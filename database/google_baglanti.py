@@ -19,25 +19,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.auth.exceptions import TransportError, RefreshError
 
-
-try:
-    from araclar.cache_yonetimi import cache
-except ImportError:
-    # Eğer bu dosya doğrudan çalıştırılırsa veya yol sorunu olursa:
-    import sys
-    import os
-    # Üst dizini path'e ekle ve tekrar dene
-    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-    try:
-        from araclar.cache_yonetimi import cache
-    except ImportError:
-        # Son çare: 'araclar' olmadan dene (type: ignore ile Pylance uyarısını susturuyoruz)
-        try:
-            from cache_yonetimi import cache  # type: ignore
-        except ImportError:
-            cache = None
-            print("UYARI: cache_yonetimi modülü bulunamadı, önbellekleme devre dışı.")
-
+print(">>> google_baglanti.py YUKLENDI <<<")
 # Loglama Ayarları
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("GoogleService")
@@ -208,39 +190,6 @@ def veritabani_getir(vt_tipi: str, sayfa_adi: str):
         logger.error(f"DB Hatası ({vt_tipi}/{sayfa_adi}): {str(e)}")
         raise e
 
-def veritabani_getir_cached(vt_tipi: str, sayfa_adi: str, force_refresh: bool = False) -> List[Dict]:
-    """
-    YENİ YÖNTEM: Verileri liste olarak (List[Dict]) döndürür.
-    Cache mekanizmasını kullanır. Okuma işlemleri için bunu kullanın.
-    
-    Args:
-        vt_tipi: DB türü ('personel', 'cihaz' vb)
-        sayfa_adi: Sheet sekme adı
-        force_refresh: True ise cache'i görmezden gelir ve yeniler.
-    """
-    if not cache:
-        # Cache modülü yüklenemediyse klasikten çek ve veriyi döndür
-        ws = veritabani_getir(vt_tipi, sayfa_adi)
-        return ws.get_all_records()
-
-    cache_key = f"{vt_tipi}:{sayfa_adi}"
-    
-    # 1. Cache Kontrolü
-    if not force_refresh:
-        data = cache.get(cache_key)
-        if data is not None:
-            return data
-
-    # 2. Cache Miss (veya force refresh) -> Veriyi Çek
-    logger.info(f"Veri güncelleniyor: {cache_key}")
-    ws = veritabani_getir(vt_tipi, sayfa_adi)
-    data = ws.get_all_records()
-    
-    # 3. Cache'e Yaz (Varsayılan 5 dk)
-    cache.set(cache_key, data)
-    
-    return data
-
 # =============================================================================
 # 6. GOOGLE DRIVE SERVİSİ
 # =============================================================================
@@ -286,3 +235,9 @@ class GoogleDriveService:
             if not internet_kontrol():
                 raise InternetBaglantiHatasi("Drive yüklemesi sırasında internet koptu.")
             raise GoogleServisHatasi(f"Dosya yüklenemedi: {e}")
+    
+def get_worksheet(table_name: str):
+    """
+    GSheetManager için köprü fonksiyon
+    """
+    return veritabani_getir(table_name, table_name)    
