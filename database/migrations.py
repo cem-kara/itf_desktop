@@ -1,442 +1,330 @@
-from database.sqlite_manager import SQLiteManager
+# database/migrations.py
+import sqlite3
 from core.logger import logger
 
 
-def enable_foreign_keys(db):
-    db.execute("PRAGMA foreign_keys = ON;")
+class MigrationManager:
+    def __init__(self, db_path):
+        self.db_path = db_path
 
-def create_meta(db):
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS meta (
-        key TEXT PRIMARY KEY,
-        value TEXT
-    )
-    """)
-# =========================
-# CİHAZ YÖNETİMİ
-# =========================
-def create_cihazlar(db):
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS Cihazlar (
-        cihaz_id TEXT PRIMARY KEY,
-        CihazTipi TEXT,
-        Marka TEXT,
-        Model TEXT,
-        Amac TEXT,
-        Kaynak TEXT,
-        SeriNo TEXT,
-        NDKSeriNo TEXT,
-        HizmeteGirisTarihi DATE,
-        RKS TEXT,
-        Sorumlusu TEXT,
-        Gorevi TEXT,
-        NDKLisansNo TEXT,
-        BaslamaTarihi DATE,
-        BitisTarihi DATE,
-        LisansDurum TEXT,
-        AnaBilimDali TEXT,
-        Birim TEXT,
-        BulunduguBina TEXT,
-        GarantiDurumu TEXT,
-        GarantiBitisTarihi DATE,
-        DemirbasNo TEXT,
-        KalibrasyonGereklimi TEXT,
-        BakimDurum TEXT,
-        Durum TEXT,
-        Img TEXT,
-        NDK_Lisans_Belgesi TEXT,
+    def connect(self):
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        return conn
 
-        created_at TEXT,
-        updated_at TEXT,
-        updated_by TEXT,
-        sync_status TEXT
-    );
-    """)
+    def reset_database(self):
+        logger.warning("SQLite tamamen yeniden yapilandiriliyor")
 
+        conn = self.connect()
+        cur = conn.cursor()
 
-def create_cihaz_ariza(db):
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS cihaz_ariza (
-        ariza_id TEXT PRIMARY KEY,
-        cihaz_id TEXT,
-        baslangic_tarihi DATE,
-        saat TEXT,
-        bildiren TEXT,
-        ariza_tipi TEXT,
-        oncelik TEXT,
-        baslik TEXT,
-        ariza_acikla TEXT,
-        durum TEXT,
-        rapor TEXT,
+        tables = [
+            "Personel",
+            "Izin_Giris",
+            "Izin_Bilgi",
+            "FHSZ_Puantaj",
+            "Cihazlar",
+            "Cihaz_Ariza",
+            "Ariza_Islem",
+            "Periyodik_Bakim",
+            "Kalibrasyon",
+            "Sabitler",
+            "Tatiller",
+            "Loglar",
+            "RKE_List",
+            "RKE_Muayene"
+        ]
 
-        created_at TEXT,
-        updated_at TEXT,
-        updated_by TEXT,
-        sync_status TEXT,
+        for table in tables:
+            cur.execute(f"DROP TABLE IF EXISTS {table}")
+            logger.info(f"{table} silindi")
 
-        FOREIGN KEY (cihaz_id) REFERENCES Cihazlar(cihaz_id)
-    );
-    """)
+        self.create_tables(cur)
 
+        conn.commit()
+        conn.close()
 
-def create_ariza_islem(db):
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS ariza_islem (
-        IslemID TEXT PRIMARY KEY,
-        ArizaID TEXT,
-        Tarih DATE,
-        Saat TEXT,
-        IslemYapan TEXT,
-        IslemTuru TEXT,
-        YapilanIslem TEXT,
-        YeniDurum TEXT,
-        Rapor TEXT,
+        logger.info("Tum tablolar basariyla olusturuldu")
 
-        created_at TEXT,
-        updated_at TEXT,
-        updated_by TEXT,
-        sync_status TEXT,
+    def create_tables(self, cur):
 
-        FOREIGN KEY (ArizaID) REFERENCES cihaz_ariza(ariza_id)
-    );
-    """)
+        # ---------------- PERSONEL ----------------
+        cur.execute("""
+        CREATE TABLE Personel (
+            KimlikNo TEXT PRIMARY KEY,
+            AdSoyad TEXT,
+            DogumYeri TEXT,
+            DogumTarihi TEXT,
+            HizmetSinifi TEXT,
+            KadroUnvani TEXT,
+            GorevYeri TEXT,
+            KurumSicilNo TEXT,
+            MemuriyeteBaslamaTarihi TEXT,
+            CepTelefonu TEXT,
+            Eposta TEXT,
+            MezunOlunanOkul TEXT,
+            MezunOlunanFakulte TEXT,
+            MezuniyetTarihi TEXT,
+            DiplomaNo TEXT,
+            MezunOlunanOkul2 TEXT,
+            MezunOlunanFakulte2 TEXT,
+            MezuniyetTarihi2 TEXT,
+            DiplomaNo2 TEXT,
+            Resim TEXT,
+            Diploma1 TEXT,
+            Diploma2 TEXT,
+            OzlukDosyasi TEXT,
+            Durum TEXT,
+            AyrilisTarihi TEXT,
+            AyrilmaNedeni TEXT,
 
+            sync_status TEXT DEFAULT 'clean',
+            updated_at TEXT
+        )
+        """)
 
-def create_periyodik_bakim(db):
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS Periyodik_Bakim (
-        PlanID TEXT PRIMARY KEY,
-        cihaz_id TEXT,
-        BakimPeriyodu TEXT,
-        BakimSirasi TEXT,
-        PlanlananTarih DATE,
-        Bakim TEXT,
-        Durum TEXT,
-        BakimTarihi DATE,
-        BakimTipi TEXT,
-        YapilanIslemler TEXT,
-        Aciklama TEXT,
-        Teknisyen TEXT,
-        Rapor TEXT,
+        # ---------------- IZIN GIRIS ----------------
+        cur.execute("""
+        CREATE TABLE Izin_Giris (
+            Izinid TEXT PRIMARY KEY,
+            HizmetSinifi TEXT,
+            Personelid TEXT,
+            AdSoyad TEXT,
+            IzinTipi TEXT,
+            BaslamaTarihi TEXT,
+            Gun INTEGER,
+            BitisTarihi TEXT,
+            Durum TEXT,
 
-        created_at TEXT,
-        updated_at TEXT,
-        updated_by TEXT,
-        sync_status TEXT,
+            sync_status TEXT DEFAULT 'clean',
+            updated_at TEXT
+        )
+        """)
 
-        FOREIGN KEY (cihaz_id) REFERENCES Cihazlar(cihaz_id)
-    );
-    """)
+        # ---------------- IZIN BILGI ----------------
+        cur.execute("""
+        CREATE TABLE Izin_Bilgi (
+            TCKimlik TEXT PRIMARY KEY,
+            AdSoyad TEXT,
+            YillikDevir REAL,
+            YillikHakedis REAL,
+            YillikToplamHak REAL,
+            YillikKullanilan REAL,
+            YillikKalan REAL,
+            SuaKullanilabilirHak REAL,
+            SuaKullanilan REAL,
+            SuaKalan REAL,
+            SuaCariYilKazanim REAL,
+            RaporMazeretTop REAL,
 
+            sync_status TEXT DEFAULT 'clean',
+            updated_at TEXT
+        )
+        """)
 
-def create_kalibrasyon(db):
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS Kalibrasyon (
-        ID TEXT PRIMARY KEY,
-        cihaz_id TEXT,
-        Firma TEXT,
-        SertifikaNo TEXT,
-        YapilanTarih DATE,
-        Gecerlilik TEXT,
-        BitisTarihi DATE,
-        Durum TEXT,
-        Dosya TEXT,
-        Aciklama TEXT,
+        # ---------------- FHSZ PUANTAJ ----------------
+        cur.execute("""
+        CREATE TABLE FHSZ_Puantaj (
+            Personelid TEXT,
+            AdSoyad TEXT,
+            Birim TEXT,
+            CalismaKosulu TEXT,
+            AitYil INTEGER,
+            Donem TEXT,
+            AylikGun INTEGER,
+            KullanilanIzin INTEGER,
+            FiiliCalismaSaat REAL,
 
-        created_at TEXT,
-        updated_at TEXT,
-        updated_by TEXT,
-        sync_status TEXT,
+            sync_status TEXT DEFAULT 'clean',
+            updated_at TEXT
+        )
+        """)
 
-        FOREIGN KEY (cihaz_id) REFERENCES Cihazlar(cihaz_id)
-    );
-    """)
+        # ---------------- CIHAZLAR ----------------
+        cur.execute("""
+        CREATE TABLE Cihazlar (
+            Cihazid TEXT PRIMARY KEY,
+            CihazTipi TEXT,
+            Marka TEXT,
+            Model TEXT,
+            Amac TEXT,
+            Kaynak TEXT,
+            SeriNo TEXT,
+            NDKSeriNo TEXT,
+            HizmeteGirisTarihi TEXT,
+            RKS TEXT,
+            Sorumlusu TEXT,
+            Gorevi TEXT,
+            NDKLisansNo TEXT,
+            BaslamaTarihi TEXT,
+            BitisTarihi TEXT,
+            LisansDurum TEXT,
+            AnaBilimDali TEXT,
+            Birim TEXT,
+            BulunduguBina TEXT,
+            GarantiDurumu TEXT,
+            GarantiBitisTarihi TEXT,
+            DemirbasNo TEXT,
+            KalibrasyonGereklimi TEXT,
+            BakimDurum TEXT,
+            Durum TEXT,
+            Img TEXT,
+            NDKLisansBelgesi TEXT,
 
+            sync_status TEXT DEFAULT 'clean',
+            updated_at TEXT
+        )
+        """)
 
-# =========================
-# PERSONEL
-# =========================
-def create_personel(db):
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS Personel (
-        Kimlik_No TEXT PRIMARY KEY,
-        Ad_Soyad TEXT,
-        Dogum_Yeri TEXT,
-        Dogum_Tarihi DATE,
-        Hizmet_Sinifi TEXT,
-        Kadro_Unvani TEXT,
-        Gorev_Yeri TEXT,
-        Kurum_Sicil_No TEXT,
-        Memuriyete_Baslama_Tarihi DATE,
-        Cep_Telefonu TEXT,
-        E_posta TEXT,
-        Mezun_Olunan_Okul TEXT,
-        Mezun_Olunan_Fakülte TEXT,
-        Mezuniyet_Tarihi DATE,
-        Diploma_No TEXT,
-        Mezun_Olunan_Okul_2 TEXT,
-        Mezun_Olunan_Fakülte_2 TEXT,
-        Mezuniyet_Tarihi_2 DATE,
-        Diploma_No_2 TEXT,
-        Resim TEXT,
-        Diploma1 TEXT,
-        Diploma2 TEXT,
-        Ozluk_Dosyasi TEXT,
-        Durum TEXT,
-        Ayrilis_Tarihi DATE,
-        Ayrilma_Nedeni TEXT,
+        # ---------------- CIHAZ ARIZA ----------------
+        cur.execute("""
+        CREATE TABLE Cihaz_Ariza (
+            Arizaid TEXT PRIMARY KEY,
+            Cihazid TEXT,
+            BaslangicTarihi TEXT,
+            Saat TEXT,
+            Bildiren TEXT,
+            ArizaTipi TEXT,
+            Oncelik TEXT,
+            Baslik TEXT,
+            ArizaAcikla TEXT,
+            Durum TEXT,
+            Rapor TEXT,
 
-        created_at TEXT,
-        updated_at TEXT,
-        updated_by TEXT,
-        sync_status TEXT
-    );
-    """)
+            sync_status TEXT DEFAULT 'clean',
+            updated_at TEXT
+        )
+        """)
 
+        # ---------------- ARIZA ISLEM ----------------
+        cur.execute("""
+        CREATE TABLE Ariza_Islem (
+            Islemid TEXT PRIMARY KEY,
+            Arizaid TEXT,
+            Tarih TEXT,
+            Saat TEXT,
+            IslemYapan TEXT,
+            IslemTuru TEXT,
+            YapilanIslem TEXT,
+            YeniDurum TEXT,
+            Rapor TEXT,
 
-def create_izin_giris(db):
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS izin_giris (
-        Id TEXT PRIMARY KEY,
-        Hizmet_Sinifi TEXT,
-        personel_id TEXT,
-        Ad_Soyad TEXT,
-        izin_tipi TEXT,
-        Baslama_Tarihi DATE,
-        Gun INTEGER,
-        Bitis_Tarihi DATE,
-        Durum TEXT,
+            sync_status TEXT DEFAULT 'clean',
+            updated_at TEXT
+        )
+        """)
 
-        created_at TEXT,
-        updated_at TEXT,
-        updated_by TEXT,
-        sync_status TEXT,
+        # ---------------- PERIYODIK BAKIM ----------------
+        cur.execute("""
+        CREATE TABLE Periyodik_Bakim (
+            Planid TEXT PRIMARY KEY,
+            Cihazid TEXT,
+            BakimPeriyodu TEXT,
+            BakimSirasi INTEGER,
+            PlanlananTarih TEXT,
+            Bakim TEXT,
+            Durum TEXT,
+            BakimTarihi TEXT,
+            BakimTipi TEXT,
+            YapilanIslemler TEXT,
+            Aciklama TEXT,
+            Teknisyen TEXT,
+            Rapor TEXT,
 
-        FOREIGN KEY (personel_id) REFERENCES Personel(Kimlik_No)
-    );
-    """)
+            sync_status TEXT DEFAULT 'clean',
+            updated_at TEXT
+        )
+        """)
 
+        # ---------------- KALIBRASYON ----------------
+        cur.execute("""
+        CREATE TABLE Kalibrasyon (
+            Kalid TEXT PRIMARY KEY,
+            Cihazid TEXT,
+            Firma TEXT,
+            SertifikaNo TEXT,
+            YapilanTarih TEXT,
+            Gecerlilik TEXT,
+            BitisTarihi TEXT,
+            Durum TEXT,
+            Dosya TEXT,
+            Aciklama TEXT,
 
-def create_izin_bilgi(db):
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS izin_bilgi (
-        TC_Kimlik TEXT PRIMARY KEY,
-        Ad_Soyad TEXT,
-        Yillik_Devir INTEGER,
-        Yillik_Hakedis INTEGER,
-        Yillik_Toplam_Hak INTEGER,
-        Yillik_Kullanilan INTEGER,
-        Yillik_Kalan INTEGER,
-        Sua_Kullanilabilir_Hak INTEGER,
-        Sua_Kullanilan INTEGER,
-        Sua_Kalan INTEGER,
-        Sua_Cari_Yil_Kazanim INTEGER,
-        Rapor_Mazeret_Top INTEGER,
+            sync_status TEXT DEFAULT 'clean',
+            updated_at TEXT
+        )
+        """)
 
-        created_at TEXT,
-        updated_at TEXT,
-        updated_by TEXT,
-        sync_status TEXT,
+        # ---------------- SABITLER ----------------
+        cur.execute("""
+        CREATE TABLE Sabitler (
+            Rowid INTEGER PRIMARY KEY AUTOINCREMENT,
+            Kod TEXT,
+            MenuEleman TEXT,
+            Aciklama TEXT
+        )
+        """)
 
-        FOREIGN KEY (TC_Kimlik) REFERENCES Personel(Kimlik_No)
-    );
-    """)
+        # ---------------- TATILLER ----------------
+        cur.execute("""
+        CREATE TABLE Tatiller (
+            Tarih TEXT PRIMARY KEY,
+            ResmiTatil TEXT
+        )
+        """)
 
+        # ---------------- LOGLAR ----------------
+        cur.execute("""
+        CREATE TABLE Loglar (
+            Tarih TEXT,
+            Saat TEXT,
+            Kullanici TEXT,
+            Modul TEXT,
+            Islem TEXT,
+            Detay TEXT
+        )
+        """)
 
-def create_fhsz_puantaj(db):
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS FHSZ_Puantaj (
-        personel_id TEXT,
-        Ad_Soyad TEXT,
-        Birim TEXT,
-        Calisma_Kosulu TEXT,
-        Ait_yil INTEGER,
-        Donem TEXT,
-        Aylik_Gun INTEGER,
-        Kullanilan_izin INTEGER,
-        Fiili_calisma_saat REAL,
+        # ---------------- RKE LIST ----------------
+        cur.execute("""
+        CREATE TABLE RKE_List (
+            KayitNo TEXT PRIMARY KEY,
+            EkipmanNo TEXT,
+            KoruyucuNumarasi TEXT,
+            AnaBilimDali TEXT,
+            Birim TEXT,
+            KoruyucuCinsi TEXT,
+            KursunEsdegeri TEXT,
+            HizmetYili INTEGER,
+            Bedeni TEXT,
+            KontrolTarihi TEXT,
+            Durum TEXT,
+            Aciklama TEXT,
+            VarsaDemirbasNo TEXT,
+            KayitTarih TEXT,
+            Barkod TEXT,
 
-        created_at TEXT,
-        updated_at TEXT,
-        updated_by TEXT,
-        sync_status TEXT,
+            sync_status TEXT DEFAULT 'clean',
+            updated_at TEXT
+        )
+        """)
 
-        FOREIGN KEY (personel_id) REFERENCES Personel(Kimlik_No)
-    );
-    """)
+        # ---------------- RKE MUAYENE ----------------
+        cur.execute("""
+        CREATE TABLE RKE_Muayene (
+            KayitNo TEXT,
+            EkipmanNo TEXT,
+            FMuayeneTarihi TEXT,
+            FizikselDurum TEXT,
+            SMuayeneTarihi TEXT,
+            SkopiDurum TEXT,
+            Aciklamalar TEXT,
+            KontrolEdenUnvani TEXT,
+            BirimSorumlusuUnvani TEXT,
+            Notlar TEXT,
+            Rapor TEXT,
 
-
-def create_nobet(db):
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS Nobet (
-        nobet_id TEXT PRIMARY KEY,
-        personel_id TEXT,
-        tarih DATE,
-        vardiya TEXT,
-
-        created_at TEXT,
-        updated_at TEXT,
-        updated_by TEXT,
-        sync_status TEXT,
-
-        FOREIGN KEY (personel_id) REFERENCES Personel(Kimlik_No)
-    );
-    """)
-
-
-def create_nobet_degisim(db):
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS Nobet_Degisim (
-        nobet_de_id TEXT PRIMARY KEY,
-        talep_eden TEXT,
-        verilecek_Tarihi DATE,
-        verilecek_vardiya TEXT,
-        alinacak_kisi TEXT,
-        alinacak_tarih DATE,
-        alinacak_vardiya TEXT,
-        degisim_nedeni TEXT,
-        birim_sorumlusu TEXT,
-        birim_durum TEXT,
-        rad_sorumlu TEXT,
-        rad_durum TEXT,
-        aciklama TEXT,
-
-        created_at TEXT,
-        updated_at TEXT,
-        updated_by TEXT,
-        sync_status TEXT
-    );
-    """)
-
-
-# =========================
-# RKE
-# =========================
-def create_rke_list(db):
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS rke_list (
-        KayitNo TEXT PRIMARY KEY,
-        EkipmanNo TEXT,
-        KoruyucuNumarasi TEXT,
-        AnaBilimDali TEXT,
-        Birim TEXT,
-        KoruyucuCinsi TEXT,
-        KursunEsdegeri TEXT,
-        HizmetYili INTEGER,
-        Bedeni TEXT,
-        KontrolTarihi DATE,
-        Durum TEXT,
-        Aciklama TEXT,
-        Varsa_Demirbas_No TEXT,
-        KayitTarih DATETIME,
-        Barkod TEXT,
-
-        created_at TEXT,
-        updated_at TEXT,
-        updated_by TEXT,
-        sync_status TEXT
-    );
-    """)
-
-
-def create_rke_muayene(db):
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS rke_muayene (
-        KayitNo TEXT PRIMARY KEY,
-        EkipmanNo TEXT,
-        F_MuayeneTarihi DATE,
-        FizikselDurum TEXT,
-        S_MuayeneTarihi DATE,
-        SkopiDurum TEXT,
-        Aciklamalar TEXT,
-        KontrolEden_Unvani TEXT,
-        BirimSorumlusu_Unvani TEXT,
-        Not_Alani TEXT,
-        Rapor TEXT,
-
-        created_at TEXT,
-        updated_at TEXT,
-        updated_by TEXT,
-        sync_status TEXT,
-
-        FOREIGN KEY (EkipmanNo) REFERENCES rke_list(EkipmanNo)
-    );
-    """)
-
-
-# =========================
-# SABİTLER & SİSTEM
-# =========================
-def create_sabitler(db):
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS Sabitler (
-        Row_ID TEXT PRIMARY KEY,
-        Kod TEXT,
-        MenuEleman TEXT,
-        Aciklama TEXT,
-
-        created_at TEXT,
-        updated_at TEXT,
-        updated_by TEXT,
-        sync_status TEXT
-    );
-    """)
-
-
-def create_loglar(db):
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS Loglar (
-        Tarih TEXT,
-        Saat TEXT,
-        Kullanici TEXT,
-        Modul TEXT,
-        Islem TEXT,
-        Detay TEXT
-    );
-    """)
-
-
-def create_tatiller(db):
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS Tatiller (
-        Tarih DATE PRIMARY KEY,
-        Resmi_Tatil TEXT,
-
-        created_at TEXT,
-        updated_at TEXT,
-        updated_by TEXT,
-        sync_status TEXT
-    );
-    """)
-
-
-# =========================
-# RUN ALL
-# =========================
-def run_migrations():
-    logger.info("Migration başlatıldı")
-    db = SQLiteManager()
-    enable_foreign_keys(db)
-
-    create_cihazlar(db)
-    create_cihaz_ariza(db)
-    create_ariza_islem(db)
-    create_periyodik_bakim(db)
-    create_kalibrasyon(db)
-
-    create_personel(db)
-    create_izin_giris(db)
-    create_izin_bilgi(db)
-    create_fhsz_puantaj(db)
-    create_nobet(db)
-    create_nobet_degisim(db)
-
-    create_rke_list(db)
-    create_rke_muayene(db)
-
-    create_sabitler(db)
-    create_loglar(db)
-    create_tatiller(db)
-
-    db.close()
-    logger.info("Migration tamamlandı")
+            sync_status TEXT DEFAULT 'clean',
+            updated_at TEXT
+        )
+        """)

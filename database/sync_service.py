@@ -1,59 +1,49 @@
-from datetime import datetime
 from core.logger import logger
-from database.personel_repository import PersonelRepository
 from database.gsheet_manager import GSheetManager
+from database.table_config import TABLES
 
 
 class SyncService:
-    """
-    Google Sheets <-> SQLite senkronizasyon servisi
-    """
-
-    def __init__(self):
-        self.personel_repo = PersonelRepository()
+    def __init__(self, repositories: dict):
+        """
+        repositories = {
+            "Personel": PersonelRepository(),
+            "Izin_Giris": IzinGirisRepository(),
+            ...
+        }
+        """
         self.gsheet = GSheetManager()
+        self.repos = repositories
 
-    # =========================
-    # GENEL YARDIMCILAR
-    # =========================
-    def _parse_dt(self, value):
-        if not value:
-            return None
-        return datetime.fromisoformat(value)
+    def sync_all(self):
+        for table_name in TABLES.keys():
+            self.sync_table(table_name)
 
-    # =========================
-    # PERSONEL SYNC
-    # =========================
-    def sync_personel(self):
-        logger.info("Personel sync başladı")
+    def sync_table(self, table_name):
+        logger.info(f"{table_name} sync başladı")
 
-        # 1️⃣ LOCAL -> REMOTE
-        dirty_records = self.personel_repo.get_dirty_personel()
-        logger.info(f"Local dirty kayıt sayısı: {len(dirty_records)}")
+        repo = self.repos[table_name]
+        cfg = TABLES[table_name]
+        pk = cfg["pk"]
 
-        for row in dirty_records:
-            self.gsheet.upsert_personel(row)
-            self.personel_repo.mark_personel_clean(row["Kimlik_No"])
+        # 1️⃣ Local → GSheets
+        dirty = repo.get_dirty()
+        for row in dirty:
+            if self.gsheet_record_exists(table_name, pk, row[pk]):
+                self.gsheet.update(table_name, row[pk], row)
+            else:
+                self.gsheet.append(table_name, row)
+            repo.mark_clean(row[pk])
 
-        # 2️⃣ REMOTE -> LOCAL
-        remote_records = self.gsheet.get_all_personel()
-        logger.info(f"GSheets kayıt sayısı: {len(remote_records)}")
-
-        for remote in remote_records:
-            local = self.personel_repo.get_personel(remote["Kimlik_No"])
-
+        # 2️⃣ GSheets → Local
+        remote_rows = self.gsheet.read(table_name)
+        for remote in remote_rows:
+            local = repo.get_by_id(remote[pk])
             if not local:
-                # yeni kayıt
-                self.personel_repo.insert(remote)
-                self.personel_repo.mark_personel_clean(remote["Kimlik_No"])
-                continue
+                repo.insert(remote)
 
-            # çakışma kontrolü
-            local_dt = self._parse_dt(local.get("updated_at"))
-            remote_dt = self._parse_dt(remote.get("updated_at"))
+        logger.info(f"{table_name} sync tamamlandı")
 
-            if remote_dt and (not local_dt or remote_dt > local_dt):
-                self.personel_repo.update(remote["Kimlik_No"], remote)
-                self.personel_repo.mark_personel_clean(remote["Kimlik_No"])
-
-        logger.info("Personel sync tamamlandı")
+    def gsheet_record_exists(self, table_name, pk, value):
+        records = self.gsheet.read(table_name)
+        return any(str(r.get(pk)) == str(value) for r in records)

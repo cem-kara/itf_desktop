@@ -1,120 +1,66 @@
-from datetime import datetime
+import sqlite3
 from core.logger import logger
-from database.sqlite_manager import SQLiteManager
 
 
 class BaseRepository:
-    """
-    Tüm repository sınıflarının temel sınıfı.
-    """
+    def __init__(self, db, table_name, pk, columns):
+        self.db = db
+        self.table = table_name
+        self.pk = pk
+        self.columns = columns
 
-    TABLE_NAME = None          # alt sınıf set edecek
-    PRIMARY_KEY = None         # alt sınıf set edecek
+    # ---------------- CRUD ----------------
 
-    def __init__(self):
-        if not self.TABLE_NAME or not self.PRIMARY_KEY:
-            raise ValueError("TABLE_NAME ve PRIMARY_KEY tanımlanmalı")
-
-        self.db = SQLiteManager()
-
-    # =========================
-    # Yardımcılar
-    # =========================
-    def _now(self):
-        return datetime.now().isoformat(timespec="seconds")
-
-    def _mark_dirty(self, data: dict):
-        data["updated_at"] = self._now()
-        data["sync_status"] = "dirty"
-        return data
-
-    # =========================
-    # CRUD
-    # =========================
     def insert(self, data: dict):
-        logger.info(f"{self.TABLE_NAME} INSERT")
-
-        data = self._mark_dirty(data)
-
-        columns = ", ".join(data.keys())
-        placeholders = ", ".join(["?"] * len(data))
-        values = list(data.values())
+        cols = ", ".join(self.columns)
+        placeholders = ", ".join(["?"] * len(self.columns))
+        values = [data.get(col) for col in self.columns]
 
         sql = f"""
-        INSERT INTO {self.TABLE_NAME}
-        ({columns})
+        INSERT OR REPLACE INTO {self.table}
+        ({cols})
         VALUES ({placeholders})
         """
 
         self.db.execute(sql, values)
+        logger.info(f"{self.table} INSERT: {data.get(self.pk)}")
 
     def update(self, pk_value, data: dict):
-        logger.info(f"{self.TABLE_NAME} UPDATE {pk_value}")
-
-        data = self._mark_dirty(data)
-
-        set_clause = ", ".join([f"{k}=?" for k in data.keys()])
-        values = list(data.values())
+        sets = ", ".join([f"{c}=?" for c in self.columns if c != self.pk])
+        values = [data.get(c) for c in self.columns if c != self.pk]
         values.append(pk_value)
 
         sql = f"""
-        UPDATE {self.TABLE_NAME}
-        SET {set_clause}
-        WHERE {self.PRIMARY_KEY} = ?
+        UPDATE {self.table}
+        SET {sets},
+            sync_status='dirty'
+        WHERE {self.pk}=?
         """
 
         self.db.execute(sql, values)
+        logger.info(f"{self.table} UPDATE: {pk_value}")
 
-    def delete(self, pk_value):
-        """
-        Fiziksel silme – ileride soft delete eklenebilir
-        """
-        logger.warning(f"{self.TABLE_NAME} DELETE {pk_value}")
-
-        sql = f"""
-        DELETE FROM {self.TABLE_NAME}
-        WHERE {self.PRIMARY_KEY} = ?
-        """
-
-        self.db.execute(sql, (pk_value,))
-
-    # =========================
-    # READ
-    # =========================
     def get_by_id(self, pk_value):
-        sql = f"""
-        SELECT * FROM {self.TABLE_NAME}
-        WHERE {self.PRIMARY_KEY} = ?
-        """
-        cur = self.db.execute(sql, (pk_value,))
-        return dict(cur.fetchone()) if cur.fetchone() else None
+        sql = f"SELECT * FROM {self.table} WHERE {self.pk}=?"
+        cur = self.db.execute(sql, [pk_value])
+        row = cur.fetchone()
+        return dict(row) if row else None
 
     def get_all(self):
-        sql = f"SELECT * FROM {self.TABLE_NAME}"
-        cur = self.db.execute(sql)
-        return [dict(row) for row in cur.fetchall()]
+        cur = self.db.execute(f"SELECT * FROM {self.table}")
+        return [dict(r) for r in cur.fetchall()]
 
-    def get_dirty_records(self):
-        """
-        Sync için: henüz gönderilmemiş kayıtlar
-        """
-        sql = f"""
-        SELECT * FROM {self.TABLE_NAME}
-        WHERE sync_status = 'dirty'
-        """
+    # ---------------- SYNC ----------------
+
+    def get_dirty(self):
+        sql = f"SELECT * FROM {self.table} WHERE sync_status='dirty'"
         cur = self.db.execute(sql)
-        return [dict(row) for row in cur.fetchall()]
+        return [dict(r) for r in cur.fetchall()]
 
     def mark_clean(self, pk_value):
-        """
-        Sync sonrası çağrılır
-        """
         sql = f"""
-        UPDATE {self.TABLE_NAME}
-        SET sync_status = 'clean'
-        WHERE {self.PRIMARY_KEY} = ?
+        UPDATE {self.table}
+        SET sync_status='clean'
+        WHERE {self.pk}=?
         """
-        self.db.execute(sql, (pk_value,))
-
-    def close(self):
-        self.db.close()
+        self.db.execute(sql, [pk_value])
