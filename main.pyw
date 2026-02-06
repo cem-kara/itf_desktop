@@ -1,29 +1,67 @@
 import sys
+import os
+
+# Proje kök dizinini Python path'e ekle
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import Qt
 
-from database.sync_worker import SyncWorker
-
-
-def on_finished():
-    print("✅ Senkron başarıyla tamamlandı")
-    app.quit()
+from core.logger import logger
+from core.paths import DB_PATH
+from database.migrations import MigrationManager
 
 
-def on_error(msg):
-    print("❌ Senkron hatası:", msg)
-    app.quit()
+def ensure_database():
+    """Veritabanı şemasını kontrol et, yoksa oluştur."""
+    import sqlite3
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT name FROM sqlite_master
+        WHERE type='table' AND name='Personel'
+    """)
+    exists = cur.fetchone()
+
+    if not exists:
+        logger.info("Veritabanı bulunamadı — tablolar oluşturuluyor")
+        MigrationManager(DB_PATH).reset_database()
+    else:
+        # Şema kontrolü
+        cur.execute("PRAGMA table_info(Personel)")
+        columns = [row[1] for row in cur.fetchall()]
+
+        if "MezunOlunanFakulte" not in columns:
+            logger.warning("Şema uyumsuz — veritabanı yeniden oluşturuluyor")
+            MigrationManager(DB_PATH).reset_database()
+        else:
+            logger.info("Veritabanı şeması doğrulandı")
+
+    conn.close()
 
 
-app = QApplication(sys.argv)
+def main():
+    # High DPI desteği
+    QApplication.setHighDpiScaleFactorRoundingPolicy(
+        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+    )
 
-worker = SyncWorker()
-worker.finished.connect(on_finished)
-worker.error.connect(on_error)
+    app = QApplication(sys.argv)
+    app.setApplicationName("ITF Desktop")
 
-worker.start()
+    # 1️⃣ Veritabanı kontrolü
+    ensure_database()
 
-# Güvenlik: 30 sn sonra zorla kapat
-QTimer.singleShot(30000, app.quit)
+    # 2️⃣ Ana pencere
+    from ui.main_window import MainWindow
+    window = MainWindow()
+    window.show()
 
-sys.exit(app.exec())
+    logger.info("Uygulama başlatıldı")
+    sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()

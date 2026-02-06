@@ -125,18 +125,20 @@ class MigrationManager:
         # ---------------- FHSZ PUANTAJ ----------------
         cur.execute("""
         CREATE TABLE FHSZ_Puantaj (
-            Personelid TEXT,
+            Personelid TEXT NOT NULL,
             AdSoyad TEXT,
             Birim TEXT,
             CalismaKosulu TEXT,
-            AitYil INTEGER,
-            Donem TEXT,
+            AitYil INTEGER NOT NULL,
+            Donem TEXT NOT NULL,
             AylikGun INTEGER,
             KullanilanIzin INTEGER,
             FiiliCalismaSaat REAL,
 
             sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT
+            updated_at TEXT,
+
+            PRIMARY KEY (Personelid, AitYil, Donem)
         )
         """)
 
@@ -312,7 +314,7 @@ class MigrationManager:
         # ---------------- RKE MUAYENE ----------------
         cur.execute("""
         CREATE TABLE RKE_Muayene (
-            KayitNo TEXT,
+            KayitNo TEXT PRIMARY KEY,
             EkipmanNo TEXT,
             FMuayeneTarihi TEXT,
             FizikselDurum TEXT,

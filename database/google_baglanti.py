@@ -236,8 +236,45 @@ class GoogleDriveService:
                 raise InternetBaglantiHatasi("Drive yüklemesi sırasında internet koptu.")
             raise GoogleServisHatasi(f"Dosya yüklenemedi: {e}")
     
-def get_worksheet(table_name: str):
+
+# ═══════════════════════════════════════════════════════
+# 7. GSHEET_MANAGER KÖPRÜSÜ
+# ═══════════════════════════════════════════════════════
+
+# Tablo adından → (vt_tipi, sayfa_adi) eşlemesi
+_TABLE_TO_SHEET_MAP = {
+    # personel vt
+    "Personel":      ("personel", "Personel"),
+    "Izin_Giris":    ("personel", "Izin_Giris"),
+    "Izin_Bilgi":    ("personel", "Izin_Bilgi"),
+    "FHSZ_Puantaj":  ("personel", "FHSZ_Puantaj"),
+
+    # cihaz vt
+    "Cihazlar":       ("cihaz", "Cihazlar"),
+    "Cihaz_Ariza":    ("cihaz", "Cihaz_Ariza"),
+    "Ariza_Islem":    ("cihaz", "Ariza_Islem"),
+    "Periyodik_Bakim":("cihaz", "Periyodik_Bakim"),
+    "Kalibrasyon":    ("cihaz", "Kalibrasyon"),
+
+    # rke vt
+    "RKE_List":       ("rke", "RKE_List"),
+    "RKE_Muayene":    ("rke", "RKE_Muayene"),
+
+    # sabit vt
+    "Sabitler":       ("sabit", "Sabitler"),
+    "Tatiller":       ("sabit", "Tatiller"),
+}
+
+
+def get_worksheet(table_name):
     """
-    GSheetManager için köprü fonksiyon
+    Tablo adına göre Google Sheets worksheet nesnesini döner.
+    gsheet_manager.py tarafından kullanılır.
     """
-    return veritabani_getir(table_name, table_name)    
+    mapping = _TABLE_TO_SHEET_MAP.get(table_name)
+
+    if not mapping:
+        raise ValueError(f"'{table_name}' için Google Sheets eşlemesi bulunamadı")
+
+    vt_tipi, sayfa_adi = mapping
+    return veritabani_getir(vt_tipi, sayfa_adi)

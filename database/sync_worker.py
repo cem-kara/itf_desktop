@@ -9,6 +9,9 @@ from database.sync_service import SyncService
 class SyncWorker(QThread):
     """
     Arka planda senkron işlemini yürüten QThread
+
+    ÖNEMLİ: SQLite nesneleri oluşturuldukları thread'de kullanılmalıdır.
+    Bu yüzden db, registry ve sync_service run() içinde oluşturulur.
     """
 
     finished = Signal()
@@ -16,32 +19,32 @@ class SyncWorker(QThread):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-
-        # 🔹 SQLite bağlantısı
-        self.db = SQLiteManager()
-
-        # 🔹 Repository registry (tüm tablolar)
-        self.registry = RepositoryRegistry(self.db)
-
-        # 🔹 Senkron servisi
-        self.sync_service = SyncService(
-            db=self.db,
-            registry=self.registry
-        )
-
         self._running = True
 
     # -----------------------------------------------------
 
     def run(self):
+        """
+        Worker thread — tüm DB işlemleri burada başlar ve biter.
+        """
         logger.info("Otomatik senkron başlatılıyor")
+
+        db = None
 
         try:
             if not self._running:
                 return
 
+            # 🔹 Bağlantılar WORKER THREAD içinde oluşturulmalı
+            db = SQLiteManager()
+            registry = RepositoryRegistry(db)
+            sync_service = SyncService(
+                db=db,
+                registry=registry
+            )
+
             # 🔁 TÜM TABLOLAR
-            self.sync_service.sync_all()
+            sync_service.sync_all()
 
             logger.info("Otomatik senkron tamamlandı")
             self.finished.emit()
@@ -51,7 +54,8 @@ class SyncWorker(QThread):
             self.error.emit(str(e))
 
         finally:
-            self.db.close()
+            if db:
+                db.close()
 
     # -----------------------------------------------------
 

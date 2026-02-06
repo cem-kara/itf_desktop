@@ -1,5 +1,7 @@
 TABLES = {
 
+    # ─────────────── PERSONEL VT ───────────────
+
     "Personel": {
         "pk": "KimlikNo",
         "columns": [
@@ -31,86 +33,113 @@ TABLES = {
         ]
     },
 
-    "FHSZ_Puantaj" :{
-	    "pk": "Personelid",
-	    "colums":[
+    "FHSZ_Puantaj": {
+        "pk": ["Personelid", "AitYil", "Donem"],   # composite PK
+        "columns": [
             "Personelid","AdSoyad","Birim","CalismaKosulu",
             "AitYil","Donem","AylikGun","KullanilanIzin",
-            "FiiliCalisma(Saat)"
-            ]
+            "FiiliCalismaSaat"
+        ]
     },
 
-    "Cihazlar" :{
-	    "pk": "Cihazid",
-	    "colums":[
+    # ─────────────── CİHAZ VT ───────────────
+
+    "Cihazlar": {
+        "pk": "Cihazid",
+        "columns": [                          # ← "colums" → "columns"
             "Cihazid","CihazTipi","Marka","Model","Amac",
             "Kaynak","SeriNo","NDKSeriNo","HizmeteGirisTarihi",
             "RKS","Sorumlusu","Gorevi","NDKLisansNo","BaslamaTarihi",
             "BitisTarihi","LisansDurum","AnaBilimDali","Birim","BulunduguBina",
             "GarantiDurumu","GarantiBitisTarihi","DemirbasNo","KalibrasyonGereklimi",
-            "BakimDurum","Durum","Img","NDKLisansBelgesi"]
+            "BakimDurum","Durum","Img","NDKLisansBelgesi"
+        ]
     },
 
-    "Cihaz_Ariza" :{
-	    "pk": "Arizaid",
-	    "colums":[
+    "Cihaz_Ariza": {
+        "pk": "Arizaid",
+        "columns": [                          # ← "colums" → "columns"
             "Arizaid","Cihazid","BaslangicTarihi","Saat","Bildiren",
-            "ArizaTipi","Oncelik","Baslık","ArizaAcikla","Durum","Rapor"]
+            "ArizaTipi","Oncelik","Baslik",   # ← "BaslÄ±k" encoding düzeltildi
+            "ArizaAcikla","Durum","Rapor"
+        ]
     },
 
-    "Ariza_Islem" :{
-	    "pk": "Islemid",
-	    "colums":[
+    "Ariza_Islem": {
+        "pk": "Islemid",
+        "columns": [                          # ← "colums" → "columns"
             "Islemid","Arizaid","Tarih","Saat","IslemYapan",
-            "IslemTuru","YapilanIslem","YeniDurum","Rapor"]
+            "IslemTuru","YapilanIslem","YeniDurum","Rapor"
+        ]
     },
 
-    "Periyodik_Bakim" :{
-	    "pk": "Planid",
-	    "colums":[
+    "Periyodik_Bakim": {
+        "pk": "Planid",
+        "columns": [                          # ← "colums" → "columns"
             "Planid","Cihazid","BakimPeriyodu","BakimSirasi","PlanlananTarih",
             "Bakim","Durum","BakimTarihi","BakimTipi","YapilanIslemler","Aciklama",
-            "Teknisyen","Rapor"]
+            "Teknisyen","Rapor"
+        ]
     },
 
-    "Kalibrasyon" :{
-	    "pk": "Kalid",
-	    "colums":[
-            "Kalid","cihazid","Firma","SertifikaNo","YapilanTarih",
-            "Gecerlilik","BitisTarihi","Durum","Dosya","Aciklama"]
+    "Kalibrasyon": {
+        "pk": "Kalid",
+        "columns": [                          # ← "colums" → "columns"
+            "Kalid","Cihazid",                # ← "cihazid" → "Cihazid" (migrations.py ile eşleşti)
+            "Firma","SertifikaNo","YapilanTarih",
+            "Gecerlilik","BitisTarihi","Durum","Dosya","Aciklama"
+        ]
     },
 
-    "Sabitler" :{
-	    "pk": "Personelid",
-	    "colums":[
-            "Rowid","Kod","MenuEleman","Aciklama"]
+    # ─────────────── SABİT VT ───────────────
+
+    "Sabitler": {
+        "pk": "Rowid",                        # ← "Personelid" → "Rowid" (migrations.py: AUTOINCREMENT PK)
+        "columns": [
+            "Rowid","Kod","MenuEleman","Aciklama"
+        ],
+        "sync": False                         # Sabitler tablosu sync dışı (AUTOINCREMENT + sync_status yok)
     },
 
-    "Tatiller" :{
-	    "pk": "Personelid",
-	    "colums":[
-            "Tarih","ResmiTatil"]
+    "Tatiller": {
+        "pk": "Tarih",                        # ← "Personelid" → "Tarih" (migrations.py PK)
+        "columns": [
+            "Tarih","ResmiTatil"
+        ],
+        "sync": False                         # Tatiller tablosunda sync_status yok
     },
 
-    "Loglar" :{
-	    "pk": "Personelid",
-	    "colums":[
-            "Tarih","Saat","Kullanici","Modul","Islem","Detay"]
+    "Loglar": {
+        "pk": None,                           # ← "Personelid" kaldırıldı (Loglar'da PK yok)
+        "columns": [
+            "Tarih","Saat","Kullanici","Modul","Islem","Detay"
+        ],
+        "sync": False                         # Log tablosu sync dışı
     },
 
-    "RKE_List" :{
-	    "pk": "Personelid",
-	    "colums":[
+    # ─────────────── RKE VT ───────────────
+
+    "RKE_List": {
+        "pk": "KayitNo",                      # ← "Personelid" → "KayitNo" (migrations.py PK)
+        "columns": [
             "KayitNo","EkipmanNo","KoruyucuNumarasi","AnaBilimDali","Birim",
             "KoruyucuCinsi","KursunEsdegeri","HizmetYili","Bedeni","KontrolTarihi",
-            "Durum","Açiklama","VarsaDemirbaşNo","KayitTarih","Barkod"]
+            "Durum","Aciklama",               # ← encoding düzeltildi
+            "VarsaDemirbasNo",                # ← encoding düzeltildi
+            "KayitTarih","Barkod"
+        ]
     },
 
-    "RKE_Muayene" :{
-	    "pk": "Personelid",
-	    "colums":[
+    "RKE_Muayene": {
+        "pk": "KayitNo",                      # ← "Personelid" → "KayitNo" (migrations.py ile eşleşti)
+        "columns": [
             "KayitNo","EkipmanNo","FMuayeneTarihi","FizikselDurum","SMuayeneTarihi",
-            "SkopiDurum","Aciklamalar","KontrolEden/Unvani","BirimSorumlusu/Unvani","Not","Rapor"]
+            "SkopiDurum","Aciklamalar",
+            "KontrolEdenUnvani",              # ← "/" kaldırıldı (SQLite kolon adında slash olmaz)
+            "BirimSorumlusuUnvani",           # ← "/" kaldırıldı
+            "Notlar",                         # ← "Not" → "Notlar" (migrations.py ile eşleşti)
+            "Rapor"
+        ]
     }
 
 }
