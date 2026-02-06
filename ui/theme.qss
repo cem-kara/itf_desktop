@@ -1,142 +1,9 @@
 /* ═══════════════════════════════════════════════
-   ITF Desktop — Ana Tema
+   ITF Desktop — İçerik Alanı Teması
+   Not: Sidebar kendi inline stillerini yönetiyor
    ═══════════════════════════════════════════════ */
 
-/* ── GENEL ── */
-QWidget {
-    font-family: "Segoe UI", "Arial", sans-serif;
-    font-size: 13px;
-    color: #1e293b;
-    background-color: #f8fafc;
-}
-
-/* ── ANA PENCERE ── */
-QMainWindow {
-    background-color: #106ecc;
-}
-
-/* ═══════════════════════════════════════════════
-   SIDEBAR
-   ═══════════════════════════════════════════════ */
-
-#sidebar {
-    background-color: #1e293b;
-    border-right: 1px solid #334155;
-    min-width: 220px;
-    max-width: 220px;
-}
-
-#sidebar QLabel#app_title {
-    color: #f1f5f9;
-    font-size: 16px;
-    font-weight: bold;
-    padding: 16px 12px 8px 12px;
-}
-
-#sidebar QLabel#app_version {
-    color: #64748b;
-    font-size: 11px;
-    padding: 0px 12px 12px 12px;
-}
-
-/* Grup başlıkları */
-#sidebar QLabel.group_header {
-    color: #94a3b8;
-    font-size: 11px;
-    font-weight: bold;
-    padding: 14px 12px 4px 12px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-/* Menü butonları */
-#sidebar QPushButton.menu_btn {
-    background-color: transparent;
-    color: #cbd5e1;
-    border: none;
-    border-radius: 6px;
-    text-align: left;
-    padding: 8px 12px 8px 20px;
-    margin: 1px 8px;
-    font-size: 13px;
-}
-
-#sidebar QPushButton.menu_btn:hover {
-    background-color: #334155;
-    color: #f1f5f9;
-}
-
-#sidebar QPushButton.menu_btn:checked,
-#sidebar QPushButton.menu_btn[active="true"] {
-    background-color: #2563eb;
-    color: #ffffff;
-    font-weight: 600;
-}
-
-/* Sync butonu */
-#sidebar QPushButton#sync_btn {
-    background-color: #0f766e;
-    color: #ffffff;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 12px;
-    margin: 8px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-#sidebar QPushButton#sync_btn:hover {
-    background-color: #0d9488;
-}
-
-#sidebar QPushButton#sync_btn:disabled {
-    background-color: #475569;
-    color: #94a3b8;
-}
-
-/* ═══════════════════════════════════════════════
-   İÇERİK ALANI
-   ═══════════════════════════════════════════════ */
-
-#content_area {
-    background-color: #f8fafc;
-}
-
-/* Sayfa başlığı */
-QLabel.page_title {
-    font-size: 20px;
-    font-weight: bold;
-    color: #0f172a;
-    padding: 16px 24px 8px 24px;
-}
-
-QLabel.page_subtitle {
-    font-size: 13px;
-    color: #64748b;
-    padding: 0px 24px 16px 24px;
-}
-
-/* ═══════════════════════════════════════════════
-   STATUS BAR
-   ═══════════════════════════════════════════════ */
-
-QStatusBar {
-    background-color: #e2e8f0;
-    border-top: 1px solid #cbd5e1;
-    padding: 2px 8px;
-    font-size: 12px;
-    color: #475569;
-}
-
-QStatusBar QLabel {
-    padding: 0px 8px;
-    font-size: 12px;
-    color: #475569;
-}
-
-/* ═══════════════════════════════════════════════
-   TABLO (QTableView)
-   ═══════════════════════════════════════════════ */
+/* ── TABLO (QTableView) ── */
 
 QTableView {
     background-color: #ffffff;
@@ -163,17 +30,18 @@ QHeaderView::section {
     color: #334155;
     font-weight: 600;
     font-size: 12px;
-    padding: 8px 8px;
+    padding: 8px;
     border: none;
     border-bottom: 2px solid #cbd5e1;
     border-right: 1px solid #e2e8f0;
 }
 
-/* ═══════════════════════════════════════════════
-   FORM ALANLARI
-   ═══════════════════════════════════════════════ */
+/* ── FORM ALANLARI ── */
 
-QLineEdit, QComboBox, QSpinBox, QDateEdit {
+#content_area QLineEdit,
+#content_area QComboBox,
+#content_area QSpinBox,
+#content_area QDateEdit {
     background-color: #ffffff;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
@@ -183,29 +51,15 @@ QLineEdit, QComboBox, QSpinBox, QDateEdit {
     min-height: 20px;
 }
 
-QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDateEdit:focus {
+#content_area QLineEdit:focus,
+#content_area QComboBox:focus {
     border: 2px solid #2563eb;
     padding: 5px 9px;
 }
 
-QLineEdit:disabled {
-    background-color: #f1f5f9;
-    color: #94a3b8;
-}
+/* ── BUTONLAR (içerik alanı) ── */
 
-/* Arama kutusu */
-QLineEdit#search_input {
-    border-radius: 8px;
-    padding: 8px 12px 8px 32px;
-    font-size: 13px;
-    min-height: 22px;
-}
-
-/* ═══════════════════════════════════════════════
-   BUTONLAR
-   ═══════════════════════════════════════════════ */
-
-QPushButton {
+#content_area QPushButton {
     background-color: #2563eb;
     color: #ffffff;
     border: none;
@@ -213,80 +67,46 @@ QPushButton {
     padding: 8px 16px;
     font-size: 13px;
     font-weight: 600;
-    min-height: 20px;
 }
 
-QPushButton:hover {
+#content_area QPushButton:hover {
     background-color: #1d4ed8;
 }
 
-QPushButton:pressed {
-    background-color: #1e40af;
-}
-
-QPushButton:disabled {
+#content_area QPushButton:disabled {
     background-color: #cbd5e1;
     color: #94a3b8;
 }
 
-/* İkincil buton */
-QPushButton.secondary {
+#content_area QPushButton[class="secondary"] {
     background-color: #e2e8f0;
     color: #334155;
 }
 
-QPushButton.secondary:hover {
-    background-color: #cbd5e1;
-}
-
-/* Tehlike butonu */
-QPushButton.danger {
+#content_area QPushButton[class="danger"] {
     background-color: #dc2626;
 }
 
-QPushButton.danger:hover {
-    background-color: #b91c1c;
-}
+/* ── SCROLLBAR ── */
 
-/* ═══════════════════════════════════════════════
-   SCROLLBAR
-   ═══════════════════════════════════════════════ */
-
-QScrollBar:vertical {
+#content_area QScrollBar:vertical {
     background-color: #f1f5f9;
     width: 8px;
     border: none;
 }
 
-QScrollBar::handle:vertical {
+#content_area QScrollBar::handle:vertical {
     background-color: #94a3b8;
     border-radius: 4px;
     min-height: 30px;
 }
 
-QScrollBar::handle:vertical:hover {
-    background-color: #64748b;
-}
-
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+#content_area QScrollBar::add-line:vertical,
+#content_area QScrollBar::sub-line:vertical {
     height: 0px;
 }
 
-QScrollBar:horizontal {
-    background-color: #f1f5f9;
-    height: 8px;
-    border: none;
-}
-
-QScrollBar::handle:horizontal {
-    background-color: #94a3b8;
-    border-radius: 4px;
-    min-width: 30px;
-}
-
-/* ═══════════════════════════════════════════════
-   GRUPBOX & TAB
-   ═══════════════════════════════════════════════ */
+/* ── GRUPBOX & TAB ── */
 
 QGroupBox {
     border: 1px solid #e2e8f0;
@@ -304,7 +124,7 @@ QGroupBox::title {
 
 QTabWidget::pane {
     border: 1px solid #e2e8f0;
-    border-radius: 0px 0px 8px 8px;
+    border-radius: 0 0 8px 8px;
     background-color: #ffffff;
 }
 
@@ -314,7 +134,7 @@ QTabBar::tab {
     padding: 8px 16px;
     border: 1px solid #e2e8f0;
     border-bottom: none;
-    border-radius: 6px 6px 0px 0px;
+    border-radius: 6px 6px 0 0;
     margin-right: 2px;
 }
 

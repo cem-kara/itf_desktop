@@ -263,7 +263,10 @@ class MigrationManager:
             Rowid INTEGER PRIMARY KEY AUTOINCREMENT,
             Kod TEXT,
             MenuEleman TEXT,
-            Aciklama TEXT
+            Aciklama TEXT,
+                    
+            sync_status TEXT DEFAULT 'clean',
+            updated_at TEXT
         )
         """)
 
@@ -271,7 +274,10 @@ class MigrationManager:
         cur.execute("""
         CREATE TABLE Tatiller (
             Tarih TEXT PRIMARY KEY,
-            ResmiTatil TEXT
+            ResmiTatil TEXT,
+                    
+            sync_status TEXT DEFAULT 'clean',
+            updated_at TEXT
         )
         """)
 

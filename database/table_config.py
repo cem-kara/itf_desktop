@@ -97,16 +97,16 @@ TABLES = {
         "pk": "Rowid",                        # ← "Personelid" → "Rowid" (migrations.py: AUTOINCREMENT PK)
         "columns": [
             "Rowid","Kod","MenuEleman","Aciklama"
-        ],
-        "sync": False                         # Sabitler tablosu sync dışı (AUTOINCREMENT + sync_status yok)
+        ]
+        
     },
 
     "Tatiller": {
         "pk": "Tarih",                        # ← "Personelid" → "Tarih" (migrations.py PK)
         "columns": [
             "Tarih","ResmiTatil"
-        ],
-        "sync": False                         # Tatiller tablosunda sync_status yok
+        ]
+        
     },
 
     "Loglar": {
