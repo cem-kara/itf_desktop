@@ -260,7 +260,7 @@ class MigrationManager:
         # ---------------- SABITLER ----------------
         cur.execute("""
         CREATE TABLE Sabitler (
-            Rowid INTEGER PRIMARY KEY AUTOINCREMENT,
+            Rowid TEXT PRIMARY KEY,
             Kod TEXT,
             MenuEleman TEXT,
             Aciklama TEXT,

@@ -69,6 +69,12 @@ class SyncService:
         Tek tablo senkronizasyonu — optimize edilmiş akış.
         Composite PK (list) ve tekli PK (string) destekler.
         """
+        cfg = TABLES[table_name]
+
+        # ── Pull-only tablolar (Sabitler, Tatiller) ──
+        if cfg.get("sync_mode") == "pull_only":
+            self._pull_replace(table_name, cfg)
+            return
         repo = self.registry.get(table_name)
         cfg = TABLES[table_name]
         pk = cfg["pk"]  # string veya list
@@ -136,3 +142,27 @@ class SyncService:
             logger.info(f"  PULL yeni kayıt: {new_count}")
 
         logger.info(f"  {table_name} sync tamamlandı ✓")
+
+    def _pull_replace(self, table_name, cfg):
+        """Tabloyu tamamen sil, Sheets'ten yeniden doldur."""
+        columns = cfg["columns"]
+        
+        ws = self.gsheet._validate_table(table_name) or None
+        from database.google_baglanti import get_worksheet
+        ws = get_worksheet(table_name)
+        records = ws.get_all_records()
+
+        # Local tabloyu temizle
+        self.db.execute(f"DELETE FROM {table_name}")
+
+        # Sheets'ten tüm kayıtları ekle
+        for row in records:
+            cols = ", ".join(columns)
+            placeholders = ", ".join(["?"] * len(columns))
+            values = [str(row.get(col, "")).strip() for col in columns]
+            self.db.execute(
+                f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders})",
+                values
+            )
+
+        logger.info(f"  {table_name} pull_only: {len(records)} kayıt yüklendi ✓")

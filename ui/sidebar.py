@@ -8,8 +8,6 @@ from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QCursor
 from core.config import AppConfig
 
-
-# ─── Menü ikon haritası ───
 MENU_ICONS = {
     "Personel Listesi":  "👥",
     "Personel Ekle":     "➕",
@@ -36,32 +34,36 @@ GROUP_ICONS = {
     "YÖNETİCİ İŞLEMLERİ": "⚙️",
 }
 
-# ─── Renkler (inline — QSS'e bağımlı değil) ───
+# ─── W11 Dark Glass Renkler ───
 C = {
-    "bg":           "#0f172a",
-    "header_bg":    "#1e293b",
-    "header_hover": "#334155",
-    "header_text":  "#e2e8f0",
-    "item_text":    "#94a3b8",
-    "item_hover":   "#1e293b",
-    "item_hover_t": "#f1f5f9",
-    "active_bg":    "#2563eb",
+    "bg":           "#1a1a2e",
+    "bg_glass":     "rgba(30, 32, 44, 0.85)",
+    "header_bg":    "rgba(255, 255, 255, 0.05)",
+    "header_hover": "rgba(255, 255, 255, 0.10)",
+    "header_text":  "#c8cad0",
+    "item_text":    "#8b8fa3",
+    "item_hover":   "rgba(255, 255, 255, 0.07)",
+    "item_hover_t": "#e0e2ea",
+    "active_bg":    "rgba(29, 117, 254, 0.35)",
+    "active_border":"#1d75fe",
     "active_text":  "#ffffff",
-    "sep":          "#1e293b",
-    "title":        "#f8fafc",
-    "ver":          "#475569",
-    "sync_bg":      "#0d9488",
-    "sync_hover":   "#14b8a6",
-    "sync_dis":     "#334155",
+    "sep":          "rgba(255, 255, 255, 0.06)",
+    "title":        "#e8eaef",
+    "ver":          "#5a5d6e",
+    "accent":       "#1d75fe",
+    "accent_light": "#6bd3ff",
+    "sync_bg":      "rgba(29, 117, 254, 0.25)",
+    "sync_hover":   "rgba(29, 117, 254, 0.40)",
+    "sync_border":  "#1d75fe",
+    "sync_dis":     "rgba(255, 255, 255, 0.05)",
 }
 
 
 class AccordionGroup(QWidget):
-    """Açılır/kapanır menü grubu."""
 
     def __init__(self, group_name, icon, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(f"background-color: {C['bg']};")
+        self.setStyleSheet(f"background-color: transparent;")
         self.group_name = group_name
         self._expanded = False
         self._buttons = []
@@ -71,7 +73,6 @@ class AccordionGroup(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # Grup başlığı
         self.header = QPushButton(f"  {icon}  {group_name}  ➕")
         self.header.setFixedHeight(38)
         self.header.setCursor(QCursor(Qt.PointingHandCursor))
@@ -80,6 +81,7 @@ class AccordionGroup(QWidget):
                 background-color: {C['header_bg']};
                 color: {C['header_text']};
                 border: none;
+                border-bottom: 1px solid {C['sep']};
                 text-align: left;
                 padding-left: 12px;
                 font-size: 12px;
@@ -93,20 +95,12 @@ class AccordionGroup(QWidget):
         self.header.clicked.connect(self._toggle)
         layout.addWidget(self.header)
 
-        # İçerik alanı
         self.content = QWidget()
-        self.content.setStyleSheet(f"background-color: {C['bg']};")
+        self.content.setStyleSheet("background-color: transparent;")
         self.content_layout = QVBoxLayout(self.content)
         self.content_layout.setContentsMargins(0, 4, 0, 4)
         self.content_layout.setSpacing(2)
         layout.addWidget(self.content)
-
-        # Alt çizgi
-        line = QFrame()
-        line.setFixedHeight(1)
-        line.setStyleSheet(f"background-color: {C['sep']};")
-        layout.addWidget(line)
-
         self.content.setVisible(False)
 
     def add_item(self, baslik, callback):
@@ -134,9 +128,11 @@ class AccordionGroup(QWidget):
                 QPushButton {{
                     background-color: {C['active_bg']};
                     color: {C['active_text']};
-                    border: none; border-radius: 6px;
+                    border: none;
+                    border-left: 3px solid {C['active_border']};
+                    border-radius: 0px 6px 6px 0px;
                     text-align: left;
-                    padding-left: 16px; margin: 0 8px;
+                    padding-left: 14px; margin: 0 8px 0 0;
                     font-size: 13px; font-weight: 600;
                 }}
             """
@@ -144,14 +140,17 @@ class AccordionGroup(QWidget):
             QPushButton {{
                 background-color: transparent;
                 color: {C['item_text']};
-                border: none; border-radius: 6px;
+                border: none;
+                border-left: 3px solid transparent;
+                border-radius: 0px 6px 6px 0px;
                 text-align: left;
-                padding-left: 16px; margin: 0 8px;
+                padding-left: 14px; margin: 0 8px 0 0;
                 font-size: 13px;
             }}
             QPushButton:hover {{
                 background-color: {C['item_hover']};
                 color: {C['item_hover_t']};
+                border-left: 3px solid rgba(29, 117, 254, 0.4);
             }}
         """
 
@@ -163,13 +162,12 @@ class AccordionGroup(QWidget):
 
 
 class Sidebar(QWidget):
-    """Sol menü — accordion gruplar, ikonlar, koyu tema."""
 
     menu_clicked = Signal(str, str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedWidth(230)
+        self.setFixedWidth(240)
         self.setAutoFillBackground(True)
         self.setStyleSheet(f"background-color: {C['bg']};")
 
@@ -183,15 +181,18 @@ class Sidebar(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # ── Başlık ──
+        # Başlık
         hdr = QWidget()
-        hdr.setStyleSheet(f"background-color: {C['bg']};")
+        hdr.setStyleSheet(f"background-color: transparent;")
         hl = QVBoxLayout(hdr)
-        hl.setContentsMargins(16, 14, 16, 4)
+        hl.setContentsMargins(16, 16, 16, 6)
         hl.setSpacing(2)
 
         t = QLabel(f"🏥  {AppConfig.APP_NAME}")
-        t.setStyleSheet(f"color: {C['title']}; font-size: 15px; font-weight: bold; background: transparent;")
+        t.setStyleSheet(f"""
+            color: {C['title']}; font-size: 15px; font-weight: bold;
+            background: transparent;
+        """)
         hl.addWidget(t)
 
         v = QLabel(f"v{AppConfig.VERSION}")
@@ -201,29 +202,29 @@ class Sidebar(QWidget):
 
         sep = QFrame()
         sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background-color: {C['sep']}; margin: 4px 12px;")
+        sep.setStyleSheet(f"background-color: {C['sep']};")
         layout.addWidget(sep)
 
-        # ── Scroll menü ──
+        # Scroll menü
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroll.setStyleSheet(f"""
-            QScrollArea {{ border: none; background-color: {C['bg']}; }}
-            QWidget {{ background-color: {C['bg']}; }}
+            QScrollArea {{ border: none; background-color: transparent; }}
+            QWidget {{ background-color: transparent; }}
             QScrollBar:vertical {{
-                background-color: {C['bg']}; width: 6px;
+                background-color: transparent; width: 4px;
             }}
             QScrollBar::handle:vertical {{
-                background-color: #334155; border-radius: 3px; min-height: 30px;
+                background-color: rgba(255,255,255,0.15); border-radius: 2px; min-height: 30px;
             }}
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
         """)
 
         menu_w = QWidget()
-        menu_w.setStyleSheet(f"background-color: {C['bg']};")
+        menu_w.setStyleSheet("background-color: transparent;")
         self._ml = QVBoxLayout(menu_w)
-        self._ml.setContentsMargins(0, 4, 0, 4)
+        self._ml.setContentsMargins(0, 6, 0, 6)
         self._ml.setSpacing(0)
 
         self._load_menu()
@@ -232,25 +233,32 @@ class Sidebar(QWidget):
         scroll.setWidget(menu_w)
         layout.addWidget(scroll, 1)
 
-        # ── Alt kısım ──
+        # Alt kısım
         bot = QWidget()
-        bot.setStyleSheet(f"background-color: {C['bg']};")
+        bot.setStyleSheet("background-color: transparent;")
         bl = QVBoxLayout(bot)
-        bl.setContentsMargins(10, 4, 10, 8)
-        bl.setSpacing(4)
+        bl.setContentsMargins(12, 4, 12, 10)
+        bl.setSpacing(6)
 
         self.sync_btn = QPushButton("⟳  Senkronize Et")
         self.sync_btn.setFixedHeight(36)
         self.sync_btn.setCursor(QCursor(Qt.PointingHandCursor))
         self.sync_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: {C['sync_bg']}; color: #fff;
-                border: none; border-radius: 8px;
+                background-color: {C['sync_bg']};
+                color: {C['accent_light']};
+                border: 1px solid {C['sync_border']};
+                border-radius: 8px;
                 font-size: 13px; font-weight: 600;
             }}
-            QPushButton:hover {{ background-color: {C['sync_hover']}; }}
+            QPushButton:hover {{
+                background-color: {C['sync_hover']};
+                color: #ffffff;
+            }}
             QPushButton:disabled {{
-                background-color: {C['sync_dis']}; color: #64748b;
+                background-color: {C['sync_dis']};
+                color: #5a5d6e;
+                border: 1px solid rgba(255,255,255,0.05);
             }}
         """)
         bl.addWidget(self.sync_btn)
@@ -289,15 +297,11 @@ class Sidebar(QWidget):
         if self._active_baslik and self._active_baslik in self._all_buttons:
             old_grp, _ = self._all_buttons[self._active_baslik]
             old_grp.set_active(None)
-
         if baslik in self._all_buttons:
             grp, _ = self._all_buttons[baslik]
             grp.set_active(baslik)
-
         self._active_baslik = baslik
         self.menu_clicked.emit(group, baslik)
-
-    # ── Public API ──
 
     def set_active(self, baslik):
         self._on_click("", baslik)
