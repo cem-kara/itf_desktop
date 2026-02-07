@@ -179,6 +179,7 @@ S = {
         }
         QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
     """,
+    
 }
 
 # DB alan → form widget eşlemesi
@@ -286,6 +287,10 @@ class PersonelEklePage(QWidget):
 
         row1 = QHBoxLayout()
         self.ui["tc"] = self._make_input("TC Kimlik No *", row1, required=True)
+        self.ui["tc"].setMaxLength(11)
+        from PySide6.QtCore import QRegularExpression
+        from PySide6.QtGui import QRegularExpressionValidator
+        self.ui["tc"].setValidator(QRegularExpressionValidator(QRegularExpression(r"^\d{0,11}$")))
         self.ui["ad_soyad"] = self._make_input("Ad Soyad *", row1, required=True)
         id_lay.addLayout(row1)
 
@@ -477,6 +482,55 @@ class PersonelEklePage(QWidget):
         de.setCalendarPopup(True)
         de.setDate(QDate.currentDate())
         de.setDisplayFormat("dd.MM.yyyy")
+
+        # Takvim popup düzeltmesi
+        cal = de.calendarWidget()
+        cal.setMinimumWidth(350)
+        cal.setMinimumHeight(250)
+        cal.setStyleSheet("""
+            QCalendarWidget {
+                background-color: #1e202c;
+                color: #e0e2ea;
+            }
+            QCalendarWidget QToolButton {
+                background-color: #1e202c;
+                color: #e0e2ea;
+                border: none; padding: 6px 10px;
+                font-size: 13px; font-weight: bold;
+            }
+            QCalendarWidget QToolButton:hover {
+                background-color: rgba(29, 117, 254, 0.3);
+                border-radius: 4px;
+            }
+            QCalendarWidget QMenu {
+                background-color: #1e202c; color: #e0e2ea;
+            }
+            QCalendarWidget QSpinBox {
+                background-color: #1e202c; color: #e0e2ea;
+                border: 1px solid #292b41; font-size: 13px;
+            }
+            QCalendarWidget QAbstractItemView {
+                background-color: #1e202c;
+                color: #c8cad0;
+                selection-background-color: rgba(29, 117, 254, 0.4);
+                selection-color: #ffffff;
+                font-size: 13px;
+                outline: none;
+            }
+            QCalendarWidget QAbstractItemView:enabled {
+                color: #c8cad0;
+            }
+            QCalendarWidget QAbstractItemView:disabled {
+                color: #5a5d6e;
+            }
+            QCalendarWidget #qt_calendar_navigationbar {
+                background-color: #16172b;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+                padding: 4px;
+            }
+        """)
+        cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
+
         lay.addWidget(de)
         parent_layout.addWidget(container)
         return de
@@ -789,7 +843,16 @@ class PersonelEklePage(QWidget):
 
         data = self._collect_data()
         tc_no = data["KimlikNo"]
-
+        
+        # Elle girilen metin alanlarını Title Case yap
+        title_fields = [
+            "AdSoyad", "DogumYeri",
+            "MezunOlunanOkul", "MezunOlunanFakulte",
+            "MezunOlunanOkul2", "MezunOlunanFakulte2",
+        ]
+        for field in title_fields:
+            if data.get(field):
+                data[field] = data[field].title()
         # Düzenleme değilse aynı TC kontrolü
         if not self._is_edit:
             try:

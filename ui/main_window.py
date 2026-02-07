@@ -134,6 +134,9 @@ class MainWindow(QMainWindow):
         if baslik == "Personel Listesi":
             from ui.pages.personel.personel_listesi import PersonelListesiPage
             page = PersonelListesiPage(db=self._db)
+            page.table.doubleClicked.connect(
+                lambda idx: self._open_personel_detay(page, idx)
+            )
             page.load_data()
             return page
 
@@ -149,6 +152,48 @@ class MainWindow(QMainWindow):
             title=baslik,
             subtitle=f"{group} modülü — geliştirme aşamasında"
         )
+
+    def _open_personel_detay(self, liste_page, index):
+        """Personel listesinde çift tıklama → detay sayfası aç."""
+        source_idx = liste_page._proxy.mapToSource(index)
+        row_data = liste_page._model.get_row(source_idx.row())
+        if not row_data:
+            return
+
+        tc = row_data.get("KimlikNo", "")
+        ad = row_data.get("AdSoyad", "")
+        detay_key = f"__detay_{tc}"
+
+        # Eski detay sayfası varsa kaldır
+        if detay_key in self._pages:
+            old = self._pages.pop(detay_key)
+            self.stack.removeWidget(old)
+            old.deleteLater()
+
+        from ui.pages.personel.personel_detay import PersonelDetayPage
+        page = PersonelDetayPage(
+            db=self._db,
+            personel_data=row_data,
+            on_back=lambda: self._back_to_personel_listesi(detay_key)
+        )
+        self._pages[detay_key] = page
+        self.stack.addWidget(page)
+        self.stack.setCurrentWidget(page)
+        self.page_title.setText(f"Personel Detay — {ad}")
+
+    def _back_to_personel_listesi(self, detay_key):
+        """Detay sayfasından listeye geri dön."""
+        if "Personel Listesi" in self._pages:
+            page = self._pages["Personel Listesi"]
+            page.load_data()
+            self.stack.setCurrentWidget(page)
+            self.page_title.setText("Personel Listesi")
+            self.sidebar.set_active("Personel Listesi")
+
+        if detay_key in self._pages:
+            old = self._pages.pop(detay_key)
+            self.stack.removeWidget(old)
+            old.deleteLater()
 
     def register_page(self, baslik, widget):
         self._pages[baslik] = widget
@@ -221,6 +266,4 @@ class MainWindow(QMainWindow):
 
         # Ekle formunu sıfırla (sonraki açılışta taze form)
         if "Personel Ekle" in self._pages:
-            old = self._pages.pop("Personel Ekle")
-            self.stack.removeWidget(old)
-            old.deleteLater()
+            del self._pages["Personel Ekle"]
