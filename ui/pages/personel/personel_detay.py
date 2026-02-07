@@ -90,7 +90,7 @@ S = {
             border-bottom: 2px solid #9dcbe3;
             border-radius: 6px;
             padding: 7px 10px; font-size: 13px;
-            color: #e0e2ea; min-height: 22px;
+            color: #e0e2ea; min-height: 20px;
         }
         QLineEdit:focus {
             border: 1px solid rgba(29, 117, 254, 0.5);
@@ -662,7 +662,7 @@ class PersonelDetayPage(QWidget):
             col = QVBoxLayout()
             col.setSpacing(8)
 
-            header_lbl = QLabel(f"{'Lisans' if i == '1' else 'Yüksek Lisans / 2. Okul'}")
+            header_lbl = QLabel(f"{'Lise / Önlisans / Lisans' if i == '1' else 'Lisans / Yüksek Lisans / Lisans Tamamlama'}")
             header_lbl.setStyleSheet("color: #6bd3ff; font-size: 12px; font-weight: bold; background: transparent;")
             col.addWidget(header_lbl)
 
@@ -671,11 +671,22 @@ class PersonelDetayPage(QWidget):
             self.ui[f"mezun_tarihi{i}"] = self._make_input_v("Mezuniyet Tarihi", col)
             self.ui[f"diploma_no{i}"] = self._make_input_v("Diploma No", col)
 
-            btn_dip = QPushButton(f"📄 Diploma {i} Seç")
-            btn_dip.setStyleSheet(S["file_btn"])
-            btn_dip.setCursor(QCursor(Qt.PointingHandCursor))
-            btn_dip.clicked.connect(lambda checked, idx=i: self._select_diploma(idx))
-            col.addWidget(btn_dip)
+            # Görüntüle butonu (her zaman görünür)
+            btn_view = QPushButton(f"📄 Diploma {i} Görüntüle")
+            btn_view.setStyleSheet(S["file_btn"])
+            btn_view.setCursor(QCursor(Qt.PointingHandCursor))
+            btn_view.clicked.connect(lambda checked, idx=i: self._open_diploma(idx))
+            col.addWidget(btn_view)
+            self.ui[f"diploma_view_btn{i}"] = btn_view
+
+            # Yükle butonu (sadece edit modda)
+            btn_upload = QPushButton(f"📤 Diploma {i} Yükle")
+            btn_upload.setStyleSheet(S["file_btn"])
+            btn_upload.setCursor(QCursor(Qt.PointingHandCursor))
+            btn_upload.clicked.connect(lambda checked, idx=i: self._select_diploma(idx))
+            btn_upload.setVisible(False)
+            col.addWidget(btn_upload)
+            self.ui[f"diploma_upload_btn{i}"] = btn_upload
 
             lbl_file = QLabel("")
             lbl_file.setStyleSheet("color: #4ade80; font-size: 11px; background: transparent;")
@@ -1072,6 +1083,10 @@ class PersonelDetayPage(QWidget):
         self.btn_photo.setVisible(editing)
         self.btn_ayrilis.setVisible(not editing)
 
+        for i in ["1", "2"]:
+            self.ui[f"diploma_view_btn{i}"].setVisible(not editing)
+            self.ui[f"diploma_upload_btn{i}"].setVisible(editing)
+
     def _toggle_edit(self):
         self._set_edit_mode(True)
 
@@ -1098,6 +1113,19 @@ class PersonelDetayPage(QWidget):
                     pixmap.scaled(160, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 )
             logger.info(f"Fotoğraf seçildi: {path}")
+
+    def _open_diploma(self, idx):
+        """Diploma linkini tarayıcıda aç."""
+        col = "Diploma1" if idx == "1" else "Diploma2"
+        link = str(self._data.get(col, "")).strip()
+        if link and link.startswith("http"):
+            import webbrowser
+            webbrowser.open(link)
+        else:
+            QMessageBox.information(
+                self, "Diploma",
+                f"Diploma {idx} dosyası yüklenmemiş."
+            )
 
     def _select_diploma(self, idx):
         if not self._editing:

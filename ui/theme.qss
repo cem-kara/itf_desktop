@@ -48,7 +48,7 @@ QHeaderView::section {
     padding: 6px 10px;
     font-size: 13px;
     color: #1e293b;
-    min-height: 20px;
+    min-height: 16px;
 }
 
 #content_area QLineEdit:focus,

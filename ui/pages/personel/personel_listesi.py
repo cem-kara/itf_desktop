@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-from PySide6.QtCore import Qt, QSortFilterProxyModel, QModelIndex, QAbstractTableModel
+from PySide6.QtCore import Qt, QSortFilterProxyModel, QModelIndex, QAbstractTableModel, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QFrame, QProgressBar, QPushButton, QHeaderView,
-    QTableView, QComboBox, QLineEdit
+    QTableView, QComboBox, QLineEdit, QMenu, QMessageBox
 )
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QCursor, QAction
 
 from core.logger import logger
 
@@ -140,7 +140,7 @@ STYLES = {
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 8px;
             gridline-color: rgba(255, 255, 255, 0.04);
-            selection-background-color: rgba(29, 117, 254, 0.3);
+            selection-background-color: rgba(29, 117, 254, 0.45);
             selection-color: #ffffff;
             color: #c8cad0;
             font-size: 13px;
@@ -150,9 +150,10 @@ STYLES = {
             border-bottom: 1px solid rgba(255, 255, 255, 0.02);
         }
         QTableView::item:selected {
-            background-color: rgba(29, 117, 254, 0.3);
+            background-color: rgba(29, 117, 254, 0.45);
+            color: #ffffff;
         }
-        QTableView::item:hover {
+        QTableView::item:hover:!selected {
             background-color: rgba(255, 255, 255, 0.04);
         }
         QHeaderView::section {
@@ -179,6 +180,28 @@ STYLES = {
         }
     """,
     "section_label": "color: #5a5d6e; font-size: 11px; font-weight: bold; background: transparent;",
+    "context_menu": """
+        QMenu {
+            background-color: #1e202c;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 4px;
+            color: #c8cad0; font-size: 13px;
+        }
+        QMenu::item {
+            padding: 8px 24px 8px 12px;
+            border-radius: 4px; margin: 2px;
+        }
+        QMenu::item:selected {
+            background-color: rgba(29, 117, 254, 0.35);
+            color: #ffffff;
+        }
+        QMenu::separator {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.08);
+            margin: 4px 8px;
+        }
+    """,
 }
 
 # Durum hücre renkleri (koyu tema uyumlu)
@@ -232,7 +255,8 @@ class PersonelTableModel(QAbstractTableModel):
                     "İzinli": QColor("#facc15"),
                 }
                 return colors.get(durum, QColor("#8b8fa3"))
-            return QColor("#c8cad0")
+            # Diğer kolonlar QSS ile yönetilir (selection-color çalışsın)
+            return None
 
         return None
 
@@ -256,12 +280,15 @@ class PersonelTableModel(QAbstractTableModel):
 
 class PersonelListesiPage(QWidget):
 
+    izin_requested = Signal(dict)  # personel_data
+
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
         self.setStyleSheet("background-color: transparent;")
         self._db = db
         self._all_data = []
         self._active_filter = "Tümü"
+        self._filter_btns = {}
         self._setup_ui()
         self._connect_signals()
 
@@ -270,82 +297,92 @@ class PersonelListesiPage(QWidget):
         main.setContentsMargins(20, 12, 20, 12)
         main.setSpacing(12)
 
-        # ── 1. FILTER PANEL ──
+        # ── 1. FILTER PANEL (tek satır) ──
         filter_frame = QFrame()
         filter_frame.setStyleSheet(STYLES["filter_panel"])
-        fp = QVBoxLayout(filter_frame)
-        fp.setContentsMargins(16, 12, 16, 12)
-        fp.setSpacing(10)
+        fp = QHBoxLayout(filter_frame)
+        fp.setContentsMargins(12, 8, 12, 8)
+        fp.setSpacing(8)
 
-        # Üst satır
-        row1 = QHBoxLayout()
-        row1.setSpacing(8)
-
-        lbl = QLabel("Durum")
-        lbl.setStyleSheet(STYLES["section_label"])
-        row1.addWidget(lbl)
-
-        self._filter_btns = {}
         for text in ["Aktif", "Pasif", "İzinli", "Tümü"]:
             btn = QPushButton(text)
             btn.setCheckable(True)
             btn.setStyleSheet(STYLES["filter_btn_all"] if text == "Tümü" else STYLES["filter_btn"])
-            btn.setFixedHeight(30)
+            btn.setFixedHeight(28)
             if text == "Tümü":
                 btn.setChecked(True)
-            row1.addWidget(btn)
+            fp.addWidget(btn)
             self._filter_btns[text] = btn
 
-        row1.addSpacing(16)
-
-        self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("🔍  İsim, TC veya telefon ara...")
-        self.search_input.setClearButtonEnabled(True)
-        self.search_input.setStyleSheet(STYLES["search"])
-        self.search_input.setFixedWidth(260)
-        row1.addWidget(self.search_input)
-        row1.addStretch()
-        fp.addLayout(row1)
-
-        # Alt satır
-        row2 = QHBoxLayout()
-        row2.setSpacing(8)
-
-        lbl2 = QLabel("Birim")
-        lbl2.setStyleSheet(STYLES["section_label"])
-        row2.addWidget(lbl2)
+        sep = QFrame()
+        sep.setFixedWidth(1)
+        sep.setFixedHeight(20)
+        sep.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        fp.addWidget(sep)
 
         self.cmb_gorev_yeri = QComboBox()
         self.cmb_gorev_yeri.addItem("Tüm Birimler")
-        self.cmb_gorev_yeri.setFixedWidth(180)
+        self.cmb_gorev_yeri.setFixedWidth(150)
         self.cmb_gorev_yeri.setStyleSheet(STYLES["combo"])
-        row2.addWidget(self.cmb_gorev_yeri)
-
-        row2.addSpacing(8)
-
-        lbl3 = QLabel("Sınıf")
-        lbl3.setStyleSheet(STYLES["section_label"])
-        row2.addWidget(lbl3)
+        fp.addWidget(self.cmb_gorev_yeri)
 
         self.cmb_hizmet = QComboBox()
         self.cmb_hizmet.addItem("Tüm Sınıflar")
-        self.cmb_hizmet.setFixedWidth(160)
+        self.cmb_hizmet.setFixedWidth(130)
         self.cmb_hizmet.setStyleSheet(STYLES["combo"])
-        row2.addWidget(self.cmb_hizmet)
+        fp.addWidget(self.cmb_hizmet)
 
-        row2.addStretch()
+        sep2 = QFrame()
+        sep2.setFixedWidth(1)
+        sep2.setFixedHeight(20)
+        sep2.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        fp.addWidget(sep2)
 
-        self.btn_yenile = QPushButton("⟳ Yenile")
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("🔍 Ara...")
+        self.search_input.setClearButtonEnabled(True)
+        self.search_input.setStyleSheet(STYLES["search"])
+        self.search_input.setFixedWidth(200)
+        fp.addWidget(self.search_input)
+
+        fp.addStretch()
+
+        self.btn_yenile = QPushButton("⟳")
         self.btn_yenile.setStyleSheet(STYLES["refresh_btn"])
-        self.btn_yenile.setFixedHeight(30)
-        row2.addWidget(self.btn_yenile)
+        self.btn_yenile.setFixedSize(28, 28)
+        self.btn_yenile.setToolTip("Yenile")
+        self.btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
+        fp.addWidget(self.btn_yenile)
 
-        self.btn_yeni = QPushButton("＋ Yeni Kayıt")
+        self.btn_yeni = QPushButton("＋ Yeni")
         self.btn_yeni.setStyleSheet(STYLES["action_btn"])
-        self.btn_yeni.setFixedHeight(30)
-        row2.addWidget(self.btn_yeni)
+        self.btn_yeni.setFixedHeight(28)
+        self.btn_yeni.setCursor(QCursor(Qt.PointingHandCursor))
+        fp.addWidget(self.btn_yeni)
 
-        fp.addLayout(row2)
+        sep3 = QFrame()
+        sep3.setFixedWidth(1)
+        sep3.setFixedHeight(20)
+        sep3.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        fp.addWidget(sep3)
+
+        self.btn_kapat = QPushButton("✕")
+        self.btn_kapat.setToolTip("Pencereyi Kapat")
+        self.btn_kapat.setFixedSize(28, 28)
+        self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_kapat.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(239, 68, 68, 0.15);
+                color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25);
+                border-radius: 6px; font-size: 14px; font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: rgba(239, 68, 68, 0.35);
+                color: #ffffff;
+            }
+        """)
+        fp.addWidget(self.btn_kapat)
+
         main.addWidget(filter_frame)
 
         # ── 2. TABLO ──
@@ -364,13 +401,18 @@ class PersonelListesiPage(QWidget):
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
         self.table.setStyleSheet(STYLES["table"])
+        self.table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self._show_context_menu)
 
+        # Orantılı kolon genişlikleri
         header = self.table.horizontalHeader()
-        header.setStretchLastSection(True)
-        for i, (_, _, width) in enumerate(COLUMNS):
-            header.setSectionResizeMode(i, QHeaderView.Interactive)
-            self.table.setColumnWidth(i, width)
-        header.setSectionResizeMode(len(COLUMNS) - 1, QHeaderView.Stretch)
+        header.setStretchLastSection(False)
+        # Stretch ratios: TC(2) Ad(3) Sınıf(2) Ünvan(2) Görev(2) Tel(2) Eposta(3) Durum(1)
+        stretch_cols = [2, 3, 2, 2, 2, 2, 3, 1]
+        for i, s in enumerate(stretch_cols):
+            header.setSectionResizeMode(i, QHeaderView.Stretch)
+        # ResizeToContents only for Durum (last)
+        header.setSectionResizeMode(len(COLUMNS) - 1, QHeaderView.ResizeToContents)
 
         main.addWidget(self.table, 1)
 
@@ -402,7 +444,8 @@ class PersonelListesiPage(QWidget):
 
         self.btn_excel = QPushButton("📥 Excel'e Aktar")
         self.btn_excel.setStyleSheet(STYLES["excel_btn"])
-        self.btn_excel.setFixedHeight(30)
+        self.btn_excel.setFixedHeight(28)
+        self.btn_excel.setCursor(QCursor(Qt.PointingHandCursor))
         footer.addWidget(self.btn_excel)
 
         main.addLayout(footer)
@@ -516,3 +559,76 @@ class PersonelListesiPage(QWidget):
             source_idx = self._proxy.mapToSource(indexes[0])
             return self._model.get_row(source_idx.row())
         return None
+
+    # ═══════════════════════════════════════════
+    #  SAĞ TIKLAMA MENÜSÜ
+    # ═══════════════════════════════════════════
+
+    def _show_context_menu(self, pos):
+        index = self.table.indexAt(pos)
+        if not index.isValid():
+            return
+
+        source_idx = self._proxy.mapToSource(index)
+        row_data = self._model.get_row(source_idx.row())
+        if not row_data:
+            return
+
+        ad = row_data.get("AdSoyad", "")
+        tc = row_data.get("KimlikNo", "")
+        durum = str(row_data.get("Durum", "")).strip()
+
+        menu = QMenu(self)
+        menu.setStyleSheet(STYLES["context_menu"])
+
+        # Detay aç
+        act_detay = menu.addAction("📋 Detay Görüntüle")
+        act_detay.triggered.connect(lambda: self.table.doubleClicked.emit(index))
+
+        menu.addSeparator()
+
+        # İzin Girişi
+        act_izin = menu.addAction("🏖️ İzin Girişi")
+        act_izin.triggered.connect(lambda: self._izin_girisi(row_data))
+
+        menu.addSeparator()
+
+        # Durum değiştirme
+        if durum != "Aktif":
+            act_aktif = menu.addAction("✅ Aktif Yap")
+            act_aktif.triggered.connect(lambda: self._change_durum(tc, ad, "Aktif"))
+
+        if durum != "Pasif":
+            act_pasif = menu.addAction("⛔ Pasif Yap")
+            act_pasif.triggered.connect(lambda: self._change_durum(tc, ad, "Pasif"))
+
+        if durum != "İzinli":
+            act_izinli = menu.addAction("⏸️ İzinli Yap")
+            act_izinli.triggered.connect(lambda: self._change_durum(tc, ad, "İzinli"))
+
+        menu.exec(self.table.viewport().mapToGlobal(pos))
+
+    def _change_durum(self, tc, ad, yeni_durum):
+        """Personel durumunu değiştir."""
+        cevap = QMessageBox.question(
+            self, "Durum Değiştir",
+            f"{ad} personelinin durumu \"{yeni_durum}\" olarak değiştirilsin mi?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        )
+        if cevap != QMessageBox.Yes:
+            return
+
+        try:
+            from database.repository_registry import RepositoryRegistry
+            registry = RepositoryRegistry(self._db)
+            repo = registry.get("Personel")
+            repo.update(tc, {"Durum": yeni_durum})
+            logger.info(f"Durum değiştirildi: {tc} → {yeni_durum}")
+            self.load_data()
+        except Exception as e:
+            logger.error(f"Durum değiştirme hatası: {e}")
+            QMessageBox.critical(self, "Hata", f"Durum değiştirilemedi:\n{e}")
+
+    def _izin_girisi(self, row_data):
+        """İzin girişi sinyali gönder."""
+        self.izin_requested.emit(row_data)

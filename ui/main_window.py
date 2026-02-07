@@ -137,6 +137,9 @@ class MainWindow(QMainWindow):
             page.table.doubleClicked.connect(
                 lambda idx: self._open_personel_detay(page, idx)
             )
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Personel Listesi"))
+            page.btn_yeni.clicked.connect(lambda: self._on_menu_clicked("Personel", "Personel Ekle"))
+            page.izin_requested.connect(lambda data: self.open_izin_giris(data))
             page.load_data()
             return page
 
@@ -195,9 +198,61 @@ class MainWindow(QMainWindow):
             self.stack.removeWidget(old)
             old.deleteLater()
 
+    def open_izin_giris(self, personel_data, from_key=None):
+        """İzin giriş sayfasını aç."""
+        tc = personel_data.get("KimlikNo", "")
+        ad = personel_data.get("AdSoyad", "")
+        izin_key = f"__izin_{tc}"
+
+        if izin_key in self._pages:
+            old = self._pages.pop(izin_key)
+            self.stack.removeWidget(old)
+            old.deleteLater()
+
+        from ui.pages.personel.izin_giris import IzinGirisPage
+        page = IzinGirisPage(
+            db=self._db,
+            personel_data=personel_data,
+            on_back=lambda: self._back_from_izin(izin_key, from_key)
+        )
+        self._pages[izin_key] = page
+        self.stack.addWidget(page)
+        self.stack.setCurrentWidget(page)
+        self.page_title.setText(f"İzin Takip — {ad}")
+
+    def _back_from_izin(self, izin_key, from_key=None):
+        """İzin sayfasından geri dön."""
+        # Geldiği sayfaya geri dön
+        if from_key and from_key in self._pages:
+            page = self._pages[from_key]
+            self.stack.setCurrentWidget(page)
+            ad = from_key.replace("__detay_", "")
+            self.page_title.setText(f"Personel Detay — {ad}")
+        elif "Personel Listesi" in self._pages:
+            page = self._pages["Personel Listesi"]
+            page.load_data()
+            self.stack.setCurrentWidget(page)
+            self.page_title.setText("Personel Listesi")
+            self.sidebar.set_active("Personel Listesi")
+
+        if izin_key in self._pages:
+            old = self._pages.pop(izin_key)
+            self.stack.removeWidget(old)
+            old.deleteLater()
+
     def register_page(self, baslik, widget):
         self._pages[baslik] = widget
         self.stack.addWidget(widget)
+
+    def _close_page(self, baslik):
+        """Sayfayı kapat ve welcome'a dön."""
+        if baslik in self._pages:
+            old = self._pages.pop(baslik)
+            self.stack.removeWidget(old)
+            old.deleteLater()
+        self.stack.setCurrentWidget(self._welcome)
+        self.page_title.setVisible(False)
+        self.sidebar.set_active("")
 
     # ── SENKRONİZASYON ──
 

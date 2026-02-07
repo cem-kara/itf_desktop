@@ -1,0 +1,741 @@
+# -*- coding: utf-8 -*-
+"""
+İzin Giriş & Takip Sayfası
+- Sol: Yeni izin girişi + bakiye panosu
+- Sağ: İzin geçmişi tablosu
+"""
+import uuid
+from datetime import datetime, timedelta
+from PySide6.QtCore import Qt, QDate, QSortFilterProxyModel, QModelIndex, QAbstractTableModel
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
+    QComboBox, QDateEdit, QSpinBox, QFrame, QGroupBox,
+    QGridLayout, QSplitter, QTableView, QHeaderView,
+    QAbstractSpinBox, QProgressBar, QMessageBox
+)
+from PySide6.QtGui import QColor, QCursor
+
+from core.logger import logger
+
+
+# ─── W11 Dark Glass Stiller ───
+S = {
+    "page": "background-color: transparent;",
+    "group": """
+        QGroupBox {
+            background-color: rgba(30, 32, 44, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            margin-top: 14px; padding: 16px 12px 12px 12px;
+            font-size: 13px; font-weight: bold; color: #8b8fa3;
+        }
+        QGroupBox::title {
+            subcontrol-origin: margin;
+            padding: 0 8px; color: #6bd3ff;
+        }
+    """,
+    "label": "color: #8b8fa3; font-size: 12px; background: transparent;",
+    "value_label": "color: #e0e2ea; font-size: 13px; font-weight: 600; background: transparent;",
+    "combo": """
+        QComboBox {
+            background-color: #1e202c;
+            border: 1px solid #292b41;
+            border-bottom: 2px solid #9dcbe3;
+            border-radius: 6px;
+            padding: 5px 10px; font-size: 13px;
+            color: #e0e2ea; min-height: 24px;
+        }
+        QComboBox:focus { border-bottom: 2px solid #1d75fe; }
+        QComboBox::drop-down { border: none; width: 24px; }
+        QComboBox QAbstractItemView {
+            background-color: #1e202c;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #c8cad0;
+            selection-background-color: rgba(29, 117, 254, 0.3);
+            selection-color: #ffffff;
+        }
+    """,
+    "date": """
+        QDateEdit {
+            background-color: #1e202c;
+            border: 1px solid #292b41;
+            border-bottom: 2px solid #9dcbe3;
+            border-radius: 6px;
+            padding: 5px 10px; font-size: 13px;
+            color: #e0e2ea; min-height: 24px;
+        }
+        QDateEdit:focus { border-bottom: 2px solid #1d75fe; }
+        QDateEdit::drop-down { border: none; width: 24px; }
+        QDateEdit:read-only {
+            background-color: rgba(30, 32, 44, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+    """,
+    "spin": """
+        QSpinBox {
+            background-color: #1e202c;
+            border: 1px solid #292b41;
+            border-bottom: 2px solid #9dcbe3;
+            border-radius: 6px;
+            padding: 5px 10px; font-size: 13px;
+            color: #e0e2ea; min-height: 24px;
+        }
+        QSpinBox:focus { border-bottom: 2px solid #1d75fe; }
+    """,
+    "save_btn": """
+        QPushButton {
+            background-color: rgba(29, 117, 254, 0.3);
+            color: #6bd3ff;
+            border: 1px solid rgba(29, 117, 254, 0.5);
+            border-radius: 8px;
+            padding: 10px 24px; font-size: 14px; font-weight: bold;
+        }
+        QPushButton:hover {
+            background-color: rgba(29, 117, 254, 0.45);
+            color: #ffffff;
+        }
+        QPushButton:disabled {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: #5a5d6e;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    """,
+    "back_btn": """
+        QPushButton {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 8px 16px; font-size: 13px; font-weight: 600;
+        }
+        QPushButton:hover {
+            background-color: rgba(239, 68, 68, 0.3);
+            color: #ffffff;
+        }
+    """,
+    "table": """
+        QTableView {
+            background-color: rgba(30, 32, 44, 0.7);
+            alternate-background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            gridline-color: rgba(255, 255, 255, 0.04);
+            selection-background-color: rgba(29, 117, 254, 0.45);
+            selection-color: #ffffff;
+            color: #c8cad0;
+            font-size: 13px;
+        }
+        QTableView::item {
+            padding: 6px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+        QTableView::item:selected {
+            background-color: rgba(29, 117, 254, 0.45);
+            color: #ffffff;
+        }
+        QTableView::item:hover:!selected {
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+        QHeaderView::section {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: #8b8fa3;
+            font-weight: 600; font-size: 12px;
+            padding: 8px; border: none;
+            border-bottom: 1px solid rgba(29, 117, 254, 0.3);
+            border-right: 1px solid rgba(255, 255, 255, 0.03);
+        }
+    """,
+    "header_name": "font-size: 18px; font-weight: bold; color: #e0e2ea; background: transparent;",
+    "separator": "QFrame { background-color: rgba(255, 255, 255, 0.06); }",
+    "stat_label": "color: #8b8fa3; font-size: 12px; background: transparent;",
+    "stat_value": "color: #e0e2ea; font-size: 14px; font-weight: bold; background: transparent;",
+    "stat_green": "color: #4ade80; font-size: 16px; font-weight: bold; background: transparent;",
+    "stat_red": "color: #f87171; font-size: 14px; font-weight: bold; background: transparent;",
+    "stat_highlight": "color: #6bd3ff; font-size: 16px; font-weight: bold; background: transparent;",
+    "section_title": "color: #6bd3ff; font-size: 12px; font-weight: bold; background: transparent;",
+    "splitter": """
+        QSplitter::handle {
+            background-color: rgba(255, 255, 255, 0.06);
+            width: 2px; margin: 8px 4px;
+        }
+    """,
+    "scroll": """
+        QScrollBar:vertical {
+            background: transparent; width: 5px;
+        }
+        QScrollBar::handle:vertical {
+            background: rgba(255,255,255,0.12); border-radius: 2px; min-height: 30px;
+        }
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+    """,
+}
+
+
+# ─── İzin Tipleri (varsayılan) ───
+IZIN_TIPLERI = [
+    "Yıllık İzin",
+    "Şua İzni",
+    "Mazeret İzni",
+    "Sağlık Raporu",
+    "Ücretsiz İzin",
+    "Doğum İzni",
+    "Babalık İzni",
+    "Evlilik İzni",
+    "Ölüm İzni",
+    "Diğer",
+]
+
+
+# ═══════════════════════════════════════════════
+#  İZİN GEÇMİŞİ TABLO MODELİ
+# ═══════════════════════════════════════════════
+
+IZIN_COLUMNS = [
+    ("IzinTipi",       "İzin Tipi",    3),
+    ("BaslamaTarihi",  "Başlama",      2),
+    ("BitisTarihi",    "Bitiş",        2),
+    ("Gun",            "Gün",          1),
+    ("Durum",          "Durum",        1),
+]
+
+DURUM_COLORS = {
+    "Onaylandı":  QColor(34, 197, 94, 40),
+    "Beklemede":   QColor(234, 179, 8, 40),
+    "İptal":       QColor(239, 68, 68, 40),
+}
+
+
+class IzinTableModel(QAbstractTableModel):
+
+    def __init__(self, data=None, parent=None):
+        super().__init__(parent)
+        self._data = data or []
+        self._keys = [c[0] for c in IZIN_COLUMNS]
+        self._headers = [c[1] for c in IZIN_COLUMNS]
+
+    def rowCount(self, parent=QModelIndex()):
+        return len(self._data)
+
+    def columnCount(self, parent=QModelIndex()):
+        return len(IZIN_COLUMNS)
+
+    def data(self, index, role=Qt.DisplayRole):
+        if not index.isValid():
+            return None
+        row = self._data[index.row()]
+        col_key = self._keys[index.column()]
+
+        if role == Qt.DisplayRole:
+            val = str(row.get(col_key, ""))
+            # Tarih formatla
+            if col_key in ("BaslamaTarihi", "BitisTarihi") and val:
+                try:
+                    d = datetime.strptime(val, "%Y-%m-%d")
+                    return d.strftime("%d.%m.%Y")
+                except Exception:
+                    pass
+            return val
+
+        if role == Qt.BackgroundRole and col_key == "Durum":
+            return DURUM_COLORS.get(str(row.get("Durum", "")))
+
+        if role == Qt.ForegroundRole and col_key == "Durum":
+            durum = str(row.get("Durum", ""))
+            colors = {
+                "Onaylandı": QColor("#4ade80"),
+                "Beklemede": QColor("#facc15"),
+                "İptal": QColor("#f87171"),
+            }
+            return colors.get(durum, QColor("#8b8fa3"))
+
+        if role == Qt.TextAlignmentRole:
+            if col_key in ("Gun", "Durum"):
+                return Qt.AlignCenter
+            return Qt.AlignVCenter | Qt.AlignLeft
+
+        return None
+
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
+        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
+            return self._headers[section]
+        return None
+
+    def set_data(self, data):
+        self.beginResetModel()
+        self._data = data or []
+        self.endResetModel()
+
+    def get_row(self, row_idx):
+        if 0 <= row_idx < len(self._data):
+            return self._data[row_idx]
+        return None
+
+
+# ═══════════════════════════════════════════════
+#  İZİN GİRİŞ SAYFASI
+# ═══════════════════════════════════════════════
+
+class IzinGirisPage(QWidget):
+    """
+    İzin Giriş & Takip sayfası.
+    db: SQLiteManager
+    personel_data: dict → personel bilgileri
+    on_back: callback → geri dönüş
+    """
+
+    def __init__(self, db=None, personel_data=None, on_back=None, parent=None):
+        super().__init__(parent)
+        self.setStyleSheet(S["page"])
+        self._db = db
+        self._personel = personel_data or {}
+        self._on_back = on_back
+        self._tatiller = []
+        self.ui = {}
+
+        self._setup_ui()
+        self._load_sabitler()
+        self._load_izin_bakiye()
+        self._load_izin_gecmisi()
+
+    # ═══════════════════════════════════════════
+    #  UI
+    # ═══════════════════════════════════════════
+
+    def _setup_ui(self):
+        main = QVBoxLayout(self)
+        main.setContentsMargins(20, 12, 20, 12)
+        main.setSpacing(12)
+
+        # ── HEADER ──
+        header_frame = QFrame()
+        header_frame.setStyleSheet("""
+            QFrame {
+                background-color: rgba(30, 32, 44, 0.85);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 10px;
+            }
+        """)
+        hdr = QHBoxLayout(header_frame)
+        hdr.setContentsMargins(16, 10, 16, 10)
+        hdr.setSpacing(12)
+
+        btn_back = QPushButton("← Geri")
+        btn_back.setStyleSheet(S["back_btn"])
+        btn_back.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_back.setFixedHeight(34)
+        btn_back.clicked.connect(self._go_back)
+        hdr.addWidget(btn_back)
+
+        ad = self._personel.get("AdSoyad", "")
+        tc = self._personel.get("KimlikNo", "")
+        self.lbl_header = QLabel(f"🏖️  {ad}  —  İzin Takip")
+        self.lbl_header.setStyleSheet(S["header_name"])
+        hdr.addWidget(self.lbl_header)
+        hdr.addStretch()
+
+        main.addWidget(header_frame)
+
+        # ── SPLITTER ──
+        splitter = QSplitter(Qt.Horizontal)
+        splitter.setStyleSheet(S["splitter"])
+
+        # ── SOL: Giriş + Bakiye ──
+        left = QWidget()
+        left.setStyleSheet("background: transparent;")
+        left_l = QVBoxLayout(left)
+        left_l.setContentsMargins(0, 0, 0, 0)
+        left_l.setSpacing(12)
+
+        # Giriş Kutusu
+        grp_giris = QGroupBox("📝  Yeni İzin Girişi")
+        grp_giris.setStyleSheet(S["group"])
+        form = QGridLayout(grp_giris)
+        form.setSpacing(10)
+        form.setContentsMargins(12, 12, 12, 12)
+
+        # İzin Tipi
+        lbl_tip = QLabel("İzin Tipi")
+        lbl_tip.setStyleSheet(S["label"])
+        form.addWidget(lbl_tip, 0, 0)
+        self.ui["izin_tipi"] = QComboBox()
+        self.ui["izin_tipi"].setStyleSheet(S["combo"])
+        form.addWidget(self.ui["izin_tipi"], 0, 1)
+
+        # Başlama Tarihi
+        lbl_bas = QLabel("Başlama Tarihi")
+        lbl_bas.setStyleSheet(S["label"])
+        form.addWidget(lbl_bas, 1, 0)
+
+        h_tarih = QHBoxLayout()
+        h_tarih.setSpacing(8)
+        self.ui["baslama"] = QDateEdit(QDate.currentDate())
+        self.ui["baslama"].setCalendarPopup(True)
+        self.ui["baslama"].setDisplayFormat("dd.MM.yyyy")
+        self.ui["baslama"].setStyleSheet(S["date"])
+        self._setup_calendar(self.ui["baslama"])
+        h_tarih.addWidget(self.ui["baslama"], 2)
+
+        lbl_gun = QLabel("Gün:")
+        lbl_gun.setStyleSheet(S["label"])
+        h_tarih.addWidget(lbl_gun)
+
+        self.ui["gun"] = QSpinBox()
+        self.ui["gun"].setRange(1, 365)
+        self.ui["gun"].setValue(1)
+        self.ui["gun"].setStyleSheet(S["spin"])
+        self.ui["gun"].setFixedWidth(70)
+        h_tarih.addWidget(self.ui["gun"])
+        form.addLayout(h_tarih, 1, 1)
+
+        # Bitiş Tarihi (otomatik)
+        lbl_bit = QLabel("Bitiş (İşe Başlama)")
+        lbl_bit.setStyleSheet(S["label"])
+        form.addWidget(lbl_bit, 2, 0)
+        self.ui["bitis"] = QDateEdit()
+        self.ui["bitis"].setReadOnly(True)
+        self.ui["bitis"].setDisplayFormat("dd.MM.yyyy")
+        self.ui["bitis"].setButtonSymbols(QAbstractSpinBox.NoButtons)
+        self.ui["bitis"].setStyleSheet(S["date"])
+        form.addWidget(self.ui["bitis"], 2, 1)
+
+        # Kaydet butonu
+        self.btn_kaydet = QPushButton("✓  İZİN KAYDET")
+        self.btn_kaydet.setStyleSheet(S["save_btn"])
+        self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_kaydet.setFixedHeight(40)
+        self.btn_kaydet.clicked.connect(self._on_save)
+        form.addWidget(self.btn_kaydet, 3, 0, 1, 2)
+
+        # Sinyaller
+        self.ui["baslama"].dateChanged.connect(self._calculate_bitis)
+        self.ui["gun"].valueChanged.connect(self._calculate_bitis)
+
+        left_l.addWidget(grp_giris)
+
+        # Bakiye Panosu
+        grp_bakiye = QGroupBox("📊  İzin Bakiyesi")
+        grp_bakiye.setStyleSheet(S["group"])
+        bg = QGridLayout(grp_bakiye)
+        bg.setSpacing(4)
+        bg.setContentsMargins(12, 12, 12, 12)
+
+        # Yıllık
+        lbl_y = QLabel("YILLIK İZİN")
+        lbl_y.setStyleSheet(S["section_title"])
+        bg.addWidget(lbl_y, 0, 0, 1, 2, Qt.AlignCenter)
+
+        self.lbl_y_devir = self._add_stat(bg, 1, "Devir", "stat_value")
+        self.lbl_y_hak = self._add_stat(bg, 2, "Hakediş", "stat_value")
+        self.lbl_y_kul = self._add_stat(bg, 3, "Kullanılan", "stat_red")
+        self.lbl_y_kal = self._add_stat(bg, 4, "KALAN", "stat_green")
+
+        sep1 = QFrame(); sep1.setFixedHeight(1); sep1.setStyleSheet(S["separator"])
+        bg.addWidget(sep1, 5, 0, 1, 2)
+
+        # Şua
+        lbl_s = QLabel("ŞUA İZNİ")
+        lbl_s.setStyleSheet(S["section_title"])
+        bg.addWidget(lbl_s, 6, 0, 1, 2, Qt.AlignCenter)
+
+        self.lbl_s_hak = self._add_stat(bg, 7, "Hakediş", "stat_value")
+        self.lbl_s_kul = self._add_stat(bg, 8, "Kullanılan", "stat_red")
+        self.lbl_s_kal = self._add_stat(bg, 9, "KALAN", "stat_green")
+
+        sep2 = QFrame(); sep2.setFixedHeight(1); sep2.setStyleSheet(S["separator"])
+        bg.addWidget(sep2, 10, 0, 1, 2)
+
+        # Diğer
+        self.lbl_diger = self._add_stat(bg, 11, "Rapor / Mazeret", "stat_value")
+
+        bg.setRowStretch(12, 1)
+        left_l.addWidget(grp_bakiye)
+        left_l.addStretch()
+
+        # ── SAĞ: İzin Geçmişi ──
+        right = QWidget()
+        right.setStyleSheet("background: transparent;")
+        right_l = QVBoxLayout(right)
+        right_l.setContentsMargins(0, 0, 0, 0)
+        right_l.setSpacing(8)
+
+        grp_gecmis = QGroupBox("📋  İzin Geçmişi")
+        grp_gecmis.setStyleSheet(S["group"])
+        gecmis_l = QVBoxLayout(grp_gecmis)
+        gecmis_l.setContentsMargins(8, 8, 8, 8)
+
+        self._izin_model = IzinTableModel()
+        self._izin_proxy = QSortFilterProxyModel()
+        self._izin_proxy.setSourceModel(self._izin_model)
+
+        self.table = QTableView()
+        self.table.setModel(self._izin_proxy)
+        self.table.setAlternatingRowColors(True)
+        self.table.setSelectionBehavior(QTableView.SelectRows)
+        self.table.setSelectionMode(QTableView.SingleSelection)
+        self.table.setSortingEnabled(True)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setShowGrid(False)
+        self.table.setStyleSheet(S["table"])
+        self.table.setStyleSheet(S["table"] + S["scroll"])
+
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(False)
+        for i, (_, _, stretch) in enumerate(IZIN_COLUMNS):
+            header.setSectionResizeMode(i, QHeaderView.Stretch)
+
+        gecmis_l.addWidget(self.table)
+
+        # Toplam satırı
+        footer_h = QHBoxLayout()
+        self.lbl_toplam = QLabel("")
+        self.lbl_toplam.setStyleSheet("color: #8b8fa3; font-size: 12px; background: transparent;")
+        footer_h.addWidget(self.lbl_toplam)
+        footer_h.addStretch()
+        gecmis_l.addLayout(footer_h)
+
+        right_l.addWidget(grp_gecmis, 1)
+
+        # Splitter
+        splitter.addWidget(left)
+        splitter.addWidget(right)
+        splitter.setStretchFactor(0, 1)
+        splitter.setStretchFactor(1, 2)
+
+        main.addWidget(splitter, 1)
+
+        # İlk bitiş hesapla
+        self._calculate_bitis()
+
+    def _setup_calendar(self, date_edit):
+        cal = date_edit.calendarWidget()
+        cal.setMinimumWidth(350)
+        cal.setMinimumHeight(250)
+        cal.setStyleSheet("""
+            QCalendarWidget { background-color: #1e202c; color: #e0e2ea; }
+            QCalendarWidget QToolButton {
+                background-color: #1e202c; color: #e0e2ea;
+                border: none; padding: 6px 10px; font-size: 13px; font-weight: bold;
+            }
+            QCalendarWidget QToolButton:hover {
+                background-color: rgba(29,117,254,0.3); border-radius: 4px;
+            }
+            QCalendarWidget QMenu { background-color: #1e202c; color: #e0e2ea; }
+            QCalendarWidget QSpinBox {
+                background-color: #1e202c; color: #e0e2ea;
+                border: 1px solid #292b41; font-size: 13px;
+            }
+            QCalendarWidget QAbstractItemView {
+                background-color: #1e202c; color: #c8cad0;
+                selection-background-color: rgba(29,117,254,0.4);
+                selection-color: #ffffff; font-size: 13px; outline: none;
+            }
+            QCalendarWidget #qt_calendar_navigationbar {
+                background-color: #16172b;
+                border-bottom: 1px solid rgba(255,255,255,0.08); padding: 4px;
+            }
+        """)
+        cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
+
+    def _add_stat(self, grid, row, text, style_key):
+        lbl = QLabel(text)
+        lbl.setStyleSheet(S["stat_label"])
+        grid.addWidget(lbl, row, 0)
+        val = QLabel("—")
+        val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        val.setStyleSheet(S[style_key])
+        grid.addWidget(val, row, 1)
+        return val
+
+    # ═══════════════════════════════════════════
+    #  VERİ YÜKLEME
+    # ═══════════════════════════════════════════
+
+    def _load_sabitler(self):
+        """İzin tiplerini ve tatilleri yükler."""
+        # İzin tipleri
+        izin_tipleri = list(IZIN_TIPLERI)
+        try:
+            if self._db:
+                from database.repository_registry import RepositoryRegistry
+                registry = RepositoryRegistry(self._db)
+                sabitler = registry.get("Sabitler")
+                all_sabit = sabitler.get_all()
+
+                # Sabitler'de Izin_Tipi varsa onu kullan
+                sabit_tipler = sorted([
+                    str(r.get("MenuEleman", "")).strip()
+                    for r in all_sabit
+                    if r.get("Kod") == "Izin_Tipi" and r.get("MenuEleman", "").strip()
+                ])
+                if sabit_tipler:
+                    izin_tipleri = sabit_tipler
+
+                # Tatilleri yükle
+                tatiller_repo = registry.get("Tatiller")
+                tatiller = tatiller_repo.get_all()
+                self._tatiller = [
+                    str(r.get("Tarih", "")).strip()
+                    for r in tatiller
+                    if r.get("Tarih", "").strip()
+                ]
+
+        except Exception as e:
+            logger.error(f"Sabitler yükleme hatası: {e}")
+
+        self.ui["izin_tipi"].clear()
+        self.ui["izin_tipi"].addItems(izin_tipleri)
+
+    def _load_izin_bakiye(self):
+        """İzin_Bilgi tablosundan bakiye verilerini yükler."""
+        tc = self._personel.get("KimlikNo", "")
+        if not self._db or not tc:
+            return
+
+        try:
+            from database.repository_registry import RepositoryRegistry
+            registry = RepositoryRegistry(self._db)
+            repo = registry.get("Izin_Bilgi")
+            izin = repo.get_by_id(tc)
+
+            if izin:
+                self.lbl_y_devir.setText(str(izin.get("YillikDevir", "0")))
+                self.lbl_y_hak.setText(str(izin.get("YillikHakedis", "0")))
+                self.lbl_y_kul.setText(str(izin.get("YillikKullanilan", "0")))
+                self.lbl_y_kal.setText(str(izin.get("YillikKalan", "0")))
+                self.lbl_s_hak.setText(str(izin.get("SuaKullanilabilirHak", "0")))
+                self.lbl_s_kul.setText(str(izin.get("SuaKullanilan", "0")))
+                self.lbl_s_kal.setText(str(izin.get("SuaKalan", "0")))
+                self.lbl_diger.setText(str(izin.get("RaporMazeretTop", "0")))
+        except Exception as e:
+            logger.error(f"İzin bakiye yükleme hatası: {e}")
+
+    def _load_izin_gecmisi(self):
+        """Izin_Giris tablosundan personelin izin kayıtlarını yükler."""
+        tc = self._personel.get("KimlikNo", "")
+        if not self._db or not tc:
+            return
+
+        try:
+            from database.repository_registry import RepositoryRegistry
+            registry = RepositoryRegistry(self._db)
+            repo = registry.get("Izin_Giris")
+            all_izin = repo.get_all()
+
+            # Bu personelin izinlerini filtrele (Personelid = TC)
+            personel_izin = [
+                r for r in all_izin
+                if str(r.get("Personelid", "")).strip() == tc
+            ]
+            # Tarihe göre sırala (yeni önce)
+            personel_izin.sort(
+                key=lambda r: str(r.get("BaslamaTarihi", "")),
+                reverse=True
+            )
+
+            self._izin_model.set_data(personel_izin)
+
+            # Toplam gün hesapla
+            toplam_gun = sum(
+                int(r.get("Gun", 0)) for r in personel_izin
+                if str(r.get("Gun", "")).isdigit()
+            )
+            self.lbl_toplam.setText(
+                f"{len(personel_izin)} izin kaydı — Toplam {toplam_gun} gün"
+            )
+
+        except Exception as e:
+            logger.error(f"İzin geçmişi yükleme hatası: {e}")
+
+    # ═══════════════════════════════════════════
+    #  BİTİŞ TARİHİ HESAPLAMA
+    # ═══════════════════════════════════════════
+
+    def _calculate_bitis(self):
+        """Başlama + gün + tatiller/hafta sonu = bitiş tarihi hesapla."""
+        baslama = self.ui["baslama"].date().toPython()
+        gun = self.ui["gun"].value()
+
+        # İş günü hesapla (hafta sonu ve tatilleri atla)
+        kalan = gun
+        current = baslama
+        while kalan > 0:
+            current += timedelta(days=1)
+            # Hafta sonu kontrolü (5=Cumartesi, 6=Pazar)
+            if current.weekday() in (5, 6):
+                continue
+            # Tatil kontrolü
+            if current.strftime("%Y-%m-%d") in self._tatiller:
+                continue
+            kalan -= 1
+
+        # Bitiş = işe başlama günü (izin bitişinin ertesi iş günü)
+        self.ui["bitis"].setDate(QDate(current.year, current.month, current.day))
+
+    # ═══════════════════════════════════════════
+    #  KAYDET
+    # ═══════════════════════════════════════════
+
+    def _on_save(self):
+        """Yeni izin kaydını DB'ye yazar."""
+        tc = self._personel.get("KimlikNo", "")
+        ad = self._personel.get("AdSoyad", "")
+        sinif = self._personel.get("HizmetSinifi", "")
+        izin_tipi = self.ui["izin_tipi"].currentText().strip()
+
+        if not izin_tipi:
+            QMessageBox.warning(self, "Eksik", "İzin tipi seçilmeli.")
+            return
+
+        baslama = self.ui["baslama"].date().toString("yyyy-MM-dd")
+        bitis = self.ui["bitis"].date().toString("yyyy-MM-dd")
+        gun = self.ui["gun"].value()
+
+        # Unique ID
+        izin_id = str(uuid.uuid4())[:8].upper()
+
+        kayit = {
+            "Izinid": izin_id,
+            "HizmetSinifi": sinif,
+            "Personelid": tc,
+            "AdSoyad": ad,
+            "IzinTipi": izin_tipi,
+            "BaslamaTarihi": baslama,
+            "Gun": gun,
+            "BitisTarihi": bitis,
+            "Durum": "Onaylandı",
+        }
+
+        try:
+            from database.repository_registry import RepositoryRegistry
+            registry = RepositoryRegistry(self._db)
+            repo = registry.get("Izin_Giris")
+            repo.insert(kayit)
+            logger.info(f"İzin kaydedildi: {izin_id} — {ad} — {izin_tipi} — {gun} gün")
+
+            QMessageBox.information(
+                self, "Başarılı",
+                f"{ad} için {gun} gün {izin_tipi} kaydedildi.\n"
+                f"Başlama: {self.ui['baslama'].date().toString('dd.MM.yyyy')}\n"
+                f"İşe Dönüş: {self.ui['bitis'].date().toString('dd.MM.yyyy')}"
+            )
+
+            # Listeyi ve bakiyeyi yenile
+            self._load_izin_gecmisi()
+            self._load_izin_bakiye()
+
+            # Formu sıfırla
+            self.ui["gun"].setValue(1)
+            self.ui["baslama"].setDate(QDate.currentDate())
+
+        except Exception as e:
+            logger.error(f"İzin kaydetme hatası: {e}")
+            QMessageBox.critical(self, "Hata", f"İzin kaydedilemedi:\n{e}")
+
+    # ═══════════════════════════════════════════
+    #  GERİ
+    # ═══════════════════════════════════════════
+
+    def _go_back(self):
+        if self._on_back:
+            self._on_back()

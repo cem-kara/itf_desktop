@@ -354,7 +354,7 @@ class PersonelEklePage(QWidget):
             col = QVBoxLayout()
             col.setSpacing(8)
 
-            header = QLabel(f"{'Lisans' if i == '1' else 'Yüksek Lisans / 2. Okul'}")
+            header = QLabel(f"{'Lise / Önlisans / Lisans' if i == '1' else 'Lisans / Yüksek Lisans / Lisans Tamamlama'}")
             header.setStyleSheet("color: #6bd3ff; font-size: 12px; font-weight: bold; background: transparent;")
             col.addWidget(header)
 
@@ -685,11 +685,12 @@ class PersonelEklePage(QWidget):
                     pass
 
     def _collect_data(self):
-        """Formdan tüm veriyi dict olarak toplar."""
         data = {}
         for db_col, ui_key in FIELD_MAP.items():
             data[db_col] = self._get_widget_value(ui_key)
+        data["Durum"] = "Aktif"
         return data
+    
 
     def _fill_form(self, row_data):
         """Mevcut veriyi forma doldurur (düzenleme modu)."""
