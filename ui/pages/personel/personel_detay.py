@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QProgressBar, QFrame, QComboBox, QLineEdit,
     QDateEdit, QGroupBox, QMessageBox, QFileDialog, QTabWidget,
-    QGridLayout, QDialog, QFormLayout
+    QGridLayout
 )
 from PySide6.QtGui import QCursor, QPixmap, QRegularExpressionValidator
 
@@ -40,30 +40,6 @@ class DriveUploadWorker(QThread):
         except Exception as e:
             self.error.emit(self._alan_adi, str(e))
 
-class ImageLoaderWorker(QThread):
-    loaded = Signal(QPixmap)
-
-    def __init__(self, url):
-        super().__init__()
-        self._url = url
-
-    def run(self):
-        try:
-            import re, urllib.request
-            # Drive link → direct download URL
-            match = re.search(r'/d/([a-zA-Z0-9_-]+)', self._url)
-            if not match:
-                return
-            file_id = match.group(1)
-            direct_url = f"https://drive.google.com/uc?export=view&id={file_id}"
-
-            data = urllib.request.urlopen(direct_url, timeout=10).read()
-            pixmap = QPixmap()
-            pixmap.loadFromData(data)
-            if not pixmap.isNull():
-                self.loaded.emit(pixmap)
-        except Exception as e:
-            logger.error(f"Resim yükleme hatası: {e}")
 
 # ─── W11 Dark Glass Stiller ───
 S = {
@@ -90,7 +66,7 @@ S = {
             border-bottom: 2px solid #9dcbe3;
             border-radius: 6px;
             padding: 7px 10px; font-size: 13px;
-            color: #e0e2ea; min-height: 20px;
+            color: #e0e2ea; min-height: 22px;
         }
         QLineEdit:focus {
             border: 1px solid rgba(29, 117, 254, 0.5);
@@ -338,85 +314,12 @@ FIELD_MAP = {
 
 
 # ═══════════════════════════════════════════════
-#  İŞTEN AYRILMA DİALOG
-# ═══════════════════════════════════════════════
-
-class AyrilisDialog(QDialog):
-    def __init__(self, ad_soyad="", parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("İşten Ayrılış İşlemleri")
-        self.setFixedSize(450, 300)
-        self.setStyleSheet(S["dialog"])
-        self._setup_ui(ad_soyad)
-
-    def _setup_ui(self, ad_soyad):
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 16, 20, 16)
-        layout.setSpacing(12)
-
-        lbl_info = QLabel(f"<b>{ad_soyad}</b> personelinin işten çıkış işlemi başlatılacak.")
-        lbl_info.setWordWrap(True)
-        lbl_info.setStyleSheet("color: #c8cad0; font-size: 14px; background: transparent;")
-        layout.addWidget(lbl_info)
-
-        gb = QGroupBox("Ayrılış Detayları")
-        form = QFormLayout(gb)
-        form.setSpacing(10)
-
-        self.dt_tarih = QDateEdit(QDate.currentDate())
-        self.dt_tarih.setCalendarPopup(True)
-        self.dt_tarih.setDisplayFormat("dd.MM.yyyy")
-        self.dt_tarih.setStyleSheet(S["date"])
-
-        self.cmb_neden = QComboBox()
-        self.cmb_neden.setEditable(True)
-        self.cmb_neden.addItems(["Emekli", "Vefat", "İstifa", "Tayin", "Diğer"])
-        self.cmb_neden.setStyleSheet(S["combo"])
-
-        lbl_t = QLabel("Ayrılış Tarihi:")
-        lbl_t.setStyleSheet(S["label"])
-        lbl_n = QLabel("Ayrılma Nedeni:")
-        lbl_n.setStyleSheet(S["label"])
-        form.addRow(lbl_t, self.dt_tarih)
-        form.addRow(lbl_n, self.cmb_neden)
-        layout.addWidget(gb)
-
-        lbl_uyari = QLabel("⚠️ Bu işlem personeli PASİF duruma getirecektir.")
-        lbl_uyari.setWordWrap(True)
-        lbl_uyari.setStyleSheet("color: #f87171; font-size: 12px; background: transparent;")
-        layout.addWidget(lbl_uyari)
-
-        layout.addStretch()
-
-        h_btn = QHBoxLayout()
-        btn_iptal = QPushButton("İptal")
-        btn_iptal.setStyleSheet(S["cancel_btn"])
-        btn_iptal.setCursor(QCursor(Qt.PointingHandCursor))
-        btn_iptal.clicked.connect(self.reject)
-
-        btn_onayla = QPushButton("✓ Onayla ve Bitir")
-        btn_onayla.setStyleSheet(S["danger_btn"])
-        btn_onayla.setCursor(QCursor(Qt.PointingHandCursor))
-        btn_onayla.clicked.connect(self.accept)
-
-        h_btn.addStretch()
-        h_btn.addWidget(btn_iptal)
-        h_btn.addWidget(btn_onayla)
-        layout.addLayout(h_btn)
-
-    def get_data(self):
-        return {
-            "AyrilisTarihi": self.dt_tarih.date().toString("yyyy-MM-dd"),
-            "AyrilmaNedeni": self.cmb_neden.currentText().strip(),
-            "Durum": "Pasif",
-        }
-
-
-# ═══════════════════════════════════════════════
 #  PERSONEL DETAY SAYFASI
 # ═══════════════════════════════════════════════
 
 class PersonelDetayPage(QWidget):
+
+    ayrilis_requested = Signal(dict)  # personel_data
     """
     Personel Detay / Düzenleme sayfası.
     db: SQLiteManager
@@ -662,7 +565,7 @@ class PersonelDetayPage(QWidget):
             col = QVBoxLayout()
             col.setSpacing(8)
 
-            header_lbl = QLabel(f"{'Lise / Önlisans / Lisans' if i == '1' else 'Lisans / Yüksek Lisans / Lisans Tamamlama'}")
+            header_lbl = QLabel(f"{'Lisans' if i == '1' else 'Yüksek Lisans / 2. Okul'}")
             header_lbl.setStyleSheet("color: #6bd3ff; font-size: 12px; font-weight: bold; background: transparent;")
             col.addWidget(header_lbl)
 
@@ -671,22 +574,11 @@ class PersonelDetayPage(QWidget):
             self.ui[f"mezun_tarihi{i}"] = self._make_input_v("Mezuniyet Tarihi", col)
             self.ui[f"diploma_no{i}"] = self._make_input_v("Diploma No", col)
 
-            # Görüntüle butonu (her zaman görünür)
-            btn_view = QPushButton(f"📄 Diploma {i} Görüntüle")
-            btn_view.setStyleSheet(S["file_btn"])
-            btn_view.setCursor(QCursor(Qt.PointingHandCursor))
-            btn_view.clicked.connect(lambda checked, idx=i: self._open_diploma(idx))
-            col.addWidget(btn_view)
-            self.ui[f"diploma_view_btn{i}"] = btn_view
-
-            # Yükle butonu (sadece edit modda)
-            btn_upload = QPushButton(f"📤 Diploma {i} Yükle")
-            btn_upload.setStyleSheet(S["file_btn"])
-            btn_upload.setCursor(QCursor(Qt.PointingHandCursor))
-            btn_upload.clicked.connect(lambda checked, idx=i: self._select_diploma(idx))
-            btn_upload.setVisible(False)
-            col.addWidget(btn_upload)
-            self.ui[f"diploma_upload_btn{i}"] = btn_upload
+            btn_dip = QPushButton(f"📄 Diploma {i} Seç")
+            btn_dip.setStyleSheet(S["file_btn"])
+            btn_dip.setCursor(QCursor(Qt.PointingHandCursor))
+            btn_dip.clicked.connect(lambda checked, idx=i: self._select_diploma(idx))
+            col.addWidget(btn_dip)
 
             lbl_file = QLabel("")
             lbl_file.setStyleSheet("color: #4ade80; font-size: 11px; background: transparent;")
@@ -714,39 +606,54 @@ class PersonelDetayPage(QWidget):
 
     def _setup_izin_tab(self, parent):
         layout = QHBoxLayout(parent)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(12)
+        layout.setContentsMargins(8, 16, 8, 8)
+        layout.setSpacing(16)
 
         # Yıllık İzin
         grp_yillik = QGroupBox("📅  Yıllık İzin Durumu")
         grp_yillik.setStyleSheet(S["group"])
         g = QGridLayout(grp_yillik)
-        g.setSpacing(4)
-        g.setContentsMargins(12, 12, 12, 12)
+        g.setSpacing(12)
+        g.setContentsMargins(16, 16, 16, 16)
 
         self.lbl_y_devir = self._add_stat(g, 0, "Devir Eden İzin", "stat_value")
         self.lbl_y_hak = self._add_stat(g, 1, "Bu Yıl Hak Edilen", "stat_value")
-        self.lbl_y_toplam = self._add_stat(g, 2, "TOPLAM İZİN HAKKI", "stat_highlight")
-        self.lbl_y_kullanilan = self._add_stat(g, 3, "Kullanılan Yıllık İzin", "stat_red")
-        self.lbl_y_kalan = self._add_stat(g, 4, "KALAN YILLIK İZİN", "stat_green")
 
-        g.setRowStretch(5, 1)
+        sep1 = QFrame(); sep1.setFixedHeight(1); sep1.setStyleSheet(S["separator"])
+        g.addWidget(sep1, 2, 0, 1, 2)
+
+        self.lbl_y_toplam = self._add_stat(g, 3, "TOPLAM İZİN HAKKI", "stat_highlight")
+        self.lbl_y_kullanilan = self._add_stat(g, 4, "Kullanılan Yıllık İzin", "stat_red")
+
+        sep2 = QFrame(); sep2.setFixedHeight(1); sep2.setStyleSheet(S["separator"])
+        g.addWidget(sep2, 5, 0, 1, 2)
+
+        self.lbl_y_kalan = self._add_stat(g, 6, "KALAN YILLIK İZİN", "stat_green")
+
         layout.addWidget(grp_yillik)
 
         # Şua ve Diğer
         grp_diger = QGroupBox("☢️  Şua ve Diğer İzinler")
         grp_diger.setStyleSheet(S["group"])
         g2 = QGridLayout(grp_diger)
-        g2.setSpacing(4)
-        g2.setContentsMargins(12, 12, 12, 12)
+        g2.setSpacing(12)
+        g2.setContentsMargins(16, 16, 16, 16)
 
         self.lbl_s_hak = self._add_stat(g2, 0, "Hak Edilen Şua İzin", "stat_value")
         self.lbl_s_kul = self._add_stat(g2, 1, "Kullanılan Şua İzinleri", "stat_red")
-        self.lbl_s_kalan = self._add_stat(g2, 2, "KALAN ŞUA İZNİ", "stat_green")
-        self.lbl_s_cari = self._add_stat(g2, 3, "Cari Yıl Şua Kazanım", "stat_value")
-        self.lbl_diger = self._add_stat(g2, 4, "Toplam Rapor/Mazeret", "stat_value")
 
-        g2.setRowStretch(5, 1)
+        sep3 = QFrame(); sep3.setFixedHeight(1); sep3.setStyleSheet(S["separator"])
+        g2.addWidget(sep3, 2, 0, 1, 2)
+
+        self.lbl_s_kalan = self._add_stat(g2, 3, "KALAN ŞUA İZNİ", "stat_green")
+
+        # Cari yıl kazanım
+        sep4 = QFrame(); sep4.setFixedHeight(1); sep4.setStyleSheet(S["separator"])
+        g2.addWidget(sep4, 4, 0, 1, 2)
+
+        self.lbl_s_cari = self._add_stat(g2, 5, "Cari Yıl Şua Kazanım", "stat_value")
+        self.lbl_diger = self._add_stat(g2, 6, "Toplam Rapor/Mazeret", "stat_value")
+
         layout.addWidget(grp_diger)
 
     def _add_stat(self, grid, row, text, style_key):
@@ -985,7 +892,9 @@ class PersonelDetayPage(QWidget):
         for db_col, ui_key in FIELD_MAP.items():
             self._set_widget_value(ui_key, row_data.get(db_col, ""))
 
+        # Başlık güncelle
         ad = row_data.get("AdSoyad", "")
+        tc = row_data.get("KimlikNo", "")
         self.lbl_ad.setText(f"👤 {ad}")
 
         durum = str(row_data.get("Durum", "Aktif")).strip()
@@ -997,21 +906,8 @@ class PersonelDetayPage(QWidget):
         self.lbl_durum.setText(durum)
         self.lbl_durum.setStyleSheet(durum_styles.get(durum, S["header_durum_aktif"]))
 
-        # Resim yükle
-        resim_url = str(row_data.get("Resim", "")).strip()
-        if resim_url and resim_url.startswith("http"):
-            self.lbl_resim.setText("⏳ Yükleniyor...")
-            self._img_worker = ImageLoaderWorker(resim_url)
-            self._img_worker.loaded.connect(self._on_image_loaded)
-            self._img_worker.start()
-
-        tc = row_data.get("KimlikNo", "")
+        # İzin bilgilerini doldur
         self._load_izin_data(tc)
-
-    def _on_image_loaded(self, pixmap):
-        self.lbl_resim.setPixmap(
-            pixmap.scaled(160, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        )
 
     def _collect_data(self):
         data = {}
@@ -1083,10 +979,6 @@ class PersonelDetayPage(QWidget):
         self.btn_photo.setVisible(editing)
         self.btn_ayrilis.setVisible(not editing)
 
-        for i in ["1", "2"]:
-            self.ui[f"diploma_view_btn{i}"].setVisible(not editing)
-            self.ui[f"diploma_upload_btn{i}"].setVisible(editing)
-
     def _toggle_edit(self):
         self._set_edit_mode(True)
 
@@ -1113,19 +1005,6 @@ class PersonelDetayPage(QWidget):
                     pixmap.scaled(160, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 )
             logger.info(f"Fotoğraf seçildi: {path}")
-
-    def _open_diploma(self, idx):
-        """Diploma linkini tarayıcıda aç."""
-        col = "Diploma1" if idx == "1" else "Diploma2"
-        link = str(self._data.get(col, "")).strip()
-        if link and link.startswith("http"):
-            import webbrowser
-            webbrowser.open(link)
-        else:
-            QMessageBox.information(
-                self, "Diploma",
-                f"Diploma {idx} dosyası yüklenmemiş."
-            )
 
     def _select_diploma(self, idx):
         if not self._editing:
@@ -1265,29 +1144,8 @@ class PersonelDetayPage(QWidget):
     # ═══════════════════════════════════════════
 
     def _on_ayrilis(self):
-        ad = self._data.get("AdSoyad", "")
-        dlg = AyrilisDialog(ad_soyad=ad, parent=self)
-
-        if dlg.exec() == QDialog.Accepted:
-            ayrilis_data = dlg.get_data()
-            tc = self._data.get("KimlikNo", "")
-
-            try:
-                from database.repository_registry import RepositoryRegistry
-                registry = RepositoryRegistry(self._db)
-                repo = registry.get("Personel")
-                repo.update(tc, ayrilis_data)
-                logger.info(f"Personel ayrıldı: {tc} — {ayrilis_data}")
-
-                self._data.update(ayrilis_data)
-                self._fill_form(self._data)
-
-                QMessageBox.information(self, "İşlem Tamamlandı",
-                    f"{ad} personeli PASİF duruma getirildi.")
-
-            except Exception as e:
-                logger.error(f"Ayrılış hatası: {e}")
-                QMessageBox.critical(self, "Hata", f"İşlem hatası:\n{e}")
+        """İşten ayrılık sayfasına yönlendir."""
+        self.ayrilis_requested.emit(self._data)
 
     # ═══════════════════════════════════════════
     #  GERİ DÖN

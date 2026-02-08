@@ -349,7 +349,7 @@ class PersonelListesiPage(QWidget):
 
         self.btn_yenile = QPushButton("⟳")
         self.btn_yenile.setStyleSheet(STYLES["refresh_btn"])
-        self.btn_yenile.setFixedSize(28, 28)
+        self.btn_yenile.setFixedSize(60, 28)
         self.btn_yenile.setToolTip("Yenile")
         self.btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         fp.addWidget(self.btn_yenile)
@@ -368,7 +368,7 @@ class PersonelListesiPage(QWidget):
 
         self.btn_kapat = QPushButton("✕")
         self.btn_kapat.setToolTip("Pencereyi Kapat")
-        self.btn_kapat.setFixedSize(28, 28)
+        self.btn_kapat.setFixedSize(60, 28)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet("""
             QPushButton {
@@ -517,7 +517,14 @@ class PersonelListesiPage(QWidget):
     def _apply_filters(self):
         filtered = self._all_data
 
-        if self._active_filter != "Tümü":
+        if self._active_filter == "İzinli":
+            # Izin_Giris tablosundan bu ay izinli personelleri bul
+            izinli_tcler = self._get_izinli_personeller()
+            filtered = [
+                r for r in filtered
+                if str(r.get("KimlikNo", "")).strip() in izinli_tcler
+            ]
+        elif self._active_filter != "Tümü":
             filtered = [
                 r for r in filtered
                 if str(r.get("Durum", "")).strip() == self._active_filter
@@ -539,6 +546,59 @@ class PersonelListesiPage(QWidget):
 
         self._model.set_data(filtered)
         self._update_count()
+
+    def _parse_date(self, val):
+        """TEXT tarih değerini yyyy-MM-dd formatına çevirir. Birden fazla format destekler."""
+        val = str(val).strip()
+        if not val:
+            return ""
+        from datetime import datetime
+        for fmt in ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%Y/%m/%d", "%d-%m-%Y"):
+            try:
+                return datetime.strptime(val, fmt).strftime("%Y-%m-%d")
+            except ValueError:
+                continue
+        return val  # parse edilemezse olduğu gibi döndür
+
+    def _get_izinli_personeller(self):
+        """Izin_Giris tablosundan bu ay+yıl içinde izinli personel TC'lerini döndürür."""
+        if not self._db:
+            return set()
+        try:
+            from datetime import date
+            bugun = date.today()
+            ay_bas = date(bugun.year, bugun.month, 1).isoformat()
+            if bugun.month == 12:
+                ay_son = date(bugun.year + 1, 1, 1).isoformat()
+            else:
+                ay_son = date(bugun.year, bugun.month + 1, 1).isoformat()
+
+            logger.info(f"İzinli sorgu aralığı: {ay_bas} — {ay_son}")
+
+            from database.repository_registry import RepositoryRegistry
+            registry = RepositoryRegistry(self._db)
+            repo = registry.get("Izin_Giris")
+            all_izin = repo.get_all()
+
+            # Bu ay ile çakışan izinler:
+            # BaslamaTarihi < ay_son AND BitisTarihi >= ay_bas
+            izinli = set()
+            for r in all_izin:
+                baslama = self._parse_date(r.get("BaslamaTarihi", ""))
+                bitis = self._parse_date(r.get("BitisTarihi", ""))
+                tc = str(r.get("Personelid", "")).strip()
+                if not baslama or not tc:
+                    continue
+                if not bitis:
+                    bitis = baslama
+                if baslama < ay_son and bitis >= ay_bas:
+                    izinli.add(tc)
+
+            logger.info(f"Bu ay izinli personel: {len(izinli)} kişi")
+            return izinli
+        except Exception as e:
+            logger.error(f"İzinli personel sorgusu hatası: {e}")
+            return set()
 
     def _update_count(self):
         visible = self._proxy.rowCount()

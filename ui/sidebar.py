@@ -13,6 +13,7 @@ MENU_ICONS = {
     "Personel Ekle":     "➕",
     "İzin Takip":        "📅",
     "FHSZ Yönetim":     "📊",
+    "Puantaj Rapor":     "📋",
     "Personel Verileri": "📈",
     "Cihaz Listesi":     "🔬",
     "Cihaz Ekle":        "🆕",
@@ -73,7 +74,7 @@ class AccordionGroup(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        self.header = QPushButton(f"  {icon}  {group_name}  ➕")
+        self.header = QPushButton(f"  {icon}  {group_name}  [+]")
         self.header.setFixedHeight(38)
         self.header.setCursor(QCursor(Qt.PointingHandCursor))
         self.header.setStyleSheet(f"""
@@ -119,7 +120,7 @@ class AccordionGroup(QWidget):
     def _toggle(self):
         self._expanded = not self._expanded
         self.content.setVisible(self._expanded)
-        arrow = "➖" if self._expanded else "➕"
+        arrow = "[-]" if self._expanded else "[+]"
         self.header.setText(f"  {self._icon}  {self.group_name}  {arrow}")
 
     def _item_css(self, active):

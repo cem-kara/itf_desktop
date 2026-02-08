@@ -19,6 +19,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.auth.exceptions import TransportError, RefreshError
 
+print(">>> google_baglanti.py YUKLENDI <<<")
 # Loglama Ayarları
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("GoogleService")
@@ -234,6 +235,48 @@ class GoogleDriveService:
             if not internet_kontrol():
                 raise InternetBaglantiHatasi("Drive yüklemesi sırasında internet koptu.")
             raise GoogleServisHatasi(f"Dosya yüklenemedi: {e}")
+
+    def download_file(self, file_id: str, dest_path: str) -> bool:
+        """Drive'dan dosya indir."""
+        try:
+            from googleapiclient.http import MediaIoBaseDownload
+            import io
+            request = self.service.files().get_media(fileId=file_id)
+            fh = io.FileIO(dest_path, 'wb')
+            downloader = MediaIoBaseDownload(fh, request)
+            done = False
+            while not done:
+                _, done = downloader.next_chunk()
+            fh.close()
+            logger.info(f"Drive dosya indirildi: {file_id} → {dest_path}")
+            return True
+        except Exception as e:
+            logger.error(f"Drive indirme hatası ({file_id}): {e}")
+            return False
+
+    def delete_file(self, file_id: str) -> bool:
+        """Drive'dan dosya sil."""
+        try:
+            self.service.files().delete(fileId=file_id).execute()
+            logger.info(f"Drive dosya silindi: {file_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Drive silme hatası ({file_id}): {e}")
+            return False
+
+    @staticmethod
+    def extract_file_id(drive_link: str) -> Optional[str]:
+        """Drive linkinden file ID çıkar."""
+        import re
+        if not drive_link:
+            return None
+        match = re.search(r'/d/([a-zA-Z0-9_-]+)', drive_link)
+        if match:
+            return match.group(1)
+        match = re.search(r'id=([a-zA-Z0-9_-]+)', drive_link)
+        if match:
+            return match.group(1)
+        return None
     
 
 # ═══════════════════════════════════════════════════════

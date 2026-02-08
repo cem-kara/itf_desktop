@@ -72,7 +72,11 @@ class BaseRepository:
         if "updated_at" in self.columns:
             data["updated_at"] = now
 
-        non_pk = [c for c in self.columns if c not in self.pk_list]
+        # Sadece data'da bulunan kolonları güncelle (partial update)
+        non_pk = [c for c in self.columns if c not in self.pk_list and c in data]
+        if not non_pk:
+            return
+
         sets_parts = [f"{c}=?" for c in non_pk]
         values = [data.get(c) for c in non_pk]
 

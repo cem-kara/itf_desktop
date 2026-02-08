@@ -151,6 +151,26 @@ class MainWindow(QMainWindow):
             )
             return page
 
+        if baslik == "İzin Takip":
+            from ui.pages.personel.izin_takip import IzinTakipPage
+            page = IzinTakipPage(db=self._db)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("İzin Takip"))
+            page.load_data()
+            return page
+
+        if baslik == "FHSZ Yönetim":
+            from ui.pages.personel.fhsz_yonetim import FHSZYonetimPage
+            page = FHSZYonetimPage(db=self._db)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("FHSZ Yönetim"))
+            page.load_data()
+            return page
+
+        if baslik == "Puantaj Rapor":
+            from ui.pages.personel.puantaj_rapor import PuantajRaporPage
+            page = PuantajRaporPage(db=self._db)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Puantaj Rapor"))
+            return page
+
         return PlaceholderPage(
             title=baslik,
             subtitle=f"{group} modülü — geliştirme aşamasında"
@@ -179,6 +199,9 @@ class MainWindow(QMainWindow):
             personel_data=row_data,
             on_back=lambda: self._back_to_personel_listesi(detay_key)
         )
+        page.ayrilis_requested.connect(
+            lambda data: self.open_isten_ayrilik(data, detay_key)
+        )
         self._pages[detay_key] = page
         self.stack.addWidget(page)
         self.stack.setCurrentWidget(page)
@@ -195,6 +218,44 @@ class MainWindow(QMainWindow):
 
         if detay_key in self._pages:
             old = self._pages.pop(detay_key)
+            self.stack.removeWidget(old)
+            old.deleteLater()
+
+    def open_isten_ayrilik(self, personel_data, from_key=None):
+        """İşten ayrılık sayfasını aç."""
+        tc = personel_data.get("KimlikNo", "")
+        ad = personel_data.get("AdSoyad", "")
+        ayrilik_key = f"__ayrilik_{tc}"
+
+        if ayrilik_key in self._pages:
+            old = self._pages.pop(ayrilik_key)
+            self.stack.removeWidget(old)
+            old.deleteLater()
+
+        from ui.pages.personel.isten_ayrilik import IstenAyrilikPage
+        page = IstenAyrilikPage(
+            db=self._db,
+            personel_data=personel_data,
+            on_back=lambda: self._back_from_ayrilik(ayrilik_key, from_key)
+        )
+        self._pages[ayrilik_key] = page
+        self.stack.addWidget(page)
+        self.stack.setCurrentWidget(page)
+        self.page_title.setText(f"İşten Ayrılış — {ad}")
+
+    def _back_from_ayrilik(self, ayrilik_key, from_key=None):
+        """Ayrılık sayfasından geri dön."""
+        if from_key and from_key in self._pages:
+            self.stack.setCurrentWidget(self._pages[from_key])
+        elif "Personel Listesi" in self._pages:
+            page = self._pages["Personel Listesi"]
+            page.load_data()
+            self.stack.setCurrentWidget(page)
+            self.page_title.setText("Personel Listesi")
+            self.sidebar.set_active("Personel Listesi")
+
+        if ayrilik_key in self._pages:
+            old = self._pages.pop(ayrilik_key)
             self.stack.removeWidget(old)
             old.deleteLater()
 
