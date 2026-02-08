@@ -57,7 +57,7 @@ def main():
     # 2️⃣ Ana pencere
     from ui.main_window import MainWindow
     window = MainWindow()
-    window.show()
+    window.showMaximized()
 
     logger.info("Uygulama başlatıldı")
     sys.exit(app.exec())
