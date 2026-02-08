@@ -66,9 +66,9 @@
             },
             {
                 "baslik": "Puantaj Rapor",
-                "icon": "📋",
                 "modul": "ui.pages.personel.puantaj_rapor",
-                "sinif": "PuantajRaporPage"
+                "sinif": "PuantajRaporPage",
+                "icon": "📋"
             },
             {
                 "baslik": "Personel Verileri",
