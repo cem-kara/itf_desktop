@@ -61,12 +61,12 @@
             {
                 "baslik": "FHSZ Yönetim",
                 "modul": "formlar.fhsz_Yonetim",
-                "sinif": "FHSZYonetimPaneli",
+                "sinif": "FIILYonetimPaneli",
                 "icon": "📊"
             },
             {
                 "baslik": "Puantaj Rapor",
-                "modul": "ui.pages.personel.puantaj_rapor",
+                "modul": "formlar.puantaj_rapor",
                 "sinif": "PuantajRaporPage",
                 "icon": "📋"
             },

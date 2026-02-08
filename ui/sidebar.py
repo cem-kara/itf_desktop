@@ -13,6 +13,7 @@ MENU_ICONS = {
     "Personel Ekle":     "➕",
     "İzin Takip":        "📅",
     "FHSZ Yönetim":     "📊",
+    "FSHZ Raporlama":   "📋",
     "Puantaj Rapor":     "📋",
     "Personel Verileri": "📈",
     "Cihaz Listesi":     "🔬",
@@ -279,6 +280,8 @@ class Sidebar(QWidget):
             with open(cfg_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             menu_cfg = data.get("menu_yapilandirma", {})
+            cfg_path = os.path.abspath(cfg_path)
+            
         except Exception:
             menu_cfg = {}
 

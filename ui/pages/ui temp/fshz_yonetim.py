@@ -5,17 +5,15 @@ from PySide6.QtGui import QFont
 
 # Sayfa sınıfları (İskelet korunması için boş tanımlanmıştır, gerçek projede import edilir)
 class FHSZHesaplamaPenceresi(QWidget): 
-    def __init__(self, yetki=None, kullanici=None): super().__init__()
+    def __init__(self): super().__init__()
 
 class PuantajRaporPenceresi(QWidget): 
-    def __init__(self, yetki=None, kullanici=None): super().__init__()
+    def __init__(self): super().__init__()
 
 class FHSZYonetimPaneli(QWidget):
     def __init__(self, yetki='viewer', kullanici_adi=None):
         super().__init__()
-        self.yetki = yetki
-        self.kullanici_adi = kullanici_adi
-        
+                
         self.setWindowTitle("FHSZ (Şua) Yönetim Paneli")
         self.resize(1300, 850)
         
