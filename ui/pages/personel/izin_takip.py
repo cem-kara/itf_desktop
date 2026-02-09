@@ -3,6 +3,11 @@
 İzin Takip Sayfası (Sidebar menüden erişilir)
 - Sol: Personel seçimi (HizmetSınıfı filtreli) + Yeni izin girişi + Bakiye
 - Sağ: İzin kayıtları tablosu (Ay/Yıl filtreli + seçili personel filtreli)
+
+🔧 GÜNCELLEMELER:
+- ✅ Tarih çakışma kontrolü eklendi
+- ✅ Bakiye kontrolü ve otomatik düşme eklendi
+- ✅ Güncelleme sırasında da kontroller aktif
 """
 import uuid
 from datetime import datetime, date, timedelta
@@ -209,90 +214,73 @@ S = {
     "max_label": "color: #facc15; font-size: 11px; font-style: italic; background: transparent;",
 }
 
-AY_ISIMLERI = [
-    "", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
-    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
-]
-
 
 # ═══════════════════════════════════════════════
-#  TABLO MODELİ
+#  TABLE MODEL (Performans İçin)
 # ═══════════════════════════════════════════════
-
-IZIN_COLUMNS = [
-    ("AdSoyad",        "Ad Soyad",     3),
-    ("IzinTipi",       "İzin Tipi",    2),
-    ("BaslamaTarihi",  "Başlama",      2),
-    ("BitisTarihi",    "Bitiş",        2),
-    ("Gun",            "Gün",          1),
-    ("Durum",          "Durum",        1),
-]
-
-DURUM_COLORS_BG = {
-    "Onaylandı": QColor(34, 197, 94, 40),
-    "Beklemede":  QColor(234, 179, 8, 40),
-    "İptal":      QColor(239, 68, 68, 40),
-}
-DURUM_COLORS_FG = {
-    "Onaylandı": QColor("#4ade80"),
-    "Beklemede":  QColor("#facc15"),
-    "İptal":      QColor("#f87171"),
-}
-
 
 class IzinTableModel(QAbstractTableModel):
-    def __init__(self, data=None, parent=None):
+    """QTableWidget yerine performanslı model."""
+
+    HEADERS = ["TC", "Ad Soyad", "Başlama", "Gün", "Bitiş", "İzin Tipi", "Durum"]
+
+    def __init__(self, parent=None):
         super().__init__(parent)
-        self._data = data or []
-        self._keys = [c[0] for c in IZIN_COLUMNS]
-        self._headers = [c[1] for c in IZIN_COLUMNS]
+        self._data = []
 
     def rowCount(self, parent=QModelIndex()):
         return len(self._data)
 
     def columnCount(self, parent=QModelIndex()):
-        return len(IZIN_COLUMNS)
+        return len(self.HEADERS)
 
     def data(self, index, role=Qt.DisplayRole):
-        if not index.isValid():
+        if not index.isValid() or not (0 <= index.row() < len(self._data)):
             return None
-        row = self._data[index.row()]
-        col_key = self._keys[index.column()]
+
+        row_data = self._data[index.row()]
+        col = index.column()
 
         if role == Qt.DisplayRole:
-            val = str(row.get(col_key, ""))
-            if col_key in ("BaslamaTarihi", "BitisTarihi") and val:
-                return _format_date_display(val)
-            return val
+            if col == 0:
+                return str(row_data.get("Personelid", ""))
+            elif col == 1:
+                return str(row_data.get("AdSoyad", ""))
+            elif col == 2:
+                return _format_date_display(row_data.get("BaslamaTarihi", ""))
+            elif col == 3:
+                return str(row_data.get("Gun", ""))
+            elif col == 4:
+                return _format_date_display(row_data.get("BitisTarihi", ""))
+            elif col == 5:
+                return str(row_data.get("IzinTipi", ""))
+            elif col == 6:
+                return str(row_data.get("Durum", ""))
 
-        if role == Qt.BackgroundRole and col_key == "Durum":
-            return DURUM_COLORS_BG.get(str(row.get("Durum", "")))
+        elif role == Qt.ForegroundRole:
+            if col == 6:
+                durum = str(row_data.get("Durum", "")).strip()
+                if durum == "İptal":
+                    return QColor("#f87171")
+                elif durum == "Onaylandı":
+                    return QColor("#4ade80")
+                elif durum == "Beklemede":
+                    return QColor("#facc15")
 
-        if role == Qt.ForegroundRole and col_key == "Durum":
-            return DURUM_COLORS_FG.get(str(row.get("Durum", "")), QColor("#8b8fa3"))
-
-        if role == Qt.TextAlignmentRole:
-            if col_key in ("Gun", "Durum"):
+        elif role == Qt.TextAlignmentRole:
+            if col in (3,):
                 return Qt.AlignCenter
-            return Qt.AlignVCenter | Qt.AlignLeft
-
-        # Sıralama için ham ISO değer
-        if role == Qt.UserRole:
-            if col_key in ("BaslamaTarihi", "BitisTarihi"):
-                d = _parse_date(row.get(col_key, ""))
-                return d.isoformat() if d else ""
-            return str(row.get(col_key, ""))
 
         return None
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
-            return self._headers[section]
+            return self.HEADERS[section]
         return None
 
-    def set_data(self, data):
+    def set_data(self, data_list):
         self.beginResetModel()
-        self._data = data or []
+        self._data = data_list
         self.endResetModel()
 
     def get_row(self, row_idx):
@@ -302,539 +290,451 @@ class IzinTableModel(QAbstractTableModel):
 
 
 # ═══════════════════════════════════════════════
-#  İZİN TAKİP SAYFASI
+#  ANA SAYFA
 # ═══════════════════════════════════════════════
 
 class IzinTakipPage(QWidget):
-
-    def __init__(self, db=None, parent=None):
+    def __init__(self, db, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(S["page"])
         self._db = db
-        self._all_izin = []
-        self._all_personel = []
-        self._tatiller = []
-        self._izin_tipleri = []           # [tip_adi, ...]
-        self._izin_max_gun = {}           # {"Yıllık İzin": 20, ...}
 
-        self._setup_ui()
-        self._connect_signals()
+        self._all_personel = []
+        self._all_izin = []
+        self._tatiller = set()
+        self._izin_max_gun = {}
+
+        # 🔧 Düzenleme modu kontrolü
+        self._edit_mode = False
+        self._edit_izin_id = None
+
+        self.setStyleSheet(S["page"])
+        self._build_ui()
+        self.load_data()
 
     # ═══════════════════════════════════════════
     #  UI
     # ═══════════════════════════════════════════
 
-    def _setup_ui(self):
-        main = QVBoxLayout(self)
-        main.setContentsMargins(20, 12, 20, 12)
-        main.setSpacing(12)
+    def _build_ui(self):
+        main_layout = QHBoxLayout(self)
+        main_layout.setContentsMargins(12, 12, 12, 12)
+        main_layout.setSpacing(12)
 
-        # ── FILTER BAR: Sadece Ay + Yıl ──
-        filter_frame = QFrame()
-        filter_frame.setStyleSheet(S["filter_panel"])
-        fp = QHBoxLayout(filter_frame)
-        fp.setContentsMargins(12, 8, 12, 8)
-        fp.setSpacing(8)
-
-        lbl_title = QLabel("📅 İzin Takip")
-        lbl_title.setStyleSheet("color: #6bd3ff; font-size: 14px; font-weight: bold; background: transparent;")
-        fp.addWidget(lbl_title)
-
-        self._add_sep(fp)
-
-        lbl_ay = QLabel("Ay:")
-        lbl_ay.setStyleSheet("color: #8b8fa3; font-size: 12px; background: transparent;")
-        fp.addWidget(lbl_ay)
-
-        self.cmb_ay = QComboBox()
-        self.cmb_ay.setStyleSheet(S["combo_filter"])
-        self.cmb_ay.setFixedWidth(110)
-        self.cmb_ay.addItem("Tümü", 0)
-        for i in range(1, 13):
-            self.cmb_ay.addItem(AY_ISIMLERI[i], i)
-        # Mevcut ayı seç
-        self.cmb_ay.setCurrentIndex(date.today().month)
-        fp.addWidget(self.cmb_ay)
-
-        lbl_yil = QLabel("Yıl:")
-        lbl_yil.setStyleSheet("color: #8b8fa3; font-size: 12px; background: transparent;")
-        fp.addWidget(lbl_yil)
-
-        self.cmb_yil = QComboBox()
-        self.cmb_yil.setStyleSheet(S["combo_filter"])
-        self.cmb_yil.setFixedWidth(80)
-        current_year = date.today().year
-        self.cmb_yil.addItem("Tümü", 0)
-        for y in range(current_year, current_year - 6, -1):
-            self.cmb_yil.addItem(str(y), y)
-        # Mevcut yılı seç (index 1)
-        self.cmb_yil.setCurrentIndex(1)
-        fp.addWidget(self.cmb_yil)
-
-        fp.addStretch()
-
-        self.btn_yenile = QPushButton("⟳")
-        self.btn_yenile.setStyleSheet(S["refresh_btn"])
-        self.btn_yenile.setFixedSize(28, 28)
-        self.btn_yenile.setToolTip("Yenile")
-        self.btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
-        fp.addWidget(self.btn_yenile)
-
-        self._add_sep(fp)
-
-        self.btn_kapat = QPushButton("✕")
-        self.btn_kapat.setToolTip("Kapat")
-        self.btn_kapat.setFixedSize(28, 28)
-        self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_kapat.setStyleSheet(S["close_btn"])
-        fp.addWidget(self.btn_kapat)
-
-        main.addWidget(filter_frame)
-
-        # ── SPLITTER ──
         splitter = QSplitter(Qt.Horizontal)
         splitter.setStyleSheet(S["splitter"])
+        splitter.setHandleWidth(3)
 
-        # ── SOL PANEL ──
-        left = QWidget()
-        left.setStyleSheet("background: transparent;")
-        left_l = QVBoxLayout(left)
-        left_l.setContentsMargins(0, 0, 0, 0)
-        left_l.setSpacing(12)
+        left = self._build_left_panel()
+        right = self._build_right_panel()
 
-        # ─ Personel Seçimi ─
-        grp_personel = QGroupBox("👤  Personel Seçimi")
-        grp_personel.setStyleSheet(S["group"])
-        pg = QGridLayout(grp_personel)
-        pg.setSpacing(8)
-        pg.setContentsMargins(12, 12, 12, 12)
+        splitter.addWidget(left)
+        splitter.addWidget(right)
+        splitter.setSizes([400, 800])
 
-        lbl_sinif = QLabel("Hizmet Sınıfı")
+        main_layout.addWidget(splitter)
+
+    def _build_left_panel(self):
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(12)
+
+        # ─── FİLTRE ───
+        grp_filter = QGroupBox("🔍 Personel Filtresi")
+        grp_filter.setStyleSheet(S["group"])
+        fl = QVBoxLayout(grp_filter)
+        fl.setSpacing(8)
+
+        lbl_sinif = QLabel("Hizmet Sınıfı:")
         lbl_sinif.setStyleSheet(S["label"])
-        pg.addWidget(lbl_sinif, 0, 0)
-        self.cmb_hizmet_sinifi = QComboBox()
-        self.cmb_hizmet_sinifi.setStyleSheet(S["combo"])
-        pg.addWidget(self.cmb_hizmet_sinifi, 0, 1)
+        self.cmb_sinif = QComboBox()
+        self.cmb_sinif.setStyleSheet(S["combo_filter"])
+        self.cmb_sinif.currentIndexChanged.connect(self._filter_personel)
+        fl.addWidget(lbl_sinif)
+        fl.addWidget(self.cmb_sinif)
 
-        lbl_p = QLabel("Personel")
+        lbl_p = QLabel("Personel:")
         lbl_p.setStyleSheet(S["label"])
-        pg.addWidget(lbl_p, 1, 0)
         self.cmb_personel = QComboBox()
-        self.cmb_personel.setEditable(True)
         self.cmb_personel.setStyleSheet(S["combo"])
-        self.cmb_personel.lineEdit().setPlaceholderText("İsim yazarak ara...")
-        self.cmb_personel.setInsertPolicy(QComboBox.NoInsert)
-        pg.addWidget(self.cmb_personel, 1, 1)
+        self.cmb_personel.setEditable(True)
+        self.cmb_personel.currentIndexChanged.connect(self._on_personel_changed)
+        fl.addWidget(lbl_p)
+        fl.addWidget(self.cmb_personel)
 
-        self.lbl_personel_info = QLabel("")
-        self.lbl_personel_info.setStyleSheet("color: #6bd3ff; font-size: 11px; background: transparent;")
-        pg.addWidget(self.lbl_personel_info, 2, 0, 1, 2)
+        layout.addWidget(grp_filter)
 
-        left_l.addWidget(grp_personel)
+        # ─── YENİ İZİN GİRİŞİ ───
+        grp_form = QGroupBox("📝 Yeni İzin Girişi")
+        grp_form.setStyleSheet(S["group"])
+        gl = QGridLayout(grp_form)
+        gl.setSpacing(10)
+        gl.setColumnStretch(1, 1)
 
-        # ─ İzin Giriş Formu ─
-        grp_giris = QGroupBox("📝  Yeni İzin Girişi")
-        grp_giris.setStyleSheet(S["group"])
-        fg = QGridLayout(grp_giris)
-        fg.setSpacing(10)
-        fg.setContentsMargins(12, 12, 12, 12)
+        row = 0
 
-        lbl_tip = QLabel("İzin Tipi")
+        # İzin Tipi
+        lbl_tip = QLabel("İzin Tipi:")
         lbl_tip.setStyleSheet(S["label"])
-        fg.addWidget(lbl_tip, 0, 0)
         self.cmb_izin_tipi = QComboBox()
         self.cmb_izin_tipi.setStyleSheet(S["combo"])
-        fg.addWidget(self.cmb_izin_tipi, 0, 1)
+        gl.addWidget(lbl_tip, row, 0)
+        gl.addWidget(self.cmb_izin_tipi, row, 1)
+        row += 1
 
-        # Max gün uyarı etiketi
-        self.lbl_max_gun = QLabel("")
-        self.lbl_max_gun.setStyleSheet(S["max_label"])
-        fg.addWidget(self.lbl_max_gun, 1, 0, 1, 2)
-
-        lbl_bas = QLabel("Başlama / Süre")
+        # Başlama Tarihi
+        lbl_bas = QLabel("Başlama Tarihi:")
         lbl_bas.setStyleSheet(S["label"])
-        fg.addWidget(lbl_bas, 2, 0)
-
-        h_tarih = QHBoxLayout()
-        h_tarih.setSpacing(8)
         self.dt_baslama = QDateEdit(QDate.currentDate())
+        self.dt_baslama.setStyleSheet(S["date"])
         self.dt_baslama.setCalendarPopup(True)
         self.dt_baslama.setDisplayFormat("dd.MM.yyyy")
-        self.dt_baslama.setStyleSheet(S["date"])
-        self._setup_calendar(self.dt_baslama)
-        h_tarih.addWidget(self.dt_baslama, 2)
+        self.dt_baslama.dateChanged.connect(self._calculate_bitis)
+        gl.addWidget(lbl_bas, row, 0)
+        gl.addWidget(self.dt_baslama, row, 1)
+        row += 1
 
-        lbl_gun = QLabel("Gün:")
+        # Gün Sayısı
+        lbl_gun = QLabel("Gün Sayısı:")
         lbl_gun.setStyleSheet(S["label"])
-        h_tarih.addWidget(lbl_gun)
         self.spn_gun = QSpinBox()
+        self.spn_gun.setStyleSheet(S["spin"])
         self.spn_gun.setRange(1, 365)
         self.spn_gun.setValue(1)
-        self.spn_gun.setStyleSheet(S["spin"])
-        self.spn_gun.setFixedWidth(70)
-        h_tarih.addWidget(self.spn_gun)
-        fg.addLayout(h_tarih, 2, 1)
+        self.spn_gun.setButtonSymbols(QAbstractSpinBox.PlusMinus)
+        self.spn_gun.valueChanged.connect(self._calculate_bitis)
+        gl.addWidget(lbl_gun, row, 0)
+        gl.addWidget(self.spn_gun, row, 1)
+        row += 1
 
-        lbl_bit = QLabel("Bitiş (İşe Dönüş)")
+        # Bitiş Tarihi (read-only)
+        lbl_bit = QLabel("İşe Dönüş:")
         lbl_bit.setStyleSheet(S["label"])
-        fg.addWidget(lbl_bit, 3, 0)
-        self.dt_bitis = QDateEdit()
+        self.dt_bitis = QDateEdit(QDate.currentDate())
+        self.dt_bitis.setStyleSheet(S["date"])
         self.dt_bitis.setReadOnly(True)
         self.dt_bitis.setDisplayFormat("dd.MM.yyyy")
-        self.dt_bitis.setButtonSymbols(QAbstractSpinBox.NoButtons)
-        self.dt_bitis.setStyleSheet(S["date"])
-        fg.addWidget(self.dt_bitis, 3, 1)
+        gl.addWidget(lbl_bit, row, 0)
+        gl.addWidget(self.dt_bitis, row, 1)
+        row += 1
 
-        self.btn_kaydet = QPushButton("✓  İZİN KAYDET")
+        # Max gün uyarısı
+        self.lbl_max_gun = QLabel("")
+        self.lbl_max_gun.setStyleSheet(S["max_label"])
+        gl.addWidget(self.lbl_max_gun, row, 0, 1, 2)
+        row += 1
+
+        # Kaydet Butonu
+        self.btn_kaydet = QPushButton("💾 KAYDET")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_kaydet.setFixedHeight(40)
-        self.btn_kaydet.setEnabled(False)
-        fg.addWidget(self.btn_kaydet, 4, 0, 1, 2)
+        self.btn_kaydet.clicked.connect(self._on_save)
+        gl.addWidget(self.btn_kaydet, row, 0, 1, 2)
+        row += 1
 
-        left_l.addWidget(grp_giris)
+        # 🔧 Düzenleme İptal Butonu
+        self.btn_iptal = QPushButton("🔄 İptal (Yeni Kayda Dön)")
+        self.btn_iptal.setStyleSheet(S["refresh_btn"])
+        self.btn_iptal.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_iptal.clicked.connect(self._clear_form)
+        self.btn_iptal.setVisible(False)
+        gl.addWidget(self.btn_iptal, row, 0, 1, 2)
+        row += 1
 
-        # ─ Bakiye Panosu ─
-        grp_bakiye = QGroupBox("📊  İzin Bakiyesi")
+        layout.addWidget(grp_form)
+
+        # ─── BAKİYE BİLGİSİ ───
+        grp_bakiye = QGroupBox("💰 Bakiye Bilgisi")
         grp_bakiye.setStyleSheet(S["group"])
-        bg = QGridLayout(grp_bakiye)
-        bg.setSpacing(4)
-        bg.setContentsMargins(12, 12, 12, 12)
+        bl = QVBoxLayout(grp_bakiye)
+        bl.setSpacing(6)
 
-        lbl_y = QLabel("YILLIK İZİN")
-        lbl_y.setStyleSheet(S["section_title"])
-        bg.addWidget(lbl_y, 0, 0, 1, 2, Qt.AlignCenter)
+        # Yıllık İzin
+        lbl_yil_title = QLabel("📅 YILLIK İZİN")
+        lbl_yil_title.setStyleSheet(S["section_title"])
+        bl.addWidget(lbl_yil_title)
 
-        self.lbl_y_devir = self._add_stat(bg, 1, "Devir", "stat_value")
-        self.lbl_y_hak = self._add_stat(bg, 2, "Hakediş", "stat_value")
-        self.lbl_y_kul = self._add_stat(bg, 3, "Kullanılan", "stat_red")
-        self.lbl_y_kal = self._add_stat(bg, 4, "KALAN", "stat_green")
+        def add_stat(label_text, value_style=S["stat_value"]):
+            hbox = QHBoxLayout()
+            hbox.setSpacing(8)
+            lbl = QLabel(label_text)
+            lbl.setStyleSheet(S["stat_label"])
+            val = QLabel("—")
+            val.setStyleSheet(value_style)
+            hbox.addWidget(lbl)
+            hbox.addStretch()
+            hbox.addWidget(val)
+            bl.addLayout(hbox)
+            return val
 
-        sep3 = QFrame(); sep3.setFixedHeight(1); sep3.setStyleSheet(S["separator"])
-        bg.addWidget(sep3, 5, 0, 1, 2)
+        self.lbl_y_devir = add_stat("Devir:")
+        self.lbl_y_hak = add_stat("Hakediş:")
+        self.lbl_y_kul = add_stat("Kullanılan:", S["stat_red"])
+        self.lbl_y_kal = add_stat("Kalan:", S["stat_green"])
 
-        lbl_s = QLabel("ŞUA İZNİ")
-        lbl_s.setStyleSheet(S["section_title"])
-        bg.addWidget(lbl_s, 6, 0, 1, 2, Qt.AlignCenter)
+        sep1 = QFrame()
+        sep1.setFrameShape(QFrame.HLine)
+        sep1.setStyleSheet(S["separator"])
+        bl.addWidget(sep1)
 
-        self.lbl_s_hak = self._add_stat(bg, 7, "Hakediş", "stat_value")
-        self.lbl_s_kul = self._add_stat(bg, 8, "Kullanılan", "stat_red")
-        self.lbl_s_kal = self._add_stat(bg, 9, "KALAN", "stat_green")
+        # Şua İzni
+        lbl_sua_title = QLabel("⏰ ŞUA İZNİ")
+        lbl_sua_title.setStyleSheet(S["section_title"])
+        bl.addWidget(lbl_sua_title)
 
-        sep4 = QFrame(); sep4.setFixedHeight(1); sep4.setStyleSheet(S["separator"])
-        bg.addWidget(sep4, 10, 0, 1, 2)
+        self.lbl_s_hak = add_stat("Hakediş:")
+        self.lbl_s_kul = add_stat("Kullanılan:", S["stat_red"])
+        self.lbl_s_kal = add_stat("Kalan:", S["stat_green"])
 
-        self.lbl_diger = self._add_stat(bg, 11, "Rapor / Mazeret", "stat_value")
-        bg.setRowStretch(12, 1)
-        left_l.addWidget(grp_bakiye)
-        left_l.addStretch()
+        sep2 = QFrame()
+        sep2.setFrameShape(QFrame.HLine)
+        sep2.setStyleSheet(S["separator"])
+        bl.addWidget(sep2)
 
-        # ── SAĞ PANEL: Tablo ──
-        right = QWidget()
-        right.setStyleSheet("background: transparent;")
-        right_l = QVBoxLayout(right)
-        right_l.setContentsMargins(0, 0, 0, 0)
-        right_l.setSpacing(8)
+        # Diğer
+        lbl_diger_title = QLabel("📋 DİĞER")
+        lbl_diger_title.setStyleSheet(S["section_title"])
+        bl.addWidget(lbl_diger_title)
 
-        grp_tablo = QGroupBox("📋  İzin Kayıtları")
-        grp_tablo.setStyleSheet(S["group"])
-        tl = QVBoxLayout(grp_tablo)
-        tl.setContentsMargins(8, 8, 8, 8)
-        tl.setSpacing(6)
+        self.lbl_diger = add_stat("Rapor / Mazeret:")
 
-        self._model = IzinTableModel()
-        self._proxy = QSortFilterProxyModel()
+        bl.addStretch()
+
+        layout.addWidget(grp_bakiye)
+        layout.addStretch()
+
+        return widget
+
+    def _build_right_panel(self):
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(12)
+
+        # ─── FİLTRE ───
+        filter_frame = QFrame()
+        filter_frame.setStyleSheet(S["filter_panel"])
+        fl = QHBoxLayout(filter_frame)
+        fl.setContentsMargins(12, 10, 12, 10)
+        fl.setSpacing(10)
+
+        lbl_yil = QLabel("Yıl:")
+        lbl_yil.setStyleSheet(S["label"])
+        self.cmb_yil = QComboBox()
+        self.cmb_yil.setStyleSheet(S["combo_filter"])
+        self.cmb_yil.currentIndexChanged.connect(self._apply_filters)
+        fl.addWidget(lbl_yil)
+        fl.addWidget(self.cmb_yil)
+
+        lbl_ay = QLabel("Ay:")
+        lbl_ay.setStyleSheet(S["label"])
+        self.cmb_ay = QComboBox()
+        self.cmb_ay.setStyleSheet(S["combo_filter"])
+        self.cmb_ay.currentIndexChanged.connect(self._apply_filters)
+        fl.addWidget(lbl_ay)
+        fl.addWidget(self.cmb_ay)
+
+        fl.addStretch()
+
+        btn_refresh = QPushButton("🔄 Yenile")
+        btn_refresh.setStyleSheet(S["refresh_btn"])
+        btn_refresh.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_refresh.clicked.connect(self.load_data)
+        fl.addWidget(btn_refresh)
+
+        layout.addWidget(filter_frame)
+
+        # ─── TABLO ───
+        self._model = IzinTableModel(self)
+        self._proxy = QSortFilterProxyModel(self)
         self._proxy.setSourceModel(self._model)
-        self._proxy.setSortRole(Qt.UserRole)
 
         self.table = QTableView()
+        self.table.setStyleSheet(S["table"])
         self.table.setModel(self._proxy)
         self.table.setAlternatingRowColors(True)
         self.table.setSelectionBehavior(QTableView.SelectRows)
         self.table.setSelectionMode(QTableView.SingleSelection)
-        self.table.setSortingEnabled(True)
-        self.table.verticalHeader().setVisible(False)
-        self.table.setShowGrid(False)
-        self.table.setStyleSheet(S["table"])
         self.table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._show_context_menu)
+        self.table.setSortingEnabled(True)
 
+        # Header resize
         header = self.table.horizontalHeader()
-        header.setStretchLastSection(False)
-        for i in range(len(IZIN_COLUMNS)):
-            header.setSectionResizeMode(i, QHeaderView.Stretch)
-        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # Gün
-        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)  # Durum
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.Stretch)
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(6, QHeaderView.ResizeToContents)
 
-        tl.addWidget(self.table, 1)
+        # 🔧 Satıra çift tıklanınca düzenle
+        self.table.doubleClicked.connect(self._on_table_double_click)
 
-        # Footer
-        foot = QHBoxLayout()
-        self.lbl_count = QLabel("")
+        layout.addWidget(self.table)
+
+        # ─── FOOTER ───
+        footer_layout = QHBoxLayout()
+        footer_layout.setSpacing(16)
+
+        self.lbl_count = QLabel("0 / 0 kayıt")
         self.lbl_count.setStyleSheet(S["footer_label"])
-        foot.addWidget(self.lbl_count)
-        foot.addStretch()
-        tl.addLayout(foot)
+        footer_layout.addWidget(self.lbl_count)
 
-        right_l.addWidget(grp_tablo, 1)
+        footer_layout.addStretch()
 
-        # Splitter oranları
-        splitter.addWidget(left)
-        splitter.addWidget(right)
-        splitter.setStretchFactor(0, 1)
-        splitter.setStretchFactor(1, 2)
-        main.addWidget(splitter, 1)
+        # Kapat butonu
+        self.btn_kapat = QPushButton("✕ Kapat")
+        self.btn_kapat.setStyleSheet(S["close_btn"])
+        self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_kapat.setFixedWidth(120)
+        footer_layout.addWidget(self.btn_kapat)
 
-        # İlk bitiş hesapla
-        self._calculate_bitis()
+        layout.addLayout(footer_layout)
 
-    # ── Yardımcı UI ──
-
-    def _add_sep(self, layout):
-        sep = QFrame()
-        sep.setFixedWidth(1)
-        sep.setFixedHeight(20)
-        sep.setStyleSheet("background-color: rgba(255,255,255,0.08);")
-        layout.addWidget(sep)
-
-    def _setup_calendar(self, date_edit):
-        cal = date_edit.calendarWidget()
-        cal.setMinimumWidth(350)
-        cal.setMinimumHeight(250)
-        cal.setStyleSheet("""
-            QCalendarWidget { background-color: #1e202c; color: #e0e2ea; }
-            QCalendarWidget QToolButton {
-                background-color: #1e202c; color: #e0e2ea;
-                border: none; padding: 6px 10px; font-size: 13px; font-weight: bold;
-            }
-            QCalendarWidget QToolButton:hover {
-                background-color: rgba(29,117,254,0.3); border-radius: 4px;
-            }
-            QCalendarWidget QMenu { background-color: #1e202c; color: #e0e2ea; }
-            QCalendarWidget QSpinBox {
-                background-color: #1e202c; color: #e0e2ea;
-                border: 1px solid #292b41; font-size: 13px;
-            }
-            QCalendarWidget QAbstractItemView {
-                background-color: #1e202c; color: #c8cad0;
-                selection-background-color: rgba(29,117,254,0.4);
-                selection-color: #ffffff; font-size: 13px; outline: none;
-            }
-            QCalendarWidget #qt_calendar_navigationbar {
-                background-color: #16172b;
-                border-bottom: 1px solid rgba(255,255,255,0.08); padding: 4px;
-            }
-        """)
-        cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
-
-    def _add_stat(self, grid, row, text, style_key):
-        lbl = QLabel(text)
-        lbl.setStyleSheet(S["stat_label"])
-        grid.addWidget(lbl, row, 0)
-        val = QLabel("—")
-        val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        val.setStyleSheet(S[style_key])
-        grid.addWidget(val, row, 1)
-        return val
-
-    # ═══════════════════════════════════════════
-    #  SİNYALLER
-    # ═══════════════════════════════════════════
-
-    def _connect_signals(self):
-        self.cmb_hizmet_sinifi.currentTextChanged.connect(self._on_sinif_changed)
-        self.cmb_personel.currentIndexChanged.connect(self._on_personel_changed)
-        self.cmb_izin_tipi.currentTextChanged.connect(self._on_izin_tipi_changed)
-        self.dt_baslama.dateChanged.connect(self._calculate_bitis)
-        self.spn_gun.valueChanged.connect(self._calculate_bitis)
-        self.btn_kaydet.clicked.connect(self._on_save)
-        self.btn_yenile.clicked.connect(self.load_data)
-        self.cmb_ay.currentIndexChanged.connect(self._apply_filters)
-        self.cmb_yil.currentIndexChanged.connect(self._apply_filters)
+        return widget
 
     # ═══════════════════════════════════════════
     #  VERİ YÜKLEME
     # ═══════════════════════════════════════════
 
     def load_data(self):
-        if not self._db:
-            return
+        """Tüm verileri yükle: personel, izinler, sabitler, tatiller."""
         try:
             from database.repository_registry import RepositoryRegistry
             registry = RepositoryRegistry(self._db)
 
-            # ── Personeller ──
-            self._all_personel = registry.get("Personel").get_all()
-            aktif = [p for p in self._all_personel
-                     if str(p.get("Durum", "")).strip() == "Aktif"]
-            aktif.sort(key=lambda p: str(p.get("AdSoyad", "")))
+            # Personel
+            all_p = registry.get("Personel").get_all()
+            self._all_personel = [
+                {
+                    "KimlikNo": p.get("KimlikNo"),
+                    "AdSoyad": p.get("AdSoyad"),
+                    "HizmetSinifi": p.get("HizmetSinifi"),
+                }
+                for p in all_p if p.get("AdSoyad")
+            ]
 
-            # Hizmet sınıfı listesi
+            # Hizmet Sınıfları (Sabitler)
+            sabits = registry.get("Sabitler").get_all()
             siniflar = sorted(set(
-                str(p.get("HizmetSinifi") or "").strip()
-                for p in aktif if str(p.get("HizmetSinifi") or "").strip()
+                s.get("Aciklama", "")
+                for s in sabits if s.get("Kod") == "Hizmet_Sinifi"
             ))
-            current_sinif = self.cmb_hizmet_sinifi.currentText()
-            self.cmb_hizmet_sinifi.blockSignals(True)
-            self.cmb_hizmet_sinifi.clear()
-            self.cmb_hizmet_sinifi.addItem("Tümü")
-            self.cmb_hizmet_sinifi.addItems(siniflar)
-            if current_sinif:
-                idx = self.cmb_hizmet_sinifi.findText(current_sinif)
-                if idx >= 0:
-                    self.cmb_hizmet_sinifi.setCurrentIndex(idx)
-            self.cmb_hizmet_sinifi.blockSignals(False)
+            siniflar = [x for x in siniflar if x]
 
-            # Personel combo (sınıf filtresine göre)
-            self._fill_personel_combo(aktif)
+            self.cmb_sinif.clear()
+            self.cmb_sinif.addItem("Tümü", "")
+            for sinif in siniflar:
+                self.cmb_sinif.addItem(sinif, sinif)
 
-            # ── İzin Tipleri: Sabitler → Kod = "İzin_Tipi" ──
-            sabitler = registry.get("Sabitler").get_all()
+            # İzin Tipleri
+            izin_tipleri = sorted(set(
+                s.get("Aciklama", "")
+                for s in sabits if s.get("Kod") == "Izin_Tipi"
+            ))
+            izin_tipleri = [x for x in izin_tipleri if x]
+
+            self.cmb_izin_tipi.clear()
+            for tip in izin_tipleri:
+                self.cmb_izin_tipi.addItem(tip)
+
+            # İzin Tipi Max Gün
             self._izin_max_gun = {}
-            tip_adlari = []
-
-            for r in sabitler:
-                if str(r.get("Kod", "")).strip() != "İzin_Tipi":
-                    continue
-                tip_adi = str(r.get("MenuEleman", "")).strip()
-                if not tip_adi:
-                    continue
-                tip_adlari.append(tip_adi)
-                # Aciklama sütununda max gün sayısı
-                aciklama = str(r.get("Aciklama", "")).strip()
-                if aciklama:
+            for s in sabits:
+                if s.get("Kod") == "Izin_Tipi":
+                    tip = s.get("Aciklama", "").strip()
                     try:
-                        self._izin_max_gun[tip_adi] = int(aciklama)
-                    except ValueError:
+                        max_val = int(s.get("Deger", 0))
+                        if max_val > 0:
+                            self._izin_max_gun[tip] = max_val
+                    except (ValueError, TypeError):
                         pass
 
-            tip_adlari.sort()
-            if not tip_adlari:
-                tip_adlari = [
-                    "Yıllık İzin", "Şua İzni", "Mazeret İzni", "Sağlık Raporu",
-                    "Ücretsiz İzin", "Doğum İzni", "Babalık İzni",
-                    "Evlilik İzni", "Ölüm İzni", "Diğer",
-                ]
+            self.cmb_izin_tipi.currentIndexChanged.connect(self._update_max_gun_label)
+            self._update_max_gun_label()
 
-            self._izin_tipleri = tip_adlari
-            self.cmb_izin_tipi.blockSignals(True)
-            self.cmb_izin_tipi.clear()
-            self.cmb_izin_tipi.addItems(tip_adlari)
-            self.cmb_izin_tipi.blockSignals(False)
-            self._on_izin_tipi_changed(self.cmb_izin_tipi.currentText())
+            # Tatiller
+            tatil_kayitlari = registry.get("Tatiller").get_all()
+            self._tatiller = set()
+            for t in tatil_kayitlari:
+                d = _parse_date(t.get("Tarih", ""))
+                if d:
+                    self._tatiller.add(d.isoformat())
 
-            # ── Tatiller ──
-            try:
-                tatiller = registry.get("Tatiller").get_all()
-                self._tatiller = []
-                for r in tatiller:
-                    t = str(r.get("Tarih", "")).strip()
-                    d = _parse_date(t)
-                    if d:
-                        self._tatiller.append(d.isoformat())
-            except Exception:
-                self._tatiller = []
-
-            # ── İzin Kayıtları ──
+            # İzin Kayıtları
             self._all_izin = registry.get("Izin_Giris").get_all()
 
-            # Yeniden eskiye sırala (çoklu tarih formatı)
-            self._all_izin.sort(
-                key=lambda r: _parse_date(r.get("BaslamaTarihi", "")) or date.min,
-                reverse=True
-            )
+            # Yıl filtresi
+            yillar = set()
+            for r in self._all_izin:
+                d = _parse_date(r.get("BaslamaTarihi", ""))
+                if d:
+                    yillar.add(d.year)
+            yillar = sorted(yillar, reverse=True)
 
+            self.cmb_yil.clear()
+            self.cmb_yil.addItem("Tümü", 0)
+            for y in yillar:
+                self.cmb_yil.addItem(str(y), y)
+
+            # Ay filtresi
+            aylar = ["Tümü", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+                     "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
+            self.cmb_ay.clear()
+            for i, ay in enumerate(aylar):
+                self.cmb_ay.addItem(ay, i)
+
+            self._filter_personel()
             self._apply_filters()
 
-            logger.info(f"İzin takip yüklendi: {len(self._all_izin)} kayıt, "
-                        f"{len(aktif)} aktif personel, "
-                        f"{len(tip_adlari)} izin tipi, "
-                        f"{len(self._izin_max_gun)} max gün tanımlı")
+            logger.info(
+                f"İzin takip verileri yüklendi: {len(self._all_personel)} personel, "
+                f"{len(self._all_izin)} izin kaydı"
+            )
 
         except Exception as e:
-            logger.error(f"İzin takip yükleme hatası: {e}")
+            logger.error(f"İzin takip veri yükleme hatası: {e}")
+            QMessageBox.critical(self, "Hata", f"Veri yüklenemedi:\n{e}")
 
-    # ═══════════════════════════════════════════
-    #  PERSONEL COMBO (HİZMET SINIFI FİLTRELİ)
-    # ═══════════════════════════════════════════
+    def _filter_personel(self):
+        """HizmetSınıfı filtresine göre personel listesini doldur."""
+        selected_sinif = self.cmb_sinif.currentData()
 
-    def _fill_personel_combo(self, aktif=None):
-        """Hizmet sınıfı filtresine göre personel comboyu doldur."""
-        if aktif is None:
-            aktif = [p for p in self._all_personel
-                     if str(p.get("Durum", "")).strip() == "Aktif"]
-            aktif.sort(key=lambda p: str(p.get("AdSoyad", "")))
-
-        sinif_filtre = self.cmb_hizmet_sinifi.currentText()
-        if sinif_filtre and sinif_filtre != "Tümü":
-            aktif = [p for p in aktif
-                     if str(p.get("HizmetSinifi") or "").strip() == sinif_filtre]
-
-        current_tc = self.cmb_personel.currentData()
-        self.cmb_personel.blockSignals(True)
         self.cmb_personel.clear()
-        self.cmb_personel.addItem("— Tüm Personel —", "")
-        for p in aktif:
+        self.cmb_personel.addItem("Seçiniz...", "")
+
+        filtered = self._all_personel
+        if selected_sinif:
+            filtered = [p for p in self._all_personel
+                        if p.get("HizmetSinifi") == selected_sinif]
+
+        filtered = sorted(filtered, key=lambda x: x.get("AdSoyad", ""))
+
+        for p in filtered:
             ad = p.get("AdSoyad", "")
             tc = p.get("KimlikNo", "")
-            sinif = p.get("HizmetSinifi", "")
-            self.cmb_personel.addItem(f"{ad}  ({sinif})", tc)
+            self.cmb_personel.addItem(ad, tc)
 
-        if current_tc:
-            idx = self.cmb_personel.findData(current_tc)
-            if idx >= 0:
-                self.cmb_personel.setCurrentIndex(idx)
-        self.cmb_personel.blockSignals(False)
-
-    def _on_sinif_changed(self, text):
-        """Hizmet sınıfı değiştiğinde personel combosunu yeniden doldur."""
-        self._fill_personel_combo()
-        self._on_personel_changed(self.cmb_personel.currentIndex())
-
-    def _on_personel_changed(self, idx):
-        """Personel değiştiğinde: bakiye güncelle + tablo filtrele."""
+    def _on_personel_changed(self):
+        """Personel seçildiğinde bakiye bilgisi yükle + filtreyi uygula."""
         tc = self.cmb_personel.currentData()
-        self.btn_kaydet.setEnabled(bool(tc))
-
-        if not tc:
-            self.lbl_personel_info.setText("")
-            self._clear_bakiye()
-        else:
-            p = next((p for p in self._all_personel
-                      if p.get("KimlikNo") == tc), None)
-            if p:
-                gorev = p.get("GorevYeri", "")
-                sinif = p.get("HizmetSinifi", "")
-                self.lbl_personel_info.setText(f"TC: {tc}  |  {sinif}  |  {gorev}")
-            self._load_bakiye(tc)
-
-        # Tablo filtresi de yenile (personel seçimi dahil)
+        self._load_bakiye(tc)
         self._apply_filters()
 
-    # ═══════════════════════════════════════════
-    #  İZİN TİPİ DEĞİŞİNCE → MAX GÜN
-    # ═══════════════════════════════════════════
-
-    def _on_izin_tipi_changed(self, tip_text):
-        """Seçili izin tipinin max gün sınırını uygula."""
-        tip_text = str(tip_text).strip()
-        max_gun = self._izin_max_gun.get(tip_text, 0)
-
-        if max_gun and max_gun > 0:
-            self.spn_gun.setMaximum(max_gun)
-            if self.spn_gun.value() > max_gun:
-                self.spn_gun.setValue(max_gun)
-            self.lbl_max_gun.setText(f"⚠ Bu izin tipi maks. {max_gun} gün")
+    def _update_max_gun_label(self):
+        """İzin tipine göre max gün uyarısını göster."""
+        izin_tipi = self.cmb_izin_tipi.currentText().strip()
+        max_gun = self._izin_max_gun.get(izin_tipi, 0)
+        if max_gun:
+            self.lbl_max_gun.setText(f"⚠️ Maksimum {max_gun} gün girilebilir")
         else:
-            self.spn_gun.setMaximum(365)
             self.lbl_max_gun.setText("")
 
-    # ═══════════════════════════════════════════
-    #  BAKİYE
-    # ═══════════════════════════════════════════
-
     def _load_bakiye(self, tc):
-        if not self._db or not tc:
+        """Seçili personelin bakiye bilgisini göster."""
+        if not tc:
             self._clear_bakiye()
             return
         try:
@@ -930,10 +830,16 @@ class IzinTakipPage(QWidget):
         self.dt_bitis.setDate(QDate(current.year, current.month, current.day))
 
     # ═══════════════════════════════════════════
-    #  KAYDET
+    #  🔧 KAYDET (ÇAKIŞMA + BAKİYE KONTROLÜ)
     # ═══════════════════════════════════════════
 
     def _on_save(self):
+        """İzin kaydet — çakışma kontrolü + bakiye kontrolü."""
+        print("\n" + "="*60)
+        print("🔴 KAYDET FONKSİYONU ÇAĞRILDI - YENİ SÜRÜM ÇALIŞIYOR!")
+        print("="*60 + "\n")
+        logger.info("🔴 KAYDET fonksiyonu çağrıldı")
+        
         tc = self.cmb_personel.currentData()
         if not tc:
             QMessageBox.warning(self, "Uyarı", "Lütfen bir personel seçin.")
@@ -960,7 +866,133 @@ class IzinTakipPage(QWidget):
                 f"{izin_tipi} için maksimum {max_gun} gün girilebilir.")
             return
 
-        izin_id = str(uuid.uuid4())[:8].upper()
+        # 🔧 TARİH ÇAKIŞMA KONTROLÜ
+        yeni_bas = _parse_date(baslama)
+        yeni_bit = _parse_date(bitis)
+
+        print(f"\n{'='*70}")
+        print(f"🔍 ÇAKIŞMA KONTROLÜ BAŞLADI")
+        print(f"{'='*70}")
+        print(f"TC: {tc} | Ad: {ad}")
+        print(f"Yeni izin: {yeni_bas} - {yeni_bit}")
+        print(f"Toplam kayıt sayısı: {len(self._all_izin)}")
+        print(f"{'='*70}\n")
+
+        if not yeni_bas or not yeni_bit:
+            print("❌ HATA: Tarih formatı hatalı!")
+            QMessageBox.critical(self, "Hata", "Tarih formatı hatalı.")
+            return
+
+        logger.info(f"Çakışma kontrolü başladı: {tc} için {yeni_bas} - {yeni_bit}")
+        logger.info(f"Kontrol edilecek izin sayısı: {len(self._all_izin)}")
+
+        ayni_personel_sayisi = 0
+        for kayit in self._all_izin:
+            # İptal edilen kayıtları atla
+            durum = str(kayit.get("Durum", "")).strip()
+            if durum == "İptal":
+                continue
+
+            # Başka personel ise atla
+            vt_tc = str(kayit.get("Personelid", "")).strip()
+            if vt_tc != tc:
+                continue
+
+            ayni_personel_sayisi += 1
+            print(f"[{ayni_personel_sayisi}] Aynı TC bulundu: {kayit.get('Izinid')}")
+
+            # Düzenleme modunda aynı kaydı atla
+            vt_id = str(kayit.get("Izinid", "")).strip()
+            if self._edit_mode and vt_id == self._edit_izin_id:
+                print(f"    ⏩ Atlandı (düzenleme modu)")
+                continue
+
+            # Tarih çakışması kontrolü
+            vt_bas = _parse_date(kayit.get("BaslamaTarihi", ""))
+            vt_bit = _parse_date(kayit.get("BitisTarihi", ""))
+
+            if vt_bas and vt_bit:
+                print(f"    📅 Tarihler: {vt_bas} - {vt_bit}")
+                cond1 = yeni_bas <= vt_bit
+                cond2 = yeni_bit >= vt_bas
+                print(f"    📊 yeni_bas ({yeni_bas}) <= vt_bit ({vt_bit}) = {cond1}")
+                print(f"    📊 yeni_bit ({yeni_bit}) >= vt_bas ({vt_bas}) = {cond2}")
+                
+                logger.debug(f"Kontrol ediliyor: {vt_bas} - {vt_bit} vs {yeni_bas} - {yeni_bit}")
+                
+                # Çakışma formülü: (yeni_bas <= vt_bit) AND (yeni_bit >= vt_bas)
+                if (yeni_bas <= vt_bit) and (yeni_bit >= vt_bas):
+                    print(f"\n{'='*70}")
+                    print(f"❌❌❌ ÇAKIŞMA BULUNDU! ❌❌❌")
+                    print(f"Mevcut: {vt_bas.strftime('%d.%m.%Y')} - {vt_bit.strftime('%d.%m.%Y')}")
+                    print(f"Yeni  : {yeni_bas.strftime('%d.%m.%Y')} - {yeni_bit.strftime('%d.%m.%Y')}")
+                    print(f"İzin Tipi: {kayit.get('IzinTipi', '')}")
+                    print(f"{'='*70}\n")
+                    
+                    logger.warning(f"ÇAKIŞMA BULUNDU! {vt_bas} - {vt_bit}")
+                    QMessageBox.warning(
+                        self, "❌ Çakışma Var!",
+                        f"{ad} personeli {vt_bas.strftime('%d.%m.%Y')} - "
+                        f"{vt_bit.strftime('%d.%m.%Y')} tarihlerinde zaten izinli!\n\n"
+                        f"İzin Tipi: {kayit.get('IzinTipi', '')}\n"
+                        f"Durum: {durum}\n\n"
+                        f"Lütfen farklı bir tarih seçiniz."
+                    )
+                    return
+                else:
+                    print(f"    ✅ Çakışma yok")
+
+        print(f"\n{'='*70}")
+        print(f"✅ Çakışma kontrolü tamamlandı")
+        print(f"Aynı personele ait {ayni_personel_sayisi} kayıt kontrol edildi")
+        print(f"Çakışma bulunamadı - kayıt devam ediyor...")
+        print(f"{'='*70}\n")
+        
+        logger.info("Çakışma kontrolü tamamlandı - çakışma yok")
+
+        # 🔧 BAKİYE KONTROLÜ (Yıllık İzin ve Şua için)
+        if izin_tipi in ["Yıllık İzin", "Şua İzni"]:
+            try:
+                from database.repository_registry import RepositoryRegistry
+                registry = RepositoryRegistry(self._db)
+                izin_bilgi = registry.get("Izin_Bilgi").get_by_id(tc)
+
+                if izin_bilgi:
+                    if izin_tipi == "Yıllık İzin":
+                        kalan = float(izin_bilgi.get("YillikKalan", 0))
+                        if gun > kalan:
+                            cevap = QMessageBox.question(
+                                self, "Bakiye Yetersiz",
+                                f"⚠️ {ad} personelinin yıllık izin bakiyesi: {kalan} gün\n"
+                                f"Girilen gün sayısı: {gun} gün\n\n"
+                                f"Eksik: {gun - kalan} gün\n\n"
+                                f"Yine de kaydetmek istiyor musunuz?",
+                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+                            )
+                            if cevap != QMessageBox.Yes:
+                                return
+
+                    elif izin_tipi == "Şua İzni":
+                        kalan = float(izin_bilgi.get("SuaKalan", 0))
+                        if gun > kalan:
+                            cevap = QMessageBox.question(
+                                self, "Bakiye Yetersiz",
+                                f"⚠️ {ad} personelinin şua izin bakiyesi: {kalan} gün\n"
+                                f"Girilen gün sayısı: {gun} gün\n\n"
+                                f"Eksik: {gun - kalan} gün\n\n"
+                                f"Yine de kaydetmek istiyor musunuz?",
+                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+                            )
+                            if cevap != QMessageBox.Yes:
+                                return
+            except Exception as e:
+                logger.error(f"Bakiye kontrolü hatası: {e}")
+
+        # Kayıt oluştur
+        if self._edit_mode:
+            izin_id = self._edit_izin_id
+        else:
+            izin_id = str(uuid.uuid4())[:8].upper()
 
         kayit = {
             "Izinid": izin_id,
@@ -977,23 +1009,140 @@ class IzinTakipPage(QWidget):
         try:
             from database.repository_registry import RepositoryRegistry
             registry = RepositoryRegistry(self._db)
-            registry.get("Izin_Giris").insert(kayit)
-            logger.info(f"İzin kaydedildi: {izin_id} — {ad} — {izin_tipi} — {gun} gün")
+
+            if self._edit_mode:
+                # Güncelleme
+                registry.get("Izin_Giris").update(izin_id, kayit)
+                logger.info(f"İzin güncellendi: {izin_id} — {ad} — {izin_tipi} — {gun} gün")
+                msg = "Güncellendi"
+            else:
+                # Yeni kayıt
+                registry.get("Izin_Giris").insert(kayit)
+                logger.info(f"İzin kaydedildi: {izin_id} — {ad} — {izin_tipi} — {gun} gün")
+
+                # 🔧 BAKİYE DÜŞME
+                self._bakiye_dus(registry, tc, izin_tipi, gun)
+                msg = "Kaydedildi"
 
             QMessageBox.information(
                 self, "Başarılı",
-                f"{ad} için {gun} gün {izin_tipi} kaydedildi.\n"
+                f"✅ {ad} için {gun} gün {izin_tipi} {msg}.\n"
                 f"Başlama: {self.dt_baslama.date().toString('dd.MM.yyyy')}\n"
                 f"İşe Dönüş: {self.dt_bitis.date().toString('dd.MM.yyyy')}"
             )
 
+            self._clear_form()
             self.load_data()
-            self.spn_gun.setValue(1)
-            self.dt_baslama.setDate(QDate.currentDate())
 
         except Exception as e:
             logger.error(f"İzin kaydetme hatası: {e}")
             QMessageBox.critical(self, "Hata", f"İzin kaydedilemedi:\n{e}")
+
+    def _bakiye_dus(self, registry, tc, izin_tipi, gun):
+        """Bakiyeden düş (Yıllık İzin / Şua İzni)."""
+        try:
+            izin_bilgi = registry.get("Izin_Bilgi").get_by_id(tc)
+            if not izin_bilgi:
+                return
+
+            if izin_tipi == "Yıllık İzin":
+                mevcut = float(izin_bilgi.get("YillikKullanilan", 0))
+                yeni = mevcut + gun
+                kalan_eski = float(izin_bilgi.get("YillikKalan", 0))
+                kalan_yeni = kalan_eski - gun
+
+                registry.get("Izin_Bilgi").update(tc, {
+                    "YillikKullanilan": yeni,
+                    "YillikKalan": kalan_yeni
+                })
+                logger.info(f"Yıllık izin bakiye düştü: {tc} → {gun} gün")
+
+            elif izin_tipi == "Şua İzni":
+                mevcut = float(izin_bilgi.get("SuaKullanilan", 0))
+                yeni = mevcut + gun
+                kalan_eski = float(izin_bilgi.get("SuaKalan", 0))
+                kalan_yeni = kalan_eski - gun
+
+                registry.get("Izin_Bilgi").update(tc, {
+                    "SuaKullanilan": yeni,
+                    "SuaKalan": kalan_yeni
+                })
+                logger.info(f"Şua izin bakiye düştü: {tc} → {gun} gün")
+
+            elif izin_tipi in ["Rapor", "Mazeret İzni"]:
+                mevcut = float(izin_bilgi.get("RaporMazeretTop", 0))
+                yeni = mevcut + gun
+                registry.get("Izin_Bilgi").update(tc, {
+                    "RaporMazeretTop": yeni
+                })
+                logger.info(f"Rapor/Mazeret toplam arttı: {tc} → {gun} gün")
+
+        except Exception as e:
+            logger.error(f"Bakiye düşme hatası: {e}")
+
+    # ═══════════════════════════════════════════
+    #  🔧 DÜZENLEME MODU
+    # ═══════════════════════════════════════════
+
+    def _on_table_double_click(self, index):
+        """Tabloda satıra çift tıklanınca düzenleme moduna geç."""
+        source_idx = self._proxy.mapToSource(index)
+        row_data = self._model.get_row(source_idx.row())
+        if not row_data:
+            return
+
+        durum = str(row_data.get("Durum", "")).strip()
+        if durum == "İptal":
+            QMessageBox.warning(self, "Uyarı", "İptal edilmiş kayıtlar düzenlenemez.")
+            return
+
+        # Düzenleme moduna geç
+        self._edit_mode = True
+        self._edit_izin_id = str(row_data.get("Izinid", ""))
+
+        # Formu doldur
+        tc = str(row_data.get("Personelid", ""))
+        idx = self.cmb_personel.findData(tc)
+        if idx >= 0:
+            self.cmb_personel.setCurrentIndex(idx)
+
+        self.cmb_izin_tipi.setCurrentText(str(row_data.get("IzinTipi", "")))
+
+        bas = _parse_date(row_data.get("BaslamaTarihi", ""))
+        if bas:
+            self.dt_baslama.setDate(QDate(bas.year, bas.month, bas.day))
+
+        self.spn_gun.setValue(int(row_data.get("Gun", 1)))
+
+        # UI değişiklikleri
+        self.btn_kaydet.setText("✏️ GÜNCELLE")
+        self.btn_kaydet.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(245, 158, 11, 0.3); color: #fbbf24;
+                border: 1px solid rgba(245, 158, 11, 0.5); border-radius: 8px;
+                padding: 10px 24px; font-size: 14px; font-weight: bold;
+            }
+            QPushButton:hover { background-color: rgba(245, 158, 11, 0.45); color: #ffffff; }
+        """)
+        self.btn_iptal.setVisible(True)
+
+        logger.info(f"Düzenleme modu: {self._edit_izin_id}")
+
+    def _clear_form(self):
+        """Formu temizle ve yeni kayıt moduna dön."""
+        self._edit_mode = False
+        self._edit_izin_id = None
+
+        self.cmb_personel.setCurrentIndex(0)
+        self.cmb_izin_tipi.setCurrentIndex(0)
+        self.spn_gun.setValue(1)
+        self.dt_baslama.setDate(QDate.currentDate())
+
+        self.btn_kaydet.setText("💾 KAYDET")
+        self.btn_kaydet.setStyleSheet(S["save_btn"])
+        self.btn_iptal.setVisible(False)
+
+        logger.info("Form temizlendi — yeni kayıt modu")
 
     # ═══════════════════════════════════════════
     #  SAĞ TIKLAMA MENÜSÜ

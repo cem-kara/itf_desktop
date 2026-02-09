@@ -44,31 +44,31 @@
         "PERSONEL": [
             {
                 "baslik": "Personel Listesi",
-                "modul": "formlar.personel_listesi",
+                "modul": "ui.pages.personel.personel_listesi",
                 "sinif": "PersonelListesiPenceresi",
                 "icon": "👥"
             },
             {
                 "baslik": "Personel Ekle",
-                "modul": "formlar.personel_ekle",
+                "modul": "ui.pages.personel.personel_ekle",
                 "sinif": "PersonelEklePenceresi"
             },
             {
                 "baslik": "İzin Takip",
-                "modul": "formlar.izin_takip_list",
+                "modul": "ui.pages.personel.izin_takip",
                 "sinif": "IzinGirisPenceresi"
             },
             {
                 "baslik": "FHSZ Yönetim",
-                "modul": "formlar.fhsz_Yonetim",
-                "sinif": "FIILYonetimPaneli",
+                "modul": "ui.pages.personel.fhsz_yonetim",
+                "sinif": "FHSZYonetimPaneli",
                 "icon": "📊"
             },
             {
                 "baslik": "Puantaj Rapor",
-                "modul": "formlar.puantaj_rapor",
-                "sinif": "PuantajRaporPage",
-                "icon": "📋"
+                "icon": "📋",
+                "modul": "ui.pages.personel.puantaj_rapor",
+                "sinif": "PuantajRaporPage"
             },
             {
                 "baslik": "Personel Verileri",

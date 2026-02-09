@@ -14,8 +14,7 @@ class SyncService:
     2. Local dirty kayıtları topla
     3. PUSH: dirty kayıtları toplu gönder (batch_update + batch_append)
     4. PULL: remote'ta olup local'de olmayanları toplu ekle
-    5. PULL: remote'taki güncellemeleri local'e yansıt (clean kayıtlar için)
-    6. Bir sonraki tabloya geç
+    5. Bir sonraki tabloya geç
 
     API çağrı sayısı:
     ESKİ → tablo başına: 1 + (dirty × 3) = onlarca istek
@@ -69,8 +68,6 @@ class SyncService:
         """
         Tek tablo senkronizasyonu — optimize edilmiş akış.
         Composite PK (list) ve tekli PK (string) destekler.
-        
-        🔧 FIX: Google Sheets'teki güncellemeler artık local'e yansıyor!
         """
         cfg = TABLES[table_name]
 
@@ -127,7 +124,6 @@ class SyncService:
         # 3️⃣  PULL: Google Sheets → Local
         # ──────────────────────────────────────────
         new_count = 0
-        updated_count = 0
 
         for remote in remote_rows:
             key = make_key(remote)
@@ -138,42 +134,12 @@ class SyncService:
             local = repo.get_by_id(pk_val)
 
             if not local:
-                # Yeni kayıt → ekle
                 remote["sync_status"] = "clean"
                 repo.insert(remote)
                 new_count += 1
-            else:
-                # 🔧 FIX: Mevcut kayıt var
-                # Local'de dirty değilse (yani kullanıcı değiştirmemişse),
-                # Google Sheets'teki güncellemeleri al
-                local_status = local.get("sync_status", "").strip()
-                
-                if local_status != "dirty":
-                    # Remote'taki verilerle local'i güncelle
-                    # (sync_status'u clean olarak koru)
-                    remote["sync_status"] = "clean"
-                    
-                    # Sadece değişen alanları güncelle
-                    has_changes = False
-                    for col in cfg["columns"]:
-                        if col in ["sync_status", "updated_at"]:
-                            continue
-                        remote_val = str(remote.get(col, "")).strip()
-                        local_val = str(local.get(col, "")).strip()
-                        if remote_val != local_val:
-                            has_changes = True
-                            break
-                    
-                    if has_changes:
-                        repo.insert(remote)  # INSERT OR REPLACE
-                        updated_count += 1
-                # else: Local dirty → kullanıcı değiştirmiş, dokunma
 
         if new_count:
             logger.info(f"  PULL yeni kayıt: {new_count}")
-        
-        if updated_count:
-            logger.info(f"  PULL güncelleme: {updated_count}")
 
         logger.info(f"  {table_name} sync tamamlandı ✓")
 

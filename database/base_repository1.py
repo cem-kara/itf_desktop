@@ -55,10 +55,6 @@ class BaseRepository:
         if "updated_at" in self.columns and not data.get("updated_at"):
             data["updated_at"] = now
 
-        # 🔧 FIX: Sync tablolarında sync_status='dirty' ekle
-        if self.has_sync and "sync_status" in self.columns:
-            data["sync_status"] = "dirty"
-
         cols = ", ".join(self.columns)
         placeholders = ", ".join(["?"] * len(self.columns))
         values = [data.get(col) for col in self.columns]

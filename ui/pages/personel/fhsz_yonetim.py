@@ -510,24 +510,42 @@ class FHSZYonetimPage(QWidget):
                 self._tatil_listesi_np = []
 
             # 4. Sabitler → Kod="Gorev_Yeri"
-            #    MenuEleman = birim adı  |  Aciklama'da "A" varsa → Koşul A
+            #    MenuEleman = birim adı | Aciklama = "Çalışma Koşulu A / B"
             sabitler = registry.get("Sabitler").get_all()
+
             self._birim_kosul_map = {}
+
             for r in sabitler:
+                # Sadece Gorev_Yeri olanlar
                 if str(r.get("Kod", "")).strip() != "Gorev_Yeri":
                     continue
+
                 birim = tr_upper(str(r.get("MenuEleman", "")).strip())
                 aciklama = tr_upper(str(r.get("Aciklama", "")).strip())
-                if birim:
-                    self._birim_kosul_map[birim] = "A" if "A" in aciklama else "B"
+
+                if not birim:
+                    continue
+
+                # 🔴 KRİTİK DÜZELTME BURASI
+                if "KOŞULU A" in aciklama:
+                    self._birim_kosul_map[birim] = "A"
+                elif "KOŞULU B" in aciklama:
+                    self._birim_kosul_map[birim] = "B"
+                else:
+                    logger.warning(
+                        f"Gorev_Yeri için tanımsız çalışma koşulu: "
+                        f"Birim={birim}, Aciklama={aciklama}"
+                    )
 
             self.progress.setVisible(False)
             self.lbl_durum.setText("Veriler yüklendi.")
+
             logger.info(
                 f"FHSZ veri yüklendi: {len(self._all_personel)} personel, "
                 f"{len(self._all_izin)} izin, {len(self._tatil_listesi_np)} tatil, "
                 f"{len(self._birim_kosul_map)} birim koşul"
             )
+
 
         except Exception as e:
             self.progress.setVisible(False)
