@@ -26,7 +26,8 @@ Bu dosya, proje üzerinde sonraki düzenlemeleri planlı, güvenli ve hızlı il
 
 **DoD (Done tanımı)**
 - Pull sonrası local kayıtta `sync_status=clean` korunuyor.
-- Aynı kayıt gereksiz yere tekrar push edilmemiş oluyor.
+- Aynı kayıt değişiklik yoksa gereksiz yere tekrar push edilmemiş oluyor.
+- Kullanıcı kayıt üzerinde değişiklik yaptığında kayıt `dirty` oluyor, bir sonraki sync’te push ediliyor ve başarılı push sonrası tekrar `clean` durumuna dönüyor.
 
 ---
 
