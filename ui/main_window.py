@@ -152,7 +152,7 @@ class MainWindow(QMainWindow):
             return page
 
         if baslik == "İzin Takip":
-            from ui.pages.personel.izin_takip1 import IzinTakipPage
+            from ui.pages.personel.izin_takip import IzinTakipPage
             page = IzinTakipPage(db=self._db)
             page.btn_kapat.clicked.connect(lambda: self._close_page("İzin Takip"))
             page.load_data()

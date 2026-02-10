@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ # -*- coding: utf-8 -*-
 """
 İzin Giriş & Takip Sayfası
 - Sol: Yeni izin girişi + bakiye panosu

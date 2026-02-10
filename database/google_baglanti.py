@@ -19,7 +19,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.auth.exceptions import TransportError, RefreshError
 
-print(">>> google_baglanti.py YUKLENDI <<<")
+
 # Loglama Ayarları
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("GoogleService")

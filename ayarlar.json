@@ -15,7 +15,7 @@
             {
                 "baslik": "İzin Takip",
                 "modul": "ui.pages.personel.izin_takip",
-                "sinif": "IzinGirisPenceresi"
+                "sinif": "IzinTakipPage"
             },
             {
                 "baslik": "FHSZ Yönetim",
