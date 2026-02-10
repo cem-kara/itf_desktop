@@ -426,6 +426,9 @@ class PuantajRaporPage(QWidget):
             for tc, kayitlar in sorted(personel_map.items(),
                                         key=lambda x: str(x[1][0].get("AdSoyad", ""))):
                 kumulatif = 0
+                toplam_gun = 0
+                toplam_izin = 0
+                toplam_saat = 0
                 for r in kayitlar:
                     donem = str(r.get("Donem", "")).strip()
                     try:
@@ -433,12 +436,24 @@ class PuantajRaporPage(QWidget):
                     except (ValueError, TypeError):
                         saat = 0
                     kumulatif += saat
+                    toplam_saat += saat
+                    try:
+                        toplam_gun += int(r.get("AylikGun", 0))
+                    except (ValueError, TypeError):
+                        toplam_gun += 0
+                    try:
+                        toplam_izin += int(r.get("KullanilanIzin", 0))
+                    except (ValueError, TypeError):
+                        toplam_izin += 0
 
                     # Tek dönem filtresi
                     if tek_donem and donem != donem_str:
                         continue
 
                     sua = sua_hak_edis_hesapla(kumulatif)
+
+                    if not tek_donem:
+                        continue
 
                     row = {
                         "Personelid": tc,
@@ -452,6 +467,23 @@ class PuantajRaporPage(QWidget):
                         "SuaHakEdis": sua,
                     }
                     rows.append(row)
+
+                # Tum donem secilirse personel toplam satiri ekle
+                if not tek_donem and kayitlar:
+                    toplam_sua = sua_hak_edis_hesapla(toplam_saat)
+                    rows.append({
+                        "Personelid": tc,
+                        "AdSoyad": kayitlar[0].get("AdSoyad", ""),
+                        "AitYil": yil_str,
+                        "Donem": "Toplam",
+                        "AylikGun": toplam_gun,
+                        "KullanilanIzin": toplam_izin,
+                        "FiiliCalismaSaat": toplam_saat,
+                        "KumulatifSaat": toplam_saat,
+                        "SuaHakEdis": toplam_sua,
+                    })
+
+
 
             # Tabloya yaz
             self.tablo.setRowCount(len(rows))
