@@ -55,9 +55,12 @@ class BaseRepository:
         if "updated_at" in self.columns and not data.get("updated_at"):
             data["updated_at"] = now
 
-        # 🔧 FIX: Sync tablolarında sync_status='dirty' ekle
+        # 🔧 FIX: sync_status sadece açıkça belirtilmemişse 'dirty' yap
+        # Pull işlemi sync_status='clean' gönderdiğinde onu koru
         if self.has_sync and "sync_status" in self.columns:
-            data["sync_status"] = "dirty"
+            if "sync_status" not in data:
+                data["sync_status"] = "dirty"
+            # else: data'da zaten var (clean veya dirty), onu koru
 
         cols = ", ".join(self.columns)
         placeholders = ", ".join(["?"] * len(self.columns))
@@ -84,8 +87,9 @@ class BaseRepository:
         sets_parts = [f"{c}=?" for c in non_pk]
         values = [data.get(c) for c in non_pk]
 
-        # sync_status sadece sync tablolarında
-        if self.has_sync:
+        # 🔧 FIX: sync_status sadece açıkça belirtilmemişse 'dirty' yap
+        # Pull işlemi sync_status='clean' gönderdiğinde onu koru
+        if self.has_sync and "sync_status" not in data:
             sets_parts.append("sync_status='dirty'")
 
         sets = ", ".join(sets_parts)
