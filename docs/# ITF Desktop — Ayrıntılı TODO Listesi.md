@@ -12,60 +12,72 @@ Bu dosya, proje üzerinde sonraki düzenlemeleri planlı, güvenli ve hızlı il
 
 ## P0 — Kritik
 
-### 1) Sync `clean/dirty` davranışını düzelt
-**Yapılacaklar**
-- `BaseRepository.insert` içinde `sync_status` zorla `dirty` atamasını koşullu hale getir.
-- Sync pull akışında gelen `clean` değerinin ezilmesini engelle.
+### 1) Sync `clean/dirty` davran???n? d?zelt
+**Durum:** Tamamland? (2026-02-10)
+
+**Yap?lanlar**
+- `BaseRepository.insert` i?inde `sync_status` zorla `dirty` atamas?n? ko?ullu hale getirildi.
+- Sync pull ak???nda gelen `clean` de?erinin ezilmesi engellendi.
+- `BaseRepository.update` i?in de ayn? kural uyguland?.
 
 **Neden**
-- Pull ile gelen kayıtlar `clean` olması gerekirken tekrar `dirty` olursa gereksiz push döngüsü ve yanlış senkron davranışı oluşabilir.
+- Pull ile gelen kay?tlar `clean` olmas? gerekirken tekrar `dirty` olursa gereksiz push d?ng?s? ve yanl?? senkron davran??? olu?abilir.
 
 **Dosyalar**
 - `database/base_repository.py`
-- `database/sync_service.py`
+- `docs/DEGISIKLIK_ACIKLAMASI.md`
 
-**DoD (Done tanımı)**
-- Pull sonrası local kayıtta `sync_status=clean` korunuyor.
-- Aynı kayıt gereksiz yere tekrar push edilmemiş oluyor.
+**DoD (Kar??land?)**
+- [x] Pull sonras? local kay?tta `sync_status=clean` korunuyor.
+- [x] Ayn? kay?t gereksiz yere tekrar push edilmiyor.
 
 ---
 
-### 2) DB reset yerine güvenli migration stratejisine geç
-**Yapılacaklar**
-- Açılıştaki şema kontrolünde tam reset yaklaşımını kaldır.
-- Versiyon tabanlı migration adımları (`ALTER TABLE`, yeni kolon ekleme vb.) uygula.
-- Kritik migration’larda yedekleme/rollback planı ekle.
+### 2) DB reset yerine g?venli migration stratejisine ge?
+**Durum:** Tamamland? (2026-02-10)
+
+**Yap?lanlar**
+- A??l??taki ?ema kontrol?nde tam reset yakla??m? kald?r?ld?.
+- Versiyon tabanl? migration ad?mlar? eklendi.
+- Migration ?ncesi otomatik yedekleme ve rollback (yedekten geri y?kleme) ak??? getirildi.
 
 **Neden**
-- Şema uyumsuzluğunda tüm tabloların silinmesi veri kaybı riski doğurur.
+- ?ema uyumsuzlu?unda t?m tablolar?n silinmesi veri kayb? riski do?urur.
 
 **Dosyalar**
 - `main.pyw`
 - `database/migrations.py`
+- `docs/MIGRATION_STRATEJISI.md`
+- `docs/MIGRATION_HIZLI_BASVURU.md`
 
-**DoD**
-- Uyumlu olmayan şema, veri silinmeden migration ile güncelleniyor.
-- Uygulama açılışında data kaybı yaşanmıyor.
+**DoD (Kar??land?)**
+- [x] Uyumlu olmayan ?ema, veri silinmeden migration ile g?ncelleniyor.
+- [x] Uygulama a??l???nda data kayb? ya?anm?yor.
 
 ---
 
-### 3) Sync hata görünürlüğünü artır
-**Yapılacaklar**
-- Sync hata mesajında tablo adı, hata tipi ve zaman bilgisini UI’da göster.
-- Status bar + kullanıcıya anlaşılır kısa hata metni sağla.
-- Loglarda hata kodu / bağlam bilgisi standardize et.
+### 3) Sync hata g?r?n?rl???n? art?r
+**Durum:** Tamamland? (2026-02-10)
+
+**Yap?lanlar**
+- Structured logging ile tablo/ad?m/kay?t say?s? gibi ba?lam bilgileri eklendi.
+- 3 ayr? log dosyas? olu?turuldu: `app.log`, `sync.log`, `errors.log`.
+- Sync hata sinyali k?sa + detay mesaj? ta??yacak ?ekilde geni?letildi.
+- UI taraf?nda status bar + tooltip + popup ile anla??l?r hata g?sterimi eklendi.
 
 **Neden**
-- Operasyon sırasında “sync hatası”nın kök nedenini hızlı bulmak kolaylaşır.
+- Operasyon s?ras?nda ?sync hatas??n?n k?k nedenini h?zl? bulmak kolayla??r.
 
 **Dosyalar**
-- `database/sync_worker.py`
-- `ui/main_window.py`
 - `core/logger.py`
+- `database/sync_worker.py`
+- `database/sync_service.py`
+- `ui/main_window.py`
+- `docs/SYNC_HATA_GORUNURLUGU.md`
 
-**DoD**
-- Hata alındığında kullanıcı neyin bozulduğunu anlayabiliyor.
-- Log satırından tablo ve akış adımı görülebiliyor.
+**DoD (Kar??land?)**
+- [x] Hata al?nd???nda kullan?c? neyin bozuldu?unu anlayabiliyor.
+- [x] Log sat?r?ndan tablo ve ak?? ad?m? g?r?lebiliyor.
 
 ---
 
@@ -192,17 +204,24 @@ Bu dosya, proje üzerinde sonraki düzenlemeleri planlı, güvenli ve hızlı il
 ---
 
 ### 12) Log standardizasyonu
-**Yapılacaklar**
-- Yapılandırılmış log formatı (event adı, tablo, kayıt anahtarı, hata kodu) tanımla.
-- Sync adımları için standart log şablonu uygula.
+**Durum:** K?smi (2026-02-10)
+
+**Yap?lanlar**
+- Structured logging ile tablo/ad?m/kay?t say?s? ba?lam? eklendi.
+- Sync ad?mlar? i?in standart log ?ablonu uygulanmaya ba?lad?.
+
+**Yap?lacaklar**
+- Olay ?emas?n? `event`, `table`, `record_key`, `result`, `error_code` alanlar?n? kapsayacak ?ekilde tamamla.
+- `record_key` ve `error_code` standard?n? t?m kritik loglarda zorunlu hale getir.
 
 **Neden**
-- Üretimde olay analizi ve hata ayıklama hızlanır.
+- ?retimde olay analizi ve hata ay?klama h?zlan?r.
 
 ---
+---
 
-## Sprint Planı Önerisi
-- **Sprint 1:** P0 (1, 2, 3)
+## Sprint Plan? ?nerisi
+- **Sprint 1:** P0 (1, 2, 3) ? Tamamland? (2026-02-10)
 - **Sprint 2:** P1 (4, 5, 6)
 - **Sprint 3:** P2 (7, 8, 9)
 - **Sprint 4:** P3 (10, 11, 12)

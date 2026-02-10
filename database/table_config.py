@@ -94,19 +94,19 @@ TABLES = {
     # ─────────────── SABİT VT ───────────────
 
     "Sabitler": {
-        "pk": "Rowid",                        # ← "Personelid" → "Rowid" (migrations.py: AUTOINCREMENT PK)
+        "pk": "Rowid",
         "columns": [
             "Rowid","Kod","MenuEleman","Aciklama"
-        ]
-        
+        ],
+        "sync_mode": "pull_only"  # Sadece Google Sheets → Local (veri kaynağı: Sheets)
     },
 
     "Tatiller": {
-        "pk": "Tarih",                        # ← "Personelid" → "Tarih" (migrations.py PK)
+        "pk": "Tarih",
         "columns": [
             "Tarih","ResmiTatil"
-        ]
-        
+        ],
+        "sync_mode": "pull_only"  # Sadece Google Sheets → Local (resmi tatil takvimi)
     },
 
     "Loglar": {

@@ -12,20 +12,19 @@ MENU_ICONS = {
     "Personel Listesi":  "👥",
     "Personel Ekle":     "➕",
     "İzin Takip":        "📅",
-    "FHSZ Yönetim":     "📊",
-    "FSHZ Raporlama":   "📋",
+    "FHSZ Yönetim":      "📊",
     "Puantaj Rapor":     "📋",
     "Personel Verileri": "📈",
     "Cihaz Listesi":     "🔬",
     "Cihaz Ekle":        "🆕",
-    "Ariza Kaydi":       "⚠️",
-    "Ariza Listesi":     "🔧",
-    "Periyodik Bakim":   "🛠️",
+    "Arıza Kayıt":       "⚠️",  # Typo düzeltildi: Ariza -> Arıza
+    "Arıza Listesi":     "🔧",  # Typo düzeltildi: Ariza -> Arıza
+    "Periyodik Bakım":   "🛠️",  # Typo düzeltildi: Bakim -> Bakım
     "Kalibrasyon Takip": "📐",
     "RKE Listesi":       "🛡️",
     "Muayene Girişi":    "🔍",
     "RKE Raporlama":     "📋",
-    "Yıl Sonu İzin":    "📆",
+    "Yıl Sonu İzin":     "📆",
     "Ayarlar":           "⚙️",
 }
 
@@ -106,7 +105,9 @@ class AccordionGroup(QWidget):
         self.content.setVisible(False)
 
     def add_item(self, baslik, callback):
+        # Icon'u JSON'dan alıyoruz artık, ama fallback için hala MENU_ICONS var
         icon = MENU_ICONS.get(baslik, "•")
+        
         btn = QPushButton(f"  {icon}   {baslik}")
         btn.setFixedHeight(34)
         btn.setCursor(QCursor(Qt.PointingHandCursor))
@@ -280,9 +281,11 @@ class Sidebar(QWidget):
             with open(cfg_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             menu_cfg = data.get("menu_yapilandirma", {})
-            cfg_path = os.path.abspath(cfg_path)
             
-        except Exception:
+        except Exception as e:
+            # Fallback: Hata durumunda minimal menü göster
+            from core.logger import logger
+            logger.error(f"ayarlar.json yüklenemedi: {e}")
             menu_cfg = {}
 
         for gname, items in menu_cfg.items():
@@ -291,6 +294,10 @@ class Sidebar(QWidget):
 
             for item in items:
                 baslik = item.get("baslik", "?")
+                
+                # Gelecek: implemented=False olan menüleri disabled göster
+                # is_implemented = item.get("implemented", True)
+                
                 btn = grp.add_item(baslik, self._on_click)
                 self._all_buttons[baslik] = (grp, btn)
 

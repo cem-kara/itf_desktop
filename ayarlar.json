@@ -3,98 +3,115 @@
         "PERSONEL": [
             {
                 "baslik": "Personel Listesi",
-                "modul": "ui.pages.personel.personel_listesi",
-                "sinif": "PersonelListesiPenceresi",
-                "icon": "👥"
+                "icon": "👥",
+                "implemented": true
             },
             {
                 "baslik": "Personel Ekle",
-                "modul": "ui.pages.personel.personel_ekle",
-                "sinif": "PersonelEklePenceresi"
+                "icon": "➕",
+                "implemented": true
             },
             {
                 "baslik": "İzin Takip",
-                "modul": "ui.pages.personel.izin_takip",
-                "sinif": "IzinTakipPage"
+                "icon": "📅",
+                "implemented": true
             },
             {
                 "baslik": "FHSZ Yönetim",
-                "modul": "ui.pages.personel.fhsz_yonetim",
-                "sinif": "FHSZYonetimPaneli",
-                "icon": "📊"
+                "icon": "📊",
+                "implemented": true
             },
             {
                 "baslik": "Puantaj Rapor",
                 "icon": "📋",
-                "modul": "ui.pages.personel.puantaj_rapor",
-                "sinif": "PuantajRaporPage"
+                "implemented": true
             },
             {
                 "baslik": "Personel Verileri",
-                "modul": "",
-                "sinif": "DashboardPenceresi"
+                "icon": "📈",
+                "implemented": false,
+                "note": "Dashboard - gelecek versiyon"
             }
         ],
         "CİHAZ": [
             {
                 "baslik": "Cihaz Listesi",
-                "modul": "formlar.cihaz_listesi",
-                "sinif": "CihazListesiPenceresi"
+                "icon": "🔬",
+                "implemented": false,
+                "note": "Geliştirme aşamasında"
             },
             {
                 "baslik": "Cihaz Ekle",
-                "modul": "formlar.cihaz_ekle",
-                "sinif": "CihazEklePenceresi"
+                "icon": "🆕",
+                "implemented": false
             },
             {
-                "baslik": "Ariza Kaydi",
-                "modul": "formlar.ariza_kayit",
-                "sinif": "ArizaKayitPenceresi"
+                "baslik": "Arıza Kayıt",
+                "icon": "⚠️",
+                "implemented": false
             },
             {
-                "baslik": "Ariza Listesi",
-                "modul": "formlar.ariza_listesi",
-                "sinif": "ArizaListesiPenceresi"
+                "baslik": "Arıza Listesi",
+                "icon": "🔧",
+                "implemented": false
             },
             {
-                "baslik": "Periyodik Bakim",
-                "modul": "formlar.periyodik_bakim",
-                "sinif": "PeriyodikBakimPenceresi"
+                "baslik": "Periyodik Bakım",
+                "icon": "🛠️",
+                "implemented": false
             },
             {
                 "baslik": "Kalibrasyon Takip",
-                "modul": "formlar.kalibrasyon_ekle",
-                "sinif": "KalibrasyonEklePenceresi"
+                "icon": "📐",
+                "implemented": false
             }
         ],
         "RKE": [
             {
                 "baslik": "RKE Listesi",
-                "modul": "formlar.rke_yonetim",
-                "sinif": "RKEYonetimPenceresi"
+                "icon": "🛡️",
+                "implemented": false,
+                "note": "Geliştirme aşamasında"
             },
             {
                 "baslik": "Muayene Girişi",
-                "modul": "formlar.rke_muayene",
-                "sinif": "RKEMuayenePenceresi"
+                "icon": "🔍",
+                "implemented": false
             },
             {
                 "baslik": "RKE Raporlama",
-                "modul": "formlar.rke_rapor",
-                "sinif": "RKERaporPenceresi"
+                "icon": "📋",
+                "implemented": false
             }
         ],
         "YÖNETİCİ İŞLEMLERİ": [
             {
                 "baslik": "Yıl Sonu İzin",
-                "modul": "araclar.yil_sonu_islemleri",
-                "sinif": "YilSonuDevirYoneticisi"
+                "icon": "📆",
+                "implemented": false,
+                "note": "Yıl sonu izin devir işlemleri"
             },
             {
                 "baslik": "Ayarlar",
-                "modul": "formlar.ayarlar",
-                "sinif": "AyarlarPenceresi"
+                "icon": "⚙️",
+                "implemented": false
             }
         ]
+    },
+    "_notes": {
+        "version": "2.0",
+        "description": "Sadeleştirilmiş menü konfigürasyonu",
+        "changes": [
+            "Kullanılmayan 'modul' ve 'sinif' alanları kaldırıldı",
+            "Sayfa oluşturma main_window.py:_create_page() içinde hardcoded",
+            "Icon'lar sidebar.py ile senkronize edildi",
+            "'implemented' flag ile hangi sayfaların çalıştığı belirtildi"
+        ],
+        "implementation_status": {
+            "PERSONEL": "5/6 sayfa implement edildi",
+            "CİHAZ": "0/6 sayfa implement edildi",
+            "RKE": "0/3 sayfa implement edildi",
+            "YÖNETİCİ İŞLEMLERİ": "0/2 sayfa implement edildi"
+        }
     }
 }
