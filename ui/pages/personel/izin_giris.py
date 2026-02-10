@@ -17,6 +17,21 @@ from PySide6.QtGui import QColor, QCursor
 
 from core.logger import logger
 
+# ─── Tarih Parse (çoklu format desteği) ───
+_DATE_FMTS = ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%Y/%m/%d", "%d-%m-%Y")
+
+def _parse_date(val):
+    """Çoklu format desteğiyle tarih string → date objesi."""
+    val = str(val).strip()
+    if not val:
+        return None
+    for fmt in _DATE_FMTS:
+        try:
+            return datetime.strptime(val, fmt).date()
+        except ValueError:
+            continue
+    return None
+
 
 # ─── W11 Dark Glass Stiller ───
 S = {
@@ -548,43 +563,81 @@ class IzinGirisPage(QWidget):
         return val
 
     # ═══════════════════════════════════════════
+    #  YENİ EKLENEN: BAKİYE DÜŞME METODU
+    # ═══════════════════════════════════════════
+    def _bakiye_dus(self, registry, tc, izin_tipi, gun):
+        """Bakiyeden otomatik düş (Yıllık İzin / Şua İzni / Rapor-Mazeret)."""
+        try:
+            izin_bilgi = registry.get("Izin_Bilgi").get_by_id(tc)
+            if not izin_bilgi:
+                return
+
+            if izin_tipi == "Yıllık İzin":
+                mevcut_kul = float(izin_bilgi.get("YillikKullanilan", 0))
+                mevcut_kal = float(izin_bilgi.get("YillikKalan", 0))
+                registry.get("Izin_Bilgi").update(tc, {
+                    "YillikKullanilan": mevcut_kul + gun,
+                    "YillikKalan": mevcut_kal - gun
+                })
+            elif izin_tipi == "Şua İzni":
+                mevcut_kul = float(izin_bilgi.get("SuaKullanilan", 0))
+                mevcut_kal = float(izin_bilgi.get("SuaKalan", 0))
+                registry.get("Izin_Bilgi").update(tc, {
+                    "SuaKullanilan": mevcut_kul + gun,
+                    "SuaKalan": mevcut_kal - gun
+                })
+            elif izin_tipi in ["Sağlık Raporu", "Mazeret İzni"]:
+                mevcut_top = float(izin_bilgi.get("RaporMazeretTop", 0))
+                registry.get("Izin_Bilgi").update(tc, {
+                    "RaporMazeretTop": mevcut_top + gun
+                })
+            logger.info(f"Bakiye güncellendi: {tc} - {izin_tipi}")
+        except Exception as e:
+            logger.error(f"Bakiye düşme hatası: {e}")
+
+    # ═══════════════════════════════════════════
     #  VERİ YÜKLEME
     # ═══════════════════════════════════════════
 
     def _load_sabitler(self):
-        """İzin tiplerini ve tatilleri yükler."""
-        # İzin tipleri
-        izin_tipleri = list(IZIN_TIPLERI)
+        """İzin tiplerini ve tatilleri Sabitler tablosundan dinamik olarak yükler."""
         try:
-            if self._db:
-                from database.repository_registry import RepositoryRegistry
-                registry = RepositoryRegistry(self._db)
-                sabitler = registry.get("Sabitler")
-                all_sabit = sabitler.get_all()
+            if not self._db:
+                return
 
-                # Sabitler'de Izin_Tipi varsa onu kullan
-                sabit_tipler = sorted([
-                    str(r.get("MenuEleman", "")).strip()
-                    for r in all_sabit
-                    if r.get("Kod") == "Izin_Tipi" and r.get("MenuEleman", "").strip()
-                ])
-                if sabit_tipler:
-                    izin_tipleri = sabit_tipler
+            from database.repository_registry import RepositoryRegistry
+            registry = RepositoryRegistry(self._db)
+            
+            # 1. İzin Tiplerini Yükle (Sabitler -> Kod: 'Izin_Tipi')
+            sabitler_repo = registry.get("Sabitler")
+            all_sabit = sabitler_repo.get_all()
 
-                # Tatilleri yükle
-                tatiller_repo = registry.get("Tatiller")
-                tatiller = tatiller_repo.get_all()
-                self._tatiller = [
-                    str(r.get("Tarih", "")).strip()
-                    for r in tatiller
-                    if r.get("Tarih", "").strip()
-                ]
+            izin_tipleri = sorted([
+                str(r.get("MenuEleman", "")).strip()
+                for r in all_sabit
+                if r.get("Kod") == "Izin_Tipi" and r.get("MenuEleman", "").strip()
+            ])
+
+            # Eğer veritabanı boşsa varsayılanları koru
+            if not izin_tipleri:
+                izin_tipleri = ["Yıllık İzin", "Şua İzni", "Mazeret İzni", "Sağlık Raporu"]
+
+            self.ui["izin_tipi"].clear()
+            self.ui["izin_tipi"].addItems(izin_tipleri)
+
+            # 2. Tatilleri Yükle (Bitiş tarihi hesaplaması için)
+            tatiller_repo = registry.get("Tatiller")
+            tatiller = tatiller_repo.get_all()
+            self._tatiller = [
+                str(r.get("Tarih", "")).strip()
+                for r in tatiller
+                if r.get("Tarih", "").strip()
+            ]
+            
+            logger.info(f"Sabitler ve {len(self._tatiller)} adet tatil günü yüklendi.")
 
         except Exception as e:
-            logger.error(f"Sabitler yükleme hatası: {e}")
-
-        self.ui["izin_tipi"].clear()
-        self.ui["izin_tipi"].addItems(izin_tipleri)
+            logger.error(f"Veritabanı sabitleri yükleme hatası: {e}")
 
     def _load_izin_bakiye(self):
         """İzin_Bilgi tablosundan bakiye verilerini yükler."""
@@ -672,12 +725,12 @@ class IzinGirisPage(QWidget):
         # Bitiş = işe başlama günü (izin bitişinin ertesi iş günü)
         self.ui["bitis"].setDate(QDate(current.year, current.month, current.day))
 
+    
     # ═══════════════════════════════════════════
-    #  KAYDET
+    #  GÜNCELLENEN: KAYDET METODU
     # ═══════════════════════════════════════════
-
     def _on_save(self):
-        """Yeni izin kaydını DB'ye yazar."""
+        """Yeni izin kaydını kontrollerle birlikte DB'ye yazar."""
         tc = self._personel.get("KimlikNo", "")
         ad = self._personel.get("AdSoyad", "")
         sinif = self._personel.get("HizmetSinifi", "")
@@ -687,50 +740,71 @@ class IzinGirisPage(QWidget):
             QMessageBox.warning(self, "Eksik", "İzin tipi seçilmeli.")
             return
 
-        baslama = self.ui["baslama"].date().toString("yyyy-MM-dd")
-        bitis = self.ui["bitis"].date().toString("yyyy-MM-dd")
+        baslama_str = self.ui["baslama"].date().toString("yyyy-MM-dd")
+        bitis_str = self.ui["bitis"].date().toString("yyyy-MM-dd")
         gun = self.ui["gun"].value()
 
-        # Unique ID
-        izin_id = str(uuid.uuid4())[:8].upper()
-
-        kayit = {
-            "Izinid": izin_id,
-            "HizmetSinifi": sinif,
-            "Personelid": tc,
-            "AdSoyad": ad,
-            "IzinTipi": izin_tipi,
-            "BaslamaTarihi": baslama,
-            "Gun": gun,
-            "BitisTarihi": bitis,
-            "Durum": "Onaylandı",
-        }
+        yeni_bas = _parse_date(baslama_str)
+        yeni_bit = _parse_date(bitis_str)
 
         try:
             from database.repository_registry import RepositoryRegistry
             registry = RepositoryRegistry(self._db)
-            repo = registry.get("Izin_Giris")
-            repo.insert(kayit)
-            logger.info(f"İzin kaydedildi: {izin_id} — {ad} — {izin_tipi} — {gun} gün")
+            
+            # 1. TARİH ÇAKIŞMA KONTROLÜ
+            all_izin = registry.get("Izin_Giris").get_all()
+            for kayit in all_izin:
+                if str(kayit.get("Durum", "")) == "İptal": continue
+                if str(kayit.get("Personelid", "")) != tc: continue
 
-            QMessageBox.information(
-                self, "Başarılı",
-                f"{ad} için {gun} gün {izin_tipi} kaydedildi.\n"
-                f"Başlama: {self.ui['baslama'].date().toString('dd.MM.yyyy')}\n"
-                f"İşe Dönüş: {self.ui['bitis'].date().toString('dd.MM.yyyy')}"
-            )
+                vt_bas = _parse_date(kayit.get("BaslamaTarihi", ""))
+                vt_bit = _parse_date(kayit.get("BitisTarihi", ""))
 
-            # Listeyi ve bakiyeyi yenile
+                if vt_bas and vt_bit:
+                    if (yeni_bas <= vt_bit) and (yeni_bit >= vt_bas):
+                        QMessageBox.warning(
+                            self, "❌ Tarih Çakışması",
+                            f"Bu tarihlerde zaten bir kayıt mevcut!\n"
+                            f"Mevcut İzin: {vt_bas.strftime('%d.%m.%Y')} - {vt_bit.strftime('%d.%m.%Y')}"
+                        )
+                        return
+
+            # 2. BAKİYE KONTROLÜ
+            if izin_tipi in ["Yıllık İzin", "Şua İzni"]:
+                izin_bilgi = registry.get("Izin_Bilgi").get_by_id(tc)
+                if izin_bilgi:
+                    alan = "YillikKalan" if izin_tipi == "Yıllık İzin" else "SuaKalan"
+                    kalan = float(izin_bilgi.get(alan, 0))
+                    if gun > kalan:
+                        cevap = QMessageBox.question(
+                            self, "⚠️ Yetersiz Bakiye",
+                            f"Kalan bakiye: {kalan} gün. Girilen: {gun} gün.\nDevam edilsin mi?",
+                            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+                        )
+                        if cevap != QMessageBox.Yes: return
+
+            # 3. KAYDETME İŞLEMİ
+            izin_id = str(uuid.uuid4())[:8].upper()
+            yeni_kayit = {
+                "Izinid": izin_id, "HizmetSinifi": sinif, "Personelid": tc,
+                "AdSoyad": ad, "IzinTipi": izin_tipi, "BaslamaTarihi": baslama_str,
+                "Gun": gun, "BitisTarihi": bitis_str, "Durum": "Onaylandı",
+            }
+            
+            registry.get("Izin_Giris").insert(yeni_kayit)
+            
+            # 4. OTOMATİK BAKİYE DÜŞME
+            self._bakiye_dus(registry, tc, izin_tipi, gun)
+
+            QMessageBox.information(self, "Başarılı", f"İzin başarıyla kaydedildi.")
+            
             self._load_izin_gecmisi()
             self._load_izin_bakiye()
-
-            # Formu sıfırla
             self.ui["gun"].setValue(1)
-            self.ui["baslama"].setDate(QDate.currentDate())
 
         except Exception as e:
-            logger.error(f"İzin kaydetme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"İzin kaydedilemedi:\n{e}")
+            logger.error(f"Kaydetme hatası: {e}")
+            QMessageBox.critical(self, "Hata", f"İşlem başarısız: {e}")
 
     # ═══════════════════════════════════════════
     #  GERİ

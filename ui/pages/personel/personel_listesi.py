@@ -309,7 +309,7 @@ class PersonelListesiPage(QWidget):
             btn.setCheckable(True)
             btn.setStyleSheet(STYLES["filter_btn_all"] if text == "Tümü" else STYLES["filter_btn"])
             btn.setFixedHeight(28)
-            if text == "Tümü":
+            if text == "Aktif":
                 btn.setChecked(True)
             fp.addWidget(btn)
             self._filter_btns[text] = btn
