@@ -326,7 +326,10 @@ class MainWindow(QMainWindow):
 
     def _start_sync(self):
         if self._sync_worker and self._sync_worker.isRunning():
+            logger.warning("Sync zaten çalışıyor, yeni sync atlanıyor")
             return
+        
+        logger.info("Sync başlatılıyor...")
         self.sidebar.set_sync_enabled(False)
         self.sidebar.set_sync_status("⏳ Senkronize ediliyor...", "#f59e0b")
         self.sync_status_label.setText("⏳ Senkronize ediliyor...")
@@ -340,6 +343,8 @@ class MainWindow(QMainWindow):
     @Slot()
     def _on_sync_finished(self):
         now = datetime.now().strftime("%H:%M:%S")
+        logger.info(f"Sync başarıyla tamamlandı ({now})")
+        
         self.sidebar.set_sync_enabled(True)
         self.sidebar.set_sync_status("● Senkronize", "#22c55e")
         self.sync_status_label.setText("● Senkronize")
@@ -347,14 +352,58 @@ class MainWindow(QMainWindow):
         self.last_sync_label.setText(f"Son sync: {now}")
         self._refresh_active_page()
 
-    @Slot(str)
-    def _on_sync_error(self, msg):
+    @Slot(str, str)
+    def _on_sync_error(self, short_msg, detail_msg):
+        """
+        Sync hatası geldiğinde detaylı bilgi göster
+        
+        Args:
+            short_msg: Kısa hata mesajı (status bar için)
+            detail_msg: Detaylı hata mesajı (tooltip/log için)
+        """
         now = datetime.now().strftime("%H:%M:%S")
+        
+        logger.error(f"Sync hatası: {short_msg} - {detail_msg}")
+        
+        # UI güncelleme
         self.sidebar.set_sync_enabled(True)
-        self.sidebar.set_sync_status("● Sync hatası", "#ef4444")
-        self.sync_status_label.setText("● Sync hatası")
+        self.sidebar.set_sync_status(f"● {short_msg}", "#ef4444")
+        
+        # Status bar'da kısa mesaj
+        self.sync_status_label.setText(f"● {short_msg}")
         self.sync_status_label.setStyleSheet("color: #ef4444;")
+        
+        # Detaylı mesajı tooltip olarak ekle
+        self.sync_status_label.setToolTip(
+            f"Hata Zamanı: {now}\n"
+            f"Kısa Açıklama: {short_msg}\n"
+            f"Detay: {detail_msg}\n\n"
+            f"Daha fazla bilgi için log dosyalarını kontrol edin."
+        )
+        
         self.last_sync_label.setText(f"Hata: {now}")
+        self.last_sync_label.setToolTip(detail_msg)
+        
+        # Opsiyonel: Kullanıcıya bildirim göster
+        from PySide6.QtWidgets import QMessageBox
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Warning)
+        msg_box.setWindowTitle("Senkronizasyon Hatası")
+        msg_box.setText(short_msg)
+        msg_box.setInformativeText(detail_msg)
+        msg_box.setDetailedText(
+            f"Hata zamanı: {now}\n\n"
+            f"Çözüm önerileri:\n"
+            f"1. İnternet bağlantınızı kontrol edin\n"
+            f"2. Google Sheets erişim izinlerini kontrol edin\n"
+            f"3. Birkaç dakika bekleyip tekrar deneyin\n"
+            f"4. Sorun devam ederse log dosyalarını kontrol edin:\n"
+            f"   - logs/app.log\n"
+            f"   - logs/sync.log\n"
+            f"   - logs/errors.log"
+        )
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.exec()
 
     def closeEvent(self, event):
         if self._sync_worker and self._sync_worker.isRunning():
