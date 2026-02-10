@@ -13,33 +13,41 @@ from database.migrations import MigrationManager
 
 
 def ensure_database():
-    """Veritabanı şemasını kontrol et, yoksa oluştur."""
+    """
+    Veritabanı şemasını kontrol et ve gerekirse migration'ları çalıştır.
+    
+    Artık veri kaybı olmadan şema güncellemesi yapılıyor:
+    - İlk kurulumda tüm tabloları oluşturur
+    - Mevcut veritabanında sadece gerekli migration'ları uygular
+    - Her migration öncesi otomatik yedekleme yapar
+    - Veri korunarak şema güncellenir
+    """
     import sqlite3
+    from pathlib import Path
 
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT name FROM sqlite_master
-        WHERE type='table' AND name='Personel'
-    """)
-    exists = cur.fetchone()
-
-    if not exists:
-        logger.info("Veritabanı bulunamadı — tablolar oluşturuluyor")
-        MigrationManager(DB_PATH).reset_database()
-    else:
-        # Şema kontrolü
-        cur.execute("PRAGMA table_info(Personel)")
-        columns = [row[1] for row in cur.fetchall()]
-
-        if "MezunOlunanFakulte" not in columns:
-            logger.warning("Şema uyumsuz — veritabanı yeniden oluşturuluyor")
-            MigrationManager(DB_PATH).reset_database()
-        else:
-            logger.info("Veritabanı şeması doğrulandı")
-
-    conn.close()
+    # Veritabanı dosyası var mı kontrol et
+    db_exists = Path(DB_PATH).exists()
+    
+    if not db_exists:
+        logger.info("Veritabanı bulunamadı — ilk kurulum yapılıyor")
+        migration_manager = MigrationManager(DB_PATH)
+        migration_manager.run_migrations()
+        return
+    
+    # Veritabanı var - migration kontrolü yap
+    logger.info("Veritabanı bulundu — şema kontrolü yapılıyor")
+    
+    migration_manager = MigrationManager(DB_PATH)
+    
+    try:
+        # Migration'ları çalıştır (gerekirse)
+        migration_manager.run_migrations()
+        logger.info("Veritabanı hazır ✓")
+        
+    except Exception as e:
+        logger.error(f"Migration hatası: {e}")
+        logger.error("Uygulamayı başlatmadan önce veritabanı sorununu çözün")
+        raise
 
 
 def main():

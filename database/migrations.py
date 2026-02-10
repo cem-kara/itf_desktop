@@ -1,56 +1,250 @@
 # database/migrations.py
 import sqlite3
+import shutil
+from datetime import datetime
+from pathlib import Path
 from core.logger import logger
 
 
 class MigrationManager:
+    """
+    Versiyon tabanlı migration yöneticisi.
+    
+    Özellikler:
+    - Otomatik şema versiyonlama
+    - Güvenli migration adımları
+    - Otomatik yedekleme
+    - Rollback desteği
+    - Veri kaybı olmadan şema güncellemeleri
+    """
+    
+    # Mevcut şema versiyonu
+    CURRENT_VERSION = 2
+    
     def __init__(self, db_path):
         self.db_path = db_path
+        self.backup_dir = Path(db_path).parent / "backups"
+        self.backup_dir.mkdir(exist_ok=True)
 
     def connect(self):
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         return conn
 
-    def reset_database(self):
-        logger.warning("SQLite tamamen yeniden yapilandiriliyor")
-
+    def get_schema_version(self):
+        """Mevcut şema versiyonunu döndürür."""
         conn = self.connect()
         cur = conn.cursor()
+        
+        try:
+            # schema_version tablosu var mı kontrol et
+            cur.execute("""
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name='schema_version'
+            """)
+            
+            if not cur.fetchone():
+                # Tablo yoksa oluştur
+                cur.execute("""
+                    CREATE TABLE schema_version (
+                        version INTEGER PRIMARY KEY,
+                        applied_at TEXT NOT NULL,
+                        description TEXT
+                    )
+                """)
+                conn.commit()
+                return 0
+            
+            # En son versiyonu getir
+            cur.execute("SELECT MAX(version) FROM schema_version")
+            result = cur.fetchone()
+            version = result[0] if result[0] is not None else 0
+            
+            return version
+            
+        finally:
+            conn.close()
 
-        tables = [
-            "Personel",
-            "Izin_Giris",
-            "Izin_Bilgi",
-            "FHSZ_Puantaj",
-            "Cihazlar",
-            "Cihaz_Ariza",
-            "Ariza_Islem",
-            "Periyodik_Bakim",
-            "Kalibrasyon",
-            "Sabitler",
-            "Tatiller",
-            "Loglar",
-            "RKE_List",
-            "RKE_Muayene"
-        ]
+    def set_schema_version(self, version, description=""):
+        """Şema versiyonunu günceller."""
+        conn = self.connect()
+        cur = conn.cursor()
+        
+        try:
+            cur.execute("""
+                INSERT INTO schema_version (version, applied_at, description)
+                VALUES (?, ?, ?)
+            """, (version, datetime.now().isoformat(), description))
+            conn.commit()
+            logger.info(f"Şema versiyonu {version} olarak güncellendi: {description}")
+            
+        finally:
+            conn.close()
 
-        for table in tables:
-            cur.execute(f"DROP TABLE IF EXISTS {table}")
-            logger.info(f"{table} silindi")
+    def backup_database(self):
+        """Veritabanını yedekler."""
+        if not Path(self.db_path).exists():
+            logger.info("Yedeklenecek veritabanı bulunamadı")
+            return None
+            
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = self.backup_dir / f"db_backup_{timestamp}.db"
+        
+        try:
+            shutil.copy2(self.db_path, backup_path)
+            logger.info(f"Veritabanı yedeklendi: {backup_path}")
+            
+            # Eski yedekleri temizle (son 10 yedek hariç)
+            self._cleanup_old_backups()
+            
+            return backup_path
+            
+        except Exception as e:
+            logger.error(f"Yedekleme hatası: {e}")
+            return None
 
-        self.create_tables(cur)
+    def _cleanup_old_backups(self, keep_count=10):
+        """Eski yedekleri temizler."""
+        backups = sorted(self.backup_dir.glob("db_backup_*.db"))
+        
+        if len(backups) > keep_count:
+            for old_backup in backups[:-keep_count]:
+                try:
+                    old_backup.unlink()
+                    logger.info(f"Eski yedek silindi: {old_backup.name}")
+                except Exception as e:
+                    logger.warning(f"Yedek silinemedi {old_backup.name}: {e}")
 
-        conn.commit()
-        conn.close()
+    def run_migrations(self):
+        """
+        Tüm bekleyen migration'ları çalıştırır.
+        Veri kaybı olmadan şemayı günceller.
+        """
+        current_version = self.get_schema_version()
+        
+        if current_version == self.CURRENT_VERSION:
+            logger.info(f"Şema güncel (v{current_version})")
+            return True
+        
+        if current_version > self.CURRENT_VERSION:
+            logger.warning(
+                f"Şema versiyonu ({current_version}) koddan ({self.CURRENT_VERSION}) yüksek! "
+                "Uygulama güncellemesi gerekebilir."
+            )
+            return False
+        
+        # Yedekleme yap
+        backup_path = self.backup_database()
+        if not backup_path:
+            logger.warning("Yedekleme yapılamadı ama migration devam ediyor")
+        
+        logger.info(f"Migration başlıyor: v{current_version} → v{self.CURRENT_VERSION}")
+        
+        try:
+            # Sırayla migration'ları çalıştır
+            for version in range(current_version + 1, self.CURRENT_VERSION + 1):
+                migration_method = getattr(self, f"_migrate_to_v{version}", None)
+                
+                if migration_method:
+                    logger.info(f"Migration v{version} uygulanıyor...")
+                    migration_method()
+                    self.set_schema_version(version, f"Migrated to v{version}")
+                else:
+                    logger.warning(f"Migration v{version} metodu bulunamadı, atlanıyor")
+            
+            logger.info("✓ Tüm migration'lar başarıyla tamamlandı")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Migration hatası: {e}")
+            logger.error(f"Yedekten geri yükleme yapabilirsiniz: {backup_path}")
+            raise
 
-        logger.info("Tum tablolar basariyla olusturuldu")
+    # ════════════════════════════════════════════════
+    # MIGRATION METODLARI
+    # ════════════════════════════════════════════════
+
+    def _migrate_to_v1(self):
+        """
+        v0 → v1: İlk şema oluşturma
+        Tüm tabloları oluşturur.
+        """
+        conn = self.connect()
+        cur = conn.cursor()
+        
+        try:
+            self.create_tables(cur)
+            conn.commit()
+            logger.info("v1: Tüm tablolar oluşturuldu")
+            
+        finally:
+            conn.close()
+
+    def _migrate_to_v2(self):
+        """
+        v1 → v2: sync_status ve updated_at kolonları ekleme
+        Mevcut tablolara eksik kolonları ekler.
+        """
+        conn = self.connect()
+        cur = conn.cursor()
+        
+        try:
+            tables_with_sync = [
+                "Personel", "Izin_Giris", "Izin_Bilgi", "FHSZ_Puantaj",
+                "Cihazlar", "Cihaz_Ariza", "Ariza_Islem", "Periyodik_Bakim",
+                "Kalibrasyon", "Sabitler", "Tatiller", "RKE_List", "RKE_Muayene"
+            ]
+            
+            for table in tables_with_sync:
+                # Tablo var mı kontrol et
+                cur.execute(f"""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='{table}'
+                """)
+                
+                if not cur.fetchone():
+                    logger.warning(f"Tablo bulunamadı: {table}, atlanıyor")
+                    continue
+                
+                # Mevcut kolonları kontrol et
+                cur.execute(f"PRAGMA table_info({table})")
+                existing_columns = {row[1] for row in cur.fetchall()}
+                
+                # sync_status ekle
+                if "sync_status" not in existing_columns:
+                    cur.execute(f"""
+                        ALTER TABLE {table} 
+                        ADD COLUMN sync_status TEXT DEFAULT 'clean'
+                    """)
+                    logger.info(f"  {table}.sync_status eklendi")
+                
+                # updated_at ekle
+                if "updated_at" not in existing_columns:
+                    cur.execute(f"""
+                        ALTER TABLE {table} 
+                        ADD COLUMN updated_at TEXT
+                    """)
+                    logger.info(f"  {table}.updated_at eklendi")
+            
+            conn.commit()
+            logger.info("v2: sync_status ve updated_at kolonları eklendi")
+            
+        finally:
+            conn.close()
+
+    # ════════════════════════════════════════════════
+    # TABLO OLUŞTURMA (İLK KURULUM)
+    # ════════════════════════════════════════════════
 
     def create_tables(self, cur):
+        """
+        İlk kurulum için tüm tabloları oluşturur.
+        Bu metod sadece v0 → v1 migration'ında çağrılır.
+        """
 
         # ---------------- PERSONEL ----------------
         cur.execute("""
-        CREATE TABLE Personel (
+        CREATE TABLE IF NOT EXISTS Personel (
             KimlikNo TEXT PRIMARY KEY,
             AdSoyad TEXT,
             DogumYeri TEXT,
@@ -85,7 +279,7 @@ class MigrationManager:
 
         # ---------------- IZIN GIRIS ----------------
         cur.execute("""
-        CREATE TABLE Izin_Giris (
+        CREATE TABLE IF NOT EXISTS Izin_Giris (
             Izinid TEXT PRIMARY KEY,
             HizmetSinifi TEXT,
             Personelid TEXT,
@@ -103,7 +297,7 @@ class MigrationManager:
 
         # ---------------- IZIN BILGI ----------------
         cur.execute("""
-        CREATE TABLE Izin_Bilgi (
+        CREATE TABLE IF NOT EXISTS Izin_Bilgi (
             TCKimlik TEXT PRIMARY KEY,
             AdSoyad TEXT,
             YillikDevir REAL,
@@ -124,7 +318,7 @@ class MigrationManager:
 
         # ---------------- FHSZ PUANTAJ ----------------
         cur.execute("""
-        CREATE TABLE FHSZ_Puantaj (
+        CREATE TABLE IF NOT EXISTS FHSZ_Puantaj (
             Personelid TEXT NOT NULL,
             AdSoyad TEXT,
             Birim TEXT,
@@ -144,7 +338,7 @@ class MigrationManager:
 
         # ---------------- CIHAZLAR ----------------
         cur.execute("""
-        CREATE TABLE Cihazlar (
+        CREATE TABLE IF NOT EXISTS Cihazlar (
             Cihazid TEXT PRIMARY KEY,
             CihazTipi TEXT,
             Marka TEXT,
@@ -180,7 +374,7 @@ class MigrationManager:
 
         # ---------------- CIHAZ ARIZA ----------------
         cur.execute("""
-        CREATE TABLE Cihaz_Ariza (
+        CREATE TABLE IF NOT EXISTS Cihaz_Ariza (
             Arizaid TEXT PRIMARY KEY,
             Cihazid TEXT,
             BaslangicTarihi TEXT,
@@ -200,7 +394,7 @@ class MigrationManager:
 
         # ---------------- ARIZA ISLEM ----------------
         cur.execute("""
-        CREATE TABLE Ariza_Islem (
+        CREATE TABLE IF NOT EXISTS Ariza_Islem (
             Islemid TEXT PRIMARY KEY,
             Arizaid TEXT,
             Tarih TEXT,
@@ -218,7 +412,7 @@ class MigrationManager:
 
         # ---------------- PERIYODIK BAKIM ----------------
         cur.execute("""
-        CREATE TABLE Periyodik_Bakim (
+        CREATE TABLE IF NOT EXISTS Periyodik_Bakim (
             Planid TEXT PRIMARY KEY,
             Cihazid TEXT,
             BakimPeriyodu TEXT,
@@ -240,7 +434,7 @@ class MigrationManager:
 
         # ---------------- KALIBRASYON ----------------
         cur.execute("""
-        CREATE TABLE Kalibrasyon (
+        CREATE TABLE IF NOT EXISTS Kalibrasyon (
             Kalid TEXT PRIMARY KEY,
             Cihazid TEXT,
             Firma TEXT,
@@ -259,7 +453,7 @@ class MigrationManager:
 
         # ---------------- SABITLER ----------------
         cur.execute("""
-        CREATE TABLE Sabitler (
+        CREATE TABLE IF NOT EXISTS Sabitler (
             Rowid TEXT PRIMARY KEY,
             Kod TEXT,
             MenuEleman TEXT,
@@ -272,7 +466,7 @@ class MigrationManager:
 
         # ---------------- TATILLER ----------------
         cur.execute("""
-        CREATE TABLE Tatiller (
+        CREATE TABLE IF NOT EXISTS Tatiller (
             Tarih TEXT PRIMARY KEY,
             ResmiTatil TEXT,
                     
@@ -283,7 +477,7 @@ class MigrationManager:
 
         # ---------------- LOGLAR ----------------
         cur.execute("""
-        CREATE TABLE Loglar (
+        CREATE TABLE IF NOT EXISTS Loglar (
             Tarih TEXT,
             Saat TEXT,
             Kullanici TEXT,
@@ -295,7 +489,7 @@ class MigrationManager:
 
         # ---------------- RKE LIST ----------------
         cur.execute("""
-        CREATE TABLE RKE_List (
+        CREATE TABLE IF NOT EXISTS RKE_List (
             KayitNo TEXT PRIMARY KEY,
             EkipmanNo TEXT,
             KoruyucuNumarasi TEXT,
@@ -319,7 +513,7 @@ class MigrationManager:
 
         # ---------------- RKE MUAYENE ----------------
         cur.execute("""
-        CREATE TABLE RKE_Muayene (
+        CREATE TABLE IF NOT EXISTS RKE_Muayene (
             KayitNo TEXT PRIMARY KEY,
             EkipmanNo TEXT,
             FMuayeneTarihi TEXT,
@@ -336,3 +530,55 @@ class MigrationManager:
             updated_at TEXT
         )
         """)
+
+    # ════════════════════════════════════════════════
+    # ESKI RESET METODU (ACİL DURUMLARDA)
+    # ════════════════════════════════════════════════
+
+    def reset_database(self):
+        """
+        ⚠️  ACİL DURUM: Tüm tabloları sil ve yeniden oluştur
+        
+        Bu metod sadece ciddi veri bozulması durumunda manuel olarak çağrılmalıdır.
+        Normal kullanımda run_migrations() tercih edilmelidir.
+        """
+        logger.warning("⚠️  VERİTABANI TAM RESET YAPILIYOR - TÜM VERİ SİLİNECEK!")
+        
+        # Yedek al
+        backup_path = self.backup_database()
+        if backup_path:
+            logger.info(f"Son yedek: {backup_path}")
+        
+        conn = self.connect()
+        cur = conn.cursor()
+
+        tables = [
+            "Personel", "Izin_Giris", "Izin_Bilgi", "FHSZ_Puantaj",
+            "Cihazlar", "Cihaz_Ariza", "Ariza_Islem", "Periyodik_Bakim",
+            "Kalibrasyon", "Sabitler", "Tatiller", "Loglar",
+            "RKE_List", "RKE_Muayene", "schema_version"
+        ]
+
+        for table in tables:
+            cur.execute(f"DROP TABLE IF EXISTS {table}")
+            logger.info(f"  {table} silindi")
+
+        self.create_tables(cur)
+        
+        # Versiyon tablosunu oluştur ve güncel versiyonu kaydet
+        cur.execute("""
+            CREATE TABLE schema_version (
+                version INTEGER PRIMARY KEY,
+                applied_at TEXT NOT NULL,
+                description TEXT
+            )
+        """)
+        cur.execute("""
+            INSERT INTO schema_version (version, applied_at, description)
+            VALUES (?, ?, ?)
+        """, (self.CURRENT_VERSION, datetime.now().isoformat(), "Full reset"))
+
+        conn.commit()
+        conn.close()
+
+        logger.info(f"✓ Tüm tablolar yeniden oluşturuldu (v{self.CURRENT_VERSION})")
