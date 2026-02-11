@@ -171,6 +171,14 @@ class MainWindow(QMainWindow):
             page.btn_kapat.clicked.connect(lambda: self._close_page("Puantaj Rapor"))
             return page
 
+        if baslik == "Cihaz Ekle":
+            from ui.pages.cihaz.cihaz_ekle import CihazEklePage
+            page = CihazEklePage(
+                db=self._db,
+                on_saved=self._on_cihaz_saved
+            )
+            return page
+        
         return PlaceholderPage(
             title=baslik,
             subtitle=f"{group} modülü — geliştirme aşamasında"
@@ -432,3 +440,24 @@ class MainWindow(QMainWindow):
         # Ekle formunu sıfırla (sonraki açılışta taze form)
         if "Personel Ekle" in self._pages:
             del self._pages["Personel Ekle"]
+
+    def _on_cihaz_saved(self):
+        """Cihaz kaydedildikten/iptal edildikten sonra listeye dön ve yenile."""
+        # Cihaz Ekle sayfasını kaldır
+        if "Cihaz Ekle" in self._pages:
+            old = self._pages.pop("Cihaz Ekle")
+            self.stack.removeWidget(old)
+            old.deleteLater()
+
+        # Cihaz Listesi sayfasına geç, yoksa welcome'a dön
+        if "Cihaz Listesi" in self._pages:
+            page = self._pages["Cihaz Listesi"]
+            if hasattr(page, "load_data"):
+                page.load_data()
+            self.stack.setCurrentWidget(page)
+            self.page_title.setText("Cihaz Listesi")
+            self.sidebar.set_active("Cihaz Listesi")
+        else:
+            self.stack.setCurrentWidget(self._welcome)
+            self.page_title.setVisible(False)
+            self.sidebar.set_active("")
