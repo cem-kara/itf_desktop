@@ -8,7 +8,7 @@ Amaç; her maddenin mevcut kod tabanındaki karşılığını kontrol etmek, ris
 ## 1) Yönetici Özeti
 
 - TODO yapısı doğru önceliklenmiş: kritik riskler önce senkronizasyon ve veri bütünlüğü tarafında toplanıyor.
-- En yüksek operasyonel risk şu anda **sync clean/dirty akışı** ve **uyumsuz şemada reset yaklaşımı**.
+- En yüksek operasyonel risklerden ikisi (sync clean/dirty akışı ve reset yerine migration) artık uygulama tarafında kapatılmış durumda.
 - P1/P2 maddelerinin bir kısmı “niyet olarak” listede var ama kodda henüz tamamlanmış değil (özellikle `pull_only` config netliği, Google katmanının modülerleşmesi, dokümantasyon uyumu).
 - Test tarafı (özellikle sync entegrasyon testleri) henüz yeterli değil; bu durum değişikliklerden sonra regresyon riskini artırıyor.
 
@@ -33,36 +33,34 @@ Aşağıdaki yaklaşım izlendi:
 ## P0 — Kritik
 
 ### P0.1 Sync `clean/dirty` davranışı
-**Durum:** Açık
+**Durum:** Tamamlandı
 
 **Gözlem:**
-- `BaseRepository.insert` sync kolonuna sahip kayıtlarda `sync_status` değerini koşulsuz `dirty` yapıyor.
-- `sync_service` pull sırasında `remote["sync_status"] = "clean"` atasa da `insert` içinde tekrar `dirty`ye dönme riski doğuyor.
+- Pull akışında `remote["sync_status"] = "clean"` değeri korunuyor.
+- `local_status == "dirty"` ise pull atlanıyor; kullanıcı değişikliği bozulmuyor.
+- Değişiklik yoksa gereksiz `dirty`/push döngüsü oluşmuyor.
 
 **Risk:**
-- Pull sonrası gereksiz tekrar push döngüsü
-- Senkron veri akışında “değişmediği halde değişmiş” algısı
+- Kapanmış durumda; yalnızca regresyon riski kaldı.
 
 **Öneri:**
-- `insert` içinde `sync_status` sadece **verilmemişse** `dirty` atansın.
-- Pull akışında `clean` olarak gelen değer korunmalı.
+- Davranışın kalıcı olması için küçük bir regresyon testi önerilir.
 
 ---
 
 ### P0.2 DB reset yerine migration
-**Durum:** Açık
+**Durum:** Tamamlandı
 
 **Gözlem:**
-- Uygulama açılışında şema kontrolü tek bir kolona göre yapılıyor.
-- Uyum yoksa `reset_database()` çağrısı ile tüm tablolar drop/create ediliyor.
+- `migrations.py` versiyon tabanlı hale getirildi; otomatik yedekleme ve rollback mevcut.
+- `main.pyw` açılış kontrolü `run_migrations()` ile güvenli akışa alındı.
+- `schema_version` tablosu ile versiyon takibi yapılıyor, eski yedekler otomatik temizleniyor (son 10).
 
 **Risk:**
-- Veri kaybı
-- Üretim ortamında geri dönüşü zor operasyonel kesinti
+- Kapanmış durumda; yalnızca migration adımlarının doğruluğu ve test kapsamı riski kaldı.
 
 **Öneri:**
-- Versiyon tabanlı migration (ör. `schema_version`) yaklaşımı başlatılsın.
-- “Drop-all reset” sadece geliştirici modu veya manuel bakım aracında kalsın.
+- v0→v2, v1→v2, v2→v2 ve v3→v2 senaryoları için smoke testleri periyodik çalıştırın.
 
 ---
 
@@ -196,14 +194,12 @@ Aşağıdaki yaklaşım izlendi:
 ## 4) Güncellenmiş Eylem Planı (Öneri)
 
 ### Faz A (Hızlı Risk Düşürme — 2-3 gün)
-1. `insert` clean/dirty düzeltmesi
-2. `pull_only` config netliği
-3. Sync hata mesajının UI’da görünür hale getirilmesi
+1. `pull_only` config netliği
+2. Sync hata mesajının UI’da görünür hale getirilmesi
 
 ### Faz B (Veri Güvenliği — 3-5 gün)
-1. Basit migration çatısı (`schema_version`)
-2. Reset bağımlılığının kaldırılması
-3. Kritik migration için backup notu
+1. Migration akışının periyodik smoke testleri
+2. Backup ve rollback adımlarının dokümantasyon uyumu
 
 ### Faz C (Bakım Kolaylığı — 1 sprint)
 1. Google katmanını bölme
@@ -220,5 +216,6 @@ Aşağıdaki yaklaşım izlendi:
 ## 5) Sonuç
 
 Güncellenen TODO listesi teknik açıdan doğru yönde ve öncelik sıralaması anlamlı.
-Ancak özellikle P0 başlıklarında (sync state doğruluğu + migration) uygulama tarafında henüz kritik açıklar var.
-Önerilen faz planı izlenirse ilk hafta içinde en yüksek veri/operasyon riskleri önemli ölçüde düşürülebilir.
+P0 başlıklarında iki kritik risk (sync state doğruluğu ve migration) uygulama tarafında kapatılmış durumda.
+Kalan risk ağırlığı P0.3 (sync hata görünürlüğü) ve P1/P2 kalite/konfig uyumu tarafında.
+Önerilen faz planı izlenirse kısa vadede operasyonel görünürlük artar, orta vadede bakım maliyeti düşer.
