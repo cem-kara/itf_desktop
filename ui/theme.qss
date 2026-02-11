@@ -1,7 +1,168 @@
 /* ═══════════════════════════════════════════════
-   ITF Desktop — İçerik Alanı Teması
-   Not: Sidebar kendi inline stillerini yönetiyor
+   ITF Desktop — Global Theme
+   Tek kaynak: Uygulamanın tamamında ortak renk ve stil tanımları.
    ═══════════════════════════════════════════════ */
+
+/* ── Main Layout ── */
+
+#content_area {
+    background-color: #16172b;
+}
+
+#page_title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #e0e2ea;
+    padding: 16px 24px 8px 24px;
+    background-color: transparent;
+}
+
+#main_status_bar {
+    background-color: #0f1020;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 2px 8px;
+}
+
+#main_status_bar QLabel {
+    font-size: 12px;
+    color: #5a5d6e;
+    padding: 0 8px;
+}
+
+#sync_status_label[variant="ok"],
+#sidebar_status_label[variant="ok"] {
+    color: #22c55e;
+}
+
+#sync_status_label[variant="warn"],
+#sidebar_status_label[variant="warn"] {
+    color: #f59e0b;
+}
+
+#sync_status_label[variant="error"],
+#sidebar_status_label[variant="error"] {
+    color: #ef4444;
+}
+
+/* ── Sidebar ── */
+
+#sidebar {
+    background-color: #1a1a2e;
+}
+
+#sidebar_title {
+    color: #e8eaef;
+    font-size: 15px;
+    font-weight: bold;
+    background: transparent;
+}
+
+#sidebar_version {
+    color: #5a5d6e;
+    font-size: 11px;
+    background: transparent;
+}
+
+#sidebar_separator {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+#sidebar_group_header {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #c8cad0;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    text-align: left;
+    padding-left: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+#sidebar_group_header:hover {
+    background-color: rgba(255, 255, 255, 0.10);
+}
+
+#sidebar_menu_item[variant="default"] {
+    background-color: transparent;
+    color: #8b8fa3;
+    border: none;
+    border-left: 3px solid transparent;
+    border-radius: 0px 6px 6px 0px;
+    text-align: left;
+    padding-left: 14px;
+    margin: 0 8px 0 0;
+    font-size: 13px;
+}
+
+#sidebar_menu_item[variant="default"]:hover {
+    background-color: rgba(255, 255, 255, 0.07);
+    color: #e0e2ea;
+    border-left: 3px solid rgba(29, 117, 254, 0.4);
+}
+
+#sidebar_menu_item[variant="active"] {
+    background-color: rgba(29, 117, 254, 0.35);
+    color: #ffffff;
+    border: none;
+    border-left: 3px solid #1d75fe;
+    border-radius: 0px 6px 6px 0px;
+    text-align: left;
+    padding-left: 14px;
+    margin: 0 8px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+#sidebar_scroll {
+    border: none;
+    background-color: transparent;
+}
+
+#sidebar_scroll QWidget {
+    background-color: transparent;
+}
+
+#sidebar_scroll QScrollBar:vertical {
+    background-color: transparent;
+    width: 4px;
+}
+
+#sidebar_scroll QScrollBar::handle:vertical {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+    min-height: 30px;
+}
+
+#sidebar_scroll QScrollBar::add-line:vertical,
+#sidebar_scroll QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+#sidebar_sync_btn {
+    background-color: rgba(29, 117, 254, 0.25);
+    color: #6bd3ff;
+    border: 1px solid #1d75fe;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+#sidebar_sync_btn:hover {
+    background-color: rgba(29, 117, 254, 0.40);
+    color: #ffffff;
+}
+
+#sidebar_sync_btn:disabled {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #5a5d6e;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#sidebar_status_label {
+    font-size: 11px;
+    background: transparent;
+}
 
 /* ── TABLO (QTableView) ── */
 
