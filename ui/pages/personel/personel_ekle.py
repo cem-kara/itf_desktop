@@ -762,6 +762,18 @@ class PersonelEklePage(QWidget):
                 repo.insert(data)
                 logger.info(f"Yeni personel eklendi: {data['KimlikNo']}")
 
+                # Yeni personel için Izin_Bilgi kaydı oluştur
+                try:
+                    repo_izin = registry.get("Izin_Bilgi")
+                    izin_data = {
+                        "Personelid": data["KimlikNo"],
+                        "AdSoyad": data["AdSoyad"]
+                    }
+                    repo_izin.insert(izin_data)
+                    logger.info(f"Izin_Bilgi kaydı oluşturuldu: {data['KimlikNo']}")
+                except Exception as e_izin:
+                    logger.error(f"Izin_Bilgi oluşturma hatası: {e_izin}")
+
             QMessageBox.information(
                 self, "Başarılı",
                 "Personel kaydı başarıyla " + ("güncellendi" if self._is_edit else "eklendi") + "."
