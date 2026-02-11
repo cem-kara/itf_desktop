@@ -104,6 +104,15 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### Tema Merkezi (UI) — Yapılan Güncellemeler
+
+- Tüm bileşen QSS stilleri merkezi `ui/styles/components.py` içine taşındı.
+- `ThemeManager` eklendi/iyileştirildi; komponent stilleri `ThemeManager.get_all_component_styles()` ile çekiliyor.
+- `ui/sidebar.py` ve personel sayfaları inline QSS yerine merkezi stilleri (`S[...]` / `STYLES[...]`) kullanacak şekilde güncellendi.
+- Eksik stil anahtarları (`page`, `label`, `required_label`, `stat_*`, `combo_filter`, `spin`, `calc_btn`, vb.) eklendi; import hataları giderildi.
+- Bu değişiklikler UI bakımını kolaylaştırır ve renk/tasarım değişikliklerini tek noktadan yönetmeyi sağlar.
+
+
 ### 3️⃣ Google API Kurulumu
 
 #### a. Google Cloud Console'dan Kimlik Bilgileri İndir
