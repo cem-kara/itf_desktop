@@ -1,70 +1,51 @@
 import json
 import os
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QPushButton,
-    QScrollArea, QFrame
-)
-from PySide6.QtCore import Signal, Qt
+
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QCursor
+from PySide6.QtWidgets import (
+    QFrame,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
+
 from core.config import AppConfig
+from ui.theme_manager import ThemeManager
 
 MENU_ICONS = {
-    "Personel Listesi":  "👥",
-    "Personel Ekle":     "➕",
-    "İzin Takip":        "📅",
-    "FHSZ Yönetim":      "📊",
-    "Puantaj Rapor":     "📋",
+    "Personel Listesi": "👥",
+    "Personel Ekle": "➕",
+    "İzin Takip": "📅",
+    "FHSZ Yönetim": "📊",
+    "Puantaj Rapor": "📋",
     "Personel Verileri": "📈",
-    "Cihaz Listesi":     "🔬",
-    "Cihaz Ekle":        "🆕",
-    "Arıza Kayıt":       "⚠️",  # Typo düzeltildi: Ariza -> Arıza
-    "Arıza Listesi":     "🔧",  # Typo düzeltildi: Ariza -> Arıza
-    "Periyodik Bakım":   "🛠️",  # Typo düzeltildi: Bakim -> Bakım
+    "Cihaz Listesi": "🔬",
+    "Cihaz Ekle": "🆕",
+    "Arıza Kayıt": "⚠️",
+    "Arıza Listesi": "🔧",
+    "Periyodik Bakım": "🛠️",
     "Kalibrasyon Takip": "📐",
-    "RKE Listesi":       "🛡️",
-    "Muayene Girişi":    "🔍",
-    "RKE Raporlama":     "📋",
-    "Yıl Sonu İzin":     "📆",
-    "Ayarlar":           "⚙️",
+    "RKE Listesi": "🛡️",
+    "Muayene Girişi": "🔍",
+    "RKE Raporlama": "📋",
+    "Yıl Sonu İzin": "📆",
+    "Ayarlar": "⚙️",
 }
 
 GROUP_ICONS = {
-    "PERSONEL":            "👤",
-    "CİHAZ":              "🔬",
-    "RKE":                "🛡️",
+    "PERSONEL": "👤",
+    "CİHAZ": "🔬",
+    "RKE": "🛡️",
     "YÖNETİCİ İŞLEMLERİ": "⚙️",
-}
-
-# ─── W11 Dark Glass Renkler ───
-C = {
-    "bg":           "#1a1a2e",
-    "bg_glass":     "rgba(30, 32, 44, 0.85)",
-    "header_bg":    "rgba(255, 255, 255, 0.05)",
-    "header_hover": "rgba(255, 255, 255, 0.10)",
-    "header_text":  "#c8cad0",
-    "item_text":    "#8b8fa3",
-    "item_hover":   "rgba(255, 255, 255, 0.07)",
-    "item_hover_t": "#e0e2ea",
-    "active_bg":    "rgba(29, 117, 254, 0.35)",
-    "active_border":"#1d75fe",
-    "active_text":  "#ffffff",
-    "sep":          "rgba(255, 255, 255, 0.06)",
-    "title":        "#e8eaef",
-    "ver":          "#5a5d6e",
-    "accent":       "#1d75fe",
-    "accent_light": "#6bd3ff",
-    "sync_bg":      "rgba(29, 117, 254, 0.25)",
-    "sync_hover":   "rgba(29, 117, 254, 0.40)",
-    "sync_border":  "#1d75fe",
-    "sync_dis":     "rgba(255, 255, 255, 0.05)",
 }
 
 
 class AccordionGroup(QWidget):
-
     def __init__(self, group_name, icon, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(f"background-color: transparent;")
         self.group_name = group_name
         self._expanded = False
         self._buttons = []
@@ -75,29 +56,14 @@ class AccordionGroup(QWidget):
         layout.setSpacing(0)
 
         self.header = QPushButton(f"  {icon}  {group_name}  [+]")
+        self.header.setObjectName("sidebar_group_header")
         self.header.setFixedHeight(38)
         self.header.setCursor(QCursor(Qt.PointingHandCursor))
-        self.header.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {C['header_bg']};
-                color: {C['header_text']};
-                border: none;
-                border-bottom: 1px solid {C['sep']};
-                text-align: left;
-                padding-left: 12px;
-                font-size: 12px;
-                font-weight: bold;
-                letter-spacing: 0.5px;
-            }}
-            QPushButton:hover {{
-                background-color: {C['header_hover']};
-            }}
-        """)
         self.header.clicked.connect(self._toggle)
         layout.addWidget(self.header)
 
         self.content = QWidget()
-        self.content.setStyleSheet("background-color: transparent;")
+        self.content.setObjectName("sidebar_group_content")
         self.content_layout = QVBoxLayout(self.content)
         self.content_layout.setContentsMargins(0, 4, 0, 4)
         self.content_layout.setSpacing(2)
@@ -105,16 +71,16 @@ class AccordionGroup(QWidget):
         self.content.setVisible(False)
 
     def add_item(self, baslik, callback):
-        # Icon'u JSON'dan alıyoruz artık, ama fallback için hala MENU_ICONS var
         icon = MENU_ICONS.get(baslik, "•")
-        
+
         btn = QPushButton(f"  {icon}   {baslik}")
+        btn.setObjectName("sidebar_menu_item")
         btn.setFixedHeight(34)
         btn.setCursor(QCursor(Qt.PointingHandCursor))
         btn.setCheckable(True)
         btn._baslik = baslik
-        btn.setStyleSheet(self._item_css(False))
         btn.clicked.connect(lambda: callback(self.group_name, baslik))
+        ThemeManager.set_variant(btn, "default")
         self.content_layout.addWidget(btn)
         self._buttons.append(btn)
         return btn
@@ -125,54 +91,21 @@ class AccordionGroup(QWidget):
         arrow = "[-]" if self._expanded else "[+]"
         self.header.setText(f"  {self._icon}  {self.group_name}  {arrow}")
 
-    def _item_css(self, active):
-        if active:
-            return f"""
-                QPushButton {{
-                    background-color: {C['active_bg']};
-                    color: {C['active_text']};
-                    border: none;
-                    border-left: 3px solid {C['active_border']};
-                    border-radius: 0px 6px 6px 0px;
-                    text-align: left;
-                    padding-left: 14px; margin: 0 8px 0 0;
-                    font-size: 13px; font-weight: 600;
-                }}
-            """
-        return f"""
-            QPushButton {{
-                background-color: transparent;
-                color: {C['item_text']};
-                border: none;
-                border-left: 3px solid transparent;
-                border-radius: 0px 6px 6px 0px;
-                text-align: left;
-                padding-left: 14px; margin: 0 8px 0 0;
-                font-size: 13px;
-            }}
-            QPushButton:hover {{
-                background-color: {C['item_hover']};
-                color: {C['item_hover_t']};
-                border-left: 3px solid rgba(29, 117, 254, 0.4);
-            }}
-        """
-
     def set_active(self, baslik):
         for btn in self._buttons:
-            is_active = (btn._baslik == baslik)
+            is_active = btn._baslik == baslik
             btn.setChecked(is_active)
-            btn.setStyleSheet(self._item_css(is_active))
+            ThemeManager.set_variant(btn, "active" if is_active else "default")
 
 
 class Sidebar(QWidget):
-
     menu_clicked = Signal(str, str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setObjectName("sidebar")
         self.setFixedWidth(240)
         self.setAutoFillBackground(True)
-        self.setStyleSheet(f"background-color: {C['bg']};")
 
         self._groups = {}
         self._all_buttons = {}
@@ -184,48 +117,31 @@ class Sidebar(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # Başlık
         hdr = QWidget()
-        hdr.setStyleSheet(f"background-color: transparent;")
         hl = QVBoxLayout(hdr)
         hl.setContentsMargins(16, 16, 16, 6)
         hl.setSpacing(2)
 
         t = QLabel(f"🏥  {AppConfig.APP_NAME}")
-        t.setStyleSheet(f"""
-            color: {C['title']}; font-size: 15px; font-weight: bold;
-            background: transparent;
-        """)
+        t.setObjectName("sidebar_title")
         hl.addWidget(t)
 
         v = QLabel(f"v{AppConfig.VERSION}")
-        v.setStyleSheet(f"color: {C['ver']}; font-size: 11px; background: transparent;")
+        v.setObjectName("sidebar_version")
         hl.addWidget(v)
         layout.addWidget(hdr)
 
         sep = QFrame()
+        sep.setObjectName("sidebar_separator")
         sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background-color: {C['sep']};")
         layout.addWidget(sep)
 
-        # Scroll menü
         scroll = QScrollArea()
+        scroll.setObjectName("sidebar_scroll")
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll.setStyleSheet(f"""
-            QScrollArea {{ border: none; background-color: transparent; }}
-            QWidget {{ background-color: transparent; }}
-            QScrollBar:vertical {{
-                background-color: transparent; width: 4px;
-            }}
-            QScrollBar::handle:vertical {{
-                background-color: rgba(255,255,255,0.15); border-radius: 2px; min-height: 30px;
-            }}
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
-        """)
 
         menu_w = QWidget()
-        menu_w.setStyleSheet("background-color: transparent;")
         self._ml = QVBoxLayout(menu_w)
         self._ml.setContentsMargins(0, 6, 0, 6)
         self._ml.setSpacing(0)
@@ -236,55 +152,37 @@ class Sidebar(QWidget):
         scroll.setWidget(menu_w)
         layout.addWidget(scroll, 1)
 
-        # Alt kısım
         bot = QWidget()
-        bot.setStyleSheet("background-color: transparent;")
         bl = QVBoxLayout(bot)
         bl.setContentsMargins(12, 4, 12, 10)
         bl.setSpacing(6)
 
         self.sync_btn = QPushButton("⟳  Senkronize Et")
+        self.sync_btn.setObjectName("sidebar_sync_btn")
         self.sync_btn.setFixedHeight(36)
         self.sync_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        self.sync_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {C['sync_bg']};
-                color: {C['accent_light']};
-                border: 1px solid {C['sync_border']};
-                border-radius: 8px;
-                font-size: 13px; font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: {C['sync_hover']};
-                color: #ffffff;
-            }}
-            QPushButton:disabled {{
-                background-color: {C['sync_dis']};
-                color: #5a5d6e;
-                border: 1px solid rgba(255,255,255,0.05);
-            }}
-        """)
         bl.addWidget(self.sync_btn)
 
         self.status_label = QLabel("● Hazır")
+        self.status_label.setObjectName("sidebar_status_label")
         self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setStyleSheet("color: #22c55e; font-size: 11px; background: transparent;")
+        ThemeManager.set_variant(self.status_label, "ok")
         bl.addWidget(self.status_label)
         layout.addWidget(bot)
 
     def _load_menu(self):
         cfg_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "ayarlar.json"
+            "ayarlar.json",
         )
         try:
             with open(cfg_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             menu_cfg = data.get("menu_yapilandirma", {})
-            
+
         except Exception as e:
-            # Fallback: Hata durumunda minimal menü göster
             from core.logger import logger
+
             logger.error(f"ayarlar.json yüklenemedi: {e}")
             menu_cfg = {}
 
@@ -294,10 +192,6 @@ class Sidebar(QWidget):
 
             for item in items:
                 baslik = item.get("baslik", "?")
-                
-                # Gelecek: implemented=False olan menüleri disabled göster
-                # is_implemented = item.get("implemented", True)
-                
                 btn = grp.add_item(baslik, self._on_click)
                 self._all_buttons[baslik] = (grp, btn)
 
@@ -319,7 +213,12 @@ class Sidebar(QWidget):
 
     def set_sync_status(self, text, color="#22c55e"):
         self.status_label.setText(text)
-        self.status_label.setStyleSheet(f"color: {color}; font-size: 11px; background: transparent;")
+        variant = "ok"
+        if color == "#f59e0b":
+            variant = "warn"
+        elif color == "#ef4444":
+            variant = "error"
+        ThemeManager.set_variant(self.status_label, variant)
 
     def set_sync_enabled(self, enabled):
         self.sync_btn.setEnabled(enabled)

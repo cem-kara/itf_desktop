@@ -1,9 +1,8 @@
-import os
 from datetime import datetime
 
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-    QStackedWidget, QLabel, QStatusBar
+    QStackedWidget, QLabel, QStatusBar, QApplication
 )
 from PySide6.QtCore import Qt, QTimer, Slot
 
@@ -14,6 +13,7 @@ from ui.sidebar import Sidebar
 from ui.pages.placeholder import WelcomePage, PlaceholderPage
 from database.sync_worker import SyncWorker
 from database.sqlite_manager import SQLiteManager
+from ui.theme_manager import ThemeManager
 
 
 class MainWindow(QMainWindow):
@@ -29,20 +29,15 @@ class MainWindow(QMainWindow):
         self._sync_worker = None
         self._db = SQLiteManager()
 
-        self._load_theme()
+        self._apply_theme()
         self._build_ui()
         self._build_status_bar()
         self._setup_sync()
 
-    def _load_theme(self):
-        theme_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "theme.qss"
-        )
-        try:
-            with open(theme_path, "r", encoding="utf-8") as f:
-                self.setStyleSheet(f.read())
-        except FileNotFoundError:
-            logger.warning("Tema dosyası bulunamadı")
+    def _apply_theme(self):
+        app = QApplication.instance()
+        if app is not None:
+            ThemeManager.instance().apply_app_theme(app)
 
     def _build_ui(self):
         central = QWidget()
@@ -61,22 +56,13 @@ class MainWindow(QMainWindow):
         # İçerik alanı
         content = QWidget()
         content.setObjectName("content_area")
-        content.setStyleSheet("""
-            #content_area {
-                background-color: #16172b;
-            }
-        """)
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(0)
 
         # Sayfa başlığı
         self.page_title = QLabel("")
-        self.page_title.setStyleSheet("""
-            font-size: 20px; font-weight: bold;
-            color: #e0e2ea; padding: 16px 24px 8px 24px;
-            background-color: transparent;
-        """)
+        self.page_title.setObjectName("page_title")
         self.page_title.setVisible(False)
         content_layout.addWidget(self.page_title)
 
@@ -93,20 +79,12 @@ class MainWindow(QMainWindow):
 
     def _build_status_bar(self):
         self.status = QStatusBar()
-        self.status.setStyleSheet("""
-            QStatusBar {
-                background-color: #0f1020;
-                border-top: 1px solid rgba(255, 255, 255, 0.06);
-                padding: 2px 8px;
-            }
-            QStatusBar QLabel {
-                font-size: 12px; color: #5a5d6e; padding: 0 8px;
-            }
-        """)
+        self.status.setObjectName("main_status_bar")
         self.setStatusBar(self.status)
 
         self.sync_status_label = QLabel("● Hazır")
-        self.sync_status_label.setStyleSheet("color: #22c55e;")
+        self.sync_status_label.setObjectName("sync_status_label")
+        ThemeManager.set_variant(self.sync_status_label, "ok")
         self.status.addWidget(self.sync_status_label)
 
         self.last_sync_label = QLabel("")
@@ -333,7 +311,7 @@ class MainWindow(QMainWindow):
         self.sidebar.set_sync_enabled(False)
         self.sidebar.set_sync_status("⏳ Senkronize ediliyor...", "#f59e0b")
         self.sync_status_label.setText("⏳ Senkronize ediliyor...")
-        self.sync_status_label.setStyleSheet("color: #f59e0b;")
+        ThemeManager.set_variant(self.sync_status_label, "warn")
 
         self._sync_worker = SyncWorker()
         self._sync_worker.finished.connect(self._on_sync_finished)
@@ -348,7 +326,7 @@ class MainWindow(QMainWindow):
         self.sidebar.set_sync_enabled(True)
         self.sidebar.set_sync_status("● Senkronize", "#22c55e")
         self.sync_status_label.setText("● Senkronize")
-        self.sync_status_label.setStyleSheet("color: #22c55e;")
+        ThemeManager.set_variant(self.sync_status_label, "ok")
         self.last_sync_label.setText(f"Son sync: {now}")
         self._refresh_active_page()
 
@@ -371,7 +349,7 @@ class MainWindow(QMainWindow):
         
         # Status bar'da kısa mesaj
         self.sync_status_label.setText(f"● {short_msg}")
-        self.sync_status_label.setStyleSheet("color: #ef4444;")
+        ThemeManager.set_variant(self.sync_status_label, "error")
         
         # Detaylı mesajı tooltip olarak ekle
         self.sync_status_label.setToolTip(
