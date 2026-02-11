@@ -3,7 +3,9 @@ import os
 import json
 from datetime import datetime
 from pathlib import Path
+from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from core.paths import LOG_DIR
+from core.config import AppConfig
 
 # Log dosyaları
 LOG_FILE = os.path.join(LOG_DIR, "app.log")
@@ -48,23 +50,38 @@ class StructuredFormatter(logging.Formatter):
         return base
 
 
-# Ana log handler
-file_handler = logging.FileHandler(LOG_FILE, encoding="utf-8")
+# Ana log handler — RotatingFileHandler (boyut tabanlı rotasyon)
+file_handler = RotatingFileHandler(
+    LOG_FILE,
+    maxBytes=AppConfig.LOG_MAX_BYTES,      # 10 MB
+    backupCount=AppConfig.LOG_BACKUP_COUNT,  # 5 yedek
+    encoding="utf-8"
+)
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(StructuredFormatter(
     "%(asctime)s - %(levelname)s - %(message)s"
 ))
 
-# Sync log handler (sadece sync işlemleri)
-sync_handler = logging.FileHandler(SYNC_LOG_FILE, encoding="utf-8")
+# Sync log handler — RotatingFileHandler
+sync_handler = RotatingFileHandler(
+    SYNC_LOG_FILE,
+    maxBytes=AppConfig.LOG_MAX_BYTES,
+    backupCount=AppConfig.LOG_BACKUP_COUNT,
+    encoding="utf-8"
+)
 sync_handler.setLevel(logging.INFO)
 sync_handler.addFilter(SyncLogFilter())
 sync_handler.setFormatter(StructuredFormatter(
     "%(asctime)s - %(message)s"
 ))
 
-# Error log handler (sadece hatalar)
-error_handler = logging.FileHandler(ERROR_LOG_FILE, encoding="utf-8")
+# Error log handler — RotatingFileHandler
+error_handler = RotatingFileHandler(
+    ERROR_LOG_FILE,
+    maxBytes=AppConfig.LOG_MAX_BYTES,
+    backupCount=AppConfig.LOG_BACKUP_COUNT,
+    encoding="utf-8"
+)
 error_handler.setLevel(logging.ERROR)
 error_handler.addFilter(ErrorLogFilter())
 error_handler.setFormatter(StructuredFormatter(

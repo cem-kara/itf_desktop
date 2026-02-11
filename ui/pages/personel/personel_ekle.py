@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QCursor, QPixmap
 
 from core.logger import logger
+from ui.theme_manager import ThemeManager
 
 
 # ─── Drive Yükleme Worker (UI donmasın) ───
@@ -25,7 +26,7 @@ class DriveUploadWorker(QThread):
 
     def run(self):
         try:
-            from database.google_baglanti import GoogleDriveService
+            from database.google import GoogleDriveService
             drive = GoogleDriveService()
             link = drive.upload_file(
                 self._file_path,
@@ -39,148 +40,8 @@ class DriveUploadWorker(QThread):
         except Exception as e:
             self.error.emit(self._alan_adi, str(e))
 
-# ─── W11 Dark Glass Stiller ───
-S = {
-    "page": "background-color: transparent;",
-    "group": """
-        QGroupBox {
-            background-color: rgba(30, 32, 44, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            margin-top: 14px; padding: 16px 12px 12px 12px;
-            font-size: 13px; font-weight: bold; color: #8b8fa3;
-        }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            padding: 0 8px; color: #6bd3ff;
-        }
-    """,
-    "label": "color: #8b8fa3; font-size: 12px; background: transparent;",
-    "required_label": "color: #6bd3ff; font-size: 12px; font-weight: bold; background: transparent;",
-    "input": """
-        QLineEdit {
-            background-color: #1e202c;
-            border: 1px solid #292b41;
-            border-bottom: 2px solid #9dcbe3;
-            border-radius: 6px;
-            padding: 7px 10px; font-size: 13px;
-            color: #e0e2ea; min-height: 22px;
-        }
-        QLineEdit:focus {
-            border: 1px solid rgba(29, 117, 254, 0.5);
-            border-bottom: 2px solid #1d75fe;
-        }
-        QLineEdit::placeholder { color: #5a5d6e; }
-    """,
-    "combo": """
-        QComboBox {
-            background-color: #1e202c;
-            border: 1px solid #292b41;
-            border-bottom: 2px solid #9dcbe3;
-            border-radius: 6px;
-            padding: 5px 10px; font-size: 13px;
-            color: #e0e2ea; min-height: 22px;
-        }
-        QComboBox:focus { border-bottom: 2px solid #1d75fe; }
-        QComboBox::drop-down { border: none; width: 24px; }
-        QComboBox QAbstractItemView {
-            background-color: #1e202c;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #c8cad0;
-            selection-background-color: rgba(29, 117, 254, 0.3);
-            selection-color: #ffffff;
-        }
-    """,
-    "date": """
-        QDateEdit {
-            background-color: #1e202c;
-            border: 1px solid #292b41;
-            border-bottom: 2px solid #9dcbe3;
-            border-radius: 6px;
-            padding: 5px 10px; font-size: 13px;
-            color: #e0e2ea; min-height: 22px;
-        }
-        QDateEdit:focus { border-bottom: 2px solid #1d75fe; }
-        QDateEdit::drop-down { border: none; width: 24px; }
-    """,
-    "photo_area": """
-        QLabel {
-            background-color: rgba(255, 255, 255, 0.04);
-            border: 2px dashed rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            color: #5a5d6e; font-size: 12px;
-        }
-    """,
-    "photo_btn": """
-        QPushButton {
-            background-color: rgba(255, 255, 255, 0.06);
-            color: #8b8fa3;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 6px;
-            padding: 8px 16px; font-size: 12px;
-        }
-        QPushButton:hover {
-            background-color: rgba(255, 255, 255, 0.10);
-            color: #c8cad0;
-        }
-    """,
-    "file_btn": """
-        QPushButton {
-            background-color: rgba(255, 255, 255, 0.04);
-            color: #8b8fa3;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 6px;
-            padding: 6px 12px; font-size: 11px;
-        }
-        QPushButton:hover {
-            background-color: rgba(255, 255, 255, 0.08);
-            color: #c8cad0;
-        }
-    """,
-    "save_btn": """
-        QPushButton {
-            background-color: rgba(29, 117, 254, 0.3);
-            color: #6bd3ff;
-            border: 1px solid rgba(29, 117, 254, 0.5);
-            border-radius: 8px;
-            padding: 12px 32px; font-size: 14px; font-weight: bold;
-        }
-        QPushButton:hover {
-            background-color: rgba(29, 117, 254, 0.45);
-            color: #ffffff;
-        }
-    """,
-    "cancel_btn": """
-        QPushButton {
-            background-color: rgba(239, 68, 68, 0.15);
-            color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 8px;
-            padding: 12px 24px; font-size: 14px; font-weight: bold;
-        }
-        QPushButton:hover {
-            background-color: rgba(239, 68, 68, 0.3);
-            color: #ffffff;
-        }
-    """,
-    "separator": """
-        QFrame {
-            background-color: rgba(255, 255, 255, 0.06);
-        }
-    """,
-    "scroll": """
-        QScrollArea { border: none; background: transparent; }
-        QWidget { background: transparent; }
-        QScrollBar:vertical {
-            background: transparent; width: 5px;
-        }
-        QScrollBar::handle:vertical {
-            background: rgba(255,255,255,0.12); border-radius: 2px; min-height: 30px;
-        }
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
-    """,
-    
-}
+# ─── W11 Dark Glass Stiller (MERKEZİ KAYNAKTAN) ───
+S = ThemeManager.get_all_component_styles()
 
 # DB alan → form widget eşlemesi
 FIELD_MAP = {

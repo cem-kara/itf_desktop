@@ -280,3 +280,32 @@ Pull-only tablolar artık:
 - [ ] Log doğrulaması yapıldı
 - [ ] Dokümantasyon güncellendi
 - [ ] Geri dönüş (rollback) notu eklendi
+
+---
+
+## Güncel Proje Takip — Son Durum (11 Şubat 2026)
+Aşağıda workspace içi en son yapılacaklar listesi ve durumları yer alır. Bu bölüm elle güncellenebilir ve sprint takibinde kullanılabilir.
+
+- [x] Kod tabanını keşfet
+- [x] Temel modülleri oku (core, database, ui)
+- [x] Bulguları topla ve analiz et
+- [x] Detaylı geliştirme raporu hazırla
+- [x] Öncelikli iyileştirme önerileri + tahminler
+- [x] `requirements.txt` oluştur
+- [x] Secrets temizle ve `.gitignore`
+- [x] `README.md` ekle
+- [ ] Unit test: `core/hesaplamalar.py`
+- [ ] CI: lint + test workflow
+- [ ] `RepositoryRegistry` DI refactor
+- [ ] Tiplendirme: `mypy` entegrasyonu
+- [x] Log rotasyonu ve retention
+- [ ] Paketleme / dağıtım betikleri
+- [ ] Backups & secrets güvenlik incelemesi
+
+### Kısa Notlar
+- Önerilen ilk adımlar: `Secrets temizle ve .gitignore` → `requirements.txt` → `Unit test: core/hesaplamalar.py`.
+- Her öğe için tahmini çaba ve DoD (Definition of Done) bu dosyaya eklenebilir.
+
+---
+
+_Not: Bu bölüm manuel olarak güncellenebilir; eklemek istediğiniz başka bir format (ör. CSV, GitHub Issues, proje tablosu) isterseniz söyleyin, dönüştüreyim._

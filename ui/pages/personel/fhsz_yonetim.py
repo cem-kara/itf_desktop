@@ -28,6 +28,7 @@ from PySide6.QtGui import QColor, QCursor, QFont, QPainter, QBrush, QPen, QPaint
 
 from core.logger import logger
 from core.hesaplamalar import sua_hak_edis_hesapla, is_gunu_hesapla, tr_upper
+from ui.theme_manager import ThemeManager
 
 
 # ─── Tarih Parse ───
@@ -70,87 +71,8 @@ C_KIMLIK, C_AD, C_BIRIM, C_KOSUL = 0, 1, 2, 3
 C_YIL, C_DONEM, C_GUN, C_IZIN, C_SAAT = 4, 5, 6, 7, 8
 
 
-# ─── W11 Dark Glass ───
-S = {
-    "page": "background-color: transparent;",
-    "filter_panel": """
-        QFrame {
-            background-color: rgba(30, 32, 44, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-        }
-    """,
-    "label": "color: #8b8fa3; font-size: 12px; background: transparent;",
-    "combo": """
-        QComboBox {
-            background-color: #1e202c;
-            border: 1px solid #292b41; border-bottom: 2px solid #9dcbe3;
-            border-radius: 6px; padding: 4px 8px; font-size: 12px;
-            color: #e0e2ea; min-height: 22px;
-        }
-        QComboBox:focus { border-bottom: 2px solid #1d75fe; }
-        QComboBox::drop-down { border: none; width: 22px; }
-        QComboBox QAbstractItemView {
-            background-color: #1e202c; border: 1px solid rgba(255,255,255,0.1);
-            color: #c8cad0; selection-background-color: rgba(29,117,254,0.3);
-            selection-color: #ffffff;
-        }
-    """,
-    "calc_btn": """
-        QPushButton {
-            background-color: rgba(29, 117, 254, 0.3); color: #6bd3ff;
-            border: 1px solid rgba(29, 117, 254, 0.5); border-radius: 8px;
-            padding: 8px 20px; font-size: 13px; font-weight: bold;
-        }
-        QPushButton:hover { background-color: rgba(29, 117, 254, 0.45); color: #ffffff; }
-        QPushButton:disabled { background-color: rgba(255,255,255,0.05); color: #5a5d6e; border-color: rgba(255,255,255,0.05); }
-    """,
-    "save_btn": """
-        QPushButton {
-            background-color: rgba(34, 197, 94, 0.25); color: #4ade80;
-            border: 1px solid rgba(34, 197, 94, 0.4); border-radius: 8px;
-            padding: 8px 20px; font-size: 13px; font-weight: bold;
-        }
-        QPushButton:hover { background-color: rgba(34, 197, 94, 0.4); color: #ffffff; }
-        QPushButton:disabled { background-color: rgba(255,255,255,0.05); color: #5a5d6e; border-color: rgba(255,255,255,0.05); }
-    """,
-    "close_btn": """
-        QPushButton {
-            background-color: rgba(239, 68, 68, 0.15); color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 6px;
-            font-size: 14px; font-weight: bold;
-        }
-        QPushButton:hover { background-color: rgba(239, 68, 68, 0.35); color: #ffffff; }
-    """,
-    "table": """
-        QTableWidget {
-            background-color: rgba(30, 32, 44, 0.7);
-            alternate-background-color: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            gridline-color: rgba(255, 255, 255, 0.04);
-            selection-background-color: rgba(29, 117, 254, 0.45);
-            selection-color: #ffffff;
-            color: #c8cad0; font-size: 13px;
-        }
-        QTableWidget::item {
-            padding: 6px 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-        }
-        QTableWidget::item:selected {
-            background-color: rgba(29, 117, 254, 0.45); color: #ffffff;
-        }
-        QHeaderView::section {
-            background-color: rgba(255, 255, 255, 0.05);
-            color: #8b8fa3; font-weight: 600; font-size: 11px;
-            padding: 6px 4px; border: none;
-            border-bottom: 1px solid rgba(29, 117, 254, 0.3);
-            border-right: 1px solid rgba(255, 255, 255, 0.03);
-        }
-    """,
-    "footer_label": "color: #5a5d6e; font-size: 12px; background: transparent;",
-    "donem_label": "color: #60cdff; font-size: 13px; font-weight: bold; background: transparent;",
-}
+# ─── MERKEZİ STİL YÖNETIMI ───
+S = ThemeManager.get_all_component_styles()
 
 
 # ═══════════════════════════════════════════════

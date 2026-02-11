@@ -1,6 +1,6 @@
 import time
 from core.logger import logger
-from database.google_baglanti import get_worksheet
+from database.google import get_worksheet
 from database.table_config import TABLES
 
 

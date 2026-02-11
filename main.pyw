@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
 
 from core.logger import logger
+from core.log_manager import initialize_log_management
 from core.paths import DB_PATH
 from database.migrations import MigrationManager
 
@@ -59,10 +60,13 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("ITF Desktop")
 
-    # 1️⃣ Veritabanı kontrolü
+    # 1️⃣ Log yönetimi başlatma (cleanup, monitoring, statistics)
+    initialize_log_management()
+
+    # 2️⃣ Veritabanı kontrolü
     ensure_database()
 
-    # 2️⃣ Ana pencere
+    # 3️⃣ Ana pencere
     from ui.main_window import MainWindow
     window = MainWindow()
     window.showMaximized()

@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QColor, QCursor
 
 from core.logger import logger
+from ui.theme_manager import ThemeManager
 
 # ─── Tarih Parse (çoklu format desteği) ───
 _DATE_FMTS = ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%Y/%m/%d", "%d-%m-%Y")
@@ -33,159 +34,8 @@ def _parse_date(val):
     return None
 
 
-# ─── W11 Dark Glass Stiller ───
-S = {
-    "page": "background-color: transparent;",
-    "group": """
-        QGroupBox {
-            background-color: rgba(30, 32, 44, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            margin-top: 14px; padding: 16px 12px 12px 12px;
-            font-size: 13px; font-weight: bold; color: #8b8fa3;
-        }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            padding: 0 8px; color: #6bd3ff;
-        }
-    """,
-    "label": "color: #8b8fa3; font-size: 12px; background: transparent;",
-    "value_label": "color: #e0e2ea; font-size: 13px; font-weight: 600; background: transparent;",
-    "combo": """
-        QComboBox {
-            background-color: #1e202c;
-            border: 1px solid #292b41;
-            border-bottom: 2px solid #9dcbe3;
-            border-radius: 6px;
-            padding: 5px 10px; font-size: 13px;
-            color: #e0e2ea; min-height: 24px;
-        }
-        QComboBox:focus { border-bottom: 2px solid #1d75fe; }
-        QComboBox::drop-down { border: none; width: 24px; }
-        QComboBox QAbstractItemView {
-            background-color: #1e202c;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #c8cad0;
-            selection-background-color: rgba(29, 117, 254, 0.3);
-            selection-color: #ffffff;
-        }
-    """,
-    "date": """
-        QDateEdit {
-            background-color: #1e202c;
-            border: 1px solid #292b41;
-            border-bottom: 2px solid #9dcbe3;
-            border-radius: 6px;
-            padding: 5px 10px; font-size: 13px;
-            color: #e0e2ea; min-height: 24px;
-        }
-        QDateEdit:focus { border-bottom: 2px solid #1d75fe; }
-        QDateEdit::drop-down { border: none; width: 24px; }
-        QDateEdit:read-only {
-            background-color: rgba(30, 32, 44, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-        }
-    """,
-    "spin": """
-        QSpinBox {
-            background-color: #1e202c;
-            border: 1px solid #292b41;
-            border-bottom: 2px solid #9dcbe3;
-            border-radius: 6px;
-            padding: 5px 10px; font-size: 13px;
-            color: #e0e2ea; min-height: 24px;
-        }
-        QSpinBox:focus { border-bottom: 2px solid #1d75fe; }
-    """,
-    "save_btn": """
-        QPushButton {
-            background-color: rgba(29, 117, 254, 0.3);
-            color: #6bd3ff;
-            border: 1px solid rgba(29, 117, 254, 0.5);
-            border-radius: 8px;
-            padding: 10px 24px; font-size: 14px; font-weight: bold;
-        }
-        QPushButton:hover {
-            background-color: rgba(29, 117, 254, 0.45);
-            color: #ffffff;
-        }
-        QPushButton:disabled {
-            background-color: rgba(255, 255, 255, 0.05);
-            color: #5a5d6e;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-    """,
-    "back_btn": """
-        QPushButton {
-            background-color: rgba(239, 68, 68, 0.15);
-            color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 8px;
-            padding: 8px 16px; font-size: 13px; font-weight: 600;
-        }
-        QPushButton:hover {
-            background-color: rgba(239, 68, 68, 0.3);
-            color: #ffffff;
-        }
-    """,
-    "table": """
-        QTableView {
-            background-color: rgba(30, 32, 44, 0.7);
-            alternate-background-color: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            gridline-color: rgba(255, 255, 255, 0.04);
-            selection-background-color: rgba(29, 117, 254, 0.45);
-            selection-color: #ffffff;
-            color: #c8cad0;
-            font-size: 13px;
-        }
-        QTableView::item {
-            padding: 6px 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-        }
-        QTableView::item:selected {
-            background-color: rgba(29, 117, 254, 0.45);
-            color: #ffffff;
-        }
-        QTableView::item:hover:!selected {
-            background-color: rgba(255, 255, 255, 0.04);
-        }
-        QHeaderView::section {
-            background-color: rgba(255, 255, 255, 0.05);
-            color: #8b8fa3;
-            font-weight: 600; font-size: 12px;
-            padding: 8px; border: none;
-            border-bottom: 1px solid rgba(29, 117, 254, 0.3);
-            border-right: 1px solid rgba(255, 255, 255, 0.03);
-        }
-    """,
-    "header_name": "font-size: 18px; font-weight: bold; color: #e0e2ea; background: transparent;",
-    "separator": "QFrame { background-color: rgba(255, 255, 255, 0.06); }",
-    "stat_label": "color: #8b8fa3; font-size: 12px; background: transparent;",
-    "stat_value": "color: #e0e2ea; font-size: 14px; font-weight: bold; background: transparent;",
-    "stat_green": "color: #4ade80; font-size: 16px; font-weight: bold; background: transparent;",
-    "stat_red": "color: #f87171; font-size: 14px; font-weight: bold; background: transparent;",
-    "stat_highlight": "color: #6bd3ff; font-size: 16px; font-weight: bold; background: transparent;",
-    "section_title": "color: #6bd3ff; font-size: 12px; font-weight: bold; background: transparent;",
-    "splitter": """
-        QSplitter::handle {
-            background-color: rgba(255, 255, 255, 0.06);
-            width: 2px; margin: 8px 4px;
-        }
-    """,
-    "scroll": """
-        QScrollBar:vertical {
-            background: transparent; width: 5px;
-        }
-        QScrollBar::handle:vertical {
-            background: rgba(255,255,255,0.12); border-radius: 2px; min-height: 30px;
-        }
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
-    """,
-}
-
+# ─── W11 Dark Glass Stiller (MERKEZİ KAYNAKTAN) ───
+S = ThemeManager.get_all_component_styles()
 
 # ─── İzin Tipleri (varsayılan) ───
 IZIN_TIPLERI = [

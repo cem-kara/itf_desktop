@@ -18,9 +18,10 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QCursor
 
 from core.logger import logger
+from ui.theme_manager import ThemeManager
 
 
-# ─── W11 Dark Glass Stiller ───
+# ─── MERKEZİ STİL YÖNETIMI ───
 S = {
     "page": "background-color: transparent;",
     "group": """
@@ -136,7 +137,7 @@ class ArsivWorker(QThread):
     def run(self):
         tmp_dir = tempfile.mkdtemp(prefix="arsiv_")
         try:
-            from database.google_baglanti import GoogleDriveService
+            from database.google import GoogleDriveService
             drive = GoogleDriveService()
 
             tc = self._data.get("KimlikNo", "")

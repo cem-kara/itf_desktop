@@ -1,0 +1,66 @@
+# ITF Desktop Application — Bağımlılıklar
+# Python 3.8+ gereklidir
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Ana Bağımlılıklar (Temel İşlevsellik)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# GUI Framework
+PySide6>=6.4.0
+
+# Sayısal işlemler (İş günü ve tarih hesapları)
+numpy>=1.20.0
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Google API Entegrasyonu (Senkronizasyon)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# Google kimlik doğrulama (OAuth 2.0)
+google-auth>=2.10.0
+google-auth-oauthlib>=0.7.0
+google-auth-httplib2>=0.1.0
+
+# Google Sheets ve Drive API
+google-api-python-client>=2.50.0
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Geliştirme ve Test Araçları (İsteğe Bağlı)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# pytest: Birim test çatısı
+pytest>=7.0.0
+pytest-cov>=3.0.0
+
+# Code formatting ve linting
+black>=22.0.0
+flake8>=4.0.0
+pylint>=2.13.0
+
+# Statik tür kontrol
+mypy>=0.950
+
+# Pre-commit hook'ları
+pre-commit>=2.17.0
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Notlar
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 
+# Kurulum adımları:
+#   1. Virtual environment oluştur: python -m venv venv
+#   2. VE'yi aktifleştir: venv\Scripts\activate (Windows) veya source venv/bin/activate (Linux/Mac)
+#   3. Paketleri yükle: pip install -r requirements.txt
+#
+# Olması gerekenler:
+#   - credentials.json: Google OAuth 2.0 kimlik bilgisi (. gitignore eklendikten sonra)
+#   - token.json: Google API access/refresh token (dinamik oluşturulur)
+#   - ayarlar.json: Uygulama ayarları
+#
+# Versiyon notları:
+#   - PySide6 6.4+: Qt 6.4 ile uyumlu, modern bileşenler
+#   - numpy 1.20+: Tarih/NumPy tür uyumluluğu
+#   - google-auth 2.10+: OIDC ve improved token handling
+#
+# Geliştirme paketi (dev) yüklemek için:
+#   pip install -r requirements.txt[dev]
+#   (Komut satırı: pip install -r requirements.txt + "pytest>=7.0.0" ekle)

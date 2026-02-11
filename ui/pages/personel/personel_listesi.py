@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QColor, QCursor, QAction
 
 from core.logger import logger
+from ui.theme_manager import ThemeManager
 
 
 # ─── Tablo sütun tanımları ───
@@ -22,193 +23,15 @@ COLUMNS = [
     ("Durum",            "Durum",            80),
 ]
 
-# ─── W11 Dark Glass Stiller ───
-STYLES = {
-    "filter_panel": """
-        QFrame {
-            background-color: rgba(30, 32, 44, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-        }
-    """,
-    "filter_btn": """
-        QPushButton {
-            background-color: rgba(255, 255, 255, 0.06);
-            color: #8b8fa3;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 6px;
-            padding: 6px 14px; font-size: 12px; font-weight: 600;
-        }
-        QPushButton:hover {
-            background-color: rgba(255, 255, 255, 0.10);
-            color: #c8cad0;
-        }
-        QPushButton:checked {
-            background-color: rgba(29, 117, 254, 0.35);
-            color: #ffffff;
-            border: 1px solid rgba(29, 117, 254, 0.5);
-        }
-    """,
-    "filter_btn_all": """
-        QPushButton {
-            background-color: rgba(255, 255, 255, 0.06);
-            color: #8b8fa3;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 6px;
-            padding: 6px 14px; font-size: 12px; font-weight: 600;
-        }
-        QPushButton:hover {
-            background-color: rgba(255, 255, 255, 0.10);
-            color: #c8cad0;
-        }
-        QPushButton:checked {
-            background-color: rgba(255, 255, 255, 0.12);
-            color: #e0e2ea;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-        }
-    """,
-    "action_btn": """
-        QPushButton {
-            background-color: rgba(29, 117, 254, 0.25);
-            color: #6bd3ff;
-            border: 1px solid rgba(29, 117, 254, 0.4);
-            border-radius: 6px;
-            padding: 7px 16px; font-size: 12px; font-weight: 600;
-        }
-        QPushButton:hover {
-            background-color: rgba(29, 117, 254, 0.4);
-            color: #ffffff;
-        }
-    """,
-    "refresh_btn": """
-        QPushButton {
-            background-color: rgba(255, 255, 255, 0.05);
-            color: #8b8fa3;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 6px;
-            padding: 7px 12px; font-size: 12px;
-        }
-        QPushButton:hover {
-            background-color: rgba(255, 255, 255, 0.10);
-            color: #c8cad0;
-        }
-    """,
-    "search": """
-        QLineEdit {
-            background-color: #1e202c;
-            border: 1px solid #292b41;
-            border-bottom: 2px solid #9dcbe3;
-            border-radius: 8px;
-            padding: 7px 12px; font-size: 13px;
-            color: #e0e2ea;
-        }
-        QLineEdit:focus {
-            border: 1px solid rgba(29, 117, 254, 0.5);
-            border-bottom: 2px solid #1d75fe;
-        }
-        QLineEdit::placeholder {
-            color: #a2a5ae;
-        }
-    """,
-    "combo": """
-        QComboBox {
-            background-color: #1e202c;
-            border: 1px solid #292b41;
-            border-bottom: 2px solid #9dcbe3;
-            border-radius: 6px;
-            padding: 5px 10px; font-size: 12px;
-            color: #e0e2ea; min-height: 22px;
-        }
-        QComboBox:focus {
-            border-bottom: 2px solid #1d75fe;
-        }
-        QComboBox::drop-down {
-            border: none; width: 24px;
-        }
-        QComboBox QAbstractItemView {
-            background-color: #1e202c;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #c8cad0;
-            selection-background-color: rgba(29, 117, 254, 0.3);
-            selection-color: #ffffff;
-        }
-    """,
-    "table": """
-        QTableView {
-            background-color: rgba(30, 32, 44, 0.7);
-            alternate-background-color: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            gridline-color: rgba(255, 255, 255, 0.04);
-            selection-background-color: rgba(29, 117, 254, 0.45);
-            selection-color: #ffffff;
-            color: #c8cad0;
-            font-size: 13px;
-        }
-        QTableView::item {
-            padding: 6px 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-        }
-        QTableView::item:selected {
-            background-color: rgba(29, 117, 254, 0.45);
-            color: #ffffff;
-        }
-        QTableView::item:hover:!selected {
-            background-color: rgba(255, 255, 255, 0.04);
-        }
-        QHeaderView::section {
-            background-color: rgba(255, 255, 255, 0.05);
-            color: #8b8fa3;
-            font-weight: 600; font-size: 12px;
-            padding: 8px; border: none;
-            border-bottom: 1px solid rgba(29, 117, 254, 0.3);
-            border-right: 1px solid rgba(255, 255, 255, 0.03);
-        }
-    """,
-    "footer_label": "color: #5a5d6e; font-size: 12px; background: transparent;",
-    "excel_btn": """
-        QPushButton {
-            background-color: rgba(5, 150, 105, 0.25);
-            color: #6ee7b7;
-            border: 1px solid rgba(5, 150, 105, 0.4);
-            border-radius: 6px;
-            padding: 6px 14px; font-size: 12px; font-weight: 600;
-        }
-        QPushButton:hover {
-            background-color: rgba(5, 150, 105, 0.4);
-            color: #ffffff;
-        }
-    """,
-    "section_label": "color: #5a5d6e; font-size: 11px; font-weight: bold; background: transparent;",
-    "context_menu": """
-        QMenu {
-            background-color: #1e202c;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 8px;
-            padding: 4px;
-            color: #c8cad0; font-size: 13px;
-        }
-        QMenu::item {
-            padding: 8px 24px 8px 12px;
-            border-radius: 4px; margin: 2px;
-        }
-        QMenu::item:selected {
-            background-color: rgba(29, 117, 254, 0.35);
-            color: #ffffff;
-        }
-        QMenu::separator {
-            height: 1px;
-            background: rgba(255, 255, 255, 0.08);
-            margin: 4px 8px;
-        }
-    """,
-}
+# ─── MERKEZİ STIL YÖNETIMI ───
+# Tüm stiller merkezi ThemeManager'dan alınıyor
+STYLES = ThemeManager.get_all_component_styles()
 
-# Durum hücre renkleri (koyu tema uyumlu)
+# Durum hücre renkleri (merkezi kaynaktan)
 DURUM_COLORS = {
-    "Aktif":    QColor(34, 197, 94, 40),     # yeşil şeffaf
-    "Pasif":    QColor(239, 68, 68, 40),      # kırmızı şeffaf
-    "İzinli":   QColor(234, 179, 8, 40),      # sarı şeffaf
+    "Aktif": ThemeManager.get_status_color("Aktif"),
+    "Pasif": ThemeManager.get_status_color("Pasif"),
+    "İzinli": ThemeManager.get_status_color("İzinli"),
 }
 
 

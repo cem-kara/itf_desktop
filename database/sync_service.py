@@ -244,7 +244,7 @@ class SyncService:
             log_sync_step(table_name, "pull_only_start")
             
             # Google Sheets'i oku
-            from database.google_baglanti import get_worksheet
+            from database.google import get_worksheet
             ws = get_worksheet(table_name)
             
             if not ws:

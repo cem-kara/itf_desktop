@@ -180,7 +180,43 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 🔐 ITF DESKTOP — HASSAS DOSYALAR (KRİTİK!)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# Google API Kimlik Bilgileri
 token.json
 credentials.json
-_pycache__/
+*.authorized_user.json
+secrets.json
+
+# Uygulama Ayarları (Ortama özgü)
+ayarlar.json
+database/ayarlar.json
+.env
+.env.local
+.env.*.local
+
+# Diğer Gizli Dosyalar
+config.secret
+private_key*
+*.pem
+*.key
+*.p12
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 📂 ITF DESKTOP — RUNTIME DOSYLARI
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# SQLite Veritabanı
+data/local.db
+data/*.db
+
+# Loglar
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
 

@@ -7,6 +7,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QCursor
 from core.config import AppConfig
+from ui.theme_manager import ThemeManager
+from ui.styles.colors import DarkTheme
 
 MENU_ICONS = {
     "Personel Listesi":  "👥",
@@ -35,29 +37,27 @@ GROUP_ICONS = {
     "YÖNETİCİ İŞLEMLERİ": "⚙️",
 }
 
-# ─── W11 Dark Glass Renkler ───
-C = {
-    "bg":           "#1a1a2e",
-    "bg_glass":     "rgba(30, 32, 44, 0.85)",
-    "header_bg":    "rgba(255, 255, 255, 0.05)",
-    "header_hover": "rgba(255, 255, 255, 0.10)",
-    "header_text":  "#c8cad0",
-    "item_text":    "#8b8fa3",
-    "item_hover":   "rgba(255, 255, 255, 0.07)",
-    "item_hover_t": "#e0e2ea",
-    "active_bg":    "rgba(29, 117, 254, 0.35)",
-    "active_border":"#1d75fe",
-    "active_text":  "#ffffff",
-    "sep":          "rgba(255, 255, 255, 0.06)",
-    "title":        "#e8eaef",
-    "ver":          "#5a5d6e",
-    "accent":       "#1d75fe",
-    "accent_light": "#6bd3ff",
-    "sync_bg":      "rgba(29, 117, 254, 0.25)",
-    "sync_hover":   "rgba(29, 117, 254, 0.40)",
-    "sync_border":  "#1d75fe",
-    "sync_dis":     "rgba(255, 255, 255, 0.05)",
-}
+# ─── MERKEZİ RENK YÖNETİMİ (DarkTheme'den) ───
+class SidebarTheme:
+    """Sidebar için merkezi renkler (DarkTheme tabanlı)"""
+    BG = DarkTheme.BG_PRIMARY                    # #16172b
+    HEADER_BG = "rgba(255, 255, 255, 0.05)"
+    HEADER_HOVER = "rgba(255, 255, 255, 0.10)"
+    HEADER_TEXT = DarkTheme.TEXT_PRIMARY         # #e0e2ea
+    ITEM_TEXT = "#8b8fa3"
+    ITEM_HOVER = "rgba(255, 255, 255, 0.07)"
+    ITEM_HOVER_T = DarkTheme.TEXT_PRIMARY        # #e0e2ea
+    ACTIVE_BG = "rgba(29, 117, 254, 0.35)"      # Mavi hover
+    ACTIVE_BORDER = "#1d75fe"                   # Accent Blue
+    ACTIVE_TEXT = "#ffffff"
+    SEPARATOR = "rgba(255, 255, 255, 0.06)"
+    TITLE = "#e8eaef"
+    VERSION = "#5a5d6e"
+    SYNC_BG = "rgba(29, 117, 254, 0.25)"
+    SYNC_HOVER = "rgba(29, 117, 254, 0.40)"
+    SYNC_BORDER = "#1d75fe"
+    SYNC_DISABLED = "rgba(255, 255, 255, 0.05)"
+    SYNC_TEXT = "#6bd3ff"                       # Light Blue
 
 
 class AccordionGroup(QWidget):
@@ -79,10 +79,10 @@ class AccordionGroup(QWidget):
         self.header.setCursor(QCursor(Qt.PointingHandCursor))
         self.header.setStyleSheet(f"""
             QPushButton {{
-                background-color: {C['header_bg']};
-                color: {C['header_text']};
+                background-color: {SidebarTheme.HEADER_BG};
+                color: {SidebarTheme.HEADER_TEXT};
                 border: none;
-                border-bottom: 1px solid {C['sep']};
+                border-bottom: 1px solid {SidebarTheme.SEPARATOR};
                 text-align: left;
                 padding-left: 12px;
                 font-size: 12px;
@@ -90,7 +90,7 @@ class AccordionGroup(QWidget):
                 letter-spacing: 0.5px;
             }}
             QPushButton:hover {{
-                background-color: {C['header_hover']};
+                background-color: {SidebarTheme.HEADER_HOVER};
             }}
         """)
         self.header.clicked.connect(self._toggle)
@@ -129,10 +129,10 @@ class AccordionGroup(QWidget):
         if active:
             return f"""
                 QPushButton {{
-                    background-color: {C['active_bg']};
-                    color: {C['active_text']};
+                    background-color: {SidebarTheme.ACTIVE_BG};
+                    color: {SidebarTheme.ACTIVE_TEXT};
                     border: none;
-                    border-left: 3px solid {C['active_border']};
+                    border-left: 3px solid {SidebarTheme.ACTIVE_BORDER};
                     border-radius: 0px 6px 6px 0px;
                     text-align: left;
                     padding-left: 14px; margin: 0 8px 0 0;
@@ -142,7 +142,7 @@ class AccordionGroup(QWidget):
         return f"""
             QPushButton {{
                 background-color: transparent;
-                color: {C['item_text']};
+                color: {SidebarTheme.ITEM_TEXT};
                 border: none;
                 border-left: 3px solid transparent;
                 border-radius: 0px 6px 6px 0px;
@@ -151,8 +151,8 @@ class AccordionGroup(QWidget):
                 font-size: 13px;
             }}
             QPushButton:hover {{
-                background-color: {C['item_hover']};
-                color: {C['item_hover_t']};
+                background-color: {SidebarTheme.ITEM_HOVER};
+                color: {SidebarTheme.ITEM_HOVER_T};
                 border-left: 3px solid rgba(29, 117, 254, 0.4);
             }}
         """
@@ -172,7 +172,7 @@ class Sidebar(QWidget):
         super().__init__(parent)
         self.setFixedWidth(240)
         self.setAutoFillBackground(True)
-        self.setStyleSheet(f"background-color: {C['bg']};")
+        self.setStyleSheet(f"background-color: {SidebarTheme.BG};")
 
         self._groups = {}
         self._all_buttons = {}
@@ -193,19 +193,19 @@ class Sidebar(QWidget):
 
         t = QLabel(f"🏥  {AppConfig.APP_NAME}")
         t.setStyleSheet(f"""
-            color: {C['title']}; font-size: 15px; font-weight: bold;
+            color: {SidebarTheme.TITLE}; font-size: 15px; font-weight: bold;
             background: transparent;
         """)
         hl.addWidget(t)
 
         v = QLabel(f"v{AppConfig.VERSION}")
-        v.setStyleSheet(f"color: {C['ver']}; font-size: 11px; background: transparent;")
+        v.setStyleSheet(f"color: {SidebarTheme.VERSION}; font-size: 11px; background: transparent;")
         hl.addWidget(v)
         layout.addWidget(hdr)
 
         sep = QFrame()
         sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background-color: {C['sep']};")
+        sep.setStyleSheet(f"background-color: {SidebarTheme.SEPARATOR};")
         layout.addWidget(sep)
 
         # Scroll menü
@@ -248,18 +248,18 @@ class Sidebar(QWidget):
         self.sync_btn.setCursor(QCursor(Qt.PointingHandCursor))
         self.sync_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: {C['sync_bg']};
-                color: {C['accent_light']};
-                border: 1px solid {C['sync_border']};
+                background-color: {SidebarTheme.SYNC_BG};
+                color: {SidebarTheme.SYNC_TEXT};
+                border: 1px solid {SidebarTheme.SYNC_BORDER};
                 border-radius: 8px;
                 font-size: 13px; font-weight: 600;
             }}
             QPushButton:hover {{
-                background-color: {C['sync_hover']};
+                background-color: {SidebarTheme.SYNC_HOVER};
                 color: #ffffff;
             }}
             QPushButton:disabled {{
-                background-color: {C['sync_dis']};
+                background-color: {SidebarTheme.SYNC_DISABLED};
                 color: #5a5d6e;
                 border: 1px solid rgba(255,255,255,0.05);
             }}
