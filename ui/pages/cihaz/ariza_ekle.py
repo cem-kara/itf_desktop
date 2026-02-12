@@ -93,11 +93,9 @@ class ArizaEklePanel(QWidget):
     kapanma_istegi        = Signal()
     kayit_basarili_sinyali = Signal()
 
-    def __init__(self, db=None, yetki="viewer", kullanici_adi=None, parent=None):
+    def __init__(self, db=None, parent=None):
         super().__init__(parent)
         self._db           = db
-        self.yetki         = yetki
-        self.kullanici_adi = kullanici_adi
 
         self.setMinimumWidth(350)
         self.inputs = {}
@@ -138,12 +136,6 @@ class ArizaEklePanel(QWidget):
 
         # Bildiren
         self._add_lbl_input(form, "Bildiren:", "Bildiren")
-        if self.kullanici_adi:
-            self.inputs["Bildiren"].setText(str(self.kullanici_adi))
-            self.inputs["Bildiren"].setReadOnly(True)
-            self.inputs["Bildiren"].setStyleSheet(
-                "background:#333; color:#aaa; border:1px solid #444;"
-            )
 
         # Konu / Başlık
         self._add_lbl_input(form, "Konu:", "Baslik")

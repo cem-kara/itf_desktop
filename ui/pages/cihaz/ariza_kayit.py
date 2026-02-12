@@ -106,12 +106,9 @@ class KayitIslemi(QThread):
 # 2. ANA PENCERE: ARIZA EKLE
 # =============================================================================
 class ArizaKayitPenceresi(QWidget):
-    def __init__(self, db=None, yetki='viewer', kullanici_adi=None):
+    def __init__(self, db=None):
         super().__init__()
         self._db = db
-        self.yetki = yetki
-        self.kullanici_adi = kullanici_adi
-        
         self.setWindowTitle("Yeni Arıza Kaydı")
         self.resize(1000, 700)
         
@@ -180,7 +177,6 @@ class ArizaKayitPenceresi(QWidget):
         
         # 4. Bildiren Personel
         self.create_input_vbox(v_genel, "Bildiren Personel:", "Bildiren", "text")
-        if self.kullanici_adi: self.inputs["Bildiren"].setText(str(self.kullanici_adi))
         
         sol_layout.addWidget(grp_genel)
         

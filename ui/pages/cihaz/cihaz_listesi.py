@@ -18,6 +18,7 @@ class CihazListesiPage(QWidget):
     # Sinyaller
     edit_requested = Signal(dict)  # Düzenleme için veri gönderir
     add_requested = Signal()       # Yeni ekleme isteği
+    periodic_maintenance_requested = Signal(dict)
 
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
@@ -272,6 +273,10 @@ class CihazListesiPage(QWidget):
         ariza_action = QAction("⚠️ Arıza Bildir", self)
         ariza_action.triggered.connect(lambda: self._open_ariza_panel(idx))
         menu.addAction(ariza_action)
+
+        bakim_action = QAction("🗓️ Periyodik Bakım Ekle", self)
+        bakim_action.triggered.connect(lambda: self._request_periodic_maintenance(idx))
+        menu.addAction(bakim_action)
               
         menu.exec(self.table.viewport().mapToGlobal(position))
 
@@ -283,6 +288,13 @@ class CihazListesiPage(QWidget):
             cihaz_id = str(data.get("Cihazid", ""))
             self.ariza_panel.formu_sifirla(cihaz_id)
             self.ariza_panel.setVisible(True)
+
+    def _request_periodic_maintenance(self, index):
+        row = index.row()
+        item = self.table.item(row, 0)
+        if item:
+            data = item.data(Qt.UserRole)
+            self.periodic_maintenance_requested.emit(data)
 
     def _close_ariza_panel(self):
         self.ariza_panel.setVisible(False)

@@ -121,12 +121,10 @@ class IslemKaydedici(QThread):
 class ArizaIslemPenceresi(QWidget):
     kapanma_istegi = Signal()
 
-    def __init__(self, ariza_id=None, db=None, yetki='viewer', kullanici_adi=None, ana_pencere=None):
+    def __init__(self, ariza_id=None, db=None, ana_pencere=None):
         super().__init__()
         self._db = db
         self.ariza_id = str(ariza_id).strip() if ariza_id else None
-        self.yetki = yetki
-        self.kullanici_adi = kullanici_adi
         self.ana_pencere = ana_pencere
         
         self.setWindowTitle(f"Arıza Takip Kartı | {self.ariza_id}")
@@ -203,8 +201,6 @@ class ArizaIslemPenceresi(QWidget):
         # Yapan / Tür
         h_personel = QHBoxLayout()
         self._add_lbl_input(h_personel, "Yapan:", "IslemYapan")
-        if self.kullanici_adi:
-            self.inputs["IslemYapan"].setText(str(self.kullanici_adi))
         
         self._add_lbl_combo(h_personel, "Tür:", "IslemTuru", ISLEM_TURLERI)
         form.addLayout(h_personel)
@@ -403,7 +399,7 @@ class ArizaIslemPenceresi(QWidget):
                 QMessageBox.warning(self, "Uyarı", "Bu arıza kapatılmıştır. Sadece rapor dosyası yükleyebilirsiniz.")
                 return
             
-            yapan = str(self.kullanici_adi) if self.kullanici_adi else "Sistem"
+            yapan = "Sistem"
             yapilan = "Arıza kapalıyken sonradan rapor eklendi."
             tur = "Rapor Ekleme"
             yeni_durum = self.inputs["YeniDurum"].currentText() # Değişmedi zaten

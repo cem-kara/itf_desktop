@@ -28,7 +28,6 @@ class MainWindow(QMainWindow):
         self._pages = {}
         self._sync_worker = None
         self._db = SQLiteManager()
-
         self._load_theme()
         self._build_ui()
         self._build_status_bar()
@@ -184,6 +183,7 @@ class MainWindow(QMainWindow):
             page = CihazListesiPage(db=self._db)
             page.add_requested.connect(lambda: self._on_menu_clicked("Cihaz", "Cihaz Ekle"))
             page.edit_requested.connect(self._open_cihaz_detay)
+            page.periodic_maintenance_requested.connect(self.open_periodic_maintenance_for_device)
             page.btn_kapat.clicked.connect(lambda: self._close_page("Cihaz Listesi"))
             page.load_data()
             return page
@@ -197,8 +197,14 @@ class MainWindow(QMainWindow):
 
         if baslik == "Periyodik Bakım":
             from ui.pages.cihaz.periyodik_bakim import PeriyodikBakimPage
-            page = PeriyodikBakimPage(db=self._db, kullanici_adi="Admin") # Kullanıcı adı dinamik olmalı
+            page = PeriyodikBakimPage(db=self._db)
             page.btn_kapat.clicked.connect(lambda: self._close_page("Periyodik Bakım"))
+            return page
+
+        if baslik == "Kalibrasyon Takip":
+            from ui.pages.cihaz.kalibrasyon_takip import KalibrasyonTakipPage
+            page = KalibrasyonTakipPage(db=self._db)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Kalibrasyon Takip"))
             return page
         
         return PlaceholderPage(
@@ -548,6 +554,24 @@ class MainWindow(QMainWindow):
             
         # Listeyi aç
         self._on_menu_clicked("Cihaz", "Cihaz Listesi")
+
+    def open_periodic_maintenance_for_device(self, device_data):
+        """Cihaz listesinden periyodik bakım sayfasını açar ve cihazı seçer."""
+        cihaz_id = device_data.get("Cihazid", "")
+        if not cihaz_id:
+            return
+
+        # Periyodik Bakım sayfasını aç veya oluştur
+        self._on_menu_clicked("Cihaz", "Periyodik Bakım")
+
+        # Sayfa instance'ını al
+        page = self._pages.get("Periyodik Bakım")
+        if page and hasattr(page, 'set_cihaz'):
+            # Cihazı ayarla
+            page.set_cihaz(cihaz_id)
+            logger.info(f"Periyodik Bakım sayfası {cihaz_id} için açıldı.")
+        else:
+            logger.warning("Periyodik Bakım sayfası bulunamadı veya 'set_cihaz' metodu yok.")
 
     def _delete_cihaz_from_detay(self, cihaz_id, page_key):
         """Detay sayfasından cihaz silme işlemi."""
