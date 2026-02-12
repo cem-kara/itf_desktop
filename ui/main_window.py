@@ -194,6 +194,12 @@ class MainWindow(QMainWindow):
             page.btn_kapat.clicked.connect(lambda: self._close_page("Arıza Listesi"))
             page.load_data()
             return page
+
+        if baslik == "Periyodik Bakım":
+            from ui.pages.cihaz.periyodik_bakim import PeriyodikBakimPage
+            page = PeriyodikBakimPage(db=self._db, kullanici_adi="Admin") # Kullanıcı adı dinamik olmalı
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Periyodik Bakım"))
+            return page
         
         return PlaceholderPage(
             title=baslik,
