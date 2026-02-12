@@ -230,60 +230,144 @@ class SyncService:
     def _pull_replace(self, table_name, cfg):
         """
         Pull-only modda çalışan tablolar için özel sync mantığı.
-        
+
         Akış:
         1. Google Sheets'ten tüm kayıtları oku
-        2. Local tabloyu tamamen temizle
-        3. Sheets'teki kayıtları local'e ekle
-        
+        2. Satırları doğrula (boş PK, bilinmeyen kolon adı vb.)
+        3. Local tabloyu tamamen temizle
+        4. INSERT OR REPLACE ile tüm kayıtları yaz
+           (Sheets'te yinelenen PK varsa son değer kazanır)
+
         Kullanım: Sabitler, Tatiller gibi sadece merkezi yönetilen tablolar için
         """
         columns = cfg["columns"]
-        
+        pk = cfg["pk"]
+        # Composite PK desteği: string ise listeye çevir
+        pk_cols = pk if isinstance(pk, list) else [pk]
+
         try:
             log_sync_step(table_name, "pull_only_start")
-            
-            # Google Sheets'i oku
+
+            # ── 1. Google Sheets'i oku ──
             from database.google import get_worksheet
             ws = get_worksheet(table_name)
-            
+
             if not ws:
                 logger.warning(f"  {table_name} worksheet bulunamadı, atlanıyor")
                 return
-            
+
             records = ws.get_all_records()
             log_sync_step(table_name, "pull_only_read", len(records))
             logger.info(f"  Google Sheets'ten {len(records)} kayıt okundu")
-            
-            # Local tabloyu temizle
+
+            # ── 2. Boş PK filtresi + aynı tarihe düşen tatilleri birleştir ──
+            #
+            # Örnek: 23.04.2023 hem "Ramazan Bayramı 3.gün" hem
+            # "Ulusal Egemenlik ve Çocuk Bayramı" olabilir.
+            # Tarih PRIMARY KEY olduğu için çakışma yaşanır.
+            # Çözüm: aynı tarihe ait isimleri " / " ile birleştirip tek kayıt yap.
+            #
+            # ResmiTatil dışındaki kolonlar (varsa) son satırın değerini alır.
+
+            skipped_rows = []          # boş PK nedeniyle atlanan satırlar
+            merged: dict = {}          # {tarih_key: row_dict}  (birleştirilmiş)
+            merge_log: dict = {}       # {tarih_key: [isim1, isim2, ...]}
+
+            MERGE_COL = "ResmiTatil"   # Birleştirilecek metin kolonu
+
+            for i, row in enumerate(records, start=2):  # start=2: başlık satırı 1
+                pk_values = [str(row.get(col, "")).strip() for col in pk_cols]
+
+                # Boş PK → atla
+                if any(v == "" for v in pk_values):
+                    reason = f"Boş PK ({', '.join(pk_cols)}={pk_values})"
+                    skipped_rows.append({"sheet_row": i, "reason": reason})
+                    logger.warning(
+                        f"  [{table_name}] Satır #{i} atlandı — {reason} | "
+                        f"Veri: { {c: row.get(c) for c in columns} }"
+                    )
+                    continue
+
+                key = "|".join(pk_values)
+
+                if key not in merged:
+                    # İlk kez görülen tarih: kaydı olduğu gibi al
+                    merged[key] = {c: str(row.get(c, "")).strip() for c in columns}
+                    merge_log[key] = [merged[key].get(MERGE_COL, "")]
+                else:
+                    # Aynı tarih tekrar geldi: sadece MERGE_COL'u birleştir,
+                    # diğer kolonları son satırın değeriyle güncelle
+                    yeni_isim = str(row.get(MERGE_COL, "")).strip()
+                    if yeni_isim and yeni_isim not in merge_log[key]:
+                        merge_log[key].append(yeni_isim)
+                        merged[key][MERGE_COL] = " / ".join(merge_log[key])
+                    # Diğer kolonları güncelle (PK ve MERGE_COL hariç)
+                    for c in columns:
+                        if c not in pk_cols and c != MERGE_COL:
+                            merged[key][c] = str(row.get(c, "")).strip()
+
+            # Birleştirme özeti logla
+            merged_dates = [k for k, v in merge_log.items() if len(v) > 1]
+            if merged_dates:
+                logger.info(
+                    f"  [{table_name}] Aynı güne düşen {len(merged_dates)} tatil "
+                    f"birleştirildi:"
+                )
+                for key in merged_dates:
+                    logger.info(
+                        f"    {key.replace('|', ' + ')} → "
+                        f"\"{merged[key].get(MERGE_COL)}\""
+                    )
+
+            if skipped_rows:
+                logger.error(
+                    f"  [{table_name}] {len(skipped_rows)} satır boş PK nedeniyle "
+                    f"atlandı — Google Sheets'te düzeltilmesi gerekiyor!"
+                )
+
+            valid_records = list(merged.values())
+
+            # ── 3. Local tabloyu temizle ──
             self.db.execute(f"DELETE FROM {table_name}")
             logger.info(f"  Local {table_name} tablosu temizlendi")
-            
-            # Sheets'ten tüm kayıtları ekle
+
+            # ── 4. INSERT ile kayıtları yaz ──
+            # Birleştirme sonrası artık duplicate PK kalmaz,
+            # yine de OR REPLACE bırakıyoruz ek güvence olarak.
             inserted = 0
-            for row in records:
-                # Sadece tanımlı kolonları al
-                cols = ", ".join(columns)
-                placeholders = ", ".join(["?"] * len(columns))
-                values = [str(row.get(col, "")).strip() for col in columns]
-                
+            failed_rows = []
+            cols_str = ", ".join(columns)
+            placeholders = ", ".join(["?"] * len(columns))
+            sql = f"INSERT OR REPLACE INTO {table_name} ({cols_str}) VALUES ({placeholders})"
+
+            for row in valid_records:
+                values = [row.get(col, "") for col in columns]
                 try:
-                    self.db.execute(
-                        f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders})",
-                        values
-                    )
+                    self.db.execute(sql, values)
                     inserted += 1
                 except Exception as row_error:
-                    logger.warning(f"  Satır eklenemedi: {row_error}")
+                    row_preview = {c: row.get(c) for c in columns}
+                    failed_rows.append({"error": str(row_error), "data": row_preview})
+                    logger.error(
+                        f"  [{table_name}] INSERT hatası: "
+                        f"{type(row_error).__name__}: {row_error} | Veri: {row_preview}"
+                    )
                     continue
-            
+
+            # ── 5. Özet rapor ──
+            total_skipped = len(skipped_rows) + len(failed_rows)
             log_sync_step(table_name, "pull_only_complete", inserted)
-            logger.info(f"  {table_name} pull_only: {inserted}/{len(records)} kayıt yüklendi ✓")
-            
-            # İstatistikler
+            logger.info(
+                f"  {table_name} pull_only tamamlandı: "
+                f"{inserted} kayıt eklendi "
+                f"({len(records)} Sheets satırı → {len(valid_records)} benzersiz kayıt"
+                + (f", {total_skipped} atlandı" if total_skipped else "")
+                + ") ✓"
+            )
+
             stats = {'pushed': 0, 'pulled': inserted}
             log_sync_complete(table_name, stats)
-            
+
         except Exception as e:
             log_sync_error(table_name, "pull_only", e)
             raise

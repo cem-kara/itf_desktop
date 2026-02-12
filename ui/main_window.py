@@ -178,6 +178,22 @@ class MainWindow(QMainWindow):
                 on_saved=self._on_cihaz_saved
             )
             return page
+
+        if baslik == "Cihaz Listesi":
+            from ui.pages.cihaz.cihaz_listesi import CihazListesiPage
+            page = CihazListesiPage(db=self._db)
+            page.add_requested.connect(lambda: self._on_menu_clicked("Cihaz", "Cihaz Ekle"))
+            page.edit_requested.connect(self._open_cihaz_detay)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Cihaz Listesi"))
+            page.load_data()
+            return page
+
+        if baslik == "Arıza Listesi":
+            from ui.pages.cihaz.ariza_listesi import ArizaListesiPage
+            page = ArizaListesiPage(db=self._db)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Arıza Listesi"))
+            page.load_data()
+            return page
         
         return PlaceholderPage(
             title=baslik,
@@ -461,3 +477,89 @@ class MainWindow(QMainWindow):
             self.stack.setCurrentWidget(self._welcome)
             self.page_title.setVisible(False)
             self.sidebar.set_active("")
+
+    def _open_cihaz_duzenle(self, data):
+        """Cihaz düzenleme sayfasını aç."""
+        # Eğer Cihaz Ekle sayfası zaten açıksa kapat (temiz başlasın)
+        if "Cihaz Ekle" in self._pages:
+            old = self._pages.pop("Cihaz Ekle")
+            self.stack.removeWidget(old)
+            old.deleteLater()
+            
+        from ui.pages.cihaz.cihaz_ekle import CihazEklePage
+        page = CihazEklePage(
+            db=self._db,
+            edit_data=data,
+            on_saved=self._on_cihaz_saved
+        )
+        
+        self._pages["Cihaz Ekle"] = page
+        self.stack.addWidget(page)
+        self.stack.setCurrentWidget(page)
+        
+        marka = data.get("Marka", "")
+        model = data.get("Model", "")
+        self.page_title.setText(f"Cihaz Düzenle — {marka} {model}")
+        self.page_title.setVisible(True)
+
+    def _open_cihaz_detay(self, data):
+        """Cihaz detay sayfasını aç."""
+        cihaz_id = data.get("Cihazid", "")
+        detay_key = f"__cihaz_detay_{cihaz_id}"
+
+        # Eğer zaten açıksa kapat
+        if detay_key in self._pages:
+            old = self._pages.pop(detay_key)
+            self.stack.removeWidget(old)
+            old.deleteLater()
+
+        from ui.pages.cihaz.cihaz_detay import CihazDetayPage
+        page = CihazDetayPage(
+            db=self._db,
+            data=data,
+            on_saved=self._on_cihaz_saved
+        )
+        
+        # Sinyalleri bağla
+        page.back_requested.connect(lambda: self._back_to_cihaz_listesi(detay_key))
+
+        self._pages[detay_key] = page
+        self.stack.addWidget(page)
+        self.stack.setCurrentWidget(page)
+        
+        marka = data.get("Marka", "")
+        model = data.get("Model", "")
+        self.page_title.setText(f"Cihaz Detay — {marka} {model}")
+        self.page_title.setVisible(True)
+
+    def _back_to_cihaz_listesi(self, detay_key):
+        """Detay sayfasından cihaz listesine geri dön."""
+        # Detay sayfasını kapat
+        if detay_key in self._pages:
+            old = self._pages.pop(detay_key)
+            self.stack.removeWidget(old)
+            old.deleteLater()
+            
+        # Listeyi aç
+        self._on_menu_clicked("Cihaz", "Cihaz Listesi")
+
+    def _delete_cihaz_from_detay(self, cihaz_id, page_key):
+        """Detay sayfasından cihaz silme işlemi."""
+        try:
+            from database.repository_registry import RepositoryRegistry
+            registry = RepositoryRegistry(self._db)
+            repo = registry.get("Cihazlar")
+            repo.delete(cihaz_id)
+            
+            # Sayfayı kapat ve listeye dön
+            self._back_to_cihaz_listesi(page_key)
+            
+            # Listeyi yenile
+            if "Cihaz Listesi" in self._pages:
+                self._pages["Cihaz Listesi"].load_data()
+                
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.information(self, "Başarılı", "Cihaz silindi.")
+            
+        except Exception as e:
+            logger.error(f"Cihaz silme hatası: {e}")

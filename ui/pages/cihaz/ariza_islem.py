@@ -1,0 +1,457 @@
+# -*- coding: utf-8 -*-
+import sys
+import os
+import logging
+from datetime import datetime
+
+from PySide6.QtCore import Qt, QDate, QThread, Signal
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
+                               QLabel, QLineEdit, QComboBox, QDateEdit, QPushButton, 
+                               QMessageBox, QFrame, QProgressBar, QTextEdit, QFileDialog)
+
+from ui.theme_manager import ThemeManager
+from database.sqlite_manager import SQLiteManager
+
+# --- LOGLAMA ---
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("ArizaIslem")
+
+# Merkezi stil
+S = ThemeManager.get_all_component_styles()
+
+# --- SABİT LİSTELER ---
+ISLEM_TURLERI = [
+    "Arıza Tespiti / İnceleme",
+    "Onarım / Tamirat",
+    "Parça Değişimi",
+    "Yazılım Güncelleme",
+    "Kalibrasyon",
+    "Dış Servis Gönderimi",
+    "Kapatma / Sonlandırma"
+]
+
+DURUM_SECENEKLERI = [
+    "İşlemde",
+    "Parça Bekliyor",
+    "Dış Serviste",
+    "Kapalı (Çözüldü)",
+    "Kapalı (İptal)"
+]
+
+# =============================================================================
+# 1. THREAD SINIFLARI
+# =============================================================================
+class VeriYukleyici(QThread):
+    veri_hazir = Signal(dict, list)
+    hata_olustu = Signal(str)
+
+    def __init__(self, ariza_id):
+        super().__init__()
+        self.ariza_id = str(ariza_id).strip()
+
+    def run(self):
+        from database.repository_registry import RepositoryRegistry
+        db = None
+        try:
+            db = SQLiteManager()
+            registry = RepositoryRegistry(db)
+            
+            # Arıza Detay (Cihaz_Ariza)
+            repo_ariza = registry.get("Cihaz_Ariza")
+            ariza_bilgisi = repo_ariza.get_by_id(self.ariza_id) or {}
+            
+            # Geçmiş İşlemler (Ariza_Islem)
+            # Repository'de filtreleme olmadığı için SQL kullanıyoruz ama tablo adı doğru
+            cursor = db.execute(
+                "SELECT * FROM Ariza_Islem WHERE Arizaid = ? ORDER BY Islemid DESC", 
+                (self.ariza_id,)
+            )
+            gecmis_islemler = [dict(r) for r in cursor.fetchall()]
+            
+            self.veri_hazir.emit(ariza_bilgisi, gecmis_islemler)
+        except Exception as e:
+            self.hata_olustu.emit(str(e))
+        finally:
+            if db: db.close()
+
+class IslemKaydedici(QThread):
+    islem_tamam = Signal()
+    hata_olustu = Signal(str)
+
+    def __init__(self, islem_verisi, rapor_yolu=None):
+        super().__init__()
+        self.islem_verisi = islem_verisi
+        self.rapor_yolu = rapor_yolu
+
+    def run(self):
+        from database.repository_registry import RepositoryRegistry
+        db = None
+        try:
+            db = SQLiteManager()
+            registry = RepositoryRegistry(db)
+            
+            # Rapor yolu ekle
+            if not self.rapor_yolu:
+                self.islem_verisi["Rapor"] = ""
+            else:
+                self.islem_verisi["Rapor"] = self.rapor_yolu
+                
+            # İşlem Kaydı Ekle (Ariza_Islem)
+            repo_islem = registry.get("Ariza_Islem")
+            repo_islem.insert(self.islem_verisi)
+            
+            # Arıza Durumunu Güncelle (Cihaz_Ariza)
+            yeni_durum = self.islem_verisi.get("YeniDurum")
+            ariza_id = self.islem_verisi.get("Arizaid")
+            
+            if yeni_durum and ariza_id:
+                repo_ariza = registry.get("Cihaz_Ariza")
+                repo_ariza.update(ariza_id, {"Durum": yeni_durum})
+            
+            self.islem_tamam.emit()
+        except Exception as e:
+            self.hata_olustu.emit(str(e))
+        finally:
+            if db: db.close()
+
+# =============================================================================
+# 3. ANA PENCERE: KOMPAKT ARIZA İŞLEM
+# =============================================================================
+class ArizaIslemPenceresi(QWidget):
+    kapanma_istegi = Signal()
+
+    def __init__(self, ariza_id=None, db=None, yetki='viewer', kullanici_adi=None, ana_pencere=None):
+        super().__init__()
+        self._db = db
+        self.ariza_id = str(ariza_id).strip() if ariza_id else None
+        self.yetki = yetki
+        self.kullanici_adi = kullanici_adi
+        self.ana_pencere = ana_pencere
+        
+        self.setWindowTitle(f"Arıza Takip Kartı | {self.ariza_id}")
+        
+        self.inputs = {}
+        self.ariza_data = {} 
+        self.secilen_rapor_yolu = None
+        self.ariza_kapali_mi = False # Durum kontrolü için bayrak
+        
+        self.setup_ui()
+        if self.ariza_id:
+            self.verileri_yukle()
+
+    def setup_ui(self):
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(10)
+        
+        # Başlık
+        self.lbl_baslik = QLabel(f"Arıza No: {self.ariza_id if self.ariza_id else '---'}")
+        self.lbl_baslik.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        self.lbl_baslik.setStyleSheet(
+            "color:#e57373; border-bottom:2px solid #444; padding-bottom:5px;"
+        )
+        main_layout.addWidget(self.lbl_baslik)
+
+        # Form
+        form = QVBoxLayout()
+        form.setSpacing(10)
+
+        # Cihaz No & Tarih (Yan yana)
+        h_info = QHBoxLayout()
+        self._add_lbl_input(h_info, "Cihaz No:", "CihazID", read_only=True)
+        self.inputs["CihazID"].setStyleSheet(
+            "background:#333; color:#4dabf7; font-weight:bold; border:1px solid #555;"
+        )
+        self._add_lbl_input(h_info, "Tarih:", "Tarih", read_only=True)
+        self.inputs["Tarih"].setStyleSheet(
+            "background:#333; color:#aaa; border:1px solid #444;"
+        )
+        form.addLayout(h_info)
+
+        # Arıza Açıklaması
+        lbl_acik = QLabel("Arıza Detayı:")
+        lbl_acik.setStyleSheet("color:#aaa; font-size:11px;")
+        self.inputs["Aciklama"] = QTextEdit()
+        self.inputs["Aciklama"].setReadOnly(True)
+        self.inputs["Aciklama"].setStyleSheet(
+            "background:#333; color:#ddd; border:1px solid #444;"
+        )
+        self.inputs["Aciklama"].setMaximumHeight(60)
+        form.addWidget(lbl_acik)
+        form.addWidget(self.inputs["Aciklama"])
+
+        # Ayraç
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        line.setStyleSheet("background-color: #444;")
+        form.addWidget(line)
+
+        # Müdahale Başlık
+        self.lbl_mudahale = QLabel("Müdahale Girişi")
+        self.lbl_mudahale.setStyleSheet("color:#4CAF50; font-weight:bold; font-size:12px;")
+        form.addWidget(self.lbl_mudahale)
+
+        # İşlem Tarih / Saat
+        h_zaman = QHBoxLayout()
+        self._add_lbl_date(h_zaman, "Tarih:", "IslemTarih")
+        self._add_lbl_input(h_zaman, "Saat:", "IslemSaat")
+        self.inputs["IslemSaat"].setText(datetime.now().strftime("%H:%M"))
+        form.addLayout(h_zaman)
+
+        # Yapan / Tür
+        h_personel = QHBoxLayout()
+        self._add_lbl_input(h_personel, "Yapan:", "IslemYapan")
+        if self.kullanici_adi:
+            self.inputs["IslemYapan"].setText(str(self.kullanici_adi))
+        
+        self._add_lbl_combo(h_personel, "Tür:", "IslemTuru", ISLEM_TURLERI)
+        form.addLayout(h_personel)
+
+        # Yapılan İşlem
+        lbl_yapilan = QLabel("Yapılan İşlem:")
+        lbl_yapilan.setStyleSheet("color:#aaa; font-size:11px;")
+        self.inputs["YapilanIslem"] = QTextEdit()
+        self.inputs["YapilanIslem"].setStyleSheet(S["input"])
+        self.inputs["YapilanIslem"].setMinimumHeight(80)
+        form.addWidget(lbl_yapilan)
+        form.addWidget(self.inputs["YapilanIslem"])
+
+        # Durum
+        self._add_lbl_combo(form, "Yeni Durum:", "YeniDurum", DURUM_SECENEKLERI)
+
+        # Rapor Dosyası
+        lbl_rapor = QLabel("Rapor (Opsiyonel):")
+        lbl_rapor.setStyleSheet("color:#aaa; font-size:11px;")
+        form.addWidget(lbl_rapor)
+        
+        h_rapor = QHBoxLayout()
+        self.txt_rapor_yolu = QLineEdit()
+        self.txt_rapor_yolu.setReadOnly(True)
+        self.txt_rapor_yolu.setPlaceholderText("Dosya seçilmedi")
+        self.txt_rapor_yolu.setStyleSheet(S["input"])
+        
+        self.btn_rapor_sec = QPushButton("Seç")
+        self.btn_rapor_sec.setFixedSize(50, 30)
+        self.btn_rapor_sec.setStyleSheet(S["file_btn"])
+        self.btn_rapor_sec.clicked.connect(self.rapor_dosyasi_sec)
+        
+        h_rapor.addWidget(self.txt_rapor_yolu)
+        h_rapor.addWidget(self.btn_rapor_sec)
+        form.addLayout(h_rapor)
+
+        main_layout.addLayout(form)
+
+        # Progress
+        self.progress = QProgressBar()
+        self.progress.setFixedHeight(5)
+        self.progress.setTextVisible(False)
+        self.progress.setStyleSheet(S.get("progress", ""))
+        main_layout.addWidget(self.progress)
+
+        # Butonlar
+        h_btn = QHBoxLayout()
+        self.btn_kapat = QPushButton("Vazgeç")
+        self.btn_kapat.setStyleSheet(S["cancel_btn"])
+        self.btn_kapat.clicked.connect(self.kapanma_istegi.emit)
+        
+        self.btn_kaydet = QPushButton("Kaydet")
+        self.btn_kaydet.setStyleSheet(S["save_btn"])
+        self.btn_kaydet.clicked.connect(self.kaydet_baslat)
+        
+        h_btn.addWidget(self.btn_kapat)
+        h_btn.addWidget(self.btn_kaydet)
+        main_layout.addLayout(h_btn)
+
+        main_layout.addStretch()
+
+    # ─── Yardımcılar ──────────────────────────────────────────
+
+    def _add_lbl_input(self, layout, text, key, read_only=False):
+        lbl = QLabel(text)
+        lbl.setStyleSheet("color:#aaa; font-size:11px;")
+        w = QLineEdit()
+        w.setStyleSheet(S["input"])
+        if read_only:
+            w.setReadOnly(True)
+        self.inputs[key] = w
+        layout.addWidget(lbl)
+        layout.addWidget(w)
+
+    def _add_lbl_combo(self, layout, text, key, items):
+        col = QVBoxLayout()
+        col.setContentsMargins(0, 0, 0, 0)
+        col.setSpacing(2)
+        lbl = QLabel(text)
+        lbl.setStyleSheet("color:#aaa; font-size:11px;")
+        cb = QComboBox()
+        cb.addItems(items)
+        cb.setStyleSheet(S["combo"])
+        self.inputs[key] = cb
+        col.addWidget(lbl)
+        col.addWidget(cb)
+        layout.addLayout(col)
+
+    def _add_lbl_date(self, layout, text, key):
+        lbl = QLabel(text)
+        lbl.setStyleSheet("color:#aaa; font-size:11px;")
+        de = QDateEdit()
+        de.setCalendarPopup(True)
+        de.setDisplayFormat("dd.MM.yyyy")
+        de.setDate(QDate.currentDate())
+        de.setStyleSheet(S["date"])
+        self.inputs[key] = de
+        layout.addWidget(lbl)
+        layout.addWidget(de)
+
+    # --- MANTIK ---
+    def yukle(self, ariza_id):
+        self.ariza_id = str(ariza_id).strip()
+        self.lbl_baslik.setText(f"Arıza No: {self.ariza_id}")
+        self.verileri_yukle()
+
+    def verileri_yukle(self):
+        self.progress.setVisible(True)
+        self.progress.setRange(0, 0)
+        self.loader = VeriYukleyici(self.ariza_id)
+        self.loader.veri_hazir.connect(self.verileri_doldur)
+        self.loader.hata_olustu.connect(self.hata_goster)
+        self.loader.start()
+
+    def verileri_doldur(self, ariza_info, gecmis):
+        self.progress.setRange(0, 100); self.progress.setValue(100)
+        self.ariza_data = ariza_info
+        
+        if not ariza_info:
+            QMessageBox.critical(self, "Hata", "Arıza kaydı bulunamadı!")
+            self.close()
+            return
+
+        def get_val(key_list):
+            for k in key_list:
+                if k in ariza_info: return str(ariza_info[k])
+            return "-"
+
+        self.inputs["CihazID"].setText(get_val(["CihazID", "Cihazid"]))
+        self.inputs["Tarih"].setText(get_val(["Tarih", "BaslangicTarihi"]))
+        detay = get_val(["Aciklama", "ariza_acikla", "ArizaAcikla"])
+        self.inputs["Aciklama"].setText(detay)
+        
+        mevcut_durum = get_val(["Durum", "durum"])
+        index = self.inputs["YeniDurum"].findText(mevcut_durum)
+        if index >= 0: self.inputs["YeniDurum"].setCurrentIndex(index)
+
+        # 🛑 KAPALI KONTROLÜ
+        self.ariza_kapali_mi = "kapalı" in mevcut_durum.lower()
+        if self.ariza_kapali_mi:
+            self.form_durumunu_ayarla(kapali=True)
+        else:
+            self.form_durumunu_ayarla(kapali=False)
+
+        # GEÇMİŞ
+        log_text = ""
+        if gecmis:
+            for islem in gecmis:
+                zaman = f"{islem.get('Tarih', '')} {islem.get('Saat', '')}".strip()
+                yapan = islem.get("IslemYapan", "")
+                tur = islem.get("IslemTuru", "")
+                detay = islem.get("YapilanIslem", "")
+                rapor = islem.get("Rapor", "")
+                
+                log_text += f"[{zaman}] {yapan} ({tur}): {detay}"
+                if rapor: log_text += " [📄 Rapor Var]"
+                log_text += "\n"
+       
+
+    def form_durumunu_ayarla(self, kapali):
+        """Eğer arıza kapalıysa inputları kapat, sadece rapor yüklemeye izin ver."""
+        durum = not kapali # Aktif mi?
+        
+        self.inputs["IslemTarih"].setEnabled(durum)
+        self.inputs["IslemSaat"].setEnabled(durum)
+        self.inputs["IslemYapan"].setEnabled(durum)
+        self.inputs["IslemTuru"].setEnabled(durum)
+        self.inputs["YapilanIslem"].setReadOnly(kapali)
+        self.inputs["YeniDurum"].setEnabled(durum)
+        
+        if kapali:
+            self.lbl_mudahale.setText("🔒 Arıza Kapatılmış (Sadece Rapor Eklenebilir)")
+            self.lbl_mudahale.setStyleSheet("color: #e57373; font-weight: bold; font-size: 13px; margin-top: 5px;")
+            self.btn_kaydet.setText("Raporu Kaydet")
+            # Arkaplanları gri yapalım ki kapalı olduğu anlaşılsın
+            disabled_style = "background: rgba(255,255,255,0.05); color: #666; border: 1px solid #333;"
+            self.inputs["IslemYapan"].setStyleSheet(disabled_style)
+            self.inputs["YapilanIslem"].setStyleSheet(disabled_style)
+        else:
+            self.lbl_mudahale.setText("🛠️ Müdahale ve Çözüm Girişi")
+            self.lbl_mudahale.setStyleSheet("color:#4CAF50; font-weight:bold; font-size:12px;")
+            self.btn_kaydet.setText("Kaydet")
+
+    def rapor_dosyasi_sec(self):
+        yol, _ = QFileDialog.getOpenFileName(self, "Rapor Dosyası Seç", "", "PDF ve Resimler (*.pdf *.jpg *.png)")
+        if yol:
+            self.secilen_rapor_yolu = yol
+            dosya_adi = os.path.basename(yol)
+            self.txt_rapor_yolu.setText(dosya_adi)
+            self.txt_rapor_yolu.setStyleSheet("color: #4caf50; font-weight: bold;")
+
+    def kaydet_baslat(self):
+        # 1. KAPALI DURUM MANTIĞI
+        if self.ariza_kapali_mi:
+            if not self.secilen_rapor_yolu:
+                QMessageBox.warning(self, "Uyarı", "Bu arıza kapatılmıştır. Sadece rapor dosyası yükleyebilirsiniz.")
+                return
+            
+            yapan = str(self.kullanici_adi) if self.kullanici_adi else "Sistem"
+            yapilan = "Arıza kapalıyken sonradan rapor eklendi."
+            tur = "Rapor Ekleme"
+            yeni_durum = self.inputs["YeniDurum"].currentText() # Değişmedi zaten
+            
+        else:
+            # 2. NORMAL DURUM MANTIĞI
+            yapan = self.inputs["IslemYapan"].text().strip()
+            yapilan = self.inputs["YapilanIslem"].toPlainText().strip()
+            tur = self.inputs["IslemTuru"].currentText()
+            yeni_durum = self.inputs["YeniDurum"].currentText()
+            
+            if not yapan or not yapilan:
+                QMessageBox.warning(self, "Eksik", "Lütfen 'İşlemi Yapan' ve 'Yapılan İşlem' alanlarını doldurun.")
+                return
+
+        self.btn_kaydet.setText("Kaydediliyor...")
+        self.btn_kaydet.setEnabled(False)
+        self.progress.setRange(0, 0)
+        
+        islem_verisi = {
+            "Arizaid": self.ariza_id,
+            "IslemYapan": yapan,
+            "Tarih": self.inputs["IslemTarih"].date().toString("yyyy-MM-dd"),
+            "Saat": self.inputs["IslemSaat"].text(),
+            "IslemTuru": tur,
+            "YapilanIslem": yapilan,
+            "YeniDurum": yeni_durum
+        }
+        
+        self.saver = IslemKaydedici(islem_verisi, self.secilen_rapor_yolu)
+        self.saver.islem_tamam.connect(self.kayit_basarili)
+        self.saver.hata_olustu.connect(self.hata_goster)
+        self.saver.start()
+
+    def kayit_basarili(self):
+        self.progress.setRange(0, 100)
+        QMessageBox.information(self, "Başarılı", "Kayıt işlemi tamamlandı.")
+        if self.ana_pencere and hasattr(self.ana_pencere, 'verileri_yenile'):
+            self.ana_pencere.verileri_yenile()
+        self.kapanma_istegi.emit()
+
+    def hata_goster(self, msg):
+        self.progress.setRange(0, 100)
+        QMessageBox.critical(self, "Hata", msg)
+        self.btn_kaydet.setEnabled(True)
+        self.btn_kaydet.setText("Kaydet")
+
+    def closeEvent(self, event):
+        if hasattr(self, 'loader') and self.loader.isRunning(): self.loader.quit(); self.loader.wait(500)
+        if hasattr(self, 'saver') and self.saver.isRunning(): self.saver.quit(); self.saver.wait(500)
+        event.accept()

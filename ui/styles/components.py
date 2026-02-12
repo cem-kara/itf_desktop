@@ -480,6 +480,12 @@ class ComponentStyles:
         background: transparent;
     """
 
+    VALUE = f"""
+        color: {Colors.TEXT_PRIMARY};
+        font-size: 13px;
+        background: transparent;
+    """
+
     REQUIRED_LABEL = f"""
         color: {Colors.TEXT_PRIMARY};
         font-size: 12px;
@@ -810,6 +816,7 @@ STYLES = {
     "photo_area": ComponentStyles.PHOTO_AREA,
     "photo_btn": ComponentStyles.PHOTO_BTN,
     "label": ComponentStyles.LABEL,
+    "value": ComponentStyles.VALUE,
     "required_label": ComponentStyles.REQUIRED_LABEL,
     "input": ComponentStyles.INPUT,
     "date": ComponentStyles.DATE,
