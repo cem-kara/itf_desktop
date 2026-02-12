@@ -1,17 +1,15 @@
 # -*- coding: utf-8 -*-
-import sys
 import os
 import logging
 from datetime import datetime
 
 from PySide6.QtCore import Qt, QDate, QThread, Signal
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, 
                                QLabel, QLineEdit, QComboBox, QDateEdit, QPushButton, 
                                QMessageBox, QFrame, QProgressBar, QTextEdit, QFileDialog)
 
 from ui.theme_manager import ThemeManager
-from database.sqlite_manager import SQLiteManager
 
 # --- LOGLAMA ---
 logging.basicConfig(level=logging.INFO)
@@ -20,30 +18,11 @@ logger = logging.getLogger("ArizaIslem")
 # Merkezi stil
 S = ThemeManager.get_all_component_styles()
 
-# --- SABİT LİSTELER ---
-ISLEM_TURLERI = [
-    "Arıza Tespiti / İnceleme",
-    "Onarım / Tamirat",
-    "Parça Değişimi",
-    "Yazılım Güncelleme",
-    "Kalibrasyon",
-    "Dış Servis Gönderimi",
-    "Kapatma / Sonlandırma"
-]
-
-DURUM_SECENEKLERI = [
-    "İşlemde",
-    "Parça Bekliyor",
-    "Dış Serviste",
-    "Kapalı (Çözüldü)",
-    "Kapalı (İptal)"
-]
-
 # =============================================================================
 # 1. THREAD SINIFLARI
 # =============================================================================
 class VeriYukleyici(QThread):
-    veri_hazir = Signal(dict, list)
+    veri_hazir = Signal(dict, list, list, list) # ariza_bilgisi, gecmis_islemler, islem_turleri, durum_secenekleri
     hata_olustu = Signal(str)
 
     def __init__(self, ariza_id):
@@ -51,25 +30,28 @@ class VeriYukleyici(QThread):
         self.ariza_id = str(ariza_id).strip()
 
     def run(self):
+        from database.sqlite_manager import SQLiteManager
         from database.repository_registry import RepositoryRegistry
         db = None
         try:
             db = SQLiteManager()
             registry = RepositoryRegistry(db)
             
-            # Arıza Detay (Cihaz_Ariza)
             repo_ariza = registry.get("Cihaz_Ariza")
             ariza_bilgisi = repo_ariza.get_by_id(self.ariza_id) or {}
             
-            # Geçmiş İşlemler (Ariza_Islem)
-            # Repository'de filtreleme olmadığı için SQL kullanıyoruz ama tablo adı doğru
             cursor = db.execute(
                 "SELECT * FROM Ariza_Islem WHERE Arizaid = ? ORDER BY Islemid DESC", 
                 (self.ariza_id,)
             )
             gecmis_islemler = [dict(r) for r in cursor.fetchall()]
             
-            self.veri_hazir.emit(ariza_bilgisi, gecmis_islemler)
+            # Sabitleri yükle
+            sabitler_repo = registry.get("Sabitler")
+            islem_turleri = [s.get("MenuEleman") for s in sabitler_repo.get_by_kod("Ariza_Islem_Turu")]
+            durum_secenekleri = [s.get("MenuEleman") for s in sabitler_repo.get_by_kod("Ariza_Durum")]
+
+            self.veri_hazir.emit(ariza_bilgisi, gecmis_islemler, islem_turleri, durum_secenekleri)
         except Exception as e:
             self.hata_olustu.emit(str(e))
         finally:
@@ -79,23 +61,17 @@ class IslemKaydedici(QThread):
     islem_tamam = Signal()
     hata_olustu = Signal(str)
 
-    def __init__(self, islem_verisi, rapor_yolu=None):
+    def __init__(self, islem_verisi):
         super().__init__()
         self.islem_verisi = islem_verisi
-        self.rapor_yolu = rapor_yolu
 
     def run(self):
+        from database.sqlite_manager import SQLiteManager
         from database.repository_registry import RepositoryRegistry
         db = None
         try:
             db = SQLiteManager()
             registry = RepositoryRegistry(db)
-            
-            # Rapor yolu ekle
-            if not self.rapor_yolu:
-                self.islem_verisi["Rapor"] = ""
-            else:
-                self.islem_verisi["Rapor"] = self.rapor_yolu
                 
             # İşlem Kaydı Ekle (Ariza_Islem)
             repo_islem = registry.get("Ariza_Islem")
@@ -115,15 +91,43 @@ class IslemKaydedici(QThread):
         finally:
             if db: db.close()
 
+class DosyaYukleyici(QThread):
+    yuklendi = Signal(str)
+    hata_olustu = Signal(str)
+
+    def __init__(self, dosya_yolu: str, cihaz_id: str, ariza_id: str, parent=None):
+        super().__init__(parent)
+        self._yol = dosya_yolu
+        self._cihaz_id = cihaz_id
+        self._ariza_id = ariza_id
+
+    def run(self):
+        try:
+            from database.google import GoogleDriveService
+            drive = GoogleDriveService()
+            cihaz_folder_id = drive.find_or_create_folder(self._cihaz_id, drive.get_folder_id("Cihazlar"))
+            ariza_folder_id = drive.find_or_create_folder(self._ariza_id, cihaz_folder_id)
+
+            islem_id = f"islem_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            dosya_adi = f"{islem_id}{os.path.splitext(self._yol)[1]}"
+            
+            link = drive.upload_file(self._yol, parent_folder_id=ariza_folder_id, custom_name=dosya_adi)
+            if link:
+                self.yuklendi.emit(link)
+            else:
+                self.hata_olustu.emit("Dosya yüklenemedi, ancak işlem kaydedildi.")
+        except Exception as e:
+            logger.error(f"Drive yükleme hatası (ariza_islem): {e}")
+            self.hata_olustu.emit(f"Dosya yüklenemedi: {e}")
+
 # =============================================================================
 # 3. ANA PENCERE: KOMPAKT ARIZA İŞLEM
 # =============================================================================
 class ArizaIslemPenceresi(QWidget):
     kapanma_istegi = Signal()
 
-    def __init__(self, ariza_id=None, db=None, ana_pencere=None):
+    def __init__(self, ariza_id=None, ana_pencere=None):
         super().__init__()
-        self._db = db
         self.ariza_id = str(ariza_id).strip() if ariza_id else None
         self.ana_pencere = ana_pencere
         
@@ -201,8 +205,7 @@ class ArizaIslemPenceresi(QWidget):
         # Yapan / Tür
         h_personel = QHBoxLayout()
         self._add_lbl_input(h_personel, "Yapan:", "IslemYapan")
-        
-        self._add_lbl_combo(h_personel, "Tür:", "IslemTuru", ISLEM_TURLERI)
+        self._add_lbl_combo(h_personel, "Tür:", "IslemTuru", [])
         form.addLayout(h_personel)
 
         # Yapılan İşlem
@@ -215,7 +218,7 @@ class ArizaIslemPenceresi(QWidget):
         form.addWidget(self.inputs["YapilanIslem"])
 
         # Durum
-        self._add_lbl_combo(form, "Yeni Durum:", "YeniDurum", DURUM_SECENEKLERI)
+        self._add_lbl_combo(form, "Yeni Durum:", "YeniDurum", [])
 
         # Rapor Dosyası
         lbl_rapor = QLabel("Rapor (Opsiyonel):")
@@ -315,10 +318,14 @@ class ArizaIslemPenceresi(QWidget):
         self.loader.hata_olustu.connect(self.hata_goster)
         self.loader.start()
 
-    def verileri_doldur(self, ariza_info, gecmis):
+    def verileri_doldur(self, ariza_info, gecmis, islem_turleri, durum_secenekleri):
         self.progress.setRange(0, 100); self.progress.setValue(100)
         self.ariza_data = ariza_info
         
+        self.inputs["IslemTuru"].clear(); self.inputs["IslemTuru"].addItems(islem_turleri)
+        self.inputs["YeniDurum"].clear(); self.inputs["YeniDurum"].addItems(durum_secenekleri)
+        self.secilen_rapor_yolu = None
+
         if not ariza_info:
             QMessageBox.critical(self, "Hata", "Arıza kaydı bulunamadı!")
             self.close()
@@ -393,24 +400,13 @@ class ArizaIslemPenceresi(QWidget):
             self.txt_rapor_yolu.setStyleSheet("color: #4caf50; font-weight: bold;")
 
     def kaydet_baslat(self):
-        # 1. KAPALI DURUM MANTIĞI
         if self.ariza_kapali_mi:
             if not self.secilen_rapor_yolu:
                 QMessageBox.warning(self, "Uyarı", "Bu arıza kapatılmıştır. Sadece rapor dosyası yükleyebilirsiniz.")
                 return
-            
-            yapan = "Sistem"
-            yapilan = "Arıza kapalıyken sonradan rapor eklendi."
-            tur = "Rapor Ekleme"
-            yeni_durum = self.inputs["YeniDurum"].currentText() # Değişmedi zaten
-            
         else:
-            # 2. NORMAL DURUM MANTIĞI
             yapan = self.inputs["IslemYapan"].text().strip()
             yapilan = self.inputs["YapilanIslem"].toPlainText().strip()
-            tur = self.inputs["IslemTuru"].currentText()
-            yeni_durum = self.inputs["YeniDurum"].currentText()
-            
             if not yapan or not yapilan:
                 QMessageBox.warning(self, "Eksik", "Lütfen 'İşlemi Yapan' ve 'Yapılan İşlem' alanlarını doldurun.")
                 return
@@ -418,7 +414,28 @@ class ArizaIslemPenceresi(QWidget):
         self.btn_kaydet.setText("Kaydediliyor...")
         self.btn_kaydet.setEnabled(False)
         self.progress.setRange(0, 0)
-        
+
+        if self.secilen_rapor_yolu:
+            cihaz_id = self.ariza_data.get("Cihazid", "BilinmeyenCihaz")
+            self.uploader = DosyaYukleyici(self.secilen_rapor_yolu, cihaz_id, self.ariza_id, self)
+            self.uploader.yuklendi.connect(self._kaydet_devam)
+            self.uploader.hata_olustu.connect(self._on_upload_error)
+            self.uploader.start()
+        else:
+            self._kaydet_devam("") # Rapor linki yok
+
+    def _kaydet_devam(self, rapor_link):
+        if self.ariza_kapali_mi:
+            yapan = "Sistem"
+            yapilan = "Arıza kapalıyken sonradan rapor eklendi."
+            tur = "Rapor Ekleme"
+            yeni_durum = self.inputs["YeniDurum"].currentText()
+        else:
+            yapan = self.inputs["IslemYapan"].text().strip()
+            yapilan = self.inputs["YapilanIslem"].toPlainText().strip()
+            tur = self.inputs["IslemTuru"].currentText()
+            yeni_durum = self.inputs["YeniDurum"].currentText()
+
         islem_verisi = {
             "Arizaid": self.ariza_id,
             "IslemYapan": yapan,
@@ -426,10 +443,11 @@ class ArizaIslemPenceresi(QWidget):
             "Saat": self.inputs["IslemSaat"].text(),
             "IslemTuru": tur,
             "YapilanIslem": yapilan,
-            "YeniDurum": yeni_durum
+            "YeniDurum": yeni_durum,
+            "Rapor": rapor_link
         }
         
-        self.saver = IslemKaydedici(islem_verisi, self.secilen_rapor_yolu)
+        self.saver = IslemKaydedici(islem_verisi)
         self.saver.islem_tamam.connect(self.kayit_basarili)
         self.saver.hata_olustu.connect(self.hata_goster)
         self.saver.start()
@@ -441,6 +459,10 @@ class ArizaIslemPenceresi(QWidget):
             self.ana_pencere.verileri_yenile()
         self.kapanma_istegi.emit()
 
+    def _on_upload_error(self, hata_mesaji):
+        QMessageBox.warning(self, "Dosya Yükleme Hatası", hata_mesaji)
+        self._kaydet_devam("") # Dosya yüklenemese de işlemi kaydet
+
     def hata_goster(self, msg):
         self.progress.setRange(0, 100)
         QMessageBox.critical(self, "Hata", msg)
@@ -450,4 +472,5 @@ class ArizaIslemPenceresi(QWidget):
     def closeEvent(self, event):
         if hasattr(self, 'loader') and self.loader.isRunning(): self.loader.quit(); self.loader.wait(500)
         if hasattr(self, 'saver') and self.saver.isRunning(): self.saver.quit(); self.saver.wait(500)
+        if hasattr(self, 'uploader') and self.uploader.isRunning(): self.uploader.quit(); self.uploader.wait(500)
         event.accept()

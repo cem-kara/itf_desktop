@@ -13,7 +13,6 @@ from PySide6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout,
                                QProgressBar, QTextEdit, QCompleter, QGroupBox, QMessageBox, QSizePolicy)
 
 from ui.theme_manager import ThemeManager
-from database.sqlite_manager import SQLiteManager
 
 # LOGLAMA
 logging.basicConfig(level=logging.INFO)
@@ -41,9 +40,8 @@ ONCELIK_DURUMLARI = ["Düşük", "Normal", "Yüksek", "Acil (Kritik)"]
 class BaslangicYukleyici(QThread):
     veri_hazir = Signal(str, list) # yeni_id, cihaz_listesi
     
-    def __init__(self, db):
+    def __init__(self):
         super().__init__()
-        self._db = db
 
     def run(self):
         from database.sqlite_manager import SQLiteManager
@@ -75,9 +73,8 @@ class KayitIslemi(QThread):
     islem_tamam = Signal()
     hata_olustu = Signal(str)
 
-    def __init__(self, db, veri_sozlugu, dosya_yollari):
+    def __init__(self, veri_sozlugu, dosya_yollari):
         super().__init__()
-        self._db = db
         self.veri = veri_sozlugu
         self.dosyalar = dosya_yollari
 
@@ -303,7 +300,7 @@ class ArizaKayitPenceresi(QWidget):
     def baslangic_yukle(self):
         self.progress.setVisible(True)
         self.progress.setRange(0, 0)
-        self.loader = BaslangicYukleyici(self._db)
+        self.loader = BaslangicYukleyici()
         self.loader.veri_hazir.connect(self.veriler_yuklendi)
         self.loader.start()
 
@@ -347,7 +344,7 @@ class ArizaKayitPenceresi(QWidget):
             "Durum": "Açık"
         }
 
-        self.saver = KayitIslemi(self._db, veri, self.secilen_dosyalar)
+        self.saver = KayitIslemi(veri, self.secilen_dosyalar)
         self.saver.islem_tamam.connect(self.kayit_basarili)
         self.saver.hata_olustu.connect(self.kayit_hatali)
         self.saver.start()

@@ -26,9 +26,8 @@ class KalibrasyonVeriYukleyici(QThread):
     veri_hazir = Signal(list, dict, list, list)
     hata_olustu = Signal(str)
 
-    def __init__(self, db, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
-        self._db = db
 
     def run(self):
         from database.sqlite_manager import SQLiteManager
@@ -64,9 +63,8 @@ class KalibrasyonKaydedici(QThread):
     islem_tamam = Signal()
     hata_olustu = Signal(str)
 
-    def __init__(self, db, veri, mod="yeni", kayit_id=None, parent=None):
+    def __init__(self, veri, mod="yeni", kayit_id=None, parent=None):
         super().__init__(parent)
-        self._db = db
         self._veri = veri
         self._mod = mod
         self._kayit_id = kayit_id
@@ -195,7 +193,7 @@ class KalibrasyonTakipPage(QWidget):
         card_sonuc_layout = QVBoxLayout(card_sonuc)
         card_sonuc_layout.setContentsMargins(15, 22, 15, 15); card_sonuc_layout.setSpacing(10)
 
-        self.inputs["Durum"] = QComboBox(); self.inputs["Durum"].addItems(["Planlandı", "Tamamlandı", "İptal"]); self.inputs["Durum"].setCurrentText("Tamamlandı"); self.inputs["Durum"].setStyleSheet(S["combo"])
+        self.inputs["Durum"] = QComboBox(); self.inputs["Durum"].addItems(["Planlandı", "Tamamlandı", "İptal"]); self.inputs["Durum"].setCurrentText("Planlandı"); self.inputs["Durum"].setStyleSheet(S["combo"])
         lbl_durum = QLabel("Durum:"); lbl_durum.setStyleSheet(S["label"])
         card_sonuc_layout.addWidget(lbl_durum); card_sonuc_layout.addWidget(self.inputs["Durum"])
 
@@ -245,7 +243,7 @@ class KalibrasyonTakipPage(QWidget):
 
     def load_data(self):
         self.progress.setVisible(True); self.progress.setRange(0, 0)
-        self._loader = KalibrasyonVeriYukleyici(self._db, self)
+        self._loader = KalibrasyonVeriYukleyici(self)
         self._loader.veri_hazir.connect(self._veriler_geldi)
         self._loader.hata_olustu.connect(self._hata_goster)
         self._loader.start()
@@ -335,7 +333,7 @@ class KalibrasyonTakipPage(QWidget):
                     "GecerlilikSuresi": self.inputs["GecerlilikSuresi"].currentText(), "BitisTarihi": self.inputs["BitisTarihi"].date().toString("yyyy-MM-dd"),
                     "Durum": self.inputs["Durum"].currentText(), "Sertifika": link, "Aciklama": self.inputs["Aciklama"].toPlainText()
                 }
-                self.saver = KalibrasyonKaydedici(self._db, yeni_satir, mod="guncelle", kayit_id=self.duzenlenen_id, parent=self)
+                self.saver = KalibrasyonKaydedici(yeni_satir, mod="guncelle", kayit_id=self.duzenlenen_id, parent=self)
             else:
                 donem_sayisi = self.inputs["DonemSayisi"].value()
                 gecerlilik = self.inputs["GecerlilikSuresi"].currentText()
@@ -366,7 +364,7 @@ class KalibrasyonTakipPage(QWidget):
                     }
                     satirlar.append(yeni_satir)
                 
-                self.saver = KalibrasyonKaydedici(self._db, satirlar, mod="yeni", parent=self)
+                self.saver = KalibrasyonKaydedici(satirlar, mod="yeni", parent=self)
 
             self.saver.islem_tamam.connect(self._islem_bitti); self.saver.hata_olustu.connect(self._hata_goster); self.saver.start()
         except Exception as e: self._hata_goster(str(e))
