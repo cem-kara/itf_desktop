@@ -336,7 +336,7 @@ class FHSZYonetimPage(QWidget):
 
         btn_kapat2 = QPushButton("✕ Kapat")
         btn_kapat2.setStyleSheet(S["close_btn"])
-        btn_kapat2.setFixedSize(80, 36)
+        btn_kapat2.setFixedSize(100, 36)
         btn_kapat2.setCursor(QCursor(Qt.PointingHandCursor))
         btn_kapat2.clicked.connect(self.btn_kapat.click)
         bf.addWidget(btn_kapat2)

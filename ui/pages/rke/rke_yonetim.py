@@ -425,9 +425,9 @@ class RKEYonetimPage(QWidget):
 
         fl.addStretch()
 
-        self._btn_yenile = QPushButton("⟳")
+        self._btn_yenile = QPushButton("⟳ Yenile")
         self._btn_yenile.setToolTip("Listeyi Yenile")
-        self._btn_yenile.setFixedSize(36, 36)
+        self._btn_yenile.setFixedSize(100, 36)
         self._btn_yenile.setStyleSheet(S.get("refresh_btn", ""))
         self._btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         fl.addWidget(self._btn_yenile)
@@ -506,7 +506,7 @@ class RKEYonetimPage(QWidget):
         if placeholder:
             inp.setPlaceholderText(placeholder)
         lay.addWidget(inp)
-        parent_layout.addWidget(container)
+        parent_layout.addWidget(container, 1)
         return inp
 
     def _make_combo(self, label, parent_layout, required=False, editable=False):
@@ -537,7 +537,7 @@ class RKEYonetimPage(QWidget):
             cmb.setStyleSheet(S.get("combo", ""))
             cmb.setEditable(editable)
             lay.addWidget(cmb)
-            parent_layout.addWidget(container)
+            parent_layout.addWidget(container, 1)
         return cmb
 
     def _make_date(self, label, parent_layout):
@@ -554,8 +554,50 @@ class RKEYonetimPage(QWidget):
         de.setCalendarPopup(True)
         de.setDate(QDate.currentDate())
         de.setDisplayFormat("yyyy-MM-dd")
+
+        cal = de.calendarWidget()
+        cal.setMinimumWidth(350)
+        cal.setMinimumHeight(250)
+        cal.setStyleSheet("""
+            QCalendarWidget {
+                background-color: #1e202c;
+                color: #e0e2ea;
+            }
+            QCalendarWidget QToolButton {
+                background-color: #1e202c;
+                color: #e0e2ea;
+                border: none; padding: 6px 10px;
+                font-size: 13px; font-weight: bold;
+            }
+            QCalendarWidget QToolButton:hover {
+                background-color: rgba(29, 117, 254, 0.3);
+                border-radius: 4px;
+            }
+            QCalendarWidget QMenu {
+                background-color: #1e202c; color: #e0e2ea;
+            }
+            QCalendarWidget QSpinBox {
+                background-color: #1e202c; color: #e0e2ea;
+                border: 1px solid #292b41; font-size: 13px;
+            }
+            QCalendarWidget QAbstractItemView {
+                background-color: #1e202c;
+                color: #c8cad0;
+                selection-background-color: rgba(29, 117, 254, 0.4);
+                selection-color: #ffffff;
+                font-size: 13px;
+                outline: none;
+            }
+            QCalendarWidget #qt_calendar_navigationbar {
+                background-color: #16172b;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+                padding: 4px;
+            }
+        """)
+        cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
+
         lay.addWidget(de)
-        parent_layout.addWidget(container)
+        parent_layout.addWidget(container, 1)
         return de
 
     # ═══════════════════════════════════════════

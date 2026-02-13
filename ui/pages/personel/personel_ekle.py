@@ -309,8 +309,8 @@ class PersonelEklePage(QWidget):
         inp.setStyleSheet(S["input"])
         if placeholder:
             inp.setPlaceholderText(placeholder)
-        lay.addWidget(inp)
-        parent_layout.addWidget(container)
+        lay.addWidget(inp) # Add the input widget to its vertical layout
+        parent_layout.addWidget(container, 1) # Add the container to the parent horizontal layout with stretch
         return inp
 
     def _make_combo(self, label, parent_layout, required=False, editable=False):
@@ -325,8 +325,8 @@ class PersonelEklePage(QWidget):
         cmb = QComboBox()
         cmb.setStyleSheet(S["combo"])
         cmb.setEditable(editable)
-        lay.addWidget(cmb)
-        parent_layout.addWidget(container)
+        lay.addWidget(cmb) # Add the combo box to its vertical layout
+        parent_layout.addWidget(container, 1) # Add the container to the parent horizontal layout with stretch
         return cmb
 
     def _make_date(self, label, parent_layout, required=False):
@@ -393,7 +393,7 @@ class PersonelEklePage(QWidget):
         cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
 
         lay.addWidget(de)
-        parent_layout.addWidget(container)
+        parent_layout.addWidget(container, 1)
         return de
 
     # Dikey versiyon (eğitim bölümü için)

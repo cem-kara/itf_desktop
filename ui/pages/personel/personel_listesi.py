@@ -170,9 +170,9 @@ class PersonelListesiPage(QWidget):
 
         fp.addStretch()
 
-        self.btn_yenile = QPushButton("⟳")
+        self.btn_yenile = QPushButton("⟳ Yenile")
         self.btn_yenile.setStyleSheet(STYLES["refresh_btn"])
-        self.btn_yenile.setFixedSize(60, 28)
+        self.btn_yenile.setFixedSize(100, 36)
         self.btn_yenile.setToolTip("Yenile")
         self.btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         fp.addWidget(self.btn_yenile)
@@ -191,7 +191,7 @@ class PersonelListesiPage(QWidget):
 
         self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Pencereyi Kapat")
-        self.btn_kapat.setFixedSize(60, 28)
+        self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet("""
             QPushButton {

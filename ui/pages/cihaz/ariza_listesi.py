@@ -173,9 +173,9 @@ class ArizaListesiPage(QWidget):
 
         fl.addStretch()
 
-        self.btn_refresh = QPushButton("⟳")
+        self.btn_refresh = QPushButton("⟳ Yenile")
         self.btn_refresh.setToolTip("Listeyi Yenile")
-        self.btn_refresh.setFixedSize(36, 36)
+        self.btn_refresh.setFixedSize(100, 36)
         self.btn_refresh.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_refresh.setStyleSheet(S["refresh_btn"])
         fl.addWidget(self.btn_refresh)
@@ -270,8 +270,9 @@ class ArizaListesiPage(QWidget):
         self.root_layout.addWidget(self.left_container, 1)
 
         # ── Sağ Panel (Arıza İşlem) ──
-        self.islem_panel = ArizaIslemPenceresi(db=self._db, ana_pencere=self)
+        self.islem_panel = ArizaIslemPenceresi(ana_pencere=self)
         self.islem_panel.setVisible(False)
+        self.islem_panel.setFixedWidth(460)
         self.islem_panel.setStyleSheet("border-left: 1px solid rgba(255, 255, 255, 0.1); background-color: #16172b;")
         self.islem_panel.kapanma_istegi.connect(lambda: self.islem_panel.setVisible(False))
         self.root_layout.addWidget(self.islem_panel, 0)

@@ -440,7 +440,7 @@ class PersonelDetayPage(QWidget):
         if placeholder:
             inp.setPlaceholderText(placeholder)
         lay.addWidget(inp)
-        parent_layout.addWidget(container)
+        parent_layout.addWidget(container, 1)
         return inp
 
     def _make_combo(self, label, parent_layout, editable=False):
@@ -456,7 +456,7 @@ class PersonelDetayPage(QWidget):
         cmb.setStyleSheet(S["combo"])
         cmb.setEditable(editable)
         lay.addWidget(cmb)
-        parent_layout.addWidget(container)
+        parent_layout.addWidget(container, 1)
         return cmb
 
     def _make_date(self, label, parent_layout):
@@ -504,7 +504,7 @@ class PersonelDetayPage(QWidget):
         cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
 
         lay.addWidget(de)
-        parent_layout.addWidget(container)
+        parent_layout.addWidget(container, 1)
         return de
 
     def _make_input_v(self, label, parent_layout, placeholder=""):

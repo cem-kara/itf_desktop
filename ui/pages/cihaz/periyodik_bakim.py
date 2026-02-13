@@ -633,6 +633,7 @@ class PeriyodikBakimPage(QWidget):
         self.inputs["PlanlananTarih"].setCalendarPopup(True)
         self.inputs["PlanlananTarih"].setDisplayFormat("yyyy-MM-dd")
         self.inputs["PlanlananTarih"].setStyleSheet(S["date"])
+        self._setup_calendar(self.inputs["PlanlananTarih"])
 
         v_periyot = QVBoxLayout(); v_periyot.setSpacing(3)
         lbl_periyot = QLabel("Bakım Periyodu:"); lbl_periyot.setStyleSheet(S["label"])
@@ -664,6 +665,7 @@ class PeriyodikBakimPage(QWidget):
         self.inputs["BakimTarihi"].setCalendarPopup(True)
         self.inputs["BakimTarihi"].setDisplayFormat("yyyy-MM-dd")
         self.inputs["BakimTarihi"].setStyleSheet(S["date"])
+        self._setup_calendar(self.inputs["BakimTarihi"])
 
         v_durum = QVBoxLayout(); v_durum.setSpacing(3)
         lbl_durum = QLabel("Bakım Durumu:"); lbl_durum.setStyleSheet(S["label"])
@@ -770,15 +772,15 @@ class PeriyodikBakimPage(QWidget):
         self.cmb_filtre_ay.setFixedWidth(155)
         self.cmb_filtre_ay.setStyleSheet(S["combo"])
         self.cmb_filtre_ay.currentIndexChanged.connect(self._tabloyu_guncelle)
-        btn_yenile = QPushButton("⟳")
-        btn_yenile.setFixedSize(36, 36)
+        btn_yenile = QPushButton("⟳ Yenile")
+        btn_yenile.setFixedSize(100, 36)
         btn_yenile.setStyleSheet(S["refresh_btn"])
         btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         btn_yenile.clicked.connect(self._verileri_yukle)
 
         self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Kapat")
-        self.btn_kapat.setFixedSize(36, 36)
+        self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S["close_btn"])
 
@@ -825,6 +827,48 @@ class PeriyodikBakimPage(QWidget):
         sag.addWidget(self.lbl_count)
 
         main.addLayout(sag, 1)
+
+    def _setup_calendar(self, date_edit):
+        cal = date_edit.calendarWidget()
+        cal.setMinimumWidth(350)
+        cal.setMinimumHeight(250)
+        cal.setStyleSheet("""
+            QCalendarWidget {
+                background-color: #1e202c;
+                color: #e0e2ea;
+            }
+            QCalendarWidget QToolButton {
+                background-color: #1e202c;
+                color: #e0e2ea;
+                border: none; padding: 6px 10px;
+                font-size: 13px; font-weight: bold;
+            }
+            QCalendarWidget QToolButton:hover {
+                background-color: rgba(29, 117, 254, 0.3);
+                border-radius: 4px;
+            }
+            QCalendarWidget QMenu {
+                background-color: #1e202c; color: #e0e2ea;
+            }
+            QCalendarWidget QSpinBox {
+                background-color: #1e202c; color: #e0e2ea;
+                border: 1px solid #292b41; font-size: 13px;
+            }
+            QCalendarWidget QAbstractItemView {
+                background-color: #1e202c;
+                color: #c8cad0;
+                selection-background-color: rgba(29, 117, 254, 0.4);
+                selection-color: #ffffff;
+                font-size: 13px;
+                outline: none;
+            }
+            QCalendarWidget #qt_calendar_navigationbar {
+                background-color: #16172b;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+                padding: 4px;
+            }
+        """)
+        cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
 
     # ─── Veri Yükleme ─────────────────────────────────────────
 

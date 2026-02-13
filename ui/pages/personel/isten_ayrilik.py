@@ -384,6 +384,39 @@ class IstenAyrilikPage(QWidget):
         self.dt_tarih.setCalendarPopup(True)
         self.dt_tarih.setDisplayFormat("dd.MM.yyyy")
         self.dt_tarih.setStyleSheet(S["date"])
+        
+        cal = self.dt_tarih.calendarWidget()
+        cal.setMinimumWidth(350)
+        cal.setMinimumHeight(250)
+        cal.setStyleSheet("""
+            QCalendarWidget {
+                background-color: #1e202c;
+                color: #e0e2ea;
+            }
+            QCalendarWidget QToolButton {
+                background-color: #1e202c;
+                color: #e0e2ea;
+                border: none; padding: 6px 10px;
+                font-size: 13px; font-weight: bold;
+            }
+            QCalendarWidget QToolButton:hover {
+                background-color: rgba(29, 117, 254, 0.3);
+                border-radius: 4px;
+            }
+            QCalendarWidget QMenu {
+                background-color: #1e202c; color: #e0e2ea;
+            }
+            QCalendarWidget QSpinBox {
+                background-color: #1e202c; color: #e0e2ea;
+                border: 1px solid #292b41; font-size: 13px;
+            }
+            QCalendarWidget #qt_calendar_navigationbar {
+                background-color: #16172b;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+                padding: 4px;
+            }
+        """)
+        cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
         fg.addWidget(self.dt_tarih, 0, 1)
 
         lbl_n = QLabel("Ayrılma Nedeni")

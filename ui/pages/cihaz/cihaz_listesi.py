@@ -75,9 +75,9 @@ class CihazListesiPage(QWidget):
         fl.addStretch()
 
         # Yenile Butonu
-        self.btn_refresh = QPushButton("⟳")
+        self.btn_refresh = QPushButton("⟳ Yenile")
         self.btn_refresh.setToolTip("Listeyi Yenile")
-        self.btn_refresh.setFixedSize(36, 36)
+        self.btn_refresh.setFixedSize(100, 36)
         self.btn_refresh.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_refresh.setStyleSheet(S["refresh_btn"])
         fl.addWidget(self.btn_refresh)
@@ -85,7 +85,7 @@ class CihazListesiPage(QWidget):
         # Kapat Butonu
         self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Kapat")
-        self.btn_kapat.setFixedSize(60, 36)
+        self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S["close_btn"])
         fl.addWidget(self.btn_kapat)

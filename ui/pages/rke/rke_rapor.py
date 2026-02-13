@@ -507,7 +507,7 @@ class RKERaporPage(QWidget):
         h_btn = QHBoxLayout()
         h_btn.setSpacing(10)
 
-        self._btn_yenile = QPushButton("⟳  VERİLERİ YENİLE")
+        self._btn_yenile = QPushButton("⟳ VERİLERİ YENİLE")
         self._btn_yenile.setFixedHeight(40)
         self._btn_yenile.setStyleSheet(S.get("refresh_btn", ""))
         self._btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
@@ -636,7 +636,7 @@ class RKERaporPage(QWidget):
     def _on_loader_finished(self):
         self._pbar.setVisible(False)
         self._btn_olustur.setEnabled(True)
-        self._btn_yenile.setText("⟳  VERİLERİ YENİLE")
+        self._btn_yenile.setText("⟳ Yenile  VERİLERİ YENİLE")
 
     def _on_data_ready(self, data, abd_listesi, birim_listesi, tarih_listesi):
         self._ham_veriler = data
@@ -759,6 +759,6 @@ class RKERaporPage(QWidget):
     def _on_error(self, msg):
         self._pbar.setVisible(False)
         self._btn_olustur.setEnabled(True)
-        self._btn_yenile.setText("⟳  VERİLERİ YENİLE")
+        self._btn_yenile.setText("⟳ Yenile  VERİLERİ YENİLE")
         logger.error(f"RKERapor hatası: {msg}")
         QMessageBox.critical(self, "Hata", msg)

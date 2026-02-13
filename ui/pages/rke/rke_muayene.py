@@ -462,6 +462,7 @@ class TopluMuayeneDialog(QDialog):
         de.setCalendarPopup(True)
         de.setDisplayFormat("yyyy-MM-dd")
         de.setStyleSheet(S.get("date", ""))
+        self._setup_calendar(de)
         lay.addWidget(lbl)
         lay.addWidget(de)
         return {"widget": c, "date": de}
@@ -480,6 +481,48 @@ class TopluMuayeneDialog(QDialog):
         lay.addWidget(lbl)
         lay.addWidget(cmb)
         return {"widget": c, "combo": cmb}
+
+    def _setup_calendar(self, date_edit):
+        cal = date_edit.calendarWidget()
+        cal.setMinimumWidth(350)
+        cal.setMinimumHeight(250)
+        cal.setStyleSheet("""
+            QCalendarWidget {
+                background-color: #1e202c;
+                color: #e0e2ea;
+            }
+            QCalendarWidget QToolButton {
+                background-color: #1e202c;
+                color: #e0e2ea;
+                border: none; padding: 6px 10px;
+                font-size: 13px; font-weight: bold;
+            }
+            QCalendarWidget QToolButton:hover {
+                background-color: rgba(29, 117, 254, 0.3);
+                border-radius: 4px;
+            }
+            QCalendarWidget QMenu {
+                background-color: #1e202c; color: #e0e2ea;
+            }
+            QCalendarWidget QSpinBox {
+                background-color: #1e202c; color: #e0e2ea;
+                border: 1px solid #292b41; font-size: 13px;
+            }
+            QCalendarWidget QAbstractItemView {
+                background-color: #1e202c;
+                color: #c8cad0;
+                selection-background-color: rgba(29, 117, 254, 0.4);
+                selection-color: #ffffff;
+                font-size: 13px;
+                outline: none;
+            }
+            QCalendarWidget #qt_calendar_navigationbar {
+                background-color: #16172b;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+                padding: 4px;
+            }
+        """)
+        cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
 
     def _sec_dosya(self):
         yol, _ = QFileDialog.getOpenFileName(self, "Rapor Seç", "", "PDF / Resim (*.pdf *.jpg *.jpeg *.png)")
@@ -704,9 +747,9 @@ class RKEMuayenePage(QWidget):
 
         fl.addStretch()
 
-        self._btn_yenile = QPushButton("⟳")
+        self._btn_yenile = QPushButton("⟳ Yenile")
         self._btn_yenile.setToolTip("Yenile")
-        self._btn_yenile.setFixedSize(36, 36)
+        self._btn_yenile.setFixedSize(100, 36)
         self._btn_yenile.setStyleSheet(S.get("refresh_btn", ""))
         self._btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         fl.addWidget(self._btn_yenile)
@@ -719,7 +762,7 @@ class RKEMuayenePage(QWidget):
 
         self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Pencereyi Kapat")
-        self.btn_kapat.setFixedSize(36, 36)
+        self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S.get("close_btn", ""))
         fl.addWidget(self.btn_kapat)
@@ -787,6 +830,7 @@ class RKEMuayenePage(QWidget):
         de.setCalendarPopup(True)
         de.setDisplayFormat("yyyy-MM-dd")
         de.setStyleSheet(S.get("date", ""))
+        self._setup_calendar(de)
         lay.addWidget(lbl)
         lay.addWidget(de)
         parent_layout.addWidget(c)
@@ -807,6 +851,48 @@ class RKEMuayenePage(QWidget):
         lay.addWidget(cmb)
         parent_layout.addWidget(c)
         return cmb
+
+    def _setup_calendar(self, date_edit):
+        cal = date_edit.calendarWidget()
+        cal.setMinimumWidth(350)
+        cal.setMinimumHeight(250)
+        cal.setStyleSheet("""
+            QCalendarWidget {
+                background-color: #1e202c;
+                color: #e0e2ea;
+            }
+            QCalendarWidget QToolButton {
+                background-color: #1e202c;
+                color: #e0e2ea;
+                border: none; padding: 6px 10px;
+                font-size: 13px; font-weight: bold;
+            }
+            QCalendarWidget QToolButton:hover {
+                background-color: rgba(29, 117, 254, 0.3);
+                border-radius: 4px;
+            }
+            QCalendarWidget QMenu {
+                background-color: #1e202c; color: #e0e2ea;
+            }
+            QCalendarWidget QSpinBox {
+                background-color: #1e202c; color: #e0e2ea;
+                border: 1px solid #292b41; font-size: 13px;
+            }
+            QCalendarWidget QAbstractItemView {
+                background-color: #1e202c;
+                color: #c8cad0;
+                selection-background-color: rgba(29, 117, 254, 0.4);
+                selection-color: #ffffff;
+                font-size: 13px;
+                outline: none;
+            }
+            QCalendarWidget #qt_calendar_navigationbar {
+                background-color: #16172b;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+                padding: 4px;
+            }
+        """)
+        cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
 
     # ═══════════════════════════════════════════
     #  SİNYALLER

@@ -244,7 +244,7 @@ class Sidebar(QWidget):
         bl.setContentsMargins(12, 4, 12, 10)
         bl.setSpacing(6)
 
-        self.sync_btn = QPushButton("⟳  Senkronize Et")
+        self.sync_btn = QPushButton("⟳ Yenile  Senkronize Et")
         self.sync_btn.setFixedHeight(36)
         self.sync_btn.setCursor(QCursor(Qt.PointingHandCursor))
         self.sync_btn.setStyleSheet(f"""
@@ -324,4 +324,4 @@ class Sidebar(QWidget):
 
     def set_sync_enabled(self, enabled):
         self.sync_btn.setEnabled(enabled)
-        self.sync_btn.setText("⟳  Senkronize Et" if enabled else "⏳ Senkronize ediliyor...")
+        self.sync_btn.setText("⟳ Yenile  Senkronize Et" if enabled else "⏳ Senkronize ediliyor...")

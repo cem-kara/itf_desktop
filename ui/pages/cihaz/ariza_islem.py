@@ -48,8 +48,9 @@ class VeriYukleyici(QThread):
             
             # Sabitleri yükle
             sabitler_repo = registry.get("Sabitler")
-            islem_turleri = [s.get("MenuEleman") for s in sabitler_repo.get_by_kod("Ariza_Islem_Turu")]
-            durum_secenekleri = [s.get("MenuEleman") for s in sabitler_repo.get_by_kod("Ariza_Durum")]
+            all_sabit = sabitler_repo.get_all()
+            islem_turleri = [s.get("MenuEleman") for s in all_sabit if s.get("Kod") == "Ariza_Islem_Turu"]
+            durum_secenekleri = [s.get("MenuEleman") for s in all_sabit if s.get("Kod") == "Ariza_Durum"]
 
             self.veri_hazir.emit(ariza_bilgisi, gecmis_islemler, islem_turleri, durum_secenekleri)
         except Exception as e:
@@ -268,6 +269,9 @@ class ArizaIslemPenceresi(QWidget):
     # ─── Yardımcılar ──────────────────────────────────────────
 
     def _add_lbl_input(self, layout, text, key, read_only=False):
+        col = QVBoxLayout()
+        col.setContentsMargins(0, 0, 0, 0)
+        col.setSpacing(2)
         lbl = QLabel(text)
         lbl.setStyleSheet("color:#aaa; font-size:11px;")
         w = QLineEdit()
@@ -275,8 +279,9 @@ class ArizaIslemPenceresi(QWidget):
         if read_only:
             w.setReadOnly(True)
         self.inputs[key] = w
-        layout.addWidget(lbl)
-        layout.addWidget(w)
+        col.addWidget(lbl)
+        col.addWidget(w)
+        layout.addLayout(col, 1)
 
     def _add_lbl_combo(self, layout, text, key, items):
         col = QVBoxLayout()
@@ -290,9 +295,12 @@ class ArizaIslemPenceresi(QWidget):
         self.inputs[key] = cb
         col.addWidget(lbl)
         col.addWidget(cb)
-        layout.addLayout(col)
+        layout.addLayout(col, 1)
 
     def _add_lbl_date(self, layout, text, key):
+        col = QVBoxLayout()
+        col.setContentsMargins(0, 0, 0, 0)
+        col.setSpacing(2)
         lbl = QLabel(text)
         lbl.setStyleSheet("color:#aaa; font-size:11px;")
         de = QDateEdit()
@@ -300,9 +308,59 @@ class ArizaIslemPenceresi(QWidget):
         de.setDisplayFormat("dd.MM.yyyy")
         de.setDate(QDate.currentDate())
         de.setStyleSheet(S["date"])
+
+        # Takvim popup düzeltmesi
+        cal = de.calendarWidget()
+        cal.setMinimumWidth(350)
+        cal.setMinimumHeight(250)
+        cal.setStyleSheet("""
+            QCalendarWidget {
+                background-color: #1e202c;
+                color: #e0e2ea;
+            }
+            QCalendarWidget QToolButton {
+                background-color: #1e202c;
+                color: #e0e2ea;
+                border: none; padding: 6px 10px;
+                font-size: 13px; font-weight: bold;
+            }
+            QCalendarWidget QToolButton:hover {
+                background-color: rgba(29, 117, 254, 0.3);
+                border-radius: 4px;
+            }
+            QCalendarWidget QMenu {
+                background-color: #1e202c; color: #e0e2ea;
+            }
+            QCalendarWidget QSpinBox {
+                background-color: #1e202c; color: #e0e2ea;
+                border: 1px solid #292b41; font-size: 13px;
+            }
+            QCalendarWidget QAbstractItemView {
+                background-color: #1e202c;
+                color: #c8cad0;
+                selection-background-color: rgba(29, 117, 254, 0.4);
+                selection-color: #ffffff;
+                font-size: 13px;
+                outline: none;
+            }
+            QCalendarWidget QAbstractItemView:enabled {
+                color: #c8cad0;
+            }
+            QCalendarWidget QAbstractItemView:disabled {
+                color: #5a5d6e;
+            }
+            QCalendarWidget #qt_calendar_navigationbar {
+                background-color: #16172b;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+                padding: 4px;
+            }
+        """)
+        cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
+
         self.inputs[key] = de
-        layout.addWidget(lbl)
-        layout.addWidget(de)
+        col.addWidget(lbl)
+        col.addWidget(de)
+        layout.addLayout(col, 1)
 
     # --- MANTIK ---
     def yukle(self, ariza_id):

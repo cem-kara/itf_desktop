@@ -168,6 +168,40 @@ class KalibrasyonTakipPage(QWidget):
         v_islem_tarihi = QVBoxLayout(); v_islem_tarihi.setSpacing(3)
         lbl_islem_tarihi = QLabel("İşlem Tarihi:"); lbl_islem_tarihi.setStyleSheet(S["label"])
         v_islem_tarihi.addWidget(lbl_islem_tarihi); v_islem_tarihi.addWidget(self.inputs["YapilanTarih"])
+        
+        cal = self.inputs["YapilanTarih"].calendarWidget()
+        cal.setMinimumWidth(350)
+        cal.setMinimumHeight(250)
+        cal.setStyleSheet("""
+            QCalendarWidget {
+                background-color: #1e202c;
+                color: #e0e2ea;
+            }
+            QCalendarWidget QToolButton {
+                background-color: #1e202c;
+                color: #e0e2ea;
+                border: none; padding: 6px 10px;
+                font-size: 13px; font-weight: bold;
+            }
+            QCalendarWidget QToolButton:hover {
+                background-color: rgba(29, 117, 254, 0.3);
+                border-radius: 4px;
+            }
+            QCalendarWidget QMenu {
+                background-color: #1e202c; color: #e0e2ea;
+            }
+            QCalendarWidget QSpinBox {
+                background-color: #1e202c; color: #e0e2ea;
+                border: 1px solid #292b41; font-size: 13px;
+            }
+            QCalendarWidget #qt_calendar_navigationbar {
+                background-color: #16172b;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+                padding: 4px;
+            }
+        """)
+        cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
+
         h_tarih.addLayout(v_islem_tarihi)
 
         self.inputs["GecerlilikSuresi"] = QComboBox(); self.inputs["GecerlilikSuresi"].addItems(["1 Yıl", "6 Ay", "2 Yıl", "3 Yıl", "Tek Seferlik"]); self.inputs["GecerlilikSuresi"].setStyleSheet(S["combo"]); self.inputs["GecerlilikSuresi"].currentTextChanged.connect(self._tarih_hesapla)
@@ -223,8 +257,8 @@ class KalibrasyonTakipPage(QWidget):
         self.txt_ara.setPlaceholderText("🔍 Listede Ara...")
         self.txt_ara.setStyleSheet(S["search"])
         self.txt_ara.textChanged.connect(self._tabloyu_filtrele)
-        btn_yenile = QPushButton("⟳")
-        btn_yenile.setFixedSize(36, 36)
+        btn_yenile = QPushButton("⟳ Yenile")
+        btn_yenile.setFixedSize(100, 36)
         btn_yenile.setStyleSheet(S["refresh_btn"])
         btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         btn_yenile.clicked.connect(self.load_data)

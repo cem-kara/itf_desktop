@@ -244,7 +244,7 @@ class ArizaKayitPenceresi(QWidget):
         # --- FOOTER ---
         footer = QHBoxLayout()
         self.btn_iptal = QPushButton("İptal")
-        self.btn_iptal.setFixedSize(120, 45)
+        self.btn_iptal.setFixedSize(100, 36)
         self.btn_iptal.setStyleSheet(S["cancel_btn"])
         self.btn_iptal.clicked.connect(self.close)
         
@@ -290,6 +290,53 @@ class ArizaKayitPenceresi(QWidget):
             widget.setCalendarPopup(True)
             widget.setDisplayFormat("dd.MM.yyyy")
             widget.setDate(QDate.currentDate())
+            # Takvim popup düzeltmesi
+            cal = widget.calendarWidget()
+            cal.setMinimumWidth(350)
+            cal.setMinimumHeight(250)
+            cal.setStyleSheet("""
+                QCalendarWidget {
+                    background-color: #1e202c;
+                    color: #e0e2ea;
+                }
+                QCalendarWidget QToolButton {
+                    background-color: #1e202c;
+                    color: #e0e2ea;
+                    border: none; padding: 6px 10px;
+                    font-size: 13px; font-weight: bold;
+                }
+                QCalendarWidget QToolButton:hover {
+                    background-color: rgba(29, 117, 254, 0.3);
+                    border-radius: 4px;
+                }
+                QCalendarWidget QMenu {
+                    background-color: #1e202c; color: #e0e2ea;
+                }
+                QCalendarWidget QSpinBox {
+                    background-color: #1e202c; color: #e0e2ea;
+                    border: 1px solid #292b41; font-size: 13px;
+                }
+                QCalendarWidget QAbstractItemView {
+                    background-color: #1e202c;
+                    color: #c8cad0;
+                    selection-background-color: rgba(29, 117, 254, 0.4);
+                    selection-color: #ffffff;
+                    font-size: 13px;
+                    outline: none;
+                }
+                QCalendarWidget QAbstractItemView:enabled {
+                    color: #c8cad0;
+                }
+                QCalendarWidget QAbstractItemView:disabled {
+                    color: #5a5d6e;
+                }
+                QCalendarWidget #qt_calendar_navigationbar {
+                    background-color: #16172b;
+                    border-bottom: 1px solid rgba(255,255,255,0.08);
+                    padding: 4px;
+                }
+            """)
+            cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
         
         if widget:
             widget.setStyleSheet(S["input"] if tip != "combo" else S["combo"])
