@@ -156,9 +156,11 @@ class SyncService:
                 logger.info(f"  PUSH yeni ekleme: {len(to_append)}")
 
             # Dirty → clean
+            just_pushed_keys = set()
             for row in dirty_rows:
                 pk_val = {col: row.get(col) for col in pk_cols} if len(pk_cols) > 1 else row.get(pk_cols[0])
                 repo.mark_clean(pk_val)
+                just_pushed_keys.add(make_key(row))  # PULL'da stale remote ile ezilmesin
 
             # ──────────────────────────────────────────
             # 3️⃣  PULL: Google Sheets → Local
@@ -170,6 +172,10 @@ class SyncService:
             for remote in remote_rows:
                 key = make_key(remote)
                 if not key or key == "|".join([""] * len(pk_cols)):
+                    continue
+
+                # Az önce push edilmiş kayıt: remote henüz güncel değil, atla
+                if key in just_pushed_keys:
                     continue
 
                 pk_val = {col: remote.get(col) for col in pk_cols} if len(pk_cols) > 1 else remote.get(pk_cols[0])

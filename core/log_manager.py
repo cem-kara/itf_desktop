@@ -33,7 +33,7 @@ class LogStatistics:
         for log_file in glob.glob(pattern):
             total += os.path.getsize(log_file)
         return total / (1024 * 1024)  # MB
-
+    
     @staticmethod
     def get_log_stats():
         """Tüm log dosyalarının detaylı istatistiklerini döner."""
@@ -55,7 +55,7 @@ class LogStatistics:
             }
         
         return stats
-
+    
     @staticmethod
     def count_lines(file_path):
         """Dosyadaki satır sayısını döner (büyük dosyalarda hızlı)."""
@@ -65,7 +65,7 @@ class LogStatistics:
         except Exception as e:
             logger.warning(f"Satır sayısı hesaplamada hata ({file_path}): {e}")
             return 0
-
+    
 
 class LogCleanup:
     """Eski log dosyalarını temizler ve disk alanını yönetir."""

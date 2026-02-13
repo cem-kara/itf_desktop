@@ -192,6 +192,7 @@ class Sidebar(QWidget):
         hl.setSpacing(2)
 
         t = QLabel(f"🏥  {AppConfig.APP_NAME}")
+        t.setWordWrap(True)
         t.setStyleSheet(f"""
             color: {SidebarTheme.TITLE}; font-size: 15px; font-weight: bold;
             background: transparent;

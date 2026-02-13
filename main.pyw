@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
 
 from core.logger import logger
+from core.config import AppConfig
 from core.log_manager import initialize_log_management
 from core.paths import DB_PATH
 from database.migrations import MigrationManager
@@ -58,7 +59,7 @@ def main():
     )
 
     app = QApplication(sys.argv)
-    app.setApplicationName("ITF Desktop")
+    app.setApplicationName(AppConfig.APP_NAME)
 
     # 1️⃣ Log yönetimi başlatma (cleanup, monitoring, statistics)
     initialize_log_management()

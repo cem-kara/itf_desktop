@@ -207,6 +207,27 @@ class MainWindow(QMainWindow):
             page.btn_kapat.clicked.connect(lambda: self._close_page("Kalibrasyon Takip"))
             return page
         
+        if baslik == "RKE Envanter":
+            from ui.pages.rke.rke_yonetim import RKEYonetimPage
+            page = RKEYonetimPage(db=self._db)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Envanter"))
+            page.load_data()
+            return page
+
+        if baslik == "RKE Muayene":
+            from ui.pages.rke.rke_muayene import RKEMuayenePage
+            page = RKEMuayenePage(db=self._db)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Muayene"))
+            page.load_data()
+            return page
+
+        if baslik == "RKE Raporlama":
+            from ui.pages.rke.rke_rapor import RKERaporPage
+            page = RKERaporPage(db=self._db)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Raporlama"))
+            page.load_data()
+            return page
+
         return PlaceholderPage(
             title=baslik,
             subtitle=f"{group} modülü — geliştirme aşamasında"

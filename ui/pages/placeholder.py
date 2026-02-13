@@ -1,6 +1,8 @@
+import os
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PySide6.QtCore import Qt
-
+from PySide6.QtGui import QPixmap
+from core.config import AppConfig
 
 class PlaceholderPage(QWidget):
 
@@ -11,9 +13,21 @@ class PlaceholderPage(QWidget):
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignCenter)
 
-        icon = QLabel("🚧")
-        icon.setStyleSheet("font-size: 48px; background: transparent;")
+        icon = QLabel()
         icon.setAlignment(Qt.AlignCenter)
+
+        # Resim yolunu belirle (ui/styles/maintenance.png varsayımıyla)
+        base_ui_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        img_path = os.path.join(base_ui_dir, "styles", "maintenance.png")
+
+        if os.path.exists(img_path):
+            pixmap = QPixmap(img_path)
+            icon.setPixmap(pixmap.scaled(128, 128, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            icon.setStyleSheet("background: transparent;")
+        else:
+            icon.setText("🚧")
+            icon.setStyleSheet("font-size: 48px; background: transparent;")
+
         layout.addWidget(icon)
 
         lbl_title = QLabel(title or "Yapım Aşamasında")
@@ -39,12 +53,23 @@ class WelcomePage(QWidget):
         layout.setAlignment(Qt.AlignCenter)
         layout.setSpacing(12)
 
-        icon = QLabel("🏥")
-        icon.setStyleSheet("font-size: 56px; background: transparent;")
+        icon = QLabel()
         icon.setAlignment(Qt.AlignCenter)
+
+        base_ui_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        img_path = os.path.join(base_ui_dir, "styles", "logo.png")
+
+        if os.path.exists(img_path):
+            pixmap = QPixmap(img_path)
+            icon.setPixmap(pixmap.scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            icon.setStyleSheet("background: transparent;")
+        else:
+            icon.setText("🏥")
+            icon.setStyleSheet("font-size: 56px; background: transparent;")
+
         layout.addWidget(icon)
 
-        title = QLabel("ITF Desktop")
+        title = QLabel(AppConfig.APP_NAME)
         title.setStyleSheet(
             "font-size: 28px; font-weight: bold; color: #e0e2ea; background: transparent;"
         )

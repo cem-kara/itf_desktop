@@ -1,0 +1,899 @@
+================================================= test session starts =================================================
+platform win32 -- Python 3.12.4, pytest-8.2.0, pluggy-1.5.0 -- C:\Users\HP\Desktop\Yeni klasör\WPy64-31241\python-3.12.4.amd64\python.exe
+cachedir: .pytest_cache
+hypothesis profile 'default' -> database=DirectoryBasedExampleDatabase(WindowsPath('C:/Users/HP/Desktop/Yeni klasör/itf_python/itf_desktop/.hypothesis/examples'))
+rootdir: C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop
+plugins: anyio-4.4.0, dash-2.17.0, hypothesis-6.100.5, jaxtyping-0.2.22, cov-7.0.0, typeguard-2.13.3
+collected 660 items
+
+itf_desktop/test_log_rotation.py::test_basic_logging PASSED                                                      [  0%]
+itf_desktop/test_log_rotation.py::test_log_statistics PASSED                                                     [  0%]
+itf_desktop/test_log_rotation.py::test_log_health PASSED                                                         [  0%]
+itf_desktop/test_log_rotation.py::test_cleanup PASSED                                                            [  0%]
+itf_desktop/test_log_rotation.py::test_generate_logs PASSED                                                      [  0%]
+itf_desktop/tests/test_ariza_model.py::TestArizaConstants::test_columns_7_sutun PASSED                           [  0%]
+itf_desktop/tests/test_ariza_model.py::TestArizaConstants::test_columns_ilk_sutun_arizaid PASSED                 [  1%]
+itf_desktop/tests/test_ariza_model.py::TestArizaConstants::test_durum_renk_acik_var PASSED                       [  1%]
+itf_desktop/tests/test_ariza_model.py::TestArizaConstants::test_durum_renk_kapali_cozuldu PASSED                 [  1%]
+itf_desktop/tests/test_ariza_model.py::TestArizaConstants::test_oncelik_renk_acil PASSED                         [  1%]
+itf_desktop/tests/test_ariza_model.py::TestArizaConstants::test_oncelik_renk_dusuk PASSED                        [  1%]
+itf_desktop/tests/test_ariza_model.py::TestArizaConstants::test_sutun_anahtarlari_dogru PASSED                   [  1%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelCounts::test_bos_model_row_count_sifir PASSED          [  1%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelCounts::test_bos_model_column_count_7 PASSED           [  2%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelCounts::test_tek_kayit_row_count_1 PASSED              [  2%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelCounts::test_bes_kayit_row_count_5 PASSED              [  2%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelCounts::test_column_count_her_zaman_7 PASSED           [  2%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelData::test_display_role_arizaid PASSED                 [  2%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelData::test_display_role_baslik PASSED                  [  2%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelData::test_display_role_durum PASSED                   [  3%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelData::test_display_role_none_alan_bos_string PASSED    [  3%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelData::test_gecersiz_index_none PASSED                  [  3%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelData::test_foreground_role_durum_acik PASSED           [  3%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelData::test_foreground_role_oncelik_yuksek PASSED       [  3%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelData::test_foreground_role_bos_durum_fallback PASSED   [  3%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelData::test_alignment_role_tarih_hucre_merkez PASSED    [  3%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelData::test_alignment_role_baslik_sol PASSED            [  4%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelHeaders::test_header_ilk_sutun_ariza_id PASSED         [  4%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelHeaders::test_header_durum_sutunu PASSED               [  4%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelHeaders::test_header_dikey_none PASSED                 [  4%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelMethods::test_set_data_gunceller PASSED                [  4%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelMethods::test_set_data_none_bos_yapar PASSED           [  4%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelMethods::test_set_data_bos_liste PASSED                [  5%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelMethods::test_get_row_gecerli PASSED                   [  5%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelMethods::test_get_row_sinir_disi_none PASSED           [  5%]
+itf_desktop/tests/test_ariza_model.py::TestArizaTableModelMethods::test_set_data_coklu_kayit PASSED              [  5%]
+itf_desktop/tests/test_ariza_model.py::TestArizaIdFormati::test_format_regex PASSED                              [  5%]
+itf_desktop/tests/test_ariza_model.py::TestArizaIdFormati::test_format_gecersiz_reddedilir PASSED                [  5%]
+itf_desktop/tests/test_ariza_model.py::TestArizaIdFormati::test_ariza_id_tarih_guncel PASSED                     [  5%]
+itf_desktop/tests/test_ariza_model.py::TestArizaIdFormati::test_benzersizlik_zamana_gore PASSED                  [  6%]
+itf_desktop/tests/test_ariza_model.py::TestArizaFiltreMantigi::test_filtre_yok_hepsi_gorunur PASSED              [  6%]
+itf_desktop/tests/test_ariza_model.py::TestArizaFiltreMantigi::test_metin_filtre_baslik PASSED                   [  6%]
+itf_desktop/tests/test_ariza_model.py::TestArizaFiltreMantigi::test_durum_filtre_acik PASSED                     [  6%]
+itf_desktop/tests/test_ariza_model.py::TestArizaFiltreMantigi::test_durum_filtre_islemde PASSED                  [  6%]
+itf_desktop/tests/test_ariza_model.py::TestArizaFiltreMantigi::test_oncelik_filtre_acil PASSED                   [  6%]
+itf_desktop/tests/test_ariza_model.py::TestArizaFiltreMantigi::test_kombinasyon_durum_oncelik PASSED             [  6%]
+itf_desktop/tests/test_ariza_model.py::TestArizaFiltreMantigi::test_eslesen_yok_bos PASSED                       [  7%]
+itf_desktop/tests/test_ariza_model.py::TestArizaFiltreMantigi::test_buyuk_kucuk_harf PASSED                      [  7%]
+itf_desktop/tests/test_base_repository.py::TestInsert::test_temel_insert PASSED                                  [  7%]
+itf_desktop/tests/test_base_repository.py::TestInsert::test_sync_status_otomatik_dirty PASSED                    [  7%]
+itf_desktop/tests/test_base_repository.py::TestInsert::test_sync_status_clean_korunur PASSED                     [  7%]
+itf_desktop/tests/test_base_repository.py::TestInsert::test_insert_or_replace PASSED                             [  7%]
+itf_desktop/tests/test_base_repository.py::TestInsert::test_updated_at_otomatik_doldurulur PASSED                [  8%]
+itf_desktop/tests/test_base_repository.py::TestInsert::test_nosync_tablo_insert PASSED                           [  8%]
+itf_desktop/tests/test_base_repository.py::TestInsert::test_composite_pk_insert PASSED                           [  8%]
+itf_desktop/tests/test_base_repository.py::TestUpdate::test_temel_update PASSED                                  [  8%]
+itf_desktop/tests/test_base_repository.py::TestUpdate::test_update_sync_status_dirty_olur PASSED                 [  8%]
+itf_desktop/tests/test_base_repository.py::TestUpdate::test_update_sync_status_clean_korunabilir PASSED          [  8%]
+itf_desktop/tests/test_base_repository.py::TestUpdate::test_partial_update_diger_alanlar_dokunulmaz PASSED       [  8%]
+itf_desktop/tests/test_base_repository.py::TestUpdate::test_bos_data_gonderilirse_hicbir_sey_olmaz PASSED        [  9%]
+itf_desktop/tests/test_base_repository.py::TestUpdate::test_composite_pk_update PASSED                           [  9%]
+itf_desktop/tests/test_base_repository.py::TestUpdate::test_updated_at_degisir PASSED                            [  9%]
+itf_desktop/tests/test_base_repository.py::TestGetById::test_mevcut_kayit_getirilir PASSED                       [  9%]
+itf_desktop/tests/test_base_repository.py::TestGetById::test_olmayan_kayit_none_doner PASSED                     [  9%]
+itf_desktop/tests/test_base_repository.py::TestGetById::test_donus_dict_tipinde PASSED                           [  9%]
+itf_desktop/tests/test_base_repository.py::TestGetById::test_composite_pk_tekli_deger PASSED                     [ 10%]
+itf_desktop/tests/test_base_repository.py::TestGetById::test_composite_pk_yanlis_deger_none PASSED               [ 10%]
+itf_desktop/tests/test_base_repository.py::TestGetById::test_composite_pk_dict_ile PASSED                        [ 10%]
+itf_desktop/tests/test_base_repository.py::TestGetAll::test_bos_tablo PASSED                                     [ 10%]
+itf_desktop/tests/test_base_repository.py::TestGetAll::test_tek_kayit PASSED                                     [ 10%]
+itf_desktop/tests/test_base_repository.py::TestGetAll::test_coklu_kayit PASSED                                   [ 10%]
+itf_desktop/tests/test_base_repository.py::TestGetAll::test_donus_list_of_dict PASSED                            [ 10%]
+itf_desktop/tests/test_base_repository.py::TestSyncOperations::test_get_dirty_yeni_kayit PASSED                  [ 11%]
+itf_desktop/tests/test_base_repository.py::TestSyncOperations::test_get_dirty_clean_sonrasi_bos PASSED           [ 11%]
+itf_desktop/tests/test_base_repository.py::TestSyncOperations::test_mark_clean PASSED                            [ 11%]
+itf_desktop/tests/test_base_repository.py::TestSyncOperations::test_birden_fazla_dirty_filtreleme PASSED         [ 11%]
+itf_desktop/tests/test_base_repository.py::TestSyncOperations::test_nosync_get_dirty_bos_doner PASSED            [ 11%]
+itf_desktop/tests/test_base_repository.py::TestSyncOperations::test_nosync_mark_clean_calisir PASSED             [ 11%]
+itf_desktop/tests/test_base_repository.py::TestSyncOperations::test_composite_pk_mark_clean PASSED               [ 11%]
+itf_desktop/tests/test_base_repository.py::TestPkHelpers::test_pk_property_tekli PASSED                          [ 12%]
+itf_desktop/tests/test_base_repository.py::TestPkHelpers::test_pk_property_composite PASSED                      [ 12%]
+itf_desktop/tests/test_base_repository.py::TestPkHelpers::test_is_composite_tekli PASSED                         [ 12%]
+itf_desktop/tests/test_base_repository.py::TestPkHelpers::test_is_composite_composite PASSED                     [ 12%]
+itf_desktop/tests/test_base_repository.py::TestPkHelpers::test_pk_key_tekli PASSED                               [ 12%]
+itf_desktop/tests/test_base_repository.py::TestPkHelpers::test_pk_key_composite PASSED                           [ 12%]
+itf_desktop/tests/test_base_repository.py::TestPkHelpers::test_resolve_pk_params_string PASSED                   [ 13%]
+itf_desktop/tests/test_base_repository.py::TestPkHelpers::test_resolve_pk_params_list PASSED                     [ 13%]
+itf_desktop/tests/test_base_repository.py::TestPkHelpers::test_resolve_pk_params_dict PASSED                     [ 13%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestFiltreTekAlan::test_filtre_yok_hepsi PASSED                   [ 13%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestFiltreTekAlan::test_tip_mr PASSED                             [ 13%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestFiltreTekAlan::test_tip_bt PASSED                             [ 13%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestFiltreTekAlan::test_tip_ekg PASSED                            [ 13%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestFiltreTekAlan::test_tip_eeg PASSED                            [ 14%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestFiltreTekAlan::test_kaynak_donel_sermaye PASSED               [ 14%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestFiltreTekAlan::test_kaynak_butce PASSED                       [ 14%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestFiltreTekAlan::test_birim_radyoloji PASSED                    [ 14%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestFiltreTekAlan::test_birim_kardiyoloji PASSED                  [ 14%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestFiltreTekAlan::test_birim_noroloji PASSED                     [ 14%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestFiltreKombinasyon::test_tip_kaynak PASSED                     [ 15%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestFiltreKombinasyon::test_tip_birim PASSED                      [ 15%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestFiltreKombinasyon::test_kaynak_birim PASSED                   [ 15%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestFiltreKombinasyon::test_uc_filtre_eslesen_yok PASSED          [ 15%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestFiltreKombinasyon::test_uc_filtre_bir_sonuc PASSED            [ 15%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestSinirDurumlar::test_bos_veri PASSED                           [ 15%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestSinirDurumlar::test_olmayan_tip PASSED                        [ 15%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestSinirDurumlar::test_olmayan_birim PASSED                      [ 16%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestSinirDurumlar::test_bos_cihaz_tipi_eslesmez PASSED            [ 16%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestSinirDurumlar::test_none_alan_eslesmez PASSED                 [ 16%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestSinirDurumlar::test_tek_eleman_eslesen PASSED                 [ 16%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestComboboxDolgusu::test_tipler PASSED                           [ 16%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestComboboxDolgusu::test_birimler PASSED                         [ 16%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestComboboxDolgusu::test_kaynaklar PASSED                        [ 16%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestComboboxDolgusu::test_bos_alan_dahil_edilmez PASSED           [ 17%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestCihazListesiQt::test_sinyaller_var PASSED                     [ 17%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestCihazListesiQt::test_populate_satir_sayisi PASSED             [ 17%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestCihazListesiQt::test_populate_bos PASSED                      [ 17%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestCihazListesiQt::test_populate_cihazid_sutun PASSED            [ 17%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestCihazListesiQt::test_populate_marka_sutun PASSED              [ 17%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestCihazListesiQt::test_userdata_saklanýyor PASSED               [ 18%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestCihazListesiQt::test_lbl_count_guncelleniyor PASSED           [ 18%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestCihazListesiQt::test_tablo_sutun_sayisi PASSED                [ 18%]
+itf_desktop/tests/test_core.py::TestAppConfig::test_app_name_string PASSED                                       [ 18%]
+itf_desktop/tests/test_core.py::TestAppConfig::test_version_format PASSED                                        [ 18%]
+itf_desktop/tests/test_core.py::TestAppConfig::test_sync_interval_pozitif PASSED                                 [ 18%]
+itf_desktop/tests/test_core.py::TestAppConfig::test_log_max_bytes_mantikli PASSED                                [ 18%]
+itf_desktop/tests/test_core.py::TestAppConfig::test_log_backup_count_pozitif PASSED                              [ 19%]
+itf_desktop/tests/test_core.py::TestAppConfig::test_auto_sync_bool PASSED                                        [ 19%]
+itf_desktop/tests/test_core.py::TestAppConfig::test_log_rotation_when_string PASSED                              [ 19%]
+itf_desktop/tests/test_core.py::TestAppConfig::test_log_rotation_interval_pozitif PASSED                         [ 19%]
+itf_desktop/tests/test_core.py::TestAppConfig::test_version_1_0_1 PASSED                                         [ 19%]
+itf_desktop/tests/test_core.py::TestLogStatistics::test_get_log_size_var_dosya PASSED                            [ 19%]
+itf_desktop/tests/test_core.py::TestLogStatistics::test_get_log_size_yok_dosya_sifir PASSED                      [ 20%]
+itf_desktop/tests/test_core.py::TestLogStatistics::test_get_log_size_mb_cinsinden PASSED                         [ 20%]
+itf_desktop/tests/test_core.py::TestLogStatistics::test_count_lines_3_satir PASSED                               [ 20%]
+itf_desktop/tests/test_core.py::TestLogStatistics::test_count_lines_bos_dosya PASSED                             [ 20%]
+itf_desktop/tests/test_core.py::TestLogStatistics::test_count_lines_cok_satir PASSED                             [ 20%]
+itf_desktop/tests/test_core.py::TestLogStatistics::test_get_total_log_size_float PASSED                          [ 20%]
+itf_desktop/tests/test_core.py::TestLogStatistics::test_get_log_stats_dict_donus PASSED                          [ 20%]
+itf_desktop/tests/test_core.py::TestLogStatistics::test_get_log_stats_bos_dizin PASSED                           [ 21%]
+itf_desktop/tests/test_core.py::TestLogStatistics::test_get_log_stats_alan_kontrol PASSED                        [ 21%]
+itf_desktop/tests/test_core.py::TestLogStatistics::test_check_log_health_dict_donus PASSED                       [ 21%]
+itf_desktop/tests/test_core.py::TestParseDateIzinGiris::test_yyyy_mm_dd_format PASSED                            [ 21%]
+itf_desktop/tests/test_core.py::TestParseDateIzinGiris::test_dd_mm_yyyy_format PASSED                            [ 21%]
+itf_desktop/tests/test_core.py::TestParseDateIzinGiris::test_dd_slash_mm_slash_yyyy PASSED                       [ 21%]
+itf_desktop/tests/test_core.py::TestParseDateIzinGiris::test_yyyy_slash_mm_slash_dd PASSED                       [ 21%]
+itf_desktop/tests/test_core.py::TestParseDateIzinGiris::test_dd_dash_mm_dash_yyyy PASSED                         [ 22%]
+itf_desktop/tests/test_core.py::TestParseDateIzinGiris::test_bos_string_none PASSED                              [ 22%]
+itf_desktop/tests/test_core.py::TestParseDateIzinGiris::test_none_str_none PASSED                                [ 22%]
+itf_desktop/tests/test_core.py::TestParseDateIzinGiris::test_sadece_bosluk_none PASSED                           [ 22%]
+itf_desktop/tests/test_core.py::TestParseDateIzinGiris::test_gecersiz_format_none PASSED                         [ 22%]
+itf_desktop/tests/test_core.py::TestParseDateIzinGiris::test_yanlis_tarih_none PASSED                            [ 22%]
+itf_desktop/tests/test_core.py::TestParseDateIzinGiris::test_date_objesi_donus PASSED                            [ 23%]
+itf_desktop/tests/test_core.py::TestParseDateIzinGiris::test_aralik_31 PASSED                                    [ 23%]
+itf_desktop/tests/test_core.py::TestParseDateIzinGiris::test_artik_yil_subat_29 PASSED                           [ 23%]
+itf_desktop/tests/test_core.py::TestParseDateIzinGiris::test_artik_olmayan_subat_29_none PASSED                  [ 23%]
+itf_desktop/tests/test_core.py::TestParseDateFhsz::test_yyyy_mm_dd_datetime PASSED                               [ 23%]
+itf_desktop/tests/test_core.py::TestParseDateFhsz::test_bos_none PASSED                                          [ 23%]
+itf_desktop/tests/test_core.py::TestParseDateFhsz::test_gecersiz_none PASSED                                     [ 23%]
+itf_desktop/tests/test_core.py::TestParseDateFhsz::test_dd_mm_yyyy PASSED                                        [ 24%]
+itf_desktop/tests/test_core.py::TestIzinTipleri::test_izin_tipleri_list PASSED                                   [ 24%]
+itf_desktop/tests/test_core.py::TestIzinTipleri::test_yillik_izin_var PASSED                                     [ 24%]
+itf_desktop/tests/test_core.py::TestIzinTipleri::test_sua_izni_var PASSED                                        [ 24%]
+itf_desktop/tests/test_core.py::TestIzinTipleri::test_mazeret_izni_var PASSED                                    [ 24%]
+itf_desktop/tests/test_core.py::TestIzinTipleri::test_tiplerde_tekrar_yok PASSED                                 [ 24%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryInsert::test_insert_basit_kayit PASSED                     [ 25%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryInsert::test_insert_sync_status_dirty_otomatik PASSED      [ 25%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryInsert::test_insert_sync_status_clean_korunur PASSED       [ 25%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryInsert::test_insert_eksik_alanlar_none_olur PASSED         [ 25%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryInsert::test_insert_or_replace_gunceller PASSED            [ 25%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryInsert::test_insert_no_sync_dirty_eklenmez PASSED          [ 25%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryGet::test_get_by_id_mevcut PASSED                          [ 25%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryGet::test_get_by_id_yok_none PASSED                        [ 26%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryGet::test_get_all_bos_tablo PASSED                         [ 26%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryGet::test_get_all_birden_fazla PASSED                      [ 26%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryGet::test_get_all_dict_listesi PASSED                      [ 26%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryGet::test_get_by_id_dict_donus PASSED                      [ 26%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryUpdate::test_update_alan_guncellenir PASSED                [ 26%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryUpdate::test_update_diger_alanlar_korunur PASSED           [ 26%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryUpdate::test_update_sync_status_dirty_olur PASSED          [ 27%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryUpdate::test_update_sync_status_explicit_clean PASSED      [ 27%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryUpdate::test_update_bos_data_etkisiz PASSED                [ 27%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryUpdate::test_update_yok_kayit_sessiz_gecilir PASSED        [ 27%]
+itf_desktop/tests/test_database.py::TestBaseRepositorySync::test_get_dirty_bos PASSED                            [ 27%]
+itf_desktop/tests/test_database.py::TestBaseRepositorySync::test_get_dirty_sadece_dirty PASSED                   [ 27%]
+itf_desktop/tests/test_database.py::TestBaseRepositorySync::test_mark_clean PASSED                               [ 28%]
+itf_desktop/tests/test_database.py::TestBaseRepositorySync::test_mark_clean_sonra_get_dirty_bos PASSED           [ 28%]
+itf_desktop/tests/test_database.py::TestBaseRepositorySync::test_no_sync_get_dirty_bos PASSED                    [ 28%]
+itf_desktop/tests/test_database.py::TestBaseRepositorySync::test_no_sync_mark_clean_exception_yok PASSED         [ 28%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryCompositePK::test_composite_insert_ve_get PASSED           [ 28%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryCompositePK::test_composite_get_by_id_dict PASSED          [ 28%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryCompositePK::test_composite_update PASSED                  [ 28%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryCompositePK::test_composite_mark_clean PASSED              [ 29%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryCompositePK::test_composite_pk_property PASSED             [ 29%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryCompositePK::test_tekli_pk_property PASSED                 [ 29%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryCompositePK::test_pk_key_composite PASSED                  [ 29%]
+itf_desktop/tests/test_database.py::TestBaseRepositoryCompositePK::test_pk_key_tekli PASSED                      [ 29%]
+itf_desktop/tests/test_database.py::TestRepositoryRegistry::test_get_returns_repository PASSED                   [ 29%]
+itf_desktop/tests/test_database.py::TestRepositoryRegistry::test_get_singleton PASSED                            [ 30%]
+itf_desktop/tests/test_database.py::TestRepositoryRegistry::test_get_farkli_tablolar PASSED                      [ 30%]
+itf_desktop/tests/test_database.py::TestRepositoryRegistry::test_pk_cihaz_ariza PASSED                           [ 30%]
+itf_desktop/tests/test_database.py::TestRepositoryRegistry::test_pk_ariza_islem PASSED                           [ 30%]
+itf_desktop/tests/test_database.py::TestRepositoryRegistry::test_pk_periyodik_bakim PASSED                       [ 30%]
+itf_desktop/tests/test_database.py::TestRepositoryRegistry::test_unknown_table_raises PASSED                     [ 30%]
+itf_desktop/tests/test_database.py::TestRepositoryRegistry::test_ariza_islem_crud PASSED                         [ 30%]
+itf_desktop/tests/test_database.py::TestRepositoryRegistry::test_periyodik_bakim_crud PASSED                     [ 31%]
+itf_desktop/tests/test_database.py::TestRepositoryRegistry::test_cihaz_ariza_get_all_filtreli PASSED             [ 31%]
+itf_desktop/tests/test_database.py::TestRepositoryRegistry::test_dirty_sonra_clean PASSED                        [ 31%]
+itf_desktop/tests/test_fhsz_logic.py::TestFhszSabitler::test_kosul_a_saat_7 PASSED                               [ 31%]
+itf_desktop/tests/test_fhsz_logic.py::TestFhszSabitler::test_fhsz_esik_tarihi PASSED                             [ 31%]
+itf_desktop/tests/test_fhsz_logic.py::TestFhszSabitler::test_ay_isimleri_12_eleman PASSED                        [ 31%]
+itf_desktop/tests/test_fhsz_logic.py::TestFhszSabitler::test_ay_isimleri_ilk_ocak PASSED                         [ 31%]
+itf_desktop/tests/test_fhsz_logic.py::TestFhszSabitler::test_ay_isimleri_son_aralik PASSED                       [ 32%]
+itf_desktop/tests/test_fhsz_logic.py::TestFhszSabitler::test_kolon_sayisi_9 PASSED                               [ 32%]
+itf_desktop/tests/test_fhsz_logic.py::TestFhszSabitler::test_c_kimlik_sifir PASSED                               [ 32%]
+itf_desktop/tests/test_fhsz_logic.py::TestFhszSabitler::test_c_saat_sekiz PASSED                                 [ 32%]
+itf_desktop/tests/test_fhsz_logic.py::TestFhszSabitler::test_izin_verilen_siniflar_listesi PASSED                [ 32%]
+itf_desktop/tests/test_fhsz_logic.py::TestPuanHesabi::test_kosul_a_normal PASSED                                 [ 32%]
+itf_desktop/tests/test_fhsz_logic.py::TestPuanHesabi::test_kosul_a_izin_sifir PASSED                             [ 33%]
+itf_desktop/tests/test_fhsz_logic.py::TestPuanHesabi::test_kosul_a_tam_izin PASSED                               [ 33%]
+itf_desktop/tests/test_fhsz_logic.py::TestPuanHesabi::test_kosul_a_izin_fazla PASSED                             [ 33%]
+itf_desktop/tests/test_fhsz_logic.py::TestPuanHesabi::test_kosul_b_her_zaman_sifir PASSED                        [ 33%]
+itf_desktop/tests/test_fhsz_logic.py::TestPuanHesabi::test_kosul_b_izinli PASSED                                 [ 33%]
+itf_desktop/tests/test_fhsz_logic.py::TestPuanHesabi::test_bos_kosul_sifir PASSED                                [ 33%]
+itf_desktop/tests/test_fhsz_logic.py::TestPuanHesabi::test_kosul_a_buyuk_harf_calisir PASSED                     [ 33%]
+itf_desktop/tests/test_fhsz_logic.py::TestPuanHesabi::test_kosul_a_kucuk_harf_calisir PASSED                     [ 34%]
+itf_desktop/tests/test_fhsz_logic.py::TestPuanHesabi::test_kosul_a_1_gun PASSED                                  [ 34%]
+itf_desktop/tests/test_fhsz_logic.py::TestKesisimIzinGunu::test_donem_tum_izinleri_kapsýyor PASSED               [ 34%]
+itf_desktop/tests/test_fhsz_logic.py::TestKesisimIzinGunu::test_donem_sadece_ilk_izni_kapsýyor PASSED            [ 34%]
+itf_desktop/tests/test_fhsz_logic.py::TestKesisimIzinGunu::test_donem_kesisim_yok PASSED                         [ 34%]
+itf_desktop/tests/test_fhsz_logic.py::TestKesisimIzinGunu::test_farkli_personel_sifir PASSED                     [ 34%]
+itf_desktop/tests/test_fhsz_logic.py::TestKesisimIzinGunu::test_iptal_izin_sayilmaz PASSED                       [ 35%]
+itf_desktop/tests/test_fhsz_logic.py::TestKesisimIzinGunu::test_bos_liste_sifir PASSED                           [ 35%]
+itf_desktop/tests/test_fhsz_logic.py::TestKesisimIzinGunu::test_kýsmi_kesisim PASSED                             [ 35%]
+itf_desktop/tests/test_fhsz_logic.py::TestTrUpperKosul::test_kosul_a_normalize PASSED                            [ 35%]
+itf_desktop/tests/test_fhsz_logic.py::TestTrUpperKosul::test_kosul_b_normalize PASSED                            [ 35%]
+itf_desktop/tests/test_fhsz_logic.py::TestTrUpperKosul::test_kucuk_harf_b_normalize PASSED                       [ 35%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_noktalý_i_buyuk_harf PASSED                            [ 35%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_noktasiz_i_buyuk_harf PASSED                           [ 36%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_yumusak_g PASSED                                       [ 36%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_u_umlauti PASSED                                       [ 36%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_s_cedilla PASSED                                       [ 36%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_o_umlauti PASSED                                       [ 36%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_c_cedilla PASSED                                       [ 36%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_tum_turkce_karakterler_bir_arada PASSED                [ 36%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_latin_karakterler_degismez PASSED                      [ 37%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_zaten_buyuk_harf PASSED                                [ 37%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_bos_string PASSED                                      [ 37%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_rakamlar_ve_semboller PASSED                           [ 37%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_int_girdi PASSED                                       [ 37%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_float_girdi PASSED                                     [ 37%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_none_girdi PASSED                                      [ 38%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_liste_girdi PASSED                                     [ 38%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_kisim_turkce_kisim_latin PASSED                        [ 38%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_sifir_saat PASSED                            [ 38%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_negatif_saat PASSED                          [ 38%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_sifirdan_kucuk_kesirliler PASSED             [ 38%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_50_saatten_az PASSED                         [ 38%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_50_saat_tam_esik PASSED                      [ 39%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_50_99_arasi PASSED                           [ 39%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[100-2] PASSED                 [ 39%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[150-3] PASSED                 [ 39%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[200-4] PASSED                 [ 39%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[250-5] PASSED                 [ 39%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[300-6] PASSED                 [ 40%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[350-7] PASSED                 [ 40%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[400-8] PASSED                 [ 40%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[450-9] PASSED                 [ 40%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[500-10] PASSED                [ 40%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[550-11] PASSED                [ 40%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[600-12] PASSED                [ 40%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[650-13] PASSED                [ 41%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[700-14] PASSED                [ 41%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[750-15] PASSED                [ 41%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[800-16] PASSED                [ 41%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[850-17] PASSED                [ 41%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[900-18] PASSED                [ 41%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[950-19] PASSED                [ 41%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_degerleri[1000-20] PASSED               [ 42%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[99.9-1] PASSED                  [ 42%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[149.9-2] PASSED                 [ 42%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[199.9-3] PASSED                 [ 42%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[249.9-4] PASSED                 [ 42%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[299.9-5] PASSED                 [ 42%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[349.9-6] PASSED                 [ 43%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[399.9-7] PASSED                 [ 43%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[449.9-8] PASSED                 [ 43%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[499.9-9] PASSED                 [ 43%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[549.9-10] PASSED                [ 43%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[599.9-11] PASSED                [ 43%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[649.9-12] PASSED                [ 43%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[699.9-13] PASSED                [ 44%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[749.9-14] PASSED                [ 44%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[799.9-15] PASSED                [ 44%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[849.9-16] PASSED                [ 44%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[899.9-17] PASSED                [ 44%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[949.9-18] PASSED                [ 44%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_esik_altlari[999.9-19] PASSED                [ 45%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_1000_1099_arasi PASSED                       [ 45%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_1100_buyuk_atlama PASSED                     [ 45%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_1100_1199_arasi PASSED                       [ 45%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_1200_1299_arasi PASSED                       [ 45%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_27_gun_yoktur PASSED                         [ 45%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_1300_1399_arasi PASSED                       [ 45%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_1400_1449_arasi PASSED                       [ 46%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_1450_tavan PASSED                            [ 46%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_1450_ustu_hep_30 PASSED                      [ 46%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_string_sayi_kabul_edilir PASSED              [ 46%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_string_ondalikli PASSED                      [ 46%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_float_girdi PASSED                           [ 46%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_gecersiz_string PASSED                       [ 46%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_none_girdi PASSED                            [ 47%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_liste_girdi PASSED                           [ 47%]
+itf_desktop/tests/test_hesaplamalar.py::TestSuaHakEdisHesapla::test_boolean_girdi PASSED                         [ 47%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_tek_gun_pazartesi PASSED                         [ 47%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_tek_gun_cumartesi PASSED                         [ 47%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_tek_gun_pazar PASSED                             [ 47%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_tam_is_haftasi PASSED                            [ 48%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_haftasonu_dahil_yedi_gun PASSED                  [ 48%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_iki_tam_hafta PASSED                             [ 48%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_tam_hafta_sonu PASSED                            [ 48%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_cuma_pazartesi PASSED                            [ 48%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_pazartesi_tatil PASSED                           [ 48%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_tatil_hafta_sonuna_denk_gelirse_etki_yok PASSED  [ 48%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_birden_fazla_tatil PASSED                        [ 49%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_ayni_gune_iki_tatil_bir_dusulur PASSED           [ 49%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_bos_tatil_listesi PASSED                         [ 49%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_tatil_listesi_none PASSED                        [ 49%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_ay_sonu_gecisi PASSED                            [ 49%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_yil_sonu_gecisi PASSED                           [ 49%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_baslangic_bitis_sonra PASSED                     [ 50%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_cumhuriyet_bayrami_haftasi PASSED                [ 50%]
+itf_desktop/tests/test_hesaplamalar.py::TestIsGunuHesapla::test_uzun_tatil_dizisi PASSED                         [ 50%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_ocak_2024 PASSED                                      [ 50%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_subat_2024_artik_yil PASSED                           [ 50%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_subat_2023_artik_olmayan PASSED                       [ 50%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_nisan_2024 PASSED                                     [ 50%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_aralik_2024 PASSED                                    [ 51%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_ocak_tatil_ile PASSED                                 [ 51%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_tatil_hafta_sonuna_denk PASSED                        [ 51%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_iki_tatil_ayni_ay PASSED                              [ 51%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_bos_tatil_listesi PASSED                              [ 51%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_tatil_listesi_none PASSED                             [ 51%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_2024_tum_aylar[2024-1-23] PASSED                      [ 51%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_2024_tum_aylar[2024-2-21] PASSED                      [ 52%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_2024_tum_aylar[2024-3-21] PASSED                      [ 52%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_2024_tum_aylar[2024-4-22] PASSED                      [ 52%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_2024_tum_aylar[2024-5-23] PASSED                      [ 52%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_2024_tum_aylar[2024-6-20] PASSED                      [ 52%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_2024_tum_aylar[2024-7-23] PASSED                      [ 52%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_2024_tum_aylar[2024-8-22] PASSED                      [ 53%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_2024_tum_aylar[2024-9-21] PASSED                      [ 53%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_2024_tum_aylar[2024-10-23] PASSED                     [ 53%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_2024_tum_aylar[2024-11-21] PASSED                     [ 53%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_2024_tum_aylar[2024-12-22] PASSED                     [ 53%]
+itf_desktop/tests/test_hesaplamalar.py::TestAyIsGunu::test_artik_yil_vs_normal_subat PASSED                      [ 53%]
+itf_desktop/tests/test_izin_logic.py::TestParseDateIzin::test_yyyy_mm_dd PASSED                                  [ 53%]
+itf_desktop/tests/test_izin_logic.py::TestParseDateIzin::test_dd_mm_yyyy PASSED                                  [ 54%]
+itf_desktop/tests/test_izin_logic.py::TestParseDateIzin::test_dd_slash_mm_slash_yyyy PASSED                      [ 54%]
+itf_desktop/tests/test_izin_logic.py::TestParseDateIzin::test_yyyy_slash_mm_slash_dd PASSED                      [ 54%]
+itf_desktop/tests/test_izin_logic.py::TestParseDateIzin::test_dd_dash_mm_dash_yyyy PASSED                        [ 54%]
+itf_desktop/tests/test_izin_logic.py::TestParseDateIzin::test_bos_string_none PASSED                             [ 54%]
+itf_desktop/tests/test_izin_logic.py::TestParseDateIzin::test_none_str_none PASSED                               [ 54%]
+itf_desktop/tests/test_izin_logic.py::TestParseDateIzin::test_bosluk_none PASSED                                 [ 55%]
+itf_desktop/tests/test_izin_logic.py::TestParseDateIzin::test_gecersiz_format_none PASSED                        [ 55%]
+itf_desktop/tests/test_izin_logic.py::TestParseDateIzin::test_yanlis_gun_none PASSED                             [ 55%]
+itf_desktop/tests/test_izin_logic.py::TestParseDateIzin::test_artik_yil_subat_29 PASSED                          [ 55%]
+itf_desktop/tests/test_izin_logic.py::TestParseDateIzin::test_non_artik_yil_subat_29_none PASSED                 [ 55%]
+itf_desktop/tests/test_izin_logic.py::TestCakismaKontrolu::test_tam_cakisma PASSED                               [ 55%]
+itf_desktop/tests/test_izin_logic.py::TestCakismaKontrolu::test_bas_cakisiyor PASSED                             [ 55%]
+itf_desktop/tests/test_izin_logic.py::TestCakismaKontrolu::test_bit_cakisiyor PASSED                             [ 56%]
+itf_desktop/tests/test_izin_logic.py::TestCakismaKontrolu::test_kapsayan_cakisma PASSED                          [ 56%]
+itf_desktop/tests/test_izin_logic.py::TestCakismaKontrolu::test_cakisma_yok_arasi PASSED                         [ 56%]
+itf_desktop/tests/test_izin_logic.py::TestCakismaKontrolu::test_cakisma_yok_sonrasi PASSED                       [ 56%]
+itf_desktop/tests/test_izin_logic.py::TestCakismaKontrolu::test_cakisma_yok_oncesi PASSED                        [ 56%]
+itf_desktop/tests/test_izin_logic.py::TestCakismaKontrolu::test_iptal_kayit_atlanir PASSED                       [ 56%]
+itf_desktop/tests/test_izin_logic.py::TestCakismaKontrolu::test_farkli_personel_atlanir PASSED                   [ 56%]
+itf_desktop/tests/test_izin_logic.py::TestCakismaKontrolu::test_bos_liste_cakisma_yok PASSED                     [ 57%]
+itf_desktop/tests/test_izin_logic.py::TestCakismaKontrolu::test_kenar_bas_bitis_esit PASSED                      [ 57%]
+itf_desktop/tests/test_izin_logic.py::TestCakismaKontrolu::test_kenar_bit_bitis_esit PASSED                      [ 57%]
+itf_desktop/tests/test_izin_logic.py::TestBakiyeDusme::test_yillik_izin_kullanilan_artar PASSED                  [ 57%]
+itf_desktop/tests/test_izin_logic.py::TestBakiyeDusme::test_yillik_izin_kalan_azalir PASSED                      [ 57%]
+itf_desktop/tests/test_izin_logic.py::TestBakiyeDusme::test_yillik_izin_toplam_korunur PASSED                    [ 57%]
+itf_desktop/tests/test_izin_logic.py::TestBakiyeDusme::test_sua_izni_kullanilan_artar PASSED                     [ 58%]
+itf_desktop/tests/test_izin_logic.py::TestBakiyeDusme::test_sua_izni_kalan_azalir PASSED                         [ 58%]
+itf_desktop/tests/test_izin_logic.py::TestBakiyeDusme::test_saglik_raporu_top_artar PASSED                       [ 58%]
+itf_desktop/tests/test_izin_logic.py::TestBakiyeDusme::test_mazeret_izni_top_artar PASSED                        [ 58%]
+itf_desktop/tests/test_izin_logic.py::TestBakiyeDusme::test_diger_izin_tipi_degistirmez PASSED                   [ 58%]
+itf_desktop/tests/test_izin_logic.py::TestBakiyeDusme::test_sifir_gun_degistirmez PASSED                         [ 58%]
+itf_desktop/tests/test_izin_logic.py::TestBakiyeDusme::test_orijinal_dict_degismez PASSED                        [ 58%]
+itf_desktop/tests/test_izin_logic.py::TestBitisTarihiHesapla::test_1_gun_hafta_ici PASSED                        [ 59%]
+itf_desktop/tests/test_izin_logic.py::TestBitisTarihiHesapla::test_cuma_1_gun_pazartesi PASSED                   [ 59%]
+itf_desktop/tests/test_izin_logic.py::TestBitisTarihiHesapla::test_cuma_2_gun_sali PASSED                        [ 59%]
+itf_desktop/tests/test_izin_logic.py::TestBitisTarihiHesapla::test_tatil_atlama PASSED                           [ 59%]
+itf_desktop/tests/test_izin_logic.py::TestBitisTarihiHesapla::test_birden_fazla_tatil_atlama PASSED              [ 59%]
+itf_desktop/tests/test_izin_logic.py::TestBitisTarihiHesapla::test_5_gun_tam_hafta FAILED                        [ 59%]
+itf_desktop/tests/test_izin_logic.py::TestBitisTarihiHesapla::test_tatil_yok_sifir_gun_ayný_gun PASSED           [ 60%]
+itf_desktop/tests/test_izin_logic.py::TestBitisTarihiHesapla::test_cumartesi_baslama_pazartesi_bitiyor PASSED    [ 60%]
+itf_desktop/tests/test_izin_logic.py::TestIzinTableModel::test_bos_model_row_count_sifir PASSED                  [ 60%]
+itf_desktop/tests/test_izin_logic.py::TestIzinTableModel::test_dolu_model_row_count PASSED                       [ 60%]
+itf_desktop/tests/test_izin_logic.py::TestIzinTableModel::test_column_count PASSED                               [ 60%]
+itf_desktop/tests/test_izin_logic.py::TestIzinTableModel::test_display_role_izin_tipi PASSED                     [ 60%]
+itf_desktop/tests/test_izin_logic.py::TestIzinTableModel::test_display_role_gun PASSED                           [ 60%]
+itf_desktop/tests/test_izin_logic.py::TestIzinTableModel::test_display_role_tarih_format PASSED                  [ 61%]
+itf_desktop/tests/test_izin_logic.py::TestIzinTableModel::test_gecersiz_index_none PASSED                        [ 61%]
+itf_desktop/tests/test_izin_logic.py::TestIzinTableModel::test_header_horizontal PASSED                          [ 61%]
+itf_desktop/tests/test_izin_logic.py::TestIzinTableModel::test_header_dikey_none PASSED                          [ 61%]
+itf_desktop/tests/test_izin_logic.py::TestIzinTableModel::test_set_data_gunceller PASSED                         [ 61%]
+itf_desktop/tests/test_izin_logic.py::TestIzinTableModel::test_get_row_gecerli PASSED                            [ 61%]
+itf_desktop/tests/test_izin_logic.py::TestIzinTableModel::test_get_row_sinir_disi_none PASSED                    [ 61%]
+itf_desktop/tests/test_izin_logic.py::TestIzinTableModel::test_foreground_onayli_yesil PASSED                    [ 62%]
+itf_desktop/tests/test_izin_logic.py::TestIzinTableModel::test_foreground_iptal_kirmizi PASSED                   [ 62%]
+itf_desktop/tests/test_izin_logic.py::TestIzinTableModel::test_alignment_gun_merkez PASSED                       [ 62%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestAyAdimi::test_6_ay PASSED                                       [ 62%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestAyAdimi::test_1_yil PASSED                                      [ 62%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestAyAdimi::test_2_yil PASSED                                      [ 62%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestAyAdimi::test_3_yil PASSED                                      [ 63%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestAyAdimi::test_tek_seferlik_sifir PASSED                         [ 63%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestAyAdimi::test_bilinmeyen_sifir PASSED                           [ 63%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestBitisTarihi::test_6_ay_bitis PASSED                             [ 63%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestBitisTarihi::test_1_yil_bitis PASSED                            [ 63%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestBitisTarihi::test_2_yil_bitis PASSED                            [ 63%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestBitisTarihi::test_3_yil_bitis PASSED                            [ 63%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestBitisTarihi::test_tek_seferlik_baslangic_ayni PASSED            [ 64%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestBitisTarihi::test_subat_artik_yil PASSED                        [ 64%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestBitisTarihi::test_ocak_31_6_ay PASSED                           [ 64%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestDonemSayisi::test_tek_seferlik_1_satir PASSED                   [ 64%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestDonemSayisi::test_1_yil_1_donem PASSED                          [ 64%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestDonemSayisi::test_1_yil_3_donem PASSED                          [ 64%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestDonemSayisi::test_6_ay_4_donem PASSED                           [ 65%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestDonemSayisi::test_2_yil_2_donem PASSED                          [ 65%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestDonemSayisi::test_3_yil_10_donem PASSED                         [ 65%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestIlkSatir::test_cihaz_id PASSED                                  [ 65%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestIlkSatir::test_firma PASSED                                     [ 65%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestIlkSatir::test_durum PASSED                                     [ 65%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestIlkSatir::test_sertifika PASSED                                 [ 65%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestIlkSatir::test_aciklama PASSED                                  [ 66%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestIlkSatir::test_yapilan_tarih PASSED                             [ 66%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestIlkSatir::test_bitis_tarihi PASSED                              [ 66%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestIlkSatir::test_kal_prefix PASSED                                [ 66%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestSonrakiSatirlar::test_ikinci_firma_bos PASSED                   [ 66%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestSonrakiSatirlar::test_ikinci_durum_planlandý PASSED             [ 66%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestSonrakiSatirlar::test_ikinci_sertifika_bos PASSED               [ 66%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestSonrakiSatirlar::test_ikinci_aciklama_otomatik PASSED           [ 67%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestSonrakiSatirlar::test_son_satir_planlandý PASSED                [ 67%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestSonrakiSatirlar::test_benzersiz_idler PASSED                    [ 67%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestTarihSiralamasi::test_6_aylik_4_donem PASSED                    [ 67%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestTarihSiralamasi::test_1_yillik_3_donem PASSED                   [ 67%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestTarihSiralamasi::test_bitis_her_zaman_baslangictan_sonra PASSED [ 67%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestKalibrasyonSutunUyumu::test_kalibrasyon_tablosu_var PASSED      [ 68%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestKalibrasyonSutunUyumu::test_pk_kalid PASSED                     [ 68%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestKalibrasyonSutunUyumu::test_zorunlu_kolonlar PASSED             [ 68%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestKalibrasyonSutunUyumu::test_sutun_adý_uyumsuzlugu_belgelenir PASSED [ 68%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestKalibrasyonSutunUyumu::test_gecerlilik_kolon_adi PASSED         [ 68%]
+itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_yeni_db_versiyon_sifir ERROR                       [ 68%]
+itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_set_schema_version ERROR                           [ 68%]
+itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_set_multiple_versions ERROR                        [ 69%]
+itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_current_version_sabit_2 ERROR                      [ 69%]
+itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_schema_version_tablo_olusur ERROR                  [ 69%]
+itf_desktop/tests/test_migrations.py::TestRunMigrations::test_fresh_db_run_migrations ERROR                      [ 69%]
+itf_desktop/tests/test_migrations.py::TestRunMigrations::test_after_migration_version_current ERROR              [ 69%]
+itf_desktop/tests/test_migrations.py::TestRunMigrations::test_zaten_guncel_true_donus ERROR                      [ 69%]
+itf_desktop/tests/test_migrations.py::TestRunMigrations::test_migration_sonrasi_tablolar_mevcut ERROR            [ 70%]
+itf_desktop/tests/test_migrations.py::TestRunMigrations::test_cihaz_ariza_kolonlar ERROR                         [ 70%]
+itf_desktop/tests/test_migrations.py::TestRunMigrations::test_periyodik_bakim_kolonlar ERROR                     [ 70%]
+itf_desktop/tests/test_migrations.py::TestRunMigrations::test_tatiller_kolonlar ERROR                            [ 70%]
+itf_desktop/tests/test_migrations.py::TestRunMigrations::test_fhsz_puantaj_composite_pk ERROR                    [ 70%]
+itf_desktop/tests/test_migrations.py::TestBackup::test_backup_dosya_olusur ERROR                                 [ 70%]
+itf_desktop/tests/test_migrations.py::TestBackup::test_backup_db_icerigi_ayni ERROR                              [ 70%]
+itf_desktop/tests/test_migrations.py::TestBackup::test_backup_olmayan_db_none FAILED                             [ 71%]
+itf_desktop/tests/test_migrations.py::TestBackup::test_cleanup_old_backups ERROR                                 [ 71%]
+itf_desktop/tests/test_migrations.py::TestSQLiteManagerLogic::test_execute_create_insert_select PASSED           [ 71%]
+itf_desktop/tests/test_migrations.py::TestSQLiteManagerLogic::test_row_factory_dict_erisim PASSED                [ 71%]
+itf_desktop/tests/test_migrations.py::TestSQLiteManagerLogic::test_executemany PASSED                            [ 71%]
+itf_desktop/tests/test_migrations.py::TestSQLiteManagerLogic::test_execute_commit_otomatik PASSED                [ 71%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestAyEkle::test_sifir_ay_ayni_tarih PASSED                     [ 71%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestAyEkle::test_3_ay_sonrasi PASSED                            [ 72%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestAyEkle::test_6_ay_sonrasi PASSED                            [ 72%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestAyEkle::test_12_ay_sonrasi_yil_atlama PASSED                [ 72%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestAyEkle::test_24_ay_2_yil PASSED                             [ 72%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestAyEkle::test_ay_sonu_ocak_31_subat PASSED                   [ 72%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestAyEkle::test_aralik_ay_gecisi PASSED                        [ 72%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestAyEkle::test_negstif_ay PASSED                              [ 73%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestSatirSayisi::test_3_ay_4_satir PASSED                       [ 73%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestSatirSayisi::test_6_ay_2_satir PASSED                       [ 73%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestSatirSayisi::test_1_yil_1_satir PASSED                      [ 73%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestSatirSayisi::test_tek_seferlik_1_satir PASSED               [ 73%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestSatirSayisi::test_bilinmeyen_periyot_1_satir PASSED         [ 73%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestTarihAraliklari::test_3_ay_tarihler PASSED                  [ 73%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestTarihAraliklari::test_6_ay_tarihler PASSED                  [ 74%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestTarihAraliklari::test_1_yil_tarih PASSED                    [ 74%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestTarihAraliklari::test_tarih_formati_yyyy_mm_dd PASSED       [ 74%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestIlkVeSonrakiSatirlar::test_ilk_satir_durum_ayni PASSED      [ 74%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestIlkVeSonrakiSatirlar::test_sonraki_satirlar_planlanmis PASSED [ 74%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestIlkVeSonrakiSatirlar::test_ilk_satir_yapilan_islem_dolu PASSED [ 74%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestIlkVeSonrakiSatirlar::test_sonraki_satirlar_yapilan_bos PASSED [ 75%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestIlkVeSonrakiSatirlar::test_ilk_satir_aciklama_dolu PASSED   [ 75%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestIlkVeSonrakiSatirlar::test_sonraki_satirlar_aciklama_bos PASSED [ 75%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestIlkVeSonrakiSatirlar::test_ilk_satir_teknisyen_dolu PASSED  [ 75%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestIlkVeSonrakiSatirlar::test_sonraki_satirlar_teknisyen_bos PASSED [ 75%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestIlkVeSonrakiSatirlar::test_ilk_satir_rapor_linki PASSED     [ 75%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestIlkVeSonrakiSatirlar::test_sonraki_satirlar_rapor_bos PASSED [ 75%]itf_desktop/tests/test_periyodik_bakim_logic.py::TestBakimTarihi::test_yapildi_bakim_tarihi_dolar PASSED         [ 76%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestBakimTarihi::test_yapildi_sonraki_bakim_tarihi_bos PASSED   [ 76%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestBakimTarihi::test_planlanmis_bakim_tarihi_bos PASSED        [ 76%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestPlanidFormati::test_planid_p_ile_baslar PASSED              [ 76%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestPlanidFormati::test_planid_benzersiz PASSED                 [ 76%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestPlanidFormati::test_planid_ardisik_artar PASSED             [ 76%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestZorunluAlanlar::test_tum_kolon_adlari_mevcut PASSED         [ 76%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestZorunluAlanlar::test_bakim_tipi_periyodik PASSED            [ 77%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestZorunluAlanlar::test_bakim_alani_periyodik PASSED           [ 77%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestZorunluAlanlar::test_bakim_sirasi_formati PASSED            [ 77%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestZorunluAlanlar::test_cihaz_id_dogru PASSED                  [ 77%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestZorunluAlanlar::test_bakim_periyodu_korunur PASSED          [ 77%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestUpdateVeriYapisi::test_update_tum_kolonlar_mevcut PASSED    [ 77%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestUpdateVeriYapisi::test_update_yapildi_bakim_tarihi PASSED   [ 78%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestUpdateVeriYapisi::test_update_planlanmis_bakim_tarihi_bos PASSED [ 78%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestUpdateVeriYapisi::test_mevcut_link_korunur PASSED           [ 78%]
+itf_desktop/tests/test_periyodik_bakim_logic.py::TestUpdateVeriYapisi::test_yeni_dosya_link_eski_link_degistirir PASSED [ 78%]
+itf_desktop/tests/test_repository_registry.py::TestRegistryGet::test_bilinen_tablo_donduruluyor PASSED           [ 78%]
+itf_desktop/tests/test_repository_registry.py::TestRegistryGet::test_cihazlar_tablosu_donduruluyor PASSED        [ 78%]
+itf_desktop/tests/test_repository_registry.py::TestRegistryGet::test_personel_tablosu_pk_dogru PASSED            [ 78%]
+itf_desktop/tests/test_repository_registry.py::TestRegistryGet::test_composite_pk_fhsz PASSED                    [ 79%]
+itf_desktop/tests/test_repository_registry.py::TestRegistryGet::test_ayni_tablo_iki_kere_ayni_nesne PASSED       [ 79%]
+itf_desktop/tests/test_repository_registry.py::TestRegistryGet::test_farkli_tablolar_farkli_nesneler PASSED      [ 79%]
+itf_desktop/tests/test_repository_registry.py::TestRegistryGet::test_bilinmeyen_tablo_key_error PASSED           [ 79%]
+itf_desktop/tests/test_repository_registry.py::TestHasSyncFlag::test_loglar_has_sync_false PASSED                [ 79%]
+itf_desktop/tests/test_repository_registry.py::TestHasSyncFlag::test_tatiller_pk_var_sync_true PASSED            [ 79%]
+itf_desktop/tests/test_repository_registry.py::TestHasSyncFlag::test_personel_has_sync_true PASSED               [ 80%]
+itf_desktop/tests/test_repository_registry.py::TestHasSyncFlag::test_cihazlar_has_sync_true PASSED               [ 80%]
+itf_desktop/tests/test_repository_registry.py::TestColumns::test_sync_tablosunda_sync_kolonlari_eklenir PASSED   [ 80%]
+itf_desktop/tests/test_repository_registry.py::TestColumns::test_nosync_tablosunda_sync_kolonlari_yok PASSED     [ 80%]
+itf_desktop/tests/test_repository_registry.py::TestColumns::test_periyodik_bakim_kolonlari PASSED                [ 80%]
+itf_desktop/tests/test_repository_registry.py::TestColumns::test_cihaz_ariza_kolonlari PASSED                    [ 80%]
+itf_desktop/tests/test_repository_registry.py::TestRegistryCollections::test_all_syncable_loglar_disinda PASSED  [ 80%]
+itf_desktop/tests/test_repository_registry.py::TestRegistryCollections::test_all_syncable_personel_var PASSED    [ 81%]
+itf_desktop/tests/test_repository_registry.py::TestRegistryCollections::test_all_syncable_cihazlar_var PASSED    [ 81%]
+itf_desktop/tests/test_repository_registry.py::TestRegistryCollections::test_all_kapsami PASSED                  [ 81%]
+itf_desktop/tests/test_repository_registry.py::TestRegistryCollections::test_all_syncable_dict_tipinde PASSED    [ 81%]
+itf_desktop/tests/test_repository_registry.py::TestRegistryCollections::test_all_dict_tipinde PASSED             [ 81%]
+itf_desktop/tests/test_repository_registry.py::TestRegistryCollections::test_all_repo_nesneleri_correct_table PASSED [ 81%]
+itf_desktop/tests/test_sync_service.py::TestMakeKey::test_tekli_pk PASSED                                        [ 81%]
+itf_desktop/tests/test_sync_service.py::TestMakeKey::test_composite_pk PASSED                                    [ 82%]
+itf_desktop/tests/test_sync_service.py::TestMakeKey::test_bos_deger PASSED                                       [ 82%]
+itf_desktop/tests/test_sync_service.py::TestMakeKey::test_bosluk_temizlenir PASSED                               [ 82%]
+itf_desktop/tests/test_sync_service.py::TestMakeKey::test_eksik_alan_bos_string PASSED                           [ 82%]
+itf_desktop/tests/test_sync_service.py::TestMakeKey::test_composite_bos_key PASSED                               [ 82%]
+itf_desktop/tests/test_sync_service.py::TestPushPullAyrimi::test_remote_var_update_olarak_isim PASSED            [ 82%]
+itf_desktop/tests/test_sync_service.py::TestPushPullAyrimi::test_remote_yok_append_olarak_isim PASSED            [ 83%]
+itf_desktop/tests/test_sync_service.py::TestPushPullAyrimi::test_karisik_liste PASSED                            [ 83%]
+itf_desktop/tests/test_sync_service.py::TestPushPullAyrimi::test_bos_dirty PASSED                                [ 83%]
+itf_desktop/tests/test_sync_service.py::TestPullMantigi::test_local_yok_insert PASSED                            [ 83%]
+itf_desktop/tests/test_sync_service.py::TestPullMantigi::test_local_dirty_atla PASSED                            [ 83%]
+itf_desktop/tests/test_sync_service.py::TestPullMantigi::test_local_clean_degisim_var_guncelle PASSED            [ 83%]
+itf_desktop/tests/test_sync_service.py::TestPullMantigi::test_local_clean_degisim_yok_atla PASSED                [ 83%]
+itf_desktop/tests/test_sync_service.py::TestPullMantigi::test_bos_pk_atlanir PASSED                              [ 84%]
+itf_desktop/tests/test_sync_service.py::TestSyncAllHataYonetimi::test_sync_all_bir_tablo_hata_digerleri_devam_eder PASSED [ 84%]
+itf_desktop/tests/test_sync_service.py::TestSyncAllHataYonetimi::test_sync_all_tum_basarili_exception_yok PASSED [ 84%]
+itf_desktop/tests/test_sync_service.py::TestSyncTablePush::test_dirty_kayit_push_edilir PASSED                   [ 84%]
+itf_desktop/tests/test_sync_service.py::TestSyncTablePush::test_clean_kayit_push_edilmez PASSED                  [ 84%]
+itf_desktop/tests/test_sync_service.py::TestSyncTablePush::test_push_sonrasi_kayit_clean_olur PASSED             [ 84%]
+itf_desktop/tests/test_sync_service.py::TestSyncTablePull::test_yeni_remote_kayit_eklenir PASSED                 [ 85%]
+itf_desktop/tests/test_sync_service.py::TestSyncTablePull::test_yeni_remote_kayit_clean_olarak_eklenir PASSED    [ 85%]
+itf_desktop/tests/test_sync_service.py::TestSyncTablePull::test_dirty_local_remote_guncelleme_ile_ezilmez PASSED [ 85%]
+itf_desktop/tests/test_sync_service.py::TestPullReplace::test_pull_only_table_config PASSED                      [ 85%]
+itf_desktop/tests/test_sync_service.py::TestPullReplace::test_sabitler_pull_only PASSED                          [ 85%]
+itf_desktop/tests/test_sync_service.py::TestPullReplace::test_tatiller_pk_tarih PASSED                           [ 85%]
+itf_desktop/tests/test_sync_service.py::TestPullReplace::test_tatiller_kolonlar PASSED                           [ 85%]
+itf_desktop/tests/test_sync_service.py::TestDirtyCleanDogusu::test_insert_dirty_push_clean PASSED                [ 86%]
+itf_desktop/tests/test_table_config.py::TestTabloVarlik::test_tum_tablolar_mevcut PASSED                         [ 86%]
+itf_desktop/tests/test_table_config.py::TestTabloVarlik::test_toplam_tablo_sayisi_yeterli PASSED                 [ 86%]
+itf_desktop/tests/test_table_config.py::TestTabloVarlik::test_her_tablonun_pk_alani_var PASSED                   [ 86%]
+itf_desktop/tests/test_table_config.py::TestTabloVarlik::test_her_tablonun_columns_alani_var PASSED              [ 86%]
+itf_desktop/tests/test_table_config.py::TestTabloVarlik::test_her_tablonun_columns_bos_degil PASSED              [ 86%]
+itf_desktop/tests/test_table_config.py::TestPkTanimlari::test_personel_pk PASSED                                 [ 86%]
+itf_desktop/tests/test_table_config.py::TestPkTanimlari::test_izin_giris_pk PASSED                               [ 87%]
+itf_desktop/tests/test_table_config.py::TestPkTanimlari::test_izin_bilgi_pk PASSED                               [ 87%]
+itf_desktop/tests/test_table_config.py::TestPkTanimlari::test_fhsz_puantaj_composite_pk PASSED                   [ 87%]
+itf_desktop/tests/test_table_config.py::TestPkTanimlari::test_cihazlar_pk PASSED                                 [ 87%]
+itf_desktop/tests/test_table_config.py::TestPkTanimlari::test_cihaz_ariza_pk PASSED                              [ 87%]
+itf_desktop/tests/test_table_config.py::TestPkTanimlari::test_ariza_islem_pk PASSED                              [ 87%]
+itf_desktop/tests/test_table_config.py::TestPkTanimlari::test_periyodik_bakim_pk PASSED                          [ 88%]
+itf_desktop/tests/test_table_config.py::TestPkTanimlari::test_kalibrasyon_pk PASSED                              [ 88%]
+itf_desktop/tests/test_table_config.py::TestPkTanimlari::test_sabitler_pk PASSED                                 [ 88%]
+itf_desktop/tests/test_table_config.py::TestPkTanimlari::test_tatiller_pk PASSED                                 [ 88%]
+itf_desktop/tests/test_table_config.py::TestPkTanimlari::test_loglar_pk_none PASSED                              [ 88%]
+itf_desktop/tests/test_table_config.py::TestPkTanimlari::test_rke_list_pk PASSED                                 [ 88%]
+itf_desktop/tests/test_table_config.py::TestPkTanimlari::test_rke_muayene_pk PASSED                              [ 88%]
+itf_desktop/tests/test_table_config.py::TestKritikKolonlar::test_personel_kimlik_no PASSED                       [ 89%]
+itf_desktop/tests/test_table_config.py::TestKritikKolonlar::test_personel_adsoyad PASSED                         [ 89%]
+itf_desktop/tests/test_table_config.py::TestKritikKolonlar::test_personel_durum PASSED                           [ 89%]
+itf_desktop/tests/test_table_config.py::TestKritikKolonlar::test_izin_giris_personelid PASSED                    [ 89%]
+itf_desktop/tests/test_table_config.py::TestKritikKolonlar::test_izin_giris_durum PASSED                         [ 89%]
+itf_desktop/tests/test_table_config.py::TestKritikKolonlar::test_izin_giris_tarihler PASSED                      [ 89%]
+itf_desktop/tests/test_table_config.py::TestKritikKolonlar::test_izin_bilgi_yillik_alanlar PASSED                [ 90%]
+itf_desktop/tests/test_table_config.py::TestKritikKolonlar::test_izin_bilgi_sua_alanlar PASSED                   [ 90%]
+itf_desktop/tests/test_table_config.py::TestKritikKolonlar::test_fhsz_puantaj_aylik_gun PASSED                   [ 90%]
+itf_desktop/tests/test_table_config.py::TestKritikKolonlar::test_fhsz_puantaj_fiili_calisma PASSED               [ 90%]
+itf_desktop/tests/test_table_config.py::TestKritikKolonlar::test_cihazlar_marka_model PASSED                     [ 90%]
+itf_desktop/tests/test_table_config.py::TestKritikKolonlar::test_cihaz_ariza_durum PASSED                        [ 90%]
+itf_desktop/tests/test_table_config.py::TestKritikKolonlar::test_kalibrasyon_bitis_tarihi PASSED                 [ 90%]
+itf_desktop/tests/test_table_config.py::TestKritikKolonlar::test_kalibrasyon_firma PASSED                        [ 91%]
+itf_desktop/tests/test_table_config.py::TestKritikKolonlar::test_rke_list_ekipman_no PASSED                      [ 91%]
+itf_desktop/tests/test_table_config.py::TestKritikKolonlar::test_rke_muayene_fiziksel_durum PASSED               [ 91%]
+itf_desktop/tests/test_table_config.py::TestKritikKolonlar::test_sabitler_kod_menueleman PASSED                  [ 91%]
+itf_desktop/tests/test_table_config.py::TestSyncModu::test_sabitler_pull_only PASSED                             [ 91%]
+itf_desktop/tests/test_table_config.py::TestSyncModu::test_tatiller_pull_only PASSED                             [ 91%]
+itf_desktop/tests/test_table_config.py::TestSyncModu::test_loglar_sync_false PASSED                              [ 91%]
+itf_desktop/tests/test_table_config.py::TestSyncModu::test_personel_sync_modu_yok PASSED                         [ 92%]
+itf_desktop/tests/test_table_config.py::TestSyncModu::test_cihaz_ariza_sync_modu_yok PASSED                      [ 92%]
+itf_desktop/tests/test_table_config.py::TestCompositePk::test_fhsz_pk_list_degil_string_degil PASSED             [ 92%]
+itf_desktop/tests/test_table_config.py::TestCompositePk::test_fhsz_pk_3_alan PASSED                              [ 92%]
+itf_desktop/tests/test_table_config.py::TestCompositePk::test_fhsz_pk_alanlari_columns_icerisinde PASSED         [ 92%]
+itf_desktop/tests/test_table_config.py::TestCompositePk::test_diger_tablolar_tek_pk PASSED                       [ 92%]
+itf_desktop/tests/test_table_config.py::TestPkColumnsUyumu::test_her_string_pk_columns_icerisinde PASSED         [ 93%]
+itf_desktop/tests/test_theme_manager.py::TestStylesZorunluAnahtarlar::test_styles_dict_donus PASSED              [ 93%]
+itf_desktop/tests/test_theme_manager.py::TestStylesZorunluAnahtarlar::test_page_anahtari_var PASSED              [ 93%]
+itf_desktop/tests/test_theme_manager.py::TestStylesZorunluAnahtarlar::test_table_anahtari_var PASSED             [ 93%]
+itf_desktop/tests/test_theme_manager.py::TestStylesZorunluAnahtarlar::test_input_anahtari_var PASSED             [ 93%]
+itf_desktop/tests/test_theme_manager.py::TestStylesZorunluAnahtarlar::test_combo_anahtari_var PASSED             [ 93%]
+itf_desktop/tests/test_theme_manager.py::TestStylesZorunluAnahtarlar::test_date_anahtari_var PASSED              [ 93%]
+itf_desktop/tests/test_theme_manager.py::TestStylesZorunluAnahtarlar::test_save_btn_anahtari_var PASSED          [ 94%]
+itf_desktop/tests/test_theme_manager.py::TestStylesZorunluAnahtarlar::test_cancel_btn_anahtari_var PASSED        [ 94%]
+itf_desktop/tests/test_theme_manager.py::TestStylesZorunluAnahtarlar::test_action_btn_anahtari_var PASSED        [ 94%]
+itf_desktop/tests/test_theme_manager.py::TestStylesZorunluAnahtarlar::test_refresh_btn_anahtari_var PASSED       [ 94%]
+itf_desktop/tests/test_theme_manager.py::TestStylesZorunluAnahtarlar::test_file_btn_anahtari_var PASSED          [ 94%]
+itf_desktop/tests/test_theme_manager.py::TestStylesZorunluAnahtarlar::test_footer_label_anahtari_var PASSED      [ 94%]
+itf_desktop/tests/test_theme_manager.py::TestStylesZorunluAnahtarlar::test_tum_zorunlu_anahtarlar PASSED         [ 95%]
+itf_desktop/tests/test_theme_manager.py::TestStylesZorunluAnahtarlar::test_stil_degerler_string PASSED           [ 95%]
+itf_desktop/tests/test_theme_manager.py::TestStylesZorunluAnahtarlar::test_stil_degerler_bos_degil PASSED        [ 95%]
+itf_desktop/tests/test_theme_manager.py::TestStylesZorunluAnahtarlar::test_get_all_copy_donus PASSED             [ 95%]
+itf_desktop/tests/test_theme_manager.py::TestThemeManagerSingleton::test_instance_ayni_nesne PASSED              [ 95%]
+itf_desktop/tests/test_theme_manager.py::TestThemeManagerSingleton::test_instance_theme_manager_tipi PASSED      [ 95%]
+itf_desktop/tests/test_theme_manager.py::TestGetColor::test_bilinen_renk_hex_donus PASSED                        [ 95%]
+itf_desktop/tests/test_theme_manager.py::TestGetColor::test_bilinmeyen_renk_fallback PASSED                      [ 96%]
+itf_desktop/tests/test_theme_manager.py::TestGetColor::test_renk_hex_format PASSED                               [ 96%]
+itf_desktop/tests/test_theme_manager.py::TestGetDarkThemeColor::test_bg_primary_donus PASSED                     [ 96%]
+itf_desktop/tests/test_theme_manager.py::TestGetDarkThemeColor::test_bilinmeyen_fallback PASSED                  [ 96%]
+itf_desktop/tests/test_theme_manager.py::TestLoadStylesheet::test_string_donus PASSED                            [ 96%]
+itf_desktop/tests/test_theme_manager.py::TestLoadStylesheet::test_cache_calisiyor PASSED                         [ 96%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigZorunluTablolar::test_tum_zorunlu_tablolar_mevcut PASSED [ 96%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigZorunluTablolar::test_her_tabloda_pk_var PASSED          [ 97%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigZorunluTablolar::test_her_tabloda_columns_var PASSED     [ 97%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigCihazKolonlar::test_cihaz_ariza_pk_arizaid PASSED        [ 97%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigCihazKolonlar::test_cihaz_ariza_zorunlu_kolonlar PASSED  [ 97%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigCihazKolonlar::test_ariza_islem_pk_islemid PASSED        [ 97%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigCihazKolonlar::test_ariza_islem_arizaid_kolon PASSED     [ 97%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigCihazKolonlar::test_periyodik_bakim_pk_planid PASSED     [ 98%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigCihazKolonlar::test_periyodik_bakim_zorunlu_kolonlar PASSED [ 98%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigCihazKolonlar::test_cihazlar_pk_cihazid PASSED           [ 98%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigCihazKolonlar::test_cihazlar_zorunlu_kolonlar PASSED     [ 98%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigPersonelKolonlar::test_personel_pk_kimlikno PASSED       [ 98%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigPersonelKolonlar::test_personel_adsoyad_kolon PASSED     [ 98%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigPersonelKolonlar::test_izin_giris_pk PASSED              [ 98%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigPersonelKolonlar::test_izin_bilgi_pk PASSED              [ 99%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigPersonelKolonlar::test_fhsz_puantaj_composite_pk PASSED  [ 99%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigPersonelKolonlar::test_tatiller_pull_only PASSED         [ 99%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigPersonelKolonlar::test_tatiller_kolonlar PASSED          [ 99%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigSyncYapisi::test_sync_tablolarda_pk_var PASSED           [ 99%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigSyncYapisi::test_kolon_listesi_tekrar_icermiyor PASSED   [ 99%]
+itf_desktop/tests/test_theme_manager.py::TestTableConfigSyncYapisi::test_pk_kolonlar_listede PASSED              [100%]
+
+======================================================= ERRORS ========================================================
+___________________________ ERROR at setup of TestSchemaVersion.test_yeni_db_versiyon_sifir ___________________________
+
+self = <test_migrations.TestSchemaVersion object at 0x0000028FD15FF7A0>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytest-2/test_yeni_db_versiyon_sifir0')
+
+    @pytest.fixture
+    def migrator(self, tmp_path):
+>       from database.migrations import DatabaseMigrator
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+
+itf_desktop\tests\test_migrations.py:28: ImportError
+_____________________________ ERROR at setup of TestSchemaVersion.test_set_schema_version _____________________________
+
+self = <test_migrations.TestSchemaVersion object at 0x0000028FD15FF680>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytest-2/test_set_schema_version0')
+
+    @pytest.fixture
+    def migrator(self, tmp_path):
+>       from database.migrations import DatabaseMigrator
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+
+itf_desktop\tests\test_migrations.py:28: ImportError
+___________________________ ERROR at setup of TestSchemaVersion.test_set_multiple_versions ____________________________
+
+self = <test_migrations.TestSchemaVersion object at 0x0000028FD15FF590>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytest-2/test_set_multiple_versions0')
+
+    @pytest.fixture
+    def migrator(self, tmp_path):
+>       from database.migrations import DatabaseMigrator
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+
+itf_desktop\tests\test_migrations.py:28: ImportError
+__________________________ ERROR at setup of TestSchemaVersion.test_current_version_sabit_2 ___________________________
+
+self = <test_migrations.TestSchemaVersion object at 0x0000028FD15FD700>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytest-2/test_current_version_sabit_20')
+
+    @pytest.fixture
+    def migrator(self, tmp_path):
+>       from database.migrations import DatabaseMigrator
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+
+itf_desktop\tests\test_migrations.py:28: ImportError
+________________________ ERROR at setup of TestSchemaVersion.test_schema_version_tablo_olusur _________________________
+
+self = <test_migrations.TestSchemaVersion object at 0x0000028FD15FDB50>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytest-2/test_schema_version_tablo_olus0')
+
+    @pytest.fixture
+    def migrator(self, tmp_path):
+>       from database.migrations import DatabaseMigrator
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+
+itf_desktop\tests\test_migrations.py:28: ImportError
+__________________________ ERROR at setup of TestRunMigrations.test_fresh_db_run_migrations ___________________________
+
+self = <test_migrations.TestRunMigrations object at 0x0000028FD15FC470>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytest-2/test_fresh_db_run_migrations0')
+
+    @pytest.fixture
+    def migrator(self, tmp_path):
+>       from database.migrations import DatabaseMigrator
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+
+itf_desktop\tests\test_migrations.py:68: ImportError
+______________________ ERROR at setup of TestRunMigrations.test_after_migration_version_current _______________________
+
+self = <test_migrations.TestRunMigrations object at 0x0000028FD15FEC90>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytest-2/test_after_migration_version_c0')
+
+    @pytest.fixture
+    def migrator(self, tmp_path):
+>       from database.migrations import DatabaseMigrator
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+
+itf_desktop\tests\test_migrations.py:68: ImportError
+__________________________ ERROR at setup of TestRunMigrations.test_zaten_guncel_true_donus ___________________________
+
+self = <test_migrations.TestRunMigrations object at 0x0000028FD15FEF90>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytest-2/test_zaten_guncel_true_donus0')
+
+    @pytest.fixture
+    def migrator(self, tmp_path):
+>       from database.migrations import DatabaseMigrator
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+
+itf_desktop\tests\test_migrations.py:68: ImportError
+_____________________ ERROR at setup of TestRunMigrations.test_migration_sonrasi_tablolar_mevcut ______________________
+
+self = <test_migrations.TestRunMigrations object at 0x0000028FD15FFC80>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytest-2/test_migration_sonrasi_tablola0')
+
+    @pytest.fixture
+    def migrator(self, tmp_path):
+>       from database.migrations import DatabaseMigrator
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+
+itf_desktop\tests\test_migrations.py:68: ImportError
+____________________________ ERROR at setup of TestRunMigrations.test_cihaz_ariza_kolonlar ____________________________
+
+self = <test_migrations.TestRunMigrations object at 0x0000028FD164E9F0>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytest-2/test_cihaz_ariza_kolonlar0')
+
+    @pytest.fixture
+    def migrator(self, tmp_path):
+>       from database.migrations import DatabaseMigrator
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+
+itf_desktop\tests\test_migrations.py:68: ImportError
+__________________________ ERROR at setup of TestRunMigrations.test_periyodik_bakim_kolonlar __________________________
+
+self = <test_migrations.TestRunMigrations object at 0x0000028FD164C080>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytest-2/test_periyodik_bakim_kolonlar0')
+
+    @pytest.fixture
+    def migrator(self, tmp_path):
+>       from database.migrations import DatabaseMigrator
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+
+itf_desktop\tests\test_migrations.py:68: ImportError
+_____________________________ ERROR at setup of TestRunMigrations.test_tatiller_kolonlar ______________________________
+
+self = <test_migrations.TestRunMigrations object at 0x0000028FD164C290>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytest-2/test_tatiller_kolonlar0')
+
+    @pytest.fixture
+    def migrator(self, tmp_path):
+>       from database.migrations import DatabaseMigrator
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+
+itf_desktop\tests\test_migrations.py:68: ImportError
+_________________________ ERROR at setup of TestRunMigrations.test_fhsz_puantaj_composite_pk __________________________
+
+self = <test_migrations.TestRunMigrations object at 0x0000028FD164C4D0>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytest-2/test_fhsz_puantaj_composite_pk0')
+
+    @pytest.fixture
+    def migrator(self, tmp_path):
+>       from database.migrations import DatabaseMigrator
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+
+itf_desktop\tests\test_migrations.py:68: ImportError
+________________________________ ERROR at setup of TestBackup.test_backup_dosya_olusur ________________________________
+
+self = <test_migrations.TestBackup object at 0x0000028FD164C7A0>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytest-2/test_backup_dosya_olusur0')
+
+    @pytest.fixture
+    def migrator(self, tmp_path):
+>       from database.migrations import DatabaseMigrator
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+
+itf_desktop\tests\test_migrations.py:152: ImportError
+______________________________ ERROR at setup of TestBackup.test_backup_db_icerigi_ayni _______________________________
+
+self = <test_migrations.TestBackup object at 0x0000028FD164C980>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytest-2/test_backup_db_icerigi_ayni0')
+
+    @pytest.fixture
+    def migrator(self, tmp_path):
+>       from database.migrations import DatabaseMigrator
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+
+itf_desktop\tests\test_migrations.py:152: ImportError
+________________________________ ERROR at setup of TestBackup.test_cleanup_old_backups ________________________________
+
+self = <test_migrations.TestBackup object at 0x0000028FD164CD70>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytest-2/test_cleanup_old_backups0')
+
+    @pytest.fixture
+    def migrator(self, tmp_path):
+>       from database.migrations import DatabaseMigrator
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+
+itf_desktop\tests\test_migrations.py:152: ImportError
+====================================================== FAILURES =======================================================
+_____________________________________ TestBitisTarihiHesapla.test_5_gun_tam_hafta _____________________________________
+
+self = <test_izin_logic.TestBitisTarihiHesapla object at 0x0000028FD1675AC0>
+
+    def test_5_gun_tam_hafta(self):
+        """Pazartesi + 5 iþ günü › Cuma."""
+        bas = date(2024, 1, 1)   # Pazartesi
+        bitis = _hesapla_bitis(bas, 5, set())
+>       assert bitis == date(2024, 1, 5)  # Cuma
+E       assert datetime.date(2024, 1, 8) == datetime.date(2024, 1, 5)
+E        +  where datetime.date(2024, 1, 5) = date(2024, 1, 5)
+
+itf_desktop\tests\test_izin_logic.py:318: AssertionError
+_______________________________________ TestBackup.test_backup_olmayan_db_none ________________________________________
+
+self = <test_migrations.TestBackup object at 0x0000028FD164CB30>
+tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytest-2/test_backup_olmayan_db_none0')
+
+    def test_backup_olmayan_db_none(self, tmp_path):
+>       from database.migrations import DatabaseMigrator
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+
+itf_desktop\tests\test_migrations.py:173: ImportError
+================================================== warnings summary ===================================================
+itf_desktop/tests/test_kalibrasyon_logic.py::TestKalibrasyonSutunUyumu::test_sutun_adý_uyumsuzlugu_belgelenir
+  C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\tests\test_kalibrasyon_logic.py:270: UserWarning: Kolon adý uyumsuzluðu: DB PK='Kalid', UI PK='Kalibrasyonid'. kalibrasyon_takip.py veya migrations.py güncellenmeli.
+    warnings.warn(
+
+itf_desktop/tests/test_kalibrasyon_logic.py::TestKalibrasyonSutunUyumu::test_gecerlilik_kolon_adi
+  C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\tests\test_kalibrasyon_logic.py:286: UserWarning: Alan adý uyumsuzluðu: DB='Gecerlilik', UI='GecerlilikSuresi'.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================================== short test summary info ===============================================
+FAILED itf_desktop/tests/test_izin_logic.py::TestBitisTarihiHesapla::test_5_gun_tam_hafta - assert datetime.date(2024, 1, 8) == datetime.date(2024, 1, 5)
+FAILED itf_desktop/tests/test_migrations.py::TestBackup::test_backup_olmayan_db_none - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_yeni_db_versiyon_sifir - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_set_schema_version - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_set_multiple_versions - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_current_version_sabit_2 - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_schema_version_tablo_olusur - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_fresh_db_run_migrations - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_after_migration_version_current - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_zaten_guncel_true_donus - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_migration_sonrasi_tablolar_mevcut - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_cihaz_ariza_kolonlar - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_periyodik_bakim_kolonlar - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_tatiller_kolonlar - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_fhsz_puantaj_composite_pk - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestBackup::test_backup_dosya_olusur - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestBackup::test_backup_db_icerigi_ayni - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestBackup::test_cleanup_old_backups - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+================================ 2 failed, 642 passed, 2 warnings, 16 errors in 5.61s =================================

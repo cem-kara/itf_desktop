@@ -68,13 +68,13 @@
         ],
         "RKE": [
             {
-                "baslik": "RKE Listesi",
+                "baslik": "RKE Envanter",
                 "icon": "🛡️",
                 "implemented": false,
                 "note": "Geliştirme aşamasında"
             },
             {
-                "baslik": "Muayene Girişi",
+                "baslik": "RKE Muayene",
                 "icon": "🔍",
                 "implemented": false
             },
