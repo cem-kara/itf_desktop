@@ -299,7 +299,7 @@ class KalibrasyonTakipPage(QWidget):
             r = self.tablo.rowCount(); self.tablo.insertRow(r)
             c_id = str(row.get("Cihazid", "")); c_ad = self.cihaz_sozlugu.get(c_id, c_id)
             bitis = str(row.get("BitisTarihi", "")); dosya = str(row.get("Sertifika", ""))
-            self.tablo.setItem(r, 0, QTableWidgetItem(str(row.get("Kalibrasyonid", ""))))
+            self.tablo.setItem(r, 0, QTableWidgetItem(str(row.get("Kalid", ""))))
             self.tablo.setItem(r, 1, QTableWidgetItem(c_ad))
             self.tablo.setItem(r, 2, QTableWidgetItem(str(row.get("Firma", ""))))
             item_tarih = QTableWidgetItem(bitis)
@@ -322,7 +322,7 @@ class KalibrasyonTakipPage(QWidget):
         if not veri: return
         if col == 5 and "http" in str(veri.get("Sertifika", "")): QDesktopServices.openUrl(QUrl(veri.get("Sertifika"))); return
 
-        self.duzenleme_modu = True; self.duzenlenen_id = str(veri.get("Kalibrasyonid", "")); self.mevcut_link = str(veri.get("Sertifika", "-"))
+        self.duzenleme_modu = True; self.duzenlenen_id = str(veri.get("Kalid", "")); self.mevcut_link = str(veri.get("Sertifika", "-"))
         self.btn_kaydet.setText("GÜNCELLE"); self.btn_kaydet.setStyleSheet(S["edit_btn"])
 
         c_id = str(veri.get("Cihazid", ""))
@@ -362,7 +362,7 @@ class KalibrasyonTakipPage(QWidget):
         try:
             if self.duzenleme_modu:
                 yeni_satir = {
-                    "Kalibrasyonid": self.duzenlenen_id, "Cihazid": cihaz_id, "Firma": self.inputs["Firma"].currentText(),
+                    "Kalid": self.duzenlenen_id, "Cihazid": cihaz_id, "Firma": self.inputs["Firma"].currentText(),
                     "SertifikaNo": self.inputs["SertifikaNo"].text(), "YapilanTarih": self.inputs["YapilanTarih"].date().toString("yyyy-MM-dd"),
                     "GecerlilikSuresi": self.inputs["GecerlilikSuresi"].currentText(), "BitisTarihi": self.inputs["BitisTarihi"].date().toString("yyyy-MM-dd"),
                     "Durum": self.inputs["Durum"].currentText(), "Sertifika": link, "Aciklama": self.inputs["Aciklama"].toPlainText()
@@ -390,7 +390,7 @@ class KalibrasyonTakipPage(QWidget):
                     ilk_kayit = (i == 0)
                     
                     yeni_satir = {
-                        "Kalibrasyonid": f"KAL-{base_id + i}", "Cihazid": cihaz_id, "Firma": self.inputs["Firma"].currentText() if ilk_kayit else "",
+                        "Kalid": f"KAL-{base_id + i}", "Cihazid": cihaz_id, "Firma": self.inputs["Firma"].currentText() if ilk_kayit else "",
                         "SertifikaNo": self.inputs["SertifikaNo"].text() if ilk_kayit else "", "YapilanTarih": yeni_baslangic.strftime("%Y-%m-%d"),
                         "GecerlilikSuresi": gecerlilik, "BitisTarihi": yeni_bitis.strftime("%Y-%m-%d"),
                         "Durum": self.inputs["Durum"].currentText() if ilk_kayit else "Planlandı",

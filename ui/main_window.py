@@ -228,6 +228,19 @@ class MainWindow(QMainWindow):
             page.load_data()
             return page
 
+        if baslik == "Yıl Sonu İzin":
+            from ui.pages.admin.yil_sonu_islemleri import YilSonuIslemleriPage
+            page = YilSonuIslemleriPage(db=self._db)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Yıl Sonu İzin"))
+            page.load_data()
+            return page
+
+        if baslik == "Ayarlar":
+            from ui.pages.admin.yonetim_ayarlar import AyarlarPenceresi
+            page = AyarlarPenceresi(db=self._db)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Ayarlar"))
+            return page
+                    
         return PlaceholderPage(
             title=baslik,
             subtitle=f"{group} modülü — geliştirme aşamasında"

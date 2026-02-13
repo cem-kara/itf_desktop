@@ -198,10 +198,10 @@ class TestSQLiteManagerLogic:
     @pytest.fixture
     def manager(self, tmp_path, monkeypatch):
         db_file = str(tmp_path / "sm_test.db")
-        monkeypatch.setattr("database.sqlite_manager.DB_PATH", db_file)
         from importlib import reload
         import database.sqlite_manager as sm_mod
         reload(sm_mod)
+        sm_mod.DB_PATH = db_file   # reload sonrası set et (monkeypatch sırasına göre)
         mgr = sm_mod.SQLiteManager()
         yield mgr
         mgr.close()

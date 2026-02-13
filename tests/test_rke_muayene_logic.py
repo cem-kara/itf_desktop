@@ -309,98 +309,102 @@ class TestTopluKayitDurum:
 class TestCheckableComboBox:
 
     def test_bos_combo_text_bos(self, qapp):
-        from ui.pages.cihaz.rke_muayene import CheckableComboBox
+        from ui.pages.rke.rke_muayene import CheckableComboBox
         cb = CheckableComboBox()
-        assert cb.getCheckedItems() == ""
+        assert cb.get_checked_items() == ""
 
     def test_item_ekleme(self, qapp):
-        from ui.pages.cihaz.rke_muayene import CheckableComboBox
+        from ui.pages.rke.rke_muayene import CheckableComboBox
         cb = CheckableComboBox()
         cb.addItem("Madde 1")
         cb.addItem("Madde 2")
         assert cb.count() == 2
 
     def test_add_items_toplu(self, qapp):
-        from ui.pages.cihaz.rke_muayene import CheckableComboBox
+        from ui.pages.rke.rke_muayene import CheckableComboBox
         cb = CheckableComboBox()
         cb.addItems(["A", "B", "C"])
         assert cb.count() == 3
 
     def test_set_checked_items_string(self, qapp):
-        from ui.pages.cihaz.rke_muayene import CheckableComboBox
+        from ui.pages.rke.rke_muayene import CheckableComboBox
         cb = CheckableComboBox()
         cb.addItems(["Önlük sağlam", "Tiroid hasarlı", "Uygun"])
-        cb.setCheckedItems("Önlük sağlam, Uygun")
-        text = cb.getCheckedItems()
+        cb.set_checked_items("Önlük sağlam, Uygun")
+        text = cb.get_checked_items()
         assert "Önlük sağlam" in text
         assert "Uygun" in text
 
     def test_set_checked_items_liste(self, qapp):
-        from ui.pages.cihaz.rke_muayene import CheckableComboBox
+        from ui.pages.rke.rke_muayene import CheckableComboBox
         cb = CheckableComboBox()
         cb.addItems(["A", "B", "C"])
-        cb.setCheckedItems(["A", "C"])
-        text = cb.getCheckedItems()
+        cb.set_checked_items(["A", "C"])
+        text = cb.get_checked_items()
         assert "A" in text
         assert "C" in text
 
     def test_cleared_items_bos(self, qapp):
-        from ui.pages.cihaz.rke_muayene import CheckableComboBox
+        from ui.pages.rke.rke_muayene import CheckableComboBox
         cb = CheckableComboBox()
         cb.addItems(["A", "B"])
-        cb.setCheckedItems(["A"])
-        cb.setCheckedItems([])
+        cb.set_checked_items(["A"])
+        cb.set_checked_items([])
         # Hiçbiri seçili değil → boş
-        assert cb.getCheckedItems() == ""
+        assert cb.get_checked_items() == ""
 
     def test_bos_liste_ile_set(self, qapp):
-        from ui.pages.cihaz.rke_muayene import CheckableComboBox
+        from ui.pages.rke.rke_muayene import CheckableComboBox
         cb = CheckableComboBox()
         cb.addItems(["X", "Y"])
-        cb.setCheckedItems("")
-        assert cb.getCheckedItems() == ""
+        cb.set_checked_items("")
+        assert cb.get_checked_items() == ""
 
 
 # =============================================================
 #  9. Qt Pencere Yapısı
 # =============================================================
 class TestRKEMuayenePenceresiQt:
+    # Üretim sınıfı: RKEMuayenePage
+    # Attribute'lar _ prefix'li (private convention)
 
     def test_cmb_rke_var(self, qapp):
-        from ui.pages.cihaz.rke_muayene import RKEMuayenePenceresi
-        win = RKEMuayenePenceresi()
-        assert hasattr(win, "cmb_rke")
+        from ui.pages.rke.rke_muayene import RKEMuayenePage
+        win = RKEMuayenePage()
+        assert hasattr(win, "_cmb_rke")
 
     def test_tablo_sutun_sayisi(self, qapp):
-        from ui.pages.cihaz.rke_muayene import RKEMuayenePenceresi
-        win = RKEMuayenePenceresi()
-        assert win.tablo.columnCount() == len(COLS_RKE)
+        from ui.pages.rke.rke_muayene import RKEMuayenePage
+        win = RKEMuayenePage()
+        # _list_view bir QTableView — sütun sayısı model üzerinden
+        assert win._list_view.model().columnCount() == len(COLS_RKE)
 
     def test_gecmis_tablo_4_sutun(self, qapp):
-        from ui.pages.cihaz.rke_muayene import RKEMuayenePenceresi
-        win = RKEMuayenePenceresi()
-        assert win.tbl_gecmis.columnCount() == 4
+        from ui.pages.rke.rke_muayene import RKEMuayenePage
+        win = RKEMuayenePage()
+        # _gecmis_view bir QTableView — model üzerinden kontrol
+        assert win._gecmis_view.model().columnCount() == 4
 
     def test_btn_toplu_var(self, qapp):
-        from ui.pages.cihaz.rke_muayene import RKEMuayenePenceresi
-        win = RKEMuayenePenceresi()
-        assert hasattr(win, "btn_toplu")
+        from ui.pages.rke.rke_muayene import RKEMuayenePage
+        win = RKEMuayenePage()
+        assert hasattr(win, "_btn_toplu")
 
     def test_temizle_gecmis_tabloyu_sifirlar(self, qapp):
-        from ui.pages.cihaz.rke_muayene import RKEMuayenePenceresi
-        win = RKEMuayenePenceresi()
-        win.tbl_gecmis.insertRow(0)
-        win.temizle()
-        assert win.tbl_gecmis.rowCount() == 0
+        from ui.pages.rke.rke_muayene import RKEMuayenePage
+        win = RKEMuayenePage()
+        # _on_clear geçmiş modeli sıfırlamalı
+        win._on_clear()
+        assert win._gecmis_model.rowCount() == 0
 
     def test_temizle_dosya_sifirlar(self, qapp):
-        from ui.pages.cihaz.rke_muayene import RKEMuayenePenceresi
-        win = RKEMuayenePenceresi()
-        win.secilen_dosya = "/tmp/test.pdf"
-        win.temizle()
-        assert win.secilen_dosya is None
+        from ui.pages.rke.rke_muayene import RKEMuayenePage
+        win = RKEMuayenePage()
+        win._secilen_dosya = "/tmp/test.pdf"
+        win._on_clear()
+        assert win._secilen_dosya is None
 
     def test_lbl_sayi_baslangic(self, qapp):
-        from ui.pages.cihaz.rke_muayene import RKEMuayenePenceresi
-        win = RKEMuayenePenceresi()
-        assert "Ekipman" in win.lbl_sayi.text() or "0" in win.lbl_sayi.text()
+        from ui.pages.rke.rke_muayene import RKEMuayenePage
+        win = RKEMuayenePage()
+        assert "Ekipman" in win._lbl_sayi.text() or "0" in win._lbl_sayi.text()

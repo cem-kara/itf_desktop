@@ -256,34 +256,20 @@ class TestKalibrasyonSutunUyumu:
                   "YapilanTarih", "BitisTarihi", "Durum", "Aciklama"]:
             assert k in cols, f"Eksik kolon: {k}"
 
-    def test_sutun_adı_uyumsuzlugu_belgelenir(self):
+    def test_sutun_adı_pk_uyumu(self):
         """
-        ⚠️ UI (kalibrasyon_takip.py) 'Kalibrasyonid' kullanırken
-        table_config PK'sı 'Kalid' → uyumsuzluk mevcut.
-        Bu test uyumsuzluğu belgelemek içindir; insert'te hata yaratır.
+        ✅ kalibrasyon_takip.py PK'sı table_config ile uyumlu olmalı.
+        (Düzeltildi: 'Kalibrasyonid' -> 'Kalid' olarak güncellendi.)
         """
         from database.table_config import TABLES
         pk = TABLES["Kalibrasyon"]["pk"]
-        ui_pk = "Kalibrasyonid"
-        if pk != ui_pk:
-            import warnings
-            warnings.warn(
-                f"Kolon adı uyumsuzluğu: DB PK='{pk}', UI PK='{ui_pk}'. "
-                "kalibrasyon_takip.py veya migrations.py güncellenmeli.",
-                UserWarning
-            )
+        assert pk == "Kalid", f"DB PK beklenen 'Kalid', bulunan '{pk}'"
 
     def test_gecerlilik_kolon_adi(self):
         """
-        ⚠️ table_config 'Gecerlilik' kullanırken UI 'GecerlilikSuresi' kullanıyor.
+        ✅ Gecerlilik suresi kolonu DB ve UI'da 'Gecerlilik' olarak tutarli olmali.
+        (Duzeltildi: kalibrasyon_takip.py 'Gecerlilik' kullanacak sekilde guncellendi.)
         """
         from database.table_config import TABLES
         cols = TABLES["Kalibrasyon"]["columns"]
-        ui_field = "GecerlilikSuresi"
-        db_field = "Gecerlilik"
-        if db_field in cols and ui_field not in cols:
-            import warnings
-            warnings.warn(
-                f"Alan adı uyumsuzluğu: DB='{db_field}', UI='{ui_field}'.",
-                UserWarning
-            )
+        assert "Gecerlilik" in cols, "DB'de 'Gecerlilik' kolonu bulunamadi"

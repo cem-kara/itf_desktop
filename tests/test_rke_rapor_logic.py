@@ -103,37 +103,37 @@ def qapp():
 class TestRaporSabitler:
 
     def test_columns_8_adet(self):
-        from ui.pages.cihaz.rke_rapor import COLUMNS
+        from ui.pages.rke.rke_rapor import COLUMNS
         assert len(COLUMNS) == 8
 
     def test_columns_ilk_ekipman_no(self):
-        from ui.pages.cihaz.rke_rapor import COLUMNS
+        from ui.pages.rke.rke_rapor import COLUMNS
         assert COLUMNS[0][0] == "EkipmanNo"
 
     def test_columns_sonuc_var(self):
-        from ui.pages.cihaz.rke_rapor import COLUMNS
+        from ui.pages.rke.rke_rapor import COLUMNS
         anahtarlar = [c[0] for c in COLUMNS]
         assert "Sonuc" in anahtarlar
 
     def test_columns_kontrol_eden_var(self):
-        from ui.pages.cihaz.rke_rapor import COLUMNS
+        from ui.pages.rke.rke_rapor import COLUMNS
         anahtarlar = [c[0] for c in COLUMNS]
         assert "KontrolEden" in anahtarlar
 
     def test_sonuc_renk_uygun_var(self):
-        from ui.pages.cihaz.rke_rapor import SONUC_RENK
+        from ui.pages.rke.rke_rapor import SONUC_RENK
         assert "Kullanıma Uygun" in SONUC_RENK
 
     def test_sonuc_renk_uygun_degil_var(self):
-        from ui.pages.cihaz.rke_rapor import SONUC_RENK
+        from ui.pages.rke.rke_rapor import SONUC_RENK
         assert "Kullanıma Uygun Değil" in SONUC_RENK
 
     def test_sonuc_renk_2_eleman(self):
-        from ui.pages.cihaz.rke_rapor import SONUC_RENK
+        from ui.pages.rke.rke_rapor import SONUC_RENK
         assert len(SONUC_RENK) == 2
 
     def test_columns_pb_var(self):
-        from ui.pages.cihaz.rke_rapor import COLUMNS
+        from ui.pages.rke.rke_rapor import COLUMNS
         anahtarlar = [c[0] for c in COLUMNS]
         assert "Pb" in anahtarlar
 
@@ -144,38 +144,38 @@ class TestRaporSabitler:
 class TestHtmlGenelRapor:
 
     def test_html_genel_rapor_html_donuyor(self):
-        from ui.pages.cihaz.rke_rapor import html_genel_rapor
+        from ui.pages.rke.rke_rapor import html_genel_rapor
         out = html_genel_rapor(VERİ[:2], "Radyoloji")
         assert "<html" in out.lower()
 
     def test_filtre_ozeti_iceriyor(self):
-        from ui.pages.cihaz.rke_rapor import html_genel_rapor
+        from ui.pages.rke.rke_rapor import html_genel_rapor
         out = html_genel_rapor(VERİ[:2], "Radyoloji ABD")
         assert "Radyoloji ABD" in out
 
     def test_baslik_iceriyor(self):
-        from ui.pages.cihaz.rke_rapor import html_genel_rapor
+        from ui.pages.rke.rke_rapor import html_genel_rapor
         out = html_genel_rapor(VERİ, "Tüm")
         assert "RKE" in out.upper()
 
     def test_ekipman_no_iceriyor(self):
-        from ui.pages.cihaz.rke_rapor import html_genel_rapor
+        from ui.pages.rke.rke_rapor import html_genel_rapor
         out = html_genel_rapor([VERİ[0]], "Test")
         assert "RKE-OAC-001" in out
 
     def test_imza_tablosu_var(self):
-        from ui.pages.cihaz.rke_rapor import html_genel_rapor
+        from ui.pages.rke.rke_rapor import html_genel_rapor
         out = html_genel_rapor(VERİ, "Test")
         assert "sig-table" in out or "İmza" in out
 
     def test_tarih_iceriyor(self):
-        from ui.pages.cihaz.rke_rapor import html_genel_rapor
+        from ui.pages.rke.rke_rapor import html_genel_rapor
         out = html_genel_rapor(VERİ, "Test")
         yil = str(datetime.datetime.now().year)
         assert yil in out
 
     def test_bos_veri_html_donuyor(self):
-        from ui.pages.cihaz.rke_rapor import html_genel_rapor
+        from ui.pages.rke.rke_rapor import html_genel_rapor
         out = html_genel_rapor([], "Test")
         assert "<table" in out.lower()
 
@@ -186,34 +186,34 @@ class TestHtmlGenelRapor:
 class TestHtmlHurdaRapor:
 
     def test_hurda_html_donuyor(self):
-        from ui.pages.cihaz.rke_rapor import html_hurda_rapor
+        from ui.pages.rke.rke_rapor import html_hurda_rapor
         hurda = [v for v in VERİ if "Değil" in v.get("Sonuc", "")]
         out = html_hurda_rapor(hurda)
         assert "<html" in out.lower()
 
     def test_hurda_baslik_iceriyor(self):
-        from ui.pages.cihaz.rke_rapor import html_hurda_rapor
+        from ui.pages.rke.rke_rapor import html_hurda_rapor
         out = html_hurda_rapor(VERİ[:1])
         assert "HURDA" in out.upper() or "HEK" in out.upper()
 
     def test_hurda_yasal_paragraf_var(self):
-        from ui.pages.cihaz.rke_rapor import html_hurda_rapor
+        from ui.pages.rke.rke_rapor import html_hurda_rapor
         out = html_hurda_rapor(VERİ[:1])
         assert "legal" in out or "arz" in out.lower()
 
     def test_hurda_ekipman_satiri_var(self):
-        from ui.pages.cihaz.rke_rapor import html_hurda_rapor
+        from ui.pages.rke.rke_rapor import html_hurda_rapor
         out = html_hurda_rapor([VERİ[1]])
         assert "RKE-OAC-002" in out
 
     def test_hurda_sira_numarasi_var(self):
-        from ui.pages.cihaz.rke_rapor import html_hurda_rapor
+        from ui.pages.rke.rke_rapor import html_hurda_rapor
         hurda = [v for v in VERİ if "Değil" in v.get("Sonuc", "")]
         out = html_hurda_rapor(hurda)
         assert "<td>1</td>" in out
 
     def test_hurda_imza_tablosu_var(self):
-        from ui.pages.cihaz.rke_rapor import html_hurda_rapor
+        from ui.pages.rke.rke_rapor import html_hurda_rapor
         out = html_hurda_rapor(VERİ[:1])
         assert "Kontrol Eden" in out
 
@@ -347,44 +347,44 @@ class TestCascadeTarih:
 class TestRaporTableModel:
 
     def test_bos_model_row_sifir(self, qapp):
-        from ui.pages.cihaz.rke_rapor import RaporTableModel
+        from ui.pages.rke.rke_rapor import RaporTableModel
         m = RaporTableModel()
         assert m.rowCount() == 0
 
     def test_dolu_model_row_count(self, qapp):
-        from ui.pages.cihaz.rke_rapor import RaporTableModel
+        from ui.pages.rke.rke_rapor import RaporTableModel
         m = RaporTableModel(VERİ)
         assert m.rowCount() == 4
 
     def test_column_count_8(self, qapp):
-        from ui.pages.cihaz.rke_rapor import RaporTableModel
+        from ui.pages.rke.rke_rapor import RaporTableModel
         m = RaporTableModel()
         assert m.columnCount() == 8
 
     def test_display_role_ekipman_no(self, qapp):
         from PySide6.QtCore import Qt
-        from ui.pages.cihaz.rke_rapor import RaporTableModel
+        from ui.pages.rke.rke_rapor import RaporTableModel
         m = RaporTableModel(VERİ)
         idx = m.createIndex(0, 0)  # EkipmanNo
         assert m.data(idx, Qt.DisplayRole) == "RKE-OAC-001"
 
     def test_display_role_sonuc(self, qapp):
         from PySide6.QtCore import Qt
-        from ui.pages.cihaz.rke_rapor import RaporTableModel
+        from ui.pages.rke.rke_rapor import RaporTableModel
         m = RaporTableModel(VERİ)
         idx = m.createIndex(0, 5)  # Sonuc sütunu (index 5)
         assert m.data(idx, Qt.DisplayRole) == "Kullanıma Uygun"
 
     def test_gecersiz_index_none(self, qapp):
         from PySide6.QtCore import Qt, QModelIndex
-        from ui.pages.cihaz.rke_rapor import RaporTableModel
+        from ui.pages.rke.rke_rapor import RaporTableModel
         m = RaporTableModel(VERİ)
         assert m.data(QModelIndex(), Qt.DisplayRole) is None
 
     def test_foreground_uygun_degil_kirmizi(self, qapp):
         from PySide6.QtCore import Qt
         from PySide6.QtGui import QColor
-        from ui.pages.cihaz.rke_rapor import RaporTableModel
+        from ui.pages.rke.rke_rapor import RaporTableModel
         m = RaporTableModel(VERİ)
         idx = m.createIndex(1, 5)  # Sonuc = "Kullanıma Uygun Değil"
         renk = m.data(idx, Qt.ForegroundRole)
@@ -393,38 +393,38 @@ class TestRaporTableModel:
 
     def test_header_horizontal_dolu(self, qapp):
         from PySide6.QtCore import Qt
-        from ui.pages.cihaz.rke_rapor import RaporTableModel
+        from ui.pages.rke.rke_rapor import RaporTableModel
         m = RaporTableModel()
         h = m.headerData(0, Qt.Horizontal, Qt.DisplayRole)
         assert h is not None and len(h) > 0
 
     def test_header_dikey_none(self, qapp):
         from PySide6.QtCore import Qt
-        from ui.pages.cihaz.rke_rapor import RaporTableModel
+        from ui.pages.rke.rke_rapor import RaporTableModel
         m = RaporTableModel()
         assert m.headerData(0, Qt.Vertical, Qt.DisplayRole) is None
 
     def test_set_data_gunceller(self, qapp):
-        from ui.pages.cihaz.rke_rapor import RaporTableModel
+        from ui.pages.rke.rke_rapor import RaporTableModel
         m = RaporTableModel([])
         assert m.rowCount() == 0
         m.set_data(VERİ)
         assert m.rowCount() == 4
 
     def test_get_row_gecerli(self, qapp):
-        from ui.pages.cihaz.rke_rapor import RaporTableModel
+        from ui.pages.rke.rke_rapor import RaporTableModel
         m = RaporTableModel(VERİ)
         row = m.get_row(2)
         assert row["EkipmanNo"] == "RKE-TID-003"
 
     def test_get_row_sinir_disi_none(self, qapp):
-        from ui.pages.cihaz.rke_rapor import RaporTableModel
+        from ui.pages.rke.rke_rapor import RaporTableModel
         m = RaporTableModel(VERİ)
         assert m.get_row(99) is None
 
     def test_alignment_tarih_merkez(self, qapp):
         from PySide6.QtCore import Qt
-        from ui.pages.cihaz.rke_rapor import RaporTableModel
+        from ui.pages.rke.rke_rapor import RaporTableModel
         m = RaporTableModel(VERİ)
         idx = m.createIndex(0, 4)  # Tarih sütunu
         alignment = m.data(idx, Qt.TextAlignmentRole)

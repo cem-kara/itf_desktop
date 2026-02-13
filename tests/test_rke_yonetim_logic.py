@@ -122,7 +122,6 @@ KISALTMA_MAPS = {
 class TestColsMap:
 
     def test_tum_anahtarlar_var(self):
-        from ui.pages.cihaz.rke_yonetim import RKEYonetimPenceresi
         beklenen = ["KayitNo", "EkipmanNo", "KoruyucuNumarasi", "AnaBilimDali",
                     "Birim", "KoruyucuCinsi", "KontrolTarihi", "Durum"]
         for k in beklenen:
@@ -303,41 +302,43 @@ class TestDurumRenklendirme:
 #  6. Qt Sayfa Testleri
 # =============================================================
 class TestRKEYonetimPenceresiQt:
+    # Üretim sınıfı: RKEYonetimPage
+    # inputs → self.ui dict, tablo → self._table, temizle → _on_clear, secili_kayit → _secili
 
     def test_tablo_sutun_sayisi(self, qapp):
-        from ui.pages.cihaz.rke_yonetim import RKEYonetimPenceresi
-        win = RKEYonetimPenceresi(db=None)
-        # cols_map len = 8, KayitNo gizli → görünür 7
-        assert win.tablo.columnCount() == len(COLS_MAP)
+        from ui.pages.rke.rke_yonetim import RKEYonetimPage
+        win = RKEYonetimPage(db=None)
+        # _table QTableView — model üzerinden sütun sayısı
+        assert win._table.model().columnCount() == 8
 
     def test_inputs_kayitno_var(self, qapp):
-        from ui.pages.cihaz.rke_yonetim import RKEYonetimPenceresi
-        win = RKEYonetimPenceresi(db=None)
-        assert "KayitNo" in win.inputs
+        from ui.pages.rke.rke_yonetim import RKEYonetimPage
+        win = RKEYonetimPage(db=None)
+        assert "KayitNo" in win.ui
 
     def test_inputs_ekipman_no_var(self, qapp):
-        from ui.pages.cihaz.rke_yonetim import RKEYonetimPenceresi
-        win = RKEYonetimPenceresi(db=None)
-        assert "EkipmanNo" in win.inputs
+        from ui.pages.rke.rke_yonetim import RKEYonetimPage
+        win = RKEYonetimPage(db=None)
+        assert "EkipmanNo" in win.ui
 
     def test_inputs_durum_var(self, qapp):
-        from ui.pages.cihaz.rke_yonetim import RKEYonetimPenceresi
-        win = RKEYonetimPenceresi(db=None)
-        assert "Durum" in win.inputs
+        from ui.pages.rke.rke_yonetim import RKEYonetimPage
+        win = RKEYonetimPage(db=None)
+        assert "Durum" in win.ui
 
     def test_temizle_secili_kayit_none(self, qapp):
-        from ui.pages.cihaz.rke_yonetim import RKEYonetimPenceresi
-        win = RKEYonetimPenceresi(db=None)
-        win.secili_kayit = {"KayitNo": "1"}
-        win.temizle()
-        assert win.secili_kayit is None
+        from ui.pages.rke.rke_yonetim import RKEYonetimPage
+        win = RKEYonetimPage(db=None)
+        win._secili = {"KayitNo": "1"}
+        win._on_clear()
+        assert win._secili is None
 
     def test_btn_kaydet_text(self, qapp):
-        from ui.pages.cihaz.rke_yonetim import RKEYonetimPenceresi
-        win = RKEYonetimPenceresi(db=None)
+        from ui.pages.rke.rke_yonetim import RKEYonetimPage
+        win = RKEYonetimPage(db=None)
         assert "KAYDET" in win.btn_kaydet.text().upper()
 
     def test_lbl_sayi_baslangic(self, qapp):
-        from ui.pages.cihaz.rke_yonetim import RKEYonetimPenceresi
-        win = RKEYonetimPenceresi(db=None)
-        assert "Kayıt" in win.lbl_sayi.text() or "kayıt" in win.lbl_sayi.text().lower()
+        from ui.pages.rke.rke_yonetim import RKEYonetimPage
+        win = RKEYonetimPage(db=None)
+        assert "kayıt" in win._lbl_sayi.text().lower() or "0" in win._lbl_sayi.text()

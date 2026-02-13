@@ -1,8 +1,8 @@
 ================================================= test session starts =================================================
-platform win32 -- Python 3.12.4, pytest-8.2.0, pluggy-1.5.0 -- C:\Users\HP\Desktop\Yeni klasör\WPy64-31241\python-3.12.4.amd64\python.exe
+platform win32 -- Python 3.12.4, pytest-8.2.0, pluggy-1.5.0 -- C:\Users\HP\Desktop\Yeni klasï¿½r\WPy64-31241\python-3.12.4.amd64\python.exe
 cachedir: .pytest_cache
-hypothesis profile 'default' -> database=DirectoryBasedExampleDatabase(WindowsPath('C:/Users/HP/Desktop/Yeni klasör/itf_python/itf_desktop/.hypothesis/examples'))
-rootdir: C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop
+hypothesis profile 'default' -> database=DirectoryBasedExampleDatabase(WindowsPath('C:/Users/HP/Desktop/Yeni klasï¿½r/itf_python/itf_desktop/.hypothesis/examples'))
+rootdir: C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop
 plugins: anyio-4.4.0, dash-2.17.0, hypothesis-6.100.5, jaxtyping-0.2.22, cov-7.0.0, typeguard-2.13.3
 collected 660 items
 
@@ -124,7 +124,7 @@ itf_desktop/tests/test_cihaz_listesi_logic.py::TestCihazListesiQt::test_populate
 itf_desktop/tests/test_cihaz_listesi_logic.py::TestCihazListesiQt::test_populate_bos PASSED                      [ 17%]
 itf_desktop/tests/test_cihaz_listesi_logic.py::TestCihazListesiQt::test_populate_cihazid_sutun PASSED            [ 17%]
 itf_desktop/tests/test_cihaz_listesi_logic.py::TestCihazListesiQt::test_populate_marka_sutun PASSED              [ 17%]
-itf_desktop/tests/test_cihaz_listesi_logic.py::TestCihazListesiQt::test_userdata_saklanýyor PASSED               [ 18%]
+itf_desktop/tests/test_cihaz_listesi_logic.py::TestCihazListesiQt::test_userdata_saklanï¿½yor PASSED               [ 18%]
 itf_desktop/tests/test_cihaz_listesi_logic.py::TestCihazListesiQt::test_lbl_count_guncelleniyor PASSED           [ 18%]
 itf_desktop/tests/test_cihaz_listesi_logic.py::TestCihazListesiQt::test_tablo_sutun_sayisi PASSED                [ 18%]
 itf_desktop/tests/test_core.py::TestAppConfig::test_app_name_string PASSED                                       [ 18%]
@@ -232,17 +232,17 @@ itf_desktop/tests/test_fhsz_logic.py::TestPuanHesabi::test_bos_kosul_sifir PASSE
 itf_desktop/tests/test_fhsz_logic.py::TestPuanHesabi::test_kosul_a_buyuk_harf_calisir PASSED                     [ 33%]
 itf_desktop/tests/test_fhsz_logic.py::TestPuanHesabi::test_kosul_a_kucuk_harf_calisir PASSED                     [ 34%]
 itf_desktop/tests/test_fhsz_logic.py::TestPuanHesabi::test_kosul_a_1_gun PASSED                                  [ 34%]
-itf_desktop/tests/test_fhsz_logic.py::TestKesisimIzinGunu::test_donem_tum_izinleri_kapsýyor PASSED               [ 34%]
-itf_desktop/tests/test_fhsz_logic.py::TestKesisimIzinGunu::test_donem_sadece_ilk_izni_kapsýyor PASSED            [ 34%]
+itf_desktop/tests/test_fhsz_logic.py::TestKesisimIzinGunu::test_donem_tum_izinleri_kapsï¿½yor PASSED               [ 34%]
+itf_desktop/tests/test_fhsz_logic.py::TestKesisimIzinGunu::test_donem_sadece_ilk_izni_kapsï¿½yor PASSED            [ 34%]
 itf_desktop/tests/test_fhsz_logic.py::TestKesisimIzinGunu::test_donem_kesisim_yok PASSED                         [ 34%]
 itf_desktop/tests/test_fhsz_logic.py::TestKesisimIzinGunu::test_farkli_personel_sifir PASSED                     [ 34%]
 itf_desktop/tests/test_fhsz_logic.py::TestKesisimIzinGunu::test_iptal_izin_sayilmaz PASSED                       [ 35%]
 itf_desktop/tests/test_fhsz_logic.py::TestKesisimIzinGunu::test_bos_liste_sifir PASSED                           [ 35%]
-itf_desktop/tests/test_fhsz_logic.py::TestKesisimIzinGunu::test_kýsmi_kesisim PASSED                             [ 35%]
+itf_desktop/tests/test_fhsz_logic.py::TestKesisimIzinGunu::test_kï¿½smi_kesisim PASSED                             [ 35%]
 itf_desktop/tests/test_fhsz_logic.py::TestTrUpperKosul::test_kosul_a_normalize PASSED                            [ 35%]
 itf_desktop/tests/test_fhsz_logic.py::TestTrUpperKosul::test_kosul_b_normalize PASSED                            [ 35%]
 itf_desktop/tests/test_fhsz_logic.py::TestTrUpperKosul::test_kucuk_harf_b_normalize PASSED                       [ 35%]
-itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_noktalý_i_buyuk_harf PASSED                            [ 35%]
+itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_noktalï¿½_i_buyuk_harf PASSED                            [ 35%]
 itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_noktasiz_i_buyuk_harf PASSED                           [ 36%]
 itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_yumusak_g PASSED                                       [ 36%]
 itf_desktop/tests/test_hesaplamalar.py::TestTrUpper::test_u_umlauti PASSED                                       [ 36%]
@@ -401,7 +401,7 @@ itf_desktop/tests/test_izin_logic.py::TestBitisTarihiHesapla::test_cuma_2_gun_sa
 itf_desktop/tests/test_izin_logic.py::TestBitisTarihiHesapla::test_tatil_atlama PASSED                           [ 59%]
 itf_desktop/tests/test_izin_logic.py::TestBitisTarihiHesapla::test_birden_fazla_tatil_atlama PASSED              [ 59%]
 itf_desktop/tests/test_izin_logic.py::TestBitisTarihiHesapla::test_5_gun_tam_hafta FAILED                        [ 59%]
-itf_desktop/tests/test_izin_logic.py::TestBitisTarihiHesapla::test_tatil_yok_sifir_gun_ayný_gun PASSED           [ 60%]
+itf_desktop/tests/test_izin_logic.py::TestBitisTarihiHesapla::test_tatil_yok_sifir_gun_aynï¿½_gun PASSED           [ 60%]
 itf_desktop/tests/test_izin_logic.py::TestBitisTarihiHesapla::test_cumartesi_baslama_pazartesi_bitiyor PASSED    [ 60%]
 itf_desktop/tests/test_izin_logic.py::TestIzinTableModel::test_bos_model_row_count_sifir PASSED                  [ 60%]
 itf_desktop/tests/test_izin_logic.py::TestIzinTableModel::test_dolu_model_row_count PASSED                       [ 60%]
@@ -446,10 +446,10 @@ itf_desktop/tests/test_kalibrasyon_logic.py::TestIlkSatir::test_yapilan_tarih PA
 itf_desktop/tests/test_kalibrasyon_logic.py::TestIlkSatir::test_bitis_tarihi PASSED                              [ 66%]
 itf_desktop/tests/test_kalibrasyon_logic.py::TestIlkSatir::test_kal_prefix PASSED                                [ 66%]
 itf_desktop/tests/test_kalibrasyon_logic.py::TestSonrakiSatirlar::test_ikinci_firma_bos PASSED                   [ 66%]
-itf_desktop/tests/test_kalibrasyon_logic.py::TestSonrakiSatirlar::test_ikinci_durum_planlandý PASSED             [ 66%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestSonrakiSatirlar::test_ikinci_durum_planlandï¿½ PASSED             [ 66%]
 itf_desktop/tests/test_kalibrasyon_logic.py::TestSonrakiSatirlar::test_ikinci_sertifika_bos PASSED               [ 66%]
 itf_desktop/tests/test_kalibrasyon_logic.py::TestSonrakiSatirlar::test_ikinci_aciklama_otomatik PASSED           [ 67%]
-itf_desktop/tests/test_kalibrasyon_logic.py::TestSonrakiSatirlar::test_son_satir_planlandý PASSED                [ 67%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestSonrakiSatirlar::test_son_satir_planlandï¿½ PASSED                [ 67%]
 itf_desktop/tests/test_kalibrasyon_logic.py::TestSonrakiSatirlar::test_benzersiz_idler PASSED                    [ 67%]
 itf_desktop/tests/test_kalibrasyon_logic.py::TestTarihSiralamasi::test_6_aylik_4_donem PASSED                    [ 67%]
 itf_desktop/tests/test_kalibrasyon_logic.py::TestTarihSiralamasi::test_1_yillik_3_donem PASSED                   [ 67%]
@@ -457,7 +457,7 @@ itf_desktop/tests/test_kalibrasyon_logic.py::TestTarihSiralamasi::test_bitis_her
 itf_desktop/tests/test_kalibrasyon_logic.py::TestKalibrasyonSutunUyumu::test_kalibrasyon_tablosu_var PASSED      [ 68%]
 itf_desktop/tests/test_kalibrasyon_logic.py::TestKalibrasyonSutunUyumu::test_pk_kalid PASSED                     [ 68%]
 itf_desktop/tests/test_kalibrasyon_logic.py::TestKalibrasyonSutunUyumu::test_zorunlu_kolonlar PASSED             [ 68%]
-itf_desktop/tests/test_kalibrasyon_logic.py::TestKalibrasyonSutunUyumu::test_sutun_adý_uyumsuzlugu_belgelenir PASSED [ 68%]
+itf_desktop/tests/test_kalibrasyon_logic.py::TestKalibrasyonSutunUyumu::test_sutun_adï¿½_uyumsuzlugu_belgelenir PASSED [ 68%]
 itf_desktop/tests/test_kalibrasyon_logic.py::TestKalibrasyonSutunUyumu::test_gecerlilik_kolon_adi PASSED         [ 68%]
 itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_yeni_db_versiyon_sifir ERROR                       [ 68%]
 itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_set_schema_version ERROR                           [ 68%]
@@ -675,7 +675,7 @@ tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytes
     @pytest.fixture
     def migrator(self, tmp_path):
 >       from database.migrations import DatabaseMigrator
-E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\database\migrations.py)
 
 itf_desktop\tests\test_migrations.py:28: ImportError
 _____________________________ ERROR at setup of TestSchemaVersion.test_set_schema_version _____________________________
@@ -686,7 +686,7 @@ tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytes
     @pytest.fixture
     def migrator(self, tmp_path):
 >       from database.migrations import DatabaseMigrator
-E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\database\migrations.py)
 
 itf_desktop\tests\test_migrations.py:28: ImportError
 ___________________________ ERROR at setup of TestSchemaVersion.test_set_multiple_versions ____________________________
@@ -697,7 +697,7 @@ tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytes
     @pytest.fixture
     def migrator(self, tmp_path):
 >       from database.migrations import DatabaseMigrator
-E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\database\migrations.py)
 
 itf_desktop\tests\test_migrations.py:28: ImportError
 __________________________ ERROR at setup of TestSchemaVersion.test_current_version_sabit_2 ___________________________
@@ -708,7 +708,7 @@ tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytes
     @pytest.fixture
     def migrator(self, tmp_path):
 >       from database.migrations import DatabaseMigrator
-E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\database\migrations.py)
 
 itf_desktop\tests\test_migrations.py:28: ImportError
 ________________________ ERROR at setup of TestSchemaVersion.test_schema_version_tablo_olusur _________________________
@@ -719,7 +719,7 @@ tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytes
     @pytest.fixture
     def migrator(self, tmp_path):
 >       from database.migrations import DatabaseMigrator
-E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\database\migrations.py)
 
 itf_desktop\tests\test_migrations.py:28: ImportError
 __________________________ ERROR at setup of TestRunMigrations.test_fresh_db_run_migrations ___________________________
@@ -730,7 +730,7 @@ tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytes
     @pytest.fixture
     def migrator(self, tmp_path):
 >       from database.migrations import DatabaseMigrator
-E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\database\migrations.py)
 
 itf_desktop\tests\test_migrations.py:68: ImportError
 ______________________ ERROR at setup of TestRunMigrations.test_after_migration_version_current _______________________
@@ -741,7 +741,7 @@ tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytes
     @pytest.fixture
     def migrator(self, tmp_path):
 >       from database.migrations import DatabaseMigrator
-E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\database\migrations.py)
 
 itf_desktop\tests\test_migrations.py:68: ImportError
 __________________________ ERROR at setup of TestRunMigrations.test_zaten_guncel_true_donus ___________________________
@@ -752,7 +752,7 @@ tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytes
     @pytest.fixture
     def migrator(self, tmp_path):
 >       from database.migrations import DatabaseMigrator
-E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\database\migrations.py)
 
 itf_desktop\tests\test_migrations.py:68: ImportError
 _____________________ ERROR at setup of TestRunMigrations.test_migration_sonrasi_tablolar_mevcut ______________________
@@ -763,7 +763,7 @@ tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytes
     @pytest.fixture
     def migrator(self, tmp_path):
 >       from database.migrations import DatabaseMigrator
-E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\database\migrations.py)
 
 itf_desktop\tests\test_migrations.py:68: ImportError
 ____________________________ ERROR at setup of TestRunMigrations.test_cihaz_ariza_kolonlar ____________________________
@@ -774,7 +774,7 @@ tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytes
     @pytest.fixture
     def migrator(self, tmp_path):
 >       from database.migrations import DatabaseMigrator
-E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\database\migrations.py)
 
 itf_desktop\tests\test_migrations.py:68: ImportError
 __________________________ ERROR at setup of TestRunMigrations.test_periyodik_bakim_kolonlar __________________________
@@ -785,7 +785,7 @@ tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytes
     @pytest.fixture
     def migrator(self, tmp_path):
 >       from database.migrations import DatabaseMigrator
-E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\database\migrations.py)
 
 itf_desktop\tests\test_migrations.py:68: ImportError
 _____________________________ ERROR at setup of TestRunMigrations.test_tatiller_kolonlar ______________________________
@@ -796,7 +796,7 @@ tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytes
     @pytest.fixture
     def migrator(self, tmp_path):
 >       from database.migrations import DatabaseMigrator
-E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\database\migrations.py)
 
 itf_desktop\tests\test_migrations.py:68: ImportError
 _________________________ ERROR at setup of TestRunMigrations.test_fhsz_puantaj_composite_pk __________________________
@@ -807,7 +807,7 @@ tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytes
     @pytest.fixture
     def migrator(self, tmp_path):
 >       from database.migrations import DatabaseMigrator
-E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\database\migrations.py)
 
 itf_desktop\tests\test_migrations.py:68: ImportError
 ________________________________ ERROR at setup of TestBackup.test_backup_dosya_olusur ________________________________
@@ -818,7 +818,7 @@ tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytes
     @pytest.fixture
     def migrator(self, tmp_path):
 >       from database.migrations import DatabaseMigrator
-E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\database\migrations.py)
 
 itf_desktop\tests\test_migrations.py:152: ImportError
 ______________________________ ERROR at setup of TestBackup.test_backup_db_icerigi_ayni _______________________________
@@ -829,7 +829,7 @@ tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytes
     @pytest.fixture
     def migrator(self, tmp_path):
 >       from database.migrations import DatabaseMigrator
-E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\database\migrations.py)
 
 itf_desktop\tests\test_migrations.py:152: ImportError
 ________________________________ ERROR at setup of TestBackup.test_cleanup_old_backups ________________________________
@@ -840,7 +840,7 @@ tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytes
     @pytest.fixture
     def migrator(self, tmp_path):
 >       from database.migrations import DatabaseMigrator
-E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\database\migrations.py)
 
 itf_desktop\tests\test_migrations.py:152: ImportError
 ====================================================== FAILURES =======================================================
@@ -849,7 +849,7 @@ _____________________________________ TestBitisTarihiHesapla.test_5_gun_tam_haft
 self = <test_izin_logic.TestBitisTarihiHesapla object at 0x0000028FD1675AC0>
 
     def test_5_gun_tam_hafta(self):
-        """Pazartesi + 5 iþ günü › Cuma."""
+        """Pazartesi + 5 iï¿½ gï¿½nï¿½ ï¿½ Cuma."""
         bas = date(2024, 1, 1)   # Pazartesi
         bitis = _hesapla_bitis(bas, 5, set())
 >       assert bitis == date(2024, 1, 5)  # Cuma
@@ -864,36 +864,36 @@ tmp_path = WindowsPath('C:/Users/HP/AppData/Local/Temp/pytest-of-radyoloji/pytes
 
     def test_backup_olmayan_db_none(self, tmp_path):
 >       from database.migrations import DatabaseMigrator
-E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\database\migrations.py)
+E       ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\database\migrations.py)
 
 itf_desktop\tests\test_migrations.py:173: ImportError
 ================================================== warnings summary ===================================================
-itf_desktop/tests/test_kalibrasyon_logic.py::TestKalibrasyonSutunUyumu::test_sutun_adý_uyumsuzlugu_belgelenir
-  C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\tests\test_kalibrasyon_logic.py:270: UserWarning: Kolon adý uyumsuzluðu: DB PK='Kalid', UI PK='Kalibrasyonid'. kalibrasyon_takip.py veya migrations.py güncellenmeli.
+itf_desktop/tests/test_kalibrasyon_logic.py::TestKalibrasyonSutunUyumu::test_sutun_adï¿½_uyumsuzlugu_belgelenir
+  C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\tests\test_kalibrasyon_logic.py:270: UserWarning: Kolon adï¿½ uyumsuzluï¿½u: DB PK='Kalid', UKalidsyonid'. kalibrasyon_takip.py veya migrations.py gï¿½ncellenmeli.
     warnings.warn(
 
 itf_desktop/tests/test_kalibrasyon_logic.py::TestKalibrasyonSutunUyumu::test_gecerlilik_kolon_adi
-  C:\Users\HP\Desktop\Yeni klasör\itf_python\itf_desktop\itf_desktop\tests\test_kalibrasyon_logic.py:286: UserWarning: Alan adý uyumsuzluðu: DB='Gecerlilik', UI='GecerlilikSuresi'.
+  C:\Users\HP\Desktop\Yeni klasï¿½r\itf_python\itf_desktop\itf_desktop\tests\test_kalibrasyon_logic.py:286: UserWarning: Alan adï¿½ uyumsuzluï¿½u: DB='Gecerlilik', UI='GecerlilikSuresi'.
     warnings.warn(
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 =============================================== short test summary info ===============================================
 FAILED itf_desktop/tests/test_izin_logic.py::TestBitisTarihiHesapla::test_5_gun_tam_hafta - assert datetime.date(2024, 1, 8) == datetime.date(2024, 1, 5)
-FAILED itf_desktop/tests/test_migrations.py::TestBackup::test_backup_olmayan_db_none - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
-ERROR itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_yeni_db_versiyon_sifir - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
-ERROR itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_set_schema_version - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
-ERROR itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_set_multiple_versions - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
-ERROR itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_current_version_sabit_2 - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
-ERROR itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_schema_version_tablo_olusur - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
-ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_fresh_db_run_migrations - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
-ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_after_migration_version_current - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
-ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_zaten_guncel_true_donus - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
-ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_migration_sonrasi_tablolar_mevcut - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
-ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_cihaz_ariza_kolonlar - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
-ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_periyodik_bakim_kolonlar - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
-ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_tatiller_kolonlar - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
-ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_fhsz_puantaj_composite_pk - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
-ERROR itf_desktop/tests/test_migrations.py::TestBackup::test_backup_dosya_olusur - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
-ERROR itf_desktop/tests/test_migrations.py::TestBackup::test_backup_db_icerigi_ayni - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
-ERROR itf_desktop/tests/test_migrations.py::TestBackup::test_cleanup_old_backups - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasör\itf_...
+FAILED itf_desktop/tests/test_migrations.py::TestBackup::test_backup_olmayan_db_none - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_yeni_db_versiyon_sifir - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_set_schema_version - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_set_multiple_versions - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_current_version_sabit_2 - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestSchemaVersion::test_schema_version_tablo_olusur - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_fresh_db_run_migrations - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_after_migration_version_current - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_zaten_guncel_true_donus - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_migration_sonrasi_tablolar_mevcut - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_cihaz_ariza_kolonlar - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_periyodik_bakim_kolonlar - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_tatiller_kolonlar - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestRunMigrations::test_fhsz_puantaj_composite_pk - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestBackup::test_backup_dosya_olusur - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestBackup::test_backup_db_icerigi_ayni - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_...
+ERROR itf_desktop/tests/test_migrations.py::TestBackup::test_cleanup_old_backups - ImportError: cannot import name 'DatabaseMigrator' from 'database.migrations' (C:\Users\HP\Desktop\Yeni klasï¿½r\itf_...
 ================================ 2 failed, 642 passed, 2 warnings, 16 errors in 5.61s =================================
