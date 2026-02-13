@@ -776,7 +776,7 @@ class PeriyodikBakimPage(QWidget):
         btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         btn_yenile.clicked.connect(self._verileri_yukle)
 
-        self.btn_kapat = QPushButton("✕")
+        self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Kapat")
         self.btn_kapat.setFixedSize(36, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))

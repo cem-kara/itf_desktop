@@ -83,7 +83,7 @@ class CihazListesiPage(QWidget):
         fl.addWidget(self.btn_refresh)
 
         # Kapat Butonu
-        self.btn_kapat = QPushButton("✕")
+        self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Kapat")
         self.btn_kapat.setFixedSize(60, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))

@@ -189,7 +189,7 @@ class PersonelListesiPage(QWidget):
         sep3.setStyleSheet("background-color: rgba(255,255,255,0.08);")
         fp.addWidget(sep3)
 
-        self.btn_kapat = QPushButton("✕")
+        self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Pencereyi Kapat")
         self.btn_kapat.setFixedSize(60, 28)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))

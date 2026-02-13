@@ -218,7 +218,7 @@ class IzinTakipPage(QWidget):
 
         self._add_sep(fp)
 
-        self.btn_kapat = QPushButton("✕")
+        self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Kapat")
         self.btn_kapat.setFixedSize(28, 28)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))

@@ -180,9 +180,9 @@ class ArizaListesiPage(QWidget):
         self.btn_refresh.setStyleSheet(S["refresh_btn"])
         fl.addWidget(self.btn_refresh)
 
-        self.btn_kapat = QPushButton("✕")
+        self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Kapat")
-        self.btn_kapat.setFixedSize(36, 36)
+        self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S["close_btn"])
         fl.addWidget(self.btn_kapat)

@@ -268,7 +268,7 @@ class FHSZYonetimPage(QWidget):
 
         self._add_sep(fp)
 
-        self.btn_kapat = QPushButton("✕")
+        self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Kapat")
         self.btn_kapat.setFixedSize(28, 28)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
@@ -334,7 +334,7 @@ class FHSZYonetimPage(QWidget):
         """)
         bf.addWidget(self.progress)
 
-        btn_kapat2 = QPushButton("Kapat")
+        btn_kapat2 = QPushButton("✕ Kapat")
         btn_kapat2.setStyleSheet(S["close_btn"])
         btn_kapat2.setFixedSize(80, 36)
         btn_kapat2.setCursor(QCursor(Qt.PointingHandCursor))
