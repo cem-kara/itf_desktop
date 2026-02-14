@@ -22,7 +22,7 @@ class PlaceholderPage(QWidget):
 
         if os.path.exists(img_path):
             pixmap = QPixmap(img_path)
-            icon.setPixmap(pixmap.scaled(128, 128, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            icon.setPixmap(pixmap.scaled(300, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation))
             icon.setStyleSheet("background: transparent;")
         else:
             icon.setText("🚧")
@@ -57,11 +57,11 @@ class WelcomePage(QWidget):
         icon.setAlignment(Qt.AlignCenter)
 
         base_ui_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        img_path = os.path.join(base_ui_dir, "styles", "logo.png")
+        img_path = os.path.join(base_ui_dir, "styles", "repys_dark.svg")
 
         if os.path.exists(img_path):
             pixmap = QPixmap(img_path)
-            icon.setPixmap(pixmap.scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            icon.setPixmap(pixmap.scaled(500, 500, Qt.KeepAspectRatio, Qt.SmoothTransformation))
             icon.setStyleSheet("background: transparent;")
         else:
             icon.setText("🏥")

@@ -16,22 +16,12 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QColor, QCursor
 
 from core.logger import logger
+from core.date_utils import parse_date as parse_any_date, to_ui_date
 from ui.theme_manager import ThemeManager
 
-# ─── Tarih Parse (çoklu format desteği) ───
-_DATE_FMTS = ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%Y/%m/%d", "%d-%m-%Y")
-
 def _parse_date(val):
-    """Çoklu format desteğiyle tarih string → date objesi."""
-    val = str(val).strip()
-    if not val:
-        return None
-    for fmt in _DATE_FMTS:
-        try:
-            return datetime.strptime(val, fmt).date()
-        except ValueError:
-            continue
-    return None
+    """Merkezi date_utils üzerinden tarih parse eder."""
+    return parse_any_date(val)
 
 
 # ─── W11 Dark Glass Stiller (MERKEZİ KAYNAKTAN) ───
@@ -95,11 +85,7 @@ class IzinTableModel(QAbstractTableModel):
             val = str(row.get(col_key, ""))
             # Tarih formatla
             if col_key in ("BaslamaTarihi", "BitisTarihi") and val:
-                try:
-                    d = datetime.strptime(val, "%Y-%m-%d")
-                    return d.strftime("%d.%m.%Y")
-                except Exception:
-                    pass
+                return to_ui_date(val)
             return val
 
         if role == Qt.BackgroundRole and col_key == "Durum":

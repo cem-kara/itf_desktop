@@ -52,38 +52,19 @@ from core.logger import logger
 
 # ══════════════════════════════════════════════════════════════
 #  1. QMessageBox LOG YAKALAYICI
-#     PySide6'da sınıf attribute'una statik atama çalışmaz;
-#     bunun yerine PySide6.QtWidgets.QMessageBox'ı log yazan bir
-#     alt sınıfla DEĞİŞTİRİYORUZ.  Sayfalar lazy-import ile
-#     'from PySide6.QtWidgets import QMessageBox' dediğinde
-#     artık bu alt sınıfı alırlar.
 # ══════════════════════════════════════════════════════════════
 
 def qmessagebox_yakala() -> None:
     """
     QMessageBox.critical / .warning / .information çağrılarını
     otomatik olarak log dosyasına da yazar.
-
-    Çalışma prensibi:
-      • PySide6.QtWidgets modülündeki 'QMessageBox' adını,
-        orijinalden türetilmiş _LoggedQMessageBox ile değiştiririz.
-      • Sayfalar lazy-import ile 'from PySide6.QtWidgets import
-        QMessageBox' dediğinde bu yeni sınıfı alırlar.
-      • Orijinal sınıfı _critical_orijinal vs. olarak saklarız;
-        böylece sonsuz döngü olmaz.
     """
     try:
         import PySide6.QtWidgets as _qw
 
-        _Orj = _qw.QMessageBox   # Orijinal sınıfı koru
+        _Orj = _qw.QMessageBox
 
         class _LoggedQMessageBox(_Orj):
-            """
-            QMessageBox'ı saran log-aware sürüm.
-            Tüm static metod çağrıları log yazdıktan sonra
-            orijinal davranışa devredilir.
-            """
-
             @staticmethod
             def critical(parent, title, msg, *args, **kwargs):
                 logger.error(f"[UI ❌] {title}: {msg}")
@@ -99,14 +80,10 @@ def qmessagebox_yakala() -> None:
                 logger.info(f"[UI ℹ️] {title}: {msg}")
                 return _Orj.information(parent, title, msg, *args, **kwargs)
 
-        # Modül namespace'ini güncelle — lazy import'lar artık
-        # _LoggedQMessageBox'ı alır.
         _qw.QMessageBox = _LoggedQMessageBox
-
         logger.info("QMessageBox log yakalayıcısı aktif edildi.")
 
     except Exception as exc:
-        # Yakalayıcı kurulamazsa uygulama çalışmaya devam etmeli
         logger.error(f"qmessagebox_yakala başarısız: {exc}")
 
 
@@ -115,17 +92,12 @@ def qmessagebox_yakala() -> None:
 # ══════════════════════════════════════════════════════════════
 
 def global_exception_hook_kur() -> None:
-    """
-    Ana iş parçacığındaki yakalanmayan her Python istisnasını
-    CRITICAL seviyesinde log dosyasına yazar.
-    """
+    """Ana iş parçacığındaki yakalanmayan her istisna loglanır."""
 
     def _hook(exc_type, exc_value, exc_tb):
-        # KeyboardInterrupt'ı normal çıkış olarak işle — loglamaya gerek yok
         if issubclass(exc_type, KeyboardInterrupt):
             sys.__excepthook__(exc_type, exc_value, exc_tb)
             return
-
         tb_str = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
         logger.critical(
             f"[YAKALANMAYAN İSTİSNA]\n"
@@ -133,7 +105,6 @@ def global_exception_hook_kur() -> None:
             f"Mesaj: {exc_value}\n"
             f"{tb_str}"
         )
-        # Konsola da yazdır
         sys.__excepthook__(exc_type, exc_value, exc_tb)
 
     sys.excepthook = _hook
@@ -141,28 +112,17 @@ def global_exception_hook_kur() -> None:
 
 
 # ══════════════════════════════════════════════════════════════
-#  3. THREAD İSTİSNALARI — threading.excepthook + QThread
+#  3. THREAD İSTİSNALARI
 # ══════════════════════════════════════════════════════════════
 
 def threading_exception_hook_kur() -> None:
-    """
-    threading.Thread ve QThread içindeki yakalanmayan istisnaları
-    ERROR seviyesinde loglar.
-
-    Python 3.8+ threading.excepthook:
-      QThread.run() içindeki try/except bloğu dışına çıkan
-      her istisna buraya düşer.
-    """
+    """threading.Thread ve QThread içindeki yakalanmayan istisnaları loglar."""
 
     def _thread_hook(args: threading.ExceptHookArgs) -> None:
-        # SystemExit'i loglamaya gerek yok
         if args.exc_type is SystemExit:
             return
-
         tb_str = "".join(
-            traceback.format_exception(
-                args.exc_type, args.exc_value, args.exc_tb
-            )
+            traceback.format_exception(args.exc_type, args.exc_value, args.exc_tb)
         )
         thread_adi = getattr(args.thread, "name", "Bilinmeyen Thread")
         logger.error(
@@ -177,7 +137,7 @@ def threading_exception_hook_kur() -> None:
 
 
 # ══════════════════════════════════════════════════════════════
-#  4. AÇIK API — Yeni sayfalar için önerilen kullanım
+#  4. AÇIK API
 # ══════════════════════════════════════════════════════════════
 
 def exc_logla(konum: str, exc: Exception) -> None:
@@ -196,10 +156,11 @@ def exc_logla(konum: str, exc: Exception) -> None:
 def hata_goster(parent, mesaj: str, baslik: str = "Hata") -> None:
     """
     ERROR seviyesinde log yaz + QMessageBox.critical göster.
-    qmessagebox_yakala() aktifken çift loglama olmaz çünkü
-    _LoggedQMessageBox.critical zaten log yazar; burada ek log eklenmez.
+    logger.error her koşulda çağrılır; qmessagebox_yakala() aktifse
+    QMessageBox içinden de ayrıca log yazılır (INFO seviyesinde önce
+    sıkıştırmak için buradan sadece bir kez logluyoruz).
     """
-    # Loglama: qmessagebox_yakala aktif değilse manuel logla
+    logger.error(f"[UI Hata] {baslik}: {mesaj}")
     _msgbox_critical(parent, baslik, mesaj)
 
 
@@ -207,6 +168,7 @@ def uyari_goster(parent, mesaj: str, baslik: str = "Uyarı") -> None:
     """
     WARNING seviyesinde log yaz + QMessageBox.warning göster.
     """
+    logger.warning(f"[UI Uyarı] {baslik}: {mesaj}")
     _msgbox_warning(parent, baslik, mesaj)
 
 
@@ -228,13 +190,13 @@ def _msgbox_critical(parent, baslik: str, mesaj: str) -> None:
     try:
         from PySide6.QtWidgets import QMessageBox
         QMessageBox.critical(parent, baslik, mesaj)
-    except Exception:
-        logger.error(f"QMessageBox gösterilemedi — {baslik}: {mesaj}")
+    except Exception as _e:
+        logger.debug(f"QMessageBox gösterilemedi — {baslik}: {_e}")
 
 
 def _msgbox_warning(parent, baslik: str, mesaj: str) -> None:
     try:
         from PySide6.QtWidgets import QMessageBox
         QMessageBox.warning(parent, baslik, mesaj)
-    except Exception:
-        logger.warning(f"QMessageBox gösterilemedi — {baslik}: {mesaj}")
+    except Exception as _e:
+        logger.debug(f"QMessageBox gösterilemedi — {baslik}: {_e}")

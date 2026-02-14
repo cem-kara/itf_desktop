@@ -10,6 +10,7 @@ from PySide6.QtGui import QCursor, QPixmap
 
 from core.logger import logger
 from core.hata_yonetici import exc_logla
+from core.date_utils import parse_date
 from ui.theme_manager import ThemeManager
 
 
@@ -541,7 +542,8 @@ class PersonelEklePage(QWidget):
         elif isinstance(w, QDateEdit):
             if value:
                 try:
-                    d = QDate.fromString(value, "yyyy-MM-dd")
+                    parsed = parse_date(value)
+                    d = QDate(parsed.year, parsed.month, parsed.day) if parsed else QDate.fromString(value, "yyyy-MM-dd")
                     if d.isValid():
                         w.setDate(d)
                 except Exception:

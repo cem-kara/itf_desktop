@@ -201,7 +201,7 @@ class TestDosyaMeta:
 class TestLogOkuyucu:
 
     def test_var_olan_dosya_okunuyor(self):
-        from ui.pages.log_goruntuleme import LogOkuyucuThread
+        from ui.pages.admin.log_goruntuleme import LogOkuyucuThread
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".log", delete=False, encoding="utf-8"
         ) as f:
@@ -218,7 +218,7 @@ class TestLogOkuyucu:
             os.unlink(yol)
 
     def test_olmayan_dosya_bos_icerik(self):
-        from ui.pages.log_goruntuleme import LogOkuyucuThread
+        from ui.pages.admin.log_goruntuleme import LogOkuyucuThread
         sonuc = {"icerik": None, "meta": None}
         thread = LogOkuyucuThread("/olmayan/yol/dosya.log")
         thread.veri_hazir.connect(lambda ic, m: sonuc.update({"icerik": ic, "meta": m}))
@@ -227,7 +227,7 @@ class TestLogOkuyucu:
         assert sonuc["meta"]["boyut"] == 0
 
     def test_meta_alanlar_mevcut(self):
-        from ui.pages.log_goruntuleme import LogOkuyucuThread
+        from ui.pages.admin.log_goruntuleme import LogOkuyucuThread
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".log", delete=False, encoding="utf-8"
         ) as f:
@@ -244,7 +244,7 @@ class TestLogOkuyucu:
             os.unlink(yol)
 
     def test_max_satir_siniri(self):
-        from ui.pages.log_goruntuleme import LogOkuyucuThread
+        from ui.pages.admin.log_goruntuleme import LogOkuyucuThread
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".log", delete=False, encoding="utf-8"
         ) as f:
@@ -267,53 +267,53 @@ class TestLogOkuyucu:
 class TestLogGoruntulemePageQt:
 
     def test_sayfa_olusturuluyor(self, qapp):
-        from ui.pages.log_goruntuleme import LogGoruntuleme
+        from ui.pages.admin.log_goruntuleme import LogGoruntuleme
         page = LogGoruntuleme()
         assert page is not None
 
     def test_cmb_dosya_var(self, qapp):
-        from ui.pages.log_goruntuleme import LogGoruntuleme
+        from ui.pages.admin.log_goruntuleme import LogGoruntuleme
         page = LogGoruntuleme()
         assert hasattr(page, "_cmb_dosya")
 
     def test_txt_arama_var(self, qapp):
-        from ui.pages.log_goruntuleme import LogGoruntuleme
+        from ui.pages.admin.log_goruntuleme import LogGoruntuleme
         page = LogGoruntuleme()
         assert hasattr(page, "_txt_arama")
 
     def test_txt_log_alani_var(self, qapp):
-        from ui.pages.log_goruntuleme import LogGoruntuleme
+        from ui.pages.admin.log_goruntuleme import LogGoruntuleme
         page = LogGoruntuleme()
         assert hasattr(page, "_txt")
 
     def test_txt_readonly(self, qapp):
-        from ui.pages.log_goruntuleme import LogGoruntuleme
+        from ui.pages.admin.log_goruntuleme import LogGoruntuleme
         page = LogGoruntuleme()
         assert page._txt.isReadOnly()
 
     def test_btn_yenile_var(self, qapp):
-        from ui.pages.log_goruntuleme import LogGoruntuleme
+        from ui.pages.admin.log_goruntuleme import LogGoruntuleme
         page = LogGoruntuleme()
         assert hasattr(page, "_btn_yenile")
 
     def test_btn_klasor_var(self, qapp):
-        from ui.pages.log_goruntuleme import LogGoruntuleme
+        from ui.pages.admin.log_goruntuleme import LogGoruntuleme
         page = LogGoruntuleme()
         assert hasattr(page, "_btn_klasor")
 
     def test_chk_canli_baslangicta_isaretli(self, qapp):
-        from ui.pages.log_goruntuleme import LogGoruntuleme
+        from ui.pages.admin.log_goruntuleme import LogGoruntuleme
         page = LogGoruntuleme()
         assert page._chk_canli.isChecked()
 
     def test_seviye_butonlari_var(self, qapp):
-        from ui.pages.log_goruntuleme import LogGoruntuleme
+        from ui.pages.admin.log_goruntuleme import LogGoruntuleme
         page = LogGoruntuleme()
         assert hasattr(page, "_seviye_butonlari")
         assert len(page._seviye_butonlari) == 5  # TÜMÜ DEBUG INFO WARNING ERROR
 
     def test_lbl_filtre_var(self, qapp):
-        from ui.pages.log_goruntuleme import LogGoruntuleme
+        from ui.pages.admin.log_goruntuleme import LogGoruntuleme
         page = LogGoruntuleme()
         assert hasattr(page, "_lbl_filtre")
 
@@ -324,12 +324,12 @@ class TestLogGoruntulemePageQt:
 class TestLogGoruntulemeEtkilesimQt:
 
     def test_tuumu_butonu_baslangicta_secili(self, qapp):
-        from ui.pages.log_goruntuleme import LogGoruntuleme
+        from ui.pages.admin.log_goruntuleme import LogGoruntuleme
         page = LogGoruntuleme()
         assert page._seviye_butonlari["TÜMÜ"].isChecked()
 
     def test_seviye_secince_diger_butonlar_kalkiyor(self, qapp):
-        from ui.pages.log_goruntuleme import LogGoruntuleme
+        from ui.pages.admin.log_goruntuleme import LogGoruntuleme
         page = LogGoruntuleme()
         page._seviye_sec("ERROR")
         assert page._seviye_butonlari["ERROR"].isChecked()
@@ -337,7 +337,7 @@ class TestLogGoruntulemeEtkilesimQt:
         assert not page._seviye_butonlari["INFO"].isChecked()
 
     def test_seviye_tumüye_donunce_diger_kalkiyor(self, qapp):
-        from ui.pages.log_goruntuleme import LogGoruntuleme
+        from ui.pages.admin.log_goruntuleme import LogGoruntuleme
         page = LogGoruntuleme()
         page._seviye_sec("WARNING")
         page._seviye_sec("TÜMÜ")
@@ -345,25 +345,25 @@ class TestLogGoruntulemeEtkilesimQt:
         assert not page._seviye_butonlari["WARNING"].isChecked()
 
     def test_canli_takip_kapaninca_timer_duruyor(self, qapp):
-        from ui.pages.log_goruntuleme import LogGoruntuleme
+        from ui.pages.admin.log_goruntuleme import LogGoruntuleme
         page = LogGoruntuleme()
         page._chk_canli.setChecked(False)
         assert not page._timer.isActive()
 
     def test_canli_takip_acilinca_timer_basliyor(self, qapp):
-        from ui.pages.log_goruntuleme import LogGoruntuleme
+        from ui.pages.admin.log_goruntuleme import LogGoruntuleme
         page = LogGoruntuleme()
         page._chk_canli.setChecked(False)
         page._chk_canli.setChecked(True)
         assert page._timer.isActive()
 
     def test_seviye_degisince_property_guncelleniyor(self, qapp):
-        from ui.pages.log_goruntuleme import LogGoruntuleme
+        from ui.pages.admin.log_goruntuleme import LogGoruntuleme
         page = LogGoruntuleme()
         page._seviye_sec("ERROR")
         assert page._seviye == "ERROR"
 
     def test_highlighter_bagli(self, qapp):
-        from ui.pages.log_goruntuleme import LogGoruntuleme
+        from ui.pages.admin.log_goruntuleme import LogGoruntuleme
         page = LogGoruntuleme()
         assert page._highlighter is not None

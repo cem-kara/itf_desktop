@@ -2,10 +2,12 @@ import sqlite3
 from core.paths import DB_PATH
 from core.logger import logger
 
+
 class SQLiteManager:
-    def __init__(self):
+    def __init__(self, db_path=None, check_same_thread=True):
+        self.db_path = db_path or DB_PATH
         logger.info("SQLite bağlantısı açılıyor")
-        self.conn = sqlite3.connect(DB_PATH)
+        self.conn = sqlite3.connect(self.db_path, check_same_thread=check_same_thread)
         self.conn.row_factory = sqlite3.Row
 
     def execute(self, query, params=()):

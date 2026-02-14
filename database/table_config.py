@@ -12,7 +12,14 @@ TABLES = {
             "MezunOlunanFakulte2","MezuniyetTarihi2","DiplomaNo2",
             "Resim","Diploma1","Diploma2","OzlukDosyasi","Durum",
             "AyrilisTarihi","AyrilmaNedeni"
-        ]
+        ],
+        "date_fields": [
+            "DogumTarihi",
+            "MemuriyeteBaslamaTarihi",
+            "MezuniyetTarihi",
+            "MezuniyetTarihi2",
+            "AyrilisTarihi",
+        ],
     },
 
     "Izin_Giris": {
@@ -20,7 +27,8 @@ TABLES = {
         "columns": [
             "Izinid","HizmetSinifi","Personelid","AdSoyad",
             "IzinTipi","BaslamaTarihi","Gun","BitisTarihi","Durum"
-        ]
+        ],
+        "date_fields": ["BaslamaTarihi", "BitisTarihi"],
     },
 
     "Izin_Bilgi": {
@@ -53,7 +61,13 @@ TABLES = {
             "BitisTarihi","LisansDurum","AnaBilimDali","Birim","BulunduguBina",
             "GarantiDurumu","GarantiBitisTarihi","DemirbasNo","KalibrasyonGereklimi",
             "BakimDurum","Durum","Img","NDKLisansBelgesi"
-        ]
+        ],
+        "date_fields": [
+            "HizmeteGirisTarihi",
+            "BaslamaTarihi",
+            "BitisTarihi",
+            "GarantiBitisTarihi",
+        ],
     },
 
     "Cihaz_Ariza": {
@@ -62,7 +76,8 @@ TABLES = {
             "Arizaid","Cihazid","BaslangicTarihi","Saat","Bildiren",
             "ArizaTipi","Oncelik","Baslik",   # ← "BaslÄ±k" encoding düzeltildi
             "ArizaAcikla","Durum","Rapor"
-        ]
+        ],
+        "date_fields": ["BaslangicTarihi"],
     },
 
     "Ariza_Islem": {
@@ -70,7 +85,8 @@ TABLES = {
         "columns": [                          # ← "colums" → "columns"
             "Islemid","Arizaid","Tarih","Saat","IslemYapan",
             "IslemTuru","YapilanIslem","YeniDurum","Rapor"
-        ]
+        ],
+        "date_fields": ["Tarih"],
     },
 
     "Periyodik_Bakim": {
@@ -79,7 +95,8 @@ TABLES = {
             "Planid","Cihazid","BakimPeriyodu","BakimSirasi","PlanlananTarih",
             "Bakim","Durum","BakimTarihi","BakimTipi","YapilanIslemler","Aciklama",
             "Teknisyen","Rapor"
-        ]
+        ],
+        "date_fields": ["PlanlananTarih", "BakimTarihi"],
     },
 
     "Kalibrasyon": {
@@ -88,7 +105,8 @@ TABLES = {
             "Kalid","Cihazid",                # ← "cihazid" → "Cihazid" (migrations.py ile eşleşti)
             "Firma","SertifikaNo","YapilanTarih",
             "Gecerlilik","BitisTarihi","Durum","Dosya","Aciklama"
-        ]
+        ],
+        "date_fields": ["YapilanTarih", "BitisTarihi"],
     },
 
     # ─────────────── SABİT VT ───────────────
@@ -106,6 +124,7 @@ TABLES = {
         "columns": [
             "Tarih","ResmiTatil"
         ],
+        "date_fields": ["Tarih"],
         "sync_mode": "pull_only"  # Sadece Google Sheets → Local (resmi tatil takvimi)
     },
 
@@ -114,20 +133,22 @@ TABLES = {
         "columns": [
             "Tarih","Saat","Kullanici","Modul","Islem","Detay"
         ],
+        "date_fields": ["Tarih"],
         "sync": False                         # Log tablosu sync dışı
     },
 
     # ─────────────── RKE VT ───────────────
 
     "RKE_List": {
-        "pk": "KayitNo",                      # ← "Personelid" → "KayitNo" (migrations.py PK)
+        "pk": "EkipmanNo",                      # ← "Personelid" → "KayitNo" (migrations.py PK)
         "columns": [
-            "KayitNo","EkipmanNo","KoruyucuNumarasi","AnaBilimDali","Birim",
+            "EkipmanNo","KoruyucuNumarasi","AnaBilimDali","Birim",
             "KoruyucuCinsi","KursunEsdegeri","HizmetYili","Bedeni","KontrolTarihi",
             "Durum","Aciklama",               # ← encoding düzeltildi
             "VarsaDemirbasNo",                # ← encoding düzeltildi
             "KayitTarih","Barkod"
-        ]
+        ],
+        "date_fields": ["KontrolTarihi"],
     },
 
     "RKE_Muayene": {
@@ -139,7 +160,8 @@ TABLES = {
             "BirimSorumlusuUnvani",           # ← "/" kaldırıldı
             "Notlar",                         # ← "Not" → "Notlar" (migrations.py ile eşleşti)
             "Rapor"
-        ]
+        ],
+        "date_fields": ["FMuayeneTarihi", "SMuayeneTarihi"],
     }
 
 }

@@ -490,8 +490,7 @@ class MigrationManager:
         # ---------------- RKE LIST ----------------
         cur.execute("""
         CREATE TABLE IF NOT EXISTS RKE_List (
-            KayitNo TEXT PRIMARY KEY,
-            EkipmanNo TEXT,
+            EkipmanNo TEXT PRIMARY KEY,
             KoruyucuNumarasi TEXT,
             AnaBilimDali TEXT,
             Birim TEXT,

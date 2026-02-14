@@ -24,7 +24,8 @@ class RepositoryRegistry:
                 table_name=table_name,
                 pk=cfg["pk"],
                 columns=cfg["columns"] + extra_cols,
-                has_sync=has_sync
+                has_sync=has_sync,
+                date_fields=cfg.get("date_fields")
             )
 
         return self._repos[table_name]

@@ -1,13 +1,15 @@
 from datetime import datetime
 from core.logger import logger
+from core.date_utils import looks_like_date_column, normalize_date_fields
 
 
 class BaseRepository:
-    def __init__(self, db, table_name, pk, columns, has_sync=True):
+    def __init__(self, db, table_name, pk, columns, has_sync=True, date_fields=None):
         self.db = db
         self.table = table_name
         self.columns = columns
         self.has_sync = has_sync
+        self.date_fields = set(date_fields or [c for c in columns if looks_like_date_column(c)])
 
         # PK: string veya list (composite)
         if isinstance(pk, list):
@@ -50,6 +52,7 @@ class BaseRepository:
     # ════════════════ CRUD ════════════════
 
     def insert(self, data: dict):
+        data = normalize_date_fields(data, self.date_fields)
         now = datetime.now().isoformat()
 
         if "updated_at" in self.columns and not data.get("updated_at"):
@@ -74,6 +77,7 @@ class BaseRepository:
         self.db.execute(sql, values)
 
     def update(self, pk_value, data: dict):
+        data = normalize_date_fields(data, self.date_fields)
         now = datetime.now().isoformat()
 
         if "updated_at" in self.columns:

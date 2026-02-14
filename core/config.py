@@ -1,5 +1,5 @@
 class AppConfig:
-    APP_NAME = "Radyoloji Envanter ve Personel Takip Sistemi"
+    APP_NAME = "Radyoloji Envanter ve Personel Yönetim Sistemi"
     VERSION = "1.0.3"
 
     AUTO_SYNC = True

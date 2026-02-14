@@ -343,54 +343,54 @@ class TestHesaplaAlanKontrol:
 class TestYilSonuIslemleriPageQt:
 
     def test_sayfa_olusturuluyor(self, qapp):
-        from ui.pages.yil_sonu_islemleri import YilSonuIslemleriPage
+        from ui.pages.admin.yil_sonu_islemleri import YilSonuIslemleriPage
         page = YilSonuIslemleriPage()
         assert page is not None
 
     def test_chk_onay_var(self, qapp):
-        from ui.pages.yil_sonu_islemleri import YilSonuIslemleriPage
+        from ui.pages.admin.yil_sonu_islemleri import YilSonuIslemleriPage
         page = YilSonuIslemleriPage()
         assert hasattr(page, "_chk_onay")
 
     def test_btn_baslat_baslangicta_disabled(self, qapp):
-        from ui.pages.yil_sonu_islemleri import YilSonuIslemleriPage
+        from ui.pages.admin.yil_sonu_islemleri import YilSonuIslemleriPage
         page = YilSonuIslemleriPage()
         assert not page._btn_baslat.isEnabled()
 
     def test_chk_isaretlenince_btn_aktif(self, qapp):
-        from ui.pages.yil_sonu_islemleri import YilSonuIslemleriPage
+        from ui.pages.admin.yil_sonu_islemleri import YilSonuIslemleriPage
         page = YilSonuIslemleriPage()
         page._chk_onay.setChecked(True)
         assert page._btn_baslat.isEnabled()
 
     def test_chk_kaldirilinca_btn_pasif(self, qapp):
-        from ui.pages.yil_sonu_islemleri import YilSonuIslemleriPage
+        from ui.pages.admin.yil_sonu_islemleri import YilSonuIslemleriPage
         page = YilSonuIslemleriPage()
         page._chk_onay.setChecked(True)
         page._chk_onay.setChecked(False)
         assert not page._btn_baslat.isEnabled()
 
     def test_txt_log_var(self, qapp):
-        from ui.pages.yil_sonu_islemleri import YilSonuIslemleriPage
+        from ui.pages.admin.yil_sonu_islemleri import YilSonuIslemleriPage
         page = YilSonuIslemleriPage()
         assert hasattr(page, "_txt_log")
 
     def test_txt_log_readonly(self, qapp):
-        from ui.pages.yil_sonu_islemleri import YilSonuIslemleriPage
+        from ui.pages.admin.yil_sonu_islemleri import YilSonuIslemleriPage
         page = YilSonuIslemleriPage()
         assert page._txt_log.isReadOnly()
 
     def test_pbar_baslangicta_gizli(self, qapp):
-        from ui.pages.yil_sonu_islemleri import YilSonuIslemleriPage
+        from ui.pages.admin.yil_sonu_islemleri import YilSonuIslemleriPage
         page = YilSonuIslemleriPage()
         assert not page._pbar.isVisible()
 
     def test_pbar_var(self, qapp):
-        from ui.pages.yil_sonu_islemleri import YilSonuIslemleriPage
+        from ui.pages.admin.yil_sonu_islemleri import YilSonuIslemleriPage
         page = YilSonuIslemleriPage()
         assert hasattr(page, "_pbar")
 
     def test_btn_kapat_var(self, qapp):
-        from ui.pages.yil_sonu_islemleri import YilSonuIslemleriPage
+        from ui.pages.admin.yil_sonu_islemleri import YilSonuIslemleriPage
         page = YilSonuIslemleriPage()
         assert hasattr(page, "btn_kapat")

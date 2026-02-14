@@ -10,8 +10,8 @@ from PySide6.QtCore import Qt, QTimer, Slot
 from core.config import AppConfig
 from core.logger import logger
 from core.paths import DB_PATH
-from ui.sidebar import Sidebar
-from ui.pages.placeholder import WelcomePage, PlaceholderPage
+from ui.sidebar import Sidebar 
+from ui.pages.placeholder import WelcomePage, PlaceholderPage 
 from database.sync_worker import SyncWorker
 from database.sqlite_manager import SQLiteManager
 
@@ -54,6 +54,7 @@ class MainWindow(QMainWindow):
         # Sidebar
         self.sidebar = Sidebar()
         self.sidebar.menu_clicked.connect(self._on_menu_clicked)
+        self.sidebar.dashboard_clicked.connect(self._open_dashboard)
         self.sidebar.sync_btn.clicked.connect(self._start_sync)
         main_layout.addWidget(self.sidebar)
 
@@ -86,6 +87,7 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(content, 1)
 
         # Hoş geldin
+        from ui.pages.placeholder import WelcomePage
         self._welcome = WelcomePage()
         self.stack.addWidget(self._welcome)
         self.stack.setCurrentWidget(self._welcome)
@@ -116,20 +118,47 @@ class MainWindow(QMainWindow):
 
     # ── SAYFA YÖNETİMİ ──
 
-    @Slot(str, str)
-    def _on_menu_clicked(self, group, baslik):
-        logger.info(f"Menü seçildi: {group} → {baslik}")
+    @Slot()
+    def _open_dashboard(self):
+        self._on_menu_clicked("YÖNETİCİ İŞLEMLERİ", "Genel Bakış")
+
+    def _on_menu_clicked(self, group, baslik, *args):
+        """
+        Menüden veya dashboard'dan gelen tıklamaları yönetir.
+        Dashboard'dan gelirse `args` içinde filtre dict'i bulunur.
+        """
+        filters = args[0] if args else {}
+        logger.info(f"Menü seçildi: {group} → {baslik} (Filtreler: {filters})")
+
         if baslik in self._pages:
             page = self._pages[baslik]
         else:
             page = self._create_page(group, baslik)
+            if isinstance(page, PlaceholderPage) or page is None:
+                if page:
+                    self.stack.addWidget(page)
+                    self.stack.setCurrentWidget(page)
+                return
             self._pages[baslik] = page
             self.stack.addWidget(page)
+
         self.stack.setCurrentWidget(page)
         self.page_title.setText(baslik)
         self.page_title.setVisible(True)
 
+        if filters and hasattr(page, "apply_filters"):
+            logger.info(f"'{baslik}' sayfasına filtreler uygulanıyor: {filters}")
+            page.apply_filters(filters)
+
     def _create_page(self, group, baslik):
+        if baslik == "Genel Bakış":
+            from ui.pages.dashboard import DashboardPage
+            page = DashboardPage(db=self._db)
+            page.open_page_requested.connect(self._on_menu_clicked)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Genel Bakış"))
+            page.load_data()
+            return page
+
         if baslik == "Personel Listesi":
             from ui.pages.personel.personel_listesi import PersonelListesiPage
             page = PersonelListesiPage(db=self._db)
@@ -237,7 +266,9 @@ class MainWindow(QMainWindow):
 
         if baslik == "Log Görüntüleyici":
             from ui.pages.admin.log_goruntuleme import LogGoruntuleme
-            return LogGoruntuleme(db=self._db)
+            page = LogGoruntuleme(db=self._db)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Log Görüntüleyici"))
+            return page
         
         if baslik == "Ayarlar":
             from ui.pages.admin.yonetim_ayarlar import AyarlarPenceresi
@@ -425,6 +456,12 @@ class MainWindow(QMainWindow):
         self.sync_status_label.setStyleSheet("color: #22c55e;")
         self.last_sync_label.setText(f"Son sync: {now}")
         self._refresh_active_page()
+        # Dashboard açıksa onu da yenile
+        if "Genel Bakış" in self._pages:
+            dashboard_page = self._pages["Genel Bakış"]
+            if hasattr(dashboard_page, "load_data"):
+                logger.info("Dashboard yenileniyor...")
+                dashboard_page.load_data()
 
     @Slot(str, str)
     def _on_sync_error(self, short_msg, detail_msg):

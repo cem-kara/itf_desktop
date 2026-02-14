@@ -334,6 +334,15 @@ class LogGoruntuleme(QWidget):
         )
         h.addWidget(self._btn_klasor)
 
+        sep2 = self._separator()
+        h.addWidget(sep2)
+
+        self.btn_kapat = QPushButton("✕ Kapat")
+        self.btn_kapat.setFixedSize(90, 32)
+        self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_kapat.setStyleSheet(S.get("close_btn", ""))
+        h.addWidget(self.btn_kapat)
+
         return h
 
     def _build_level_bar(self) -> QHBoxLayout:
@@ -569,6 +578,32 @@ class LogGoruntuleme(QWidget):
 
     def _arama_degisti(self, metin: str):
         self._filtreyi_uygula()
+
+    def apply_filters(self, filters: dict):
+        """
+        Dışarıdan filtre uygular (Dashboard'dan gelir).
+        Örn: {"Dosya": "errors.log", "Seviye": "ERROR"}
+        """
+        logger.info(f"Log görüntüleyiciye filtre uygulanıyor: {filters}")
+
+        # Seviye filtresini uygula (varsa)
+        if "Seviye" in filters:
+            seviye = filters["Seviye"]
+            if seviye in self._seviye_butonlari:
+                self._seviye_butonlari[seviye].click()
+
+        # Dosya filtresini uygula (varsa)
+        if "Dosya" in filters:
+            dosya_adi = filters["Dosya"]
+            for i in range(self._cmb_dosya.count()):
+                if f"({dosya_adi})" in self._cmb_dosya.itemText(i):
+                    if self._cmb_dosya.currentIndex() != i:
+                        # Sinyal _yenile() -> _filtreyi_uygula() tetikler
+                        self._cmb_dosya.setCurrentIndex(i)
+                    else:
+                        # Dosya zaten seçili, filtreyi manuel tetikle
+                        self._filtreyi_uygula()
+                    break
 
     # ----------------------------------------------------------
     #  Canlı Takip

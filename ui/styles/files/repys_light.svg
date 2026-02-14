@@ -1,0 +1,172 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 200" width="640" height="200">
+  <defs>
+
+    <!-- Mica Light surface -->
+    <linearGradient id="mica" x1="0" y1="0" x2="640" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#EFF5FB"/>
+      <stop offset="45%"  stop-color="#F2F6FC"/>
+      <stop offset="100%" stop-color="#E8EFF8"/>
+    </linearGradient>
+
+    <!-- Icon tile — Win11 blue gradient -->
+    <linearGradient id="tile" x1="20" y1="14" x2="174" y2="186" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#3B9EF0"/>
+      <stop offset="55%"  stop-color="#0078D4"/>
+      <stop offset="100%" stop-color="#004E8C"/>
+    </linearGradient>
+
+    <!-- Inner tile shimmer -->
+    <linearGradient id="shimmer" x1="20" y1="14" x2="20" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Scan ring gradient for X-ray arcs -->
+    <linearGradient id="arcFade" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#FFFFFF" stop-opacity="0.0"/>
+      <stop offset="40%"  stop-color="#FFFFFF" stop-opacity="0.9"/>
+      <stop offset="60%"  stop-color="#FFFFFF" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.0"/>
+    </linearGradient>
+
+    <!-- Card outer shadow -->
+    <filter id="cardShadow" x="-4%" y="-6%" width="108%" height="116%">
+      <feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="#90B8D8" flood-opacity="0.22"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="2"  flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+
+    <!-- Tile elevation shadow -->
+    <filter id="tileShadow" x="-16%" y="-12%" width="132%" height="128%">
+      <feDropShadow dx="0" dy="6" stdDeviation="9"  flood-color="#0078D4" flood-opacity="0.28"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="2"  flood-color="#000000" flood-opacity="0.10"/>
+    </filter>
+
+    <!-- Glow for xray mark -->
+    <filter id="glowW" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glowC" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="4"   result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <clipPath id="tileClip">
+      <rect x="20" y="14" width="154" height="172" rx="22"/>
+    </clipPath>
+
+  </defs>
+
+  <!-- ═══ CARD ═══ -->
+  <rect x="0" y="0" width="640" height="200" rx="18" fill="url(#mica)" filter="url(#cardShadow)"/>
+  <!-- Top edge highlight (glass rim) -->
+  <rect x="1" y="1"   width="638" height="1"   rx="0.5" fill="white" opacity="0.75"/>
+  <!-- Bottom edge shadow -->
+  <rect x="1" y="198" width="638" height="1"   rx="0.5" fill="#C0D4E8" opacity="0.4"/>
+  <!-- Acrylic noise layer (thin pattern) -->
+  <rect x="0" y="0" width="640" height="200" rx="18" fill="none"
+        stroke="#C8DCF0" stroke-width="0.5" opacity="0.4"/>
+
+  <!-- ═══ APP ICON TILE ═══ -->
+  <rect x="20" y="14" width="154" height="172" rx="22"
+        fill="url(#tile)" filter="url(#tileShadow)"/>
+  <!-- Shimmer top half -->
+  <rect x="20" y="14" width="154" height="90"  rx="22"
+        fill="url(#shimmer)" clip-path="url(#tileClip)"/>
+  <!-- Glass rim top -->
+  <rect x="21" y="14.5" width="152" height="1.2" rx="0.6"
+        fill="white" opacity="0.28" clip-path="url(#tileClip)"/>
+
+  <!-- ═══ X-RAY / RADYOLOJI MARK (cx=97, cy=100) ═══ -->
+
+  <!-- Outer scan arcs — radiating waves (like ultrasound/xray scanner) -->
+  <!-- Arc set LEFT (pointing left, concave right) -->
+  <path d="M 64 100 A 33 33 0 0 1 64 100" fill="none"/>
+  <!-- Arc 1 — outermost -->
+  <path d="M 59 68  A 40 40 0 0 0 59 132" fill="none"
+        stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.35"
+        filter="url(#glowW)"/>
+  <path d="M 67 76  A 27 27 0 0 0 67 124" fill="none"
+        stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.55"
+        filter="url(#glowW)"/>
+  <path d="M 75 84  A 16 16 0 0 0 75 116" fill="none"
+        stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.75"
+        filter="url(#glowW)"/>
+
+  <!-- Arc set RIGHT -->
+  <path d="M 135 68  A 40 40 0 0 1 135 132" fill="none"
+        stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.35"
+        filter="url(#glowW)"/>
+  <path d="M 127 76  A 27 27 0 0 1 127 124" fill="none"
+        stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.55"
+        filter="url(#glowW)"/>
+  <path d="M 119 84  A 16 16 0 0 1 119 116" fill="none"
+        stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.75"
+        filter="url(#glowW)"/>
+
+  <!-- Medical cross at center -->
+  <!-- Vertical bar -->
+  <rect x="91" y="80" width="12" height="40" rx="3.5"
+        fill="white" opacity="0.95" filter="url(#glowW)"/>
+  <!-- Horizontal bar -->
+  <rect x="77" y="94" width="40" height="12" rx="3.5"
+        fill="white" opacity="0.95" filter="url(#glowW)"/>
+  <!-- Center circle highlight -->
+  <circle cx="97" cy="100" r="7.5"
+          fill="#60CDFF" opacity="0.9" filter="url(#glowC)"/>
+  <circle cx="97" cy="100" r="4"
+          fill="white" opacity="0.95"/>
+
+  <!-- Tile bottom label -->
+  <text x="97" y="172"
+        font-family="'Segoe UI Variable Display','Segoe UI',system-ui,sans-serif"
+        font-size="11" font-weight="600" letter-spacing="3"
+        text-anchor="middle" fill="white" opacity="0.7">REPYS</text>
+
+  <!-- ═══ WORDMARK ═══ -->
+
+  <!-- "Radyoloji" — large display -->
+  <text x="198" y="66"
+        font-family="'Segoe UI Variable Display','Segoe UI',system-ui,sans-serif"
+        font-size="30" font-weight="700" letter-spacing="-0.4"
+        fill="#0F2845">Radyoloji</text>
+  <!-- Fluent accent underline -->
+  <rect x="198" y="72" width="152" height="3" rx="1.5" fill="#0078D4" opacity="0.85"/>
+
+  <!-- Subtitle lines -->
+  <text x="198" y="103"
+        font-family="'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif"
+        font-size="17.5" font-weight="400" letter-spacing="0"
+        fill="#1E3D5C">Envanter ve Personel</text>
+
+  <text x="198" y="129"
+        font-family="'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif"
+        font-size="17.5" font-weight="400" letter-spacing="0"
+        fill="#1E3D5C">Yönetim Sistemi</text>
+
+  <!-- Separator line -->
+  <rect x="198" y="143" width="424" height="0.75" rx="0.5" fill="#B8CDE0" opacity="0.7"/>
+
+  <!-- English subtitle -->
+  <text x="198" y="161"
+        font-family="'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif"
+        font-size="11.5" font-weight="300" letter-spacing="0.25"
+        fill="#5A7D9A">Radiology Inventory &amp; Personnel Management System</text>
+
+  <!-- REPYS pill badge -->
+  <rect x="198" y="174" width="72" height="18" rx="9"
+        fill="#0078D4" fill-opacity="0.08"
+        stroke="#0078D4" stroke-width="0.8" stroke-opacity="0.3"/>
+  <text x="234" y="187"
+        font-family="'Segoe UI',system-ui,sans-serif"
+        font-size="9.5" font-weight="700" letter-spacing="1.2"
+        text-anchor="middle" fill="#0067BD" opacity="0.85">REPYS</text>
+
+  <!-- Fluent ambient light — top right corner -->
+  <radialGradient id="cornerLight" cx="100%" cy="0%" r="35%">
+    <stop offset="0%"   stop-color="#0078D4" stop-opacity="0.06"/>
+    <stop offset="100%" stop-color="#0078D4" stop-opacity="0"/>
+  </radialGradient>
+  <rect x="0" y="0" width="640" height="200" rx="18" fill="url(#cornerLight)"/>
+
+</svg>

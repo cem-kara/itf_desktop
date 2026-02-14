@@ -27,23 +27,15 @@ from PySide6.QtCore import Qt, QRectF
 from PySide6.QtGui import QColor, QCursor, QFont, QPainter, QBrush, QPen, QPainterPath
 
 from core.logger import logger
+from core.date_utils import parse_date as parse_any_date
 from core.hesaplamalar import sua_hak_edis_hesapla, is_gunu_hesapla, tr_upper
 from ui.theme_manager import ThemeManager
 
-
-# ─── Tarih Parse ───
-_DATE_FMTS = ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%Y/%m/%d", "%d-%m-%Y")
-
 def _parse_date(val):
-    val = str(val).strip()
-    if not val:
+    parsed = parse_any_date(val)
+    if not parsed:
         return None
-    for fmt in _DATE_FMTS:
-        try:
-            return datetime.strptime(val, fmt)
-        except ValueError:
-            continue
-    return None
+    return datetime.combine(parsed, datetime.min.time())
 
 
 # ─── Sabitler ───

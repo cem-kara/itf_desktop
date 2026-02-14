@@ -167,6 +167,7 @@ class AccordionGroup(QWidget):
 class Sidebar(QWidget):
 
     menu_clicked = Signal(str, str)
+    dashboard_clicked = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -244,6 +245,25 @@ class Sidebar(QWidget):
         bl.setContentsMargins(12, 4, 12, 10)
         bl.setSpacing(6)
 
+        self.notifications_btn = QPushButton("🔔 Bildirimler")
+        self.notifications_btn.setFixedHeight(36)
+        self.notifications_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.notifications_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: rgba(255, 193, 7, 0.15);
+                color: #ffca28;
+                border: 1px solid rgba(255, 193, 7, 0.4);
+                border-radius: 8px;
+                font-size: 13px; font-weight: 600;
+            }}
+            QPushButton:hover {{
+                background-color: rgba(255, 193, 7, 0.25);
+                color: #ffdd72;
+            }}
+        """)
+        self.notifications_btn.clicked.connect(self.dashboard_clicked.emit)
+        bl.addWidget(self.notifications_btn)
+
         self.sync_btn = QPushButton("⟳ Yenile  Senkronize Et")
         self.sync_btn.setFixedHeight(36)
         self.sync_btn.setCursor(QCursor(Qt.PointingHandCursor))
@@ -316,7 +336,17 @@ class Sidebar(QWidget):
         self.menu_clicked.emit(group, baslik)
 
     def set_active(self, baslik):
-        self._on_click("", baslik)
+        # Programatik seçimde menü tıklama sinyali üretme.
+        if self._active_baslik and self._active_baslik in self._all_buttons:
+            old_grp, _ = self._all_buttons[self._active_baslik]
+            old_grp.set_active(None)
+
+        if baslik and baslik in self._all_buttons:
+            grp, _ = self._all_buttons[baslik]
+            grp.set_active(baslik)
+            self._active_baslik = baslik
+        else:
+            self._active_baslik = None
 
     def set_sync_status(self, text, color="#22c55e"):
         self.status_label.setText(text)

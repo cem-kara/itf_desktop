@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 140" width="560" height="280">
+  <defs>
+    <!-- Light tile -->
+    <linearGradient id="tL" x1="10" y1="10" x2="130" y2="130" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#3B9EF0"/>
+      <stop offset="55%"  stop-color="#0078D4"/>
+      <stop offset="100%" stop-color="#004E8C"/>
+    </linearGradient>
+    <!-- Dark tile -->
+    <linearGradient id="tD" x1="150" y1="10" x2="270" y2="130" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#4AADFF"/>
+      <stop offset="55%"  stop-color="#0088EF"/>
+      <stop offset="100%" stop-color="#00468A"/>
+    </linearGradient>
+    <!-- Shimmer -->
+    <linearGradient id="shL" x1="0%" y1="0%" x2="0%" y2="60%">
+      <stop offset="0%"   stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="shD" x1="0%" y1="0%" x2="0%" y2="60%">
+      <stop offset="0%"   stop-color="#FFFFFF" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <!-- Shadows -->
+    <filter id="sL" x="-15%" y="-12%" width="130%" height="128%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8"  flood-color="#0078D4" flood-opacity="0.28"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="2"  flood-color="#000"    flood-opacity="0.10"/>
+    </filter>
+    <filter id="sD" x="-15%" y="-12%" width="130%" height="128%">
+      <feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#60CDFF" flood-opacity="0.16"/>
+      <feDropShadow dx="0" dy="6" stdDeviation="9"  flood-color="#000"    flood-opacity="0.45"/>
+    </filter>
+    <filter id="gW" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="1.8" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="gC" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="4"   result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <clipPath id="clL"><rect x="10" y="10" width="120" height="120" rx="26"/></clipPath>
+    <clipPath id="clD"><rect x="150" y="10" width="120" height="120" rx="26"/></clipPath>
+  </defs>
+
+  <!-- ─── LIGHT ICON ─── -->
+  <!-- Light background swatch -->
+  <rect x="0" y="0" width="140" height="140" rx="8" fill="#EEF4FB"/>
+  <!-- Tile -->
+  <rect x="10" y="10" width="120" height="120" rx="26" fill="url(#tL)" filter="url(#sL)"/>
+  <rect x="10" y="10" width="120" height="65"  rx="26" fill="url(#shL)" clip-path="url(#clL)"/>
+  <rect x="11" y="10.5" width="118" height="1.2" rx="0.6" fill="white" opacity="0.28" clip-path="url(#clL)"/>
+
+  <!-- X-ray mark — cx=70, cy=67 -->
+  <!-- Arcs L -->
+  <path d="M 36 43 A 30 30 0 0 0 36 91" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" opacity="0.32" filter="url(#gW)"/>
+  <path d="M 43 51 A 20 20 0 0 0 43 83" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" opacity="0.55" filter="url(#gW)"/>
+  <path d="M 51 59 A 10 10 0 0 0 51 75" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" opacity="0.80" filter="url(#gW)"/>
+  <!-- Arcs R -->
+  <path d="M 104 43 A 30 30 0 0 1 104 91" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" opacity="0.32" filter="url(#gW)"/>
+  <path d="M 97 51 A 20 20 0 0 1 97 83" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" opacity="0.55" filter="url(#gW)"/>
+  <path d="M 89 59 A 10 10 0 0 1 89 75" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" opacity="0.80" filter="url(#gW)"/>
+  <!-- Cross -->
+  <rect x="65" y="53" width="10" height="28" rx="3" fill="white" opacity="0.93" filter="url(#gW)"/>
+  <rect x="57" y="62" width="26" height="10" rx="3" fill="white" opacity="0.93" filter="url(#gW)"/>
+  <!-- Center -->
+  <circle cx="70" cy="67" r="6.5" fill="#60CDFF" opacity="0.92" filter="url(#gC)"/>
+  <circle cx="70" cy="67" r="3.5" fill="white"   opacity="0.98"/>
+  <!-- Label -->
+  <text x="70" y="122" font-family="'Segoe UI',system-ui,sans-serif" font-size="9"
+        font-weight="700" letter-spacing="2.5" text-anchor="middle" fill="white" opacity="0.72">REPYS</text>
+
+  <!-- ─── DARK ICON ─── -->
+  <!-- Dark background swatch -->
+  <rect x="140" y="0" width="140" height="140" rx="8" fill="#1C1C24"/>
+  <!-- Tile -->
+  <rect x="150" y="10" width="120" height="120" rx="26" fill="url(#tD)" filter="url(#sD)"/>
+  <rect x="150" y="10" width="120" height="65"  rx="26" fill="url(#shD)" clip-path="url(#clD)"/>
+  <rect x="151" y="10.5" width="118" height="1.2" rx="0.6" fill="white" opacity="0.20" clip-path="url(#clD)"/>
+
+  <!-- X-ray mark — cx=210, cy=67 -->
+  <!-- Arcs L -->
+  <path d="M 176 43 A 30 30 0 0 0 176 91" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" opacity="0.30" filter="url(#gW)"/>
+  <path d="M 183 51 A 20 20 0 0 0 183 83" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" opacity="0.52" filter="url(#gW)"/>
+  <path d="M 191 59 A 10 10 0 0 0 191 75" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" opacity="0.78" filter="url(#gW)"/>
+  <!-- Arcs R -->
+  <path d="M 244 43 A 30 30 0 0 1 244 91" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" opacity="0.30" filter="url(#gW)"/>
+  <path d="M 237 51 A 20 20 0 0 1 237 83" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" opacity="0.52" filter="url(#gW)"/>
+  <path d="M 229 59 A 10 10 0 0 1 229 75" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" opacity="0.78" filter="url(#gW)"/>
+  <!-- Cross -->
+  <rect x="205" y="53" width="10" height="28" rx="3" fill="white" opacity="0.90" filter="url(#gW)"/>
+  <rect x="197" y="62" width="26" height="10" rx="3" fill="white" opacity="0.90" filter="url(#gW)"/>
+  <!-- Center halo -->
+  <circle cx="210" cy="67" r="11"  fill="#60CDFF" opacity="0.14" filter="url(#gC)"/>
+  <circle cx="210" cy="67" r="6.5" fill="#60CDFF" opacity="0.92" filter="url(#gC)"/>
+  <circle cx="210" cy="67" r="3.5" fill="white"   opacity="0.98"/>
+  <!-- Label -->
+  <text x="210" y="122" font-family="'Segoe UI',system-ui,sans-serif" font-size="9"
+        font-weight="700" letter-spacing="2.5" text-anchor="middle" fill="white" opacity="0.65">REPYS</text>
+
+  <!-- Center label band -->
+  <text x="70"  y="136" font-family="'Segoe UI',sans-serif" font-size="8" text-anchor="middle" fill="#5A7D9A">Light</text>
+  <text x="210" y="136" font-family="'Segoe UI',sans-serif" font-size="8" text-anchor="middle" fill="#4A7090">Dark</text>
+</svg>

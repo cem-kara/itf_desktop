@@ -8,6 +8,7 @@ from core.logger import (
 )
 from database.gsheet_manager import GSheetManager
 from database.table_config import TABLES
+from core.date_utils import looks_like_date_column, normalize_date_fields
 
 
 class SyncService:
@@ -248,6 +249,7 @@ class SyncService:
         """
         columns = cfg["columns"]
         pk = cfg["pk"]
+        date_fields = cfg.get("date_fields") or [c for c in columns if looks_like_date_column(c)]
         # Composite PK desteği: string ise listeye çevir
         pk_cols = pk if isinstance(pk, list) else [pk]
 
@@ -282,6 +284,7 @@ class SyncService:
             MERGE_COL = "ResmiTatil"   # Birleştirilecek metin kolonu
 
             for i, row in enumerate(records, start=2):  # start=2: başlık satırı 1
+                row = normalize_date_fields(row, date_fields)
                 pk_values = [str(row.get(col, "")).strip() for col in pk_cols]
 
                 # Boş PK → atla
