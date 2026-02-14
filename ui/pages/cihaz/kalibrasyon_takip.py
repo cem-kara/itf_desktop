@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.logger import logger
+from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
 
 S = ThemeManager.get_all_component_styles()
@@ -65,8 +66,8 @@ class KalibrasyonKaydedici(QThread):
 
     def __init__(self, veri, mod="yeni", kayit_id=None, parent=None):
         super().__init__(parent)
-        self._veri = veri
-        self._mod = mod
+        self._veri     = veri
+        self._mod      = mod
         self._kayit_id = kayit_id
 
     def run(self):
@@ -85,7 +86,7 @@ class KalibrasyonKaydedici(QThread):
 
             self.islem_tamam.emit()
         except Exception as e:
-            logger.error(f"Kalibrasyon kayıt hatası: {e}")
+            exc_logla("KalibrasyonKaydedici.run", e)
             self.hata_olustu.emit(str(e))
         finally:
             if db: db.close()
@@ -168,40 +169,6 @@ class KalibrasyonTakipPage(QWidget):
         v_islem_tarihi = QVBoxLayout(); v_islem_tarihi.setSpacing(3)
         lbl_islem_tarihi = QLabel("İşlem Tarihi:"); lbl_islem_tarihi.setStyleSheet(S["label"])
         v_islem_tarihi.addWidget(lbl_islem_tarihi); v_islem_tarihi.addWidget(self.inputs["YapilanTarih"])
-        
-        cal = self.inputs["YapilanTarih"].calendarWidget()
-        cal.setMinimumWidth(350)
-        cal.setMinimumHeight(250)
-        cal.setStyleSheet("""
-            QCalendarWidget {
-                background-color: #1e202c;
-                color: #e0e2ea;
-            }
-            QCalendarWidget QToolButton {
-                background-color: #1e202c;
-                color: #e0e2ea;
-                border: none; padding: 6px 10px;
-                font-size: 13px; font-weight: bold;
-            }
-            QCalendarWidget QToolButton:hover {
-                background-color: rgba(29, 117, 254, 0.3);
-                border-radius: 4px;
-            }
-            QCalendarWidget QMenu {
-                background-color: #1e202c; color: #e0e2ea;
-            }
-            QCalendarWidget QSpinBox {
-                background-color: #1e202c; color: #e0e2ea;
-                border: 1px solid #292b41; font-size: 13px;
-            }
-            QCalendarWidget #qt_calendar_navigationbar {
-                background-color: #16172b;
-                border-bottom: 1px solid rgba(255,255,255,0.08);
-                padding: 4px;
-            }
-        """)
-        cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
-
         h_tarih.addLayout(v_islem_tarihi)
 
         self.inputs["GecerlilikSuresi"] = QComboBox(); self.inputs["GecerlilikSuresi"].addItems(["1 Yıl", "6 Ay", "2 Yıl", "3 Yıl", "Tek Seferlik"]); self.inputs["GecerlilikSuresi"].setStyleSheet(S["combo"]); self.inputs["GecerlilikSuresi"].currentTextChanged.connect(self._tarih_hesapla)
@@ -257,21 +224,44 @@ class KalibrasyonTakipPage(QWidget):
         self.txt_ara.setPlaceholderText("🔍 Listede Ara...")
         self.txt_ara.setStyleSheet(S["search"])
         self.txt_ara.textChanged.connect(self._tabloyu_filtrele)
+
         btn_yenile = QPushButton("⟳ Yenile")
         btn_yenile.setFixedSize(100, 36)
         btn_yenile.setStyleSheet(S["refresh_btn"])
         btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         btn_yenile.clicked.connect(self.load_data)
-        self.btn_kapat = QPushButton("✕"); self.btn_kapat.setFixedSize(36, 36); self.btn_kapat.setStyleSheet(S["close_btn"]); self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
-        h_header.addWidget(self.txt_ara); h_header.addWidget(btn_yenile); h_header.addWidget(self.btn_kapat)
+
+        self.btn_kapat = QPushButton("✕ Kapat")
+        self.btn_kapat.setFixedSize(100, 36)
+        self.btn_kapat.setStyleSheet(S["close_btn"])
+        self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
+        h_header.addWidget(self.txt_ara)
+        h_header.addWidget(btn_yenile)
+        h_header.addWidget(self.btn_kapat)
         sag.addLayout(h_header)
 
-        self.tablo = QTableWidget(); self.tablo.setColumnCount(6); self.tablo.setHorizontalHeaderLabels(["ID", "Cihaz", "Firma", "Bitiş Tarihi", "Durum", "Belge"])
-        hdr = self.tablo.horizontalHeader(); hdr.setSectionResizeMode(QHeaderView.Stretch); hdr.setSectionResizeMode(0, QHeaderView.ResizeToContents); hdr.setSectionResizeMode(4, QHeaderView.ResizeToContents); hdr.setSectionResizeMode(5, QHeaderView.ResizeToContents)
-        self.tablo.setSelectionBehavior(QAbstractItemView.SelectRows); self.tablo.setEditTriggers(QAbstractItemView.NoEditTriggers); self.tablo.verticalHeader().setVisible(False); self.tablo.setAlternatingRowColors(True); self.tablo.setStyleSheet(S["table"]); self.tablo.cellClicked.connect(self._satir_secildi)
+        self.tablo = QTableWidget()
+        self.tablo.setColumnCount(6)
+        self.tablo.setHorizontalHeaderLabels(["ID", "Cihaz", "Firma", "Bitiş Tarihi", "Durum", "Belge"])
+        hdr = self.tablo.horizontalHeader()
+        hdr.setSectionResizeMode(QHeaderView.Stretch)
+        hdr.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        hdr.setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        hdr.setSectionResizeMode(5, QHeaderView.ResizeToContents)
+
+        self.tablo.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.tablo.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.tablo.verticalHeader().setVisible(False)
+        self.tablo.setAlternatingRowColors(True)
+        self.tablo.setStyleSheet(S["table"])
+        self.tablo.cellClicked.connect(self._satir_secildi)
         sag.addWidget(self.tablo, 1)
 
-        self.progress = QProgressBar(); self.progress.setVisible(False); self.progress.setFixedHeight(4); self.progress.setTextVisible(False); self.progress.setStyleSheet(S.get("progress", ""))
+        self.progress = QProgressBar()
+        self.progress.setVisible(False)
+        self.progress.setFixedHeight(4)
+        self.progress.setTextVisible(False)
+        self.progress.setStyleSheet(S.get("progress", ""))
         sag.addWidget(self.progress)
         main.addLayout(sag)
 
@@ -401,7 +391,9 @@ class KalibrasyonTakipPage(QWidget):
                 self.saver = KalibrasyonKaydedici(satirlar, mod="yeni", parent=self)
 
             self.saver.islem_tamam.connect(self._islem_bitti); self.saver.hata_olustu.connect(self._hata_goster); self.saver.start()
-        except Exception as e: self._hata_goster(str(e))
+        except Exception as e:
+            exc_logla("KalibrasyonTakip._kaydet_devam", e)
+            self._hata_goster(str(e))
 
     def _islem_bitti(self):
         self.progress.setVisible(False); self.btn_kaydet.setEnabled(True)
@@ -409,8 +401,11 @@ class KalibrasyonTakipPage(QWidget):
         QMessageBox.information(self, "Başarılı", msg); self.formu_temizle(); self.load_data()
 
     def _hata_goster(self, msg):
-        self.progress.setVisible(False); self.btn_kaydet.setEnabled(True)
-        self.btn_kaydet.setText("GÜNCELLE" if self.duzenleme_modu else "💾 KAYDET"); QMessageBox.critical(self, "Hata", msg)
+        self.progress.setVisible(False)
+        self.btn_kaydet.setEnabled(True)
+        self.btn_kaydet.setText("GÜNCELLE" if self.duzenleme_modu else "💾 KAYDET")
+        logger.error(f"[KalibrasyonTakipPage] {msg}")
+        QMessageBox.critical(self, "Hata", msg)
 
     def _tabloyu_filtrele(self, text):
         text = text.lower()

@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QColor, QCursor, QIntValidator
 
 from core.logger import logger
+from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
 
 # ─── Merkezi Stiller ───
@@ -133,6 +134,7 @@ class VeriYukleyiciThread(QThread):
 
             self.veri_hazir.emit(sabitler, maps, rke_data, muayene_data)
         except Exception as e:
+            exc_logla("RKEYonetim.Worker", e)
             self.hata_olustu.emit(f"Veri yükleme hatası: {e}")
         finally:
             if db:
@@ -165,6 +167,7 @@ class IslemKaydediciThread(QThread):
 
             self.islem_tamam.emit()
         except Exception as e:
+            exc_logla("RKEYonetim.Worker", e)
             self.hata_olustu.emit(f"İşlem hatası: {e}")
         finally:
             if db:

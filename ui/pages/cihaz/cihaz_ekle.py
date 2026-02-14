@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QCursor, QPixmap
 
 from core.logger import logger
+from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
 
 
@@ -38,6 +39,7 @@ class DriveUploadWorker(QThread):
             else:
                 self.error.emit(self._alan_adi, "Yükleme başarısız")
         except Exception as e:
+            exc_logla("CihazEkle.DosyaYukleyici", e)
             self.error.emit(self._alan_adi, str(e))
 
 

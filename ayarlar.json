@@ -92,6 +92,12 @@
                 "note": "Yıl sonu izin devir işlemleri"
             },
             {
+                "baslik": "Log Görüntüleyici",
+                "icon": "📜",
+                "implemented": true,
+                "note": "Uygulama log dosyalarını incele"
+            },
+            {
                 "baslik": "Ayarlar",
                 "icon": "⚙️",
                 "implemented": false

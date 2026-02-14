@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QColor, QCursor, QPalette, QStandardItemModel, QStandardItem
 
 from core.logger import logger
+from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
 
 # ─── Merkezi Stiller ───
@@ -182,6 +183,7 @@ class VeriYukleyiciThread(QThread):
 
             self.veri_hazir.emit(rke_data, teknik, kontrol_edenler, birim_sorumlulari, tum_muayene)
         except Exception as e:
+            exc_logla("RKEMuayene.Worker", e)
             self.hata_olustu.emit(str(e))
         finally:
             if db:
@@ -246,6 +248,7 @@ class KayitWorkerThread(QThread):
 
             self.kayit_tamam.emit("Kayıt Başarılı")
         except Exception as e:
+            exc_logla("RKEMuayene.Worker", e)
             self.hata_olustu.emit(str(e))
         finally:
             if db:
@@ -315,6 +318,7 @@ class TopluKayitWorkerThread(QThread):
 
             self.kayit_tamam.emit("Toplu Kayıt Başarılı")
         except Exception as e:
+            exc_logla("RKEMuayene.Worker", e)
             self.hata_olustu.emit(str(e))
         finally:
             if db:

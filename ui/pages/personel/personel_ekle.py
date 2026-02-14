@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QCursor, QPixmap
 
 from core.logger import logger
+from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
 
 
@@ -38,6 +39,7 @@ class DriveUploadWorker(QThread):
             else:
                 self.error.emit(self._alan_adi, "Yükleme başarısız")
         except Exception as e:
+            exc_logla("PersonelEkle.DosyaYukleyici", e)
             self.error.emit(self._alan_adi, str(e))
 
 # ─── W11 Dark Glass Stiller (MERKEZİ KAYNAKTAN) ───
@@ -309,8 +311,8 @@ class PersonelEklePage(QWidget):
         inp.setStyleSheet(S["input"])
         if placeholder:
             inp.setPlaceholderText(placeholder)
-        lay.addWidget(inp) # Add the input widget to its vertical layout
-        parent_layout.addWidget(container, 1) # Add the container to the parent horizontal layout with stretch
+        lay.addWidget(inp)
+        parent_layout.addWidget(container)
         return inp
 
     def _make_combo(self, label, parent_layout, required=False, editable=False):
@@ -325,8 +327,8 @@ class PersonelEklePage(QWidget):
         cmb = QComboBox()
         cmb.setStyleSheet(S["combo"])
         cmb.setEditable(editable)
-        lay.addWidget(cmb) # Add the combo box to its vertical layout
-        parent_layout.addWidget(container, 1) # Add the container to the parent horizontal layout with stretch
+        lay.addWidget(cmb)
+        parent_layout.addWidget(container)
         return cmb
 
     def _make_date(self, label, parent_layout, required=False):
@@ -393,7 +395,7 @@ class PersonelEklePage(QWidget):
         cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
 
         lay.addWidget(de)
-        parent_layout.addWidget(container, 1)
+        parent_layout.addWidget(container)
         return de
 
     # Dikey versiyon (eğitim bölümü için)

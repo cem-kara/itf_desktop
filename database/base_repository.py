@@ -113,6 +113,48 @@ class BaseRepository:
         cur = self.db.execute(f"SELECT * FROM {self.table}")
         return [dict(r) for r in cur.fetchall()]
 
+    def get_by_kod(self, kod_degeri: str, kolum: str = "Kod") -> list:
+        """
+        Belirtilen kolona göre filtreli kayıtları döner.
+        Varsayılan olarak 'Kod' kolonunu kullanır (Sabitler tablosu için).
+
+        Örnek:
+            sabitler_repo.get_by_kod("Ariza_Islem_Turu")
+            sabitler_repo.get_by_kod("aktif", kolum="Durum")
+        """
+        sql = f"SELECT * FROM {self.table} WHERE {kolum} = ?"
+        try:
+            cur = self.db.execute(sql, (kod_degeri,))
+            return [dict(r) for r in cur.fetchall()]
+        except Exception as exc:
+            logger.error(
+                f"BaseRepository.get_by_kod hatası — "
+                f"tablo={self.table}, kolum={kolum}, deger={kod_degeri}: {exc}"
+            )
+            return []
+
+    def get_where(self, kosullar: dict) -> list:
+        """
+        Birden fazla kolona göre filtreleme.
+
+        Örnek:
+            repo.get_where({"Durum": "aktif", "Tur": "A"})
+        """
+        if not kosullar:
+            return self.get_all()
+        where  = " AND ".join(f"{k}=?" for k in kosullar)
+        values = list(kosullar.values())
+        sql    = f"SELECT * FROM {self.table} WHERE {where}"
+        try:
+            cur = self.db.execute(sql, values)
+            return [dict(r) for r in cur.fetchall()]
+        except Exception as exc:
+            logger.error(
+                f"BaseRepository.get_where hatası — "
+                f"tablo={self.table}, kosullar={kosullar}: {exc}"
+            )
+            return []
+
     # ════════════════ SYNC ════════════════
 
     def get_dirty(self):

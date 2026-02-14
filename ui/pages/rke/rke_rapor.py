@@ -28,6 +28,7 @@ from PySide6.QtGui import (
 from PySide6.QtCore import QMarginsF
 
 from core.logger import logger
+from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
 
 # ─── Merkezi Stiller ───
@@ -295,6 +296,7 @@ class VeriYukleyiciThread(QThread):
                 sirali_tarih
             )
         except Exception as e:
+            exc_logla("RKERapor.Worker", e)
             self.hata_olustu.emit(str(e))
         finally:
             if db:
@@ -369,8 +371,8 @@ class RaporOlusturucuThread(QThread):
                 try:
                     if os.path.exists(f):
                         os.remove(f)
-                except Exception:
-                    pass
+                except Exception as _e:
+                    logger.warning(f"Geçici dosya silinemedi: {f} — {_e}")
             self.islem_bitti.emit()
 
     def _yukle_drive(self, dosya_adi: str):

@@ -223,6 +223,14 @@ class YilSonuIslemleriPage(QWidget):
         self._setup_ui()
         self._connect_signals()
 
+    def load_data(self):
+        """
+        Bu sayfa başlangıçta veri yüklemez.
+        Arayüz standardı için boş metod.
+        İşlemler kullanıcı onayı ile başlar.
+        """
+        pass
+
     # ----------------------------------------------------------
     def _setup_ui(self):
         main = QVBoxLayout(self)
@@ -320,8 +328,8 @@ class YilSonuIslemleriPage(QWidget):
         sep_v.setFixedHeight(30)
         sep_v.setStyleSheet("background-color: rgba(255,255,255,0.08);")
 
-        self.btn_kapat = QPushButton("Kapat")
-        self.btn_kapat.setFixedHeight(46)
+        self.btn_kapat = QPushButton("✕ Kapat")
+        self.btn_kapat.setFixedHeight(36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S.get("close_btn", ""))
 

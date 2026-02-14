@@ -8,7 +8,7 @@ Kapsam:
   3. Çoklu dönem satırı oluşturma (_kaydet_devam)
   4. İlk/sonraki satır içerik doğrulaması
   5. Tarih sıralaması tutarlılığı
-  6. Sütun adı uyumsuzluğu belgeleme (Kalibrasyonid vs Kalid)
+  6. Sütun adı uyumsuzluğu belgeleme (Kalid vs Kalid)
 """
 import pytest
 import datetime
@@ -51,7 +51,7 @@ def _satirlari_olustur(baslangic: datetime.date, gecerlilik: str,
                     if ay_adim > 0 else baslangic)
         ilk = (i == 0)
         satirlar.append({
-            "Kalibrasyonid":    f"KAL-{base_id + i}",
+            "Kalid":    f"KAL-{base_id + i}",
             "Cihazid":          cihaz_id,
             "Firma":            firma if ilk else "",
             "SertifikaNo":      "SERT-001" if ilk else "",
@@ -179,7 +179,7 @@ class TestIlkSatir:
         assert self.ilk["BitisTarihi"] == "2025-01-15"
 
     def test_kal_prefix(self):
-        assert self.ilk["Kalibrasyonid"].startswith("KAL-")
+        assert self.ilk["Kalid"].startswith("KAL-")
 
 
 # =============================================================
@@ -206,7 +206,7 @@ class TestSonrakiSatirlar:
         assert self.s[-1]["Durum"] == "Planlandı"
 
     def test_benzersiz_idler(self):
-        ids = [s["Kalibrasyonid"] for s in self.s]
+        ids = [s["Kalid"] for s in self.s]
         assert len(ids) == len(set(ids))
 
 
@@ -259,7 +259,7 @@ class TestKalibrasyonSutunUyumu:
     def test_sutun_adı_pk_uyumu(self):
         """
         ✅ kalibrasyon_takip.py PK'sı table_config ile uyumlu olmalı.
-        (Düzeltildi: 'Kalibrasyonid' -> 'Kalid' olarak güncellendi.)
+        (Düzeltildi: 'Kalid' -> 'Kalid' olarak güncellendi.)
         """
         from database.table_config import TABLES
         pk = TABLES["Kalibrasyon"]["pk"]

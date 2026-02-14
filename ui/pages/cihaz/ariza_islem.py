@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-import logging
 from datetime import datetime
 
 from PySide6.QtCore import Qt, QDate, QThread, Signal
@@ -9,11 +8,9 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
                                QLabel, QLineEdit, QComboBox, QDateEdit, QPushButton, 
                                QMessageBox, QFrame, QProgressBar, QTextEdit, QFileDialog)
 
+from core.logger import logger
+from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
-
-# --- LOGLAMA ---
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("ArizaIslem")
 
 # Merkezi stil
 S = ThemeManager.get_all_component_styles()
@@ -48,12 +45,12 @@ class VeriYukleyici(QThread):
             
             # Sabitleri yükle
             sabitler_repo = registry.get("Sabitler")
-            all_sabit = sabitler_repo.get_all()
-            islem_turleri = [s.get("MenuEleman") for s in all_sabit if s.get("Kod") == "Ariza_Islem_Turu"]
-            durum_secenekleri = [s.get("MenuEleman") for s in all_sabit if s.get("Kod") == "Ariza_Durum"]
+            islem_turleri = [s.get("MenuEleman") for s in sabitler_repo.get_by_kod("Ariza_Islem_Turu")]
+            durum_secenekleri = [s.get("MenuEleman") for s in sabitler_repo.get_by_kod("Ariza_Durum")]
 
             self.veri_hazir.emit(ariza_bilgisi, gecmis_islemler, islem_turleri, durum_secenekleri)
         except Exception as e:
+            exc_logla("ArizaIslem.VeriYukleyici.run", e)
             self.hata_olustu.emit(str(e))
         finally:
             if db: db.close()
@@ -88,6 +85,7 @@ class IslemKaydedici(QThread):
             
             self.islem_tamam.emit()
         except Exception as e:
+            exc_logla("ArizaIslem.IslemKaydedici.run", e)
             self.hata_olustu.emit(str(e))
         finally:
             if db: db.close()
@@ -252,7 +250,7 @@ class ArizaIslemPenceresi(QWidget):
 
         # Butonlar
         h_btn = QHBoxLayout()
-        self.btn_kapat = QPushButton("Vazgeç")
+        self.btn_kapat = QPushButton("✕ Vazgeç")
         self.btn_kapat.setStyleSheet(S["cancel_btn"])
         self.btn_kapat.clicked.connect(self.kapanma_istegi.emit)
         
@@ -269,9 +267,6 @@ class ArizaIslemPenceresi(QWidget):
     # ─── Yardımcılar ──────────────────────────────────────────
 
     def _add_lbl_input(self, layout, text, key, read_only=False):
-        col = QVBoxLayout()
-        col.setContentsMargins(0, 0, 0, 0)
-        col.setSpacing(2)
         lbl = QLabel(text)
         lbl.setStyleSheet("color:#aaa; font-size:11px;")
         w = QLineEdit()
@@ -279,9 +274,8 @@ class ArizaIslemPenceresi(QWidget):
         if read_only:
             w.setReadOnly(True)
         self.inputs[key] = w
-        col.addWidget(lbl)
-        col.addWidget(w)
-        layout.addLayout(col, 1)
+        layout.addWidget(lbl)
+        layout.addWidget(w)
 
     def _add_lbl_combo(self, layout, text, key, items):
         col = QVBoxLayout()
@@ -295,12 +289,9 @@ class ArizaIslemPenceresi(QWidget):
         self.inputs[key] = cb
         col.addWidget(lbl)
         col.addWidget(cb)
-        layout.addLayout(col, 1)
+        layout.addLayout(col)
 
     def _add_lbl_date(self, layout, text, key):
-        col = QVBoxLayout()
-        col.setContentsMargins(0, 0, 0, 0)
-        col.setSpacing(2)
         lbl = QLabel(text)
         lbl.setStyleSheet("color:#aaa; font-size:11px;")
         de = QDateEdit()
@@ -308,59 +299,9 @@ class ArizaIslemPenceresi(QWidget):
         de.setDisplayFormat("dd.MM.yyyy")
         de.setDate(QDate.currentDate())
         de.setStyleSheet(S["date"])
-
-        # Takvim popup düzeltmesi
-        cal = de.calendarWidget()
-        cal.setMinimumWidth(350)
-        cal.setMinimumHeight(250)
-        cal.setStyleSheet("""
-            QCalendarWidget {
-                background-color: #1e202c;
-                color: #e0e2ea;
-            }
-            QCalendarWidget QToolButton {
-                background-color: #1e202c;
-                color: #e0e2ea;
-                border: none; padding: 6px 10px;
-                font-size: 13px; font-weight: bold;
-            }
-            QCalendarWidget QToolButton:hover {
-                background-color: rgba(29, 117, 254, 0.3);
-                border-radius: 4px;
-            }
-            QCalendarWidget QMenu {
-                background-color: #1e202c; color: #e0e2ea;
-            }
-            QCalendarWidget QSpinBox {
-                background-color: #1e202c; color: #e0e2ea;
-                border: 1px solid #292b41; font-size: 13px;
-            }
-            QCalendarWidget QAbstractItemView {
-                background-color: #1e202c;
-                color: #c8cad0;
-                selection-background-color: rgba(29, 117, 254, 0.4);
-                selection-color: #ffffff;
-                font-size: 13px;
-                outline: none;
-            }
-            QCalendarWidget QAbstractItemView:enabled {
-                color: #c8cad0;
-            }
-            QCalendarWidget QAbstractItemView:disabled {
-                color: #5a5d6e;
-            }
-            QCalendarWidget #qt_calendar_navigationbar {
-                background-color: #16172b;
-                border-bottom: 1px solid rgba(255,255,255,0.08);
-                padding: 4px;
-            }
-        """)
-        cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
-
         self.inputs[key] = de
-        col.addWidget(lbl)
-        col.addWidget(de)
-        layout.addLayout(col, 1)
+        layout.addWidget(lbl)
+        layout.addWidget(de)
 
     # --- MANTIK ---
     def yukle(self, ariza_id):
@@ -385,6 +326,7 @@ class ArizaIslemPenceresi(QWidget):
         self.secilen_rapor_yolu = None
 
         if not ariza_info:
+            logger.error(f"[ArizaIslem] Arıza kaydı bulunamadı! ariza_id={self._loader.ariza_id if hasattr(self, '_loader') else 'N/A'}")
             QMessageBox.critical(self, "Hata", "Arıza kaydı bulunamadı!")
             self.close()
             return
@@ -518,11 +460,13 @@ class ArizaIslemPenceresi(QWidget):
         self.kapanma_istegi.emit()
 
     def _on_upload_error(self, hata_mesaji):
+        logger.warning(f"[ArizaIslem] Dosya yükleme hatası: {hata_mesaji}")
         QMessageBox.warning(self, "Dosya Yükleme Hatası", hata_mesaji)
         self._kaydet_devam("") # Dosya yüklenemese de işlemi kaydet
 
     def hata_goster(self, msg):
         self.progress.setRange(0, 100)
+        logger.error(f"[ArizaIslem] {msg}")
         QMessageBox.critical(self, "Hata", msg)
         self.btn_kaydet.setEnabled(True)
         self.btn_kaydet.setText("Kaydet")

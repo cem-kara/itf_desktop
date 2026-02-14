@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QCursor, QPixmap, QRegularExpressionValidator
 
 from core.logger import logger
+from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
 
 
@@ -39,6 +40,7 @@ class DriveUploadWorker(QThread):
             else:
                 self.error.emit(self._alan_adi, "Yükleme başarısız")
         except Exception as e:
+            exc_logla("PersonelDetay.DosyaYukleyici", e)
             self.error.emit(self._alan_adi, str(e))
 
 
@@ -440,7 +442,7 @@ class PersonelDetayPage(QWidget):
         if placeholder:
             inp.setPlaceholderText(placeholder)
         lay.addWidget(inp)
-        parent_layout.addWidget(container, 1)
+        parent_layout.addWidget(container)
         return inp
 
     def _make_combo(self, label, parent_layout, editable=False):
@@ -456,7 +458,7 @@ class PersonelDetayPage(QWidget):
         cmb.setStyleSheet(S["combo"])
         cmb.setEditable(editable)
         lay.addWidget(cmb)
-        parent_layout.addWidget(container, 1)
+        parent_layout.addWidget(container)
         return cmb
 
     def _make_date(self, label, parent_layout):
@@ -504,7 +506,7 @@ class PersonelDetayPage(QWidget):
         cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
 
         lay.addWidget(de)
-        parent_layout.addWidget(container, 1)
+        parent_layout.addWidget(container)
         return de
 
     def _make_input_v(self, label, parent_layout, placeholder=""):

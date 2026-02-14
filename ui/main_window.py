@@ -235,6 +235,10 @@ class MainWindow(QMainWindow):
             page.load_data()
             return page
 
+        if baslik == "Log Görüntüleyici":
+            from ui.pages.admin.log_goruntuleme import LogGoruntuleme
+            return LogGoruntuleme(db=self._db)
+        
         if baslik == "Ayarlar":
             from ui.pages.admin.yonetim_ayarlar import AyarlarPenceresi
             page = AyarlarPenceresi(db=self._db)
