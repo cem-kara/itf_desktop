@@ -61,9 +61,8 @@ class DashboardWorker(QThread):
             one_month_later = (today + timedelta(days=30)).strftime('%Y-%m-%d')
             data['yaklasan_rke'] = self._get_count(
                 registry,
-                "RKE_Muayene",
-                f"(FMuayeneTarihi BETWEEN '{today_str}' AND '{one_month_later}' OR "
-                f"SMuayeneTarihi BETWEEN '{today_str}' AND '{one_month_later}') AND Durum = 'Planlandı'"
+                "RKE_List",
+                f"KontrolTarihi BETWEEN '{today_str}' AND '{one_month_later}' AND Durum = 'Planlandı'"
             )
 
             # --- MEVCUT SORGULAR ---

@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 
 from core.logger import logger
 from core.config import AppConfig
@@ -60,6 +61,16 @@ def main():
 
     app = QApplication(sys.argv)
     app.setApplicationName(AppConfig.APP_NAME)
+    app_icon_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "ui",
+        "styles",
+        "radyoloji_icon.ico",
+    )
+    if os.path.exists(app_icon_path):
+        app.setWindowIcon(QIcon(app_icon_path))
+    else:
+        logger.warning(f"Uygulama ikonu bulunamadı: {app_icon_path}")
 
     # 1️⃣ Log yönetimi başlatma (cleanup, monitoring, statistics)
     initialize_log_management()
@@ -70,6 +81,8 @@ def main():
     # 3️⃣ Ana pencere
     from ui.main_window import MainWindow
     window = MainWindow()
+    if os.path.exists(app_icon_path):
+        window.setWindowIcon(QIcon(app_icon_path))
     window.showMaximized()
 
     logger.info("Uygulama başlatıldı")
