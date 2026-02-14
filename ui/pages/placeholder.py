@@ -57,29 +57,17 @@ class WelcomePage(QWidget):
         icon.setAlignment(Qt.AlignCenter)
 
         base_ui_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        img_path = os.path.join(base_ui_dir, "styles", "repys_dark.svg")
+        img_path = os.path.join(base_ui_dir, "styles", "main.png")
 
         if os.path.exists(img_path):
             pixmap = QPixmap(img_path)
-            icon.setPixmap(pixmap.scaled(500, 500, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            icon.setPixmap(pixmap.scaled(800, 800, Qt.KeepAspectRatio, Qt.SmoothTransformation))
             icon.setStyleSheet("background: transparent;")
         else:
             icon.setText("🏥")
             icon.setStyleSheet("font-size: 56px; background: transparent;")
 
         layout.addWidget(icon)
-
-        title = QLabel(AppConfig.APP_NAME)
-        title.setStyleSheet(
-            "font-size: 28px; font-weight: bold; color: #e0e2ea; background: transparent;"
-        )
-        title.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title)
-
-        subtitle = QLabel("Yönetim Sistemi")
-        subtitle.setStyleSheet("font-size: 16px; color: #6bd3ff; background: transparent;")
-        subtitle.setAlignment(Qt.AlignCenter)
-        layout.addWidget(subtitle)
 
         hint = QLabel("Başlamak için sol menüden bir modül seçin")
         hint.setStyleSheet(
