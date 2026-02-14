@@ -27,6 +27,11 @@
                 "implemented": true
             },
             {
+                "baslik": "Saglik Takip",
+                "icon": "ST",
+                "implemented": true
+            },
+            {
                 "baslik": "Personel Verileri",
                 "icon": "📈",
                 "implemented": false,

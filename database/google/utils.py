@@ -96,6 +96,7 @@ TABLE_TO_SHEET_MAP = {
     "Izin_Giris":       ("personel", "Izin_Giris"),
     "Izin_Bilgi":       ("personel", "Izin_Bilgi"),
     "FHSZ_Puantaj":     ("personel", "FHSZ_Puantaj"),
+    "Personel_Saglik_Takip": ("personel", "Personel_Saglik_Takip"),
 
     # cihaz vt
     "Cihazlar":         ("cihaz", "Cihazlar"),

@@ -44,8 +44,8 @@ class TestSchemaVersion:
         migrator.set_schema_version(2, "v2")
         assert migrator.get_schema_version() == 2
 
-    def test_current_version_sabit_2(self, migrator):
-        assert migrator.CURRENT_VERSION == 2
+    def test_current_version_sabit_6(self, migrator):
+        assert migrator.CURRENT_VERSION == 6
 
     def test_schema_version_tablo_olusur(self, migrator):
         migrator.get_schema_version()

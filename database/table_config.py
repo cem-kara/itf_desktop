@@ -162,6 +162,24 @@ TABLES = {
             "Rapor"
         ],
         "date_fields": ["FMuayeneTarihi", "SMuayeneTarihi"],
+    },
+
+    "Personel_Saglik_Takip": {
+        "pk": "KayitNo",
+        "columns": [
+            "KayitNo", "Personelid", "AdSoyad", "Birim", "Yil",
+            "MuayeneTarihi", "SonrakiKontrolTarihi", "Sonuc", "Durum",
+            "DermatolojiMuayeneTarihi", "DermatolojiDurum", "DermatolojiAciklama",
+            "DahiliyeMuayeneTarihi", "DahiliyeDurum", "DahiliyeAciklama",
+            "GozMuayeneTarihi", "GozDurum", "GozAciklama",
+            "GoruntulemeMuayeneTarihi", "GoruntulemeDurum", "GoruntulemeAciklama",
+            "RaporDosya", "Notlar"
+        ],
+        "date_fields": [
+            "MuayeneTarihi", "SonrakiKontrolTarihi",
+            "DermatolojiMuayeneTarihi", "DahiliyeMuayeneTarihi",
+            "GozMuayeneTarihi", "GoruntulemeMuayeneTarihi"
+        ],
     }
 
 }

@@ -199,6 +199,13 @@ class MainWindow(QMainWindow):
             page.btn_kapat.clicked.connect(lambda: self._close_page("Puantaj Rapor"))
             return page
 
+        if baslik == "Saglik Takip":
+            from ui.pages.personel.saglik_takip import SaglikTakipPage
+            page = SaglikTakipPage(db=self._db)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Saglik Takip"))
+            page.load_data()
+            return page
+
         if baslik == "Cihaz Ekle":
             from ui.pages.cihaz.cihaz_ekle import CihazEklePage
             page = CihazEklePage(

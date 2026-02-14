@@ -16,6 +16,7 @@ MENU_ICONS = {
     "İzin Takip":        "📅",
     "FHSZ Yönetim":      "📊",
     "Puantaj Rapor":     "📋",
+    "Saglik Takip":      "🩺",
     "Personel Verileri": "📈",
     "Cihaz Listesi":     "🔬",
     "Cihaz Ekle":        "🆕",

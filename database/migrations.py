@@ -19,7 +19,7 @@ class MigrationManager:
     """
     
     # Mevcut şema versiyonu
-    CURRENT_VERSION = 2
+    CURRENT_VERSION = 6
     
     def __init__(self, db_path):
         self.db_path = db_path
@@ -229,6 +229,202 @@ class MigrationManager:
             conn.commit()
             logger.info("v2: sync_status ve updated_at kolonları eklendi")
             
+        finally:
+            conn.close()
+
+    def _migrate_to_v3(self):
+        """
+        v2 → v3: Personel_Saglik_Takip tablosu ekleme (MVP saglik takip).
+        """
+        conn = self.connect()
+        cur = conn.cursor()
+
+        try:
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS Personel_Saglik_Takip (
+                KayitNo TEXT PRIMARY KEY,
+                Personelid TEXT,
+                AdSoyad TEXT,
+                Birim TEXT,
+                Yil INTEGER,
+                MuayeneTarihi TEXT,
+                SonrakiKontrolTarihi TEXT,
+                Sonuc TEXT,
+                Durum TEXT,
+                RaporDosya TEXT,
+                Notlar TEXT,
+                sync_status TEXT DEFAULT 'clean',
+                updated_at TEXT
+            )
+            """)
+            conn.commit()
+            logger.info("v3: Personel_Saglik_Takip tablosu olusturuldu")
+        finally:
+            conn.close()
+
+    def _migrate_to_v4(self):
+        """
+        v3 → v4: Personel_Saglik_Takip tablosuna sync kolonlari ekleme.
+        """
+        conn = self.connect()
+        cur = conn.cursor()
+
+        try:
+            cur.execute("""
+                SELECT name FROM sqlite_master
+                WHERE type='table' AND name='Personel_Saglik_Takip'
+            """)
+            if not cur.fetchone():
+                logger.warning("Tablo bulunamadi: Personel_Saglik_Takip, v4 atlandi")
+                conn.commit()
+                return
+
+            cur.execute("PRAGMA table_info(Personel_Saglik_Takip)")
+            existing_columns = {row[1] for row in cur.fetchall()}
+
+            if "sync_status" not in existing_columns:
+                cur.execute("""
+                    ALTER TABLE Personel_Saglik_Takip
+                    ADD COLUMN sync_status TEXT DEFAULT 'clean'
+                """)
+                logger.info("  Personel_Saglik_Takip.sync_status eklendi")
+
+            if "updated_at" not in existing_columns:
+                cur.execute("""
+                    ALTER TABLE Personel_Saglik_Takip
+                    ADD COLUMN updated_at TEXT
+                """)
+                logger.info("  Personel_Saglik_Takip.updated_at eklendi")
+
+            conn.commit()
+            logger.info("v4: Personel_Saglik_Takip sync kolonlari hazir")
+        finally:
+            conn.close()
+
+    def _migrate_to_v5(self):
+        """
+        v4 → v5: Personel_Saglik_Takip tablosuna 4 muayene alanlari ekleme.
+        """
+        conn = self.connect()
+        cur = conn.cursor()
+        try:
+            cur.execute("""
+                SELECT name FROM sqlite_master
+                WHERE type='table' AND name='Personel_Saglik_Takip'
+            """)
+            if not cur.fetchone():
+                logger.warning("Tablo bulunamadi: Personel_Saglik_Takip, v5 atlandi")
+                conn.commit()
+                return
+
+            cur.execute("PRAGMA table_info(Personel_Saglik_Takip)")
+            existing = {row[1] for row in cur.fetchall()}
+            new_cols = [
+                ("DermatolojiMuayeneTarihi", "TEXT"),
+                ("DermatolojiDurum", "TEXT"),
+                ("DermatolojiAciklama", "TEXT"),
+                ("DahiliyeMuayeneTarihi", "TEXT"),
+                ("DahiliyeDurum", "TEXT"),
+                ("DahiliyeAciklama", "TEXT"),
+                ("GozMuayeneTarihi", "TEXT"),
+                ("GozDurum", "TEXT"),
+                ("GozAciklama", "TEXT"),
+                ("GoruntulemeMuayeneTarihi", "TEXT"),
+                ("GoruntulemeDurum", "TEXT"),
+                ("GoruntulemeAciklama", "TEXT"),
+            ]
+            for col_name, col_type in new_cols:
+                if col_name not in existing:
+                    cur.execute(f"ALTER TABLE Personel_Saglik_Takip ADD COLUMN {col_name} {col_type}")
+                    logger.info(f"  Personel_Saglik_Takip.{col_name} eklendi")
+
+            conn.commit()
+            logger.info("v5: Personel_Saglik_Takip muayene alanlari hazir")
+        finally:
+            conn.close()
+
+    def _migrate_to_v6(self):
+        """
+        v5 → v6: Personel_Saglik_Takip tablosundan
+        DozimetreUygun/BelirtiVar/GozSevkGerekli kolonlarini kaldir.
+        """
+        conn = self.connect()
+        cur = conn.cursor()
+        try:
+            cur.execute("""
+                SELECT name FROM sqlite_master
+                WHERE type='table' AND name='Personel_Saglik_Takip'
+            """)
+            if not cur.fetchone():
+                logger.warning("Tablo bulunamadi: Personel_Saglik_Takip, v6 atlandi")
+                conn.commit()
+                return
+
+            cur.execute("PRAGMA table_info(Personel_Saglik_Takip)")
+            existing = {row[1] for row in cur.fetchall()}
+            drop_cols = {"DozimetreUygun", "BelirtiVar", "GozSevkGerekli"}
+
+            if not (existing & drop_cols):
+                logger.info("v6: Kaldirilacak kolon yok, atlandi")
+                conn.commit()
+                return
+
+            # SQLite'da güvenli kolon kaldırma için tabloyu yeniden oluştur.
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS Personel_Saglik_Takip_new (
+                KayitNo TEXT PRIMARY KEY,
+                Personelid TEXT,
+                AdSoyad TEXT,
+                Birim TEXT,
+                Yil INTEGER,
+                MuayeneTarihi TEXT,
+                SonrakiKontrolTarihi TEXT,
+                Sonuc TEXT,
+                Durum TEXT,
+                DermatolojiMuayeneTarihi TEXT,
+                DermatolojiDurum TEXT,
+                DermatolojiAciklama TEXT,
+                DahiliyeMuayeneTarihi TEXT,
+                DahiliyeDurum TEXT,
+                DahiliyeAciklama TEXT,
+                GozMuayeneTarihi TEXT,
+                GozDurum TEXT,
+                GozAciklama TEXT,
+                GoruntulemeMuayeneTarihi TEXT,
+                GoruntulemeDurum TEXT,
+                GoruntulemeAciklama TEXT,
+                RaporDosya TEXT,
+                Notlar TEXT,
+                sync_status TEXT DEFAULT 'clean',
+                updated_at TEXT
+            )
+            """)
+
+            cur.execute("""
+            INSERT INTO Personel_Saglik_Takip_new (
+                KayitNo, Personelid, AdSoyad, Birim, Yil,
+                MuayeneTarihi, SonrakiKontrolTarihi, Sonuc, Durum,
+                DermatolojiMuayeneTarihi, DermatolojiDurum, DermatolojiAciklama,
+                DahiliyeMuayeneTarihi, DahiliyeDurum, DahiliyeAciklama,
+                GozMuayeneTarihi, GozDurum, GozAciklama,
+                GoruntulemeMuayeneTarihi, GoruntulemeDurum, GoruntulemeAciklama,
+                RaporDosya, Notlar, sync_status, updated_at
+            )
+            SELECT
+                KayitNo, Personelid, AdSoyad, Birim, Yil,
+                MuayeneTarihi, SonrakiKontrolTarihi, Sonuc, Durum,
+                DermatolojiMuayeneTarihi, DermatolojiDurum, DermatolojiAciklama,
+                DahiliyeMuayeneTarihi, DahiliyeDurum, DahiliyeAciklama,
+                GozMuayeneTarihi, GozDurum, GozAciklama,
+                GoruntulemeMuayeneTarihi, GoruntulemeDurum, GoruntulemeAciklama,
+                RaporDosya, Notlar, sync_status, updated_at
+            FROM Personel_Saglik_Takip
+            """)
+
+            cur.execute("DROP TABLE Personel_Saglik_Takip")
+            cur.execute("ALTER TABLE Personel_Saglik_Takip_new RENAME TO Personel_Saglik_Takip")
+            conn.commit()
+            logger.info("v6: Dozimetre/Belirti/GozSevk kolonlari kaldirildi")
         finally:
             conn.close()
 
@@ -530,6 +726,38 @@ class MigrationManager:
         )
         """)
 
+        # ---------------- PERSONEL SAGLIK TAKIP ----------------
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Personel_Saglik_Takip (
+            KayitNo TEXT PRIMARY KEY,
+            Personelid TEXT,
+            AdSoyad TEXT,
+            Birim TEXT,
+            Yil INTEGER,
+            MuayeneTarihi TEXT,
+            SonrakiKontrolTarihi TEXT,
+            Sonuc TEXT,
+            Durum TEXT,
+            DermatolojiMuayeneTarihi TEXT,
+            DermatolojiDurum TEXT,
+            DermatolojiAciklama TEXT,
+            DahiliyeMuayeneTarihi TEXT,
+            DahiliyeDurum TEXT,
+            DahiliyeAciklama TEXT,
+            GozMuayeneTarihi TEXT,
+            GozDurum TEXT,
+            GozAciklama TEXT,
+            GoruntulemeMuayeneTarihi TEXT,
+            GoruntulemeDurum TEXT,
+            GoruntulemeAciklama TEXT,
+            RaporDosya TEXT,
+            Notlar TEXT,
+
+            sync_status TEXT DEFAULT 'clean',
+            updated_at TEXT
+        )
+        """)
+
     # ════════════════════════════════════════════════
     # ESKI RESET METODU (ACİL DURUMLARDA)
     # ════════════════════════════════════════════════
@@ -555,7 +783,7 @@ class MigrationManager:
             "Personel", "Izin_Giris", "Izin_Bilgi", "FHSZ_Puantaj",
             "Cihazlar", "Cihaz_Ariza", "Ariza_Islem", "Periyodik_Bakim",
             "Kalibrasyon", "Sabitler", "Tatiller", "Loglar",
-            "RKE_List", "RKE_Muayene", "schema_version"
+            "RKE_List", "RKE_Muayene", "Personel_Saglik_Takip", "schema_version"
         ]
 
         for table in tables:
