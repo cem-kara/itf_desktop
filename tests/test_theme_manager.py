@@ -300,8 +300,10 @@ class TestTableConfigPersonelKolonlar:
         assert "AitYil"     in pk
         assert "Donem"      in pk
 
-    def test_tatiller_pull_only(self, tables):
-        assert tables["Tatiller"].get("sync_mode") == "pull_only"
+    def test_tatiller_two_way(self, tables):
+        cfg = tables["Tatiller"]
+        assert cfg.get("sync_mode") != "pull_only"
+        assert cfg.get("sync", True) is not False
 
     def test_tatiller_kolonlar(self, tables):
         cols = tables["Tatiller"]["columns"]

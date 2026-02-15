@@ -11,6 +11,40 @@ from database.table_config import TABLES
 from core.date_utils import looks_like_date_column, normalize_date_fields
 
 
+class SyncBatchError(RuntimeError):
+    """
+    Tüm tablo senkronizasyonunda birden fazla tablonun hata alması durumunu
+    yapılandırılmış olarak taşır.
+    """
+
+    def __init__(self, failures, total_tables=0, successful_tables=0):
+        self.failures = failures or []
+        self.total_tables = total_tables
+        self.successful_tables = successful_tables
+        failed_tables = [f.get("table", "?") for f in self.failures]
+        super().__init__(f"Şu tablolarda sync hatası: {', '.join(failed_tables)}")
+
+    def to_ui_messages(self, max_tables=3):
+        fail_count = len(self.failures)
+        short_msg = f"{fail_count} tabloda hata"
+
+        listed = [f.get("table", "?") for f in self.failures[:max_tables]]
+        detail_msg = f"Başarısız tablolar: {', '.join(listed)}"
+        if fail_count > max_tables:
+            detail_msg += f" ve {fail_count - max_tables} tablo daha"
+
+        return short_msg, detail_msg
+
+    def to_event(self):
+        return {
+            "event": "SYNC_BATCH_FAILED",
+            "total_tables": self.total_tables,
+            "successful_tables": self.successful_tables,
+            "failed_tables": len(self.failures),
+            "failures": self.failures,
+        }
+
+
 class SyncService:
     """
     Senkronizasyon servisi.
@@ -47,7 +81,7 @@ class SyncService:
 
         total = len(syncable)
         success = 0
-        errors = []
+        failures = []
 
         logger.info(f"Toplam {total} tablo senkronize edilecek")
 
@@ -64,32 +98,40 @@ class SyncService:
             except Exception as e:
                 error_type = type(e).__name__
                 error_msg = str(e)
-                
+                failure = {
+                    "event": "SYNC_TABLE_FAILED",
+                    "table": table_name,
+                    "step": "sync_table",
+                    "error_type": error_type,
+                    "error_msg": error_msg[:200],
+                    "table_index": i,
+                    "table_total": total,
+                }
+                 
                 logger.error(f"[{i}/{total}] {table_name} sync hatası: {error_type}")
                 log_sync_error(table_name, "sync_table", e)
-                
-                errors.append({
-                    'table': table_name,
-                    'error_type': error_type,
-                    'error_msg': error_msg[:100]  # İlk 100 karakter
-                })
-                
+                 
+                failures.append(failure)
+                 
                 # Bir tablo hata alırsa diğerlerine devam et
                 continue
 
         # Özet log
         logger.info("=" * 60)
         logger.info(f"SYNC ÖZETİ: {success}/{total} tablo başarılı")
-        if errors:
-            logger.error(f"Başarısız tablolar: {len(errors)}")
-            for err in errors:
-                logger.error(f"  - {err['table']}: {err['error_type']} - {err['error_msg']}")
+        if failures:
+            logger.error(f"Başarısız tablolar: {len(failures)}")
+            for fail in failures:
+                logger.error(
+                    f"  - {fail['table']}: {fail['error_type']} - {fail['error_msg']}"
+                )
         logger.info("=" * 60)
 
-        if errors:
-            failed_tables = [e['table'] for e in errors]
-            raise RuntimeError(
-                f"Şu tablolarda sync hatası: {', '.join(failed_tables)}"
+        if failures:
+            raise SyncBatchError(
+                failures=failures,
+                total_tables=total,
+                successful_tables=success,
             )
 
     # ═══════════════════════════════════════════════

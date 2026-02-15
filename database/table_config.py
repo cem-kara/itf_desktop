@@ -140,7 +140,7 @@ TABLES = {
     # ─────────────── RKE VT ───────────────
 
     "RKE_List": {
-        "pk": "EkipmanNo",                      # ← "Personelid" → "KayitNo" (migrations.py PK)
+        "pk": "EkipmanNo",                      # migrations.py ile uyumlu PK
         "columns": [
             "EkipmanNo","KoruyucuNumarasi","AnaBilimDali","Birim",
             "KoruyucuCinsi","KursunEsdegeri","HizmetYili","Bedeni","KontrolTarihi",
@@ -169,11 +169,11 @@ TABLES = {
         "columns": [
             "KayitNo", "Personelid", "AdSoyad", "Birim", "Yil",
             "MuayeneTarihi", "SonrakiKontrolTarihi", "Sonuc", "Durum",
+            "RaporDosya", "Notlar",
             "DermatolojiMuayeneTarihi", "DermatolojiDurum", "DermatolojiAciklama",
             "DahiliyeMuayeneTarihi", "DahiliyeDurum", "DahiliyeAciklama",
             "GozMuayeneTarihi", "GozDurum", "GozAciklama",
             "GoruntulemeMuayeneTarihi", "GoruntulemeDurum", "GoruntulemeAciklama",
-            "RaporDosya", "Notlar"
         ],
         "date_fields": [
             "MuayeneTarihi", "SonrakiKontrolTarihi",

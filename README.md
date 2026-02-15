@@ -456,7 +456,9 @@ python main.pyw  # Yeni DB oluşturulacak
 ## 📚 Dokümantasyon
 
 Daha fazla bilgi için:
+- [Operasyon ve Raporlama Merkezi](docs/OPERASYON_VE_RAPORLAMA_MERKEZI.md)
 - [Detaylı Proje Dokümantasyonu](docs/proje_dokumantasyonu.md)
+- [RKE Modül Dokümantasyonu](docs/RKE_MODUL_DOKUMANTASYONU.md)
 - [Gizli Bilgi Yönetimi](SECRETS_MANAGEMENT.md)
 - [Geliştirme TODO Listesi](TODO.md)
 

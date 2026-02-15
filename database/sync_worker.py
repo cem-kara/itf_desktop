@@ -3,7 +3,7 @@ from core.logger import logger, log_sync_error, get_user_friendly_error
 
 from database.sqlite_manager import SQLiteManager
 from database.repository_registry import RepositoryRegistry
-from database.sync_service import SyncService
+from database.sync_service import SyncService, SyncBatchError
 
 
 class SyncWorker(QThread):
@@ -33,8 +33,6 @@ class SyncWorker(QThread):
         logger.info("=" * 60)
 
         db = None
-        failed_tables = []
-        total_errors = []
 
         try:
             if not self._running:
@@ -53,28 +51,16 @@ class SyncWorker(QThread):
                 logger.info("Tüm tabloların senkronizasyonu başlıyor...")
                 sync_service.sync_all()
                 logger.info("✓ Tüm tablolar başarıyla senkronize edildi")
-                
-            except Exception as sync_error:
-                # sync_all içinde hangi tablolarda hata olduğunu yakala
-                error_msg = str(sync_error)
-                
-                # Hata mesajından tablo isimlerini çıkar
-                if "tablolarda sync hatası:" in error_msg:
-                    tables_part = error_msg.split("tablolarda sync hatası:")[-1]
-                    failed_tables = [t.strip() for t in tables_part.split(",")]
-                
-                # Kullanıcı dostu mesaj oluştur
-                short_msg, detail_msg = get_user_friendly_error(sync_error)
-                
-                if failed_tables:
-                    short_msg = f"{len(failed_tables)} tabloda hata"
-                    detail_msg = f"Başarısız tablolar: {', '.join(failed_tables[:3])}"
-                    if len(failed_tables) > 3:
-                        detail_msg += f" ve {len(failed_tables) - 3} tablo daha"
-                
+
+            except SyncBatchError as sync_error:
+                short_msg, detail_msg = sync_error.to_ui_messages(max_tables=3)
                 log_sync_error("GENEL", "sync_all", sync_error)
-                
-                # Kısmi başarı durumunda da hatayı bildir
+                self.error.emit(short_msg, detail_msg)
+                return
+
+            except Exception as sync_error:
+                short_msg, detail_msg = get_user_friendly_error(sync_error)
+                log_sync_error("GENEL", "sync_all", sync_error)
                 self.error.emit(short_msg, detail_msg)
                 return
 

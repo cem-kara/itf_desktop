@@ -267,6 +267,26 @@ class TestSyncAllHataYonetimi:
         svc.sync_all()  # exception olmamalı
         db.close()
 
+    def test_sync_batch_error_ui_mesajlari(self):
+        from database.sync_service import SyncBatchError
+
+        failures = [
+            {"table": "Tatiller", "error_type": "RuntimeError", "error_msg": "x"},
+            {"table": "Sabitler", "error_type": "ValueError", "error_msg": "y"},
+            {"table": "RKE_List", "error_type": "TypeError", "error_msg": "z"},
+            {"table": "Personel", "error_type": "KeyError", "error_msg": "w"},
+        ]
+        err = SyncBatchError(failures=failures, total_tables=10, successful_tables=6)
+
+        short_msg, detail_msg = err.to_ui_messages(max_tables=3)
+        event = err.to_event()
+
+        assert short_msg == "4 tabloda hata"
+        assert "Tatiller, Sabitler, RKE_List" in detail_msg
+        assert "ve 1 tablo daha" in detail_msg
+        assert event["event"] == "SYNC_BATCH_FAILED"
+        assert event["failed_tables"] == 4
+
 
 # ════════════════════════════════════════════════════════════
 #  5. SyncService — sync_table PUSH
@@ -401,22 +421,19 @@ class TestSyncTablePull:
 
 class TestPullReplace:
 
-    def test_pull_only_table_config(self):
-        """Tatiller pull_only olarak konfigure edilmiş olmalı."""
+    def test_tatiller_two_way_table_config(self):
+        """Tatiller iki yönlü sync çalışmalı (pull_only değil)."""
         from database.table_config import TABLES
-        assert TABLES["Tatiller"].get("sync_mode") == "pull_only"
+        cfg = TABLES["Tatiller"]
+        assert cfg.get("sync_mode") != "pull_only"
+        assert cfg.get("sync", True) is not False
 
-    def test_sabitler_pull_only(self):
+    def test_sabitler_two_way(self):
         from database.table_config import TABLES
-        # Sabitler'in sync_mode'u pull_only ise kontrol et
         if "Sabitler" in TABLES:
-            # sync False veya pull_only olabilir
             cfg = TABLES["Sabitler"]
-            is_pull_only = (
-                cfg.get("sync_mode") == "pull_only" or
-                cfg.get("sync", True) is False
-            )
-            assert is_pull_only
+            assert cfg.get("sync_mode") != "pull_only"
+            assert cfg.get("sync", True) is not False
 
     def test_tatiller_pk_tarih(self):
         from database.table_config import TABLES

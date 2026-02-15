@@ -97,7 +97,7 @@ class TestPkTanimlari:
         assert tables["Loglar"]["pk"] is None
 
     def test_rke_list_pk(self, tables):
-        assert tables["RKE_List"]["pk"] == "KayitNo"
+        assert tables["RKE_List"]["pk"] == "EkipmanNo"
 
     def test_rke_muayene_pk(self, tables):
         assert tables["RKE_Muayene"]["pk"] == "KayitNo"
@@ -175,11 +175,15 @@ class TestKritikKolonlar:
 # =============================================================
 class TestSyncModu:
 
-    def test_sabitler_pull_only(self, tables):
-        assert tables["Sabitler"].get("sync_mode") == "pull_only"
+    def test_sabitler_two_way(self, tables):
+        cfg = tables["Sabitler"]
+        assert cfg.get("sync_mode") != "pull_only"
+        assert cfg.get("sync", True) is not False
 
-    def test_tatiller_pull_only(self, tables):
-        assert tables["Tatiller"].get("sync_mode") == "pull_only"
+    def test_tatiller_two_way(self, tables):
+        cfg = tables["Tatiller"]
+        assert cfg.get("sync_mode") != "pull_only"
+        assert cfg.get("sync", True) is not False
 
     def test_loglar_sync_false(self, tables):
         """Loglar sync dışı olmalı."""
