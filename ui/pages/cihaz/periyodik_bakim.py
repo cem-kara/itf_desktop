@@ -331,6 +331,7 @@ class TopluPlanlamaDialog(QDialog):
         self._tarih.setCalendarPopup(True)
         self._tarih.setDisplayFormat("yyyy-MM-dd")
         self._tarih.setStyleSheet(date_style)
+        ThemeManager.setup_calendar_popup(self._tarih)
         self._tarih.dateChanged.connect(self._onizleme_guncelle)
         col2.addWidget(self._tarih)
 
@@ -829,46 +830,7 @@ class PeriyodikBakimPage(QWidget):
         main.addLayout(sag, 1)
 
     def _setup_calendar(self, date_edit):
-        cal = date_edit.calendarWidget()
-        cal.setMinimumWidth(350)
-        cal.setMinimumHeight(250)
-        cal.setStyleSheet("""
-            QCalendarWidget {
-                background-color: #1e202c;
-                color: #e0e2ea;
-            }
-            QCalendarWidget QToolButton {
-                background-color: #1e202c;
-                color: #e0e2ea;
-                border: none; padding: 6px 10px;
-                font-size: 13px; font-weight: bold;
-            }
-            QCalendarWidget QToolButton:hover {
-                background-color: rgba(29, 117, 254, 0.3);
-                border-radius: 4px;
-            }
-            QCalendarWidget QMenu {
-                background-color: #1e202c; color: #e0e2ea;
-            }
-            QCalendarWidget QSpinBox {
-                background-color: #1e202c; color: #e0e2ea;
-                border: 1px solid #292b41; font-size: 13px;
-            }
-            QCalendarWidget QAbstractItemView {
-                background-color: #1e202c;
-                color: #c8cad0;
-                selection-background-color: rgba(29, 117, 254, 0.4);
-                selection-color: #ffffff;
-                font-size: 13px;
-                outline: none;
-            }
-            QCalendarWidget #qt_calendar_navigationbar {
-                background-color: #16172b;
-                border-bottom: 1px solid rgba(255,255,255,0.08);
-                padding: 4px;
-            }
-        """)
-        cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
+        ThemeManager.setup_calendar_popup(date_edit)
 
     # ─── Veri Yükleme ─────────────────────────────────────────
 

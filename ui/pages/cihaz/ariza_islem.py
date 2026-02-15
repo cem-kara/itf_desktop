@@ -299,6 +299,7 @@ class ArizaIslemPenceresi(QWidget):
         de.setDisplayFormat("dd.MM.yyyy")
         de.setDate(QDate.currentDate())
         de.setStyleSheet(S["date"])
+        ThemeManager.setup_calendar_popup(de)
         self.inputs[key] = de
         layout.addWidget(lbl)
         layout.addWidget(de)

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import QObject
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication, QWidget, QDateEdit
 from PySide6.QtGui import QColor
 
 from core.logger import logger
@@ -133,4 +133,56 @@ class ThemeManager(QObject):
         widget.setProperty("variant", variant)
         widget.style().unpolish(widget)
         widget.style().polish(widget)
+
+    @staticmethod
+    def setup_calendar_popup(date_edit: QDateEdit) -> None:
+        """QDateEdit takvim popup stilini merkezi olarak uygular."""
+        cal = date_edit.calendarWidget()
+        cal.setMinimumWidth(350)
+        cal.setMinimumHeight(250)
+        cal.setStyleSheet(
+            """
+            QCalendarWidget {
+                background-color: #1e202c;
+                color: #e0e2ea;
+            }
+            QCalendarWidget QToolButton {
+                background-color: #1e202c;
+                color: #e0e2ea;
+                border: none; padding: 6px 10px;
+                font-size: 13px; font-weight: bold;
+            }
+            QCalendarWidget QToolButton:hover {
+                background-color: rgba(29, 117, 254, 0.3);
+                border-radius: 4px;
+            }
+            QCalendarWidget QMenu {
+                background-color: #1e202c; color: #e0e2ea;
+            }
+            QCalendarWidget QSpinBox {
+                background-color: #1e202c; color: #e0e2ea;
+                border: 1px solid #292b41; font-size: 13px;
+            }
+            QCalendarWidget QAbstractItemView {
+                background-color: #1e202c;
+                color: #c8cad0;
+                selection-background-color: rgba(29, 117, 254, 0.4);
+                selection-color: #ffffff;
+                font-size: 13px;
+                outline: none;
+            }
+            QCalendarWidget QAbstractItemView:enabled {
+                color: #c8cad0;
+            }
+            QCalendarWidget QAbstractItemView:disabled {
+                color: #5a5d6e;
+            }
+            QCalendarWidget #qt_calendar_navigationbar {
+                background-color: #16172b;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+                padding: 4px;
+            }
+            """
+        )
+        cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
 

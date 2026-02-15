@@ -386,6 +386,7 @@ class IstenAyrilikPage(QWidget):
         self.dt_tarih.setCalendarPopup(True)
         self.dt_tarih.setDisplayFormat("dd.MM.yyyy")
         self.dt_tarih.setStyleSheet(S["date"])
+        ThemeManager.setup_calendar_popup(self.dt_tarih)
         fg.addWidget(self.dt_tarih, 0, 1)
 
         lbl_n = QLabel("Ayrılma Nedeni")

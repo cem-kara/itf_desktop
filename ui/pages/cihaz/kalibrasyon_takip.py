@@ -165,7 +165,7 @@ class KalibrasyonTakipPage(QWidget):
         card_surec_layout.addWidget(lbl_sertifika); card_surec_layout.addWidget(self.inputs["SertifikaNo"])
 
         h_tarih = QHBoxLayout()
-        self.inputs["YapilanTarih"] = QDateEdit(QDate.currentDate()); self.inputs["YapilanTarih"].setCalendarPopup(True); self.inputs["YapilanTarih"].setDisplayFormat("yyyy-MM-dd"); self.inputs["YapilanTarih"].setStyleSheet(S["date"]); self.inputs["YapilanTarih"].dateChanged.connect(self._tarih_hesapla)
+        self.inputs["YapilanTarih"] = QDateEdit(QDate.currentDate()); self.inputs["YapilanTarih"].setCalendarPopup(True); self.inputs["YapilanTarih"].setDisplayFormat("yyyy-MM-dd"); self.inputs["YapilanTarih"].setStyleSheet(S["date"]); ThemeManager.setup_calendar_popup(self.inputs["YapilanTarih"]); self.inputs["YapilanTarih"].dateChanged.connect(self._tarih_hesapla)
         v_islem_tarihi = QVBoxLayout(); v_islem_tarihi.setSpacing(3)
         lbl_islem_tarihi = QLabel("İşlem Tarihi:"); lbl_islem_tarihi.setStyleSheet(S["label"])
         v_islem_tarihi.addWidget(lbl_islem_tarihi); v_islem_tarihi.addWidget(self.inputs["YapilanTarih"])

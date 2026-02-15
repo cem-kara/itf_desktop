@@ -424,7 +424,8 @@ class SaglikTakipPage(QWidget):
         de = QDateEdit(QDate.currentDate())
         de.setDisplayFormat("dd.MM.yyyy")
         de.setCalendarPopup(True)
-        de.setStyleSheet(S["input"])
+        de.setStyleSheet(S["date"])
+        ThemeManager.setup_calendar_popup(de)
         gl.addWidget(de, 0, 1)
 
         lbl_durum = QLabel("Durum")

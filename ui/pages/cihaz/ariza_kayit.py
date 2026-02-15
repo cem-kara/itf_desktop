@@ -292,6 +292,7 @@ class ArizaKayitPenceresi(QWidget):
             widget.setCalendarPopup(True)
             widget.setDisplayFormat("dd.MM.yyyy")
             widget.setDate(QDate.currentDate())
+            ThemeManager.setup_calendar_popup(widget)
         
         if widget:
             widget.setStyleSheet(S["input"] if tip != "combo" else S["combo"])

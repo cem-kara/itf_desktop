@@ -173,7 +173,7 @@ class AyarlarPenceresi(QWidget):
         layout = QVBoxLayout(self.tab_tatil)
         layout.setContentsMargins(15, 15, 15, 15)
         grp = QGroupBox("Yeni Tatil"); grp.setStyleSheet(S.get("group", "")); h = QHBoxLayout(grp)
-        self.date_tatil = QDateEdit(QDate.currentDate()); self.date_tatil.setCalendarPopup(True); self.date_tatil.setStyleSheet(S.get("date", ""))
+        self.date_tatil = QDateEdit(QDate.currentDate()); self.date_tatil.setCalendarPopup(True); self.date_tatil.setStyleSheet(S.get("date", "")); ThemeManager.setup_calendar_popup(self.date_tatil)
         self.txt_tatil_aciklama = QLineEdit(); self.txt_tatil_aciklama.setStyleSheet(S.get("input", "")); btn = QPushButton("EKLE"); btn.setStyleSheet(S.get("save_btn", "")); btn.clicked.connect(self.tatil_ekle)
         h.addWidget(QLabel("Tarih:")); h.addWidget(self.date_tatil)
         h.addWidget(QLabel("Açıklama:")); h.addWidget(self.txt_tatil_aciklama); h.addWidget(btn)
