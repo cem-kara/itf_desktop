@@ -19,7 +19,7 @@ class MigrationManager:
     """
     
     # Mevcut şema versiyonu
-    CURRENT_VERSION = 6
+    CURRENT_VERSION = 7
     
     def __init__(self, db_path):
         self.db_path = db_path
@@ -428,6 +428,42 @@ class MigrationManager:
         finally:
             conn.close()
 
+    def _migrate_to_v7(self):
+        """
+        v6 → v7: Personel tablosuna saglik ozet kolonlari ekleme.
+        - MuayeneTarihi (TEXT)
+        - Sonuc (TEXT)
+        """
+        conn = self.connect()
+        cur = conn.cursor()
+
+        try:
+            cur.execute("""
+                SELECT name FROM sqlite_master
+                WHERE type='table' AND name='Personel'
+            """)
+            if not cur.fetchone():
+                logger.warning("Tablo bulunamadi: Personel, v7 atlandi")
+                conn.commit()
+                return
+
+            cur.execute("PRAGMA table_info(Personel)")
+            existing = {row[1] for row in cur.fetchall()}
+
+            if "MuayeneTarihi" not in existing:
+                cur.execute("ALTER TABLE Personel ADD COLUMN MuayeneTarihi TEXT")
+                logger.info("  Personel.MuayeneTarihi eklendi")
+
+            if "Sonuc" not in existing:
+                cur.execute("ALTER TABLE Personel ADD COLUMN Sonuc TEXT")
+                logger.info("  Personel.Sonuc eklendi")
+
+            conn.commit()
+            logger.info("v7: Personel saglik ozet kolonlari hazir")
+
+        finally:
+            conn.close()
+
     # ════════════════════════════════════════════════
     # TABLO OLUŞTURMA (İLK KURULUM)
     # ════════════════════════════════════════════════
@@ -467,6 +503,8 @@ class MigrationManager:
             Durum TEXT,
             AyrilisTarihi TEXT,
             AyrilmaNedeni TEXT,
+            MuayeneTarihi TEXT,
+            Sonuc TEXT,
 
             sync_status TEXT DEFAULT 'clean',
             updated_at TEXT

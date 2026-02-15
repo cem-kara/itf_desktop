@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import uuid
 from datetime import date, datetime
 
@@ -80,8 +81,11 @@ class SaglikTakipPage(QWidget):
         super().__init__(parent)
         self._db = db
         self._all_rows = []
+        self._takip_rows = []
         self._personel_rows = []
         self._editing_id = None
+        self._selected_report_path = ""
+        self._drive_folders = {}
         self._exam_keys = ["Dermatoloji", "Dahiliye", "Goz", "Goruntuleme"]
         self._exam_widgets = {}
         self._setup_ui()
@@ -292,6 +296,7 @@ class SaglikTakipPage(QWidget):
             registry = RepositoryRegistry(self._db)
             personel_repo = registry.get("Personel")
             takip_repo = registry.get("Personel_Saglik_Takip")
+            sabit_repo = registry.get("Sabitler")
 
             all_personel = personel_repo.get_all()
             self._personel_rows = [
@@ -307,12 +312,59 @@ class SaglikTakipPage(QWidget):
                 label = f"{ad} ({kimlik})"
                 self.cmb_personel.addItem(label, {"KimlikNo": kimlik, "AdSoyad": ad, "Birim": birim})
 
-            self._all_rows = takip_repo.get_all()
+            self._takip_rows = takip_repo.get_all()
+            self._drive_folders = {
+                str(r.get("MenuEleman", "")).strip(): str(r.get("Aciklama", "")).strip()
+                for r in sabit_repo.get_all()
+                if r.get("Kod") == "Sistem_DriveID" and r.get("Aciklama", "").strip()
+            }
+            self._all_rows = self._build_personel_list_rows(all_personel)
             self._fill_filter_combos()
             self._apply_filters()
             logger.info(f"Saglik takip yüklendi: {len(self._all_rows)} kayit")
         except Exception as exc:
             logger.error(f"Saglik takip yukleme hatasi: {exc}")
+
+    def _build_personel_list_rows(self, all_personel):
+        rows = []
+        for p in all_personel:
+            if str(p.get("Durum", "")).strip().lower() == "pasif":
+                continue
+
+            muayene = to_db_date(p.get("MuayeneTarihi", ""))
+            d_muayene = parse_date(muayene)
+            if d_muayene:
+                try:
+                    sonraki = d_muayene.replace(year=d_muayene.year + 1).isoformat()
+                except ValueError:
+                    sonraki = d_muayene.replace(month=2, day=28, year=d_muayene.year + 1).isoformat()
+            else:
+                sonraki = ""
+
+            sonuc = str(p.get("Sonuc", "")).strip()
+            s_low = sonuc.lower()
+            if s_low == "uygun degil":
+                durum = "Riskli"
+            elif s_low == "sartli uygun":
+                durum = "Gecerli"
+            elif s_low == "uygun":
+                durum = "Gecikmis" if (parse_date(sonraki) and parse_date(sonraki) < date.today()) else "Gecerli"
+            else:
+                durum = "Planlandi"
+
+            yil = d_muayene.year if d_muayene else date.today().year
+            rows.append({
+                "KayitNo": "",
+                "Personelid": str(p.get("KimlikNo", "")).strip(),
+                "AdSoyad": str(p.get("AdSoyad", "")).strip(),
+                "Birim": str(p.get("GorevYeri", "")).strip(),
+                "Yil": yil,
+                "MuayeneTarihi": muayene,
+                "SonrakiKontrolTarihi": sonraki,
+                "Sonuc": sonuc,
+                "Durum": durum,
+            })
+        return rows
 
     def _fill_filter_combos(self):
         curr = self.cmb_birim_filter.currentText()
@@ -461,7 +513,56 @@ class SaglikTakipPage(QWidget):
             self, "Rapor Sec", "", "Dosyalar (*.pdf *.jpg *.jpeg *.png)"
         )
         if path:
+            self._selected_report_path = path
             self.inp_rapor.setText(path)
+
+    def _get_report_folder_id(self):
+        """Sabitler/Sistem_DriveID kayitlarindan saglik rapor klasorunu bulur."""
+        keys = [
+            "Saglik_Raporlari",
+                ]
+        for key in keys:
+            folder_id = str(self._drive_folders.get(key, "")).strip()
+            if folder_id:
+                return folder_id
+        return ""
+
+    def _upload_report_to_drive(self, tc_no, kayit_no):
+        """Secilen raporu Drive'a yukler ve link dondurur."""
+        if not self._selected_report_path:
+            return self.inp_rapor.text().strip()
+        if not os.path.exists(self._selected_report_path):
+            QMessageBox.warning(self, "Uyari", "Secilen rapor dosyasi bulunamadi.")
+            return ""
+
+        folder_id = self._get_report_folder_id()
+        if not folder_id:
+            QMessageBox.warning(
+                self,
+                "Drive Ayari Eksik",
+                "Sabitler tablosunda Sistem_DriveID icin saglik rapor klasoru bulunamadi."
+            )
+            return ""
+
+        try:
+            from database.google import GoogleDriveService
+            drive = GoogleDriveService()
+            ext = os.path.splitext(self._selected_report_path)[1]
+            custom_name = f"{tc_no}_{kayit_no}_SaglikRapor{ext}"
+            link = drive.upload_file(
+                self._selected_report_path,
+                parent_folder_id=folder_id,
+                custom_name=custom_name
+            )
+            if not link:
+                QMessageBox.warning(self, "Drive", "Rapor Drive'a yuklenemedi.")
+                return ""
+            logger.info(f"Saglik raporu Drive'a yuklendi: {custom_name}")
+            return str(link).strip()
+        except Exception as exc:
+            logger.error(f"Saglik rapor Drive yukleme hatasi: {exc}")
+            QMessageBox.critical(self, "Drive Hata", f"Rapor yuklenemedi:\n{exc}")
+            return ""
 
     def _save_record(self):
         if self.cmb_personel.currentIndex() < 0:
@@ -487,9 +588,16 @@ class SaglikTakipPage(QWidget):
 
         personel_data = self.cmb_personel.currentData()
         muayene_db, sonraki_db, sonuc, durum = self._compute_summary()
+        kayit_no = self._editing_id or uuid.uuid4().hex[:12].upper()
+        rapor_link = self._upload_report_to_drive(
+            personel_data.get("KimlikNo", ""),
+            kayit_no
+        )
+        if self._selected_report_path and not rapor_link:
+            return
 
         payload = {
-            "KayitNo": self._editing_id or uuid.uuid4().hex[:12].upper(),
+            "KayitNo": kayit_no,
             "Personelid": personel_data.get("KimlikNo", ""),
             "AdSoyad": personel_data.get("AdSoyad", ""),
             "Birim": personel_data.get("Birim", ""),
@@ -510,7 +618,7 @@ class SaglikTakipPage(QWidget):
             "GoruntulemeMuayeneTarihi": self._exam_date_if_set("Goruntuleme"),
             "GoruntulemeDurum": str(self._exam_widgets["Goruntuleme"]["durum"].currentText()).strip(),
             "GoruntulemeAciklama": self._exam_widgets["Goruntuleme"]["aciklama"].text().strip(),
-            "RaporDosya": self.inp_rapor.text().strip(),
+            "RaporDosya": rapor_link,
             "Notlar": self.inp_not.text().strip(),
         }
 
@@ -518,11 +626,18 @@ class SaglikTakipPage(QWidget):
             from database.repository_registry import RepositoryRegistry
             registry = RepositoryRegistry(self._db)
             takip_repo = registry.get("Personel_Saglik_Takip")
+            personel_repo = registry.get("Personel")
             mevcut = takip_repo.get_by_id(payload["KayitNo"])
             if mevcut:
                 takip_repo.update(payload["KayitNo"], payload)
             else:
                 takip_repo.insert(payload)
+
+            personel_sonuc = "uygun" if sonuc == "Uygun" else sonuc
+            personel_repo.update(payload["Personelid"], {
+                "MuayeneTarihi": muayene_db,
+                "Sonuc": personel_sonuc,
+            })
 
             QMessageBox.information(self, "Basarili", "Saglik takip kaydi kaydedildi.")
             self._clear_form()
@@ -530,6 +645,28 @@ class SaglikTakipPage(QWidget):
         except Exception as exc:
             logger.error(f"Saglik takip kaydetme hatasi: {exc}")
             QMessageBox.critical(self, "Hata", f"Kayit sirasinda hata olustu:\n{exc}")
+
+    def _find_personel_takip_row(self, personelid):
+        selected_year = int(self.cmb_yil.currentData() or 0)
+        candidates = [
+            r for r in self._takip_rows
+            if str(r.get("Personelid", "")).strip() == str(personelid).strip()
+        ]
+        if selected_year:
+            yearly = [r for r in candidates if int(r.get("Yil") or 0) == selected_year]
+            if yearly:
+                candidates = yearly
+        if not candidates:
+            return None
+        candidates.sort(
+            key=lambda r: (
+                to_db_date(r.get("MuayeneTarihi", "")),
+                str(r.get("updated_at", "")),
+                str(r.get("KayitNo", "")),
+            ),
+            reverse=True
+        )
+        return candidates[0]
 
     def _on_select_row(self, *_):
         idx = self.table.currentIndex()
@@ -539,9 +676,13 @@ class SaglikTakipPage(QWidget):
         if not row:
             return
 
-        self._editing_id = row.get("KayitNo")
-        self.inp_not.setText(str(row.get("Notlar", "")))
-        self.inp_rapor.setText(str(row.get("RaporDosya", "")))
+        personelid = str(row.get("Personelid", "")).strip()
+        takip_row = self._find_personel_takip_row(personelid) or {}
+
+        self._editing_id = takip_row.get("KayitNo")
+        self._selected_report_path = ""
+        self.inp_not.setText(str(takip_row.get("Notlar", "")))
+        self.inp_rapor.setText(str(takip_row.get("RaporDosya", "")))
         mapping = [
             ("Dermatoloji", "DermatolojiMuayeneTarihi", "DermatolojiDurum", "DermatolojiAciklama"),
             ("Dahiliye", "DahiliyeMuayeneTarihi", "DahiliyeDurum", "DahiliyeAciklama"),
@@ -550,16 +691,15 @@ class SaglikTakipPage(QWidget):
         ]
         for key, col_t, col_d, col_a in mapping:
             w = self._exam_widgets[key]
-            w["durum"].setCurrentText(str(row.get(col_d, "")))
-            w["aciklama"].setText(str(row.get(col_a, "")))
-            d = parse_date(row.get(col_t, ""))
+            w["durum"].setCurrentText(str(takip_row.get(col_d, "")))
+            w["aciklama"].setText(str(takip_row.get(col_a, "")))
+            d = parse_date(takip_row.get(col_t, ""))
             if d:
                 w["tarih"].setDate(QDate(d.year, d.month, d.day))
             else:
                 w["tarih"].setDate(QDate.currentDate())
             self._on_exam_status_changed(key)
 
-        personelid = str(row.get("Personelid", ""))
         for i in range(self.cmb_personel.count()):
             info = self.cmb_personel.itemData(i)
             if info and str(info.get("KimlikNo", "")) == personelid:
@@ -568,6 +708,7 @@ class SaglikTakipPage(QWidget):
 
     def _clear_form(self):
         self._editing_id = None
+        self._selected_report_path = ""
         self.inp_rapor.clear()
         self.inp_not.clear()
         for key in self._exam_keys:

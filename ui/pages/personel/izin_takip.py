@@ -12,7 +12,7 @@ from PySide6.QtCore import (
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QDateEdit, QSpinBox, QFrame, QGroupBox,
-    QGridLayout, QSplitter, QTableView, QHeaderView,
+    QGridLayout, QTableView, QHeaderView,
     QAbstractSpinBox, QMessageBox, QMenu
 )
 from PySide6.QtGui import QColor, QCursor
@@ -216,8 +216,8 @@ class IzinTakipPage(QWidget):
         main.addWidget(filter_frame)
 
         # ── SPLITTER ──
-        splitter = QSplitter(Qt.Horizontal)
-        splitter.setStyleSheet(S["splitter"])
+        content = QHBoxLayout()
+        content.setSpacing(12)
 
         # ── SOL PANEL ──
         left = QWidget()
@@ -403,11 +403,10 @@ class IzinTakipPage(QWidget):
         right_l.addWidget(grp_tablo, 1)
 
         # Splitter oranları
-        splitter.addWidget(left)
-        splitter.addWidget(right)
-        splitter.setStretchFactor(0, 1)
-        splitter.setStretchFactor(1, 2)
-        main.addWidget(splitter, 1)
+        left.setFixedWidth(430)
+        content.addWidget(left)
+        content.addWidget(right, 1)
+        main.addLayout(content, 1)
 
         # İlk bitiş hesapla
         self._calculate_bitis()

@@ -11,7 +11,7 @@ TABLES = {
             "MezuniyetTarihi","DiplomaNo","MezunOlunanOkul2",
             "MezunOlunanFakulte2","MezuniyetTarihi2","DiplomaNo2",
             "Resim","Diploma1","Diploma2","OzlukDosyasi","Durum",
-            "AyrilisTarihi","AyrilmaNedeni"
+            "AyrilisTarihi","AyrilmaNedeni","MuayeneTarihi","Sonuc"
         ],
         "date_fields": [
             "DogumTarihi",
@@ -19,6 +19,7 @@ TABLES = {
             "MezuniyetTarihi",
             "MezuniyetTarihi2",
             "AyrilisTarihi",
+            "MuayeneTarihi",
         ],
     },
 
@@ -116,7 +117,6 @@ TABLES = {
         "columns": [
             "Rowid","Kod","MenuEleman","Aciklama"
         ],
-        "sync_mode": "pull_only"  # Sadece Google Sheets → Local (veri kaynağı: Sheets)
     },
 
     "Tatiller": {
@@ -125,7 +125,7 @@ TABLES = {
             "Tarih","ResmiTatil"
         ],
         "date_fields": ["Tarih"],
-        "sync_mode": "pull_only"  # Sadece Google Sheets → Local (resmi tatil takvimi)
+        
     },
 
     "Loglar": {

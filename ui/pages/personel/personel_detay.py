@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 import os
-from PySide6.QtCore import Qt, QDate, QThread, Signal, QRegularExpression
+import tempfile
+from PySide6.QtCore import Qt, QDate, QThread, Signal, QRegularExpression, QUrl
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QProgressBar, QFrame, QComboBox, QLineEdit,
     QDateEdit, QGroupBox, QMessageBox, QFileDialog, QTabWidget,
     QGridLayout
 )
-from PySide6.QtGui import QCursor, QPixmap, QRegularExpressionValidator
+from PySide6.QtGui import QCursor, QPixmap, QRegularExpressionValidator, QDesktopServices
 
 from core.logger import logger
 from core.hata_yonetici import exc_logla
@@ -337,6 +338,14 @@ class PersonelDetayPage(QWidget):
             btn_dip.setCursor(QCursor(Qt.PointingHandCursor))
             btn_dip.clicked.connect(lambda checked, idx=i: self._select_diploma(idx))
             col.addWidget(btn_dip)
+            self.ui[f"btn_diploma{i}"] = btn_dip
+
+            btn_open = QPushButton(f"Diploma {i} Aç")
+            btn_open.setStyleSheet(S["file_btn"])
+            btn_open.setCursor(QCursor(Qt.PointingHandCursor))
+            btn_open.clicked.connect(lambda checked, idx=i: self._open_diploma(idx))
+            col.addWidget(btn_open)
+            self.ui[f"btn_diploma_open{i}"] = btn_open
 
             lbl_file = QLabel("")
             lbl_file.setStyleSheet("color: #4ade80; font-size: 11px; background: transparent;")
@@ -365,14 +374,15 @@ class PersonelDetayPage(QWidget):
     def _setup_izin_tab(self, parent):
         layout = QHBoxLayout(parent)
         layout.setContentsMargins(8, 16, 8, 8)
-        layout.setSpacing(16)
+        layout.setSpacing(12)
 
         # Yıllık İzin
         grp_yillik = QGroupBox("📅  Yıllık İzin Durumu")
         grp_yillik.setStyleSheet(S["group"])
         g = QGridLayout(grp_yillik)
-        g.setSpacing(12)
-        g.setContentsMargins(16, 16, 16, 16)
+        g.setHorizontalSpacing(10)
+        g.setVerticalSpacing(6)
+        g.setContentsMargins(14, 12, 14, 12)
 
         self.lbl_y_devir = self._add_stat(g, 0, "Devir Eden İzin", "stat_value")
         self.lbl_y_hak = self._add_stat(g, 1, "Bu Yıl Hak Edilen", "stat_value")
@@ -388,14 +398,16 @@ class PersonelDetayPage(QWidget):
 
         self.lbl_y_kalan = self._add_stat(g, 6, "KALAN YILLIK İZİN", "stat_green")
 
+        g.setRowStretch(7, 1)
         layout.addWidget(grp_yillik)
 
         # Şua ve Diğer
         grp_diger = QGroupBox("☢️  Şua ve Diğer İzinler")
         grp_diger.setStyleSheet(S["group"])
         g2 = QGridLayout(grp_diger)
-        g2.setSpacing(12)
-        g2.setContentsMargins(16, 16, 16, 16)
+        g2.setHorizontalSpacing(10)
+        g2.setVerticalSpacing(6)
+        g2.setContentsMargins(14, 12, 14, 12)
 
         self.lbl_s_hak = self._add_stat(g2, 0, "Hak Edilen Şua İzin", "stat_value")
         self.lbl_s_kul = self._add_stat(g2, 1, "Kullanılan Şua İzinleri", "stat_red")
@@ -412,6 +424,7 @@ class PersonelDetayPage(QWidget):
         self.lbl_s_cari = self._add_stat(g2, 5, "Cari Yıl Şua Kazanım", "stat_value")
         self.lbl_diger = self._add_stat(g2, 6, "Toplam Rapor/Mazeret", "stat_value")
 
+        g2.setRowStretch(7, 1)
         layout.addWidget(grp_diger)
 
     def _add_stat(self, grid, row, text, style_key):
@@ -649,6 +662,9 @@ class PersonelDetayPage(QWidget):
     def _fill_form(self, row_data):
         for db_col, ui_key in FIELD_MAP.items():
             self._set_widget_value(ui_key, row_data.get(db_col, ""))
+        self._set_photo_preview(row_data.get("Resim", ""))
+        self._refresh_diploma_ui("1", row_data.get("Diploma1", ""))
+        self._refresh_diploma_ui("2", row_data.get("Diploma2", ""))
 
         # Başlık güncelle
         ad = row_data.get("AdSoyad", "")
@@ -666,6 +682,97 @@ class PersonelDetayPage(QWidget):
 
         # İzin bilgilerini doldur
         self._load_izin_data(tc)
+
+    def _set_photo_preview(self, photo_ref):
+        """Fotoğraf alanını yerel dosya veya Drive linkinden önizler."""
+        photo_ref = str(photo_ref or "").strip()
+        self.lbl_resim.setToolTip("")
+        self.lbl_resim.setPixmap(QPixmap())
+
+        if not photo_ref:
+            self.lbl_resim.setText("Fotoğraf\nYüklenmedi")
+            return
+
+        # Yerel dosya ise doğrudan yükle
+        if os.path.exists(photo_ref):
+            pixmap = QPixmap(photo_ref)
+            if not pixmap.isNull():
+                self.lbl_resim.setText("")
+                self.lbl_resim.setPixmap(
+                    pixmap.scaled(160, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                )
+                self.lbl_resim.setToolTip(os.path.basename(photo_ref))
+                return
+
+        # Drive linki ise geçici dosyaya indirip önizle
+        if photo_ref.startswith("http"):
+            try:
+                from database.google import GoogleDriveService
+                drive = GoogleDriveService()
+                file_id = drive.extract_file_id(photo_ref)
+                if file_id:
+                    fd, tmp_path = tempfile.mkstemp(prefix="personel_resim_", suffix=".img")
+                    os.close(fd)
+                    if drive.download_file(file_id, tmp_path):
+                        pixmap = QPixmap(tmp_path)
+                        try:
+                            os.remove(tmp_path)
+                        except OSError:
+                            pass
+                        if not pixmap.isNull():
+                            self.lbl_resim.setText("")
+                            self.lbl_resim.setPixmap(
+                                pixmap.scaled(160, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                            )
+                            self.lbl_resim.setToolTip("Drive fotoğrafı")
+                            return
+            except Exception as e:
+                logger.warning(f"Fotoğraf önizleme yüklenemedi: {e}")
+
+        self.lbl_resim.setText("Fotoğraf\nYüklenemedi")
+        self.lbl_resim.setToolTip(photo_ref[:200])
+
+    def _refresh_diploma_ui(self, idx, db_value=None):
+        file_key = f"Diploma{idx}"
+        lbl = self.ui.get(f"diploma_file_lbl{idx}")
+        open_btn = self.ui.get(f"btn_diploma_open{idx}")
+        if not lbl:
+            return
+
+        selected = str(self._file_paths.get(file_key, "")).strip()
+        existing = str(db_value if db_value is not None else self._data.get(file_key, "")).strip()
+        active_ref = selected or existing
+
+        if selected:
+            lbl.setText(f"Seçildi: {os.path.basename(selected)}")
+        elif existing.startswith("http"):
+            lbl.setText("Yüklü dosya (Drive) - Aç ile görüntüleyin")
+        elif existing and os.path.exists(existing):
+            lbl.setText(f"Yüklü dosya: {os.path.basename(existing)}")
+        elif existing:
+            lbl.setText("Yüklü dosya mevcut")
+        else:
+            lbl.setText("Dosya yok")
+
+        if open_btn:
+            open_btn.setEnabled(bool(active_ref))
+            open_btn.setToolTip(active_ref if active_ref else "Diploma dosyası yok")
+
+    def _open_diploma(self, idx):
+        file_key = f"Diploma{idx}"
+        ref = str(self._file_paths.get(file_key, "")).strip()
+        if not ref:
+            ref = str(self._data.get(file_key, "")).strip()
+        if not ref:
+            QMessageBox.information(self, "Bilgi", f"Diploma {idx} dosyası bulunamadı.")
+            return
+
+        if ref.startswith("http"):
+            ok = QDesktopServices.openUrl(QUrl(ref))
+        else:
+            ok = QDesktopServices.openUrl(QUrl.fromLocalFile(ref))
+        if not ok:
+            QMessageBox.warning(self, "Uyarı", f"Diploma {idx} dosyası açılamadı.")
 
     def _collect_data(self):
         data = {}
@@ -736,15 +843,21 @@ class PersonelDetayPage(QWidget):
 
         self.btn_photo.setVisible(editing)
         self.btn_ayrilis.setVisible(not editing)
+        for i in ("1", "2"):
+            btn_select = self.ui.get(f"btn_diploma{i}")
+            if btn_select:
+                btn_select.setVisible(editing)
+                btn_select.setEnabled(editing)
+            self._refresh_diploma_ui(i)
 
     def _toggle_edit(self):
         self._set_edit_mode(True)
 
     def _cancel_edit(self):
-        self._fill_form(self._data)
-        self._set_edit_mode(False)
         self._file_paths.clear()
         self._drive_links.clear()
+        self._fill_form(self._data)
+        self._set_edit_mode(False)
 
     # ═══════════════════════════════════════════
     #  DOSYA SEÇME & DRIVE YÜKLEME
@@ -757,11 +870,7 @@ class PersonelDetayPage(QWidget):
         )
         if path:
             self._file_paths["Resim"] = path
-            pixmap = QPixmap(path)
-            if not pixmap.isNull():
-                self.lbl_resim.setPixmap(
-                    pixmap.scaled(160, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                )
+            self._set_photo_preview(path)
             logger.info(f"Fotoğraf seçildi: {path}")
 
     def _select_diploma(self, idx):
@@ -773,6 +882,7 @@ class PersonelDetayPage(QWidget):
         )
         if path:
             self._file_paths[f"Diploma{idx}"] = path
+            self._refresh_diploma_ui(str(idx))
             lbl = self.ui.get(f"diploma_file_lbl{idx}")
             if lbl:
                 lbl.setText(f"✓ {os.path.basename(path)}")
@@ -801,6 +911,8 @@ class PersonelDetayPage(QWidget):
             folder_name, db_field = upload_map[file_key]
             folder_id = self._get_drive_folder_id(folder_name)
             if not folder_id:
+                self._upload_errors.append(f"{db_field}: Drive klasörü bulunamadı ({folder_name})")
+                logger.warning(f"Drive klasörü bulunamadı: {folder_name}")
                 continue
 
             ext = os.path.splitext(file_path)[1]
@@ -814,6 +926,11 @@ class PersonelDetayPage(QWidget):
             worker.start()
 
         if self._pending_uploads == 0:
+            if self._upload_errors:
+                QMessageBox.warning(
+                    self, "Drive Yükleme Uyarısı",
+                    "Bazı dosyalar yüklenemedi:\n" + "\n".join(self._upload_errors)
+                )
             callback()
         else:
             self._upload_callback = callback
@@ -823,6 +940,7 @@ class PersonelDetayPage(QWidget):
 
     def _on_upload_finished(self, alan_adi, link):
         self._drive_links[alan_adi] = link
+        self._delete_old_drive_file(alan_adi, link)
         logger.info(f"Drive yükleme OK: {alan_adi} → {link}")
         self._pending_uploads -= 1
         if self._pending_uploads <= 0:
@@ -834,6 +952,30 @@ class PersonelDetayPage(QWidget):
         self._pending_uploads -= 1
         if self._pending_uploads <= 0:
             self._finalize_uploads()
+
+    def _delete_old_drive_file(self, db_field, new_link):
+        """Yeni dosya yüklendikten sonra eski Drive dosyasını siler."""
+        old_link = str(self._data.get(db_field, "")).strip()
+        if not old_link or not old_link.startswith("http"):
+            return
+        if old_link == str(new_link).strip():
+            return
+
+        try:
+            from database.google import GoogleDriveService
+            old_file_id = GoogleDriveService.extract_file_id(old_link)
+            if not old_file_id:
+                return
+
+            drive = GoogleDriveService()
+            if drive.delete_file(old_file_id):
+                logger.info(f"Eski Drive dosyasi silindi: {db_field} -> {old_file_id}")
+            else:
+                self._upload_errors.append(f"{db_field}: eski Drive dosyasi silinemedi")
+                logger.warning(f"Eski Drive dosyasi silinemedi: {db_field} -> {old_file_id}")
+        except Exception as e:
+            self._upload_errors.append(f"{db_field}: eski Drive dosyasi silme hatasi")
+            logger.warning(f"Eski Drive dosya silme hatasi ({db_field}): {e}")
 
     def _finalize_uploads(self):
         self.progress.setVisible(False)

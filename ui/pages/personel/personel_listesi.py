@@ -12,27 +12,27 @@ from core.date_utils import parse_date, to_db_date
 from ui.theme_manager import ThemeManager
 
 
-# â”€â”€â”€ Tablo sÃ¼tun tanÄ±mlarÄ± â”€â”€â”€
+# â”€â”€â”€ Tablo sütun tanımları â”€â”€â”€
 COLUMNS = [
     ("KimlikNo",         "TC Kimlik No",   120),
     ("AdSoyad",          "Ad Soyad",       160),
-    ("HizmetSinifi",     "Hizmet SÄ±nÄ±fÄ±",  120),
-    ("KadroUnvani",      "Ãœnvan",           130),
-    ("GorevYeri",        "GÃ¶rev Yeri",      140),
+    ("HizmetSinifi",     "Hizmet Sınıfı",  120),
+    ("KadroUnvani",      "Ünvan",           130),
+    ("GorevYeri",        "Görev Yeri",      140),
     ("CepTelefonu",      "Telefon",         120),
     ("Eposta",           "E-posta",         170),
     ("Durum",            "Durum",            80),
 ]
 
-# â”€â”€â”€ MERKEZÄ° STIL YÃ–NETIMI â”€â”€â”€
-# TÃ¼m stiller merkezi ThemeManager'dan alÄ±nÄ±yor
+# â”€â”€â”€ MERKEZİ STIL YÃ–NETIMI â”€â”€â”€
+# Tüm stiller merkezi ThemeManager'dan alınıyor
 STYLES = ThemeManager.get_all_component_styles()
 
-# Durum hÃ¼cre renkleri (merkezi kaynaktan)
+# Durum hücre renkleri (merkezi kaynaktan)
 DURUM_COLORS = {
     "Aktif": ThemeManager.get_status_color("Aktif"),
     "Pasif": ThemeManager.get_status_color("Pasif"),
-    "Ä°zinli": ThemeManager.get_status_color("Ä°zinli"),
+    "İzinli": ThemeManager.get_status_color("İzinli"),
 }
 
 
@@ -76,10 +76,10 @@ class PersonelTableModel(QAbstractTableModel):
                 colors = {
                     "Aktif": QColor("#4ade80"),
                     "Pasif": QColor("#f87171"),
-                    "Ä°zinli": QColor("#facc15"),
+                    "İzinli": QColor("#facc15"),
                 }
                 return colors.get(durum, QColor("#8b8fa3"))
-            # DiÄŸer kolonlar QSS ile yÃ¶netilir (selection-color Ã§alÄ±ÅŸsÄ±n)
+            # Diğer kolonlar QSS ile yönetilir (selection-color çalışsın)
             return None
 
         return None
@@ -100,7 +100,7 @@ class PersonelTableModel(QAbstractTableModel):
         self.endResetModel()
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# -----------------------------------------------------------------------------------------------
 
 class PersonelListesiPage(QWidget):
 
@@ -111,7 +111,7 @@ class PersonelListesiPage(QWidget):
         self.setStyleSheet("background-color: transparent;")
         self._db = db
         self._all_data = []
-        self._active_filter = "TÃ¼mÃ¼"
+        self._active_filter = "Tümü"
         self._filter_btns = {}
         self._setup_ui()
         self._connect_signals()
@@ -121,17 +121,17 @@ class PersonelListesiPage(QWidget):
         main.setContentsMargins(20, 12, 20, 12)
         main.setSpacing(12)
 
-        # â”€â”€ 1. FILTER PANEL (tek satÄ±r) â”€â”€
+        # â”€â”€ 1. FILTER PANEL (tek satır) â”€â”€
         filter_frame = QFrame()
         filter_frame.setStyleSheet(STYLES["filter_panel"])
         fp = QHBoxLayout(filter_frame)
         fp.setContentsMargins(12, 8, 12, 8)
         fp.setSpacing(8)
 
-        for text in ["Aktif", "Pasif", "Ä°zinli", "TÃ¼mÃ¼"]:
+        for text in ["Aktif", "Pasif", "İzinli", "Tümü"]:
             btn = QPushButton(text)
             btn.setCheckable(True)
-            btn.setStyleSheet(STYLES["filter_btn_all"] if text == "TÃ¼mÃ¼" else STYLES["filter_btn"])
+            btn.setStyleSheet(STYLES["filter_btn_all"] if text == "Tümü" else STYLES["filter_btn"])
             btn.setFixedHeight(28)
             if text == "Aktif":
                 btn.setChecked(True)
@@ -145,13 +145,13 @@ class PersonelListesiPage(QWidget):
         fp.addWidget(sep)
 
         self.cmb_gorev_yeri = QComboBox()
-        self.cmb_gorev_yeri.addItem("TÃ¼m Birimler")
+        self.cmb_gorev_yeri.addItem("Tüm Birimler")
         self.cmb_gorev_yeri.setFixedWidth(150)
         self.cmb_gorev_yeri.setStyleSheet(STYLES["combo"])
         fp.addWidget(self.cmb_gorev_yeri)
 
         self.cmb_hizmet = QComboBox()
-        self.cmb_hizmet.addItem("TÃ¼m SÄ±nÄ±flar")
+        self.cmb_hizmet.addItem("Tüm Sınıflar")
         self.cmb_hizmet.setFixedWidth(130)
         self.cmb_hizmet.setStyleSheet(STYLES["combo"])
         fp.addWidget(self.cmb_hizmet)
@@ -163,7 +163,7 @@ class PersonelListesiPage(QWidget):
         fp.addWidget(sep2)
 
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("ğŸ” Ara...")
+        self.search_input.setPlaceholderText("Ara...")
         self.search_input.setClearButtonEnabled(True)
         self.search_input.setStyleSheet(STYLES["search"])
         self.search_input.setFixedWidth(200)
@@ -171,16 +171,16 @@ class PersonelListesiPage(QWidget):
 
         fp.addStretch()
 
-        self.btn_yenile = QPushButton("âŸ³ Yenile")
+        self.btn_yenile = QPushButton("Yenile")
         self.btn_yenile.setStyleSheet(STYLES["refresh_btn"])
         self.btn_yenile.setFixedSize(100, 36)
         self.btn_yenile.setToolTip("Yenile")
         self.btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         fp.addWidget(self.btn_yenile)
 
-        self.btn_yeni = QPushButton("ï¼‹ Yeni")
+        self.btn_yeni = QPushButton("Yeni")
         self.btn_yeni.setStyleSheet(STYLES["action_btn"])
-        self.btn_yeni.setFixedHeight(28)
+        self.btn_yeni.setFixedHeight(36)
         self.btn_yeni.setCursor(QCursor(Qt.PointingHandCursor))
         fp.addWidget(self.btn_yeni)
 
@@ -190,7 +190,7 @@ class PersonelListesiPage(QWidget):
         sep3.setStyleSheet("background-color: rgba(255,255,255,0.08);")
         fp.addWidget(sep3)
 
-        self.btn_kapat = QPushButton("âœ• Kapat")
+        self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Pencereyi Kapat")
         self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
@@ -228,10 +228,10 @@ class PersonelListesiPage(QWidget):
         self.table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._show_context_menu)
 
-        # OrantÄ±lÄ± kolon geniÅŸlikleri
+        # Orantılı kolon genişlikleri
         header = self.table.horizontalHeader()
         header.setStretchLastSection(False)
-        # Stretch ratios: TC(2) Ad(3) SÄ±nÄ±f(2) Ãœnvan(2) GÃ¶rev(2) Tel(2) Eposta(3) Durum(1)
+        # Stretch ratios: TC(2) Ad(3) Sınıf(2) Ünvan(2) Görev(2) Tel(2) Eposta(3) Durum(1)
         stretch_cols = [2, 3, 2, 2, 2, 2, 3, 1]
         for i, s in enumerate(stretch_cols):
             header.setSectionResizeMode(i, QHeaderView.Stretch)
@@ -244,7 +244,7 @@ class PersonelListesiPage(QWidget):
         footer = QHBoxLayout()
         footer.setSpacing(8)
 
-        self.lbl_info = QLabel("0 kayÄ±t")
+        self.lbl_info = QLabel("0 kayıt")
         self.lbl_info.setStyleSheet(STYLES["footer_label"])
         footer.addWidget(self.lbl_info)
         footer.addStretch()
@@ -287,21 +287,21 @@ class PersonelListesiPage(QWidget):
 
     def load_data(self):
         if not self._db:
-            logger.warning("Personel listesi: DB baÄŸlantÄ±sÄ± yok")
+            logger.warning("Personel listesi: DB bağlantısı yok")
             return
         try:
             from database.repository_registry import RepositoryRegistry
             registry = RepositoryRegistry(self._db)
             repo = registry.get("Personel")
             self._all_data = repo.get_all()
-            logger.info(f"Personel yÃ¼klendi: {len(self._all_data)} kayÄ±t")
+            logger.info(f"Personel yüklendi: {len(self._all_data)} kayıt")
             self._populate_combos()
             self._apply_filters()
         except Exception as e:
-            logger.error(f"Personel yÃ¼kleme hatasÄ±: {e}")
+            logger.error(f"Personel yükleme hatası: {e}")
 
     def _populate_combos(self):
-        """Combobox'larÄ± Sabitler tablosundan doldurur."""
+        """Combobox'ları Sabitler tablosundan doldurur."""
         try:
             from database.repository_registry import RepositoryRegistry
             registry = RepositoryRegistry(self._db)
@@ -314,7 +314,7 @@ class PersonelListesiPage(QWidget):
                 if r.get("Kod") == "Gorev_Yeri" and r.get("MenuEleman", "").strip()
             ])
             self.cmb_gorev_yeri.clear()
-            self.cmb_gorev_yeri.addItem("TÃ¼m Birimler")
+            self.cmb_gorev_yeri.addItem("Tüm Birimler")
             self.cmb_gorev_yeri.addItems(gorev_yerleri)
 
             siniflar = sorted([
@@ -323,10 +323,10 @@ class PersonelListesiPage(QWidget):
                 if r.get("Kod") == "Hizmet_Sinifi" and r.get("MenuEleman", "").strip()
             ])
             self.cmb_hizmet.clear()
-            self.cmb_hizmet.addItem("TÃ¼m SÄ±nÄ±flar")
+            self.cmb_hizmet.addItem("Tüm Sınıflar")
             self.cmb_hizmet.addItems(siniflar)
         except Exception as e:
-            logger.error(f"Sabitler yÃ¼kleme hatasÄ±: {e}")
+            logger.error(f"Sabitler yükleme hatası: {e}")
 
     def _on_filter_click(self, filter_text):
         self._active_filter = filter_text
@@ -341,28 +341,28 @@ class PersonelListesiPage(QWidget):
     def _apply_filters(self):
         filtered = self._all_data
 
-        if self._active_filter == "Ä°zinli":
+        if self._active_filter == "İzinli":
             # Izin_Giris tablosundan bu ay izinli personelleri bul
             izinli_tcler = self._get_izinli_personeller()
             filtered = [
                 r for r in filtered
                 if str(r.get("KimlikNo", "")).strip() in izinli_tcler
             ]
-        elif self._active_filter != "TÃ¼mÃ¼":
+        elif self._active_filter != "Tümü":
             filtered = [
                 r for r in filtered
                 if str(r.get("Durum", "")).strip() == self._active_filter
             ]
 
         birim = self.cmb_gorev_yeri.currentText()
-        if birim and birim != "TÃ¼m Birimler":
+        if birim and birim != "Tüm Birimler":
             filtered = [
                 r for r in filtered
                 if str(r.get("GorevYeri", "")).strip() == birim
             ]
 
         sinif = self.cmb_hizmet.currentText()
-        if sinif and sinif != "TÃ¼m SÄ±nÄ±flar":
+        if sinif and sinif != "Tüm Sınıflar":
             filtered = [
                 r for r in filtered
                 if str(r.get("HizmetSinifi", "")).strip() == sinif
@@ -378,7 +378,7 @@ class PersonelListesiPage(QWidget):
         return to_db_date(val)
 
     def _get_izinli_personeller(self):
-        """Izin_Giris tablosundan bu ay+yÄ±l iÃ§inde izinli personel TC'lerini dÃ¶ndÃ¼rÃ¼r."""
+        """Izin_Giris tablosundan bu ay+yıl içinde izinli personel TC'lerini döndürür."""
         if not self._db:
             return set()
         try:
@@ -390,14 +390,14 @@ class PersonelListesiPage(QWidget):
             else:
                 ay_son = date(bugun.year, bugun.month + 1, 1).isoformat()
 
-            logger.info(f"Ä°zinli sorgu aralÄ±ÄŸÄ±: {ay_bas} â€” {ay_son}")
+            logger.info(f"İzinli sorgu aralığı: {ay_bas} / {ay_son}")
 
             from database.repository_registry import RepositoryRegistry
             registry = RepositoryRegistry(self._db)
             repo = registry.get("Izin_Giris")
             all_izin = repo.get_all()
 
-            # Bu ay ile Ã§akÄ±ÅŸan izinler:
+            # Bu ay ile çakışan izinler:
             # BaslamaTarihi < ay_son AND BitisTarihi >= ay_bas
             izinli = set()
             for r in all_izin:
@@ -411,16 +411,16 @@ class PersonelListesiPage(QWidget):
                 if baslama < ay_son and bitis >= ay_bas:
                     izinli.add(tc)
 
-            logger.info(f"Bu ay izinli personel: {len(izinli)} kiÅŸi")
+            logger.info(f"Bu ay izinli personel: {len(izinli)} kişi")
             return izinli
         except Exception as e:
-            logger.error(f"Ä°zinli personel sorgusu hatasÄ±: {e}")
+            logger.error(f"İzinli personel sorgusu hatası: {e}")
             return set()
 
     def _update_count(self):
         visible = self._proxy.rowCount()
         total = len(self._all_data)
-        self.lbl_info.setText(f"{visible} / {total} kayÄ±t gÃ¶steriliyor")
+        self.lbl_info.setText(f"{visible} / {total} kayıt gösteriliyor")
 
     def _on_row_double_click(self, index):
         source_idx = self._proxy.mapToSource(index)
@@ -428,7 +428,7 @@ class PersonelListesiPage(QWidget):
         if row_data:
             kimlik = row_data.get("KimlikNo", "")
             ad = row_data.get("AdSoyad", "")
-            logger.info(f"Personel seÃ§ildi: {kimlik} â€” {ad}")
+            logger.info(f"Personel seçildi: {kimlik} ç {ad}")
 
     def get_selected(self):
         indexes = self.table.selectionModel().selectedRows()
@@ -438,7 +438,7 @@ class PersonelListesiPage(QWidget):
         return None
 
     # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    #  SAÄ TIKLAMA MENÃœSÃœ
+    #  SAÄ TIKLAMA MENÜSÜ
     # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _show_context_menu(self, pos):
@@ -458,19 +458,19 @@ class PersonelListesiPage(QWidget):
         menu = QMenu(self)
         menu.setStyleSheet(STYLES["context_menu"])
 
-        # Detay aÃ§
-        act_detay = menu.addAction("ğŸ“‹ Detay GÃ¶rÃ¼ntÃ¼le")
+        # Detay aç
+        act_detay = menu.addAction("ğŸ“‹ Detay Görüntüle")
         act_detay.triggered.connect(lambda: self.table.doubleClicked.emit(index))
 
         menu.addSeparator()
 
-        # Ä°zin GiriÅŸi
-        act_izin = menu.addAction("ğŸ–ï¸ Ä°zin GiriÅŸi")
+        # İzin Girişi
+        act_izin = menu.addAction("ğŸ–ï¸ İzin Girişi")
         act_izin.triggered.connect(lambda: self._izin_girisi(row_data))
 
         menu.addSeparator()
 
-        # Durum deÄŸiÅŸtirme
+        # Durum değiştirme
         if durum != "Aktif":
             act_aktif = menu.addAction("âœ… Aktif Yap")
             act_aktif.triggered.connect(lambda: self._change_durum(tc, ad, "Aktif"))
@@ -479,17 +479,17 @@ class PersonelListesiPage(QWidget):
             act_pasif = menu.addAction("â›” Pasif Yap")
             act_pasif.triggered.connect(lambda: self._change_durum(tc, ad, "Pasif"))
 
-        if durum != "Ä°zinli":
-            act_izinli = menu.addAction("â¸ï¸ Ä°zinli Yap")
-            act_izinli.triggered.connect(lambda: self._change_durum(tc, ad, "Ä°zinli"))
+        if durum != "İzinli":
+            act_izinli = menu.addAction("â¸ï¸ İzinli Yap")
+            act_izinli.triggered.connect(lambda: self._change_durum(tc, ad, "İzinli"))
 
         menu.exec(self.table.viewport().mapToGlobal(pos))
 
     def _change_durum(self, tc, ad, yeni_durum):
-        """Personel durumunu deÄŸiÅŸtir."""
+        """Personel durumunu değiştir."""
         cevap = QMessageBox.question(
-            self, "Durum DeÄŸiÅŸtir",
-            f"{ad} personelinin durumu \"{yeni_durum}\" olarak deÄŸiÅŸtirilsin mi?",
+            self, "Durum Değiştir",
+            f"{ad} personelinin durumu \"{yeni_durum}\" olarak değiştirilsin mi?",
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No
         )
         if cevap != QMessageBox.Yes:
@@ -500,13 +500,13 @@ class PersonelListesiPage(QWidget):
             registry = RepositoryRegistry(self._db)
             repo = registry.get("Personel")
             repo.update(tc, {"Durum": yeni_durum})
-            logger.info(f"Durum deÄŸiÅŸtirildi: {tc} â†’ {yeni_durum}")
+            logger.info(f"Durum değiştirildi: {tc} â†’ {yeni_durum}")
             self.load_data()
         except Exception as e:
-            logger.error(f"Durum deÄŸiÅŸtirme hatasÄ±: {e}")
-            QMessageBox.critical(self, "Hata", f"Durum deÄŸiÅŸtirilemedi:\n{e}")
+            logger.error(f"Durum değiştirme hatası: {e}")
+            QMessageBox.critical(self, "Hata", f"Durum değiştirilemedi:\n{e}")
 
     def _izin_girisi(self, row_data):
-        """Ä°zin giriÅŸi sinyali gÃ¶nder."""
+        """İzin girişi sinyali gönder."""
         self.izin_requested.emit(row_data)
 

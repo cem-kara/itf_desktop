@@ -224,6 +224,13 @@ class MainWindow(QMainWindow):
             page.load_data()
             return page
 
+        if baslik == "Arıza Kayıt":
+            from ui.pages.cihaz.ariza_kayit import ArizaKayitPenceresi
+            page = ArizaKayitPenceresi(db=self._db)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Arıza Kayıt"))
+            page.load_data()
+            return page
+        
         if baslik == "Arıza Listesi":
             from ui.pages.cihaz.ariza_listesi import ArizaListesiPage
             page = ArizaListesiPage(db=self._db)
