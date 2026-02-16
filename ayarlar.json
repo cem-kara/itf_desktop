@@ -1,128 +1,134 @@
 {
-    "menu_yapilandirma": {
-        "PERSONEL": [
-            {
-                "baslik": "Personel Listesi",
-                "icon": "👥",
-                "implemented": true
-            },
-            {
-                "baslik": "Personel Ekle",
-                "icon": "➕",
-                "implemented": true
-            },
-            {
-                "baslik": "İzin Takip",
-                "icon": "📅",
-                "implemented": true
-            },
-            {
-                "baslik": "FHSZ Yönetim",
-                "icon": "📊",
-                "implemented": true
-            },
-            {
-                "baslik": "Puantaj Rapor",
-                "icon": "📋",
-                "implemented": true
-            },
-            {
-                "baslik": "Saglik Takip",
-                "icon": "ST",
-                "implemented": true
-            },
-            {
-                "baslik": "Personel Verileri",
-                "icon": "📈",
-                "implemented": false,
-                "note": "Dashboard - gelecek versiyon"
-            }
-        ],
-        "CİHAZ": [
-            {
-                "baslik": "Cihaz Listesi",
-                "icon": "🔬",
-                "implemented": false,
-                "note": "Geliştirme aşamasında"
-            },
-            {
-                "baslik": "Cihaz Ekle",
-                "icon": "🆕",
-                "implemented": false
-            },
-            {
-                "baslik": "Arıza Kayıt",
-                "icon": "⚠️",
-                "implemented": false
-            },
-            {
-                "baslik": "Arıza Listesi",
-                "icon": "🔧",
-                "implemented": false
-            },
-            {
-                "baslik": "Periyodik Bakım",
-                "icon": "🛠️",
-                "implemented": false
-            },
-            {
-                "baslik": "Kalibrasyon Takip",
-                "icon": "📐",
-                "implemented": false
-            }
-        ],
-        "RKE": [
-            {
-                "baslik": "RKE Envanter",
-                "icon": "🛡️",
-                "implemented": false,
-                "note": "Geliştirme aşamasında"
-            },
-            {
-                "baslik": "RKE Muayene",
-                "icon": "🔍",
-                "implemented": false
-            },
-            {
-                "baslik": "RKE Raporlama",
-                "icon": "📋",
-                "implemented": false
-            }
-        ],
-        "YÖNETİCİ İŞLEMLERİ": [
-            {
-                "baslik": "Yıl Sonu İzin",
-                "icon": "📆",
-                "implemented": false,
-                "note": "Yıl sonu izin devir işlemleri"
-            },
-            {
-                "baslik": "Log Görüntüleyici",
-                "icon": "📜",
-                "implemented": true,
-                "note": "Uygulama log dosyalarını incele"
-            },
-            {
-                "baslik": "Ayarlar",
-                "icon": "⚙️",
-                "implemented": false
-            }
-        ]
-    },
-    "_notes": {
-        "version": "2.0",
-        "description": "Sadeleştirilmiş menü konfigürasyonu",
-        "changes": [
-            "Kullanılmayan 'modul' ve 'sinif' alanları kaldırıldı",
-            "Sayfa oluşturma main_window.py:_create_page() içinde hardcoded",
-            "Icon'lar sidebar.py ile senkronize edildi",
-            "'implemented' flag ile hangi sayfaların çalıştığı belirtildi"
-        ],
-        "implementation_status": {
-            "PERSONEL": "5/6 sayfa implement edildi",
-            "CİHAZ": "0/6 sayfa implement edildi",
-            "RKE": "0/3 sayfa implement edildi",
-            "YÖNETİCİ İŞLEMLERİ": "0/2 sayfa implement edildi"
-        }
+  "menu_yapilandirma": {
+    "PERSONEL": [
+      {
+        "baslik": "Personel Listesi",
+        "icon": "👥",
+        "implemented": true
+      },
+      {
+        "baslik": "Personel Ekle",
+        "icon": "➕",
+        "implemented": true
+      },
+      {
+        "baslik": "İzin Takip",
+        "icon": "📅",
+        "implemented": true
+      },
+      {
+        "baslik": "FHSZ Yönetim",
+        "icon": "📊",
+        "implemented": true
+      },
+      {
+        "baslik": "Puantaj Rapor",
+        "icon": "📋",
+        "implemented": true
+      },
+      {
+        "baslik": "Saglik Takip",
+        "icon": "ST",
+        "implemented": true
+      },
+      {
+        "baslik": "Personel Verileri",
+        "icon": "📈",
+        "implemented": false,
+        "note": "Dashboard - gelecek versiyon"
+      }
+    ],
+    "CİHAZ": [
+      {
+        "baslik": "Cihaz Listesi",
+        "icon": "🔬",
+        "implemented": false,
+        "note": "Geliştirme aşamasında"
+      },
+      {
+        "baslik": "Cihaz Ekle",
+        "icon": "🆕",
+        "implemented": false
+      },
+      {
+        "baslik": "Arıza Kayıt",
+        "icon": "⚠️",
+        "implemented": false
+      },
+      {
+        "baslik": "Arıza Listesi",
+        "icon": "🔧",
+        "implemented": false
+      },
+      {
+        "baslik": "Periyodik Bakım",
+        "icon": "🛠️",
+        "implemented": false
+      },
+      {
+        "baslik": "Kalibrasyon Takip",
+        "icon": "📐",
+        "implemented": false
+      }
+    ],
+    "RKE": [
+      {
+        "baslik": "RKE Envanter",
+        "icon": "🛡️",
+        "implemented": false,
+        "note": "Geliştirme aşamasında"
+      },
+      {
+        "baslik": "RKE Muayene",
+        "icon": "🔍",
+        "implemented": false
+      },
+      {
+        "baslik": "RKE Raporlama",
+        "icon": "📋",
+        "implemented": false
+      }
+    ],
+    "YÖNETİCİ İŞLEMLERİ": [
+      {
+        "baslik": "Yıl Sonu İzin",
+        "icon": "📆",
+        "implemented": false,
+        "note": "Yıl sonu izin devir işlemleri"
+      },
+      {
+        "baslik": "Log Görüntüleyici",
+        "icon": "📜",
+        "implemented": true,
+        "note": "Uygulama log dosyalarını incele"
+      },
+      {
+        "baslik": "Yedek Yönetimi",
+        "icon": "💾",
+        "implemented": true,
+        "note": "Veritabanı yedeklerini listele, al ve geri yükle"
+      },
+      {
+        "baslik": "Ayarlar",
+        "icon": "⚙️",
+        "implemented": false
+      }
+    ]
+  },
+  "_notes": {
+    "version": "2.0",
+    "description": "Sadeleştirilmiş menü konfigürasyonu",
+    "changes": [
+      "Kullanılmayan 'modul' ve 'sinif' alanları kaldırıldı",
+      "Sayfa oluşturma main_window.py:_create_page() içinde hardcoded",
+      "Icon'lar sidebar.py ile senkronize edildi",
+      "'implemented' flag ile hangi sayfaların çalıştığı belirtildi"
+    ],
+    "implementation_status": {
+      "PERSONEL": "5/6 sayfa implement edildi",
+      "CİHAZ": "0/6 sayfa implement edildi",
+      "RKE": "0/3 sayfa implement edildi",
+      "YÖNETİCİ İŞLEMLERİ": "0/2 sayfa implement edildi"
     }
+  }
 }

@@ -303,7 +303,10 @@ itf_desktop/
 │   └── errors.log
 │
 └── docs/                     # Dokümantasyon
-    └── proje_dokumantasyonu.md
+    ├── OPERASYON_VE_RAPORLAMA_MERKEZI.md
+    ├── proje_dokumantasyonu.md
+    ├── PROJE_TAM_INCELEME_VE_YAPILACAKLAR_RAPORU_2026-02-15.md
+    └── ITF_Desktop_Analiz_Raporu.md
 ```
 
 ---
@@ -458,7 +461,7 @@ python main.pyw  # Yeni DB oluşturulacak
 Daha fazla bilgi için:
 - [Operasyon ve Raporlama Merkezi](docs/OPERASYON_VE_RAPORLAMA_MERKEZI.md)
 - [Detaylı Proje Dokümantasyonu](docs/proje_dokumantasyonu.md)
-- [RKE Modül Dokümantasyonu](docs/RKE_MODUL_DOKUMANTASYONU.md)
+- Not: Modül dokümantasyonları (Personel/Cihaz/RKE/Admin/Veri-Sync) bu dosya içinde birleştirilmiştir.
 - [Gizli Bilgi Yönetimi](SECRETS_MANAGEMENT.md)
 - [Geliştirme TODO Listesi](TODO.md)
 

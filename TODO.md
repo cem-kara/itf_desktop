@@ -189,12 +189,19 @@ Pull-only tablolar artık:
 **Yapılacaklar**
 - Mevcut doküman içeriğini gerçek kod durumuna göre güncelle.
 - “var olan”/“planlanan” bölümleri ayır.
+- Modül bazlı mükerrer dokümanları tek kanonik dosyada birleştir.
 
 **Neden**
 - Doğru dokümantasyon onboarding ve geliştirme hızını artırır.
 
 **Dosyalar**
-- `docs/itf_desktop_proje_dokumantasyonu.md`
+- `docs/proje_dokumantasyonu.md`
+- `docs/OPERASYON_VE_RAPORLAMA_MERKEZI.md`
+
+## ✅ Definition of Done (DoD)
+
+- [x] Dokümantasyon içerikleri kodla senkronize edildi
+- [x] Modül dokümanları `docs/proje_dokumantasyonu.md` içinde birleştirildi
 
 ---
 
@@ -202,6 +209,7 @@ Pull-only tablolar artık:
 **Yapılacaklar**
 - `base_repository1.py`, `sync_service1.py` gibi kopya dosyaları kaldır ya da `archive/` altına taşı.
 - Aktif olmayan dosyaları README’de not et.
+- Dokümantasyonda mükerrer modül dosyalarını tek kanonik dosyada birleştir.
 
 **Neden**
 - Yanlış dosyayı düzenleme riski azalır, repo sadeleşir.
@@ -209,6 +217,16 @@ Pull-only tablolar artık:
 **Dosyalar**
 - `database/base_repository1.py`
 - `database/sync_service1.py`
+- `docs/proje_dokumantasyonu.md`
+- `docs/OPERASYON_VE_RAPORLAMA_MERKEZI.md`
+- `README.md`
+
+## ✅ Definition of Done (DoD)
+
+- [x] Kopya dosya isimleri kontrol edildi (aktif kod tabanında `base_repository1.py` / `sync_service1.py` bulunmuyor)
+- [x] Mükerrer modül dokümanları `docs/proje_dokumantasyonu.md` içinde birleştirildi
+- [x] Ayrı modül doküman dosyaları temizlendi
+- [x] README doküman yönlendirmeleri güncellendi
 
 ---
 
@@ -283,7 +301,7 @@ Pull-only tablolar artık:
 
 ---
 
-## Güncel Proje Takip — Son Durum (11 Şubat 2026)
+## Güncel Proje Takip — Son Durum (16 Şubat 2026)
 Aşağıda workspace içi en son yapılacaklar listesi ve durumları yer alır. Bu bölüm elle güncellenebilir ve sprint takibinde kullanılabilir.
 
 - [x] Kod tabanını keşfet
@@ -294,8 +312,11 @@ Aşağıda workspace içi en son yapılacaklar listesi ve durumları yer alır. 
 - [x] `requirements.txt` oluştur
 - [x] Secrets temizle ve `.gitignore`
 - [x] `README.md` ekle
-- [ ] Unit test: `core/hesaplamalar.py`
-- [ ] CI: lint + test workflow
+- [x] Dokümantasyonları birleştir ve sadeleştir
+- [x] `README.md` doküman haritasını güncelle
+- [x] `TODO.md` doküman maddelerini güncelle
+- [x] Unit test: `core/hesaplamalar.py`
+- [x] CI: lint + test workflow
 - [ ] `RepositoryRegistry` DI refactor
 - [ ] Tiplendirme: `mypy` entegrasyonu
 - [x] Log rotasyonu ve retention

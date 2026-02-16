@@ -148,9 +148,12 @@ class MigrationManager:
                 if migration_method:
                     logger.info(f"Migration v{version} uygulanıyor...")
                     migration_method()
-                    self.set_schema_version(version, f"Migrated to v{version}")
                 else:
-                    logger.warning(f"Migration v{version} metodu bulunamadı, atlanıyor")
+                    # Metod yoksa bu sürüm geliştirme sürecinde atlandı demektir.
+                    # Yine de schema_version'a kayıt yaparak boşluk bırakmıyoruz.
+                    logger.info(f"Migration v{version} metodu yok — no-op olarak geçiliyor")
+                
+                self.set_schema_version(version, f"Migrated to v{version}")
             
             logger.info("✓ Tüm migration'lar başarıyla tamamlandı")
             return True
@@ -192,7 +195,8 @@ class MigrationManager:
             tables_with_sync = [
                 "Personel", "Izin_Giris", "Izin_Bilgi", "FHSZ_Puantaj",
                 "Cihazlar", "Cihaz_Ariza", "Ariza_Islem", "Periyodik_Bakim",
-                "Kalibrasyon", "Sabitler", "Tatiller", "RKE_List", "RKE_Muayene"
+                "Kalibrasyon", "Sabitler", "Tatiller", "RKE_List", "RKE_Muayene",
+                "Personel_Saglik_Takip"
             ]
             
             for table in tables_with_sync:
@@ -232,66 +236,15 @@ class MigrationManager:
         finally:
             conn.close()
 
-    def _migrate_to_v3(self):
-        """
-        v2 → v3: No-op.
-        Nihai şema create_tables içinde yönetiliyor.
-        """
-        logger.info("v3: no-op (Personel_Saglik_Takip create_tables ile yönetiliyor)")
-
-    def _migrate_to_v4(self):
-        """
-        v3 → v4: Geriye dönük versiyon uyumluluğu için no-op.
-        """
-        logger.info("v4: no-op (Personel_Saglik_Takip şeması v3'te sabitlendi)")
-
-    def _migrate_to_v5(self):
-        """
-        v4 → v5: Geriye dönük versiyon uyumluluğu için no-op.
-        """
-        logger.info("v5: no-op (Personel_Saglik_Takip şeması v3'te sabitlendi)")
-
-    def _migrate_to_v6(self):
-        """
-        v5 → v6: Geriye dönük versiyon uyumluluğu için no-op.
-        """
-        logger.info("v6: no-op (Personel_Saglik_Takip şeması v3'te sabitlendi)")
-
-    def _migrate_to_v7(self):
-        """
-        v6 → v7: Personel tablosuna saglik ozet kolonlari ekleme.
-        - MuayeneTarihi (TEXT)
-        - Sonuc (TEXT)
-        """
-        conn = self.connect()
-        cur = conn.cursor()
-
-        try:
-            cur.execute("""
-                SELECT name FROM sqlite_master
-                WHERE type='table' AND name='Personel'
-            """)
-            if not cur.fetchone():
-                logger.warning("Tablo bulunamadi: Personel, v7 atlandi")
-                conn.commit()
-                return
-
-            cur.execute("PRAGMA table_info(Personel)")
-            existing = {row[1] for row in cur.fetchall()}
-
-            if "MuayeneTarihi" not in existing:
-                cur.execute("ALTER TABLE Personel ADD COLUMN MuayeneTarihi TEXT")
-                logger.info("  Personel.MuayeneTarihi eklendi")
-
-            if "Sonuc" not in existing:
-                cur.execute("ALTER TABLE Personel ADD COLUMN Sonuc TEXT")
-                logger.info("  Personel.Sonuc eklendi")
-
-            conn.commit()
-            logger.info("v7: Personel saglik ozet kolonlari hazir")
-
-        finally:
-            conn.close()
+    # v3-v7: Şema değişikliği içermeyen versiyon adımları. Metod tanımlanmamıştır;
+    # run_migrations döngüsü bunları otomatik "no-op" olarak geçer ve
+    # schema_version tablosuna yine de kaydeder (gap bırakmaz).
+    #
+    # Özet geçmiş:
+    #   v3 — Personel_Saglik_Takip create_tables'a eklendi (no-op)
+    #   v4-v6 — rezerve
+    #   v7 — Personel.MuayeneTarihi ve .Sonuc; zaten create_tables'ta mevcut,
+    #          local DB ve GSheets'e manuel eklendi — alter table gerekmez
 
     # ════════════════════════════════════════════════
     # TABLO OLUŞTURMA (İLK KURULUM)

@@ -151,3 +151,31 @@ Son guncellemelerle kritik test-kod-konfig uyumsuzluklari kapatildi ve testler t
 Notlar:
 - `sync_status` ve `updated_at` lokal teknik kolonlardir; `table_config.columns` icinde olmadiklari surece GSheets payload'ina girmez.
 - `Personel_Saglik_Takip` icin tablo-level contract test eklenmesi onerilir (PK + kritik kolonlar + tarih alanlari).
+
+## Ek C) 2026-02-16 Sonrasi Guncellemeler (Arsiv Notu)
+
+Bu dosya 15.02.2026 tarihli referans rapordur. Asagidaki maddeler, sonrasinda projeye eklenen yeni alanlari arsivlemek icin eklenmistir:
+
+1. Raporlama katmani
+- `core/rapor_servisi.py` ile merkezi Excel/PDF uretimi
+- `ui/components/rapor_buton.py` ile sayfalara tek bilesenle disa aktarma
+- `scripts/demo_sablonlar_olustur.py` ile referans sablon uretimi
+
+2. Bildirim katmani
+- `core/bildirim_servisi.py` (kritik/uyari siniflandirma)
+- `ui/components/bildirim_paneli.py` (chip tabanli panel, tiklanabilir yonlendirme)
+- `ui/main_window.py` icinde bildirim paneli + worker tetikleme entegrasyonu
+
+3. Yedekleme UI katmani
+- `ui/pages/admin/yedek_yonetimi.py` eklendi
+- `database/migrations.py` backup/cleanup davranisi ile uyumlu calisir
+
+4. Dashboard gelisimi
+- `ui/pages/dashboard.py` SQL metrik kapsamı genisletildi
+- Cihaz, personel, RKE ve saglik metrikleri + aylik izinli siniflandirmasi
+
+5. Test guvencesi (yeni)
+- `tests/test_rapor_servisi.py` (25 test)
+- `tests/test_bildirim_servisi.py`
+- `tests/test_yedek_yonetimi.py`
+- `tests/test_dashboard_worker.py`

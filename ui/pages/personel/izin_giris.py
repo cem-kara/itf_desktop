@@ -424,7 +424,7 @@ class IzinGirisPage(QWidget):
             izin_tipleri = sorted([
                 str(r.get("MenuEleman", "")).strip()
                 for r in all_sabit
-                if r.get("Kod") == "Izin_Tipi" and r.get("MenuEleman", "").strip()
+                if r.get("Kod") == "İzin_Tipi" and r.get("MenuEleman", "").strip()
             ])
 
             # Eğer veritabanı boşsa varsayılanları koru

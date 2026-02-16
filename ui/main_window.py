@@ -27,11 +27,13 @@ class MainWindow(QMainWindow):
 
         self._pages = {}
         self._sync_worker = None
+        self._bildirim_worker = None
         self._db = SQLiteManager()
         self._load_theme()
         self._build_ui()
         self._build_status_bar()
         self._setup_sync()
+        self._setup_bildirim()
 
     def _load_theme(self):
         theme_path = os.path.join(
@@ -79,6 +81,12 @@ class MainWindow(QMainWindow):
         """)
         self.page_title.setVisible(False)
         content_layout.addWidget(self.page_title)
+
+        # Bildirim paneli (page_title ile stack arasında)
+        from ui.components.bildirim_paneli import BildirimPaneli
+        self.bildirim_paneli = BildirimPaneli()
+        self.bildirim_paneli.sayfa_ac.connect(self._on_menu_clicked)
+        content_layout.addWidget(self.bildirim_paneli)
 
         # Stacked Widget
         self.stack = QStackedWidget()
@@ -283,6 +291,12 @@ class MainWindow(QMainWindow):
             page = LogGoruntuleme(db=self._db)
             page.btn_kapat.clicked.connect(lambda: self._close_page("Log Görüntüleyici"))
             return page
+
+        if baslik == "Yedek Yönetimi":
+            from ui.pages.admin.yedek_yonetimi import YedekYonetimiPage
+            page = YedekYonetimiPage(db=self._db)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Yedek Yönetimi"))
+            return page
         
         if baslik == "Ayarlar":
             from ui.pages.admin.yonetim_ayarlar import AyarlarPenceresi
@@ -434,6 +448,23 @@ class MainWindow(QMainWindow):
         self.page_title.setVisible(False)
         self.sidebar.set_active("")
 
+    # ── BİLDİRİM ──
+
+    def _setup_bildirim(self):
+        """Uygulama açılışından 5 sn sonra ilk bildirim kontrolünü başlatır."""
+        QTimer.singleShot(5000, self._tetikle_bildirim)
+
+    def _tetikle_bildirim(self):
+        """BildirimWorker'ı başlatır; zaten çalışıyorsa atlar."""
+        if self._bildirim_worker and self._bildirim_worker.isRunning():
+            return
+        from core.bildirim_servisi import BildirimWorker
+        db_path = getattr(self._db, "db_path", DB_PATH)
+        self._bildirim_worker = BildirimWorker(db_path)
+        self._bildirim_worker.sonuc_hazir.connect(self.bildirim_paneli.guncelle)
+        self._bildirim_worker.start()
+        logger.info("Bildirim kontrolü başlatıldı")
+
     # ── SENKRONİZASYON ──
 
     def _setup_sync(self):
@@ -476,6 +507,8 @@ class MainWindow(QMainWindow):
             if hasattr(dashboard_page, "load_data"):
                 logger.info("Dashboard yenileniyor...")
                 dashboard_page.load_data()
+        # Sync sonrası bildirimleri de güncelle
+        self._tetikle_bildirim()
 
     @Slot(str, str)
     def _on_sync_error(self, short_msg, detail_msg):
@@ -533,6 +566,9 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         if self._sync_worker and self._sync_worker.isRunning():
             self._sync_worker.stop()
+        if self._bildirim_worker and self._bildirim_worker.isRunning():
+            self._bildirim_worker.quit()
+            self._bildirim_worker.wait(1000)
         if self._db:
             self._db.close()
         event.accept()

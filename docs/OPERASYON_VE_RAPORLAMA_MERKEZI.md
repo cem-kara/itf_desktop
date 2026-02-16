@@ -52,7 +52,7 @@ Tum guncel durum, acik maddeler ve operasyon notlari burada tutulur.
 
 - `docs/OPERASYON_VE_RAPORLAMA_MERKEZI.md` (bu dosya)
 - `docs/proje_dokumantasyonu.md` (mimari ve genel teknik dokuman)
-- `docs/RKE_MODUL_DOKUMANTASYONU.md` (RKE bagimsiz modul dokumani)
+- Modul detaylari `docs/proje_dokumantasyonu.md` icinde birlestirilmis halde bulunur.
 
 ### Referans/Arsiv
 
@@ -63,8 +63,51 @@ Tum guncel durum, acik maddeler ve operasyon notlari burada tutulur.
 ## 6) Degisiklik Gunlugu
 
 - 2026-02-16: Operasyon ve raporlama notlari tek dosyada birlestirildi.
+- 2026-02-16: Rapor servisi, bildirim paneli, yedek yonetimi ve dashboard metrik guncellemeleri eklendi.
 
-## 7) Release Ready Notu
+## 7) 2026-02-16 Operasyon Ekleri
+
+### Raporlama Runbook
+
+1. Merkezi servis: `core/rapor_servisi.py`
+2. UI bileseni: `ui/components/rapor_buton.py`
+3. Sablonlar:
+- Excel: `data/templates/excel/*.xlsx`
+- PDF: `data/templates/pdf/*.html`
+4. Referans sablon uretimi:
+- `scripts/demo_sablonlar_olustur.py`
+5. Hata durumlari:
+- Sablon yoksa servis `None` doner ve log basar
+- PDF ortaminda Qt yoksa `_preview.html` fallback olusur
+
+### Bildirim Runbook
+
+1. Worker: `core/bildirim_servisi.py::BildirimWorker`
+2. UI panel: `ui/components/bildirim_paneli.py`
+3. Main akisi:
+- `ui/main_window.py` acilista `_setup_bildirim()`
+- Sync sonrasi yeniden bildirim kontrolu
+4. Kategoriler:
+- Kritik/Uyari + grup/sayfa bilgisi ile tiklanabilir yonlendirme
+
+### Yedekleme Runbook
+
+1. Admin ekrani: `ui/pages/admin/yedek_yonetimi.py`
+2. Altyapi: `database/migrations.py::backup_database()`
+3. Dosya formati:
+- `data/backups/db_backup_YYYYMMDD_HHMMSS.db`
+4. Politika:
+- Eski yedek temizligi varsayilan `keep_count=10`
+- Geri yuklemede once emniyet yedegi alinmasi
+
+### Yeni Test Paketleri
+
+- `tests/test_rapor_servisi.py`
+- `tests/test_bildirim_servisi.py`
+- `tests/test_yedek_yonetimi.py`
+- `tests/test_dashboard_worker.py`
+
+## 8) Release Ready Notu
 
 Durum: `Release-Ready`
 
