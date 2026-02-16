@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 import os
 from PySide6.QtCore import Qt, QDate, QThread, Signal
 from PySide6.QtWidgets import (
@@ -13,7 +13,7 @@ from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
 
 
-# ─── Drive Yükleme Worker (UI donmasın) ───
+# â”€â”€â”€ Drive YÃ¼kleme Worker (UI donmasÄ±n) â”€â”€â”€
 class DriveUploadWorker(QThread):
     finished = Signal(str, str)   # (alan_adi, webViewLink)
     error = Signal(str, str)      # (alan_adi, hata_mesaji)
@@ -37,16 +37,16 @@ class DriveUploadWorker(QThread):
             if link:
                 self.finished.emit(self._alan_adi, link)
             else:
-                self.error.emit(self._alan_adi, "Yükleme başarısız")
+                self.error.emit(self._alan_adi, "YÃ¼kleme baÅŸarÄ±sÄ±z")
         except Exception as e:
             exc_logla("CihazEkle.DosyaYukleyici", e)
             self.error.emit(self._alan_adi, str(e))
 
 
-# ─── W11 Dark Glass Stiller (MERKEZİ KAYNAKTAN) ───
+# â”€â”€â”€ W11 Dark Glass Stiller (MERKEZÄ° KAYNAKTAN) â”€â”€â”€
 S = ThemeManager.get_all_component_styles()
 
-# DB alan → form widget eşlemesi
+# DB alan â†’ form widget eÅŸlemesi
 FIELD_MAP = {
     "Marka": "marka",
     "Model": "model",
@@ -75,10 +75,10 @@ FIELD_MAP = {
 
 class CihazEklePage(QWidget):
     """
-    Cihaz Ekle / Düzenle sayfası.
+    Cihaz Ekle / DÃ¼zenle sayfasÄ±.
     db: SQLiteManager instance
-    edit_data: dict → düzenleme modunda mevcut veri
-    on_saved: callback → kayıt sonrası çağrılır
+    edit_data: dict â†’ dÃ¼zenleme modunda mevcut veri
+    on_saved: callback â†’ kayÄ±t sonrasÄ± Ã§aÄŸrÄ±lÄ±r
     """
 
     def __init__(self, db=None, edit_data=None, on_saved=None, parent=None):
@@ -102,9 +102,9 @@ class CihazEklePage(QWidget):
         if self._is_edit:
             self._fill_form(edit_data)
 
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     #  UI
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _setup_ui(self):
         main = QVBoxLayout(self)
@@ -123,25 +123,25 @@ class CihazEklePage(QWidget):
         content_layout.setSpacing(20)
         content_layout.setContentsMargins(0, 0, 0, 0)
 
-        # ── SOL SÜTUN ──
+        # â”€â”€ SOL SÃœTUN â”€â”€
         left = QWidget()
         left_l = QVBoxLayout(left)
         left_l.setSpacing(12)
         left_l.setContentsMargins(0, 0, 0, 0)
 
-        # Cihaz Görseli
-        photo_grp = QGroupBox("📷  Cihaz Görseli")
+        # Cihaz GÃ¶rseli
+        photo_grp = QGroupBox("ğŸ“·  Cihaz GÃ¶rseli")
         photo_grp.setStyleSheet(S["group"])
         photo_lay = QVBoxLayout(photo_grp)
         photo_lay.setAlignment(Qt.AlignCenter)
 
-        self.lbl_resim = QLabel("Görsel\nYüklenmedi")
+        self.lbl_resim = QLabel("GÃ¶rsel\nYÃ¼klenmedi")
         self.lbl_resim.setFixedSize(200, 200)
         self.lbl_resim.setAlignment(Qt.AlignCenter)
         self.lbl_resim.setStyleSheet(S["photo_area"])
         photo_lay.addWidget(self.lbl_resim, alignment=Qt.AlignCenter)
 
-        btn_resim = QPushButton("📷 Görsel Seç")
+        btn_resim = QPushButton("ğŸ“· GÃ¶rsel SeÃ§")
         btn_resim.setStyleSheet(S["photo_btn"])
         btn_resim.setCursor(QCursor(Qt.PointingHandCursor))
         btn_resim.clicked.connect(lambda: self._select_file("Img"))
@@ -149,7 +149,7 @@ class CihazEklePage(QWidget):
         left_l.addWidget(photo_grp)
 
         # Temel Bilgiler
-        basic_grp = QGroupBox("📋  Temel Bilgiler")
+        basic_grp = QGroupBox("ğŸ“‹  Temel Bilgiler")
         basic_grp.setStyleSheet(S["group"])
         basic_lay = QHBoxLayout(basic_grp)
         basic_lay.setSpacing(10)
@@ -164,13 +164,13 @@ class CihazEklePage(QWidget):
             }
         """)
 
-        # Demirbaş No
-        self.ui["demirbas_no"] = self._make_input("Demirbaş No", basic_lay)
+        # DemirbaÅŸ No
+        self.ui["demirbas_no"] = self._make_input("DemirbaÅŸ No", basic_lay)
 
         left_l.addWidget(basic_grp)
 
         # Kimlik Bilgileri
-        identity_grp = QGroupBox("🔬  Cihaz Kimlik Bilgileri")
+        identity_grp = QGroupBox("ğŸ”¬  Cihaz Kimlik Bilgileri")
         identity_grp.setStyleSheet(S["group"])
         identity_lay = QVBoxLayout(identity_grp)
         identity_lay.setSpacing(10)
@@ -188,39 +188,39 @@ class CihazEklePage(QWidget):
         identity_lay.addLayout(row2)
 
         row3 = QHBoxLayout()
-        self.ui["amac"] = self._make_combo("Kullanım Amacı", row3)
+        self.ui["amac"] = self._make_combo("KullanÄ±m AmacÄ±", row3)
         self.ui["amac"].setProperty("db_kod", "Amac")
-        self.ui["kaynak"] = self._make_combo("Edinim Kaynağı", row3)
+        self.ui["kaynak"] = self._make_combo("Edinim KaynaÄŸÄ±", row3)
         self.ui["kaynak"].setProperty("db_kod", "Kaynak")
         identity_lay.addLayout(row3)
         left_l.addWidget(identity_grp)
         left_l.addStretch()
 
-        # ── SAĞ SÜTUN ──
+        # â”€â”€ SAÄ SÃœTUN â”€â”€
         right = QWidget()
         right_l = QVBoxLayout(right)
         right_l.setSpacing(12)
         right_l.setContentsMargins(0, 0, 0, 0)
 
         # Lokasyon Bilgileri
-        location_grp = QGroupBox("📍  Lokasyon Bilgileri")
+        location_grp = QGroupBox("ğŸ“  Lokasyon Bilgileri")
         location_grp.setStyleSheet(S["group"])
         location_lay = QVBoxLayout(location_grp)
         location_lay.setSpacing(10)
 
-        self.ui["ana_bilim_dali"] = self._make_combo_v("Ana Bilim Dalı", location_lay)
+        self.ui["ana_bilim_dali"] = self._make_combo_v("Ana Bilim DalÄ±", location_lay)
         self.ui["ana_bilim_dali"].setProperty("db_kod", "AnaBilimDali")
 
         row_loc = QHBoxLayout()
         self.ui["birim"] = self._make_combo("Birim", row_loc)
         self.ui["birim"].setProperty("db_kod", "Birim")
-        self.ui["bina"] = self._make_input("Bulunduğu Bina", row_loc)
+        self.ui["bina"] = self._make_input("BulunduÄŸu Bina", row_loc)
         location_lay.addLayout(row_loc)
 
         right_l.addWidget(location_grp)
 
         # Lisans Bilgileri
-        license_grp = QGroupBox("📜  Lisans Bilgileri")
+        license_grp = QGroupBox("ğŸ“œ  Lisans Bilgileri")
         license_grp.setStyleSheet(S["group"])
         license_lay = QVBoxLayout(license_grp)
         license_lay.setSpacing(10)
@@ -233,10 +233,10 @@ class CihazEklePage(QWidget):
         row_l2 = QHBoxLayout()
         self.ui["lisans_durum"] = self._make_combo("Lisans Durumu", row_l2)
         self.ui["lisans_durum"].setProperty("db_kod", "Lisans_Durum")
-        self.ui["lisans_bitis"] = self._make_date("Lisans Bitiş Tarihi", row_l2)
+        self.ui["lisans_bitis"] = self._make_date("Lisans BitiÅŸ Tarihi", row_l2)
         license_lay.addLayout(row_l2)
 
-        btn_lisans = QPushButton("📄 Lisans Belgesi Seç")
+        btn_lisans = QPushButton("ğŸ“„ Lisans Belgesi SeÃ§")
         btn_lisans.setStyleSheet(S["file_btn"])
         btn_lisans.setCursor(QCursor(Qt.PointingHandCursor))
         btn_lisans.clicked.connect(lambda: self._select_file("NDKLisansBelgesi"))
@@ -249,26 +249,26 @@ class CihazEklePage(QWidget):
         right_l.addWidget(license_grp)
 
         # Teknik Bilgiler
-        tech_info_grp = QGroupBox("🔧  Teknik Bilgiler")
+        tech_info_grp = QGroupBox("ğŸ”§  Teknik Bilgiler")
         tech_info_grp.setStyleSheet(S["group"])
         tech_info_lay = QVBoxLayout(tech_info_grp)
         tech_info_lay.setSpacing(10)
 
         row_t1 = QHBoxLayout()
-        self.ui["sorumlu"] = self._make_input("Sorumlu Kişi", row_t1)
+        self.ui["sorumlu"] = self._make_input("Sorumlu KiÅŸi", row_t1)
         self.ui["rks"] = self._make_input("Radyasyon Kor. Sor.", row_t1)
         tech_info_lay.addLayout(row_t1)
 
         row_t2 = QHBoxLayout()
-        self.ui["hizmet_giris"] = self._make_date("Hizmete Giriş Tarihi", row_t2)
+        self.ui["hizmet_giris"] = self._make_date("Hizmete GiriÅŸ Tarihi", row_t2)
         self.ui["durum"] = self._make_combo("Genel Durum", row_t2)
         self.ui["durum"].setProperty("db_kod", "Cihaz_Durum")
         tech_info_lay.addLayout(row_t2)
 
         right_l.addWidget(tech_info_grp)
 
-        # Garanti ve Bakım
-        maint_grp = QGroupBox("🛠️  Garanti ve Bakım Durumu")
+        # Garanti ve BakÄ±m
+        maint_grp = QGroupBox("ğŸ› ï¸  Garanti ve BakÄ±m Durumu")
         maint_grp.setStyleSheet(S["group"])
         maint_lay = QVBoxLayout(maint_grp)
         maint_lay.setSpacing(10)
@@ -276,11 +276,11 @@ class CihazEklePage(QWidget):
         row_m1 = QHBoxLayout()
         self.ui["garanti_durum"] = self._make_combo("Garanti Durumu", row_m1)
         self.ui["garanti_durum"].setProperty("db_kod", "Garanti_Durum")
-        self.ui["garanti_bitis"] = self._make_date("Garanti Bitiş Tarihi", row_m1)
+        self.ui["garanti_bitis"] = self._make_date("Garanti BitiÅŸ Tarihi", row_m1)
         maint_lay.addLayout(row_m1)
 
         row_m2 = QHBoxLayout()
-        self.ui["bakim_durum"] = self._make_combo("Bakım Anlaşması", row_m2)
+        self.ui["bakim_durum"] = self._make_combo("BakÄ±m AnlaÅŸmasÄ±", row_m2)
         self.ui["bakim_durum"].setProperty("db_kod", "Bakim_Durum")
         self.ui["kalibrasyon_gerekli"] = self._make_combo("Kalibrasyon Gerekli mi?", row_m2)
         self.ui["kalibrasyon_gerekli"].setProperty("db_kod", "Kalibrasyon_Durum")
@@ -294,7 +294,7 @@ class CihazEklePage(QWidget):
         scroll.setWidget(content)
         main.addWidget(scroll, 1)
 
-        # ── FOOTER ──
+        # â”€â”€ FOOTER â”€â”€
         footer = QHBoxLayout()
         footer.setSpacing(12)
 
@@ -316,15 +316,15 @@ class CihazEklePage(QWidget):
         footer.addWidget(self.progress)
         footer.addStretch()
 
-        btn_iptal = QPushButton("✕  İPTAL")
+        btn_iptal = QPushButton("âœ•  Ä°PTAL")
         btn_iptal.setStyleSheet(S["cancel_btn"])
         btn_iptal.setFixedHeight(42)
         btn_iptal.setCursor(QCursor(Qt.PointingHandCursor))
         btn_iptal.clicked.connect(self._on_cancel)
         footer.addWidget(btn_iptal)
 
-        title = "GÜNCELLE" if self._is_edit else "KAYDET"
-        self.btn_kaydet = QPushButton(f"✓  CİHAZI {title}")
+        title = "GÃœNCELLE" if self._is_edit else "KAYDET"
+        self.btn_kaydet = QPushButton(f"âœ“  CÄ°HAZI {title}")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
         self.btn_kaydet.setFixedHeight(42)
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
@@ -333,9 +333,9 @@ class CihazEklePage(QWidget):
 
         main.addLayout(footer)
 
-    # ═══════════════════════════════════════════
-    #  YARDIMCI WIDGET FABRİKALARI
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  YARDIMCI WIDGET FABRÄ°KALARI
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _make_input(self, label, parent_layout, required=False, placeholder=""):
         container = QWidget()
@@ -426,18 +426,18 @@ class CihazEklePage(QWidget):
         parent_layout.addWidget(de)
         return de
 
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     #  COMBOBOX POPULATE
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _populate_combos(self):
-        """ComboBox'ları Sabitler tablosundan doldurur"""
+        """ComboBox'larÄ± Sabitler tablosundan doldurur"""
         if not self._db:
             return
 
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
+            from core.di import get_registry
+            registry = get_registry(self._db)
             sabitler_repo = registry.get("Sabitler")
             all_sabit = sabitler_repo.get_all()
 
@@ -465,7 +465,7 @@ class CihazEklePage(QWidget):
                     if db_kod in sabitler_map:
                         widget.addItems([""] + sorted(sabitler_map[db_kod]))
 
-            # Cihaz ID için sıradaki no
+            # Cihaz ID iÃ§in sÄ±radaki no
             cihaz_repo = registry.get("Cihazlar")
             max_id = 0
             for cihaz in cihaz_repo.get_all():
@@ -479,23 +479,23 @@ class CihazEklePage(QWidget):
                         pass
             self._next_cihaz_sira = max_id + 1
 
-            # Sinyalleri bağla
+            # Sinyalleri baÄŸla
             for key in ["ana_bilim_dali", "cihaz_tipi", "kaynak"]:
                 if key in self.ui:
                     self.ui[key].currentTextChanged.connect(self._update_cihaz_id)
             self._update_cihaz_id()
 
-            # Drive klasör ID'leri
+            # Drive klasÃ¶r ID'leri
             self._drive_folders = {
                 str(r.get("MenuEleman", "")).strip(): str(r.get("Aciklama", "")).strip()
                 for r in all_sabit if r.get("Kod") == "Sistem_DriveID"
             }
 
         except Exception as e:
-            logger.error(f"Combo populate hatası: {e}")
+            logger.error(f"Combo populate hatasÄ±: {e}")
 
     def _update_cihaz_id(self):
-        """Cihaz ID'yi otomatik oluşturur"""
+        """Cihaz ID'yi otomatik oluÅŸturur"""
         try:
             abd = self.ui["ana_bilim_dali"].currentText().strip()
             tip = self.ui["cihaz_tipi"].currentText().strip()
@@ -511,29 +511,29 @@ class CihazEklePage(QWidget):
             else:
                 self.ui["cihaz_id"].setText("")
         except Exception as e:
-            logger.error(f"Cihaz ID güncelleme hatası: {e}")
+            logger.error(f"Cihaz ID gÃ¼ncelleme hatasÄ±: {e}")
 
-    # ═══════════════════════════════════════════
-    #  DOSYA SEÇİMİ
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  DOSYA SEÃ‡Ä°MÄ°
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _select_file(self, alan_adi):
-        """Dosya seçici dialog"""
+        """Dosya seÃ§ici dialog"""
         if alan_adi == "Img":
-            file_filter = "Görsel Dosyaları (*.jpg *.jpeg *.png *.bmp *.gif)"
+            file_filter = "GÃ¶rsel DosyalarÄ± (*.jpg *.jpeg *.png *.bmp *.gif)"
         else:
             file_filter = "Belgeler (*.pdf *.jpg *.jpeg *.png)"
 
         file_path, _ = QFileDialog.getOpenFileName(
             self,
-            f"{alan_adi} Seç",
+            f"{alan_adi} SeÃ§",
             "",
             file_filter
         )
 
         if file_path:
             self._file_paths[alan_adi] = file_path
-            logger.info(f"{alan_adi} seçildi: {file_path}")
+            logger.info(f"{alan_adi} seÃ§ildi: {file_path}")
 
             if alan_adi == "Img":
                 pixmap = QPixmap(file_path)
@@ -544,14 +544,14 @@ class CihazEklePage(QWidget):
                     self.lbl_resim.setScaledContents(False)
             elif alan_adi == "NDKLisansBelgesi":
                 file_name = os.path.basename(file_path)
-                self.ui["lisans_file_lbl"].setText(f"✓ {file_name}")
+                self.ui["lisans_file_lbl"].setText(f"âœ“ {file_name}")
 
-    # ═══════════════════════════════════════════
-    #  FORM İŞLEMLERİ
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  FORM Ä°ÅLEMLERÄ°
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _fill_form(self, data):
-        """Formu mevcut veri ile doldurur (düzenleme modu)"""
+        """Formu mevcut veri ile doldurur (dÃ¼zenleme modu)"""
         for db_field, widget_key in FIELD_MAP.items():
             if widget_key in self.ui:
                 widget = self.ui[widget_key]
@@ -575,15 +575,15 @@ class CihazEklePage(QWidget):
         # Cihaz ID
         self.ui["cihaz_id"].setText(data.get("Cihazid", ""))
 
-        # Görsel
+        # GÃ¶rsel
         img_link = data.get("Img", "")
         if img_link:
             self._drive_links["Img"] = img_link
-            # TODO: Drive'dan görsel indirip göster
+            # TODO: Drive'dan gÃ¶rsel indirip gÃ¶ster
 
     def _on_save(self):
         """Kaydet butonu"""
-        # Zorunlu alanları kontrol et
+        # Zorunlu alanlarÄ± kontrol et
         required_fields = {
             "marka": "Marka",
             "model": "Model",
@@ -601,7 +601,7 @@ class CihazEklePage(QWidget):
                     value = widget.currentText().strip()
 
                 if not value:
-                    QMessageBox.warning(self, "Eksik Bilgi", f"Lütfen {name} alanını doldurun!")
+                    QMessageBox.warning(self, "Eksik Bilgi", f"LÃ¼tfen {name} alanÄ±nÄ± doldurun!")
                     widget.setFocus()
                     return
 
@@ -619,7 +619,7 @@ class CihazEklePage(QWidget):
 
         data["Cihazid"] = self.ui["cihaz_id"].text().strip()
 
-        # Drive yüklemeleri
+        # Drive yÃ¼klemeleri
         if self._file_paths:
             self.btn_kaydet.setEnabled(False)
             self.progress.setVisible(True)
@@ -628,7 +628,7 @@ class CihazEklePage(QWidget):
             self._save_to_db(data)
 
     def _upload_to_drive(self, data):
-        """Dosyaları Drive'a yükle"""
+        """DosyalarÄ± Drive'a yÃ¼kle"""
         for alan_adi, file_path in self._file_paths.items():
             folder_id = self._drive_folders.get(f"Cihaz_{alan_adi}", None)
             custom_name = f"{data['Cihazid']}_{alan_adi}{os.path.splitext(file_path)[1]}"
@@ -640,58 +640,60 @@ class CihazEklePage(QWidget):
             self._upload_workers.append(worker)
 
     def _on_upload_finished(self, alan_adi, link, data):
-        """Drive yükleme tamamlandı"""
+        """Drive yÃ¼kleme tamamlandÄ±"""
         self._drive_links[alan_adi] = link
-        logger.info(f"{alan_adi} yüklendi: {link}")
+        logger.info(f"{alan_adi} yÃ¼klendi: {link}")
 
-        # Tüm yüklemeler tamamlandı mı?
+        # TÃ¼m yÃ¼klemeler tamamlandÄ± mÄ±?
         if len(self._drive_links) == len(self._file_paths):
             self._save_to_db(data)
 
     def _on_upload_error(self, alan_adi, error_msg):
-        """Drive yükleme hatası"""
-        logger.error(f"{alan_adi} yükleme hatası: {error_msg}")
-        QMessageBox.warning(self, "Yükleme Hatası", f"{alan_adi} yüklenemedi: {error_msg}")
+        """Drive yÃ¼kleme hatasÄ±"""
+        logger.error(f"{alan_adi} yÃ¼kleme hatasÄ±: {error_msg}")
+        QMessageBox.warning(self, "YÃ¼kleme HatasÄ±", f"{alan_adi} yÃ¼klenemedi: {error_msg}")
         self.btn_kaydet.setEnabled(True)
         self.progress.setVisible(False)
 
     def _save_to_db(self, data):
-        """Veritabanına kaydet"""
+        """VeritabanÄ±na kaydet"""
         try:
             # Drive linklerini ekle
             for alan_adi, link in self._drive_links.items():
                 data[alan_adi] = link
 
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
+            from core.di import get_registry
+            registry = get_registry(self._db)
             cihaz_repo = registry.get("Cihazlar")
 
             if self._is_edit:
                 pk = self._edit_data.get("Cihazid")
                 cihaz_repo.update(pk, data)
-                QMessageBox.information(self, "Başarılı", "Cihaz güncellendi!")
+                QMessageBox.information(self, "BaÅŸarÄ±lÄ±", "Cihaz gÃ¼ncellendi!")
             else:
                 cihaz_repo.insert(data)
-                QMessageBox.information(self, "Başarılı", "Cihaz kaydedildi!")
+                QMessageBox.information(self, "BaÅŸarÄ±lÄ±", "Cihaz kaydedildi!")
 
             if self._on_saved:
                 self._on_saved()
 
         except Exception as e:
-            logger.error(f"Kayıt hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Kayıt başarısız: {e}")
+            logger.error(f"KayÄ±t hatasÄ±: {e}")
+            QMessageBox.critical(self, "Hata", f"KayÄ±t baÅŸarÄ±sÄ±z: {e}")
         finally:
             self.btn_kaydet.setEnabled(True)
             self.progress.setVisible(False)
 
     def _on_cancel(self):
-        """İptal butonu"""
+        """Ä°ptal butonu"""
         reply = QMessageBox.question(
             self,
-            "İptal",
-            "Değişiklikler kaydedilmeyecek. Devam edilsin mi?",
+            "Ä°ptal",
+            "DeÄŸiÅŸiklikler kaydedilmeyecek. Devam edilsin mi?",
             QMessageBox.Yes | QMessageBox.No
         )
         if reply == QMessageBox.Yes:
             if self._on_saved:
                 self._on_saved()
+
+

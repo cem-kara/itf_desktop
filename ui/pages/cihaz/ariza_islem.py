@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 import os
 from datetime import datetime
 
@@ -28,11 +28,11 @@ class VeriYukleyici(QThread):
 
     def run(self):
         from database.sqlite_manager import SQLiteManager
-        from database.repository_registry import RepositoryRegistry
+        from core.di import get_registry
         db = None
         try:
             db = SQLiteManager()
-            registry = RepositoryRegistry(db)
+            registry = get_registry(db)
             
             repo_ariza = registry.get("Cihaz_Ariza")
             ariza_bilgisi = repo_ariza.get_by_id(self.ariza_id) or {}
@@ -43,7 +43,7 @@ class VeriYukleyici(QThread):
             )
             gecmis_islemler = [dict(r) for r in cursor.fetchall()]
             
-            # Sabitleri yükle
+            # Sabitleri yÃ¼kle
             sabitler_repo = registry.get("Sabitler")
             islem_turleri = [s.get("MenuEleman") for s in sabitler_repo.get_by_kod("Ariza_Islem_Turu")]
             durum_secenekleri = [s.get("MenuEleman") for s in sabitler_repo.get_by_kod("Ariza_Durum")]
@@ -65,17 +65,17 @@ class IslemKaydedici(QThread):
 
     def run(self):
         from database.sqlite_manager import SQLiteManager
-        from database.repository_registry import RepositoryRegistry
+        from core.di import get_registry
         db = None
         try:
             db = SQLiteManager()
-            registry = RepositoryRegistry(db)
+            registry = get_registry(db)
                 
-            # İşlem Kaydı Ekle (Ariza_Islem)
+            # Ä°ÅŸlem KaydÄ± Ekle (Ariza_Islem)
             repo_islem = registry.get("Ariza_Islem")
             repo_islem.insert(self.islem_verisi)
             
-            # Arıza Durumunu Güncelle (Cihaz_Ariza)
+            # ArÄ±za Durumunu GÃ¼ncelle (Cihaz_Ariza)
             yeni_durum = self.islem_verisi.get("YeniDurum")
             ariza_id = self.islem_verisi.get("Arizaid")
             
@@ -114,13 +114,13 @@ class DosyaYukleyici(QThread):
             if link:
                 self.yuklendi.emit(link)
             else:
-                self.hata_olustu.emit("Dosya yüklenemedi, ancak işlem kaydedildi.")
+                self.hata_olustu.emit("Dosya yÃ¼klenemedi, ancak iÅŸlem kaydedildi.")
         except Exception as e:
-            logger.error(f"Drive yükleme hatası (ariza_islem): {e}")
-            self.hata_olustu.emit(f"Dosya yüklenemedi: {e}")
+            logger.error(f"Drive yÃ¼kleme hatasÄ± (ariza_islem): {e}")
+            self.hata_olustu.emit(f"Dosya yÃ¼klenemedi: {e}")
 
 # =============================================================================
-# 3. ANA PENCERE: KOMPAKT ARIZA İŞLEM
+# 3. ANA PENCERE: KOMPAKT ARIZA Ä°ÅLEM
 # =============================================================================
 class ArizaIslemPenceresi(QWidget):
     kapanma_istegi = Signal()
@@ -130,12 +130,12 @@ class ArizaIslemPenceresi(QWidget):
         self.ariza_id = str(ariza_id).strip() if ariza_id else None
         self.ana_pencere = ana_pencere
         
-        self.setWindowTitle(f"Arıza Takip Kartı | {self.ariza_id}")
+        self.setWindowTitle(f"ArÄ±za Takip KartÄ± | {self.ariza_id}")
         
         self.inputs = {}
         self.ariza_data = {} 
         self.secilen_rapor_yolu = None
-        self.ariza_kapali_mi = False # Durum kontrolü için bayrak
+        self.ariza_kapali_mi = False # Durum kontrolÃ¼ iÃ§in bayrak
         
         self.setup_ui()
         if self.ariza_id:
@@ -146,8 +146,8 @@ class ArizaIslemPenceresi(QWidget):
         main_layout.setContentsMargins(10, 10, 10, 10)
         main_layout.setSpacing(10)
         
-        # Başlık
-        self.lbl_baslik = QLabel(f"Arıza No: {self.ariza_id if self.ariza_id else '---'}")
+        # BaÅŸlÄ±k
+        self.lbl_baslik = QLabel(f"ArÄ±za No: {self.ariza_id if self.ariza_id else '---'}")
         self.lbl_baslik.setFont(QFont("Segoe UI", 12, QFont.Bold))
         self.lbl_baslik.setStyleSheet(
             "color:#e57373; border-bottom:2px solid #444; padding-bottom:5px;"
@@ -170,8 +170,8 @@ class ArizaIslemPenceresi(QWidget):
         )
         form.addLayout(h_info)
 
-        # Arıza Açıklaması
-        lbl_acik = QLabel("Arıza Detayı:")
+        # ArÄ±za AÃ§Ä±klamasÄ±
+        lbl_acik = QLabel("ArÄ±za DetayÄ±:")
         lbl_acik.setStyleSheet("color:#aaa; font-size:11px;")
         self.inputs["Aciklama"] = QTextEdit()
         self.inputs["Aciklama"].setReadOnly(True)
@@ -182,33 +182,33 @@ class ArizaIslemPenceresi(QWidget):
         form.addWidget(lbl_acik)
         form.addWidget(self.inputs["Aciklama"])
 
-        # Ayraç
+        # AyraÃ§
         line = QFrame()
         line.setFrameShape(QFrame.HLine)
         line.setFrameShadow(QFrame.Sunken)
         line.setStyleSheet("background-color: #444;")
         form.addWidget(line)
 
-        # Müdahale Başlık
-        self.lbl_mudahale = QLabel("Müdahale Girişi")
+        # MÃ¼dahale BaÅŸlÄ±k
+        self.lbl_mudahale = QLabel("MÃ¼dahale GiriÅŸi")
         self.lbl_mudahale.setStyleSheet("color:#4CAF50; font-weight:bold; font-size:12px;")
         form.addWidget(self.lbl_mudahale)
 
-        # İşlem Tarih / Saat
+        # Ä°ÅŸlem Tarih / Saat
         h_zaman = QHBoxLayout()
         self._add_lbl_date(h_zaman, "Tarih:", "IslemTarih")
         self._add_lbl_input(h_zaman, "Saat:", "IslemSaat")
         self.inputs["IslemSaat"].setText(datetime.now().strftime("%H:%M"))
         form.addLayout(h_zaman)
 
-        # Yapan / Tür
+        # Yapan / TÃ¼r
         h_personel = QHBoxLayout()
         self._add_lbl_input(h_personel, "Yapan:", "IslemYapan")
-        self._add_lbl_combo(h_personel, "Tür:", "IslemTuru", [])
+        self._add_lbl_combo(h_personel, "TÃ¼r:", "IslemTuru", [])
         form.addLayout(h_personel)
 
-        # Yapılan İşlem
-        lbl_yapilan = QLabel("Yapılan İşlem:")
+        # YapÄ±lan Ä°ÅŸlem
+        lbl_yapilan = QLabel("YapÄ±lan Ä°ÅŸlem:")
         lbl_yapilan.setStyleSheet("color:#aaa; font-size:11px;")
         self.inputs["YapilanIslem"] = QTextEdit()
         self.inputs["YapilanIslem"].setStyleSheet(S["input"])
@@ -219,7 +219,7 @@ class ArizaIslemPenceresi(QWidget):
         # Durum
         self._add_lbl_combo(form, "Yeni Durum:", "YeniDurum", [])
 
-        # Rapor Dosyası
+        # Rapor DosyasÄ±
         lbl_rapor = QLabel("Rapor (Opsiyonel):")
         lbl_rapor.setStyleSheet("color:#aaa; font-size:11px;")
         form.addWidget(lbl_rapor)
@@ -227,10 +227,10 @@ class ArizaIslemPenceresi(QWidget):
         h_rapor = QHBoxLayout()
         self.txt_rapor_yolu = QLineEdit()
         self.txt_rapor_yolu.setReadOnly(True)
-        self.txt_rapor_yolu.setPlaceholderText("Dosya seçilmedi")
+        self.txt_rapor_yolu.setPlaceholderText("Dosya seÃ§ilmedi")
         self.txt_rapor_yolu.setStyleSheet(S["input"])
         
-        self.btn_rapor_sec = QPushButton("Seç")
+        self.btn_rapor_sec = QPushButton("SeÃ§")
         self.btn_rapor_sec.setFixedSize(50, 30)
         self.btn_rapor_sec.setStyleSheet(S["file_btn"])
         self.btn_rapor_sec.clicked.connect(self.rapor_dosyasi_sec)
@@ -250,7 +250,7 @@ class ArizaIslemPenceresi(QWidget):
 
         # Butonlar
         h_btn = QHBoxLayout()
-        self.btn_kapat = QPushButton("✕ Vazgeç")
+        self.btn_kapat = QPushButton("âœ• VazgeÃ§")
         self.btn_kapat.setStyleSheet(S["cancel_btn"])
         self.btn_kapat.clicked.connect(self.kapanma_istegi.emit)
         
@@ -264,7 +264,7 @@ class ArizaIslemPenceresi(QWidget):
 
         main_layout.addStretch()
 
-    # ─── Yardımcılar ──────────────────────────────────────────
+    # â”€â”€â”€ YardÄ±mcÄ±lar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     def _add_lbl_input(self, layout, text, key, read_only=False):
         lbl = QLabel(text)
@@ -307,7 +307,7 @@ class ArizaIslemPenceresi(QWidget):
     # --- MANTIK ---
     def yukle(self, ariza_id):
         self.ariza_id = str(ariza_id).strip()
-        self.lbl_baslik.setText(f"Arıza No: {self.ariza_id}")
+        self.lbl_baslik.setText(f"ArÄ±za No: {self.ariza_id}")
         self.verileri_yukle()
 
     def verileri_yukle(self):
@@ -327,8 +327,8 @@ class ArizaIslemPenceresi(QWidget):
         self.secilen_rapor_yolu = None
 
         if not ariza_info:
-            logger.error(f"[ArizaIslem] Arıza kaydı bulunamadı! ariza_id={self._loader.ariza_id if hasattr(self, '_loader') else 'N/A'}")
-            QMessageBox.critical(self, "Hata", "Arıza kaydı bulunamadı!")
+            logger.error(f"[ArizaIslem] ArÄ±za kaydÄ± bulunamadÄ±! ariza_id={self._loader.ariza_id if hasattr(self, '_loader') else 'N/A'}")
+            QMessageBox.critical(self, "Hata", "ArÄ±za kaydÄ± bulunamadÄ±!")
             self.close()
             return
 
@@ -346,14 +346,14 @@ class ArizaIslemPenceresi(QWidget):
         index = self.inputs["YeniDurum"].findText(mevcut_durum)
         if index >= 0: self.inputs["YeniDurum"].setCurrentIndex(index)
 
-        # 🛑 KAPALI KONTROLÜ
-        self.ariza_kapali_mi = "kapalı" in mevcut_durum.lower()
+        # ğŸ›‘ KAPALI KONTROLÃœ
+        self.ariza_kapali_mi = "kapalÄ±" in mevcut_durum.lower()
         if self.ariza_kapali_mi:
             self.form_durumunu_ayarla(kapali=True)
         else:
             self.form_durumunu_ayarla(kapali=False)
 
-        # GEÇMİŞ
+        # GEÃ‡MÄ°Å
         log_text = ""
         if gecmis:
             for islem in gecmis:
@@ -364,12 +364,12 @@ class ArizaIslemPenceresi(QWidget):
                 rapor = islem.get("Rapor", "")
                 
                 log_text += f"[{zaman}] {yapan} ({tur}): {detay}"
-                if rapor: log_text += " [📄 Rapor Var]"
+                if rapor: log_text += " [ğŸ“„ Rapor Var]"
                 log_text += "\n"
        
 
     def form_durumunu_ayarla(self, kapali):
-        """Eğer arıza kapalıysa inputları kapat, sadece rapor yüklemeye izin ver."""
+        """EÄŸer arÄ±za kapalÄ±ysa inputlarÄ± kapat, sadece rapor yÃ¼klemeye izin ver."""
         durum = not kapali # Aktif mi?
         
         self.inputs["IslemTarih"].setEnabled(durum)
@@ -380,20 +380,20 @@ class ArizaIslemPenceresi(QWidget):
         self.inputs["YeniDurum"].setEnabled(durum)
         
         if kapali:
-            self.lbl_mudahale.setText("🔒 Arıza Kapatılmış (Sadece Rapor Eklenebilir)")
+            self.lbl_mudahale.setText("ğŸ”’ ArÄ±za KapatÄ±lmÄ±ÅŸ (Sadece Rapor Eklenebilir)")
             self.lbl_mudahale.setStyleSheet("color: #e57373; font-weight: bold; font-size: 13px; margin-top: 5px;")
             self.btn_kaydet.setText("Raporu Kaydet")
-            # Arkaplanları gri yapalım ki kapalı olduğu anlaşılsın
+            # ArkaplanlarÄ± gri yapalÄ±m ki kapalÄ± olduÄŸu anlaÅŸÄ±lsÄ±n
             disabled_style = "background: rgba(255,255,255,0.05); color: #666; border: 1px solid #333;"
             self.inputs["IslemYapan"].setStyleSheet(disabled_style)
             self.inputs["YapilanIslem"].setStyleSheet(disabled_style)
         else:
-            self.lbl_mudahale.setText("🛠️ Müdahale ve Çözüm Girişi")
+            self.lbl_mudahale.setText("ğŸ› ï¸ MÃ¼dahale ve Ã‡Ã¶zÃ¼m GiriÅŸi")
             self.lbl_mudahale.setStyleSheet("color:#4CAF50; font-weight:bold; font-size:12px;")
             self.btn_kaydet.setText("Kaydet")
 
     def rapor_dosyasi_sec(self):
-        yol, _ = QFileDialog.getOpenFileName(self, "Rapor Dosyası Seç", "", "PDF ve Resimler (*.pdf *.jpg *.png)")
+        yol, _ = QFileDialog.getOpenFileName(self, "Rapor DosyasÄ± SeÃ§", "", "PDF ve Resimler (*.pdf *.jpg *.png)")
         if yol:
             self.secilen_rapor_yolu = yol
             dosya_adi = os.path.basename(yol)
@@ -403,13 +403,13 @@ class ArizaIslemPenceresi(QWidget):
     def kaydet_baslat(self):
         if self.ariza_kapali_mi:
             if not self.secilen_rapor_yolu:
-                QMessageBox.warning(self, "Uyarı", "Bu arıza kapatılmıştır. Sadece rapor dosyası yükleyebilirsiniz.")
+                QMessageBox.warning(self, "UyarÄ±", "Bu arÄ±za kapatÄ±lmÄ±ÅŸtÄ±r. Sadece rapor dosyasÄ± yÃ¼kleyebilirsiniz.")
                 return
         else:
             yapan = self.inputs["IslemYapan"].text().strip()
             yapilan = self.inputs["YapilanIslem"].toPlainText().strip()
             if not yapan or not yapilan:
-                QMessageBox.warning(self, "Eksik", "Lütfen 'İşlemi Yapan' ve 'Yapılan İşlem' alanlarını doldurun.")
+                QMessageBox.warning(self, "Eksik", "LÃ¼tfen 'Ä°ÅŸlemi Yapan' ve 'YapÄ±lan Ä°ÅŸlem' alanlarÄ±nÄ± doldurun.")
                 return
 
         self.btn_kaydet.setText("Kaydediliyor...")
@@ -428,7 +428,7 @@ class ArizaIslemPenceresi(QWidget):
     def _kaydet_devam(self, rapor_link):
         if self.ariza_kapali_mi:
             yapan = "Sistem"
-            yapilan = "Arıza kapalıyken sonradan rapor eklendi."
+            yapilan = "ArÄ±za kapalÄ±yken sonradan rapor eklendi."
             tur = "Rapor Ekleme"
             yeni_durum = self.inputs["YeniDurum"].currentText()
         else:
@@ -455,15 +455,15 @@ class ArizaIslemPenceresi(QWidget):
 
     def kayit_basarili(self):
         self.progress.setRange(0, 100)
-        QMessageBox.information(self, "Başarılı", "Kayıt işlemi tamamlandı.")
+        QMessageBox.information(self, "BaÅŸarÄ±lÄ±", "KayÄ±t iÅŸlemi tamamlandÄ±.")
         if self.ana_pencere and hasattr(self.ana_pencere, 'verileri_yenile'):
             self.ana_pencere.verileri_yenile()
         self.kapanma_istegi.emit()
 
     def _on_upload_error(self, hata_mesaji):
-        logger.warning(f"[ArizaIslem] Dosya yükleme hatası: {hata_mesaji}")
-        QMessageBox.warning(self, "Dosya Yükleme Hatası", hata_mesaji)
-        self._kaydet_devam("") # Dosya yüklenemese de işlemi kaydet
+        logger.warning(f"[ArizaIslem] Dosya yÃ¼kleme hatasÄ±: {hata_mesaji}")
+        QMessageBox.warning(self, "Dosya YÃ¼kleme HatasÄ±", hata_mesaji)
+        self._kaydet_devam("") # Dosya yÃ¼klenemese de iÅŸlemi kaydet
 
     def hata_goster(self, msg):
         self.progress.setRange(0, 100)
@@ -477,3 +477,5 @@ class ArizaIslemPenceresi(QWidget):
         if hasattr(self, 'saver') and self.saver.isRunning(): self.saver.quit(); self.saver.wait(500)
         if hasattr(self, 'uploader') and self.uploader.isRunning(): self.uploader.quit(); self.uploader.wait(500)
         event.accept()
+
+

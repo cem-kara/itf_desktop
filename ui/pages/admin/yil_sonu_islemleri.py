@@ -1,28 +1,28 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-Yıl Sonu Devir İşlemleri
-═══════════════════════════════════════════════════════════════
-Eski sistem (Google Sheets) → Yeni mimari (SQLite + RepositoryRegistry)
+YÄ±l Sonu Devir Ä°ÅŸlemleri
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+Eski sistem (Google Sheets) â†’ Yeni mimari (SQLite + RepositoryRegistry)
 
 Tablolar (database/table_config.py):
-  • Izin_Bilgi  — PK: TCKimlik
-  • Personel    — PK: KimlikNo  (MemuriyeteBaslamaTarihi için join)
+  â€¢ Izin_Bilgi  â€” PK: TCKimlik
+  â€¢ Personel    â€” PK: KimlikNo  (MemuriyeteBaslamaTarihi iÃ§in join)
 
-Yapılacak işlemler (her yılbaşında bir kez):
-  1. Yıllık İzin:
+YapÄ±lacak iÅŸlemler (her yÄ±lbaÅŸÄ±nda bir kez):
+  1. YÄ±llÄ±k Ä°zin:
        - Yeni Devir    = min(YillikKalan, YillikHakedis)
-       - Yeni Hakediş  = hizmet yılına göre (≥10 yıl → 30 gün, diğer → 20 gün)
-       - YillikKullanilan → 0 (sıfırla)
-  2. Şua İzni:
-       - SuaCariYilKazanim → SuaKullanilabilirHak (taşı)
-       - SuaKullanilan     → 0 (sıfırla)
-       - SuaCariYilKazanim → 0 (boşalt)
+       - Yeni HakediÅŸ  = hizmet yÄ±lÄ±na gÃ¶re (â‰¥10 yÄ±l â†’ 30 gÃ¼n, diÄŸer â†’ 20 gÃ¼n)
+       - YillikKullanilan â†’ 0 (sÄ±fÄ±rla)
+  2. Åua Ä°zni:
+       - SuaCariYilKazanim â†’ SuaKullanilabilirHak (taÅŸÄ±)
+       - SuaKullanilan     â†’ 0 (sÄ±fÄ±rla)
+       - SuaCariYilKazanim â†’ 0 (boÅŸalt)
 
 Mimari:
-  • Worker: QThread içinde SQLiteManager + RepositoryRegistry (lazy import)
-  • Sayfa:  QWidget; db=None kabul eder (worker kendi bağlantısını açar)
-  • Stiller: ThemeManager.get_all_component_styles()
-  • Loglama: core.logger + Signal(str) ile UI log alanı
+  â€¢ Worker: QThread iÃ§inde SQLiteManager + RepositoryRegistry (lazy import)
+  â€¢ Sayfa:  QWidget; db=None kabul eder (worker kendi baÄŸlantÄ±sÄ±nÄ± aÃ§ar)
+  â€¢ Stiller: ThemeManager.get_all_component_styles()
+  â€¢ Loglama: core.logger + Signal(str) ile UI log alanÄ±
 """
 from datetime import datetime
 
@@ -41,19 +41,19 @@ from ui.theme_manager import ThemeManager
 S = ThemeManager.get_all_component_styles()
 
 
-# ══════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 #  WORKER
-# ══════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 class DevirWorker(QThread):
     """
-    Yıl sonu devir hesaplamalarını arka planda yürütür.
-    Bağlantıyı kendisi açar; dışarıdan db almaz.
+    YÄ±l sonu devir hesaplamalarÄ±nÄ± arka planda yÃ¼rÃ¼tÃ¼r.
+    BaÄŸlantÄ±yÄ± kendisi aÃ§ar; dÄ±ÅŸarÄ±dan db almaz.
 
     Sinyaller
     ---------
-    log_sinyali      (str)   -> UI log alanına mesaj yaz
-    progress_sinyali (int)   -> QProgressBar değeri (0-100)
-    islem_bitti      (bool)  -> True = başarılı, False = hata
+    log_sinyali      (str)   -> UI log alanÄ±na mesaj yaz
+    progress_sinyali (int)   -> QProgressBar deÄŸeri (0-100)
+    islem_bitti      (bool)  -> True = baÅŸarÄ±lÄ±, False = hata
     """
     log_sinyali      = Signal(str)
     progress_sinyali = Signal(int)
@@ -64,16 +64,16 @@ class DevirWorker(QThread):
         db = None
         try:
             from database.sqlite_manager import SQLiteManager
-            from database.repository_registry import RepositoryRegistry
+            from core.di import get_registry
 
             self.log_sinyali.emit("Veritabanina baglaniliyor...")
             db       = SQLiteManager()
-            registry = RepositoryRegistry(db)
+            registry = get_registry(db)
 
             repo_izin     = registry.get("Izin_Bilgi")
             repo_personel = registry.get("Personel")
 
-            # 1. Tüm kayıtları çek
+            # 1. TÃ¼m kayÄ±tlarÄ± Ã§ek
             self.log_sinyali.emit("Veriler cekiliyor...")
             tum_izin     = repo_izin.get_all()
             tum_personel = repo_personel.get_all()
@@ -83,7 +83,7 @@ class DevirWorker(QThread):
                 self.islem_bitti.emit(False)
                 return
 
-            # 2. Join haritası: TCKimlik → MemuriyeteBaslamaTarihi
+            # 2. Join haritasÄ±: TCKimlik â†’ MemuriyeteBaslamaTarihi
             #    (Izin_Bilgi.TCKimlik  ==  Personel.KimlikNo)
             baslama_map: dict = {
                 str(p.get("KimlikNo", "")).strip(): str(p.get("MemuriyeteBaslamaTarihi", ""))
@@ -99,7 +99,7 @@ class DevirWorker(QThread):
                 + "-" * 46
             )
 
-            # 3. Kayıt döngüsü
+            # 3. KayÄ±t dÃ¶ngÃ¼sÃ¼
             for i, row in enumerate(tum_izin):
                 tc = str(row.get("TCKimlik", "")).strip()
                 if not tc:
@@ -121,7 +121,7 @@ class DevirWorker(QThread):
 
                 self.progress_sinyali.emit(int((i + 1) / toplam * 100))
 
-            # 4. Özet
+            # 4. Ã–zet
             self.log_sinyali.emit("-" * 46)
             self.log_sinyali.emit(
                 f"Islem tamamlandi.\n"
@@ -201,9 +201,9 @@ class DevirWorker(QThread):
         return 0
 
 
-# ══════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 #  SAYFA
-# ══════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 class YilSonuIslemleriPage(QWidget):
     """
     Yil Sonu Devir Islemleri sayfasi.
@@ -211,7 +211,7 @@ class YilSonuIslemleriPage(QWidget):
     Parametreler
     ------------
     db : SQLiteManager | None
-        Ana pencereden gecirilebilir; worker kendi baglantisinı actigi icin
+        Ana pencereden gecirilebilir; worker kendi baglantisinÄ± actigi icin
         bu sayfa icin zorunlu degildir.
     """
 
@@ -225,9 +225,9 @@ class YilSonuIslemleriPage(QWidget):
 
     def load_data(self):
         """
-        Bu sayfa başlangıçta veri yüklemez.
-        Arayüz standardı için boş metod.
-        İşlemler kullanıcı onayı ile başlar.
+        Bu sayfa baÅŸlangÄ±Ã§ta veri yÃ¼klemez.
+        ArayÃ¼z standardÄ± iÃ§in boÅŸ metod.
+        Ä°ÅŸlemler kullanÄ±cÄ± onayÄ± ile baÅŸlar.
         """
         pass
 
@@ -328,7 +328,7 @@ class YilSonuIslemleriPage(QWidget):
         sep_v.setFixedHeight(30)
         sep_v.setStyleSheet("background-color: rgba(255,255,255,0.08);")
 
-        self.btn_kapat = QPushButton("✕ Kapat")
+        self.btn_kapat = QPushButton("âœ• Kapat")
         self.btn_kapat.setFixedHeight(36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S.get("close_btn", ""))
@@ -418,3 +418,5 @@ class YilSonuIslemleriPage(QWidget):
             "  border: none;"
             "}"
         )
+
+

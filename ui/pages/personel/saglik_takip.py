@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 import os
 import uuid
 from datetime import date, datetime
@@ -292,8 +292,8 @@ class SaglikTakipPage(QWidget):
         if not self._db:
             return
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
+            from core.di import get_registry
+            registry = get_registry(self._db)
             personel_repo = registry.get("Personel")
             takip_repo = registry.get("Personel_Saglik_Takip")
             sabit_repo = registry.get("Sabitler")
@@ -321,7 +321,7 @@ class SaglikTakipPage(QWidget):
             self._all_rows = self._build_personel_list_rows(all_personel)
             self._fill_filter_combos()
             self._apply_filters()
-            logger.info(f"Saglik takip yüklendi: {len(self._all_rows)} kayit")
+            logger.info(f"Saglik takip yÃ¼klendi: {len(self._all_rows)} kayit")
         except Exception as exc:
             logger.error(f"Saglik takip yukleme hatasi: {exc}")
 
@@ -624,8 +624,8 @@ class SaglikTakipPage(QWidget):
         }
 
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
+            from core.di import get_registry
+            registry = get_registry(self._db)
             takip_repo = registry.get("Personel_Saglik_Takip")
             personel_repo = registry.get("Personel")
             mevcut = takip_repo.get_by_id(payload["KayitNo"])
@@ -727,8 +727,8 @@ class SaglikTakipPage(QWidget):
             return
 
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
+            from core.di import get_registry
+            registry = get_registry(self._db)
             takip_repo = registry.get("Personel_Saglik_Takip")
             mevcut = takip_repo.get_all()
             mevcut_keys = {(str(r.get("Personelid", "")), int(r.get("Yil") or 0)) for r in mevcut}
@@ -771,3 +771,5 @@ class SaglikTakipPage(QWidget):
         except Exception as exc:
             logger.error(f"Toplu plan hatasi: {exc}")
             QMessageBox.critical(self, "Hata", f"Toplu planlama sirasinda hata:\n{exc}")
+
+

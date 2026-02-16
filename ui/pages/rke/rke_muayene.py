@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-RKE Muayene Girişi Sayfası
-────────────────────────────
-• Sol: Tekli / toplu muayene formu + geçmiş
-• Sağ: RKE listesi (QAbstractTableModel)
-• itf_desktop mimarisine uygun (RepositoryRegistry(db), core.logger, GoogleDriveService)
+RKE Muayene GiriÅŸi SayfasÄ±
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+â€¢ Sol: Tekli / toplu muayene formu + geÃ§miÅŸ
+â€¢ SaÄŸ: RKE listesi (QAbstractTableModel)
+â€¢ itf_desktop mimarisine uygun (get_registry(db), core.logger, GoogleDriveService)
 """
 import os
 import time
@@ -25,10 +25,10 @@ from core.logger import logger
 from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
 
-# ─── Merkezi Stiller ───
+# â”€â”€â”€ Merkezi Stiller â”€â”€â”€
 S = ThemeManager.get_all_component_styles()
 
-# ─── RKE Listesi Tablo sütunları ───
+# â”€â”€â”€ RKE Listesi Tablo sÃ¼tunlarÄ± â”€â”€â”€
 RKE_COLUMNS = [
     ("EkipmanNo",     "Ekipman No",    120),
     ("AnaBilimDali",  "ABD",           140),
@@ -39,18 +39,18 @@ RKE_COLUMNS = [
 ]
 
 DURUM_RENK = {
-    "Kullanıma Uygun":       QColor("#4ade80"),
-    "Kullanıma Uygun Değil": QColor("#f87171"),
+    "KullanÄ±ma Uygun":       QColor("#4ade80"),
+    "KullanÄ±ma Uygun DeÄŸil": QColor("#f87171"),
     "Hurda":                  QColor("#ef4444"),
 }
 
 
-# ═══════════════════════════════════════════════
-#  ÖZEL BİLEŞENLER
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  Ã–ZEL BÄ°LEÅENLER
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class CheckableComboBox(QComboBox):
-    """Çoklu seçim yapılabilen ComboBox."""
+    """Ã‡oklu seÃ§im yapÄ±labilen ComboBox."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -99,9 +99,9 @@ class CheckableComboBox(QComboBox):
             self.addItem(t)
 
 
-# ═══════════════════════════════════════════════
-#  TABLO MODELİ (RKE Listesi)
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  TABLO MODELÄ° (RKE Listesi)
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class RKEListTableModel(QAbstractTableModel):
 
@@ -140,23 +140,23 @@ class RKEListTableModel(QAbstractTableModel):
         self.endResetModel()
 
 
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 #  WORKER THREAD'LER
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class VeriYukleyiciThread(QThread):
-    """Tüm sayfa verilerini arka planda yükler."""
+    """TÃ¼m sayfa verilerini arka planda yÃ¼kler."""
     # rke_data, teknik_acik, kontrol_edenler, birim_sorumlulari, tum_muayene
     veri_hazir  = Signal(list, list, list, list, list)
     hata_olustu = Signal(str)
 
     def run(self):
         from database.sqlite_manager import SQLiteManager
-        from database.repository_registry import RepositoryRegistry
+        from core.di import get_registry
         db = None
         try:
             db       = SQLiteManager()
-            registry = RepositoryRegistry(db)
+            registry = get_registry(db)
 
             rke_data = registry.get("RKE_List").get_all()
 
@@ -169,7 +169,7 @@ class VeriYukleyiciThread(QThread):
 
             tum_muayene = registry.get("RKE_Muayene").get_all()
 
-            # Kontrol Eden ve Birim Sorumlusu: RKE_Muayene tablosundan benzersiz değerler
+            # Kontrol Eden ve Birim Sorumlusu: RKE_Muayene tablosundan benzersiz deÄŸerler
             kontrol_edenler = sorted(set(
                 str(r.get("KontrolEdenUnvani", "")).strip()
                 for r in tum_muayene
@@ -191,7 +191,7 @@ class VeriYukleyiciThread(QThread):
 
 
 class KayitWorkerThread(QThread):
-    """Tek ekipman muayene kaydı."""
+    """Tek ekipman muayene kaydÄ±."""
     kayit_tamam = Signal(str)
     hata_olustu = Signal(str)
 
@@ -202,17 +202,17 @@ class KayitWorkerThread(QThread):
 
     def run(self):
         from database.sqlite_manager import SQLiteManager
-        from database.repository_registry import RepositoryRegistry
+        from core.di import get_registry
         db = None
         try:
             db       = SQLiteManager()
-            registry = RepositoryRegistry(db)
+            registry = get_registry(db)
 
-            # Drive yükleme
+            # Drive yÃ¼kleme
             if self._dosya_yolu:
                 from database.google import GoogleDriveService
                 drive = GoogleDriveService()
-                # Klasör ID'sini Sabitler'den al
+                # KlasÃ¶r ID'sini Sabitler'den al
                 all_sabit    = registry.get("Sabitler").get_all()
                 rke_folder   = next(
                     (str(r.get("Aciklama", "")).strip()
@@ -226,14 +226,14 @@ class KayitWorkerThread(QThread):
 
             registry.get("RKE_Muayene").insert(self._veri)
 
-            # RKE_List durum güncelle
+            # RKE_List durum gÃ¼ncelle
             ekipman_no = self._veri.get("EkipmanNo")
             if ekipman_no:
                 yeni_durum = (
-                    "Kullanıma Uygun Değil"
-                    if "Değil" in self._veri.get("FizikselDurum", "") or
-                       "Değil" in self._veri.get("SkopiDurum", "")
-                    else "Kullanıma Uygun"
+                    "KullanÄ±ma Uygun DeÄŸil"
+                    if "DeÄŸil" in self._veri.get("FizikselDurum", "") or
+                       "DeÄŸil" in self._veri.get("SkopiDurum", "")
+                    else "KullanÄ±ma Uygun"
                 )
                 repo_list = registry.get("RKE_List")
                 target    = next(
@@ -246,7 +246,7 @@ class KayitWorkerThread(QThread):
                         "KontrolTarihi": self._veri.get("FMuayeneTarihi")
                     })
 
-            self.kayit_tamam.emit("Kayıt Başarılı")
+            self.kayit_tamam.emit("KayÄ±t BaÅŸarÄ±lÄ±")
         except Exception as e:
             exc_logla("RKEMuayene.Worker", e)
             self.hata_olustu.emit(str(e))
@@ -256,7 +256,7 @@ class KayitWorkerThread(QThread):
 
 
 class TopluKayitWorkerThread(QThread):
-    """Birden fazla ekipman için toplu muayene kaydı."""
+    """Birden fazla ekipman iÃ§in toplu muayene kaydÄ±."""
     kayit_tamam = Signal(str)
     hata_olustu = Signal(str)
 
@@ -268,11 +268,11 @@ class TopluKayitWorkerThread(QThread):
 
     def run(self):
         from database.sqlite_manager import SQLiteManager
-        from database.repository_registry import RepositoryRegistry
+        from core.di import get_registry
         db = None
         try:
             db       = SQLiteManager()
-            registry = RepositoryRegistry(db)
+            registry = get_registry(db)
 
             repo_muayene = registry.get("RKE_Muayene")
             repo_list    = registry.get("RKE_List")
@@ -301,10 +301,10 @@ class TopluKayitWorkerThread(QThread):
                 repo_muayene.insert(item)
 
                 yeni_durum = (
-                    "Kullanıma Uygun Değil"
-                    if "Değil" in item.get("FizikselDurum", "") or
-                       "Değil" in item.get("SkopiDurum", "")
-                    else "Kullanıma Uygun"
+                    "KullanÄ±ma Uygun DeÄŸil"
+                    if "DeÄŸil" in item.get("FizikselDurum", "") or
+                       "DeÄŸil" in item.get("SkopiDurum", "")
+                    else "KullanÄ±ma Uygun"
                 )
                 target = next(
                     (x for x in all_rke if str(x.get("EkipmanNo")) == str(ekipman_no)),
@@ -316,7 +316,7 @@ class TopluKayitWorkerThread(QThread):
                         "KontrolTarihi": item.get("FMuayeneTarihi")
                     })
 
-            self.kayit_tamam.emit("Toplu Kayıt Başarılı")
+            self.kayit_tamam.emit("Toplu KayÄ±t BaÅŸarÄ±lÄ±")
         except Exception as e:
             exc_logla("RKEMuayene.Worker", e)
             self.hata_olustu.emit(str(e))
@@ -325,17 +325,17 @@ class TopluKayitWorkerThread(QThread):
                 db.close()
 
 
-# ═══════════════════════════════════════════════
-#  TOPLU MUAYENE DİALOG
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  TOPLU MUAYENE DÄ°ALOG
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class TopluMuayeneDialog(QDialog):
-    """Seçili ekipmanlara aynı anda muayene kaydı ekler."""
+    """SeÃ§ili ekipmanlara aynÄ± anda muayene kaydÄ± ekler."""
 
     def __init__(self, secilen_ekipmanlar, teknik_aciklamalar,
                  kontrol_listesi, sorumlu_listesi, kullanici_adi=None, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(f"Toplu Muayene — {len(secilen_ekipmanlar)} Ekipman")
+        self.setWindowTitle(f"Toplu Muayene â€” {len(secilen_ekipmanlar)} Ekipman")
         self.resize(680, 640)
         self._ekipmanlar         = secilen_ekipmanlar
         self._teknik_aciklamalar = teknik_aciklamalar
@@ -367,7 +367,7 @@ class TopluMuayeneDialog(QDialog):
         self._grp_fiz.setStyleSheet(S.get("group", ""))
         h_fiz = QHBoxLayout(self._grp_fiz)
         self._dt_fiz  = self._make_date("Tarih")
-        self._cmb_fiz = self._make_combo("Durum", ["Kullanıma Uygun", "Kullanıma Uygun Değil"])
+        self._cmb_fiz = self._make_combo("Durum", ["KullanÄ±ma Uygun", "KullanÄ±ma Uygun DeÄŸil"])
         h_fiz.addWidget(self._dt_fiz["widget"])
         h_fiz.addWidget(self._cmb_fiz["widget"])
         main.addWidget(self._grp_fiz)
@@ -379,7 +379,7 @@ class TopluMuayeneDialog(QDialog):
         self._grp_sko.setStyleSheet(S.get("group", ""))
         h_sko = QHBoxLayout(self._grp_sko)
         self._dt_sko  = self._make_date("Tarih")
-        self._cmb_sko = self._make_combo("Durum", ["Kullanıma Uygun", "Kullanıma Uygun Değil", "Yapılmadı"])
+        self._cmb_sko = self._make_combo("Durum", ["KullanÄ±ma Uygun", "KullanÄ±ma Uygun DeÄŸil", "YapÄ±lmadÄ±"])
         h_sko.addWidget(self._dt_sko["widget"])
         h_sko.addWidget(self._cmb_sko["widget"])
         main.addWidget(self._grp_sko)
@@ -408,12 +408,12 @@ class TopluMuayeneDialog(QDialog):
         self._cmb_aciklama = CheckableComboBox()
         self._cmb_aciklama.setStyleSheet(S.get("combo", ""))
         self._cmb_aciklama.addItems(self._teknik_aciklamalar)
-        v_ortak.addWidget(self._labeled("Teknik Açıklama (Çoklu Seçim)", self._cmb_aciklama))
+        v_ortak.addWidget(self._labeled("Teknik AÃ§Ä±klama (Ã‡oklu SeÃ§im)", self._cmb_aciklama))
 
         h_dosya = QHBoxLayout()
-        self._lbl_dosya = QLabel("Dosya seçilmedi")
+        self._lbl_dosya = QLabel("Dosya seÃ§ilmedi")
         self._lbl_dosya.setStyleSheet("color:#8b8fa3; font-size:11px;")
-        btn_dosya = QPushButton("📂 Ortak Rapor Seç")
+        btn_dosya = QPushButton("ğŸ“‚ Ortak Rapor SeÃ§")
         btn_dosya.setStyleSheet(S.get("file_btn", ""))
         btn_dosya.clicked.connect(self._sec_dosya)
         h_dosya.addWidget(self._lbl_dosya)
@@ -431,10 +431,10 @@ class TopluMuayeneDialog(QDialog):
 
         h_btn = QHBoxLayout()
         h_btn.addStretch()
-        btn_iptal = QPushButton("✕  İptal")
+        btn_iptal = QPushButton("âœ•  Ä°ptal")
         btn_iptal.setStyleSheet(S.get("cancel_btn", ""))
         btn_iptal.clicked.connect(self.reject)
-        self._btn_baslat = QPushButton("✓  Başlat")
+        self._btn_baslat = QPushButton("âœ“  BaÅŸlat")
         self._btn_baslat.setStyleSheet(S.get("save_btn", ""))
         self._btn_baslat.clicked.connect(self._on_save)
         h_btn.addWidget(btn_iptal)
@@ -442,7 +442,7 @@ class TopluMuayeneDialog(QDialog):
         main.addLayout(h_btn)
 
     def _labeled(self, label_text, widget):
-        """Label + Widget sarmalayan container döndürür."""
+        """Label + Widget sarmalayan container dÃ¶ndÃ¼rÃ¼r."""
         c = QWidget()
         c.setStyleSheet("background: transparent;")
         lay = QVBoxLayout(c)
@@ -490,7 +490,7 @@ class TopluMuayeneDialog(QDialog):
         ThemeManager.setup_calendar_popup(date_edit)
 
     def _sec_dosya(self):
-        yol, _ = QFileDialog.getOpenFileName(self, "Rapor Seç", "", "PDF / Resim (*.pdf *.jpg *.jpeg *.png)")
+        yol, _ = QFileDialog.getOpenFileName(self, "Rapor SeÃ§", "", "PDF / Resim (*.pdf *.jpg *.jpeg *.png)")
         if yol:
             self._dosya_yolu = yol
             self._lbl_dosya.setText(os.path.basename(yol))
@@ -504,7 +504,7 @@ class TopluMuayeneDialog(QDialog):
             "Aciklamalar":    self._cmb_aciklama.get_checked_items(),
             "KontrolEden":    self._cmb_kontrol.currentText(),
             "BirimSorumlusu": self._cmb_sorumlu.currentText(),
-            "Notlar":         "Toplu Kayıt",
+            "Notlar":         "Toplu KayÄ±t",
         }
         self._btn_baslat.setEnabled(False)
         self._pbar.setVisible(True)
@@ -516,13 +516,13 @@ class TopluMuayeneDialog(QDialog):
         self._worker.start()
 
 
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 #  ANA SAYFA
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class RKEMuayenePage(QWidget):
     """
-    RKE Muayene Girişi sayfası.
+    RKE Muayene GiriÅŸi sayfasÄ±.
     db: SQLiteManager instance
     """
 
@@ -534,24 +534,24 @@ class RKEMuayenePage(QWidget):
         self._rke_data        = []
         self._tum_muayeneler  = []
         self._teknik_acik     = []
-        self._kontrol_list    = []   # RKE_Muayene.KontrolEdenUnvani benzersiz değerleri
-        self._sorumlu_list    = []   # RKE_Muayene.BirimSorumlusuUnvani benzersiz değerleri
+        self._kontrol_list    = []   # RKE_Muayene.KontrolEdenUnvani benzersiz deÄŸerleri
+        self._sorumlu_list    = []   # RKE_Muayene.BirimSorumlusuUnvani benzersiz deÄŸerleri
         self._secilen_dosya   = None
 
         self._setup_ui()
         self._connect_signals()
         self.load_data()
 
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     #  UI
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _setup_ui(self):
         root = QHBoxLayout(self)
         root.setContentsMargins(10, 10, 10, 10)
         root.setSpacing(10)
 
-        # ── SOL: FORM ──
+        # â”€â”€ SOL: FORM â”€â”€
         sol_widget = QWidget()
         sol_lay = QVBoxLayout(sol_widget)
         sol_lay.setContentsMargins(0, 0, 0, 0)
@@ -568,8 +568,8 @@ class RKEMuayenePage(QWidget):
         form_lay.setContentsMargins(0, 0, 8, 0)
         form_lay.setSpacing(12)
 
-        # 1. Ekipman Seçimi
-        grp_ekipman = QGroupBox("🛡️  Ekipman Seçimi")
+        # 1. Ekipman SeÃ§imi
+        grp_ekipman = QGroupBox("ğŸ›¡ï¸  Ekipman SeÃ§imi")
         grp_ekipman.setStyleSheet(S.get("group", ""))
         v_ekip = QVBoxLayout(grp_ekipman)
         self._cmb_rke = QComboBox()
@@ -579,27 +579,27 @@ class RKEMuayenePage(QWidget):
         v_ekip.addWidget(self._labeled("Ekipman No | Cinsi", self._cmb_rke))
         form_lay.addWidget(grp_ekipman)
 
-        # 2. Muayene Detayları
-        grp_detay = QGroupBox("🔬  Muayene Detayları")
+        # 2. Muayene DetaylarÄ±
+        grp_detay = QGroupBox("ğŸ”¬  Muayene DetaylarÄ±")
         grp_detay.setStyleSheet(S.get("group", ""))
         v_detay = QVBoxLayout(grp_detay)
 
         h_fiz = QHBoxLayout()
         self._dt_fiziksel = self._make_date_widget("Fiziksel Muayene Tarihi", h_fiz)
         self._cmb_fiziksel = self._make_combo_widget("Fiziksel Durum",
-            ["Kullanıma Uygun", "Kullanıma Uygun Değil"], h_fiz)
+            ["KullanÄ±ma Uygun", "KullanÄ±ma Uygun DeÄŸil"], h_fiz)
         v_detay.addLayout(h_fiz)
 
         h_sko = QHBoxLayout()
         self._dt_skopi = self._make_date_widget("Skopi Muayene Tarihi", h_sko)
         self._cmb_skopi = self._make_combo_widget("Skopi Durumu",
-            ["Kullanıma Uygun", "Kullanıma Uygun Değil", "Yapılmadı"], h_sko)
+            ["KullanÄ±ma Uygun", "KullanÄ±ma Uygun DeÄŸil", "YapÄ±lmadÄ±"], h_sko)
         v_detay.addLayout(h_sko)
 
         form_lay.addWidget(grp_detay)
 
-        # 3. Sonuç ve Raporlama
-        grp_sonuc = QGroupBox("📄  Sonuç ve Raporlama")
+        # 3. SonuÃ§ ve Raporlama
+        grp_sonuc = QGroupBox("ğŸ“„  SonuÃ§ ve Raporlama")
         grp_sonuc.setStyleSheet(S.get("group", ""))
         v_sonuc = QVBoxLayout(grp_sonuc)
 
@@ -617,12 +617,12 @@ class RKEMuayenePage(QWidget):
 
         self._cmb_aciklama = CheckableComboBox()
         self._cmb_aciklama.setStyleSheet(S.get("combo", ""))
-        v_sonuc.addWidget(self._labeled("Teknik Açıklama (Çoklu Seçim)", self._cmb_aciklama))
+        v_sonuc.addWidget(self._labeled("Teknik AÃ§Ä±klama (Ã‡oklu SeÃ§im)", self._cmb_aciklama))
 
         h_dosya = QHBoxLayout()
-        self._lbl_dosya = QLabel("Rapor seçilmedi")
+        self._lbl_dosya = QLabel("Rapor seÃ§ilmedi")
         self._lbl_dosya.setStyleSheet("color:#8b8fa3; font-size:11px; font-style:italic;")
-        btn_dosya = QPushButton("📂 Rapor Seç")
+        btn_dosya = QPushButton("ğŸ“‚ Rapor SeÃ§")
         btn_dosya.setStyleSheet(S.get("file_btn", ""))
         btn_dosya.setCursor(QCursor(Qt.PointingHandCursor))
         btn_dosya.clicked.connect(self._sec_dosya)
@@ -633,8 +633,8 @@ class RKEMuayenePage(QWidget):
 
         form_lay.addWidget(grp_sonuc)
 
-        # 4. Geçmiş Muayeneler
-        grp_gecmis = QGroupBox("📋  Geçmiş Muayeneler")
+        # 4. GeÃ§miÅŸ Muayeneler
+        grp_gecmis = QGroupBox("ğŸ“‹  GeÃ§miÅŸ Muayeneler")
         grp_gecmis.setStyleSheet(S.get("group", ""))
         v_gec = QVBoxLayout(grp_gecmis)
 
@@ -666,11 +666,11 @@ class RKEMuayenePage(QWidget):
         # Butonlar
         h_btn = QHBoxLayout()
         h_btn.setSpacing(8)
-        self._btn_temizle = QPushButton("✕  TEMİZLE")
+        self._btn_temizle = QPushButton("âœ•  TEMÄ°ZLE")
         self._btn_temizle.setStyleSheet(S.get("cancel_btn", ""))
         self._btn_temizle.setFixedHeight(40)
         self._btn_temizle.setCursor(QCursor(Qt.PointingHandCursor))
-        self._btn_kaydet = QPushButton("✓  KAYDET")
+        self._btn_kaydet = QPushButton("âœ“  KAYDET")
         self._btn_kaydet.setStyleSheet(S.get("save_btn", ""))
         self._btn_kaydet.setFixedHeight(40)
         self._btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
@@ -680,13 +680,13 @@ class RKEMuayenePage(QWidget):
 
         root.addWidget(sol_widget, 35)
 
-        # Dikey ayraç
+        # Dikey ayraÃ§
         sep = QFrame()
         sep.setFrameShape(QFrame.VLine)
         sep.setStyleSheet("background-color: rgba(255,255,255,0.08);")
         root.addWidget(sep)
 
-        # ── SAĞ: LİSTE ──
+        # â”€â”€ SAÄ: LÄ°STE â”€â”€
         sag_widget = QWidget()
         sag_lay = QVBoxLayout(sag_widget)
         sag_lay.setContentsMargins(0, 0, 0, 0)
@@ -700,19 +700,19 @@ class RKEMuayenePage(QWidget):
         fl.setSpacing(8)
 
         self._cmb_filtre_abd = QComboBox()
-        self._cmb_filtre_abd.addItem("Tüm Bölümler")
+        self._cmb_filtre_abd.addItem("TÃ¼m BÃ¶lÃ¼mler")
         self._cmb_filtre_abd.setStyleSheet(S.get("combo", ""))
         fl.addWidget(self._cmb_filtre_abd)
 
         self._txt_ara = QLineEdit()
-        self._txt_ara.setPlaceholderText("🔍 Ekipman ara...")
+        self._txt_ara.setPlaceholderText("ğŸ” Ekipman ara...")
         self._txt_ara.setClearButtonEnabled(True)
         self._txt_ara.setStyleSheet(S.get("search", ""))
         fl.addWidget(self._txt_ara)
 
         fl.addStretch()
 
-        self._btn_yenile = QPushButton("⟳ Yenile")
+        self._btn_yenile = QPushButton("âŸ³ Yenile")
         self._btn_yenile.setToolTip("Yenile")
         self._btn_yenile.setFixedSize(100, 36)
         self._btn_yenile.setStyleSheet(S.get("refresh_btn", ""))
@@ -725,7 +725,7 @@ class RKEMuayenePage(QWidget):
         _sep_k.setStyleSheet("background-color: rgba(255,255,255,0.08);")
         fl.addWidget(_sep_k)
 
-        self.btn_kapat = QPushButton("✕ Kapat")
+        self.btn_kapat = QPushButton("âœ• Kapat")
         self.btn_kapat.setToolTip("Pencereyi Kapat")
         self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
@@ -756,14 +756,14 @@ class RKEMuayenePage(QWidget):
 
         sag_lay.addWidget(self._list_view, 1)
 
-        # Toplu İşlem Butonu + Footer
-        self._btn_toplu = QPushButton("⚡  Seçili Ekipmanlara Toplu Muayene Ekle")
+        # Toplu Ä°ÅŸlem Butonu + Footer
+        self._btn_toplu = QPushButton("âš¡  SeÃ§ili Ekipmanlara Toplu Muayene Ekle")
         self._btn_toplu.setStyleSheet(S.get("action_btn", ""))
         self._btn_toplu.setCursor(QCursor(Qt.PointingHandCursor))
         sag_lay.addWidget(self._btn_toplu)
 
         footer = QHBoxLayout()
-        self._lbl_sayi = QLabel("0 kayıt")
+        self._lbl_sayi = QLabel("0 kayÄ±t")
         self._lbl_sayi.setStyleSheet(S.get("footer_label", "color:#8b8fa3; font-size:11px;"))
         footer.addStretch()
         footer.addWidget(self._lbl_sayi)
@@ -820,9 +820,9 @@ class RKEMuayenePage(QWidget):
     def _setup_calendar(self, date_edit):
         ThemeManager.setup_calendar_popup(date_edit)
 
-    # ═══════════════════════════════════════════
-    #  SİNYALLER
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  SÄ°NYALLER
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _connect_signals(self):
         self._btn_kaydet.clicked.connect(self._on_save)
@@ -834,19 +834,19 @@ class RKEMuayenePage(QWidget):
         self._cmb_rke.currentIndexChanged.connect(self._on_ekipman_secildi)
         self._list_view.selectionModel().selectionChanged.connect(self._on_list_selection)
 
-    # ═══════════════════════════════════════════
-    #  VERİ
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  VERÄ°
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def load_data(self):
-        # Önceki thread hâlâ çalışıyorsa yeni başlatma
+        # Ã–nceki thread hÃ¢lÃ¢ Ã§alÄ±ÅŸÄ±yorsa yeni baÅŸlatma
         if hasattr(self, "_loader") and self._loader.isRunning():
             return
         self._pbar.setVisible(True)
         self._pbar.setRange(0, 0)
-        # self._loader referansı tutularak Python GC'nin thread'i erken silmesi engellenir.
-        # deleteLater KULLANILMIYOR — kullanılırsa C++ nesnesi silinince sonraki
-        # isRunning() çağrısı RuntimeError fırlatır ve load_data sessizce çıkar.
+        # self._loader referansÄ± tutularak Python GC'nin thread'i erken silmesi engellenir.
+        # deleteLater KULLANILMIYOR â€” kullanÄ±lÄ±rsa C++ nesnesi silinince sonraki
+        # isRunning() Ã§aÄŸrÄ±sÄ± RuntimeError fÄ±rlatÄ±r ve load_data sessizce Ã§Ä±kar.
         self._loader = VeriYukleyiciThread()
         self._loader.veri_hazir.connect(self._on_data_ready)
         self._loader.hata_olustu.connect(self._on_error)
@@ -871,23 +871,23 @@ class RKEMuayenePage(QWidget):
         self._cmb_rke.setCurrentIndex(-1)
         self._cmb_rke.blockSignals(False)
 
-        # Teknik açıklama
+        # Teknik aÃ§Ä±klama
         self._cmb_aciklama.clear()
         self._cmb_aciklama.addItems(teknik)
 
-        # Kontrol Eden — RKE_Muayene.KontrolEdenUnvani'dan benzersiz değerler
+        # Kontrol Eden â€” RKE_Muayene.KontrolEdenUnvani'dan benzersiz deÄŸerler
         self._cmb_kontrol.blockSignals(True)
         mevcut_kontrol = self._cmb_kontrol.currentText()
         self._cmb_kontrol.clear()
         self._cmb_kontrol.addItems(kontrol_listesi)
-        # Önceki değeri koru veya kullanıcı adını yaz
+        # Ã–nceki deÄŸeri koru veya kullanÄ±cÄ± adÄ±nÄ± yaz
         if self._kullanici_adi:
             self._cmb_kontrol.setCurrentText(self._kullanici_adi)
         elif mevcut_kontrol:
             self._cmb_kontrol.setCurrentText(mevcut_kontrol)
         self._cmb_kontrol.blockSignals(False)
 
-        # Birim Sorumlusu — RKE_Muayene.BirimSorumlusuUnvani'dan benzersiz değerler
+        # Birim Sorumlusu â€” RKE_Muayene.BirimSorumlusuUnvani'dan benzersiz deÄŸerler
         self._cmb_sorumlu.blockSignals(True)
         mevcut_sorumlu = self._cmb_sorumlu.currentText()
         self._cmb_sorumlu.clear()
@@ -900,7 +900,7 @@ class RKEMuayenePage(QWidget):
         abd_set = set(str(r.get("AnaBilimDali", "")).strip() for r in rke_data if r.get("AnaBilimDali"))
         self._cmb_filtre_abd.blockSignals(True)
         self._cmb_filtre_abd.clear()
-        self._cmb_filtre_abd.addItem("Tüm Bölümler")
+        self._cmb_filtre_abd.addItem("TÃ¼m BÃ¶lÃ¼mler")
         self._cmb_filtre_abd.addItems(sorted(abd_set))
         self._cmb_filtre_abd.blockSignals(False)
 
@@ -910,13 +910,13 @@ class RKEMuayenePage(QWidget):
         f_abd = self._cmb_filtre_abd.currentText()
         filtered = [
             r for r in self._rke_data
-            if f_abd == "Tüm Bölümler" or str(r.get("AnaBilimDali", "")).strip() == f_abd
+            if f_abd == "TÃ¼m BÃ¶lÃ¼mler" or str(r.get("AnaBilimDali", "")).strip() == f_abd
         ]
         self._list_model.set_data(filtered)
         self._lbl_sayi.setText(f"{len(filtered)} Ekipman")
 
     def _on_list_selection(self):
-        """Tabloda satır seçilince sol formdaki combo'yu güncelle."""
+        """Tabloda satÄ±r seÃ§ilince sol formdaki combo'yu gÃ¼ncelle."""
         indexes = self._list_view.selectionModel().selectedRows()
         if len(indexes) != 1:
             return
@@ -946,25 +946,25 @@ class RKEMuayenePage(QWidget):
         ]
         self._gecmis_model.set_data(gecmis)
 
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     #  DOSYA
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _sec_dosya(self):
-        yol, _ = QFileDialog.getOpenFileName(self, "Rapor Seç", "", "PDF / Resim (*.pdf *.jpg *.jpeg *.png)")
+        yol, _ = QFileDialog.getOpenFileName(self, "Rapor SeÃ§", "", "PDF / Resim (*.pdf *.jpg *.jpeg *.png)")
         if yol:
             self._secilen_dosya = yol
             self._lbl_dosya.setText(os.path.basename(yol))
-            logger.info(f"RKE rapor dosyası seçildi: {yol}")
+            logger.info(f"RKE rapor dosyasÄ± seÃ§ildi: {yol}")
 
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     #  KAYDET
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _on_save(self):
         txt = self._cmb_rke.currentText()
         if not txt:
-            QMessageBox.warning(self, "Eksik Bilgi", "Lütfen bir ekipman seçin.")
+            QMessageBox.warning(self, "Eksik Bilgi", "LÃ¼tfen bir ekipman seÃ§in.")
             return
 
         ekipman_no = txt.split("|")[0].strip()
@@ -993,7 +993,7 @@ class RKEMuayenePage(QWidget):
     def _on_save_success(self, msg):
         self._pbar.setVisible(False)
         self._btn_kaydet.setEnabled(True)
-        QMessageBox.information(self, "Başarılı", msg)
+        QMessageBox.information(self, "BaÅŸarÄ±lÄ±", msg)
         self._on_clear()
         self.load_data()
 
@@ -1004,30 +1004,30 @@ class RKEMuayenePage(QWidget):
         self._cmb_fiziksel.setCurrentIndex(0)
         self._cmb_skopi.setCurrentIndex(0)
         self._cmb_aciklama.set_checked_items([])
-        # Kontrol Eden: varsa kullanıcı adını koru, yoksa boş bırak
+        # Kontrol Eden: varsa kullanÄ±cÄ± adÄ±nÄ± koru, yoksa boÅŸ bÄ±rak
         if self._kullanici_adi:
             self._cmb_kontrol.setCurrentText(self._kullanici_adi)
         else:
             self._cmb_kontrol.clearEditText()
         self._cmb_sorumlu.clearEditText()
-        self._lbl_dosya.setText("Rapor seçilmedi")
+        self._lbl_dosya.setText("Rapor seÃ§ilmedi")
         self._secilen_dosya = None
         self._gecmis_model.set_data([])
 
     def _on_error(self, msg):
         self._pbar.setVisible(False)
         self._btn_kaydet.setEnabled(True)
-        logger.error(f"RKEMuayene hatası: {msg}")
+        logger.error(f"RKEMuayene hatasÄ±: {msg}")
         QMessageBox.critical(self, "Hata", msg)
 
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     #  TOPLU MUAYENE
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _ac_toplu_dialog(self):
         indexes = self._list_view.selectionModel().selectedRows()
         if not indexes:
-            QMessageBox.warning(self, "Uyarı", "Listeden en az bir ekipman seçin (Ctrl/Shift ile çoklu seçim).")
+            QMessageBox.warning(self, "UyarÄ±", "Listeden en az bir ekipman seÃ§in (Ctrl/Shift ile Ã§oklu seÃ§im).")
             return
 
         ekipmanlar = sorted(set(
@@ -1044,19 +1044,19 @@ class RKEMuayenePage(QWidget):
             self
         )
         if dlg.exec() == QDialog.Accepted:
-            QMessageBox.information(self, "Bilgi", "Toplu kayıt tamamlandı.")
+            QMessageBox.information(self, "Bilgi", "Toplu kayÄ±t tamamlandÄ±.")
             self.load_data()
 
 
-# ═══════════════════════════════════════════════
-#  GEÇMIŞ MUAYENE TABLO MODELİ
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  GEÃ‡MIÅ MUAYENE TABLO MODELÄ°
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 _GECMIS_COLS = [
     ("FMuayeneTarihi",  "Fiz. Tarih"),
     ("SMuayeneTarihi",  "Skopi Tarih"),
-    ("Aciklamalar",     "Açıklama"),
-    ("FizikselDurum",   "Sonuç"),
+    ("Aciklamalar",     "AÃ§Ä±klama"),
+    ("FizikselDurum",   "SonuÃ§"),
 ]
 
 class _GecmisMuayeneModel(QAbstractTableModel):
@@ -1077,7 +1077,7 @@ class _GecmisMuayeneModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             return str(row.get(col, ""))
         if role == Qt.ForegroundRole and col == "FizikselDurum":
-            return QColor("#f87171") if "Değil" in str(row.get(col, "")) else QColor("#4ade80")
+            return QColor("#f87171") if "DeÄŸil" in str(row.get(col, "")) else QColor("#4ade80")
         if role == Qt.TextAlignmentRole:
             return Qt.AlignCenter if col in ("FMuayeneTarihi", "SMuayeneTarihi", "FizikselDurum") else Qt.AlignVCenter | Qt.AlignLeft
         return None
@@ -1091,3 +1091,5 @@ class _GecmisMuayeneModel(QAbstractTableModel):
         self.beginResetModel()
         self._data = data or []
         self.endResetModel()
+
+

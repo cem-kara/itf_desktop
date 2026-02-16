@@ -1,19 +1,19 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-FHSZ (Fiili Hizmet Süresi Zammı / Şua) Hesaplama ve Düzenleme
+FHSZ (Fiili Hizmet SÃ¼resi ZammÄ± / Åua) Hesaplama ve DÃ¼zenleme
 
-Orijinal formdan birebir taşınan çalışma prensibi:
-──────────────────────────────────────────────────
-• Dönem     : Ayın 15'i → sonraki ayın 14'ü  (relativedelta)
-• Eşik      : 26.04.2022 — öncesi hesaplanamaz
-• Filtre    : Sadece belirli HizmetSınıfı dahil edilir
-• Koşul     : Sabitler → Kod="Gorev_Yeri", Aciklama'da "A" → Koşul A
-  - Koşul A : puan = (iş_günü - izin) × 7 saat
-  - Koşul B : puan = 0
-• İzin      : Dönem aralığıyla kesişim (overlap) iş günü hesabı
-• Pasif     : AyrılışTarihi dönem içindeyse, bitiş = ayrılış
-• Kayıt     : Eski sil → yeni ekle → şua bakiye güncelle
-• Hesap     : hesaplamalar.py → sua_hak_edis_hesapla, is_gunu_hesapla
+Orijinal formdan birebir taÅŸÄ±nan Ã§alÄ±ÅŸma prensibi:
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+â€¢ DÃ¶nem     : AyÄ±n 15'i â†’ sonraki ayÄ±n 14'Ã¼  (relativedelta)
+â€¢ EÅŸik      : 26.04.2022 â€” Ã¶ncesi hesaplanamaz
+â€¢ Filtre    : Sadece belirli HizmetSÄ±nÄ±fÄ± dahil edilir
+â€¢ KoÅŸul     : Sabitler â†’ Kod="Gorev_Yeri", Aciklama'da "A" â†’ KoÅŸul A
+  - KoÅŸul A : puan = (iÅŸ_gÃ¼nÃ¼ - izin) Ã— 7 saat
+  - KoÅŸul B : puan = 0
+â€¢ Ä°zin      : DÃ¶nem aralÄ±ÄŸÄ±yla kesiÅŸim (overlap) iÅŸ gÃ¼nÃ¼ hesabÄ±
+â€¢ Pasif     : AyrÄ±lÄ±ÅŸTarihi dÃ¶nem iÃ§indeyse, bitiÅŸ = ayrÄ±lÄ±ÅŸ
+â€¢ KayÄ±t     : Eski sil â†’ yeni ekle â†’ ÅŸua bakiye gÃ¼ncelle
+â€¢ Hesap     : hesaplamalar.py â†’ sua_hak_edis_hesapla, is_gunu_hesapla
 """
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
@@ -38,24 +38,24 @@ def _parse_date(val):
     return datetime.combine(parsed, datetime.min.time())
 
 
-# ─── Sabitler ───
+# â”€â”€â”€ Sabitler â”€â”€â”€
 FHSZ_ESIK = datetime(2022, 4, 26)
 KOSUL_A_SAAT = 7
 
 IZIN_VERILEN_SINIFLAR = [
     "Akademik Personel", "Asistan Doktor",
-    "Radyasyon Görevlisi", "Hemşire",
+    "Radyasyon GÃ¶revlisi", "HemÅŸire",
 ]
 
 AY_ISIMLERI = [
-    "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
-    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
+    "Ocak", "Åubat", "Mart", "Nisan", "MayÄ±s", "Haziran",
+    "Temmuz", "AÄŸustos", "EylÃ¼l", "Ekim", "KasÄ±m", "AralÄ±k",
 ]
 
 TABLO_KOLONLARI = [
-    "Kimlik No", "Adı Soyadı", "Birim", "Çalışma Koşulu",
-    "Ait Yıl", "Dönem", "Aylık Gün", "Kullanılan İzin",
-    "Fiili Çalışma (Saat)",
+    "Kimlik No", "AdÄ± SoyadÄ±", "Birim", "Ã‡alÄ±ÅŸma KoÅŸulu",
+    "Ait YÄ±l", "DÃ¶nem", "AylÄ±k GÃ¼n", "KullanÄ±lan Ä°zin",
+    "Fiili Ã‡alÄ±ÅŸma (Saat)",
 ]
 
 # Kolon indeksleri
@@ -63,22 +63,22 @@ C_KIMLIK, C_AD, C_BIRIM, C_KOSUL = 0, 1, 2, 3
 C_YIL, C_DONEM, C_GUN, C_IZIN, C_SAAT = 4, 5, 6, 7, 8
 
 
-# ─── MERKEZİ STİL YÖNETIMI ───
+# â”€â”€â”€ MERKEZÄ° STÄ°L YÃ–NETIMI â”€â”€â”€
 S = ThemeManager.get_all_component_styles()
 
 
-# ═══════════════════════════════════════════════
-#  DELEGATE: Çalışma Koşulu ComboBox  (Kolon 3)
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  DELEGATE: Ã‡alÄ±ÅŸma KoÅŸulu ComboBox  (Kolon 3)
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class KosulDelegate(QStyledItemDelegate):
     """
-    Orijinaldeki ComboDelegate'in birebir karşılığı.
-    Çalışma Koşulu A / B seçtirip badge olarak gösterir.
+    Orijinaldeki ComboDelegate'in birebir karÅŸÄ±lÄ±ÄŸÄ±.
+    Ã‡alÄ±ÅŸma KoÅŸulu A / B seÃ§tirip badge olarak gÃ¶sterir.
     """
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.items = ["Çalışma Koşulu A", "Çalışma Koşulu B"]
+        self.items = ["Ã‡alÄ±ÅŸma KoÅŸulu A", "Ã‡alÄ±ÅŸma KoÅŸulu B"]
 
     def createEditor(self, parent, option, index):
         editor = QComboBox(parent)
@@ -119,13 +119,13 @@ class KosulDelegate(QStyledItemDelegate):
         editor.setGeometry(option.rect)
 
     def paint(self, painter, option, index):
-        """Badge çizimi: Koşul A → yeşil, Koşul B → mavi."""
+        """Badge Ã§izimi: KoÅŸul A â†’ yeÅŸil, KoÅŸul B â†’ mavi."""
         bg = QColor(29, 117, 254, 60) if option.state & QStyle.State_Selected \
             else QColor("transparent")
         painter.fillRect(option.rect, bg)
 
         text = str(index.data(Qt.DisplayRole) or "")
-        if "KOŞULU A" in str(text).upper():
+        if "KOÅULU A" in str(text).upper():
             badge_bg = QColor(46, 125, 50, 140)
             border_c = QColor("#66bb6a")
         else:
@@ -147,12 +147,12 @@ class KosulDelegate(QStyledItemDelegate):
         painter.restore()
 
 
-# ═══════════════════════════════════════════════
-#  DELEGATE: Fiili Çalışma sonuç badge  (Kolon 8)
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  DELEGATE: Fiili Ã‡alÄ±ÅŸma sonuÃ§ badge  (Kolon 8)
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class SonucDelegate(QStyledItemDelegate):
-    """Orijinaldeki SonucDelegate'in birebir karşılığı."""
+    """Orijinaldeki SonucDelegate'in birebir karÅŸÄ±lÄ±ÄŸÄ±."""
     def paint(self, painter, option, index):
         bg = QColor(29, 117, 254, 60) if option.state & QStyle.State_Selected \
             else QColor("transparent")
@@ -184,9 +184,9 @@ class SonucDelegate(QStyledItemDelegate):
         painter.restore()
 
 
-# ═══════════════════════════════════════════════
-#  FHSZ YÖNETİM SAYFASI
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  FHSZ YÃ–NETÄ°M SAYFASI
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class FHSZYonetimPage(QWidget):
 
@@ -196,36 +196,36 @@ class FHSZYonetimPage(QWidget):
         self._db = db
         self._all_personel = []
         self._all_izin = []
-        self._tatil_listesi_np = []       # ["YYYY-MM-DD", ...] numpy formatı
+        self._tatil_listesi_np = []       # ["YYYY-MM-DD", ...] numpy formatÄ±
         self._birim_kosul_map = {}        # {TR_UPPER(birim): "A" | "B"}
 
         self._setup_ui()
         self._connect_signals()
 
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     #  UI KURULUMU
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _setup_ui(self):
         main = QVBoxLayout(self)
         main.setContentsMargins(20, 12, 20, 12)
         main.setSpacing(10)
 
-        # ── ÜST BAR: Dönem Seçimi ──
+        # â”€â”€ ÃœST BAR: DÃ¶nem SeÃ§imi â”€â”€
         filter_frame = QFrame()
         filter_frame.setStyleSheet(S["filter_panel"])
         fp = QHBoxLayout(filter_frame)
         fp.setContentsMargins(12, 8, 12, 8)
         fp.setSpacing(8)
 
-        lbl_t = QLabel("📊 FHSZ Hesaplama ve Düzenleme")
+        lbl_t = QLabel("ğŸ“Š FHSZ Hesaplama ve DÃ¼zenleme")
         lbl_t.setStyleSheet("color: #6bd3ff; font-size: 14px; font-weight: bold; background: transparent;")
         fp.addWidget(lbl_t)
 
         self._add_sep(fp)
 
-        # Yıl
-        fp.addWidget(self._make_label("Yıl:"))
+        # YÄ±l
+        fp.addWidget(self._make_label("YÄ±l:"))
         self.cmb_yil = QComboBox()
         self.cmb_yil.setStyleSheet(S["combo"])
         self.cmb_yil.setFixedWidth(80)
@@ -252,7 +252,7 @@ class FHSZYonetimPage(QWidget):
 
         fp.addStretch()
 
-        self.btn_hesapla = QPushButton("⚡ LİSTELE VE HESAPLA")
+        self.btn_hesapla = QPushButton("âš¡ LÄ°STELE VE HESAPLA")
         self.btn_hesapla.setStyleSheet(S["calc_btn"])
         self.btn_hesapla.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_hesapla.setFixedHeight(34)
@@ -260,7 +260,7 @@ class FHSZYonetimPage(QWidget):
 
         self._add_sep(fp)
 
-        self.btn_kapat = QPushButton("✕ Kapat")
+        self.btn_kapat = QPushButton("âœ• Kapat")
         self.btn_kapat.setToolTip("Kapat")
         self.btn_kapat.setFixedSize(28, 28)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
@@ -269,7 +269,7 @@ class FHSZYonetimPage(QWidget):
 
         main.addWidget(filter_frame)
 
-        # ── TABLO (QTableWidget — orijinaldeki gibi) ──
+        # â”€â”€ TABLO (QTableWidget â€” orijinaldeki gibi) â”€â”€
         self.tablo = QTableWidget()
         self.tablo.setColumnCount(len(TABLO_KOLONLARI))
         self.tablo.setHorizontalHeaderLabels(TABLO_KOLONLARI)
@@ -286,7 +286,7 @@ class FHSZYonetimPage(QWidget):
         h.setSectionResizeMode(C_SAAT, QHeaderView.Fixed)
         self.tablo.setColumnWidth(C_SAAT, 130)
 
-        # AitYıl + Dönem gizli
+        # AitYÄ±l + DÃ¶nem gizli
         self.tablo.setColumnHidden(C_YIL, True)
         self.tablo.setColumnHidden(C_DONEM, True)
 
@@ -296,14 +296,14 @@ class FHSZYonetimPage(QWidget):
 
         main.addWidget(self.tablo, 1)
 
-        # ── ALT BAR ──
+        # â”€â”€ ALT BAR â”€â”€
         bot_frame = QFrame()
         bot_frame.setStyleSheet(S["filter_panel"])
         bf = QHBoxLayout(bot_frame)
         bf.setContentsMargins(12, 8, 12, 8)
         bf.setSpacing(12)
 
-        self.lbl_durum = QLabel("Hazır")
+        self.lbl_durum = QLabel("HazÄ±r")
         self.lbl_durum.setStyleSheet(S["footer_label"])
         bf.addWidget(self.lbl_durum)
 
@@ -326,14 +326,14 @@ class FHSZYonetimPage(QWidget):
         """)
         bf.addWidget(self.progress)
 
-        btn_kapat2 = QPushButton("✕ Kapat")
+        btn_kapat2 = QPushButton("âœ• Kapat")
         btn_kapat2.setStyleSheet(S["close_btn"])
         btn_kapat2.setFixedSize(100, 36)
         btn_kapat2.setCursor(QCursor(Qt.PointingHandCursor))
         btn_kapat2.clicked.connect(self.btn_kapat.click)
         bf.addWidget(btn_kapat2)
 
-        self.btn_kaydet = QPushButton("💾 KAYDET / GÜNCELLE")
+        self.btn_kaydet = QPushButton("ğŸ’¾ KAYDET / GÃœNCELLE")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kaydet.setFixedHeight(36)
@@ -343,7 +343,7 @@ class FHSZYonetimPage(QWidget):
         main.addWidget(bot_frame)
         self._donem_guncelle()
 
-    # ─── UI yardımcıları ───
+    # â”€â”€â”€ UI yardÄ±mcÄ±larÄ± â”€â”€â”€
 
     def _make_label(self, text):
         lbl = QLabel(text)
@@ -357,9 +357,9 @@ class FHSZYonetimPage(QWidget):
         sep.setStyleSheet("background-color: rgba(255,255,255,0.08);")
         layout.addWidget(sep)
 
-    # ═══════════════════════════════════════════
-    #  SİNYALLER
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  SÄ°NYALLER
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _connect_signals(self):
         self.btn_hesapla.clicked.connect(self._baslat_kontrol)
@@ -368,12 +368,12 @@ class FHSZYonetimPage(QWidget):
         self.cmb_ay.currentIndexChanged.connect(self._donem_guncelle)
         self.tablo.itemChanged.connect(self._hucre_degisti)
 
-    # ═══════════════════════════════════════════
-    #  DÖNEM: 15'i → sonraki ayın 14'ü
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  DÃ–NEM: 15'i â†’ sonraki ayÄ±n 14'Ã¼
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _get_donem_aralik(self):
-        """Dönem başlangıç/bitiş → (datetime, datetime)"""
+        """DÃ¶nem baÅŸlangÄ±Ã§/bitiÅŸ â†’ (datetime, datetime)"""
         try:
             yil = int(self.cmb_yil.currentText())
             ay_idx = self.cmb_ay.currentIndex() + 1   # 1-12
@@ -387,32 +387,32 @@ class FHSZYonetimPage(QWidget):
         donem_bas, donem_bit = self._get_donem_aralik()
         if donem_bas and donem_bit:
             self.lbl_donem.setText(
-                f"Dönem: {donem_bas.strftime('%d.%m.%Y')} — {donem_bit.strftime('%d.%m.%Y')}"
+                f"DÃ¶nem: {donem_bas.strftime('%d.%m.%Y')} â€” {donem_bit.strftime('%d.%m.%Y')}"
             )
 
-    # ═══════════════════════════════════════════
-    #  VERİ YÜKLEME  (sayfa açılışında)
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  VERÄ° YÃœKLEME  (sayfa aÃ§Ä±lÄ±ÅŸÄ±nda)
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def load_data(self):
-        """Personel, izin, tatil, sabitler(Gorev_Yeri) yükle."""
+        """Personel, izin, tatil, sabitler(Gorev_Yeri) yÃ¼kle."""
         if not self._db:
             return
 
-        self.lbl_durum.setText("Veriler yükleniyor...")
+        self.lbl_durum.setText("Veriler yÃ¼kleniyor...")
         self.progress.setVisible(True)
 
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
+            from core.di import get_registry
+            registry = get_registry(self._db)
 
             # 1. Personeller
             self._all_personel = registry.get("Personel").get_all()
 
-            # 2. İzinler
+            # 2. Ä°zinler
             self._all_izin = registry.get("Izin_Giris").get_all()
 
-            # 3. Tatiller → numpy busday_count formatı
+            # 3. Tatiller â†’ numpy busday_count formatÄ±
             try:
                 tatiller = registry.get("Tatiller").get_all()
                 self._tatil_listesi_np = []
@@ -423,8 +423,8 @@ class FHSZYonetimPage(QWidget):
             except Exception:
                 self._tatil_listesi_np = []
 
-            # 4. Sabitler → Kod="Gorev_Yeri"
-            #    MenuEleman = birim adı | Aciklama = "Çalışma Koşulu A / B"
+            # 4. Sabitler â†’ Kod="Gorev_Yeri"
+            #    MenuEleman = birim adÄ± | Aciklama = "Ã‡alÄ±ÅŸma KoÅŸulu A / B"
             sabitler = registry.get("Sabitler").get_all()
 
             self._birim_kosul_map = {}
@@ -440,54 +440,54 @@ class FHSZYonetimPage(QWidget):
                 if not birim:
                     continue
 
-                # 🔴 KRİTİK DÜZELTME BURASI
-                if "KOŞULU A" in aciklama:
+                # ğŸ”´ KRÄ°TÄ°K DÃœZELTME BURASI
+                if "KOÅULU A" in aciklama:
                     self._birim_kosul_map[birim] = "A"
-                elif "KOŞULU B" in aciklama:
+                elif "KOÅULU B" in aciklama:
                     self._birim_kosul_map[birim] = "B"
                 else:
                     logger.warning(
-                        f"Gorev_Yeri için tanımsız çalışma koşulu: "
+                        f"Gorev_Yeri iÃ§in tanÄ±msÄ±z Ã§alÄ±ÅŸma koÅŸulu: "
                         f"Birim={birim}, Aciklama={aciklama}"
                     )
 
             self.progress.setVisible(False)
-            self.lbl_durum.setText("Veriler yüklendi.")
+            self.lbl_durum.setText("Veriler yÃ¼klendi.")
 
             logger.info(
-                f"FHSZ veri yüklendi: {len(self._all_personel)} personel, "
+                f"FHSZ veri yÃ¼klendi: {len(self._all_personel)} personel, "
                 f"{len(self._all_izin)} izin, {len(self._tatil_listesi_np)} tatil, "
-                f"{len(self._birim_kosul_map)} birim koşul"
+                f"{len(self._birim_kosul_map)} birim koÅŸul"
             )
 
 
         except Exception as e:
             self.progress.setVisible(False)
-            self.lbl_durum.setText(f"Veri yükleme hatası: {e}")
-            logger.error(f"FHSZ veri yükleme hatası: {e}")
+            self.lbl_durum.setText(f"Veri yÃ¼kleme hatasÄ±: {e}")
+            logger.error(f"FHSZ veri yÃ¼kleme hatasÄ±: {e}")
 
-    # ═══════════════════════════════════════════
-    #  YARDIMCI: Tablo işlemleri
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  YARDIMCI: Tablo iÅŸlemleri
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _set_item(self, row, col, text):
-        """Salt-okunur hücre ekle."""
+        """Salt-okunur hÃ¼cre ekle."""
         item = QTableWidgetItem(str(text))
         item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         self.tablo.setItem(row, col, item)
 
     def _satir_hesapla(self, row):
         """
-        Orijinaldeki _satir_hesapla — Koşul değişince puanı yeniden hesapla.
-        Koşul A → (is_gunu - izin) × 7
-        Koşul B → 0
+        Orijinaldeki _satir_hesapla â€” KoÅŸul deÄŸiÅŸince puanÄ± yeniden hesapla.
+        KoÅŸul A â†’ (is_gunu - izin) Ã— 7
+        KoÅŸul B â†’ 0
         """
         try:
             kosul = self.tablo.item(row, C_KOSUL).text()
             is_gunu = int(self.tablo.item(row, C_GUN).text())
             izin = int(self.tablo.item(row, C_IZIN).text())
             puan = 0
-            if "KOŞULU A" in tr_upper(kosul):
+            if "KOÅULU A" in tr_upper(kosul):
                 net = max(0, is_gunu - izin)
                 puan = net * KOSUL_A_SAAT
             self.tablo.setItem(row, C_SAAT, QTableWidgetItem(str(puan)))
@@ -495,18 +495,18 @@ class FHSZYonetimPage(QWidget):
             pass
 
     def _hucre_degisti(self, item):
-        """Koşul kolonu değiştiğinde puanı yeniden hesapla."""
+        """KoÅŸul kolonu deÄŸiÅŸtiÄŸinde puanÄ± yeniden hesapla."""
         if item.column() == C_KOSUL:
             self._satir_hesapla(item.row())
 
-    # ═══════════════════════════════════════════
-    #  İZİN KESİŞİM HESABI  (orijinal: kesisim_izin_gunu_hesapla)
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  Ä°ZÄ°N KESÄ°ÅÄ°M HESABI  (orijinal: kesisim_izin_gunu_hesapla)
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _kesisim_izin_gunu(self, kimlik, donem_bas, donem_bit):
         """
-        Personelin izin kayıtlarıyla dönem aralığının kesişen
-        iş günlerini hesaplar (numpy busday_count).
+        Personelin izin kayÄ±tlarÄ±yla dÃ¶nem aralÄ±ÄŸÄ±nÄ±n kesiÅŸen
+        iÅŸ gÃ¼nlerini hesaplar (numpy busday_count).
         """
         toplam = 0
         kimlik_str = str(kimlik).strip()
@@ -514,7 +514,7 @@ class FHSZYonetimPage(QWidget):
         for iz in self._all_izin:
             if str(iz.get("Personelid", "")).strip() != kimlik_str:
                 continue
-            if str(iz.get("Durum", "")).strip() == "İptal":
+            if str(iz.get("Durum", "")).strip() == "Ä°ptal":
                 continue
 
             izin_bas = _parse_date(iz.get("BaslamaTarihi", ""))
@@ -522,7 +522,7 @@ class FHSZYonetimPage(QWidget):
             if not izin_bas or not izin_bit:
                 continue
 
-            # Kesişim aralığı
+            # KesiÅŸim aralÄ±ÄŸÄ±
             k_bas = max(donem_bas, izin_bas)
             k_bit = min(donem_bit, izin_bit)
 
@@ -531,39 +531,39 @@ class FHSZYonetimPage(QWidget):
 
         return toplam
 
-    # ═══════════════════════════════════════════
-    #  ⚡ LİSTELE VE HESAPLA
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  âš¡ LÄ°STELE VE HESAPLA
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _baslat_kontrol(self):
         """
         Orijinaldeki baslat_kontrol:
-        1. FHSZ_Puantaj'da mevcut kayıt var mı kontrol et
-        2. Varsa → _kayitli_veriyi_yukle + eksik personel ekle
-        3. Yoksa → _sifirdan_hesapla
+        1. FHSZ_Puantaj'da mevcut kayÄ±t var mÄ± kontrol et
+        2. Varsa â†’ _kayitli_veriyi_yukle + eksik personel ekle
+        3. Yoksa â†’ _sifirdan_hesapla
         """
         donem_bas, donem_bit = self._get_donem_aralik()
         if not donem_bas or not donem_bit:
             return
 
-        # 26.04.2022 eşik kontrolü
+        # 26.04.2022 eÅŸik kontrolÃ¼
         if donem_bit < FHSZ_ESIK:
-            QMessageBox.warning(self, "Uyarı", "26.04.2022 öncesi hesaplanamaz.")
+            QMessageBox.warning(self, "UyarÄ±", "26.04.2022 Ã¶ncesi hesaplanamaz.")
             return
 
         self.tablo.setRowCount(0)
         self.btn_hesapla.setEnabled(False)
         self.progress.setVisible(True)
-        self.lbl_durum.setText("Kayıtlar kontrol ediliyor...")
+        self.lbl_durum.setText("KayÄ±tlar kontrol ediliyor...")
 
         yil_str = self.cmb_yil.currentText()
         ay_str = self.cmb_ay.currentText()
 
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
+            from core.di import get_registry
+            registry = get_registry(self._db)
 
-            # Mevcut kayıtları kontrol et
+            # Mevcut kayÄ±tlarÄ± kontrol et
             tum_puantaj = registry.get("FHSZ_Puantaj").get_all()
             mevcut = [
                 r for r in tum_puantaj
@@ -577,19 +577,19 @@ class FHSZYonetimPage(QWidget):
                 self._sifirdan_hesapla()
 
         except Exception as e:
-            logger.error(f"FHSZ kontrol hatası: {e}")
+            logger.error(f"FHSZ kontrol hatasÄ±: {e}")
             QMessageBox.critical(self, "Hata", str(e))
 
         self.progress.setVisible(False)
         self.btn_hesapla.setEnabled(True)
 
-    # ───────────────────────────────────────────
-    #  Kayıtlı veriyi yükle + eksik personel ekle
-    # ───────────────────────────────────────────
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    #  KayÄ±tlÄ± veriyi yÃ¼kle + eksik personel ekle
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     def _kayitli_veriyi_yukle(self, mevcut_rows):
         """Orijinaldeki _kayitli_veriyi_yukle."""
-        self.lbl_durum.setText(f"Veritabanından {len(mevcut_rows)} kayıt yüklendi.")
+        self.lbl_durum.setText(f"VeritabanÄ±ndan {len(mevcut_rows)} kayÄ±t yÃ¼klendi.")
         self.tablo.blockSignals(True)
         self.tablo.setRowCount(0)
         mevcut_tcler = []
@@ -604,7 +604,7 @@ class FHSZYonetimPage(QWidget):
             self._set_item(row_idx, C_AD, row_data.get("AdSoyad", ""))
             self._set_item(row_idx, C_BIRIM, row_data.get("Birim", ""))
 
-            kosul = row_data.get("CalismaKosulu") or "Çalışma Koşulu B"
+            kosul = row_data.get("CalismaKosulu") or "Ã‡alÄ±ÅŸma KoÅŸulu B"
             item_k = QTableWidgetItem(str(kosul))
             item_k.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
             self.tablo.setItem(row_idx, C_KOSUL, item_k)
@@ -615,7 +615,7 @@ class FHSZYonetimPage(QWidget):
             self._set_item(row_idx, C_IZIN, str(row_data.get("KullanilanIzin", "0")))
             self._set_item(row_idx, C_SAAT, str(row_data.get("FiiliCalismaSaat", "0")))
 
-        # ── EKSİK PERSONEL SENKRONİZASYONU ──
+        # â”€â”€ EKSÄ°K PERSONEL SENKRONÄ°ZASYONU â”€â”€
         try:
             donem_bas, donem_bit = self._get_donem_aralik()
             hesap_bas = donem_bas if donem_bas >= FHSZ_ESIK else FHSZ_ESIK
@@ -634,13 +634,13 @@ class FHSZYonetimPage(QWidget):
 
         self.tablo.blockSignals(False)
 
-    # ───────────────────────────────────────────
-    #  Sıfırdan hesapla
-    # ───────────────────────────────────────────
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    #  SÄ±fÄ±rdan hesapla
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     def _sifirdan_hesapla(self):
         """Orijinaldeki _sifirdan_hesapla."""
-        self.lbl_durum.setText("Yeni hesaplama yapıldı.")
+        self.lbl_durum.setText("Yeni hesaplama yapÄ±ldÄ±.")
         self.tablo.blockSignals(True)
 
         try:
@@ -670,7 +670,7 @@ class FHSZYonetimPage(QWidget):
                 birim = str(p.get("GorevYeri", "")).strip()
                 durum = str(p.get("Durum", "Aktif")).strip()
 
-                # Pasif personel kontrolü
+                # Pasif personel kontrolÃ¼
                 kisi_bit = donem_bit
                 if durum == "Pasif":
                     ayrilis = _parse_date(p.get("AyrilisTarihi", ""))
@@ -687,12 +687,12 @@ class FHSZYonetimPage(QWidget):
                 self._set_item(row_idx, C_AD, ad)
                 self._set_item(row_idx, C_BIRIM, birim)
 
-                # Çalışma koşulu: birim_kosul_map'ten
-                kosul = "Çalışma Koşulu B"
+                # Ã‡alÄ±ÅŸma koÅŸulu: birim_kosul_map'ten
+                kosul = "Ã‡alÄ±ÅŸma KoÅŸulu B"
                 birim_upper = tr_upper(birim)
                 if birim_upper in self._birim_kosul_map \
                    and self._birim_kosul_map[birim_upper] == "A":
-                    kosul = "Çalışma Koşulu A"
+                    kosul = "Ã‡alÄ±ÅŸma KoÅŸulu A"
                 item_k = QTableWidgetItem(kosul)
                 item_k.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
                 self.tablo.setItem(row_idx, C_KOSUL, item_k)
@@ -700,11 +700,11 @@ class FHSZYonetimPage(QWidget):
                 self._set_item(row_idx, C_YIL, self.cmb_yil.currentText())
                 self._set_item(row_idx, C_DONEM, self.cmb_ay.currentText())
 
-                # İş günü (numpy busday_count)
+                # Ä°ÅŸ gÃ¼nÃ¼ (numpy busday_count)
                 ozel_is_gunu = is_gunu_hesapla(hesap_bas, kisi_bit, self._tatil_listesi_np)
                 self._set_item(row_idx, C_GUN, str(ozel_is_gunu))
 
-                # İzin kesişim
+                # Ä°zin kesiÅŸim
                 izin_gunu = self._kesisim_izin_gunu(kimlik, hesap_bas, kisi_bit)
                 self._set_item(row_idx, C_IZIN, str(izin_gunu))
 
@@ -712,17 +712,17 @@ class FHSZYonetimPage(QWidget):
                 self._satir_hesapla(row_idx)
 
         except Exception as e:
-            logger.error(f"FHSZ sıfırdan hesaplama hatası: {e}")
+            logger.error(f"FHSZ sÄ±fÄ±rdan hesaplama hatasÄ±: {e}")
             QMessageBox.critical(self, "Hata", str(e))
 
         self.tablo.blockSignals(False)
 
-    # ───────────────────────────────────────────
-    #  Eksik personel ekle  (mevcut kayıtlarda olmayan)
-    # ───────────────────────────────────────────
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    #  Eksik personel ekle  (mevcut kayÄ±tlarda olmayan)
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     def _eksik_personel_ekle(self, mevcut_tcler, hesap_bas, donem_bit):
-        """Listede olmayan personelleri ekle, yeni eklenen sayısını döndür."""
+        """Listede olmayan personelleri ekle, yeni eklenen sayÄ±sÄ±nÄ± dÃ¶ndÃ¼r."""
         yeni_sayi = 0
 
         if not self._all_personel:
@@ -761,11 +761,11 @@ class FHSZYonetimPage(QWidget):
             birim = str(p.get("GorevYeri", "")).strip()
             self._set_item(row_idx, C_BIRIM, birim)
 
-            kosul = "Çalışma Koşulu B"
+            kosul = "Ã‡alÄ±ÅŸma KoÅŸulu B"
             birim_upper = tr_upper(birim)
             if birim_upper in self._birim_kosul_map \
                and self._birim_kosul_map[birim_upper] == "A":
-                kosul = "Çalışma Koşulu A"
+                kosul = "Ã‡alÄ±ÅŸma KoÅŸulu A"
             item_k = QTableWidgetItem(kosul)
             item_k.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
             self.tablo.setItem(row_idx, C_KOSUL, item_k)
@@ -781,7 +781,7 @@ class FHSZYonetimPage(QWidget):
 
             self._satir_hesapla(row_idx)
 
-            # Yeni personel → sarı arka plan
+            # Yeni personel â†’ sarÄ± arka plan
             for c in range(self.tablo.columnCount()):
                 item = self.tablo.item(row_idx, c)
                 if item:
@@ -789,18 +789,18 @@ class FHSZYonetimPage(QWidget):
 
         return yeni_sayi
 
-    # ═══════════════════════════════════════════
-    #  💾 KAYDET / GÜNCELLE
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  ğŸ’¾ KAYDET / GÃœNCELLE
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _kaydet_baslat(self):
         """
-        Orijinaldeki kayıt prensibi:
-        1. Tablo boşsa çık
-        2. Mevcut dönem kayıtlarını say
-        3. Varsa onay al → eski sil → yeni ekle
-        4. Yoksa doğrudan ekle
-        5. Şua bakiyesi güncelle
+        Orijinaldeki kayÄ±t prensibi:
+        1. Tablo boÅŸsa Ã§Ä±k
+        2. Mevcut dÃ¶nem kayÄ±tlarÄ±nÄ± say
+        3. Varsa onay al â†’ eski sil â†’ yeni ekle
+        4. Yoksa doÄŸrudan ekle
+        5. Åua bakiyesi gÃ¼ncelle
         """
         if self.tablo.rowCount() == 0:
             return
@@ -809,11 +809,11 @@ class FHSZYonetimPage(QWidget):
         ay_str = self.cmb_ay.currentText()
 
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
+            from core.di import get_registry
+            registry = get_registry(self._db)
             repo = registry.get("FHSZ_Puantaj")
 
-            # Mevcut kayıt kontrol
+            # Mevcut kayÄ±t kontrol
             tum = repo.get_all()
             mevcut_sayisi = sum(
                 1 for r in tum
@@ -824,23 +824,23 @@ class FHSZYonetimPage(QWidget):
             # Onay
             if mevcut_sayisi > 0:
                 cevap = QMessageBox.question(
-                    self, "Veri Güncelleme",
-                    f"Bu dönem ({ay_str} {yil_str}) için {mevcut_sayisi} kayıt zaten var.\n\n"
+                    self, "Veri GÃ¼ncelleme",
+                    f"Bu dÃ¶nem ({ay_str} {yil_str}) iÃ§in {mevcut_sayisi} kayÄ±t zaten var.\n\n"
                     f"'Evet' derseniz:\n"
-                    f"1. Mevcut kayıtlar silinecek.\n"
-                    f"2. Tablodaki GÜNCEL veriler kaydedilecek.",
+                    f"1. Mevcut kayÄ±tlar silinecek.\n"
+                    f"2. Tablodaki GÃœNCEL veriler kaydedilecek.",
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No
                 )
                 if cevap != QMessageBox.Yes:
-                    self.lbl_durum.setText("İptal edildi.")
+                    self.lbl_durum.setText("Ä°ptal edildi.")
                     return
 
             self.btn_kaydet.setEnabled(False)
             self.progress.setVisible(True)
 
-            # 1. Eski kayıtları sil
+            # 1. Eski kayÄ±tlarÄ± sil
             if mevcut_sayisi > 0:
-                self.lbl_durum.setText("🧹 Eski kayıtlar temizleniyor...")
+                self.lbl_durum.setText("ğŸ§¹ Eski kayÄ±tlar temizleniyor...")
                 for r in tum:
                     if str(r.get("AitYil", "")).strip() == yil_str \
                        and str(r.get("Donem", "")).strip() == ay_str:
@@ -855,7 +855,7 @@ class FHSZYonetimPage(QWidget):
                             pass
 
             # 2. Yeni kaydet (tablodan oku)
-            self.lbl_durum.setText("💾 Güncel veriler kaydediliyor...")
+            self.lbl_durum.setText("ğŸ’¾ GÃ¼ncel veriler kaydediliyor...")
             kayit_sayisi = 0
             for r in range(self.tablo.rowCount()):
                 data = {
@@ -872,38 +872,38 @@ class FHSZYonetimPage(QWidget):
                 repo.insert(data)
                 kayit_sayisi += 1
 
-            # 3. Şua bakiyesi güncelle
-            self.lbl_durum.setText("🔄 Şua hesaplanıyor...")
+            # 3. Åua bakiyesi gÃ¼ncelle
+            self.lbl_durum.setText("ğŸ”„ Åua hesaplanÄ±yor...")
             self._sua_bakiye_guncelle(repo, yil_str)
 
             self.progress.setVisible(False)
             self.btn_kaydet.setEnabled(True)
-            self.lbl_durum.setText(f"✓ {kayit_sayisi} kayıt kaydedildi  •  {ay_str} {yil_str}")
+            self.lbl_durum.setText(f"âœ“ {kayit_sayisi} kayÄ±t kaydedildi  â€¢  {ay_str} {yil_str}")
 
-            logger.info(f"FHSZ kaydedildi: {ay_str} {yil_str}, {kayit_sayisi} kayıt")
-            QMessageBox.information(self, "Başarılı", "Kayıt işlemi tamamlandı.")
+            logger.info(f"FHSZ kaydedildi: {ay_str} {yil_str}, {kayit_sayisi} kayÄ±t")
+            QMessageBox.information(self, "BaÅŸarÄ±lÄ±", "KayÄ±t iÅŸlemi tamamlandÄ±.")
 
         except Exception as e:
             self.progress.setVisible(False)
             self.btn_kaydet.setEnabled(True)
             self.lbl_durum.setText(f"Hata: {e}")
-            logger.error(f"FHSZ kayıt hatası: {e}")
+            logger.error(f"FHSZ kayÄ±t hatasÄ±: {e}")
             QMessageBox.critical(self, "Hata", str(e))
 
-    # ═══════════════════════════════════════════
-    #  ŞUA BAKİYESİ GÜNCELLE  (Izin_Bilgi → SuaCariYilKazanim)
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  ÅUA BAKÄ°YESÄ° GÃœNCELLE  (Izin_Bilgi â†’ SuaCariYilKazanim)
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _sua_bakiye_guncelle(self, repo_puantaj, yil_str):
         """
         Orijinaldeki _sua_bakiye_guncelle:
-        1. FHSZ_Puantaj'dan yıla ait tüm kayıtları topla
-        2. Personel başına yıllık toplam saat hesapla
-        3. sua_hak_edis_hesapla → İzin_Bilgi.SuaCariYilKazanim güncelle
+        1. FHSZ_Puantaj'dan yÄ±la ait tÃ¼m kayÄ±tlarÄ± topla
+        2. Personel baÅŸÄ±na yÄ±llÄ±k toplam saat hesapla
+        3. sua_hak_edis_hesapla â†’ Ä°zin_Bilgi.SuaCariYilKazanim gÃ¼ncelle
         """
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
+            from core.di import get_registry
+            registry = get_registry(self._db)
 
             tum = repo_puantaj.get_all()
             personel_toplam = {}
@@ -932,7 +932,9 @@ class FHSZYonetimPage(QWidget):
                 except Exception:
                     pass
 
-            logger.info(f"Şua bakiyesi güncellendi: {len(personel_toplam)} personel")
+            logger.info(f"Åua bakiyesi gÃ¼ncellendi: {len(personel_toplam)} personel")
 
         except Exception as e:
-            logger.error(f"Şua bakiye güncelleme hatası: {e}")
+            logger.error(f"Åua bakiye gÃ¼ncelleme hatasÄ±: {e}")
+
+

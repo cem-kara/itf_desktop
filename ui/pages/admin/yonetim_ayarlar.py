@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QThread, Signal, QDate
 from PySide6.QtGui import QColor, QCursor
 
-# --- MODÜLLER ---
+# --- MODÃœLLER ---
 from core.logger import logger
 from ui.theme_manager import ThemeManager
 
@@ -27,17 +27,17 @@ class VeriYukleWorker(QThread):
 
     def run(self):
         from database.sqlite_manager import SQLiteManager
-        from database.repository_registry import RepositoryRegistry
+        from core.di import get_registry
         db = None
         try:
             db = SQLiteManager()
-            registry = RepositoryRegistry(db)
+            registry = get_registry(db)
             repo = registry.get(self.sayfa_adi)
             data = repo.get_all()
             self.veri_indi.emit(data)
         except Exception as e:
-            logger.error(f"Veri yükleme hatası ({self.sayfa_adi}): {e}")
-            self.hata_olustu.emit(f"'{self.sayfa_adi}' sayfası verileri yüklenemedi.")
+            logger.error(f"Veri yÃ¼kleme hatasÄ± ({self.sayfa_adi}): {e}")
+            self.hata_olustu.emit(f"'{self.sayfa_adi}' sayfasÄ± verileri yÃ¼klenemedi.")
         finally:
             if db: db.close()
 
@@ -51,17 +51,17 @@ class EkleWorker(QThread):
 
     def run(self):
         from database.sqlite_manager import SQLiteManager
-        from database.repository_registry import RepositoryRegistry
+        from core.di import get_registry
         db = None
         try:
             db = SQLiteManager()
-            registry = RepositoryRegistry(db)
+            registry = get_registry(db)
             repo = registry.get(self.sayfa_adi)
             repo.insert(self.veri_dict)
             self.islem_tamam.emit()
         except Exception as e:
-            logger.error(f"Ekleme hatası ({self.sayfa_adi}): {e}")
-            self.hata_olustu.emit(f"Kayıt eklenemedi: {e}")
+            logger.error(f"Ekleme hatasÄ± ({self.sayfa_adi}): {e}")
+            self.hata_olustu.emit(f"KayÄ±t eklenemedi: {e}")
         finally:
             if db: db.close()
 
@@ -75,27 +75,27 @@ class SilWorker(QThread):
 
     def run(self):
         from database.sqlite_manager import SQLiteManager
-        from database.repository_registry import RepositoryRegistry
+        from core.di import get_registry
         db = None
         try:
             db = SQLiteManager()
-            registry = RepositoryRegistry(db)
+            registry = get_registry(db)
             repo = registry.get(self.sayfa_adi)
             repo.delete(self.kayit_id)
             self.islem_tamam.emit()
         except Exception as e:
-            logger.error(f"Silme hatası ({self.sayfa_adi}): {e}")
-            self.hata_olustu.emit(f"Kayıt silinemedi: {e}")
+            logger.error(f"Silme hatasÄ± ({self.sayfa_adi}): {e}")
+            self.hata_olustu.emit(f"KayÄ±t silinemedi: {e}")
         finally:
             if db: db.close()
 
 # =============================================================================
-# ANA FORM: AYARLAR PENCERESİ
+# ANA FORM: AYARLAR PENCERESÄ°
 # =============================================================================
 class AyarlarPenceresi(QWidget):
     def __init__(self, db=None, yetki=None):
         super().__init__()
-        self.setWindowTitle("Sistem Ayarları ve Tanımlamalar")
+        self.setWindowTitle("Sistem AyarlarÄ± ve TanÄ±mlamalar")
         self.resize(1150, 750)
         self.setStyleSheet(S.get("page", ""))
         self._db = db
@@ -118,8 +118,8 @@ class AyarlarPenceresi(QWidget):
         # --- HEADER ---
         header_layout = QHBoxLayout()
         header_layout.addStretch()
-        self.btn_kapat = QPushButton("✕ Kapat")
-        self.btn_kapat.setToolTip("Sayfayı Kapat")
+        self.btn_kapat = QPushButton("âœ• Kapat")
+        self.btn_kapat.setToolTip("SayfayÄ± Kapat")
         self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S.get("close_btn", ""))
@@ -131,11 +131,11 @@ class AyarlarPenceresi(QWidget):
 
         self.tab_genel = QWidget()
         self.setup_tab_genel()
-        self.tabs.addTab(self.tab_genel, "📋 Genel Tanımlamalar")
+        self.tabs.addTab(self.tab_genel, "ğŸ“‹ Genel TanÄ±mlamalar")
 
         self.tab_tatil = QWidget()
         self.setup_tab_tatil()
-        self.tabs.addTab(self.tab_tatil, "📅 Resmi Tatiller (FHSZ)")
+        self.tabs.addTab(self.tab_tatil, "ğŸ“… Resmi Tatiller (FHSZ)")
         main_layout.addWidget(self.tabs, 1)
 
     def setup_tab_genel(self):
@@ -145,27 +145,27 @@ class AyarlarPenceresi(QWidget):
 
         left_frame = QFrame(); left_frame.setFixedWidth(280); 
         l_layout = QVBoxLayout(left_frame)
-        lbl_kat = QLabel("📂 KATEGORİLER"); lbl_kat.setStyleSheet(S.get("label", ""))
+        lbl_kat = QLabel("ğŸ“‚ KATEGORÄ°LER"); lbl_kat.setStyleSheet(S.get("label", ""))
         l_layout.addWidget(lbl_kat)
         self.list_kat = QListWidget()
         self.list_kat.setStyleSheet(S.get("list", ""))
         self.list_kat.currentRowChanged.connect(self.kategori_secildi)
         l_layout.addWidget(self.list_kat)
-        btn_yeni = QPushButton(" + Özel Kategori")
+        btn_yeni = QPushButton(" + Ã–zel Kategori")
         btn_yeni.setStyleSheet(S.get("action_btn", ""))
         btn_yeni.setCursor(QCursor(Qt.PointingHandCursor))
         btn_yeni.clicked.connect(self.yeni_kategori_ekle)
         l_layout.addWidget(btn_yeni); layout.addWidget(left_frame)
         
         r_layout = QVBoxLayout(); h_add = QHBoxLayout()
-        self.lbl_secili_kat = QLabel("Seçiniz..."); self.lbl_secili_kat.setStyleSheet("color:#4dabf7; font-weight:bold;")
-        self.txt_deger = QLineEdit(); self.txt_deger.setPlaceholderText("Değer"); self.txt_deger.setStyleSheet(S.get("input", ""))
-        self.txt_aciklama = QLineEdit(); self.txt_aciklama.setPlaceholderText("Açıklama"); self.txt_aciklama.setStyleSheet(S.get("input", ""))
+        self.lbl_secili_kat = QLabel("SeÃ§iniz..."); self.lbl_secili_kat.setStyleSheet("color:#4dabf7; font-weight:bold;")
+        self.txt_deger = QLineEdit(); self.txt_deger.setPlaceholderText("DeÄŸer"); self.txt_deger.setStyleSheet(S.get("input", ""))
+        self.txt_aciklama = QLineEdit(); self.txt_aciklama.setPlaceholderText("AÃ§Ä±klama"); self.txt_aciklama.setStyleSheet(S.get("input", ""))
         self.btn_ekle_sabit = QPushButton("EKLE"); self.btn_ekle_sabit.setStyleSheet(S.get("save_btn", "")); self.btn_ekle_sabit.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_ekle_sabit.clicked.connect(self.sabit_ekle)
         h_add.addWidget(self.lbl_secili_kat); h_add.addWidget(self.txt_deger); h_add.addWidget(self.txt_aciklama); h_add.addWidget(self.btn_ekle_sabit)
         r_layout.addLayout(h_add)
-        self.table_sabit = QTableWidget(0, 2); self.table_sabit.setHorizontalHeaderLabels(["Değer", "Açıklama"]); self.table_sabit.setStyleSheet(S.get("table", ""))
+        self.table_sabit = QTableWidget(0, 2); self.table_sabit.setHorizontalHeaderLabels(["DeÄŸer", "AÃ§Ä±klama"]); self.table_sabit.setStyleSheet(S.get("table", ""))
         self.table_sabit.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         r_layout.addWidget(self.table_sabit); layout.addLayout(r_layout)
 
@@ -176,24 +176,24 @@ class AyarlarPenceresi(QWidget):
         self.date_tatil = QDateEdit(QDate.currentDate()); self.date_tatil.setCalendarPopup(True); self.date_tatil.setStyleSheet(S.get("date", "")); ThemeManager.setup_calendar_popup(self.date_tatil)
         self.txt_tatil_aciklama = QLineEdit(); self.txt_tatil_aciklama.setStyleSheet(S.get("input", "")); btn = QPushButton("EKLE"); btn.setStyleSheet(S.get("save_btn", "")); btn.clicked.connect(self.tatil_ekle)
         h.addWidget(QLabel("Tarih:")); h.addWidget(self.date_tatil)
-        h.addWidget(QLabel("Açıklama:")); h.addWidget(self.txt_tatil_aciklama); h.addWidget(btn)
+        h.addWidget(QLabel("AÃ§Ä±klama:")); h.addWidget(self.txt_tatil_aciklama); h.addWidget(btn)
         layout.addWidget(grp)
         
         h_filtre = QHBoxLayout()
-        self.cmb_tatil_yil = QComboBox(); self.cmb_tatil_yil.addItem("Tümü"); self.cmb_tatil_yil.setStyleSheet(S.get("combo", ""))
+        self.cmb_tatil_yil = QComboBox(); self.cmb_tatil_yil.addItem("TÃ¼mÃ¼"); self.cmb_tatil_yil.setStyleSheet(S.get("combo", ""))
         self.cmb_tatil_yil.currentTextChanged.connect(self._tatil_filtrele)
-        h_filtre.addWidget(QLabel("Yıl:")); h_filtre.addWidget(self.cmb_tatil_yil); h_filtre.addStretch()
+        h_filtre.addWidget(QLabel("YÄ±l:")); h_filtre.addWidget(self.cmb_tatil_yil); h_filtre.addStretch()
         layout.addLayout(h_filtre)
         
-        self.table_tatil = QTableWidget(0, 2); self.table_tatil.setHorizontalHeaderLabels(["Tarih", "Açıklama"]); self.table_tatil.setStyleSheet(S.get("table", ""))
+        self.table_tatil = QTableWidget(0, 2); self.table_tatil.setHorizontalHeaderLabels(["Tarih", "AÃ§Ä±klama"]); self.table_tatil.setStyleSheet(S.get("table", ""))
         self.table_tatil.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         layout.addWidget(self.table_tatil)
         btn_yenile = QPushButton("Yenile"); btn_yenile.setStyleSheet(S.get("refresh_btn", "")); btn_yenile.clicked.connect(self.tatilleri_yukle)
         layout.addWidget(btn_yenile)
 
-    # --- İŞLEMLER ---
+    # --- Ä°ÅLEMLER ---
     def sabitleri_yukle(self):
-        # Eğer varsa eski thread'i durdur
+        # EÄŸer varsa eski thread'i durdur
         if hasattr(self, 'sabit_worker') and self.sabit_worker and self.sabit_worker.isRunning():
             return
         self.sabit_worker = VeriYukleWorker('Sabitler')
@@ -217,7 +217,7 @@ class AyarlarPenceresi(QWidget):
 
     def sabit_ekle(self):
         kat = self.lbl_secili_kat.text(); deger = self.txt_deger.text().strip(); aciklama = self.txt_aciklama.text().strip()
-        if not deger or kat == "Seçiniz...": return
+        if not deger or kat == "SeÃ§iniz...": return
         self.btn_ekle_sabit.setEnabled(False)
         veri_dict = {"Kod": kat, "MenuEleman": deger, "Aciklama": aciklama}
         self.ekle_worker = EkleWorker('Sabitler', veri_dict)
@@ -235,13 +235,13 @@ class AyarlarPenceresi(QWidget):
 
     def _tatiller_geldi(self, data):
         self.tatiller_data = data
-        # Yıl filtresi vb. işlemleri burada kısaca
+        # YÄ±l filtresi vb. iÅŸlemleri burada kÄ±saca
         self._tatil_filtrele()
 
     def _tatil_filtrele(self):
         # Basit filtreleme
         self.table_tatil.setRowCount(0) # Temizle
-        filt = self.tatiller_data # Tam liste (Filtre mantığını basitleştirdim hatayı önlemek için)
+        filt = self.tatiller_data # Tam liste (Filtre mantÄ±ÄŸÄ±nÄ± basitleÅŸtirdim hatayÄ± Ã¶nlemek iÃ§in)
         self.table_tatil.setRowCount(len(filt))
         for i, r in enumerate(filt):
             self.table_tatil.setItem(i, 0, QTableWidgetItem(str(r.get('Tarih',''))))
@@ -256,7 +256,7 @@ class AyarlarPenceresi(QWidget):
         self.t_ekle_worker.hata_olustu.connect(lambda msg: QMessageBox.critical(self, "Hata", msg))
         self.t_ekle_worker.start()
 
-    # 🔴 EN ÖNEMLİ KISIM: Pencere kapanırken threadleri öldür
+    # ğŸ”´ EN Ã–NEMLÄ° KISIM: Pencere kapanÄ±rken threadleri Ã¶ldÃ¼r
     def closeEvent(self, event):
         worker_names = ['sabit_worker', 'tatil_worker', 'ekle_worker', 't_ekle_worker']
         for name in worker_names:
@@ -274,14 +274,16 @@ if __name__ == "__main__":
     
     app = QApplication(sys.argv)
     
-    # Veritabanı bağlantısı oluştur
+    # VeritabanÄ± baÄŸlantÄ±sÄ± oluÅŸtur
     db_manager = None
     try:
         db_manager = SQLiteManager()
     except Exception as e:
-        print(f"DB Hatası: {e}")
+        print(f"DB HatasÄ±: {e}")
     
     win = AyarlarPenceresi(db=db_manager, yetki="admin")
     win.show()
     app.exec()
     if db_manager: db_manager.close()
+
+

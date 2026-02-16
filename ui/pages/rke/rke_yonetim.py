@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-RKE Envanter Yönetimi Sayfası
-──────────────────────────────
-• Sol: Ekipman ekle / güncelle formu + muayene geçmişi
-• Sağ: QAbstractTableModel + QSortFilterProxyModel tablosu
-• itf_desktop mimarisine uygun (RepositoryRegistry(db), core.logger, GoogleDriveService)
+RKE Envanter YÃ¶netimi SayfasÄ±
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+â€¢ Sol: Ekipman ekle / gÃ¼ncelle formu + muayene geÃ§miÅŸi
+â€¢ SaÄŸ: QAbstractTableModel + QSortFilterProxyModel tablosu
+â€¢ itf_desktop mimarisine uygun (get_registry(db), core.logger, GoogleDriveService)
 """
 from PySide6.QtCore import Qt, QDate, QThread, Signal, QAbstractTableModel, QModelIndex, QSortFilterProxyModel
 from PySide6.QtWidgets import (
@@ -19,10 +19,10 @@ from core.logger import logger
 from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
 
-# ─── Merkezi Stiller ───
+# â”€â”€â”€ Merkezi Stiller â”€â”€â”€
 S = ThemeManager.get_all_component_styles()
 
-# ─── Tablo sütun tanımları ───
+# â”€â”€â”€ Tablo sÃ¼tun tanÄ±mlarÄ± â”€â”€â”€
 COLUMNS = [
     ("KayitNo",         "ID",            80),
     ("EkipmanNo",       "Ekipman No",   120),
@@ -35,17 +35,17 @@ COLUMNS = [
 ]
 
 DURUM_RENK = {
-    "Kullanıma Uygun":       QColor("#4ade80"),
-    "Kullanıma Uygun Değil": QColor("#f87171"),
+    "KullanÄ±ma Uygun":       QColor("#4ade80"),
+    "KullanÄ±ma Uygun DeÄŸil": QColor("#f87171"),
     "Hurda":                  QColor("#ef4444"),
     "Tamirde":                QColor("#facc15"),
-    "Kayıp":                  QColor("#a78bfa"),
+    "KayÄ±p":                  QColor("#a78bfa"),
 }
 
 
-# ═══════════════════════════════════════════════
-#  TABLO MODELİ
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  TABLO MODELÄ°
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class RKETableModel(QAbstractTableModel):
 
@@ -97,22 +97,22 @@ class RKETableModel(QAbstractTableModel):
         self.endResetModel()
 
 
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 #  WORKER THREAD'LER
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class VeriYukleyiciThread(QThread):
-    """Sabitler + RKE_List + RKE_Muayene verisini arka planda yükler."""
+    """Sabitler + RKE_List + RKE_Muayene verisini arka planda yÃ¼kler."""
     veri_hazir   = Signal(dict, dict, list, list)  # sabitler, kisaltma_maps, rke_data, muayene_data
     hata_olustu  = Signal(str)
 
     def run(self):
         from database.sqlite_manager import SQLiteManager
-        from database.repository_registry import RepositoryRegistry
+        from core.di import get_registry
         db = None
         try:
             db = SQLiteManager()
-            registry = RepositoryRegistry(db)
+            registry = get_registry(db)
 
             sabitler = {}
             maps     = {"AnaBilimDali": {}, "Birim": {}, "Koruyucu_Cinsi": {}}
@@ -135,14 +135,14 @@ class VeriYukleyiciThread(QThread):
             self.veri_hazir.emit(sabitler, maps, rke_data, muayene_data)
         except Exception as e:
             exc_logla("RKEYonetim.Worker", e)
-            self.hata_olustu.emit(f"Veri yükleme hatası: {e}")
+            self.hata_olustu.emit(f"Veri yÃ¼kleme hatasÄ±: {e}")
         finally:
             if db:
                 db.close()
 
 
 class IslemKaydediciThread(QThread):
-    """INSERT veya UPDATE işlemini arka planda yapar."""
+    """INSERT veya UPDATE iÅŸlemini arka planda yapar."""
     islem_tamam = Signal()
     hata_olustu = Signal(str)
 
@@ -153,11 +153,11 @@ class IslemKaydediciThread(QThread):
 
     def run(self):
         from database.sqlite_manager import SQLiteManager
-        from database.repository_registry import RepositoryRegistry
+        from core.di import get_registry
         db = None
         try:
             db       = SQLiteManager()
-            registry = RepositoryRegistry(db)
+            registry = get_registry(db)
             repo     = registry.get("RKE_List")
 
             if self._mod == "INSERT":
@@ -168,14 +168,14 @@ class IslemKaydediciThread(QThread):
             self.islem_tamam.emit()
         except Exception as e:
             exc_logla("RKEYonetim.Worker", e)
-            self.hata_olustu.emit(f"İşlem hatası: {e}")
+            self.hata_olustu.emit(f"Ä°ÅŸlem hatasÄ±: {e}")
         finally:
             if db:
                 db.close()
 
 
 class GecmisYukleyiciThread(QThread):
-    """Seçili ekipmanın muayene geçmişini yükler."""
+    """SeÃ§ili ekipmanÄ±n muayene geÃ§miÅŸini yÃ¼kler."""
     gecmis_hazir = Signal(list)
 
     def __init__(self, ekipman_no):
@@ -184,30 +184,30 @@ class GecmisYukleyiciThread(QThread):
 
     def run(self):
         from database.sqlite_manager import SQLiteManager
-        from database.repository_registry import RepositoryRegistry
+        from core.di import get_registry
         db = None
         try:
             db       = SQLiteManager()
-            registry = RepositoryRegistry(db)
+            registry = get_registry(db)
             all_data = registry.get("RKE_Muayene").get_all()
             gecmis   = [x for x in all_data if str(x.get("EkipmanNo")) == str(self._ekipman_no)]
             gecmis.sort(key=lambda x: x.get("FMuayeneTarihi", ""), reverse=True)
             self.gecmis_hazir.emit(gecmis)
         except Exception as e:
-            logger.error(f"Geçmiş yükleme hatası: {e}")
+            logger.error(f"GeÃ§miÅŸ yÃ¼kleme hatasÄ±: {e}")
             self.gecmis_hazir.emit([])
         finally:
             if db:
                 db.close()
 
 
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 #  ANA SAYFA
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class RKEYonetimPage(QWidget):
     """
-    RKE Envanter Yönetimi sayfası.
+    RKE Envanter YÃ¶netimi sayfasÄ±.
     db: SQLiteManager instance
     """
 
@@ -221,22 +221,22 @@ class RKEYonetimPage(QWidget):
         self._muayene     = []
         self._secili      = None   # dict | None
         self.ui           = {}
-        self._combo_db    = {}     # ui_key → sabit_kod
+        self._combo_db    = {}     # ui_key â†’ sabit_kod
 
         self._setup_ui()
         self._connect_signals()
         self.load_data()
 
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     #  UI
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _setup_ui(self):
         root = QHBoxLayout(self)
         root.setContentsMargins(10, 10, 10, 10)
         root.setSpacing(10)
 
-        # ── SOL: FORM ──
+        # â”€â”€ SOL: FORM â”€â”€
         form_container = QWidget()
         form_lay = QVBoxLayout(form_container)
         form_lay.setContentsMargins(0, 0, 0, 0)
@@ -258,7 +258,7 @@ class RKEYonetimPage(QWidget):
         self.ui["KayitNo"].setVisible(False)
 
         # 1. Kimlik
-        grp_kimlik = QGroupBox("🔖  Kimlik Bilgileri")
+        grp_kimlik = QGroupBox("ğŸ”–  Kimlik Bilgileri")
         grp_kimlik.setStyleSheet(S.get("group", ""))
         v_kimlik = QVBoxLayout(grp_kimlik)
         v_kimlik.setSpacing(10)
@@ -270,18 +270,18 @@ class RKEYonetimPage(QWidget):
 
         row2 = QHBoxLayout()
         self.ui["Barkod"]              = self._make_input("Barkod", row2)
-        self.ui["Varsa_Demirbaş_No"]   = self._make_input("Demirbaş No", row2)
+        self.ui["Varsa_DemirbaÅŸ_No"]   = self._make_input("DemirbaÅŸ No", row2)
         v_kimlik.addLayout(row2)
 
         inner.addWidget(grp_kimlik)
 
-        # 2. Özellikler
-        grp_ozel = QGroupBox("⚙️  Ekipman Özellikleri")
+        # 2. Ã–zellikler
+        grp_ozel = QGroupBox("âš™ï¸  Ekipman Ã–zellikleri")
         grp_ozel.setStyleSheet(S.get("group", ""))
         v_ozel = QVBoxLayout(grp_ozel)
         v_ozel.setSpacing(10)
 
-        self.ui["AnaBilimDali"] = self._make_combo("Ana Bilim Dalı *", v_ozel, required=True)
+        self.ui["AnaBilimDali"] = self._make_combo("Ana Bilim DalÄ± *", v_ozel, required=True)
         self._combo_db["AnaBilimDali"] = "AnaBilimDali"
 
         row3 = QHBoxLayout()
@@ -293,49 +293,49 @@ class RKEYonetimPage(QWidget):
 
         row4 = QHBoxLayout()
         self.ui["Bedeni"]         = self._make_combo("Beden", row4)
-        self.ui["KursunEsdegeri"] = self._make_combo("Kurşun Eşdeğeri", row4, editable=True)
+        self.ui["KursunEsdegeri"] = self._make_combo("KurÅŸun EÅŸdeÄŸeri", row4, editable=True)
         self._combo_db["Bedeni"] = "Bedeni"
         v_ozel.addLayout(row4)
 
-        # Kurşun sabit seçenekler
+        # KurÅŸun sabit seÃ§enekler
         for val in ["0.25 mmPb", "0.35 mmPb", "0.50 mmPb", "1.0 mmPb"]:
             self.ui["KursunEsdegeri"].addItem(val)
 
         row5 = QHBoxLayout()
-        self.ui["HizmetYili"]  = self._make_input("Üretim Yılı", row5)
-        self.ui["KayitTarih"]  = self._make_date("Envanter Giriş", row5)
+        self.ui["HizmetYili"]  = self._make_input("Ãœretim YÄ±lÄ±", row5)
+        self.ui["KayitTarih"]  = self._make_date("Envanter GiriÅŸ", row5)
         v_ozel.addLayout(row5)
 
         self.ui["HizmetYili"].setValidator(QIntValidator(1900, 2100))
-        self.ui["HizmetYili"].setPlaceholderText("Örn: 2024")
+        self.ui["HizmetYili"].setPlaceholderText("Ã–rn: 2024")
 
-        lbl_acik = QLabel("Açıklama:")
+        lbl_acik = QLabel("AÃ§Ä±klama:")
         lbl_acik.setStyleSheet(S.get("label", ""))
-        self.ui["Açiklama"] = QTextEdit()
-        self.ui["Açiklama"].setMaximumHeight(60)
-        self.ui["Açiklama"].setStyleSheet(S.get("input", ""))
+        self.ui["AÃ§iklama"] = QTextEdit()
+        self.ui["AÃ§iklama"].setMaximumHeight(60)
+        self.ui["AÃ§iklama"].setStyleSheet(S.get("input", ""))
         v_ozel.addWidget(lbl_acik)
-        v_ozel.addWidget(self.ui["Açiklama"])
+        v_ozel.addWidget(self.ui["AÃ§iklama"])
 
         inner.addWidget(grp_ozel)
 
         # 3. Durum
-        grp_durum = QGroupBox("🟢  Durum Bilgileri")
+        grp_durum = QGroupBox("ğŸŸ¢  Durum Bilgileri")
         grp_durum.setStyleSheet(S.get("group", ""))
         v_durum = QVBoxLayout(grp_durum)
         v_durum.setSpacing(10)
 
         row6 = QHBoxLayout()
         self.ui["Durum"] = self._make_combo("Durum", row6)
-        for d in ["Kullanıma Uygun", "Kullanıma Uygun Değil", "Hurda", "Tamirde", "Kayıp"]:
+        for d in ["KullanÄ±ma Uygun", "KullanÄ±ma Uygun DeÄŸil", "Hurda", "Tamirde", "KayÄ±p"]:
             self.ui["Durum"].addItem(d)
         self.ui["KontrolTarihi"] = self._make_date("Son Kontrol Tarihi", row6)
         v_durum.addLayout(row6)
 
         inner.addWidget(grp_durum)
 
-        # 4. Muayene Geçmişi
-        grp_gecmis = QGroupBox("📋  Muayene Geçmişi")
+        # 4. Muayene GeÃ§miÅŸi
+        grp_gecmis = QGroupBox("ğŸ“‹  Muayene GeÃ§miÅŸi")
         grp_gecmis.setStyleSheet(S.get("group", ""))
         v_gecmis = QVBoxLayout(grp_gecmis)
 
@@ -369,12 +369,12 @@ class RKEYonetimPage(QWidget):
         h_btn = QHBoxLayout()
         h_btn.setSpacing(8)
 
-        self.btn_temizle = QPushButton("✕  TEMİZLE / YENİ")
+        self.btn_temizle = QPushButton("âœ•  TEMÄ°ZLE / YENÄ°")
         self.btn_temizle.setStyleSheet(S.get("cancel_btn", ""))
         self.btn_temizle.setFixedHeight(40)
         self.btn_temizle.setCursor(QCursor(Qt.PointingHandCursor))
 
-        self.btn_kaydet = QPushButton("✓  KAYDET")
+        self.btn_kaydet = QPushButton("âœ“  KAYDET")
         self.btn_kaydet.setStyleSheet(S.get("save_btn", ""))
         self.btn_kaydet.setFixedHeight(40)
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
@@ -385,13 +385,13 @@ class RKEYonetimPage(QWidget):
 
         root.addWidget(form_container, 30)
 
-        # Dikey ayraç
+        # Dikey ayraÃ§
         sep = QFrame()
         sep.setFrameShape(QFrame.VLine)
         sep.setStyleSheet("background-color: rgba(255,255,255,0.08);")
         root.addWidget(sep)
 
-        # ── SAĞ: LİSTE ──
+        # â”€â”€ SAÄ: LÄ°STE â”€â”€
         list_container = QWidget()
         list_lay = QVBoxLayout(list_container)
         list_lay.setContentsMargins(0, 0, 0, 0)
@@ -405,22 +405,22 @@ class RKEYonetimPage(QWidget):
         fl.setSpacing(8)
 
         self._cmb_filter_abd = QComboBox()
-        self._cmb_filter_abd.addItem("Tüm Bölümler")
+        self._cmb_filter_abd.addItem("TÃ¼m BÃ¶lÃ¼mler")
         self._cmb_filter_abd.setStyleSheet(S.get("combo", ""))
         fl.addWidget(self._cmb_filter_abd)
 
         self._cmb_filter_birim = QComboBox()
-        self._cmb_filter_birim.addItem("Tüm Birimler")
+        self._cmb_filter_birim.addItem("TÃ¼m Birimler")
         self._cmb_filter_birim.setStyleSheet(S.get("combo", ""))
         fl.addWidget(self._cmb_filter_birim)
 
         self._cmb_filter_cins = QComboBox()
-        self._cmb_filter_cins.addItem("Tüm Cinsler")
+        self._cmb_filter_cins.addItem("TÃ¼m Cinsler")
         self._cmb_filter_cins.setStyleSheet(S.get("combo", ""))
         fl.addWidget(self._cmb_filter_cins)
 
         self._txt_ara = QLineEdit()
-        self._txt_ara.setPlaceholderText("🔍 Ara...")
+        self._txt_ara.setPlaceholderText("ğŸ” Ara...")
         self._txt_ara.setClearButtonEnabled(True)
         self._txt_ara.setStyleSheet(S.get("search", ""))
         self._txt_ara.setFixedWidth(180)
@@ -428,7 +428,7 @@ class RKEYonetimPage(QWidget):
 
         fl.addStretch()
 
-        self._btn_yenile = QPushButton("⟳ Yenile")
+        self._btn_yenile = QPushButton("âŸ³ Yenile")
         self._btn_yenile.setToolTip("Listeyi Yenile")
         self._btn_yenile.setFixedSize(100, 36)
         self._btn_yenile.setStyleSheet(S.get("refresh_btn", ""))
@@ -441,7 +441,7 @@ class RKEYonetimPage(QWidget):
         _sep_k.setStyleSheet("background-color: rgba(255,255,255,0.08);")
         fl.addWidget(_sep_k)
 
-        self.btn_kapat = QPushButton("✕ Kapat")
+        self.btn_kapat = QPushButton("âœ• Kapat")
         self.btn_kapat.setToolTip("Pencereyi Kapat")
         self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
@@ -470,16 +470,16 @@ class RKEYonetimPage(QWidget):
 
         hdr2 = self._table.horizontalHeader()
         hdr2.setSectionResizeMode(QHeaderView.Stretch)
-        # KayitNo sütununu gizle
+        # KayitNo sÃ¼tununu gizle
         self._table.setColumnHidden(0, True)
-        # Durum sütunu içeriğe göre
+        # Durum sÃ¼tunu iÃ§eriÄŸe gÃ¶re
         hdr2.setSectionResizeMode(len(COLUMNS) - 1, QHeaderView.ResizeToContents)
 
         list_lay.addWidget(self._table, 1)
 
         # Footer
         footer = QHBoxLayout()
-        self._lbl_sayi = QLabel("0 kayıt")
+        self._lbl_sayi = QLabel("0 kayÄ±t")
         self._lbl_sayi.setStyleSheet(S.get("footer_label", "color:#8b8fa3; font-size:11px;"))
         footer.addWidget(self._lbl_sayi)
         footer.addStretch()
@@ -487,9 +487,9 @@ class RKEYonetimPage(QWidget):
 
         root.addWidget(list_container, 70)
 
-    # ═══════════════════════════════════════════
-    #  YARDIMCI WIDGET FABRİKALARI
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  YARDIMCI WIDGET FABRÄ°KALARI
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _make_input(self, label, parent_layout, read_only=False, placeholder=""):
         container = QWidget()
@@ -564,9 +564,9 @@ class RKEYonetimPage(QWidget):
         parent_layout.addWidget(container, 1)
         return de
 
-    # ═══════════════════════════════════════════
-    #  SİNYALLER
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  SÄ°NYALLER
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _connect_signals(self):
         self.btn_kaydet.clicked.connect(self._on_save)
@@ -585,12 +585,12 @@ class RKEYonetimPage(QWidget):
         self.ui["KoruyucuCinsi"].currentIndexChanged.connect(self._hesapla_kod)
         self.ui["KayitTarih"].dateChanged.connect(self._tarih_hesapla)
 
-    # ═══════════════════════════════════════════
-    #  VERİ
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  VERÄ°
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def load_data(self):
-        # Önceki thread hâlâ çalışıyorsa yeni başlatma
+        # Ã–nceki thread hÃ¢lÃ¢ Ã§alÄ±ÅŸÄ±yorsa yeni baÅŸlatma
         if hasattr(self, "_loader") and self._loader.isRunning():
             return
         self._pbar.setVisible(True)
@@ -607,7 +607,7 @@ class RKEYonetimPage(QWidget):
         self._rke_listesi = rke_data
         self._muayene     = muayene_data
 
-        # Form combolarını doldur
+        # Form combolarÄ±nÄ± doldur
         for ui_key, db_kod in self._combo_db.items():
             w = self.ui.get(ui_key)
             if w and db_kod in self._sabitler:
@@ -620,7 +620,7 @@ class RKEYonetimPage(QWidget):
                 w.setCurrentIndex(idx if idx >= 0 else 0)
                 w.blockSignals(False)
 
-        # Filtre combolarını doldur
+        # Filtre combolarÄ±nÄ± doldur
         def fill_filter(widget, items, default_text):
             widget.blockSignals(True)
             curr = widget.currentText()
@@ -636,9 +636,9 @@ class RKEYonetimPage(QWidget):
         birim_set = set(str(r.get("Birim", "")).strip() for r in rke_data if r.get("Birim"))
         cins_set  = set(str(r.get("KoruyucuCinsi", "")).strip() for r in rke_data if r.get("KoruyucuCinsi"))
 
-        fill_filter(self._cmb_filter_abd,   abd_set,   "Tüm Bölümler")
-        fill_filter(self._cmb_filter_birim, birim_set, "Tüm Birimler")
-        fill_filter(self._cmb_filter_cins,  cins_set,  "Tüm Cinsler")
+        fill_filter(self._cmb_filter_abd,   abd_set,   "TÃ¼m BÃ¶lÃ¼mler")
+        fill_filter(self._cmb_filter_birim, birim_set, "TÃ¼m Birimler")
+        fill_filter(self._cmb_filter_cins,  cins_set,  "TÃ¼m Cinsler")
 
         self._apply_filter()
 
@@ -649,13 +649,13 @@ class RKEYonetimPage(QWidget):
 
         filtered = []
         for r in self._rke_listesi:
-            if f_abd   != "Tüm Bölümler" and str(r.get("AnaBilimDali",   "")).strip() != f_abd:   continue
-            if f_birim != "Tüm Birimler" and str(r.get("Birim",           "")).strip() != f_birim: continue
-            if f_cins  != "Tüm Cinsler"  and str(r.get("KoruyucuCinsi",  "")).strip() != f_cins:  continue
+            if f_abd   != "TÃ¼m BÃ¶lÃ¼mler" and str(r.get("AnaBilimDali",   "")).strip() != f_abd:   continue
+            if f_birim != "TÃ¼m Birimler" and str(r.get("Birim",           "")).strip() != f_birim: continue
+            if f_cins  != "TÃ¼m Cinsler"  and str(r.get("KoruyucuCinsi",  "")).strip() != f_cins:  continue
             filtered.append(r)
 
         self._model.set_data(filtered)
-        self._lbl_sayi.setText(f"{len(filtered)} kayıt")
+        self._lbl_sayi.setText(f"{len(filtered)} kayÄ±t")
 
     def _on_row_double_click(self, index):
         src_idx  = self._proxy.mapToSource(index)
@@ -665,7 +665,7 @@ class RKEYonetimPage(QWidget):
         self._secili = row_data
         self._fill_form(row_data)
         self._gecmis_yukle(row_data.get("EkipmanNo", ""))
-        self.btn_kaydet.setText("✓  GÜNCELLE")
+        self.btn_kaydet.setText("âœ“  GÃœNCELLE")
         self.btn_kaydet.setStyleSheet(
             "background-color: #e65100; color: white; font-weight: bold; "
             "border-radius: 6px; padding: 6px 16px; font-size: 13px;"
@@ -677,7 +677,7 @@ class RKEYonetimPage(QWidget):
             return
         menu = QMenu(self)
         menu.setStyleSheet(S.get("context_menu", ""))
-        act_sec = menu.addAction("✏️  Düzenle")
+        act_sec = menu.addAction("âœï¸  DÃ¼zenle")
         act_sec.triggered.connect(lambda: self._on_row_double_click(idx))
         menu.exec(self._table.viewport().mapToGlobal(pos))
 
@@ -703,7 +703,7 @@ class RKEYonetimPage(QWidget):
     def _gecmis_yukle(self, ekipman_no):
         if not ekipman_no:
             return
-        # Önceki geçmiş thread'i hâlâ çalışıyorsa bekle
+        # Ã–nceki geÃ§miÅŸ thread'i hÃ¢lÃ¢ Ã§alÄ±ÅŸÄ±yorsa bekle
         if hasattr(self, "_gecmis_loader") and self._gecmis_loader.isRunning():
             return
         self._gecmis_loader = GecmisYukleyiciThread(ekipman_no)
@@ -713,13 +713,13 @@ class RKEYonetimPage(QWidget):
     def _gecmis_goster(self, data):
         self._gecmis_model.set_data(data)
 
-    # ═══════════════════════════════════════════
-    #  KAYDET / TEMİZLE
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  KAYDET / TEMÄ°ZLE
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _on_save(self):
         if not self.ui["EkipmanNo"].text().strip():
-            QMessageBox.warning(self, "Eksik Bilgi", "Ekipman No zorunludur (Ana Bilim Dalı ve Cinsi seçin).")
+            QMessageBox.warning(self, "Eksik Bilgi", "Ekipman No zorunludur (Ana Bilim DalÄ± ve Cinsi seÃ§in).")
             return
 
         veri = {}
@@ -749,7 +749,7 @@ class RKEYonetimPage(QWidget):
     def _on_save_success(self):
         self._pbar.setVisible(False)
         self.btn_kaydet.setEnabled(True)
-        QMessageBox.information(self, "Başarılı", "İşlem tamamlandı.")
+        QMessageBox.information(self, "BaÅŸarÄ±lÄ±", "Ä°ÅŸlem tamamlandÄ±.")
         self._on_clear()
         self.load_data()
 
@@ -766,14 +766,14 @@ class RKEYonetimPage(QWidget):
                 w.clear()
 
         self.ui["HizmetYili"].setText(str(QDate.currentDate().year()))
-        self.ui["Durum"].setCurrentText("Kullanıma Uygun")
+        self.ui["Durum"].setCurrentText("KullanÄ±ma Uygun")
         self._gecmis_model.set_data([])
 
-        self.btn_kaydet.setText("✓  KAYDET")
+        self.btn_kaydet.setText("âœ“  KAYDET")
         self.btn_kaydet.setStyleSheet(S.get("save_btn", ""))
 
     def _hesapla_kod(self):
-        """Ana Bilim Dalı / Birim / Cins değiştiğinde EkipmanNo ve KoruyucuNo hesaplar."""
+        """Ana Bilim DalÄ± / Birim / Cins deÄŸiÅŸtiÄŸinde EkipmanNo ve KoruyucuNo hesaplar."""
         abd  = self.ui["AnaBilimDali"].currentText()
         birim = self.ui["Birim"].currentText()
         cins  = self.ui["KoruyucuCinsi"].currentText()
@@ -812,18 +812,18 @@ class RKEYonetimPage(QWidget):
     def _on_error(self, msg):
         self._pbar.setVisible(False)
         self.btn_kaydet.setEnabled(True)
-        logger.error(f"RKEYonetim hatası: {msg}")
+        logger.error(f"RKEYonetim hatasÄ±: {msg}")
         QMessageBox.critical(self, "Hata", msg)
 
 
-# ═══════════════════════════════════════════════
-#  GEÇMIŞ TABLO MODELİ (Küçük yardımcı)
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  GEÃ‡MIÅ TABLO MODELÄ° (KÃ¼Ã§Ã¼k yardÄ±mcÄ±)
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 _GECMIS_COLS = [
     ("FMuayeneTarihi",  "Fiz. Tarih"),
-    ("FizikselDurum",   "Fiziksel Sonuç"),
-    ("Aciklamalar",     "Açıklama"),
+    ("FizikselDurum",   "Fiziksel SonuÃ§"),
+    ("Aciklamalar",     "AÃ§Ä±klama"),
 ]
 
 class _GecmisTableModel(QAbstractTableModel):
@@ -844,7 +844,7 @@ class _GecmisTableModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             return str(row.get(col, ""))
         if role == Qt.ForegroundRole and col == "FizikselDurum":
-            return QColor("#f87171") if "Değil" in str(row.get(col, "")) else QColor("#4ade80")
+            return QColor("#f87171") if "DeÄŸil" in str(row.get(col, "")) else QColor("#4ade80")
         return None
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
@@ -856,3 +856,5 @@ class _GecmisTableModel(QAbstractTableModel):
         self.beginResetModel()
         self._data = data or []
         self.endResetModel()
+
+

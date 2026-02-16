@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-Ana Gösterge Paneli (Dashboard)
+Ana GÃ¶sterge Paneli (Dashboard)
 """
 import calendar
 from datetime import datetime, timedelta
@@ -33,25 +33,25 @@ class DashboardWorker(QThread):
         db = None
         try:
             from database.sqlite_manager import SQLiteManager
-            from database.repository_registry import RepositoryRegistry
+            from core.di import get_registry
             db = SQLiteManager(db_path=self._db_path)
-            registry = RepositoryRegistry(db)
+            registry = get_registry(db)
             today = datetime.now()
             today_str = today.strftime('%Y-%m-%d')
 
-            # --- CİHAZ ---
+            # --- CÄ°HAZ ---
             six_months_later = (today + timedelta(days=180)).strftime('%Y-%m-%d')
             data['yaklasan_ndk'] = self._get_count(registry, "Cihazlar", f"BitisTarihi BETWEEN '{today_str}' AND '{six_months_later}'")
             
             month_start = today.replace(day=1).strftime('%Y-%m-%d')
             _, last_day = calendar.monthrange(today.year, today.month)
             month_end = today.replace(day=last_day).strftime('%Y-%m-%d')
-            data['aylik_bakim'] = self._get_count(registry, "Periyodik_Bakim", f"PlanlananTarih BETWEEN '{month_start}' AND '{month_end}' AND Durum = 'Planlandı'")
+            data['aylik_bakim'] = self._get_count(registry, "Periyodik_Bakim", f"PlanlananTarih BETWEEN '{month_start}' AND '{month_end}' AND Durum = 'PlanlandÄ±'")
 
-            data['aylik_kalibrasyon'] = self._get_count(registry, "Kalibrasyon", f"BitisTarihi BETWEEN '{month_start}' AND '{month_end}' AND Durum = 'Tamamlandı'")
+            data['aylik_kalibrasyon'] = self._get_count(registry, "Kalibrasyon", f"BitisTarihi BETWEEN '{month_start}' AND '{month_end}' AND Durum = 'TamamlandÄ±'")
 
             one_week_ago = (today - timedelta(days=7)).strftime('%Y-%m-%d')
-            data['yeni_arizalar'] = self._get_count(registry, "Cihaz_Ariza", f"BaslangicTarihi >= '{one_week_ago}' AND Durum <> 'Kapatıldı'")
+            data['yeni_arizalar'] = self._get_count(registry, "Cihaz_Ariza", f"BaslangicTarihi >= '{one_week_ago}' AND Durum <> 'KapatÄ±ldÄ±'")
 
             # --- PERSONEL ---
             data['aktif_personel'] = self._get_count(registry, "Personel", "Durum = 'Aktif'")
@@ -62,10 +62,10 @@ class DashboardWorker(QThread):
             data['yaklasan_rke'] = self._get_count(
                 registry,
                 "RKE_List",
-                f"KontrolTarihi BETWEEN '{today_str}' AND '{one_month_later}' AND Durum = 'Planlandı'"
+                f"KontrolTarihi BETWEEN '{today_str}' AND '{one_month_later}' AND Durum = 'PlanlandÄ±'"
             )
 
-            # --- SAĞLIK ---
+            # --- SAÄLIK ---
             three_months_later = (today + timedelta(days=90)).strftime('%Y-%m-%d')
             data['yaklasan_saglik'] = self._get_count(
                 registry,
@@ -79,8 +79,8 @@ class DashboardWorker(QThread):
             )
 
             # --- MEVCUT SORGULAR ---
-            data['acik_arizalar'] = self._get_count(registry, "Cihaz_Ariza", "Durum = 'Açık'")
-            data['gecmis_kalibrasyon'] = self._get_count(registry, "Kalibrasyon", f"BitisTarihi < '{today_str}' AND BitisTarihi != '' AND Durum = 'Tamamlandı'")
+            data['acik_arizalar'] = self._get_count(registry, "Cihaz_Ariza", "Durum = 'AÃ§Ä±k'")
+            data['gecmis_kalibrasyon'] = self._get_count(registry, "Kalibrasyon", f"BitisTarihi < '{today_str}' AND BitisTarihi != '' AND Durum = 'TamamlandÄ±'")
 
             log_stats = LogStatistics.get_log_stats()
             data['hata_log_satir'] = log_stats.get('errors.log', {}).get('lines', 0)
@@ -88,7 +88,7 @@ class DashboardWorker(QThread):
 
             self.data_ready.emit(data)
         except Exception as e:
-            logger.error(f"Dashboard worker hatası: {e}")
+            logger.error(f"Dashboard worker hatasÄ±: {e}")
             self.data_ready.emit({})  # Emit empty on error
         finally:
             if db:
@@ -101,7 +101,7 @@ class DashboardWorker(QThread):
             cursor = repo.db.execute(query)
             return cursor.fetchone()[0]
         except Exception as e:
-            logger.warning(f"Dashboard sayım hatası ({table_name}): {e}")
+            logger.warning(f"Dashboard sayÄ±m hatasÄ± ({table_name}): {e}")
             return -1 # Indicate error
 
     def _parse_date(self, value):
@@ -111,11 +111,11 @@ class DashboardWorker(QThread):
 
     def _classify_leave_type(self, leave_type):
         leave_type = str(leave_type).strip().lower()
-        if "yıllık" in leave_type or "yillik" in leave_type:
+        if "yÄ±llÄ±k" in leave_type or "yillik" in leave_type:
             return "yillik"
-        if "şua" in leave_type or "sua" in leave_type:
+        if "ÅŸua" in leave_type or "sua" in leave_type:
             return "sua"
-        if "rapor" in leave_type or "sağlık" in leave_type or "saglik" in leave_type:
+        if "rapor" in leave_type or "saÄŸlÄ±k" in leave_type or "saglik" in leave_type:
             return "rapor"
         return "diger"
 
@@ -161,11 +161,11 @@ class DashboardWorker(QThread):
             stats["aylik_izinli_rapor"] = len(by_type["rapor"])
             stats["aylik_izinli_diger"] = len(by_type["diger"])
         except Exception as e:
-            logger.warning(f"Aylık izinli personel hesaplama hatası: {e}")
+            logger.warning(f"AylÄ±k izinli personel hesaplama hatasÄ±: {e}")
         return stats
 
 class StatCard(QGroupBox):
-    """Dashboard için tıklanabilir bir istatistik kartı."""
+    """Dashboard iÃ§in tÄ±klanabilir bir istatistik kartÄ±."""
     clicked = Signal()
 
     def __init__(self, title, icon, parent=None):
@@ -225,7 +225,7 @@ class StatCard(QGroupBox):
         self.value_label.setStyleSheet("font-size: 28px; font-weight: bold; color: #e0e2ea; border: none; background: transparent;")
         v_layout.addWidget(self.value_label)
 
-        self.desc_label = QLabel("Yükleniyor")
+        self.desc_label = QLabel("YÃ¼kleniyor")
         self.desc_label.setStyleSheet("font-size: 12px; color: #8b949e; border: none; background: transparent;")
         v_layout.addWidget(self.desc_label)
         
@@ -247,7 +247,7 @@ class StatCard(QGroupBox):
 
 
 class DashboardPage(QWidget):
-    """Ana karşılama sayfası, genel durumu gösterir."""
+    """Ana karÅŸÄ±lama sayfasÄ±, genel durumu gÃ¶sterir."""
     open_page_requested = Signal(str, str, dict)
 
     def __init__(self, db=None, parent=None):
@@ -267,16 +267,16 @@ class DashboardPage(QWidget):
 
         # Header
         header_layout = QHBoxLayout()
-        title = QLabel("Genel Bakış")
+        title = QLabel("Genel BakÄ±ÅŸ")
         title.setStyleSheet("font-size: 24px; font-weight: bold; color: #e0e2ea;")
         
-        self.refresh_button = QPushButton("↻ Yenile")
+        self.refresh_button = QPushButton("â†» Yenile")
         self.refresh_button.setFixedSize(100, 36)
         self.refresh_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.refresh_button.setStyleSheet(S.get("refresh_btn", ""))
         self.refresh_button.clicked.connect(self.load_data)
 
-        self.btn_kapat = QPushButton("✕ Kapat")
+        self.btn_kapat = QPushButton("âœ• Kapat")
         self.btn_kapat.setFixedSize(90, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S.get("close_btn", ""))
@@ -316,110 +316,110 @@ class DashboardPage(QWidget):
         content_layout.setContentsMargins(0, 10, 0, 10)
         content_layout.setSpacing(20)
 
-        # --- Hatırlatmalar ---
+        # --- HatÄ±rlatmalar ---
         self.fhsz_reminder_frame = self._create_reminder_box(
-            "Fiili Hizmet Zammı Hatırlatması",
-            "Her ayın 15'inde FHSZ hesaplamalarını kontrol etmeyi unutmayın."
+            "Fiili Hizmet ZammÄ± HatÄ±rlatmasÄ±",
+            "Her ayÄ±n 15'inde FHSZ hesaplamalarÄ±nÄ± kontrol etmeyi unutmayÄ±n."
         )
         content_layout.addWidget(self.fhsz_reminder_frame)
 
         # --- Cihaz Grubu ---
-        cihaz_group = QGroupBox("🔬 Cihaz Yönetimi")
+        cihaz_group = QGroupBox("ğŸ”¬ Cihaz YÃ¶netimi")
         cihaz_group.setStyleSheet(self._group_style())
         cihaz_grid = QGridLayout(cihaz_group)
         cihaz_grid.setSpacing(20)
         
-        self.card_acik_arizalar = StatCard("Açık Arıza Kayıtları", "⚠️")
+        self.card_acik_arizalar = StatCard("AÃ§Ä±k ArÄ±za KayÄ±tlarÄ±", "âš ï¸")
         self.card_acik_arizalar.clicked.connect(
-            lambda: self.open_page_requested.emit("CİHAZ", "Arıza Listesi", {"Durum": "Açık"})
+            lambda: self.open_page_requested.emit("CÄ°HAZ", "ArÄ±za Listesi", {"Durum": "AÃ§Ä±k"})
         )
         cihaz_grid.addWidget(self.card_acik_arizalar, 0, 0)
 
-        self.card_yeni_arizalar = StatCard("Yeni Arızalar (1 Hafta)", "🆕")
-        self.card_yeni_arizalar.clicked.connect(lambda: self.open_page_requested.emit("CİHAZ", "Arıza Listesi", {"Filtre": "Yeni"}))
+        self.card_yeni_arizalar = StatCard("Yeni ArÄ±zalar (1 Hafta)", "ğŸ†•")
+        self.card_yeni_arizalar.clicked.connect(lambda: self.open_page_requested.emit("CÄ°HAZ", "ArÄ±za Listesi", {"Filtre": "Yeni"}))
         cihaz_grid.addWidget(self.card_yeni_arizalar, 0, 1)
 
-        self.card_aylik_bakim = StatCard("Bu Ayki Bakımlar", "🛠️")
-        self.card_aylik_bakim.clicked.connect(lambda: self.open_page_requested.emit("CİHAZ", "Periyodik Bakım", {"Filtre": "BuAy"}))
+        self.card_aylik_bakim = StatCard("Bu Ayki BakÄ±mlar", "ğŸ› ï¸")
+        self.card_aylik_bakim.clicked.connect(lambda: self.open_page_requested.emit("CÄ°HAZ", "Periyodik BakÄ±m", {"Filtre": "BuAy"}))
         cihaz_grid.addWidget(self.card_aylik_bakim, 0, 2)
 
-        self.card_gecmis_kalibrasyon = StatCard("Vadesi Geçmiş Kalibrasyonlar", "📐")
+        self.card_gecmis_kalibrasyon = StatCard("Vadesi GeÃ§miÅŸ Kalibrasyonlar", "ğŸ“")
         self.card_gecmis_kalibrasyon.clicked.connect(
-            lambda: self.open_page_requested.emit("CİHAZ", "Kalibrasyon Takip", {"Filtre": "Gecmis"})
+            lambda: self.open_page_requested.emit("CÄ°HAZ", "Kalibrasyon Takip", {"Filtre": "Gecmis"})
         )
         cihaz_grid.addWidget(self.card_gecmis_kalibrasyon, 1, 0)
 
-        self.card_aylik_kalibrasyon = StatCard("Bu Ayki Kalibrasyonlar", "📅")
-        self.card_aylik_kalibrasyon.clicked.connect(lambda: self.open_page_requested.emit("CİHAZ", "Kalibrasyon Takip", {"Filtre": "BuAy"}))
+        self.card_aylik_kalibrasyon = StatCard("Bu Ayki Kalibrasyonlar", "ğŸ“…")
+        self.card_aylik_kalibrasyon.clicked.connect(lambda: self.open_page_requested.emit("CÄ°HAZ", "Kalibrasyon Takip", {"Filtre": "BuAy"}))
         cihaz_grid.addWidget(self.card_aylik_kalibrasyon, 1, 1)
 
-        self.card_yaklasan_ndk = StatCard("Yaklaşan NDK Lisansları", "📜")
-        self.card_yaklasan_ndk.clicked.connect(lambda: self.open_page_requested.emit("CİHAZ", "Cihaz Listesi", {"Filtre": "YaklasanNDK"}))
+        self.card_yaklasan_ndk = StatCard("YaklaÅŸan NDK LisanslarÄ±", "ğŸ“œ")
+        self.card_yaklasan_ndk.clicked.connect(lambda: self.open_page_requested.emit("CÄ°HAZ", "Cihaz Listesi", {"Filtre": "YaklasanNDK"}))
         cihaz_grid.addWidget(self.card_yaklasan_ndk, 1, 2)
         content_layout.addWidget(cihaz_group)
 
         # --- Personel Grubu ---
-        personel_group = QGroupBox("👤 Personel")
+        personel_group = QGroupBox("ğŸ‘¤ Personel")
         personel_group.setStyleSheet(self._group_style())
         personel_grid = QGridLayout(personel_group)
         personel_grid.setSpacing(20)
 
-        self.card_aktif_personel = StatCard("Aktif Personel", "👥")
+        self.card_aktif_personel = StatCard("Aktif Personel", "ğŸ‘¥")
         self.card_aktif_personel.clicked.connect(lambda: self.open_page_requested.emit("PERSONEL", "Personel Listesi", {"Filtre": "Aktif"}))
         personel_grid.addWidget(self.card_aktif_personel, 0, 0)
 
-        self.card_aylik_izinli = StatCard("Bu Ay İzinli Personel", "🗓️")
+        self.card_aylik_izinli = StatCard("Bu Ay Ä°zinli Personel", "ğŸ—“ï¸")
         self.card_aylik_izinli.clicked.connect(
-            lambda: self.open_page_requested.emit("PERSONEL", "Personel Listesi", {"Filtre": "İzinli"})
+            lambda: self.open_page_requested.emit("PERSONEL", "Personel Listesi", {"Filtre": "Ä°zinli"})
         )
         personel_grid.addWidget(self.card_aylik_izinli, 0, 1)
         content_layout.addWidget(personel_group)
 
-        # --- Sağlık Takibi Grubu ---
-        saglik_group = QGroupBox("🏥 Personel Sağlık Takibi")
+        # --- SaÄŸlÄ±k Takibi Grubu ---
+        saglik_group = QGroupBox("ğŸ¥ Personel SaÄŸlÄ±k Takibi")
         saglik_group.setStyleSheet(self._group_style())
         saglik_grid = QGridLayout(saglik_group)
         saglik_grid.setSpacing(20)
 
-        self.card_yaklasan_saglik = StatCard("Yaklaşan Muayeneler (90 Gün)", "🩺")
+        self.card_yaklasan_saglik = StatCard("YaklaÅŸan Muayeneler (90 GÃ¼n)", "ğŸ©º")
         self.card_yaklasan_saglik.clicked.connect(
-            lambda: self.open_page_requested.emit("PERSONEL", "Sağlık Takip", {"Filtre": "Yaklasan"})
+            lambda: self.open_page_requested.emit("PERSONEL", "SaÄŸlÄ±k Takip", {"Filtre": "Yaklasan"})
         )
         saglik_grid.addWidget(self.card_yaklasan_saglik, 0, 0)
 
-        self.card_gecmis_saglik = StatCard("Vadesi Geçmiş Muayeneler", "⏰")
+        self.card_gecmis_saglik = StatCard("Vadesi GeÃ§miÅŸ Muayeneler", "â°")
         self.card_gecmis_saglik.clicked.connect(
-            lambda: self.open_page_requested.emit("PERSONEL", "Sağlık Takip", {"Filtre": "Gecmis"})
+            lambda: self.open_page_requested.emit("PERSONEL", "SaÄŸlÄ±k Takip", {"Filtre": "Gecmis"})
         )
         saglik_grid.addWidget(self.card_gecmis_saglik, 0, 1)
         content_layout.addWidget(saglik_group)
 
         # --- RKE Grubu ---
-        rke_group = QGroupBox("🛡️ RKE")
+        rke_group = QGroupBox("ğŸ›¡ï¸ RKE")
         rke_group.setStyleSheet(self._group_style())
         rke_grid = QGridLayout(rke_group)
         rke_grid.setSpacing(20)
-        self.card_yaklasan_rke = StatCard("Yaklaşan RKE Muayeneleri", "🛡️")
+        self.card_yaklasan_rke = StatCard("YaklaÅŸan RKE Muayeneleri", "ğŸ›¡ï¸")
         self.card_yaklasan_rke.clicked.connect(lambda: self.open_page_requested.emit("RKE", "RKE Muayene", {"Filtre": "Yaklasan"}))
         rke_grid.addWidget(self.card_yaklasan_rke, 0, 0)
         content_layout.addWidget(rke_group)
 
         # --- Sistem Grubu ---
-        sistem_group = QGroupBox("⚙️ Sistem Sağlığı")
+        sistem_group = QGroupBox("âš™ï¸ Sistem SaÄŸlÄ±ÄŸÄ±")
         sistem_group.setStyleSheet(self._group_style())
         sistem_grid = QGridLayout(sistem_group)
         sistem_grid.setSpacing(20)
 
         
-        self.card_hata_log = StatCard("Kritik Hata Logları", "📄")
+        self.card_hata_log = StatCard("Kritik Hata LoglarÄ±", "ğŸ“„")
         self.card_hata_log.clicked.connect(
-            lambda: self.open_page_requested.emit("YÖNETİCİ İŞLEMLERİ", "Log Görüntüleyici", {"Dosya": "errors.log", "Seviye": "ERROR"})
+            lambda: self.open_page_requested.emit("YÃ–NETÄ°CÄ° Ä°ÅLEMLERÄ°", "Log GÃ¶rÃ¼ntÃ¼leyici", {"Dosya": "errors.log", "Seviye": "ERROR"})
         )
         sistem_grid.addWidget(self.card_hata_log, 0, 0)
 
-        self.card_log_boyutu = StatCard("Toplam Log Boyutu", "🗄️")
+        self.card_log_boyutu = StatCard("Toplam Log Boyutu", "ğŸ—„ï¸")
         self.card_log_boyutu.clicked.connect(
-            lambda: self.open_page_requested.emit("YÖNETİCİ İŞLEMLERİ", "Log Görüntüleyici", {})
+            lambda: self.open_page_requested.emit("YÃ–NETÄ°CÄ° Ä°ÅLEMLERÄ°", "Log GÃ¶rÃ¼ntÃ¼leyici", {})
         )
         sistem_grid.addWidget(self.card_log_boyutu, 0, 1)
         content_layout.addWidget(sistem_group)
@@ -429,7 +429,7 @@ class DashboardPage(QWidget):
         main_layout.addWidget(scroll_area, 1)
 
     def _create_reminder_box(self, title, text):
-        frame = QGroupBox(f"🔔 {title}")
+        frame = QGroupBox(f"ğŸ”” {title}")
         frame.setStyleSheet("""
             QGroupBox {
                 border: 1px solid #e3b341;
@@ -493,11 +493,11 @@ class DashboardPage(QWidget):
 
     def load_data(self):
         if self._worker and self._worker.isRunning():
-            return # Zaten çalışıyor
+            return # Zaten Ã§alÄ±ÅŸÄ±yor
         
-        logger.info("Dashboard verileri yükleniyor...")
+        logger.info("Dashboard verileri yÃ¼kleniyor...")
         self.refresh_button.setEnabled(False)
-        self.refresh_button.setText("Yükleniyor...")
+        self.refresh_button.setText("YÃ¼kleniyor...")
         
         db_path = getattr(self._db, "db_path", DB_PATH)
         self._worker = DashboardWorker(db_path)
@@ -506,47 +506,49 @@ class DashboardPage(QWidget):
         self._worker.start()
 
     def _on_data_ready(self, data):
-        # FHSZ Hatırlatma
+        # FHSZ HatÄ±rlatma
         if datetime.now().day == 15:
             self.fhsz_reminder_frame.setVisible(True)
         else:
             self.fhsz_reminder_frame.setVisible(False)
 
         # Cihaz
-        self.card_acik_arizalar.set_data(data.get('acik_arizalar', 0), "Çözülmeyi bekleyen arıza kayıtları")
-        self.card_yeni_arizalar.set_data(data.get('yeni_arizalar', 0), "Son 7 günde açılan kayıtlar")
-        self.card_aylik_bakim.set_data(data.get('aylik_bakim', 0), "Bu ay planlanan bakımlar")
-        self.card_gecmis_kalibrasyon.set_data(data.get('gecmis_kalibrasyon', 0), "Süresi geçmiş cihazlar")
-        self.card_aylik_kalibrasyon.set_data(data.get('aylik_kalibrasyon', 0), "Bu ay geçerlilik süresi dolacaklar")
-        self.card_yaklasan_ndk.set_data(data.get('yaklasan_ndk', 0), "6 ay içinde dolacak lisanslar")
+        self.card_acik_arizalar.set_data(data.get('acik_arizalar', 0), "Ã‡Ã¶zÃ¼lmeyi bekleyen arÄ±za kayÄ±tlarÄ±")
+        self.card_yeni_arizalar.set_data(data.get('yeni_arizalar', 0), "Son 7 gÃ¼nde aÃ§Ä±lan kayÄ±tlar")
+        self.card_aylik_bakim.set_data(data.get('aylik_bakim', 0), "Bu ay planlanan bakÄ±mlar")
+        self.card_gecmis_kalibrasyon.set_data(data.get('gecmis_kalibrasyon', 0), "SÃ¼resi geÃ§miÅŸ cihazlar")
+        self.card_aylik_kalibrasyon.set_data(data.get('aylik_kalibrasyon', 0), "Bu ay geÃ§erlilik sÃ¼resi dolacaklar")
+        self.card_yaklasan_ndk.set_data(data.get('yaklasan_ndk', 0), "6 ay iÃ§inde dolacak lisanslar")
 
         # Personel
-        self.card_aktif_personel.set_data(data.get('aktif_personel', 0), "Sistemde aktif görünen personel")
+        self.card_aktif_personel.set_data(data.get('aktif_personel', 0), "Sistemde aktif gÃ¶rÃ¼nen personel")
         yillik = data.get("aylik_izinli_yillik", 0)
         sua = data.get("aylik_izinli_sua", 0)
         rapor = data.get("aylik_izinli_rapor", 0)
         diger = data.get("aylik_izinli_diger", 0)
-        izin_desc = f"Yıllık:{yillik} • Şua:{sua} • Rapor:{rapor} • Diğer:{diger}"
+        izin_desc = f"YÄ±llÄ±k:{yillik} â€¢ Åua:{sua} â€¢ Rapor:{rapor} â€¢ DiÄŸer:{diger}"
         self.card_aylik_izinli.set_data(data.get("aylik_izinli_personel_toplam", 0), izin_desc)
 
         # RKE
-        self.card_yaklasan_rke.set_data(data.get('yaklasan_rke', 0), "1 ay içinde muayenesi olanlar")
+        self.card_yaklasan_rke.set_data(data.get('yaklasan_rke', 0), "1 ay iÃ§inde muayenesi olanlar")
 
-        # Sağlık Takibi
-        self.card_yaklasan_saglik.set_data(data.get('yaklasan_saglik', 0), "90 gün içinde kontrolü gelenler")
+        # SaÄŸlÄ±k Takibi
+        self.card_yaklasan_saglik.set_data(data.get('yaklasan_saglik', 0), "90 gÃ¼n iÃ§inde kontrolÃ¼ gelenler")
         gecmis = data.get('gecmis_saglik', 0)
-        self.card_gecmis_saglik.set_data(gecmis, "Zamanında yapılmamış muayeneler")
+        self.card_gecmis_saglik.set_data(gecmis, "ZamanÄ±nda yapÄ±lmamÄ±ÅŸ muayeneler")
         if isinstance(gecmis, int) and gecmis > 0:
             self.card_gecmis_saglik.value_label.setStyleSheet(
                 "font-size: 28px; font-weight: bold; color: #f85149; border: none; background: transparent;"
             )
 
         # Sistem
-        self.card_hata_log.set_data(data.get('hata_log_satir', 0), "errors.log dosyasındaki satır sayısı")
+        self.card_hata_log.set_data(data.get('hata_log_satir', 0), "errors.log dosyasÄ±ndaki satÄ±r sayÄ±sÄ±")
         log_boyut = data.get('toplam_log_boyut_mb', 0)
-        self.card_log_boyutu.set_data(f"{log_boyut:.2f} MB", "Tüm log dosyalarının toplamı")
+        self.card_log_boyutu.set_data(f"{log_boyut:.2f} MB", "TÃ¼m log dosyalarÄ±nÄ±n toplamÄ±")
 
     def _on_worker_finished(self):
         self.refresh_button.setEnabled(True)
-        self.refresh_button.setText("↻ Yenile")
-        logger.info("Dashboard verileri yüklendi.")
+        self.refresh_button.setText("â†» Yenile")
+        logger.info("Dashboard verileri yÃ¼klendi.")
+
+

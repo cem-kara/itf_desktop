@@ -317,8 +317,8 @@ Aşağıda workspace içi en son yapılacaklar listesi ve durumları yer alır. 
 - [x] `TODO.md` doküman maddelerini güncelle
 - [x] Unit test: `core/hesaplamalar.py`
 - [x] CI: lint + test workflow
-- [ ] `RepositoryRegistry` DI refactor
-- [ ] Tiplendirme: `mypy` entegrasyonu
+- [x] `RepositoryRegistry` DI refactor
+- [x] Tiplendirme: `mypy` entegrasyonu
 - [x] Log rotasyonu ve retention
 - [ ] Paketleme / dağıtım betikleri
 - [ ] Backups & secrets güvenlik incelemesi

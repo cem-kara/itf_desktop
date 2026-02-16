@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-İşten Ayrılık Sayfası
-- Personel bilgi özeti
-- Ayrılış bilgileri (tarih, neden, ek dosya)
-- Kullanılan izinler özeti
-- Dosya arşivleme (resim + diplomalar + ek dosya → tek PDF → Eski_Personel)
+Ä°ÅŸten AyrÄ±lÄ±k SayfasÄ±
+- Personel bilgi Ã¶zeti
+- AyrÄ±lÄ±ÅŸ bilgileri (tarih, neden, ek dosya)
+- KullanÄ±lan izinler Ã¶zeti
+- Dosya arÅŸivleme (resim + diplomalar + ek dosya â†’ tek PDF â†’ Eski_Personel)
 """
 import os
 import tempfile
@@ -22,7 +22,7 @@ from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
 
 
-# ─── MERKEZİ STİL YÖNETIMI ───
+# â”€â”€â”€ MERKEZÄ° STÄ°L YÃ–NETIMI â”€â”€â”€
 S = {
     "page": "background-color: transparent;",
     "group": """
@@ -114,19 +114,19 @@ S = {
 }
 
 
-# ═══════════════════════════════════════════════
-#  ARŞİV WORKER
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  ARÅÄ°V WORKER
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class ArsivWorker(QThread):
     """
-    1. Drive'dan mevcut dosyaları (resim, diploma1, diploma2) indir
-    2. Ek dosya ile birlikte tek PDF'e birleştir
-    3. Eski_Personel klasörüne yükle
-    4. Eski Drive dosyalarını sil
+    1. Drive'dan mevcut dosyalarÄ± (resim, diploma1, diploma2) indir
+    2. Ek dosya ile birlikte tek PDF'e birleÅŸtir
+    3. Eski_Personel klasÃ¶rÃ¼ne yÃ¼kle
+    4. Eski Drive dosyalarÄ±nÄ± sil
     """
     progress = Signal(str)
-    finished = Signal(str)   # arşiv_link
+    finished = Signal(str)   # arÅŸiv_link
     error = Signal(str)
 
     def __init__(self, personel_data, ek_dosya_path, drive_folders):
@@ -144,7 +144,7 @@ class ArsivWorker(QThread):
             tc = self._data.get("KimlikNo", "")
             ad = self._data.get("AdSoyad", "")
 
-            # ── 1. Mevcut dosyaları indir ──
+            # â”€â”€ 1. Mevcut dosyalarÄ± indir â”€â”€
             downloaded = []
             old_ids = []
 
@@ -156,7 +156,7 @@ class ArsivWorker(QThread):
                 if not file_id:
                     continue
 
-                self.progress.emit(f"İndiriliyor: {label}...")
+                self.progress.emit(f"Ä°ndiriliyor: {label}...")
                 dest = os.path.join(tmp_dir, f"{tc}_{label}.tmp")
                 if drive.download_file(file_id, dest):
                     ext = self._detect_ext(dest)
@@ -173,24 +173,24 @@ class ArsivWorker(QThread):
                 self.finished.emit("")
                 return
 
-            # ── 2. Tek PDF ──
-            self.progress.emit("PDF birleştiriliyor...")
+            # â”€â”€ 2. Tek PDF â”€â”€
+            self.progress.emit("PDF birleÅŸtiriliyor...")
             merged = os.path.join(tmp_dir, f"{tc}_{ad.replace(' ', '_')}_Arsiv.pdf")
             self._merge_to_pdf(downloaded, merged)
 
-            # ── 3. Yükle ──
+            # â”€â”€ 3. YÃ¼kle â”€â”€
             arsiv_id = self._folders.get("Eski_Personel", "") or self._folders.get("Personel_Dosya", "")
             link = ""
             if arsiv_id:
-                self.progress.emit("Arşive yükleniyor...")
+                self.progress.emit("ArÅŸive yÃ¼kleniyor...")
                 link = drive.upload_file(
                     merged, parent_folder_id=arsiv_id,
                     custom_name=f"{tc}_{ad.replace(' ', '_')}_Arsiv.pdf"
                 ) or ""
             else:
-                self.progress.emit("Arşiv klasörü bulunamadı.")
+                self.progress.emit("ArÅŸiv klasÃ¶rÃ¼ bulunamadÄ±.")
 
-            # ── 4. Eski dosyaları sil ──
+            # â”€â”€ 4. Eski dosyalarÄ± sil â”€â”€
             for fid in old_ids:
                 self.progress.emit("Eski dosyalar temizleniyor...")
                 drive.delete_file(fid)
@@ -252,7 +252,7 @@ class ArsivWorker(QThread):
                     c.showPage(); c.save()
                     temp_pdfs.append(pdf_p)
                 except Exception as e:
-                    logger.error(f"Görüntü→PDF hatası: {e}")
+                    logger.error(f"GÃ¶rÃ¼ntÃ¼â†’PDF hatasÄ±: {e}")
 
         if not temp_pdfs:
             return
@@ -262,22 +262,22 @@ class ArsivWorker(QThread):
                 try:
                     merger.append(p)
                 except Exception as e:
-                    logger.error(f"PDF ekleme hatası: {e}")
+                    logger.error(f"PDF ekleme hatasÄ±: {e}")
             merger.write(output); merger.close()
         elif temp_pdfs:
             shutil.copy2(temp_pdfs[0], output)
 
 
-# ═══════════════════════════════════════════════
-#  İŞTEN AYRILIK SAYFASI
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  Ä°ÅTEN AYRILIK SAYFASI
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class IstenAyrilikPage(QWidget):
     """
-    İşten ayrılık sayfası.
+    Ä°ÅŸten ayrÄ±lÄ±k sayfasÄ±.
     db: SQLiteManager
     personel_data: dict
-    on_back: callback → geri dönüş
+    on_back: callback â†’ geri dÃ¶nÃ¼ÅŸ
     """
 
     def __init__(self, db=None, personel_data=None, on_back=None, parent=None):
@@ -294,16 +294,16 @@ class IstenAyrilikPage(QWidget):
         self._load_drive_folders()
         self._load_izin_ozet()
 
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     #  UI
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _setup_ui(self):
         main = QVBoxLayout(self)
         main.setContentsMargins(20, 12, 20, 12)
         main.setSpacing(12)
 
-        # ── HEADER ──
+        # â”€â”€ HEADER â”€â”€
         header_frame = QFrame()
         header_frame.setStyleSheet("""
             QFrame {
@@ -316,7 +316,7 @@ class IstenAyrilikPage(QWidget):
         hdr.setContentsMargins(16, 10, 16, 10)
         hdr.setSpacing(12)
 
-        btn_back = QPushButton("← Geri")
+        btn_back = QPushButton("â† Geri")
         btn_back.setStyleSheet(S["back_btn"])
         btn_back.setCursor(QCursor(Qt.PointingHandCursor))
         btn_back.setFixedHeight(34)
@@ -324,13 +324,13 @@ class IstenAyrilikPage(QWidget):
         hdr.addWidget(btn_back)
 
         ad = self._data.get("AdSoyad", "")
-        lbl = QLabel(f"⚠️  İşten Ayrılış — {ad}")
+        lbl = QLabel(f"âš ï¸  Ä°ÅŸten AyrÄ±lÄ±ÅŸ â€” {ad}")
         lbl.setStyleSheet(S["header_name"])
         hdr.addWidget(lbl)
         hdr.addStretch()
         main.addWidget(header_frame)
 
-        # ── SCROLL ──
+        # â”€â”€ SCROLL â”€â”€
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
@@ -342,14 +342,14 @@ class IstenAyrilikPage(QWidget):
         cl.setSpacing(16)
         cl.setContentsMargins(0, 0, 0, 0)
 
-        # ── SOL: Personel Bilgi + Ayrılış Formu ──
+        # â”€â”€ SOL: Personel Bilgi + AyrÄ±lÄ±ÅŸ Formu â”€â”€
         left = QWidget()
         left_l = QVBoxLayout(left)
         left_l.setContentsMargins(0, 0, 0, 0)
         left_l.setSpacing(12)
 
-        # Personel Özet
-        grp_ozet = QGroupBox("👤  Personel Bilgileri")
+        # Personel Ã–zet
+        grp_ozet = QGroupBox("ğŸ‘¤  Personel Bilgileri")
         grp_ozet.setStyleSheet(S["group"])
         og = QGridLayout(grp_ozet)
         og.setSpacing(6)
@@ -358,10 +358,10 @@ class IstenAyrilikPage(QWidget):
         bilgiler = [
             ("TC Kimlik", self._data.get("KimlikNo", "")),
             ("Ad Soyad", self._data.get("AdSoyad", "")),
-            ("Hizmet Sınıfı", self._data.get("HizmetSinifi", "")),
-            ("Kadro Ünvanı", self._data.get("KadroUnvani", "")),
-            ("Görev Yeri", self._data.get("GorevYeri", "")),
-            ("Başlama Tarihi", self._format_date(self._data.get("MemuriyeteBaslamaTarihi", ""))),
+            ("Hizmet SÄ±nÄ±fÄ±", self._data.get("HizmetSinifi", "")),
+            ("Kadro ÃœnvanÄ±", self._data.get("KadroUnvani", "")),
+            ("GÃ¶rev Yeri", self._data.get("GorevYeri", "")),
+            ("BaÅŸlama Tarihi", self._format_date(self._data.get("MemuriyeteBaslamaTarihi", ""))),
         ]
         for i, (lbl_t, val) in enumerate(bilgiler):
             l = QLabel(lbl_t)
@@ -372,14 +372,14 @@ class IstenAyrilikPage(QWidget):
             og.addWidget(v, i, 1)
         left_l.addWidget(grp_ozet)
 
-        # Ayrılış Formu
-        grp_form = QGroupBox("📋  Ayrılış Bilgileri")
+        # AyrÄ±lÄ±ÅŸ Formu
+        grp_form = QGroupBox("ğŸ“‹  AyrÄ±lÄ±ÅŸ Bilgileri")
         grp_form.setStyleSheet(S["group"])
         fg = QGridLayout(grp_form)
         fg.setSpacing(10)
         fg.setContentsMargins(12, 12, 12, 12)
 
-        lbl_t = QLabel("Ayrılış Tarihi")
+        lbl_t = QLabel("AyrÄ±lÄ±ÅŸ Tarihi")
         lbl_t.setStyleSheet(S["label"])
         fg.addWidget(lbl_t, 0, 0)
         self.dt_tarih = QDateEdit(QDate.currentDate())
@@ -389,12 +389,12 @@ class IstenAyrilikPage(QWidget):
         ThemeManager.setup_calendar_popup(self.dt_tarih)
         fg.addWidget(self.dt_tarih, 0, 1)
 
-        lbl_n = QLabel("Ayrılma Nedeni")
+        lbl_n = QLabel("AyrÄ±lma Nedeni")
         lbl_n.setStyleSheet(S["label"])
         fg.addWidget(lbl_n, 1, 0)
         self.cmb_neden = QComboBox()
         self.cmb_neden.setEditable(True)
-        self.cmb_neden.addItems(["Emekli", "Vefat", "İstifa", "Tayin", "Diğer"])
+        self.cmb_neden.addItems(["Emekli", "Vefat", "Ä°stifa", "Tayin", "DiÄŸer"])
         self.cmb_neden.setStyleSheet(S["combo"])
         fg.addWidget(self.cmb_neden, 1, 1)
 
@@ -402,7 +402,7 @@ class IstenAyrilikPage(QWidget):
         lbl_d.setStyleSheet(S["label"])
         fg.addWidget(lbl_d, 2, 0)
         dosya_h = QHBoxLayout()
-        self.btn_dosya = QPushButton("📎 Dosya Seç")
+        self.btn_dosya = QPushButton("ğŸ“ Dosya SeÃ§")
         self.btn_dosya.setStyleSheet(S["file_btn"])
         self.btn_dosya.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_dosya.clicked.connect(self._select_file)
@@ -415,7 +415,7 @@ class IstenAyrilikPage(QWidget):
         left_l.addWidget(grp_form)
 
         # Mevcut Dosyalar
-        grp_dosya = QGroupBox("📁  Mevcut Drive Dosyaları")
+        grp_dosya = QGroupBox("ğŸ“  Mevcut Drive DosyalarÄ±")
         grp_dosya.setStyleSheet(S["group"])
         dg = QGridLayout(grp_dosya)
         dg.setSpacing(6)
@@ -425,50 +425,50 @@ class IstenAyrilikPage(QWidget):
             ("Resim", self._data.get("Resim", "")),
             ("Diploma 1", self._data.get("Diploma1", "")),
             ("Diploma 2", self._data.get("Diploma2", "")),
-            ("Özlük Dosyası", self._data.get("OzlukDosyasi", "")),
+            ("Ã–zlÃ¼k DosyasÄ±", self._data.get("OzlukDosyasi", "")),
         ]
         for i, (lbl_t, val) in enumerate(dosya_alanlar):
             l = QLabel(lbl_t)
             l.setStyleSheet(S["label"])
             dg.addWidget(l, i, 0)
             if val and str(val).startswith("http"):
-                v = QLabel("✓ Mevcut")
+                v = QLabel("âœ“ Mevcut")
                 v.setStyleSheet("color: #4ade80; font-size: 12px; background: transparent;")
             else:
-                v = QLabel("—")
+                v = QLabel("â€”")
                 v.setStyleSheet("color: #5a5d6e; font-size: 12px; background: transparent;")
             dg.addWidget(v, i, 1)
         left_l.addWidget(grp_dosya)
 
         left_l.addStretch()
 
-        # ── SAĞ: İzin Özeti + Onay ──
+        # â”€â”€ SAÄ: Ä°zin Ã–zeti + Onay â”€â”€
         right = QWidget()
         right_l = QVBoxLayout(right)
         right_l.setContentsMargins(0, 0, 0, 0)
         right_l.setSpacing(12)
 
-        # İzin Özeti
-        grp_izin = QGroupBox("📊  İzin Özeti")
+        # Ä°zin Ã–zeti
+        grp_izin = QGroupBox("ğŸ“Š  Ä°zin Ã–zeti")
         grp_izin.setStyleSheet(S["group"])
         ig = QGridLayout(grp_izin)
         ig.setSpacing(4)
         ig.setContentsMargins(12, 12, 12, 12)
 
-        lbl_y = QLabel("YILLIK İZİN")
+        lbl_y = QLabel("YILLIK Ä°ZÄ°N")
         lbl_y.setStyleSheet(S["section_title"])
         ig.addWidget(lbl_y, 0, 0, 1, 2, Qt.AlignCenter)
         self.lbl_y_toplam = self._add_stat(ig, 1, "Toplam Hak", "stat_value")
-        self.lbl_y_kul = self._add_stat(ig, 2, "Kullanılan", "stat_red")
+        self.lbl_y_kul = self._add_stat(ig, 2, "KullanÄ±lan", "stat_red")
         self.lbl_y_kal = self._add_stat(ig, 3, "Kalan", "stat_green")
 
         sep = QFrame(); sep.setFixedHeight(1); sep.setStyleSheet(S["separator"])
         ig.addWidget(sep, 4, 0, 1, 2)
 
-        lbl_s = QLabel("ŞUA İZNİ")
+        lbl_s = QLabel("ÅUA Ä°ZNÄ°")
         lbl_s.setStyleSheet(S["section_title"])
         ig.addWidget(lbl_s, 5, 0, 1, 2, Qt.AlignCenter)
-        self.lbl_s_kul = self._add_stat(ig, 6, "Kullanılan", "stat_red")
+        self.lbl_s_kul = self._add_stat(ig, 6, "KullanÄ±lan", "stat_red")
         self.lbl_s_kal = self._add_stat(ig, 7, "Kalan", "stat_green")
 
         sep2 = QFrame(); sep2.setFixedHeight(1); sep2.setStyleSheet(S["separator"])
@@ -478,25 +478,25 @@ class IstenAyrilikPage(QWidget):
         ig.setRowStretch(10, 1)
         right_l.addWidget(grp_izin)
 
-        # Uyarı + Buton
-        grp_onay = QGroupBox("⚠️  İşlemi Onayla")
+        # UyarÄ± + Buton
+        grp_onay = QGroupBox("âš ï¸  Ä°ÅŸlemi Onayla")
         grp_onay.setStyleSheet(S["group"])
         onay_l = QVBoxLayout(grp_onay)
         onay_l.setSpacing(12)
         onay_l.setContentsMargins(12, 12, 12, 12)
 
         uyari = QLabel(
-            "Bu işlem:\n"
-            "• Personeli PASİF duruma getirecek\n"
-            "• Tüm dosyaları (resim, diploma, ek) tek PDF olarak arşivleyecek\n"
-            "• Arşivi Eski Personel klasörüne taşıyacak\n"
-            "• Eski Drive dosyalarını silecek"
+            "Bu iÅŸlem:\n"
+            "â€¢ Personeli PASÄ°F duruma getirecek\n"
+            "â€¢ TÃ¼m dosyalarÄ± (resim, diploma, ek) tek PDF olarak arÅŸivleyecek\n"
+            "â€¢ ArÅŸivi Eski Personel klasÃ¶rÃ¼ne taÅŸÄ±yacak\n"
+            "â€¢ Eski Drive dosyalarÄ±nÄ± silecek"
         )
         uyari.setWordWrap(True)
         uyari.setStyleSheet("color: #f87171; font-size: 12px; background: transparent;")
         onay_l.addWidget(uyari)
 
-        self.btn_onayla = QPushButton("⚠️ ONAYLA VE BİTİR")
+        self.btn_onayla = QPushButton("âš ï¸ ONAYLA VE BÄ°TÄ°R")
         self.btn_onayla.setStyleSheet(S["danger_btn"])
         self.btn_onayla.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_onayla.setFixedHeight(45)
@@ -537,7 +537,7 @@ class IstenAyrilikPage(QWidget):
         lbl = QLabel(text)
         lbl.setStyleSheet(S["stat_label"])
         grid.addWidget(lbl, row, 0)
-        val = QLabel("—")
+        val = QLabel("â€”")
         val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         val.setStyleSheet(S[style_key])
         grid.addWidget(val, row, 1)
@@ -546,7 +546,7 @@ class IstenAyrilikPage(QWidget):
     def _format_date(self, val):
         val = str(val).strip()
         if not val:
-            return "—"
+            return "â€”"
         try:
             from datetime import datetime
             for fmt in ("%Y-%m-%d", "%d.%m.%Y"):
@@ -558,16 +558,16 @@ class IstenAyrilikPage(QWidget):
             pass
         return val
 
-    # ═══════════════════════════════════════════
-    #  VERİ YÜKLEME
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  VERÄ° YÃœKLEME
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _load_drive_folders(self):
         if not self._db:
             return
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
+            from core.di import get_registry
+            registry = get_registry(self._db)
             all_sabit = registry.get("Sabitler").get_all()
             self._drive_folders = {
                 str(r.get("MenuEleman", "")).strip(): str(r.get("Aciklama", "")).strip()
@@ -575,15 +575,15 @@ class IstenAyrilikPage(QWidget):
                 if r.get("Kod") == "Sistem_DriveID" and r.get("Aciklama", "").strip()
             }
         except Exception as e:
-            logger.error(f"Drive klasör yükleme hatası: {e}")
+            logger.error(f"Drive klasÃ¶r yÃ¼kleme hatasÄ±: {e}")
 
     def _load_izin_ozet(self):
         tc = self._data.get("KimlikNo", "")
         if not self._db or not tc:
             return
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
+            from core.di import get_registry
+            registry = get_registry(self._db)
             izin = registry.get("Izin_Bilgi").get_by_id(tc)
             if izin:
                 self.lbl_y_toplam.setText(str(izin.get("YillikToplamHak", "0")))
@@ -593,35 +593,35 @@ class IstenAyrilikPage(QWidget):
                 self.lbl_s_kal.setText(str(izin.get("SuaKalan", "0")))
                 self.lbl_diger.setText(str(izin.get("RaporMazeretTop", "0")))
         except Exception as e:
-            logger.error(f"İzin özet yükleme hatası: {e}")
+            logger.error(f"Ä°zin Ã¶zet yÃ¼kleme hatasÄ±: {e}")
 
-    # ═══════════════════════════════════════════
-    #  DOSYA SEÇ
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  DOSYA SEÃ‡
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _select_file(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, "Ek Dosya Seç", "",
-            "Dosyalar (*.pdf *.jpg *.jpeg *.png *.doc *.docx);;Tüm Dosyalar (*)"
+            self, "Ek Dosya SeÃ§", "",
+            "Dosyalar (*.pdf *.jpg *.jpeg *.png *.doc *.docx);;TÃ¼m Dosyalar (*)"
         )
         if path:
             self._ek_dosya = path
-            self.lbl_dosya.setText(f"✓ {os.path.basename(path)}")
+            self.lbl_dosya.setText(f"âœ“ {os.path.basename(path)}")
 
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     #  ONAYLA
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _on_confirm(self):
         ad = self._data.get("AdSoyad", "")
         neden = self.cmb_neden.currentText().strip()
         if not neden:
-            QMessageBox.warning(self, "Eksik", "Ayrılma nedeni seçilmeli.")
+            QMessageBox.warning(self, "Eksik", "AyrÄ±lma nedeni seÃ§ilmeli.")
             return
 
         cevap = QMessageBox.question(
             self, "Son Onay",
-            f"{ad} personeli PASİF yapılacak ve dosyaları arşivlenecek.\n\n"
+            f"{ad} personeli PASÄ°F yapÄ±lacak ve dosyalarÄ± arÅŸivlenecek.\n\n"
             f"Neden: {neden}\n"
             f"Tarih: {self.dt_tarih.date().toString('dd.MM.yyyy')}\n\n"
             "Devam etmek istiyor musunuz?",
@@ -632,28 +632,28 @@ class IstenAyrilikPage(QWidget):
 
         tc = self._data.get("KimlikNo", "")
 
-        # 1. DB güncelle
+        # 1. DB gÃ¼ncelle
         ayrilis_data = {
             "AyrilisTarihi": self.dt_tarih.date().toString("yyyy-MM-dd"),
             "AyrilmaNedeni": neden,
             "Durum": "Pasif",
         }
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
+            from core.di import get_registry
+            registry = get_registry(self._db)
             repo = registry.get("Personel")
             repo.update(tc, ayrilis_data)
             self._data.update(ayrilis_data)
             logger.info(f"Personel pasif: {tc}")
         except Exception as e:
-            logger.error(f"DB güncelleme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Güncelleme hatası:\n{e}")
+            logger.error(f"DB gÃ¼ncelleme hatasÄ±: {e}")
+            QMessageBox.critical(self, "Hata", f"GÃ¼ncelleme hatasÄ±:\n{e}")
             return
 
-        # 2. Arşivleme başlat
+        # 2. ArÅŸivleme baÅŸlat
         self.progress.setVisible(True)
         self.btn_onayla.setEnabled(False)
-        self.lbl_status.setText("Arşivleme başlatıldı...")
+        self.lbl_status.setText("ArÅŸivleme baÅŸlatÄ±ldÄ±...")
 
         self._arsiv_worker = ArsivWorker(
             personel_data=self._data,
@@ -667,7 +667,7 @@ class IstenAyrilikPage(QWidget):
 
     def _on_progress(self, msg):
         self.lbl_status.setText(msg)
-        logger.info(f"Arşiv: {msg}")
+        logger.info(f"ArÅŸiv: {msg}")
 
     def _on_finished(self, arsiv_link):
         self.progress.setVisible(False)
@@ -676,11 +676,11 @@ class IstenAyrilikPage(QWidget):
         tc = self._data.get("KimlikNo", "")
         ad = self._data.get("AdSoyad", "")
 
-        # Arşiv linkini kaydet, eski linkleri temizle
+        # ArÅŸiv linkini kaydet, eski linkleri temizle
         if arsiv_link:
             try:
-                from database.repository_registry import RepositoryRegistry
-                registry = RepositoryRegistry(self._db)
+                from core.di import get_registry
+                registry = get_registry(self._db)
                 repo = registry.get("Personel")
                 repo.update(tc, {
                     "OzlukDosyasi": arsiv_link,
@@ -688,27 +688,29 @@ class IstenAyrilikPage(QWidget):
                     "Diploma1": "",
                     "Diploma2": "",
                 })
-                logger.info(f"Arşiv tamamlandı: {tc} → {arsiv_link}")
+                logger.info(f"ArÅŸiv tamamlandÄ±: {tc} â†’ {arsiv_link}")
             except Exception as e:
-                logger.error(f"Arşiv link kayıt hatası: {e}")
+                logger.error(f"ArÅŸiv link kayÄ±t hatasÄ±: {e}")
 
-        self.lbl_status.setText("✓ İşlem tamamlandı.")
-        QMessageBox.information(self, "Tamamlandı",
-            f"{ad} personeli PASİF duruma getirildi.\n"
-            f"{'Dosyaları arşivlendi.' if arsiv_link else 'Arşivlenecek dosya bulunamadı.'}")
+        self.lbl_status.setText("âœ“ Ä°ÅŸlem tamamlandÄ±.")
+        QMessageBox.information(self, "TamamlandÄ±",
+            f"{ad} personeli PASÄ°F duruma getirildi.\n"
+            f"{'DosyalarÄ± arÅŸivlendi.' if arsiv_link else 'ArÅŸivlenecek dosya bulunamadÄ±.'}")
 
     def _on_error(self, hata):
         self.progress.setVisible(False)
         self.btn_onayla.setEnabled(True)
-        self.lbl_status.setText(f"⚠ Arşiv hatası: {hata}")
-        logger.error(f"Arşiv hatası: {hata}")
-        QMessageBox.warning(self, "Arşiv Uyarısı",
-            f"Personel PASİF yapıldı ancak arşivleme hatası:\n{hata}")
+        self.lbl_status.setText(f"âš  ArÅŸiv hatasÄ±: {hata}")
+        logger.error(f"ArÅŸiv hatasÄ±: {hata}")
+        QMessageBox.warning(self, "ArÅŸiv UyarÄ±sÄ±",
+            f"Personel PASÄ°F yapÄ±ldÄ± ancak arÅŸivleme hatasÄ±:\n{hata}")
 
-    # ═══════════════════════════════════════════
-    #  GERİ
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  GERÄ°
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _go_back(self):
         if self._on_back:
             self._on_back()
+
+

@@ -290,8 +290,8 @@ class PersonelListesiPage(QWidget):
             logger.warning("Personel listesi: DB bağlantısı yok")
             return
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
+            from core.di import get_registry
+            registry = get_registry(self._db)
             repo = registry.get("Personel")
             self._all_data = repo.get_all()
             logger.info(f"Personel yüklendi: {len(self._all_data)} kayıt")
@@ -303,8 +303,8 @@ class PersonelListesiPage(QWidget):
     def _populate_combos(self):
         """Combobox'ları Sabitler tablosundan doldurur."""
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
+            from core.di import get_registry
+            registry = get_registry(self._db)
             sabitler = registry.get("Sabitler")
             all_sabit = sabitler.get_all()
 
@@ -392,8 +392,8 @@ class PersonelListesiPage(QWidget):
 
             logger.info(f"İzinli sorgu aralığı: {ay_bas} / {ay_son}")
 
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
+            from core.di import get_registry
+            registry = get_registry(self._db)
             repo = registry.get("Izin_Giris")
             all_izin = repo.get_all()
 
@@ -496,8 +496,8 @@ class PersonelListesiPage(QWidget):
             return
 
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
+            from core.di import get_registry
+            registry = get_registry(self._db)
             repo = registry.get("Personel")
             repo.update(tc, {"Durum": yeni_durum})
             logger.info(f"Durum değiştirildi: {tc} â†’ {yeni_durum}")
@@ -509,4 +509,6 @@ class PersonelListesiPage(QWidget):
     def _izin_girisi(self, row_data):
         """İzin girişi sinyali gönder."""
         self.izin_requested.emit(row_data)
+
+
 
