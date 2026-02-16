@@ -310,7 +310,7 @@ class MainWindow(QMainWindow):
         )
 
     def _open_personel_detay(self, liste_page, index):
-        """Personel listesinde çift tıklama → detay sayfası aç."""
+        """Personel listesinde çift tıklama → Personel Merkez (360) sayfası aç."""
         source_idx = liste_page._proxy.mapToSource(index)
         row_data = liste_page._model.get_row(source_idx.row())
         if not row_data:
@@ -318,27 +318,27 @@ class MainWindow(QMainWindow):
 
         tc = row_data.get("KimlikNo", "")
         ad = row_data.get("AdSoyad", "")
-        detay_key = f"__detay_{tc}"
+        merkez_key = f"__merkez_{tc}"
 
-        # Eski detay sayfası varsa kaldır
-        if detay_key in self._pages:
-            old = self._pages.pop(detay_key)
+        # Eski sayfa varsa kaldır
+        if merkez_key in self._pages:
+            old = self._pages.pop(merkez_key)
             self.stack.removeWidget(old)
             old.deleteLater()
 
-        from ui.pages.personel.personel_detay import PersonelDetayPage
-        page = PersonelDetayPage(
+        from ui.pages.personel.personel_merkez import PersonelMerkezPage
+        page = PersonelMerkezPage(
             db=self._db,
-            personel_data=row_data,
-            on_back=lambda: self._back_to_personel_listesi(detay_key)
+            personel_id=tc
         )
-        page.ayrilis_requested.connect(
-            lambda data: self.open_isten_ayrilik(data, detay_key)
-        )
-        self._pages[detay_key] = page
+        
+        # Kapatma sinyali listeye dönüşü tetikler
+        page.kapat_istegi.connect(lambda: self._back_to_personel_listesi(merkez_key))
+        
+        self._pages[merkez_key] = page
         self.stack.addWidget(page)
         self.stack.setCurrentWidget(page)
-        self.page_title.setText(f"Personel Detay — {ad}")
+        self.page_title.setText(f"Personel Kartı — {ad}")
 
     def _back_to_personel_listesi(self, detay_key):
         """Detay sayfasından listeye geri dön."""
@@ -678,45 +678,15 @@ class MainWindow(QMainWindow):
             old.deleteLater()
             
         # Listeyi aç
-        self._on_menu_clicked("Cihaz", "Cihaz Listesi")
+        if "Cihaz Listesi" in self._pages:
+            page = self._pages["Cihaz Listesi"]
+            if hasattr(page, "load_data"):
+                page.load_data()
+            self.stack.setCurrentWidget(page)
+            self.page_title.setText("Cihaz Listesi")
+            self.sidebar.set_active("Cihaz Listesi")
 
     def open_periodic_maintenance_for_device(self, device_data):
-        """Cihaz listesinden periyodik bakım sayfasını açar ve cihazı seçer."""
-        cihaz_id = device_data.get("Cihazid", "")
-        if not cihaz_id:
-            return
-
-        # Periyodik Bakım sayfasını aç veya oluştur
+        """Cihaz listesinden periyodik bakım sayfasına yönlendir."""
         self._on_menu_clicked("Cihaz", "Periyodik Bakım")
-
-        # Sayfa instance'ını al
-        page = self._pages.get("Periyodik Bakım")
-        if page and hasattr(page, 'set_cihaz'):
-            # Cihazı ayarla
-            page.set_cihaz(cihaz_id)
-            logger.info(f"Periyodik Bakım sayfası {cihaz_id} için açıldı.")
-        else:
-            logger.warning("Periyodik Bakım sayfası bulunamadı veya 'set_cihaz' metodu yok.")
-
-    def _delete_cihaz_from_detay(self, cihaz_id, page_key):
-        """Detay sayfasından cihaz silme işlemi."""
-        try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            repo = registry.get("Cihazlar")
-            repo.delete(cihaz_id)
-            
-            # Sayfayı kapat ve listeye dön
-            self._back_to_cihaz_listesi(page_key)
-            
-            # Listeyi yenile
-            if "Cihaz Listesi" in self._pages:
-                self._pages["Cihaz Listesi"].load_data()
-                
-            from PySide6.QtWidgets import QMessageBox
-            QMessageBox.information(self, "Başarılı", "Cihaz silindi.")
-            
-        except Exception as e:
-            logger.error(f"Cihaz silme hatası: {e}")
-
-
+        # İleride: page.filter_by_device(device_data['Cihazid']) eklenebilir
