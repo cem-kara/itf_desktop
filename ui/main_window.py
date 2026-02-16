@@ -547,19 +547,40 @@ class MainWindow(QMainWindow):
         msg_box = QMessageBox(self)
         msg_box.setIcon(QMessageBox.Warning)
         msg_box.setWindowTitle("Senkronizasyon Hatası")
-        msg_box.setText(short_msg)
-        msg_box.setInformativeText(detail_msg)
-        msg_box.setDetailedText(
-            f"Hata zamanı: {now}\n\n"
-            f"Çözüm önerileri:\n"
-            f"1. İnternet bağlantınızı kontrol edin\n"
-            f"2. Google Sheets erişim izinlerini kontrol edin\n"
-            f"3. Birkaç dakika bekleyip tekrar deneyin\n"
-            f"4. Sorun devam ederse log dosyalarını kontrol edin:\n"
-            f"   - logs/app.log\n"
-            f"   - logs/sync.log\n"
-            f"   - logs/errors.log"
-        )
+
+        # API 503 (Servis Ulaşılamıyor) hatası için özel mesaj
+        is_service_unavailable = "503" in detail_msg or "unavailable" in detail_msg.lower()
+
+        if is_service_unavailable:
+            service_error_short = "Google Servisi Ulaşılamıyor"
+            service_error_info = (
+                "Google Sheets servisi şu anda geçici olarak yanıt vermiyor. "
+                "Bu genellikle Google tarafındaki kısa süreli bir sorundur.\n\n"
+                "Lütfen birkaç dakika bekleyip tekrar deneyin. Uygulama, bir sonraki "
+                "otomatik senkronizasyonda veya manuel yenilemede tekrar deneyecektir."
+            )
+            msg_box.setText(service_error_short)
+            msg_box.setInformativeText(service_error_info)
+            msg_box.setDetailedText(f"Hata Detayı:\n{detail_msg}")
+            
+            # UI'da da daha anlaşılır bir mesaj göster
+            self.sidebar.set_sync_status(f"● {service_error_short}", "#ef4444")
+            self.sync_status_label.setText(f"● {service_error_short}")
+        else:
+            msg_box.setText(short_msg)
+            msg_box.setInformativeText(detail_msg)
+            msg_box.setDetailedText(
+                f"Hata zamanı: {now}\n\n"
+                f"Çözüm önerileri:\n"
+                f"1. İnternet bağlantınızı kontrol edin.\n"
+                f"2. Google Sheets erişim izinlerini kontrol edin.\n"
+                f"3. Birkaç dakika bekleyip tekrar deneyin.\n"
+                f"4. Sorun devam ederse log dosyalarını kontrol edin:\n"
+                f"   - logs/app.log\n"
+                f"   - logs/sync.log\n"
+                f"   - logs/errors.log"
+            )
+
         msg_box.setStandardButtons(QMessageBox.Ok)
         msg_box.exec()
 

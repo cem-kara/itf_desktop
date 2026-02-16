@@ -45,7 +45,7 @@ QHeaderView::section {
     background-color: #ffffff;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
-    padding: 6px 10px;
+    padding: 6px 6px;
     font-size: 13px;
     color: #1e293b;
     min-height: 16px;
@@ -91,7 +91,7 @@ QHeaderView::section {
 
 #content_area QScrollBar:vertical {
     background-color: #f1f5f9;
-    width: 8px;
+    width: 10px;
     border: none;
 }
 

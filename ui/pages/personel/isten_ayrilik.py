@@ -316,7 +316,7 @@ class IstenAyrilikPage(QWidget):
         hdr.setContentsMargins(16, 10, 16, 10)
         hdr.setSpacing(12)
 
-        btn_back = QPushButton("← Geri")
+        btn_back = QPushButton("✕ İptal")
         btn_back.setStyleSheet(S["back_btn"])
         btn_back.setCursor(QCursor(Qt.PointingHandCursor))
         btn_back.setFixedHeight(34)
@@ -697,6 +697,8 @@ class IstenAyrilikPage(QWidget):
             f"{ad} personeli PASİF duruma getirildi.\n"
             f"{'Dosyaları arşivlendi.' if arsiv_link else 'Arşivlenecek dosya bulunamadı.'}")
 
+        self._go_back()
+
     def _on_error(self, hata):
         self.progress.setVisible(False)
         self.btn_onayla.setEnabled(True)
@@ -712,5 +714,3 @@ class IstenAyrilikPage(QWidget):
     def _go_back(self):
         if self._on_back:
             self._on_back()
-
-
