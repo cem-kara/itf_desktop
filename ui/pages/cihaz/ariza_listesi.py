@@ -1,11 +1,11 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
-ArÄ±za Listesi SayfasÄ±
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-â€¢ QAbstractTableModel + QSortFilterProxyModel  (personel_listesi.py deseni)
-â€¢ Filtre: metin arama + durum + Ã¶ncelik combobox
-â€¢ Alt panel: seÃ§ili arÄ±zanÄ±n detaylarÄ± (QTextBrowser)
-â€¢ Ã‡ift tÄ±klama â†’ ariza_secildi(dict) sinyali
+Arıza Listesi Sayfası
+─────────────────────
+• QAbstractTableModel + QSortFilterProxyModel  (personel_listesi.py deseni)
+• Filtre: metin arama + durum + öncelik combobox
+• Alt panel: seçili arızanın detayları (QTextBrowser)
+• Çift tıklama → ariza_secildi(dict) sinyali
 """
 from PySide6.QtCore import (
     Qt, QSortFilterProxyModel, QModelIndex, QAbstractTableModel, Signal
@@ -23,38 +23,38 @@ from ui.theme_manager import ThemeManager
 from ui.pages.cihaz.ariza_islem import ArizaIslemPenceresi
 
 
-# â”€â”€â”€ Tablo sÃ¼tun tanÄ±mlarÄ±  (DB_KOLON, BaÅŸlÄ±k, min-geniÅŸlik) â”€â”€â”€
+# ─── Tablo sütun tanımları  (DB_KOLON, Başlık, min-genişlik) ───
 COLUMNS = [
-    ("Arizaid",         "ArÄ±za ID",    130),
+    ("Arizaid",         "Arıza ID",    130),
     ("Cihazid",         "Cihaz ID",    110),
     ("BaslangicTarihi", "Tarih",        90),
     ("Bildiren",        "Bildiren",    130),
     ("Baslik",          "Konu",        200),
-    ("Oncelik",         "Ã–ncelik",      90),
+    ("Oncelik",         "Öncelik",      90),
     ("Durum",           "Durum",        90),
 ]
 
 ONCELIK_RENK = {
-    "DÃ¼ÅŸÃ¼k":         QColor("#6b7280"),
+    "Düşük":         QColor("#6b7280"),
     "Normal":        QColor("#60a5fa"),
-    "YÃ¼ksek":        QColor("#fb923c"),
+    "Yüksek":        QColor("#fb923c"),
     "Acil (Kritik)": QColor("#f87171"),
 }
 DURUM_RENK = {
-    "AÃ§Ä±k":           QColor("#f87171"),
-    "Ä°ÅŸlemde":        QColor("#fb923c"),
-    "ParÃ§a Bekliyor": QColor("#facc15"),
-    "DÄ±ÅŸ Serviste":   QColor("#a78bfa"),
-    "KapalÄ± (Ã‡Ã¶zÃ¼ldÃ¼)": QColor("#4ade80"),
-    "KapalÄ± (Ä°ptal)":   QColor("#9ca3af"),
+    "Açık":           QColor("#f87171"),
+    "İşlemde":        QColor("#fb923c"),
+    "Parça Bekliyor": QColor("#facc15"),
+    "Dış Serviste":   QColor("#a78bfa"),
+    "Kapalı (Çözüldü)": QColor("#4ade80"),
+    "Kapalı (İptal)":   QColor("#9ca3af"),
 }
 
 S = ThemeManager.get_all_component_styles()
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-#  TABLO MODELÄ°
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ═══════════════════════════════════════════════
+#  TABLO MODELİ
+# ═══════════════════════════════════════════════
 
 class ArizaTableModel(QAbstractTableModel):
 
@@ -110,12 +110,12 @@ class ArizaTableModel(QAbstractTableModel):
         self.endResetModel()
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ═══════════════════════════════════════════════
 #  ANA SAYFA
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ═══════════════════════════════════════════════
 
 class ArizaListesiPage(QWidget):
-    """ArÄ±za listesi. Ã‡ift tÄ±klama â†’ ariza_secildi(dict) sinyali."""
+    """Arıza listesi. Çift tıklama → ariza_secildi(dict) sinyali."""
     ariza_secildi = Signal(dict)
 
     def __init__(self, db=None, parent=None):
@@ -126,10 +126,10 @@ class ArizaListesiPage(QWidget):
         self._setup_ui()
         self._connect_signals()
 
-    # â”€â”€â”€ UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ─── UI ───────────────────────────────────────────────────
 
     def _setup_ui(self):
-        # Root Layout (Yatay: Liste | Ä°ÅŸlem Paneli)
+        # Root Layout (Yatay: Liste | İşlem Paneli)
         self.root_layout = QHBoxLayout(self)
         self.root_layout.setContentsMargins(0, 0, 0, 0)
         self.root_layout.setSpacing(0)
@@ -140,7 +140,7 @@ class ArizaListesiPage(QWidget):
         main.setContentsMargins(20, 12, 20, 12)
         main.setSpacing(10)
 
-        # â”€â”€ Filtre Paneli â”€â”€
+        # ── Filtre Paneli ──
         filter_frame = QFrame()
         filter_frame.setStyleSheet(S["filter_panel"])
         fl = QHBoxLayout(filter_frame)
@@ -148,7 +148,7 @@ class ArizaListesiPage(QWidget):
         fl.setSpacing(12)
 
         self.txt_search = QLineEdit()
-        self.txt_search.setPlaceholderText("ğŸ”  ArÄ±za ID, Cihaz ID, Konu ara...")
+        self.txt_search.setPlaceholderText("🔍  Arıza ID, Cihaz ID, Konu ara...")
         self.txt_search.setStyleSheet(S["search"])
         self.txt_search.setFixedWidth(280)
         fl.addWidget(self.txt_search)
@@ -157,9 +157,9 @@ class ArizaListesiPage(QWidget):
         self.cmb_durum.setStyleSheet(S["combo"])
         self.cmb_durum.setFixedWidth(170)
         self.cmb_durum.addItems([
-            "TÃ¼m Durumlar", "AÃ§Ä±k", "Ä°ÅŸlemde",
-            "ParÃ§a Bekliyor", "DÄ±ÅŸ Serviste",
-            "KapalÄ± (Ã‡Ã¶zÃ¼ldÃ¼)", "KapalÄ± (Ä°ptal)"
+            "Tüm Durumlar", "Açık", "İşlemde",
+            "Parça Bekliyor", "Dış Serviste",
+            "Kapalı (Çözüldü)", "Kapalı (İptal)"
         ])
         fl.addWidget(self.cmb_durum)
 
@@ -167,20 +167,20 @@ class ArizaListesiPage(QWidget):
         self.cmb_oncelik.setStyleSheet(S["combo"])
         self.cmb_oncelik.setFixedWidth(150)
         self.cmb_oncelik.addItems(
-            ["TÃ¼m Ã–ncelikler", "DÃ¼ÅŸÃ¼k", "Normal", "YÃ¼ksek", "Acil (Kritik)"]
+            ["Tüm Öncelikler", "Düşük", "Normal", "Yüksek", "Acil (Kritik)"]
         )
         fl.addWidget(self.cmb_oncelik)
 
         fl.addStretch()
 
-        self.btn_refresh = QPushButton("âŸ³ Yenile")
+        self.btn_refresh = QPushButton("⟳ Yenile")
         self.btn_refresh.setToolTip("Listeyi Yenile")
         self.btn_refresh.setFixedSize(100, 36)
         self.btn_refresh.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_refresh.setStyleSheet(S["refresh_btn"])
         fl.addWidget(self.btn_refresh)
 
-        self.btn_kapat = QPushButton("âœ• Kapat")
+        self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Kapat")
         self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
@@ -189,7 +189,7 @@ class ArizaListesiPage(QWidget):
 
         main.addWidget(filter_frame)
 
-        # â”€â”€ Progress â”€â”€
+        # ── Progress ──
         self.progress = QProgressBar()
         self.progress.setFixedHeight(4)
         self.progress.setTextVisible(False)
@@ -198,7 +198,7 @@ class ArizaListesiPage(QWidget):
         self.progress.setStyleSheet(S.get("progress", ""))
         main.addWidget(self.progress)
 
-        # â”€â”€ Splitter: Liste Ã¼stte, Detay altta â”€â”€
+        # ── Splitter: Liste üstte, Detay altta ──
         splitter = QSplitter(Qt.Vertical)
         splitter.setStyleSheet(S["splitter"])
 
@@ -232,7 +232,7 @@ class ArizaListesiPage(QWidget):
         splitter.addWidget(list_wrap)
 
         # Detay paneli
-        detail_box = QGroupBox("ğŸ“‹  SeÃ§ili ArÄ±za DetayÄ±")
+        detail_box = QGroupBox("📋  Seçili Arıza Detayı")
         detail_box.setStyleSheet(S["group"])
         d_lay = QVBoxLayout(detail_box)
         d_lay.setContentsMargins(10, 10, 10, 10)
@@ -242,13 +242,13 @@ class ArizaListesiPage(QWidget):
             "background:transparent; border:none; color:#e0e2ea;"
         )
         self.lbl_detail.setHtml(
-            "<p style='color:#8b8fa3'>Listeden bir arÄ±za seÃ§iniz.</p>"
+            "<p style='color:#8b8fa3'>Listeden bir arıza seçiniz.</p>"
         )
         d_lay.addWidget(self.lbl_detail)
 
         h_det_btn = QHBoxLayout()
         h_det_btn.addStretch()
-        self.btn_islem = QPushButton("ğŸ› ï¸  Ä°ÅŸlem Ekle")
+        self.btn_islem = QPushButton("🛠️  İşlem Ekle")
         self.btn_islem.setStyleSheet(S["action_btn"])
         self.btn_islem.setEnabled(False)
         h_det_btn.addWidget(self.btn_islem)
@@ -258,18 +258,18 @@ class ArizaListesiPage(QWidget):
         splitter.setSizes([520, 210])
         main.addWidget(splitter, 1)
 
-        # â”€â”€ Footer â”€â”€
+        # ── Footer ──
         footer = QHBoxLayout()
-        self.lbl_count = QLabel("Toplam: 0 kayÄ±t")
+        self.lbl_count = QLabel("Toplam: 0 kayıt")
         self.lbl_count.setStyleSheet(S["footer_label"])
         footer.addWidget(self.lbl_count)
         footer.addStretch()
         main.addLayout(footer)
 
-        # Sol tarafÄ± ana layout'a ekle
+        # Sol tarafı ana layout'a ekle
         self.root_layout.addWidget(self.left_container, 1)
 
-        # â”€â”€ SaÄŸ Panel (ArÄ±za Ä°ÅŸlem) â”€â”€
+        # ── Sağ Panel (Arıza İşlem) ──
         self.islem_panel = ArizaIslemPenceresi(ana_pencere=self)
         self.islem_panel.setVisible(False)
         self.islem_panel.setFixedWidth(460)
@@ -281,7 +281,7 @@ class ArizaListesiPage(QWidget):
         self.table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._show_context_menu)
 
-    # â”€â”€â”€ Sinyaller â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ─── Sinyaller ────────────────────────────────────────────
 
     def _connect_signals(self):
         self.txt_search.textChanged.connect(self._apply_filter)
@@ -291,7 +291,7 @@ class ArizaListesiPage(QWidget):
         self.table.selectionModel().selectionChanged.connect(self._on_selection_changed)
         self.btn_islem.clicked.connect(self._on_islem_clicked)
 
-    # â”€â”€â”€ Veri â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ─── Veri ─────────────────────────────────────────────────
 
     def load_data(self):
         if not self._db:
@@ -306,7 +306,7 @@ class ArizaListesiPage(QWidget):
                 key=lambda x: x.get("BaslangicTarihi", ""), reverse=True
             )
         except Exception as e:
-            logger.error(f"ArÄ±za listesi yÃ¼kleme hatasÄ±: {e}")
+            logger.error(f"Arıza listesi yükleme hatası: {e}")
             self._all_data = []
         finally:
             self.progress.setRange(0, 100)
@@ -315,7 +315,7 @@ class ArizaListesiPage(QWidget):
         self._model.set_data(self._all_data)
         self._apply_filter()
 
-    # â”€â”€â”€ Filtre â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ─── Filtre ───────────────────────────────────────────────
 
     def _apply_filter(self):
         search  = self.txt_search.text().strip().lower()
@@ -332,16 +332,16 @@ class ArizaListesiPage(QWidget):
             ]).lower()
             if search and search not in haystack:
                 continue
-            if durum != "TÃ¼m Durumlar" and row.get("Durum", "") != durum:
+            if durum != "Tüm Durumlar" and row.get("Durum", "") != durum:
                 continue
-            if oncelik != "TÃ¼m Ã–ncelikler" and row.get("Oncelik", "") != oncelik:
+            if oncelik != "Tüm Öncelikler" and row.get("Oncelik", "") != oncelik:
                 continue
             filtered.append(row)
 
         self._model.set_data(filtered)
-        self.lbl_count.setText(f"Toplam: {len(filtered)} kayÄ±t")
+        self.lbl_count.setText(f"Toplam: {len(filtered)} kayıt")
 
-    # â”€â”€â”€ SeÃ§im & Detay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ─── Seçim & Detay ────────────────────────────────────────
 
     def _get_selected_row(self):
         indexes = self.table.selectionModel().selectedRows()
@@ -355,7 +355,7 @@ class ArizaListesiPage(QWidget):
         self.btn_islem.setEnabled(row is not None)
         if row is None:
             self.lbl_detail.setHtml(
-                "<p style='color:#8b8fa3'>Listeden bir arÄ±za seÃ§iniz.</p>"
+                "<p style='color:#8b8fa3'>Listeden bir arıza seçiniz.</p>"
             )
             return
         self._show_detail(row)
@@ -366,7 +366,7 @@ class ArizaListesiPage(QWidget):
         
         idx = self.table.indexAt(pos)
         if idx.isValid():
-            action_islem = QAction("ğŸ› ï¸ Ä°ÅŸlem Yap", self)
+            action_islem = QAction("🛠️ İşlem Yap", self)
             action_islem.triggered.connect(self._on_islem_clicked)
             menu.addAction(action_islem)
             
@@ -383,18 +383,18 @@ class ArizaListesiPage(QWidget):
             self.islem_panel.setVisible(True)
 
     def _show_detail(self, data: dict):
-        durum  = data.get("Durum", "AÃ§Ä±k")
+        durum  = data.get("Durum", "Açık")
         d_renk = DURUM_RENK.get(durum, QColor("#8b8fa3")).name()
         onc    = data.get("Oncelik", "")
         o_renk = ONCELIK_RENK.get(onc, QColor("#8b8fa3")).name()
 
         html = f"""
         <h4 style="color:#4dabf7;margin-bottom:8px;">
-            {data.get("Baslik","â€”")}
+            {data.get("Baslik","—")}
         </h3>
         <table width="100%" cellpadding="5" cellspacing="0" style="font-size:11px;">
             <tr>
-                <td width="100" style="color:#8b8fa3;"><b>ArÄ±za ID:</b></td>
+                <td width="100" style="color:#8b8fa3;"><b>Arıza ID:</b></td>
                 <td style="color:#e0e2ea;">{data.get("Arizaid","")}</td>
                 <td width="100" style="color:#8b8fa3;"><b>Cihaz ID:</b></td>
                 <td style="color:#e0e2ea;">{data.get("Cihazid","")}</td>
@@ -408,9 +408,9 @@ class ArizaListesiPage(QWidget):
                 </td>
             </tr>
             <tr>
-                <td style="color:#8b8fa3;"><b>ArÄ±za Tipi:</b></td>
+                <td style="color:#8b8fa3;"><b>Arıza Tipi:</b></td>
                 <td style="color:#e0e2ea;">{data.get("ArizaTipi","")}</td>
-                <td style="color:#8b8fa3;"><b>Ã–ncelik:</b></td>
+                <td style="color:#8b8fa3;"><b>Öncelik:</b></td>
                 <td style="color:{o_renk};font-weight:bold;">{onc}</td>
             </tr>
             <tr>
@@ -420,16 +420,16 @@ class ArizaListesiPage(QWidget):
             </tr>
         </table>
         <hr style="border:1px solid #333;margin:10px 0;">
-        <p style="color:#8b8fa3;font-size:12px;"><b>AÃ§Ä±klama:</b></p>
+        <p style="color:#8b8fa3;font-size:12px;"><b>Açıklama:</b></p>
         <p style="color:#e0e0e0;background:rgba(255,255,255,0.04);
                   padding:8px;border-radius:4px;font-size:11px;">
-            {data.get("ArizaAcikla","â€”") or "â€”"}
+            {data.get("ArizaAcikla","—") or "—"}
         </p>
         """
         self.lbl_detail.setHtml(html)
 
     def verileri_yenile(self):
-        """ArÄ±za iÅŸlem penceresinden Ã§aÄŸrÄ±lÄ±r."""
+        """Arıza işlem penceresinden çağrılır."""
         self.load_data()
 
 

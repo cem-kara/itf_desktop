@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 from core.hata_yonetici import exc_logla
 import sys
 import os
@@ -28,12 +28,12 @@ if root_dir not in sys.path:
 # Merkezi stil
 S = ThemeManager.get_all_component_styles()
 
-# SABÄ°T LÄ°STELER
+# SABİT LİSTELER
 ARIZA_TIPLERI = [
-    "DonanÄ±msal ArÄ±za", "YazÄ±lÄ±msal ArÄ±za", "KullanÄ±cÄ± HatasÄ±",
-    "AÄŸ / BaÄŸlantÄ± Sorunu", "ParÃ§a DeÄŸiÅŸimi", "Periyodik BakÄ±m Talebi", "DiÄŸer"
+    "Donanımsal Arıza", "Yazılımsal Arıza", "Kullanıcı Hatası",
+    "Ağ / Bağlantı Sorunu", "Parça Değişimi", "Periyodik Bakım Talebi", "Diğer"
 ]
-ONCELIK_DURUMLARI = ["DÃ¼ÅŸÃ¼k", "Normal", "YÃ¼ksek", "Acil (Kritik)"]
+ONCELIK_DURUMLARI = ["Düşük", "Normal", "Yüksek", "Acil (Kritik)"]
 
 # =============================================================================
 # 1. THREAD SINIFLARI
@@ -61,11 +61,11 @@ class BaslangicYukleyici(QThread):
                     # Format: ID | Marka Model
                     cihaz_listesi.append(f"{c.get('Cihazid')} | {c.get('Marka')} {c.get('Model')}")
             except Exception as e:
-                logger.error(f"Cihaz listesi yÃ¼kleme hatasÄ±: {e}")
+                logger.error(f"Cihaz listesi yükleme hatası: {e}")
             
             self.veri_hazir.emit(yeni_id, cihaz_listesi)
         except Exception as e:
-            logger.error(f"BaÅŸlangÄ±Ã§ yÃ¼kleme hatasÄ±: {e}")
+            logger.error(f"Başlangıç yükleme hatası: {e}")
             self.veri_hazir.emit("HATA", [])
         finally:
             if db: db.close()
@@ -83,7 +83,7 @@ class KayitIslemi(QThread):
         from database.sqlite_manager import SQLiteManager
         db = None
         try:
-            # Dosya yollarÄ±nÄ± birleÅŸtirip kaydet (basit Ã§Ã¶zÃ¼m)
+            # Dosya yollarını birleştirip kaydet (basit çözüm)
             if self.dosyalar:
                 self.veri["Rapor"] = ";".join(self.dosyalar)
             else:
@@ -108,7 +108,7 @@ class ArizaKayitPenceresi(QWidget):
     def __init__(self, db=None):
         super().__init__()
         self._db = db
-        self.setWindowTitle("Yeni ArÄ±za KaydÄ±")
+        self.setWindowTitle("Yeni Arıza Kaydı")
         self.resize(1000, 700)
         
         self.inputs = {}
@@ -126,7 +126,7 @@ class ArizaKayitPenceresi(QWidget):
 
         # --- HEADER ---
         header_layout = QHBoxLayout()
-        lbl_baslik = QLabel("ArÄ±za Bildirim Formu")
+        lbl_baslik = QLabel("Arıza Bildirim Formu")
         lbl_baslik.setFont(QFont("Segoe UI", 16, QFont.Bold))
         lbl_baslik.setStyleSheet(S["header_name"])
         
@@ -156,20 +156,20 @@ class ArizaKayitPenceresi(QWidget):
         v_genel = QVBoxLayout(grp_genel)
         v_genel.setSpacing(15)
         
-        # 1. ArÄ±za ID
-        self.create_input_vbox(v_genel, "ArÄ±za ID (Otomatik):", "ArizaID", "text")
+        # 1. Arıza ID
+        self.create_input_vbox(v_genel, "Arıza ID (Otomatik):", "ArizaID", "text")
         self.inputs["ArizaID"].setReadOnly(True)
         self.inputs["ArizaID"].setStyleSheet("font-weight: bold; color: #e57373; background-color: #2b2b2b; border: 1px solid #444;")
         
-        # 2. Ä°lgili Cihaz (YERÄ° DEÄÄ°ÅTÄ°RÄ°LDÄ° - ARTIK 2. SIRADA)
-        self.create_input_vbox(v_genel, "Ä°lgili Cihaz (ID veya Marka Ara):", "CihazID", "combo")
+        # 2. İlgili Cihaz (YERİ DEĞİŞTİRİLDİ - ARTIK 2. SIRADA)
+        self.create_input_vbox(v_genel, "İlgili Cihaz (ID veya Marka Ara):", "CihazID", "combo")
         self.inputs["CihazID"].setEditable(True) 
         self.inputs["CihazID"].setInsertPolicy(QComboBox.NoInsert) # Yeni veri eklenmesin
         
-        # ğŸŸ¢ GeliÅŸmiÅŸ Arama AyarÄ± (MatchContains)
+        # 🟢 Gelişmiş Arama Ayarı (MatchContains)
         completer = self.inputs["CihazID"].completer()
         completer.setCompletionMode(QCompleter.PopupCompletion)
-        completer.setFilterMode(Qt.MatchContains) # Ä°Ã§inde geÃ§en kelimeyi bulur (Samsung gibi)
+        completer.setFilterMode(Qt.MatchContains) # İçinde geçen kelimeyi bulur (Samsung gibi)
 
         # 3. Tarih
         self.create_input_vbox(v_genel, "Tarih / Saat:", "Tarih", "date")
@@ -185,11 +185,11 @@ class ArizaKayitPenceresi(QWidget):
         v_dosya = QVBoxLayout(grp_dosya)
         v_dosya.setSpacing(10)
         
-        self.lbl_dosya_durum = QLabel("Dosya seÃ§ilmedi")
+        self.lbl_dosya_durum = QLabel("Dosya seçilmedi")
         self.lbl_dosya_durum.setStyleSheet("color: #888; font-style: italic;")
         self.lbl_dosya_durum.setAlignment(Qt.AlignCenter)
         
-        self.btn_dosya = QPushButton("ğŸ“ GÃ¶rsel / Tutanak Ekle")
+        self.btn_dosya = QPushButton("📎 Görsel / Tutanak Ekle")
         self.btn_dosya.setStyleSheet(S["file_btn"])
         self.btn_dosya.clicked.connect(self.dosya_sec)
         
@@ -199,58 +199,58 @@ class ArizaKayitPenceresi(QWidget):
         sol_layout.addWidget(grp_dosya)
         sol_layout.addStretch()
         
-        content_layout.addLayout(sol_layout, 1) # %33 GeniÅŸlik
+        content_layout.addLayout(sol_layout, 1) # %33 Genişlik
 
-        # ================= SAÄ KOLON =================
+        # ================= SAĞ KOLON =================
         sag_layout = QVBoxLayout()
         sag_layout.setAlignment(Qt.AlignTop)
         
-        grp_detay = QGroupBox("ArÄ±za DetaylarÄ±")
+        grp_detay = QGroupBox("Arıza Detayları")
         grp_detay.setStyleSheet(S["group"])
         frm_detay = QVBoxLayout(grp_detay)
         frm_detay.setSpacing(15)
         
         # Konu
-        self.create_input_vbox(frm_detay, "Konu / BaÅŸlÄ±k:", "Konu")
+        self.create_input_vbox(frm_detay, "Konu / Başlık:", "Konu")
         
-        # Tip ve Ã–ncelik (Yanyana)
+        # Tip ve Öncelik (Yanyana)
         h_tip = QHBoxLayout()
-        self.create_input_vbox_layout(h_tip, "ArÄ±za Tipi:", "ArizaTipi", "combo")
+        self.create_input_vbox_layout(h_tip, "Arıza Tipi:", "ArizaTipi", "combo")
         self.inputs["ArizaTipi"].addItems(ARIZA_TIPLERI)
         
-        self.create_input_vbox_layout(h_tip, "Ã–ncelik Durumu:", "Oncelik", "combo")
+        self.create_input_vbox_layout(h_tip, "Öncelik Durumu:", "Oncelik", "combo")
         self.inputs["Oncelik"].addItems(ONCELIK_DURUMLARI)
         frm_detay.addLayout(h_tip)
         
-        # AÃ§Ä±klama
-        lbl_aciklama = QLabel("DetaylÄ± AÃ§Ä±klama:")
+        # Açıklama
+        lbl_aciklama = QLabel("Detaylı Açıklama:")
         lbl_aciklama.setStyleSheet(S["label"])
         
         self.txt_aciklama = QTextEdit()
-        self.txt_aciklama.setPlaceholderText("ArÄ±zanÄ±n oluÅŸ ÅŸekli, belirtileri vb...")
+        self.txt_aciklama.setPlaceholderText("Arızanın oluş şekli, belirtileri vb...")
         self.txt_aciklama.setStyleSheet(S["input"])
         
-        # ğŸŸ¢ YÃ¼kseklik AzaltÄ±ldÄ± (Daha kompakt)
+        # 🟢 Yükseklik Azaltıldı (Daha kompakt)
         self.txt_aciklama.setMinimumHeight(120) 
         self.inputs["Aciklama"] = self.txt_aciklama
         
         frm_detay.addWidget(lbl_aciklama)
         frm_detay.addWidget(self.txt_aciklama)
-        frm_detay.addStretch() # Altta boÅŸluk kalsÄ±n, yukarÄ± sÄ±kÄ±ÅŸmasÄ±n
+        frm_detay.addStretch() # Altta boşluk kalsın, yukarı sıkışmasın
         
         sag_layout.addWidget(grp_detay)
-        content_layout.addLayout(sag_layout, 2) # %66 GeniÅŸlik
+        content_layout.addLayout(sag_layout, 2) # %66 Genişlik
         
         main_layout.addWidget(content_widget)
 
         # --- FOOTER ---
         footer = QHBoxLayout()
-        self.btn_iptal = QPushButton("âœ• Ä°ptal")
+        self.btn_iptal = QPushButton("✕ İptal")
         self.btn_iptal.setFixedSize(100, 36)
         self.btn_iptal.setStyleSheet(S["cancel_btn"])
         self.btn_iptal.clicked.connect(self.close)
         
-        self.btn_kaydet = QPushButton("âš ï¸ KaydÄ± OluÅŸtur")
+        self.btn_kaydet = QPushButton("⚠️ Kaydı Oluştur")
         self.btn_kaydet.setFixedSize(200, 36)
         self.btn_kaydet.setStyleSheet(S["save_btn"])
         self.btn_kaydet.clicked.connect(self.kaydet_baslat)
@@ -262,7 +262,7 @@ class ArizaKayitPenceresi(QWidget):
 
     # --- UI YARDIMCILARI ---
     def create_input_vbox(self, layout, label_text, key, tip="text"):
-        """Dikey yerleÅŸim iÃ§in Label + Input oluÅŸturur."""
+        """Dikey yerleşim için Label + Input oluşturur."""
         lbl = QLabel(label_text)
         lbl.setStyleSheet(S["label"])
         widget = self._create_widget(tip)
@@ -271,7 +271,7 @@ class ArizaKayitPenceresi(QWidget):
         layout.addWidget(widget)
 
     def create_input_vbox_layout(self, parent_layout, label_text, key, tip="text"):
-        """Yatay layout iÃ§ine dikey grup ekler (Label + Input)"""
+        """Yatay layout içine dikey grup ekler (Label + Input)"""
         container = QVBoxLayout()
         container.setSpacing(4)
         container.setContentsMargins(0,0,0,0)
@@ -315,11 +315,11 @@ class ArizaKayitPenceresi(QWidget):
         self.inputs["CihazID"].addItems(cihaz_listesi)
 
     def dosya_sec(self):
-        yol, _ = QFileDialog.getOpenFileName(self, "Dosya SeÃ§", "", "Resim/PDF (*.jpg *.png *.pdf)")
+        yol, _ = QFileDialog.getOpenFileName(self, "Dosya Seç", "", "Resim/PDF (*.jpg *.png *.pdf)")
         if yol:
             self.secilen_dosyalar = [yol]
             dosya_adi = os.path.basename(yol)
-            self.lbl_dosya_durum.setText(f"âœ… {dosya_adi}")
+            self.lbl_dosya_durum.setText(f"✅ {dosya_adi}")
             self.lbl_dosya_durum.setStyleSheet("color: #4caf50; font-weight: bold;")
 
     def kaydet_baslat(self):
@@ -328,7 +328,7 @@ class ArizaKayitPenceresi(QWidget):
         konu = self.inputs["Konu"].text().strip()
         
         if not cihaz_id or not konu:
-            QMessageBox.warning(self, "Eksik", "LÃ¼tfen Cihaz ve Konu alanlarÄ±nÄ± doldurun.")
+            QMessageBox.warning(self, "Eksik", "Lütfen Cihaz ve Konu alanlarını doldurun.")
             return
 
         self.btn_kaydet.setEnabled(False); self.btn_kaydet.setText("Kaydediliyor...")
@@ -344,7 +344,7 @@ class ArizaKayitPenceresi(QWidget):
             "Oncelik": self.inputs["Oncelik"].currentText(),
             "Baslik": konu,
             "ArizaAcikla": self.inputs["Aciklama"].toPlainText(),
-            "Durum": "AÃ§Ä±k"
+            "Durum": "Açık"
         }
 
         self.saver = KayitIslemi(veri, self.secilen_dosyalar)
@@ -355,14 +355,14 @@ class ArizaKayitPenceresi(QWidget):
     def kayit_basarili(self):
         QApplication.restoreOverrideCursor()
         self.progress.setRange(0, 100); self.progress.setValue(100)
-        QMessageBox.information(self, "BaÅŸarÄ±lÄ±", "ArÄ±za kaydÄ± oluÅŸturuldu.")
+        QMessageBox.information(self, "Başarılı", "Arıza kaydı oluşturuldu.")
         self.close()
 
     def kayit_hatali(self, hata):
         QApplication.restoreOverrideCursor()
         self.progress.setRange(0, 100); self.progress.setValue(0)
-        self.btn_kaydet.setEnabled(True); self.btn_kaydet.setText("âš ï¸ KaydÄ± OluÅŸtur")
-        QMessageBox.critical(self, "Hata", f"KayÄ±t HatasÄ±: {hata}")
+        self.btn_kaydet.setEnabled(True); self.btn_kaydet.setText("⚠️ Kaydı Oluştur")
+        QMessageBox.critical(self, "Hata", f"Kayıt Hatası: {hata}")
 
     def closeEvent(self, event):
         if hasattr(self, 'loader') and self.loader.isRunning(): self.loader.quit(); self.loader.wait(500)

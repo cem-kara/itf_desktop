@@ -4,7 +4,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QApplication, QWidget, QDateEdit
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QPalette
 
 from core.logger import logger
 from ui.styles import Colors, DarkTheme, ComponentStyles
@@ -49,7 +49,24 @@ class ThemeManager(QObject):
         return self._stylesheet_cache
 
     def apply_app_theme(self, app: QApplication) -> None:
-        """Ana uygulamaya theme.qss uygula."""
+        """
+        Ana uygulamaya tema uygula.
+        Platform farklarını azaltmak için Fusion style + temel palette de zorlanır.
+        """
+        app.setStyle("Fusion")
+
+        palette = app.palette()
+        palette.setColor(QPalette.Window, QColor("#16172b"))
+        palette.setColor(QPalette.WindowText, QColor("#e0e2ea"))
+        palette.setColor(QPalette.Base, QColor("#1e202c"))
+        palette.setColor(QPalette.AlternateBase, QColor("#292b41"))
+        palette.setColor(QPalette.Text, QColor("#e0e2ea"))
+        palette.setColor(QPalette.Button, QColor("#1e202c"))
+        palette.setColor(QPalette.ButtonText, QColor("#e0e2ea"))
+        palette.setColor(QPalette.ToolTipBase, QColor("#1e202c"))
+        palette.setColor(QPalette.ToolTipText, QColor("#e0e2ea"))
+        app.setPalette(palette)
+
         app.setStyleSheet(self.load_stylesheet())
 
     # ══════════════════════════════════════════════════════════════

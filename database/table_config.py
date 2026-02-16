@@ -75,7 +75,7 @@ TABLES = {
         "pk": "Arizaid",
         "columns": [                          # ← "colums" → "columns"
             "Arizaid","Cihazid","BaslangicTarihi","Saat","Bildiren",
-            "ArizaTipi","Oncelik","Baslik",   # ← "BaslÄ±k" encoding düzeltildi
+            "ArizaTipi","Oncelik","Baslik",   # ← "Baslık" encoding düzeltildi
             "ArizaAcikla","Durum","Rapor"
         ],
         "date_fields": ["BaslangicTarihi"],

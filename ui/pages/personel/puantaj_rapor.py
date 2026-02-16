@@ -1,13 +1,13 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
-Puantaj Raporlama ve Åua Takip Sistemi
+Puantaj Raporlama ve Şua Takip Sistemi
 
-Orijinal form: fshz_puantaj.py â†’ PuantajRaporPenceresi
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-â€¢ FHSZ_Puantaj tablosundan yÄ±l/dÃ¶nem bazlÄ± rapor
-â€¢ KÃ¼mÃ¼latif saat: AynÄ± yÄ±lda, o dÃ¶nem dahil Ã¶nceki tÃ¼m dÃ¶nemlerin toplamÄ±
-â€¢ Hak Edilen Åua: sua_hak_edis_hesapla(kÃ¼mÃ¼latif)
-â€¢ Excel / PDF dÄ±ÅŸa aktarÄ±m
+Orijinal form: fshz_puantaj.py → PuantajRaporPenceresi
+─────────────────────────────────────────────────────
+• FHSZ_Puantaj tablosundan yıl/dönem bazlı rapor
+• Kümülatif saat: Aynı yılda, o dönem dahil önceki tüm dönemlerin toplamı
+• Hak Edilen Şua: sua_hak_edis_hesapla(kümülatif)
+• Excel / PDF dışa aktarım
 """
 import os
 from datetime import datetime
@@ -26,32 +26,32 @@ from ui.theme_manager import ThemeManager
 
 
 AY_ISIMLERI = [
-    "Ocak", "Åubat", "Mart", "Nisan", "MayÄ±s", "Haziran",
-    "Temmuz", "AÄŸustos", "EylÃ¼l", "Ekim", "KasÄ±m", "AralÄ±k",
+    "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
 ]
 
-# DÃ¶nem sÄ±ralamasÄ± (ay adÄ± â†’ sÄ±ra no)
+# Dönem sıralaması (ay adı → sıra no)
 AY_SIRA = {ay: i for i, ay in enumerate(AY_ISIMLERI)}
 
 TABLO_KOLONLARI = [
-    "Kimlik No", "AdÄ± SoyadÄ±", "YÄ±l", "DÃ¶nem",
-    "Top. GÃ¼n", "Top. Ä°zin", "Fiili Saat",
-    "KÃ¼mÃ¼latif Saat", "Hak Edilen Åua (GÃ¼n)",
+    "Kimlik No", "Adı Soyadı", "Yıl", "Dönem",
+    "Top. Gün", "Top. İzin", "Fiili Saat",
+    "Kümülatif Saat", "Hak Edilen Şua (Gün)",
 ]
 C_KIMLIK, C_AD, C_YIL, C_DONEM = 0, 1, 2, 3
 C_GUN, C_IZIN, C_SAAT, C_KUM, C_SUA = 4, 5, 6, 7, 8
 
 
-# â”€â”€â”€ MERKEZÄ° STÄ°L YÃ–NETIMI â”€â”€â”€
+# ─── MERKEZİ STİL YÖNETIMI ───
 S = ThemeManager.get_all_component_styles()
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-#  DELEGATE: Åua Hak EdiÅŸ badge (Kolon 8)
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ═══════════════════════════════════════════════
+#  DELEGATE: Şua Hak Ediş badge (Kolon 8)
+# ═══════════════════════════════════════════════
 
 class SuaDelegate(QStyledItemDelegate):
-    """Åua hak ediÅŸ gÃ¼nlerini renkli badge olarak gÃ¶sterir."""
+    """Şua hak ediş günlerini renkli badge olarak gösterir."""
     def paint(self, painter, option, index):
         bg = QColor(29, 117, 254, 60) if option.state & QStyle.State_Selected \
             else QColor("transparent")
@@ -87,9 +87,9 @@ class SuaDelegate(QStyledItemDelegate):
         painter.restore()
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ═══════════════════════════════════════════════
 #  PUANTAJ RAPOR SAYFASI
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ═══════════════════════════════════════════════
 
 class PuantajRaporPage(QWidget):
 
@@ -97,35 +97,35 @@ class PuantajRaporPage(QWidget):
         super().__init__(parent)
         self.setStyleSheet(S["page"])
         self._db = db
-        self._rapor_data = []     # Tablodaki satÄ±rlar (dict list)
+        self._rapor_data = []     # Tablodaki satırlar (dict list)
 
         self._setup_ui()
         self._connect_signals()
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
     #  UI
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
 
     def _setup_ui(self):
         main = QVBoxLayout(self)
         main.setContentsMargins(20, 12, 20, 12)
         main.setSpacing(10)
 
-        # â”€â”€ ÃœST BAR: Rapor Filtreleri â”€â”€
+        # ── ÜST BAR: Rapor Filtreleri ──
         filter_frame = QFrame()
         filter_frame.setStyleSheet(S["filter_panel"])
         fp = QHBoxLayout(filter_frame)
         fp.setContentsMargins(12, 8, 12, 8)
         fp.setSpacing(8)
 
-        lbl_t = QLabel("ğŸ“Š Puantaj Raporlama ve Åua Takip")
+        lbl_t = QLabel("📊 Puantaj Raporlama ve Şua Takip")
         lbl_t.setStyleSheet("color: #6bd3ff; font-size: 14px; font-weight: bold; background: transparent;")
         fp.addWidget(lbl_t)
 
         self._add_sep(fp)
 
-        # YÄ±l
-        fp.addWidget(self._make_label("Rapor YÄ±lÄ±:"))
+        # Yıl
+        fp.addWidget(self._make_label("Rapor Yılı:"))
         self.cmb_yil = QComboBox()
         self.cmb_yil.setStyleSheet(S["combo"])
         self.cmb_yil.setFixedWidth(80)
@@ -135,18 +135,18 @@ class PuantajRaporPage(QWidget):
         self.cmb_yil.setCurrentText(str(by))
         fp.addWidget(self.cmb_yil)
 
-        # DÃ¶nem / Ay
-        fp.addWidget(self._make_label("DÃ¶nem:"))
+        # Dönem / Ay
+        fp.addWidget(self._make_label("Dönem:"))
         self.cmb_donem = QComboBox()
         self.cmb_donem.setStyleSheet(S["combo"])
         self.cmb_donem.setFixedWidth(130)
-        self.cmb_donem.addItem("TÃ¼mÃ¼")
+        self.cmb_donem.addItem("Tümü")
         self.cmb_donem.addItems(AY_ISIMLERI)
         fp.addWidget(self.cmb_donem)
 
         fp.addStretch()
 
-        self.btn_getir = QPushButton("ğŸ“‹ Raporu OluÅŸtur")
+        self.btn_getir = QPushButton("📋 Raporu Oluştur")
         self.btn_getir.setStyleSheet(S["report_btn"])
         self.btn_getir.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_getir.setFixedHeight(34)
@@ -154,7 +154,7 @@ class PuantajRaporPage(QWidget):
 
         self._add_sep(fp)
 
-        self.btn_kapat = QPushButton("âœ• Kapat")
+        self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Kapat")
         self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
@@ -163,13 +163,13 @@ class PuantajRaporPage(QWidget):
 
         main.addWidget(filter_frame)
 
-        # â”€â”€ BÄ°LGÄ° LABEL â”€â”€
+        # ── BİLGİ LABEL ──
         self.lbl_bilgi = QLabel("Veri bekleniyor...")
         self.lbl_bilgi.setStyleSheet(S["info_label"])
         self.lbl_bilgi.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         main.addWidget(self.lbl_bilgi)
 
-        # â”€â”€ TABLO â”€â”€
+        # ── TABLO ──
         self.tablo = QTableWidget()
         self.tablo.setColumnCount(len(TABLO_KOLONLARI))
         self.tablo.setHorizontalHeaderLabels(TABLO_KOLONLARI)
@@ -185,19 +185,19 @@ class PuantajRaporPage(QWidget):
         h.setSectionResizeMode(C_SUA, QHeaderView.Fixed)
         self.tablo.setColumnWidth(C_SUA, 150)
 
-        # Åua delegate
+        # Şua delegate
         self.tablo.setItemDelegateForColumn(C_SUA, SuaDelegate(self.tablo))
 
         main.addWidget(self.tablo, 1)
 
-        # â”€â”€ ALT BAR â”€â”€
+        # ── ALT BAR ──
         bot_frame = QFrame()
         bot_frame.setStyleSheet(S["filter_panel"])
         bf = QHBoxLayout(bot_frame)
         bf.setContentsMargins(12, 8, 12, 8)
         bf.setSpacing(12)
 
-        self.lbl_durum = QLabel("HazÄ±r")
+        self.lbl_durum = QLabel("Hazır")
         self.lbl_durum.setStyleSheet(S["footer_label"])
         bf.addWidget(self.lbl_durum)
 
@@ -220,14 +220,14 @@ class PuantajRaporPage(QWidget):
         """)
         bf.addWidget(self.progress)
 
-        btn_kapat2 = QPushButton("âœ• Kapat")
+        btn_kapat2 = QPushButton("✕ Kapat")
         btn_kapat2.setStyleSheet(S["close_btn"])
         btn_kapat2.setFixedSize(100, 36)
         btn_kapat2.setCursor(QCursor(Qt.PointingHandCursor))
         btn_kapat2.clicked.connect(self.btn_kapat.click)
         bf.addWidget(btn_kapat2)
 
-        self.btn_excel = QPushButton("ğŸ“¥ Excel Ä°ndir")
+        self.btn_excel = QPushButton("📥 Excel İndir")
         self.btn_excel.setStyleSheet(S["excel_btn"])
         self.btn_excel.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_excel.setFixedHeight(36)
@@ -235,7 +235,7 @@ class PuantajRaporPage(QWidget):
         self.btn_excel.setEnabled(False)
         bf.addWidget(self.btn_excel)
 
-        self.btn_pdf = QPushButton("ğŸ“„ PDF Ä°ndir")
+        self.btn_pdf = QPushButton("📄 PDF İndir")
         self.btn_pdf.setStyleSheet(S["pdf_btn"])
         self.btn_pdf.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_pdf.setFixedHeight(36)
@@ -245,7 +245,7 @@ class PuantajRaporPage(QWidget):
 
         main.addWidget(bot_frame)
 
-    # â”€â”€â”€ UI yardÄ±mcÄ±larÄ± â”€â”€â”€
+    # ─── UI yardımcıları ───
 
     def _make_label(self, text):
         lbl = QLabel(text)
@@ -258,44 +258,44 @@ class PuantajRaporPage(QWidget):
         sep.setStyleSheet("background-color: rgba(255,255,255,0.08);")
         layout.addWidget(sep)
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    #  SÄ°NYALLER
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
+    #  SİNYALLER
+    # ═══════════════════════════════════════════
 
     def _connect_signals(self):
         self.btn_getir.clicked.connect(self._rapor_olustur)
         self.btn_excel.clicked.connect(self._excel_indir)
         self.btn_pdf.clicked.connect(self._pdf_indir)
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    #  VERÄ° YÃœKLEME (boÅŸ â€” sayfa ilk aÃ§Ä±ldÄ±ÄŸÄ±nda)
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
+    #  VERİ YÜKLEME (boş — sayfa ilk açıldığında)
+    # ═══════════════════════════════════════════
 
     def load_data(self):
-        """Sayfa aÃ§Ä±lÄ±ÅŸÄ±nda Ã§aÄŸrÄ±lÄ±r â€” henÃ¼z rapor oluÅŸturma yok."""
+        """Sayfa açılışında çağrılır — henüz rapor oluşturma yok."""
         pass
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    #  ğŸ“‹ RAPOR OLUÅTUR
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
+    #  📋 RAPOR OLUŞTUR
+    # ═══════════════════════════════════════════
 
     def _rapor_olustur(self):
         """
-        FHSZ_Puantaj tablosundan seÃ§ili yÄ±l (+ opsiyonel dÃ¶nem) verilerini Ã§ek.
-        Her personel iÃ§in kÃ¼mÃ¼latif saat ve ÅŸua hak ediÅŸ hesapla.
+        FHSZ_Puantaj tablosundan seçili yıl (+ opsiyonel dönem) verilerini çek.
+        Her personel için kümülatif saat ve şua hak ediş hesapla.
         """
         if not self._db:
             return
 
         yil_str = self.cmb_yil.currentText()
-        donem_str = self.cmb_donem.currentText()   # "TÃ¼mÃ¼" veya ay adÄ±
-        tek_donem = donem_str != "TÃ¼mÃ¼"
+        donem_str = self.cmb_donem.currentText()   # "Tümü" veya ay adı
+        tek_donem = donem_str != "Tümü"
 
         self.tablo.setRowCount(0)
         self._rapor_data = []
         self.btn_getir.setEnabled(False)
         self.progress.setVisible(True)
-        self.lbl_durum.setText("Rapor hazÄ±rlanÄ±yor...")
+        self.lbl_durum.setText("Rapor hazırlanıyor...")
 
         try:
             from core.di import get_registry
@@ -304,37 +304,37 @@ class PuantajRaporPage(QWidget):
 
             tum = repo.get_all()
 
-            # YÄ±la ait kayÄ±tlarÄ± filtrele
+            # Yıla ait kayıtları filtrele
             yil_kayitlar = [
                 r for r in tum
                 if str(r.get("AitYil", "")).strip() == yil_str
             ]
 
             if not yil_kayitlar:
-                self.lbl_bilgi.setText("KayÄ±t bulunamadÄ±.")
-                self.lbl_durum.setText("HazÄ±r")
+                self.lbl_bilgi.setText("Kayıt bulunamadı.")
+                self.lbl_durum.setText("Hazır")
                 self.progress.setVisible(False)
                 self.btn_getir.setEnabled(True)
                 self.btn_excel.setEnabled(False)
                 self.btn_pdf.setEnabled(False)
                 return
 
-            # â”€â”€ KÃ¼mÃ¼latif hesaplama â”€â”€
-            # Personel bazlÄ± dÃ¶nem sÄ±ralÄ± grupla
-            personel_map = {}   # {tc: [kayÄ±t, kayÄ±t, ...]}  (dÃ¶nem sÄ±ralÄ±)
+            # ── Kümülatif hesaplama ──
+            # Personel bazlı dönem sıralı grupla
+            personel_map = {}   # {tc: [kayıt, kayıt, ...]}  (dönem sıralı)
             for r in yil_kayitlar:
                 tc = str(r.get("Personelid", "")).strip()
                 if tc not in personel_map:
                     personel_map[tc] = []
                 personel_map[tc].append(r)
 
-            # Her personelin kayÄ±tlarÄ±nÄ± dÃ¶nem sÄ±rasÄ±na gÃ¶re sÄ±rala
+            # Her personelin kayıtlarını dönem sırasına göre sırala
             for tc in personel_map:
                 personel_map[tc].sort(
                     key=lambda r: AY_SIRA.get(str(r.get("Donem", "")).strip(), 99)
                 )
 
-            # â”€â”€ Tabloya doldur â”€â”€
+            # ── Tabloya doldur ──
             rows = []
             for tc, kayitlar in sorted(personel_map.items(),
                                         key=lambda x: str(x[1][0].get("AdSoyad", ""))):
@@ -359,7 +359,7 @@ class PuantajRaporPage(QWidget):
                     except (ValueError, TypeError):
                         toplam_izin += 0
 
-                    # Tek dÃ¶nem filtresi
+                    # Tek dönem filtresi
                     if tek_donem and donem != donem_str:
                         continue
 
@@ -409,7 +409,7 @@ class PuantajRaporPage(QWidget):
                 self._set_item(i, C_IZIN, str(row["KullanilanIzin"]))
                 self._set_item(i, C_SAAT, f"{row['FiiliCalismaSaat']:.0f}")
                 self._set_item(i, C_KUM, f"{row['KumulatifSaat']:.0f}")
-                # Åua hak ediÅŸ â€” delegate Ã§izecek
+                # Şua hak ediş — delegate çizecek
                 item_sua = QTableWidgetItem(str(row["SuaHakEdis"]))
                 item_sua.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                 item_sua.setTextAlignment(Qt.AlignCenter)
@@ -419,20 +419,20 @@ class PuantajRaporPage(QWidget):
 
             # Bilgi label
             personel_sayisi = len(personel_map)
-            donem_info = donem_str if tek_donem else "TÃ¼m dÃ¶nemler"
+            donem_info = donem_str if tek_donem else "Tüm dönemler"
             self.lbl_bilgi.setText(
-                f"{personel_sayisi} personel  â€¢  {len(rows)} kayÄ±t  â€¢  {donem_info}  â€¢  {yil_str}"
+                f"{personel_sayisi} personel  •  {len(rows)} kayıt  •  {donem_info}  •  {yil_str}"
             )
-            self.lbl_durum.setText(f"âœ“ Rapor hazÄ±r  â€¢  {len(rows)} satÄ±r")
+            self.lbl_durum.setText(f"✓ Rapor hazır  •  {len(rows)} satır")
             self.btn_excel.setEnabled(len(rows) > 0)
             self.btn_pdf.setEnabled(len(rows) > 0)
 
-            logger.info(f"Puantaj rapor oluÅŸturuldu: {yil_str}, {len(rows)} satÄ±r")
+            logger.info(f"Puantaj rapor oluşturuldu: {yil_str}, {len(rows)} satır")
 
         except Exception as e:
-            logger.error(f"Puantaj rapor hatasÄ±: {e}")
+            logger.error(f"Puantaj rapor hatası: {e}")
             QMessageBox.critical(self, "Hata", str(e))
-            self.lbl_bilgi.setText("Hata oluÅŸtu.")
+            self.lbl_bilgi.setText("Hata oluştu.")
 
         self.progress.setVisible(False)
         self.btn_getir.setEnabled(True)
@@ -444,9 +444,9 @@ class PuantajRaporPage(QWidget):
             item.setTextAlignment(Qt.AlignCenter)
         self.tablo.setItem(row, col, item)
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    #  ğŸ“¥ EXCEL Ä°NDÄ°R
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
+    #  📥 EXCEL İNDİR
+    # ═══════════════════════════════════════════
 
     def _excel_indir(self):
         if not self._rapor_data:
@@ -458,7 +458,7 @@ class PuantajRaporPage(QWidget):
 
         path, _ = QFileDialog.getSaveFileName(
             self, "Excel Kaydet", default_name,
-            "Excel DosyasÄ± (*.xlsx)"
+            "Excel Dosyası (*.xlsx)"
         )
         if not path:
             return
@@ -471,7 +471,7 @@ class PuantajRaporPage(QWidget):
             ws = wb.active
             ws.title = "Puantaj Rapor"
 
-            # BaÅŸlÄ±k satÄ±rÄ±
+            # Başlık satırı
             header_font = Font(name="Arial", bold=True, color="FFFFFF", size=11)
             header_fill = PatternFill(start_color="1D75FE", end_color="1D75FE", fill_type="solid")
             header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -487,12 +487,12 @@ class PuantajRaporPage(QWidget):
                 cell.alignment = header_align
                 cell.border = thin_border
 
-            # Veri satÄ±rlarÄ±
+            # Veri satırları
             data_font = Font(name="Arial", size=10)
             center_align = Alignment(horizontal="center", vertical="center")
             left_align = Alignment(horizontal="left", vertical="center")
 
-            # Åua renk dolgularÄ±
+            # Şua renk dolguları
             sua_fill_high = PatternFill(start_color="1B5E20", end_color="1B5E20", fill_type="solid")
             sua_fill_mid = PatternFill(start_color="F57F17", end_color="F57F17", fill_type="solid")
             sua_fill_low = PatternFill(start_color="1565C0", end_color="1565C0", fill_type="solid")
@@ -511,7 +511,7 @@ class PuantajRaporPage(QWidget):
                     cell.border = thin_border
                     cell.alignment = center_align if c >= 3 else left_align
 
-                # Åua hÃ¼cre renklendirme
+                # Şua hücre renklendirme
                 sua_cell = ws.cell(row=r, column=9)
                 sua_val = int(row["SuaHakEdis"])
                 if sua_val >= 20:
@@ -524,7 +524,7 @@ class PuantajRaporPage(QWidget):
                     sua_cell.fill = sua_fill_low
                     sua_cell.font = sua_font_white
 
-            # Kolon geniÅŸlikleri
+            # Kolon genişlikleri
             widths = [14, 25, 8, 12, 10, 10, 14, 16, 18]
             for i, w in enumerate(widths, 1):
                 ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
@@ -534,20 +534,20 @@ class PuantajRaporPage(QWidget):
 
             wb.save(path)
 
-            self.lbl_durum.setText(f"âœ“ Excel kaydedildi: {os.path.basename(path)}")
-            QMessageBox.information(self, "BaÅŸarÄ±lÄ±", f"Excel dosyasÄ± kaydedildi:\n{path}")
+            self.lbl_durum.setText(f"✓ Excel kaydedildi: {os.path.basename(path)}")
+            QMessageBox.information(self, "Başarılı", f"Excel dosyası kaydedildi:\n{path}")
             logger.info(f"Puantaj rapor Excel: {path}")
 
         except ImportError:
-            QMessageBox.warning(self, "UyarÄ±",
-                "openpyxl modÃ¼lÃ¼ yÃ¼klÃ¼ deÄŸil.\npip install openpyxl")
+            QMessageBox.warning(self, "Uyarı",
+                "openpyxl modülü yüklü değil.\npip install openpyxl")
         except Exception as e:
-            logger.error(f"Excel kaydetme hatasÄ±: {e}")
+            logger.error(f"Excel kaydetme hatası: {e}")
             QMessageBox.critical(self, "Hata", f"Excel kaydedilemedi:\n{e}")
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    #  ğŸ“„ PDF Ä°NDÄ°R
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
+    #  📄 PDF İNDİR
+    # ═══════════════════════════════════════════
 
     def _pdf_indir(self):
         if not self._rapor_data:
@@ -559,7 +559,7 @@ class PuantajRaporPage(QWidget):
 
         path, _ = QFileDialog.getSaveFileName(
             self, "PDF Kaydet", default_name,
-            "PDF DosyasÄ± (*.pdf)"
+            "PDF Dosyası (*.pdf)"
         )
         if not path:
             return
@@ -573,7 +573,7 @@ class PuantajRaporPage(QWidget):
             from reportlab.pdfbase import pdfmetrics
             from reportlab.pdfbase.ttfonts import TTFont
 
-            # TÃ¼rkÃ§e font
+            # Türkçe font
             try:
                 pdfmetrics.registerFont(TTFont("Arial", "arial.ttf"))
                 pdfmetrics.registerFont(TTFont("ArialBold", "arialbd.ttf"))
@@ -590,9 +590,9 @@ class PuantajRaporPage(QWidget):
             elements = []
             styles = getSampleStyleSheet()
 
-            # BaÅŸlÄ±k
+            # Başlık
             donem_text = self.cmb_donem.currentText()
-            title_text = f"FHSZ Puantaj Raporu â€” {yil} {donem_text}"
+            title_text = f"FHSZ Puantaj Raporu — {yil} {donem_text}"
             title_style = styles["Title"]
             title_style.fontName = font_bold
             title_style.fontSize = 14
@@ -633,7 +633,7 @@ class PuantajRaporPage(QWidget):
                 ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F0F4F8")]),
             ]
 
-            # Åua renklendirme
+            # Şua renklendirme
             for i, row in enumerate(self._rapor_data, 1):
                 sua = int(row["SuaHakEdis"])
                 if sua >= 20:
@@ -651,7 +651,7 @@ class PuantajRaporPage(QWidget):
 
             # Alt bilgi
             elements.append(Spacer(1, 5 * mm))
-            info_text = f"Rapor tarihi: {datetime.now().strftime('%d.%m.%Y %H:%M')} â€” Toplam {len(self._rapor_data)} kayÄ±t"
+            info_text = f"Rapor tarihi: {datetime.now().strftime('%d.%m.%Y %H:%M')} — Toplam {len(self._rapor_data)} kayıt"
             info_style = styles["Normal"]
             info_style.fontName = font_name
             info_style.fontSize = 8
@@ -660,15 +660,15 @@ class PuantajRaporPage(QWidget):
 
             doc.build(elements)
 
-            self.lbl_durum.setText(f"âœ“ PDF kaydedildi: {os.path.basename(path)}")
-            QMessageBox.information(self, "BaÅŸarÄ±lÄ±", f"PDF dosyasÄ± kaydedildi:\n{path}")
+            self.lbl_durum.setText(f"✓ PDF kaydedildi: {os.path.basename(path)}")
+            QMessageBox.information(self, "Başarılı", f"PDF dosyası kaydedildi:\n{path}")
             logger.info(f"Puantaj rapor PDF: {path}")
 
         except ImportError:
-            QMessageBox.warning(self, "UyarÄ±",
-                "reportlab modÃ¼lÃ¼ yÃ¼klÃ¼ deÄŸil.\npip install reportlab")
+            QMessageBox.warning(self, "Uyarı",
+                "reportlab modülü yüklü değil.\npip install reportlab")
         except Exception as e:
-            logger.error(f"PDF kaydetme hatasÄ±: {e}")
+            logger.error(f"PDF kaydetme hatası: {e}")
             QMessageBox.critical(self, "Hata", f"PDF kaydedilemedi:\n{e}")
 
 

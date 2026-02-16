@@ -1,4 +1,4 @@
-﻿from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import QThread, Signal
 from core.logger import logger, log_sync_error, get_user_friendly_error
 
 from database.sqlite_manager import SQLiteManager
@@ -8,10 +8,10 @@ from database.sync_service import SyncService, SyncBatchError
 
 class SyncWorker(QThread):
     """
-    Arka planda senkron iÅŸlemini yÃ¼rÃ¼ten QThread
+    Arka planda senkron işlemini yürüten QThread
 
-    Ã–NEMLÄ°: SQLite nesneleri oluÅŸturulduklarÄ± thread'de kullanÄ±lmalÄ±dÄ±r.
-    Bu yÃ¼zden db, registry ve sync_service run() iÃ§inde oluÅŸturulur.
+    ÖNEMLİ: SQLite nesneleri oluşturuldukları thread'de kullanılmalıdır.
+    Bu yüzden db, registry ve sync_service run() içinde oluşturulur.
     """
 
     finished = Signal()
@@ -26,10 +26,10 @@ class SyncWorker(QThread):
 
     def run(self):
         """
-        Worker thread â€” tÃ¼m DB iÅŸlemleri burada baÅŸlar ve biter.
+        Worker thread — tüm DB işlemleri burada başlar ve biter.
         """
         logger.info("=" * 60)
-        logger.info("SYNC Ä°ÅLEMÄ° BAÅLADI")
+        logger.info("SYNC İŞLEMİ BAŞLADI")
         logger.info("=" * 60)
 
         db = None
@@ -38,7 +38,7 @@ class SyncWorker(QThread):
             if not self._running:
                 return
 
-            # ğŸ”¹ BaÄŸlantÄ±lar WORKER THREAD iÃ§inde oluÅŸturulmalÄ±
+            # 🔹 Bağlantılar WORKER THREAD içinde oluşturulmalı
             db = SQLiteManager()
             registry = get_registry(db)
             sync_service = SyncService(
@@ -46,11 +46,11 @@ class SyncWorker(QThread):
                 registry=registry
             )
 
-            # ğŸ” TÃœM TABLOLAR - Hata takibi ile
+            # 🔁 TÜM TABLOLAR - Hata takibi ile
             try:
-                logger.info("TÃ¼m tablolarÄ±n senkronizasyonu baÅŸlÄ±yor...")
+                logger.info("Tüm tabloların senkronizasyonu başlıyor...")
                 sync_service.sync_all()
-                logger.info("âœ“ TÃ¼m tablolar baÅŸarÄ±yla senkronize edildi")
+                logger.info("✓ Tüm tablolar başarıyla senkronize edildi")
 
             except SyncBatchError as sync_error:
                 short_msg, detail_msg = sync_error.to_ui_messages(max_tables=3)
@@ -65,15 +65,15 @@ class SyncWorker(QThread):
                 return
 
             logger.info("=" * 60)
-            logger.info("SYNC Ä°ÅLEMÄ° TAMAMLANDI")
+            logger.info("SYNC İŞLEMİ TAMAMLANDI")
             logger.info("=" * 60)
             self.finished.emit()
 
         except Exception as e:
             logger.error("=" * 60)
-            logger.error("SYNC Ä°ÅLEMÄ° BAÅARISIZ")
+            logger.error("SYNC İŞLEMİ BAŞARISIZ")
             logger.error("=" * 60)
-            logger.exception("Kritik senkron hatasÄ±")
+            logger.exception("Kritik senkron hatası")
             
             short_msg, detail_msg = get_user_friendly_error(e)
             self.error.emit(short_msg, detail_msg)
@@ -86,7 +86,7 @@ class SyncWorker(QThread):
 
     def stop(self):
         """
-        Thread gÃ¼venli ÅŸekilde durdurulur
+        Thread güvenli şekilde durdurulur
         """
         self._running = False
         self.quit()

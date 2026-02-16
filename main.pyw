@@ -13,6 +13,7 @@ from core.config import AppConfig
 from core.log_manager import initialize_log_management
 from core.paths import DB_PATH
 from database.migrations import MigrationManager
+from ui.theme_manager import ThemeManager
 
 
 def ensure_database():
@@ -61,6 +62,7 @@ def main():
 
     app = QApplication(sys.argv)
     app.setApplicationName(AppConfig.APP_NAME)
+    ThemeManager.instance().apply_app_theme(app)
     app_icon_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "ui",

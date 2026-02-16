@@ -143,3 +143,27 @@ QTabBar::tab:selected {
     color: #1e293b;
     font-weight: 600;
 }
+
+/* —— MESSAGE BOX (platform bağımsız görünüm) —— */
+
+QMessageBox {
+    background-color: #1e202c;
+}
+
+QMessageBox QLabel {
+    color: #e0e2ea;
+    background-color: transparent;
+}
+
+QMessageBox QPushButton {
+    background-color: #2563eb;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    min-width: 80px;
+}
+
+QMessageBox QPushButton:hover {
+    background-color: #1d4ed8;
+}

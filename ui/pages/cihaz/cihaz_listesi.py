@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView,
@@ -16,8 +16,8 @@ S = ThemeManager.get_all_component_styles()
 
 class CihazListesiPage(QWidget):
     # Sinyaller
-    edit_requested = Signal(dict)  # DÃ¼zenleme iÃ§in veri gÃ¶nderir
-    add_requested = Signal()       # Yeni ekleme isteÄŸi
+    edit_requested = Signal(dict)  # Düzenleme için veri gönderir
+    add_requested = Signal()       # Yeni ekleme isteği
     periodic_maintenance_requested = Signal(dict)
 
     def __init__(self, db=None, parent=None):
@@ -30,7 +30,7 @@ class CihazListesiPage(QWidget):
         self._connect_signals()
 
     def _setup_ui(self):
-        # Ana Layout (Yatay: Liste | ArÄ±za Paneli)
+        # Ana Layout (Yatay: Liste | Arıza Paneli)
         self.root_layout = QHBoxLayout(self)
         self.root_layout.setContentsMargins(0, 0, 0, 0)
         self.root_layout.setSpacing(0)
@@ -41,7 +41,7 @@ class CihazListesiPage(QWidget):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(15)
 
-        # â”€â”€ FÄ°LTRE PANELÄ° â”€â”€
+        # ── FİLTRE PANELİ ──
         filter_frame = QFrame()
         filter_frame.setStyleSheet(S["filter_panel"])
         fl = QHBoxLayout(filter_frame)
@@ -50,32 +50,32 @@ class CihazListesiPage(QWidget):
 
         # Cihaz Tipi Filtresi
         self.cmb_cihaz_tipi = QComboBox()
-        self.cmb_cihaz_tipi.setPlaceholderText("TÃ¼m Tipler")
+        self.cmb_cihaz_tipi.setPlaceholderText("Tüm Tipler")
         self.cmb_cihaz_tipi.setStyleSheet(S["combo"])
         self.cmb_cihaz_tipi.setFixedWidth(200)
-        self.cmb_cihaz_tipi.addItem("TÃ¼m Tipler")
+        self.cmb_cihaz_tipi.addItem("Tüm Tipler")
         fl.addWidget(self.cmb_cihaz_tipi)
 
         # Kaynak Filtresi
         self.cmb_kaynak = QComboBox()
-        self.cmb_kaynak.setPlaceholderText("TÃ¼m Kaynaklar")
+        self.cmb_kaynak.setPlaceholderText("Tüm Kaynaklar")
         self.cmb_kaynak.setStyleSheet(S["combo"])
         self.cmb_kaynak.setFixedWidth(200)
-        self.cmb_kaynak.addItem("TÃ¼m Kaynaklar")
+        self.cmb_kaynak.addItem("Tüm Kaynaklar")
         fl.addWidget(self.cmb_kaynak)
 
         # Birim Filtresi
         self.cmb_birim = QComboBox()
-        self.cmb_birim.setPlaceholderText("TÃ¼m Birimler")
+        self.cmb_birim.setPlaceholderText("Tüm Birimler")
         self.cmb_birim.setStyleSheet(S["combo"])
         self.cmb_birim.setFixedWidth(200)
-        self.cmb_birim.addItem("TÃ¼m Birimler")
+        self.cmb_birim.addItem("Tüm Birimler")
         fl.addWidget(self.cmb_birim)
 
         fl.addStretch()
 
         # Yenile Butonu
-        self.btn_refresh = QPushButton("âŸ³ Yenile")
+        self.btn_refresh = QPushButton("⟳ Yenile")
         self.btn_refresh.setToolTip("Listeyi Yenile")
         self.btn_refresh.setFixedSize(100, 36)
         self.btn_refresh.setCursor(QCursor(Qt.PointingHandCursor))
@@ -83,7 +83,7 @@ class CihazListesiPage(QWidget):
         fl.addWidget(self.btn_refresh)
 
         # Kapat Butonu
-        self.btn_kapat = QPushButton("âœ• Kapat")
+        self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Kapat")
         self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
@@ -92,12 +92,12 @@ class CihazListesiPage(QWidget):
 
         layout.addWidget(filter_frame)
 
-        # â”€â”€ TABLO â”€â”€
+        # ── TABLO ──
         self.table = QTableWidget()
         self.table.setColumnCount(7)
         self.table.setHorizontalHeaderLabels([
             "Cihaz ID", "Marka", "Model", "Seri No", 
-            "Birim", "Durum", "Son Ä°ÅŸlem"
+            "Birim", "Durum", "Son İşlem"
         ])
         self.table.verticalHeader().setVisible(False)
         self.table.setAlternatingRowColors(True)
@@ -105,7 +105,7 @@ class CihazListesiPage(QWidget):
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setStyleSheet(S["table"])
         
-        # Header ayarlarÄ±
+        # Header ayarları
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Stretch)
         header.setSectionResizeMode(0, QHeaderView.ResizeToContents) # ID
@@ -113,7 +113,7 @@ class CihazListesiPage(QWidget):
 
         layout.addWidget(self.table)
 
-        # â”€â”€ ALT PANEL â”€â”€
+        # ── ALT PANEL ──
         footer = QHBoxLayout()
         
         self.lbl_count = QLabel("Toplam: 0 cihaz")
@@ -122,7 +122,7 @@ class CihazListesiPage(QWidget):
         
         footer.addStretch()
 
-        self.btn_new = QPushButton("â• YENÄ° CÄ°HAZ EKLE")
+        self.btn_new = QPushButton("➕ YENİ CİHAZ EKLE")
         self.btn_new.setStyleSheet(S["action_btn"])
         self.btn_new.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_new.setFixedHeight(40)
@@ -133,7 +133,7 @@ class CihazListesiPage(QWidget):
         
         self.root_layout.addWidget(self.list_container, 1)
 
-        # â”€â”€ SAÄ PANEL (ArÄ±za Ekle) â”€â”€
+        # ── SAĞ PANEL (Arıza Ekle) ──
         self.ariza_panel = ArizaEklePanel(db=self._db, parent=self)
         self.ariza_panel.setVisible(False)
         self.ariza_panel.setStyleSheet("border-left: 1px solid rgba(255, 255, 255, 0.1); background-color: #16172b;")
@@ -183,15 +183,15 @@ class CihazListesiPage(QWidget):
                     combo.setCurrentIndex(0)
                 combo.blockSignals(False)
 
-            populate(self.cmb_birim, birimler, "TÃ¼m Birimler")
-            populate(self.cmb_cihaz_tipi, tipler, "TÃ¼m Tipler")
-            populate(self.cmb_kaynak, kaynaklar, "TÃ¼m Kaynaklar")
+            populate(self.cmb_birim, birimler, "Tüm Birimler")
+            populate(self.cmb_cihaz_tipi, tipler, "Tüm Tipler")
+            populate(self.cmb_kaynak, kaynaklar, "Tüm Kaynaklar")
 
             self._filter_table()
             
         except Exception as e:
-            logger.error(f"Cihaz listesi yÃ¼kleme hatasÄ±: {e}")
-            QMessageBox.critical(self, "Hata", f"Veri yÃ¼klenirken hata oluÅŸtu: {e}")
+            logger.error(f"Cihaz listesi yükleme hatası: {e}")
+            QMessageBox.critical(self, "Hata", f"Veri yüklenirken hata oluştu: {e}")
 
     def _filter_table(self):
         filter_tip = self.cmb_cihaz_tipi.currentText()
@@ -201,13 +201,13 @@ class CihazListesiPage(QWidget):
         filtered = []
         for row in self._all_data:
             # Cihaz Tipi
-            if filter_tip != "TÃ¼m Tipler" and str(row.get("CihazTipi", "")) != filter_tip:
+            if filter_tip != "Tüm Tipler" and str(row.get("CihazTipi", "")) != filter_tip:
                 continue
             # Kaynak
-            if filter_kaynak != "TÃ¼m Kaynaklar" and str(row.get("Kaynak", "")) != filter_kaynak:
+            if filter_kaynak != "Tüm Kaynaklar" and str(row.get("Kaynak", "")) != filter_kaynak:
                 continue
             # Birim filtre
-            if filter_birim != "TÃ¼m Birimler" and str(row.get("Birim", "")) != filter_birim:
+            if filter_birim != "Tüm Birimler" and str(row.get("Birim", "")) != filter_birim:
                 continue
                 
             filtered.append(row)
@@ -241,10 +241,10 @@ class CihazListesiPage(QWidget):
                 
             self.table.setItem(r, 5, item_durum)
             
-            # Son Ä°ÅŸlem (Placeholder)
+            # Son İşlem (Placeholder)
             self.table.setItem(r, 6, QTableWidgetItem("-"))
             
-            # SatÄ±r verisini sakla
+            # Satır verisini sakla
             self.table.item(r, 0).setData(Qt.UserRole, row)
 
         self.lbl_count.setText(f"Toplam: {len(data)} cihaz")
@@ -264,17 +264,17 @@ class CihazListesiPage(QWidget):
         if not idx.isValid():
             return
             
-        edit_action = QAction("âœï¸ DÃ¼zenle", self)
+        edit_action = QAction("✏️ Düzenle", self)
         edit_action.triggered.connect(lambda: self._on_row_double_clicked(idx))
         menu.addAction(edit_action)
         
         menu.addSeparator()
         
-        ariza_action = QAction("âš ï¸ ArÄ±za Bildir", self)
+        ariza_action = QAction("⚠️ Arıza Bildir", self)
         ariza_action.triggered.connect(lambda: self._open_ariza_panel(idx))
         menu.addAction(ariza_action)
 
-        bakim_action = QAction("ğŸ—“ï¸ Periyodik BakÄ±m Ekle", self)
+        bakim_action = QAction("🗓️ Periyodik Bakım Ekle", self)
         bakim_action.triggered.connect(lambda: self._request_periodic_maintenance(idx))
         menu.addAction(bakim_action)
               
@@ -311,8 +311,8 @@ class CihazListesiPage(QWidget):
         cihaz_id = data.get("Cihazid")
         
         reply = QMessageBox.question(
-            self, "Silme OnayÄ±", 
-            f"{cihaz_id} ID'li cihazÄ± silmek istediÄŸinize emin misiniz?",
+            self, "Silme Onayı", 
+            f"{cihaz_id} ID'li cihazı silmek istediğinize emin misiniz?",
             QMessageBox.Yes | QMessageBox.No
         )
         
@@ -324,9 +324,9 @@ class CihazListesiPage(QWidget):
                 repo.delete(cihaz_id)
                 
                 self.load_data()
-                QMessageBox.information(self, "BaÅŸarÄ±lÄ±", "Cihaz silindi.")
+                QMessageBox.information(self, "Başarılı", "Cihaz silindi.")
             except Exception as e:
-                logger.error(f"Cihaz silme hatasÄ±: {e}")
-                QMessageBox.critical(self, "Hata", f"Silme iÅŸlemi baÅŸarÄ±sÄ±z: {e}")
+                logger.error(f"Cihaz silme hatası: {e}")
+                QMessageBox.critical(self, "Hata", f"Silme işlemi başarısız: {e}")
 
 

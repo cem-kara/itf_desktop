@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import os
 import uuid
 from datetime import date, datetime
@@ -321,7 +321,7 @@ class SaglikTakipPage(QWidget):
             self._all_rows = self._build_personel_list_rows(all_personel)
             self._fill_filter_combos()
             self._apply_filters()
-            logger.info(f"Saglik takip yÃ¼klendi: {len(self._all_rows)} kayit")
+            logger.info(f"Saglik takip yüklendi: {len(self._all_rows)} kayit")
         except Exception as exc:
             logger.error(f"Saglik takip yukleme hatasi: {exc}")
 

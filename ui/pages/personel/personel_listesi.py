@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 from PySide6.QtCore import Qt, QSortFilterProxyModel, QModelIndex, QAbstractTableModel, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
@@ -12,7 +12,7 @@ from core.date_utils import parse_date, to_db_date
 from ui.theme_manager import ThemeManager
 
 
-# â”€â”€â”€ Tablo sütun tanımları â”€â”€â”€
+# ─── Tablo sütun tanımları ───
 COLUMNS = [
     ("KimlikNo",         "TC Kimlik No",   120),
     ("AdSoyad",          "Ad Soyad",       160),
@@ -24,7 +24,7 @@ COLUMNS = [
     ("Durum",            "Durum",            80),
 ]
 
-# â”€â”€â”€ MERKEZİ STIL YÃ–NETIMI â”€â”€â”€
+# ─── MERKEZİ STIL YÖNETIMI ───
 # Tüm stiller merkezi ThemeManager'dan alınıyor
 STYLES = ThemeManager.get_all_component_styles()
 
@@ -36,7 +36,7 @@ DURUM_COLORS = {
 }
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ═══════════════════════════════════════════════
 
 class PersonelTableModel(QAbstractTableModel):
 
@@ -121,7 +121,7 @@ class PersonelListesiPage(QWidget):
         main.setContentsMargins(20, 12, 20, 12)
         main.setSpacing(12)
 
-        # â”€â”€ 1. FILTER PANEL (tek satır) â”€â”€
+        # ── 1. FILTER PANEL (tek satır) ──
         filter_frame = QFrame()
         filter_frame.setStyleSheet(STYLES["filter_panel"])
         fp = QHBoxLayout(filter_frame)
@@ -209,7 +209,7 @@ class PersonelListesiPage(QWidget):
 
         main.addWidget(filter_frame)
 
-        # â”€â”€ 2. TABLO â”€â”€
+        # ── 2. TABLO ──
         self._model = PersonelTableModel()
         self._proxy = QSortFilterProxyModel()
         self._proxy.setSourceModel(self._model)
@@ -240,7 +240,7 @@ class PersonelListesiPage(QWidget):
 
         main.addWidget(self.table, 1)
 
-        # â”€â”€ 3. FOOTER â”€â”€
+        # ── 3. FOOTER ──
         footer = QHBoxLayout()
         footer.setSpacing(8)
 
@@ -266,7 +266,7 @@ class PersonelListesiPage(QWidget):
         """)
         footer.addWidget(self.progress)
 
-        self.btn_excel = QPushButton("ğŸ“¥ Excel'e Aktar")
+        self.btn_excel = QPushButton("📥 Excel'e Aktar")
         self.btn_excel.setStyleSheet(STYLES["excel_btn"])
         self.btn_excel.setFixedHeight(28)
         self.btn_excel.setCursor(QCursor(Qt.PointingHandCursor))
@@ -283,7 +283,7 @@ class PersonelListesiPage(QWidget):
         self.btn_yenile.clicked.connect(self.load_data)
         self.table.doubleClicked.connect(self._on_row_double_click)
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
 
     def load_data(self):
         if not self._db:
@@ -437,9 +437,9 @@ class PersonelListesiPage(QWidget):
             return self._model.get_row(source_idx.row())
         return None
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    #  SAÄ TIKLAMA MENÜSÜ
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
+    #  SAĞ TIKLAMA MENÜSÜ
+    # ═══════════════════════════════════════════
 
     def _show_context_menu(self, pos):
         index = self.table.indexAt(pos)
@@ -459,28 +459,28 @@ class PersonelListesiPage(QWidget):
         menu.setStyleSheet(STYLES["context_menu"])
 
         # Detay aç
-        act_detay = menu.addAction("ğŸ“‹ Detay Görüntüle")
+        act_detay = menu.addAction("📋 Detay Görüntüle")
         act_detay.triggered.connect(lambda: self.table.doubleClicked.emit(index))
 
         menu.addSeparator()
 
         # İzin Girişi
-        act_izin = menu.addAction("ğŸ–ï¸ İzin Girişi")
+        act_izin = menu.addAction("🏖️ İzin Girişi")
         act_izin.triggered.connect(lambda: self._izin_girisi(row_data))
 
         menu.addSeparator()
 
         # Durum değiştirme
         if durum != "Aktif":
-            act_aktif = menu.addAction("âœ… Aktif Yap")
+            act_aktif = menu.addAction("✅ Aktif Yap")
             act_aktif.triggered.connect(lambda: self._change_durum(tc, ad, "Aktif"))
 
         if durum != "Pasif":
-            act_pasif = menu.addAction("â›” Pasif Yap")
+            act_pasif = menu.addAction("⛔ Pasif Yap")
             act_pasif.triggered.connect(lambda: self._change_durum(tc, ad, "Pasif"))
 
         if durum != "İzinli":
-            act_izinli = menu.addAction("â¸ï¸ İzinli Yap")
+            act_izinli = menu.addAction("⏸️ İzinli Yap")
             act_izinli.triggered.connect(lambda: self._change_durum(tc, ad, "İzinli"))
 
         menu.exec(self.table.viewport().mapToGlobal(pos))
@@ -500,7 +500,7 @@ class PersonelListesiPage(QWidget):
             registry = get_registry(self._db)
             repo = registry.get("Personel")
             repo.update(tc, {"Durum": yeni_durum})
-            logger.info(f"Durum değiştirildi: {tc} â†’ {yeni_durum}")
+            logger.info(f"Durum değiştirildi: {tc} → {yeni_durum}")
             self.load_data()
         except Exception as e:
             logger.error(f"Durum değiştirme hatası: {e}")
