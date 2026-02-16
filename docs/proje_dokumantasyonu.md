@@ -124,7 +124,6 @@ Kapsam:
 UI sayfalari:
 - `ui/pages/personel/personel_listesi.py`
 - `ui/pages/personel/personel_ekle.py`
-- `ui/pages/personel/personel_detay.py`
 - `ui/pages/personel/izin_giris.py`
 - `ui/pages/personel/izin_takip.py`
 - `ui/pages/personel/fhsz_yonetim.py`

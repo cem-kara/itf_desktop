@@ -287,7 +287,6 @@ itf_desktop/
 │       └── personel/        # Personel modülü
 │           ├── personel_listesi.py
 │           ├── personel_ekle.py
-│           ├── personel_detay.py
 │           ├── izin_giris.py
 │           ├── izin_takip.py
 │           ├── fhsz_yonetim.py

@@ -21,6 +21,8 @@ from ui.theme_manager import ThemeManager
 from core.personel_ozet_servisi import personel_ozet_getir
 from core.logger import logger
 from ui.components.personel_overview_panel import PersonelOverviewPanel
+from ui.components.personel_izin_panel import PersonelIzinPanel
+from ui.components.personel_saglik_panel import PersonelSaglikPanel
 
 # Stil tanımları
 S = ThemeManager.get_all_component_styles()
@@ -106,10 +108,27 @@ class PersonelMerkezPage(QWidget):
         self._add_nav_btn("Genel Bakış", "GENEL", True)
         self._add_nav_btn("İzinler", "IZIN")
         self._add_nav_btn("Sağlık Takip", "SAGLIK")
-        self._add_nav_btn("FHSZ / Puantaj", "FHSZ")
         self._add_nav_btn("İşten Ayrılış", "AYRILIS")
         
         self.nav_layout.addStretch()
+
+        # Geri Butonu
+        btn_geri = QPushButton("← Listeye Dön")
+        btn_geri.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_geri.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(255, 255, 255, 0.05);
+                color: #aab0c4;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 6px;
+                padding: 5px 12px;
+                font-weight: bold;
+            }
+            QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); color: white; }
+        """)
+        btn_geri.clicked.connect(self.kapat_istegi.emit)
+        self.nav_layout.addWidget(btn_geri)
+
         left_layout.addWidget(self.nav_frame)
         
         # İçerik Alanı (Stacked)
@@ -237,6 +256,9 @@ class PersonelMerkezPage(QWidget):
                     lbl.setWordWrap(True)
                     self.alert_container.addWidget(lbl)
                     
+            # Veri yüklendikten sonra başlangıç sekmesini yükle
+            self._switch_tab("GENEL")
+
         except Exception as e:
             logger.error(f"Personel merkez veri yükleme hatası: {e}")
 
@@ -274,23 +296,11 @@ class PersonelMerkezPage(QWidget):
         widget = None
         try:
             if code == "IZIN":
-                from ui.pages.personel.izin_takip import IzinTakipPage
-                widget = IzinTakipPage(self.db)
+                widget = PersonelIzinPanel(self.db, self.personel_id)
                 # Eğer sayfa destekliyorsa sadece bu personeli filtrele
-                if hasattr(widget, "filter_by_personel"):
-                    widget.filter_by_personel(self.personel_id)
             
             elif code == "SAGLIK":
-                from ui.pages.personel.saglik_takip import SaglikTakipPage
-                widget = SaglikTakipPage(self.db)
-                if hasattr(widget, "filter_by_personel"):
-                    widget.filter_by_personel(self.personel_id)
-            
-            elif code == "FHSZ":
-                from ui.pages.personel.fhsz_yonetim import FHSZYonetimPage
-                widget = FHSZYonetimPage(self.db)
-                if hasattr(widget, "filter_by_personel"):
-                    widget.filter_by_personel(self.personel_id)
+                widget = PersonelSaglikPanel(self.db, self.personel_id)
             
             elif code == "AYRILIS":
                 from ui.pages.personel.isten_ayrilik import IstenAyrilikPage

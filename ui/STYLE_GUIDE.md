@@ -16,7 +16,6 @@ ui/
 └── pages/
     └── personel/
         ├── personel_listesi.py    # ✅ Merkezi theme'i kullanan örnek
-        ├── personel_detay.py      # ✅ Merkezi theme'i kullanan örnek
         ├── personel_ekle.py       # ✅ Merkezi theme'i kullanan örnek
         ├── izin_giris.py          # ✅ Merkezi theme'i kullanan örnek
         └── izin_takip.py          # ✅ Merkezi theme'i kullanan örnek
