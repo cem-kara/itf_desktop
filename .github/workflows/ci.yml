@@ -29,7 +29,7 @@ jobs:
           black --check . || echo "Black formatting needed. Run: black ."
 
       - name: Flake8
-        run: flake8 . --max-line-length=100
+        run: flake8 . --max-line-length=100 --select=E9,F63,F7,F82 --show-source --statistics
 
       - name: Mypy
         run: mypy --config-file mypy.ini
