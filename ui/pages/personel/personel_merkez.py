@@ -10,9 +10,10 @@ Yapı:
 4. Right Panel: Kritik bildirimler ve hızlı aksiyonlar
 """
 import os
-from PySide6.QtWidgets import (
+from PySide6.QtWidgets import ( # noqa
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QFrame, QStackedWidget, QScrollArea, QSizePolicy, QLayout
+    QFrame, QStackedWidget, QScrollArea, QSizePolicy, QLayout,
+    QMessageBox
 )
 from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QIcon, QColor, QCursor, QPixmap
@@ -23,6 +24,8 @@ from core.logger import logger
 from ui.components.personel_overview_panel import PersonelOverviewPanel
 from ui.components.personel_izin_panel import PersonelIzinPanel
 from ui.components.personel_saglik_panel import PersonelSaglikPanel
+from ui.components.hizli_izin_giris import HizliIzinGirisDialog
+from ui.components.hizli_saglik_giris import HizliSaglikGirisDialog
 
 # Stil tanımları
 S = ThemeManager.get_all_component_styles()
@@ -37,6 +40,7 @@ class PersonelMerkezPage(QWidget):
         self.personel_id = str(personel_id)
         self.ozet_data = {}
         
+        self._initial_load_complete = False
         # Modül cache (açılan sayfaları tekrar oluşturmamak için)
         self.modules = {}
         
@@ -160,8 +164,8 @@ class PersonelMerkezPage(QWidget):
         lbl_aksiyon.setStyleSheet("color: #6bd3ff; font-weight: bold; font-size: 12px; letter-spacing: 1px;")
         right_layout.addWidget(lbl_aksiyon)
         
-        self._add_action_btn(right_layout, "➕ İzin Ekle", lambda: self._switch_tab("IZIN"))
-        self._add_action_btn(right_layout, "🩺 Muayene Ekle", lambda: self._switch_tab("SAGLIK"))
+        self._add_action_btn(right_layout, "➕ İzin Ekle", self._hizli_izin_gir)
+        self._add_action_btn(right_layout, "🩺 Muayene Ekle", self._hizli_saglik_gir)
         
         right_layout.addStretch()
         
@@ -212,6 +216,28 @@ class PersonelMerkezPage(QWidget):
         btn.clicked.connect(callback)
         layout.addWidget(btn)
 
+    def _hizli_izin_gir(self):
+        """Hızlı izin girişi için bir dialog açar."""
+        if not self.ozet_data.get("personel"):
+            QMessageBox.warning(self, "Hata", "Personel verisi yüklenemedi.")
+            return
+
+        dialog = HizliIzinGirisDialog(self.db, self.ozet_data["personel"], self)
+        # İzin kaydedildiğinde, bu ana sayfadaki verileri (özet, panel) yenile
+        dialog.izin_kaydedildi.connect(self._load_data)
+        dialog.exec()
+
+    def _hizli_saglik_gir(self):
+        """Hızlı sağlık muayene girişi için bir dialog açar."""
+        if not self.ozet_data.get("personel"):
+            QMessageBox.warning(self, "Hata", "Personel verisi yüklenemedi.")
+            return
+
+        dialog = HizliSaglikGirisDialog(self.db, self.ozet_data["personel"], self)
+        # Kayıt başarılı olduğunda verileri yenile
+        dialog.saglik_kaydedildi.connect(self._load_data)
+        dialog.exec()
+
     def _load_data(self):
         """Verileri servisten çek ve UI güncelle."""
         try:
@@ -256,8 +282,15 @@ class PersonelMerkezPage(QWidget):
                     lbl.setWordWrap(True)
                     self.alert_container.addWidget(lbl)
                     
-            # Veri yüklendikten sonra başlangıç sekmesini yükle
-            self._switch_tab("GENEL")
+            # Eğer ilk yükleme değilse, mevcut modülü yenile.
+            # İlk yüklemede ise varsayılan sekmeyi aç.
+            if self._initial_load_complete:
+                current_module = self.content_stack.currentWidget()
+                if current_module and hasattr(current_module, "load_data"):
+                    current_module.load_data()
+            else:
+                self._switch_tab("GENEL")
+                self._initial_load_complete = True
 
         except Exception as e:
             logger.error(f"Personel merkez veri yükleme hatası: {e}")

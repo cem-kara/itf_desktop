@@ -316,13 +316,6 @@ class IstenAyrilikPage(QWidget):
         hdr.setContentsMargins(16, 10, 16, 10)
         hdr.setSpacing(12)
 
-        btn_back = QPushButton("✕ İptal")
-        btn_back.setStyleSheet(S["back_btn"])
-        btn_back.setCursor(QCursor(Qt.PointingHandCursor))
-        btn_back.setFixedHeight(34)
-        btn_back.clicked.connect(self._go_back)
-        hdr.addWidget(btn_back)
-
         ad = self._data.get("AdSoyad", "")
         lbl = QLabel(f"⚠️  İşten Ayrılış — {ad}")
         lbl.setStyleSheet(S["header_name"])
