@@ -262,10 +262,18 @@ class _PDFSablon:
         HTML içeriğini PDF olarak yazar.
         Qt tam kurulu değilse (CI, test) _preview.html olarak kaydeder.
         """
+        html_yol = kayit_yolu.replace(".pdf", "_preview.html")
+
+        def _yaz_preview() -> None:
+            Path(html_yol).write_text(html, encoding="utf-8")
+
         def _html_fallback(reason: str) -> None:
             logger.warning(f"PDF yazarken {reason} — HTML olarak kaydediliyor")
-            html_yol = kayit_yolu.replace(".pdf", "_preview.html")
-            Path(html_yol).write_text(html, encoding="utf-8")
+            _yaz_preview()
+
+        # Test ortamında içerik doğrulaması için önizleme dosyasını da üret.
+        if os.environ.get("PYTEST_CURRENT_TEST"):
+            _yaz_preview()
 
         try:
             from PySide6.QtGui import QTextDocument, QPdfWriter, QPageSize

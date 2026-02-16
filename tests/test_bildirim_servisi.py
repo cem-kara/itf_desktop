@@ -121,7 +121,7 @@ class TestEkleMantigi:
 
         from core.bildirim_servisi import BildirimWorker
         # __init__ çağırma (QThread), sadece metodu test et
-        w = object.__new__(BildirimWorker)
+        w = BildirimWorker.__new__(BildirimWorker)
         return w
 
     def test_sifir_sayi_ekleme_yapmaz(self):
