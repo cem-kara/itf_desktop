@@ -156,6 +156,37 @@ Başarılıysa, `token.json` otomatik oluşturulacak.
 }
 ```
 
+### Offline / Online Mod (Yeni)
+
+Uygulama artık çalışma modunu `online` veya `offline` olarak belirleyebilir.
+
+- `online`: Google Sheets/Drive ve sync özellikleri aktiftir.
+- `offline`: Bulut işlemleri devre dışıdır, yerel SQLite akışı devam eder.
+
+Mod belirleme önceliği:
+
+1. `ITF_APP_MODE` ortam değişkeni (`online` / `offline`)
+2. `ayarlar.json` içindeki `app_mode`
+3. `database/credentials.json` yoksa otomatik `offline`
+4. Varsayılan `online`
+
+`ayarlar.json` örneği:
+
+```json
+{
+  "app_mode": "offline",
+  "AUTO_SYNC": false,
+  "SYNC_INTERVAL_MIN": 15
+}
+```
+
+Geçiş durumu (2026-02-17):
+
+- Tamamlandı (Aşama 1): `AppConfig` ile mode çözümleme ve persist altyapısı.
+- Tamamlandı (Aşama 2): `CloudAdapter` (online/offline) ve DI erişimi.
+- Başlatıldı: Offline modda `main_window` sync davranışı devre dışı bırakma.
+- Planlanan: Sync servisi ve tüm Google çağrılarının adapter üzerinden taşınması.
+
 ---
 
 ## 🚀 Çalıştırma

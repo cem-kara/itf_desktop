@@ -378,10 +378,10 @@ class RaporOlusturucuThread(QThread):
             self.islem_bitti.emit()
 
     def _yukle_drive(self, dosya_adi: str):
+        db = None
         try:
             from database.sqlite_manager import SQLiteManager
-            from core.di import get_registry
-            from database.google import GoogleDriveService
+            from core.di import get_registry, get_cloud_adapter
 
             db       = SQLiteManager()
             registry = get_registry(db)
@@ -392,17 +392,18 @@ class RaporOlusturucuThread(QThread):
                  if r.get("Kod") == "Sistem_DriveID" and r.get("MenuEleman") == "RKE_Raporlar"),
                 ""
             )
-            db.close()
-
-            drive = GoogleDriveService()
-            link  = drive.upload_file(dosya_adi, parent_folder_id=folder_id)
+            cloud = get_cloud_adapter()
+            link  = cloud.upload_file(dosya_adi, parent_folder_id=folder_id)
             if link:
                 self.log_mesaji.emit("BASARILI: Drive'a yuklendi.")
             else:
-                self.log_mesaji.emit("UYARI: Drive yukleme basarisiz.")
+                self.log_mesaji.emit("UYARI: Drive yukleme atlandi/basarisiz (offline olabilir).")
         except Exception as e:
             self.log_mesaji.emit(f"UYARI: Drive hatasi: {e}")
             logger.warning(f"Drive yükleme hatası: {e}")
+        finally:
+            if db:
+                db.close()
 
 
 # ═══════════════════════════════════════════════

@@ -13,6 +13,11 @@ Tum guncel durum, acik maddeler ve operasyon notlari burada tutulur.
   - `Personel_Saglik_Takip` tablo contract testi
 - Merkezi contract smoke testi aktif: `tests/test_contract_smoke.py`
 - Sync hata standardizasyonu aktif: `database/sync_service.py` icindeki `SyncBatchError`
+- Offline/Online mod gecisi baslatildi:
+  - `core/config.py` ile `app_mode` cozumleme (env + ayar + fallback)
+  - `database/cloud_adapter.py` eklendi (online/offline adapter)
+  - `core/di.py` uzerinden `get_cloud_adapter()` aktif
+  - `ui/main_window.py` offline modda sync baslatmiyor
 
 ## 2) Planlanan Durum (Acik Isler)
 
@@ -20,6 +25,10 @@ Tum guncel durum, acik maddeler ve operasyon notlari burada tutulur.
 
 1. Ek entegrasyon/smoke testleri genisletilecek.
 2. Operasyonel gorunurluk (sync event izleme) daha merkezi hale getirilecek.
+3. Offline/Online geciste kalan fazlar tamamlanacak:
+   - sync servislerinin adapter-aware refactor'u
+   - UI'deki dogrudan Google cagri noktalarinin adapter'a alinmasi
+   - ayarlar ekranindan mode yonetimi
 
 ## 3) Test ve Kalite Ozet
 
@@ -64,6 +73,7 @@ Tum guncel durum, acik maddeler ve operasyon notlari burada tutulur.
 
 - 2026-02-16: Operasyon ve raporlama notlari tek dosyada birlestirildi.
 - 2026-02-16: Rapor servisi, bildirim paneli, yedek yonetimi ve dashboard metrik guncellemeleri eklendi.
+- 2026-02-17: Offline/Online mod gecisinin Asama 1-2 altyapisi eklendi (`AppConfig app_mode`, `CloudAdapter`, DI baglantisi).
 
 ## 7) 2026-02-16 Operasyon Ekleri
 

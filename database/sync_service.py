@@ -9,6 +9,7 @@ from core.logger import (
 from database.gsheet_manager import GSheetManager
 from database.table_config import TABLES
 from core.date_utils import looks_like_date_column, normalize_date_fields
+from core.config import AppConfig
 
 
 class SyncBatchError(RuntimeError):
@@ -74,6 +75,10 @@ class SyncService:
         """
         Tüm senkronize edilebilir tabloları sırayla işler.
         """
+        if not AppConfig.is_online_mode():
+            logger.info("Offline mod: sync_all atlandi")
+            return
+
         syncable = [
             (name, cfg) for name, cfg in TABLES.items()
             if cfg.get("sync", True) and cfg.get("pk") is not None
@@ -299,8 +304,7 @@ class SyncService:
             log_sync_step(table_name, "pull_only_start")
 
             # ── 1. Google Sheets'i oku ──
-            from database.google import get_worksheet
-            ws = get_worksheet(table_name)
+            ws = self.gsheet.get_worksheet(table_name)
 
             if not ws:
                 logger.warning(f"  {table_name} worksheet bulunamadı, atlanıyor")
@@ -422,3 +426,5 @@ class SyncService:
         except Exception as e:
             log_sync_error(table_name, "pull_only", e)
             raise
+
+

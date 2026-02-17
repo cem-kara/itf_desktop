@@ -11,12 +11,21 @@ Bu dokuman, projenin temel yapisini ve operasyonel kullanim basliklarini tek nok
 - Senkronizasyon akisi `database/sync_service.py` + `database/sync_worker.py` uzerinden calisiyor
 - Sozlesme guvencesi icin merkezi smoke test mevcut: `tests/test_contract_smoke.py`
 - `Personel_Saglik_Takip` tablo contract testi mevcut: `tests/test_personel_saglik_takip_contract.py`
+- Offline/Online mode altyapisi baslatildi:
+  - `core/config.py` icinde `app_mode` cozumleme
+  - `database/cloud_adapter.py` (online/offline adapter)
+  - `core/di.py` uzerinden adapter erisimi
+  - `ui/main_window.py` offline modda sync disi davranis
 
 ### Planlanan Durum
 
 - Dokumantasyon ve operasyon notlarinin tek aktif dosyada birlestirilmesi
 - Ek entegrasyon/smoke testleriyle kritik akislarda daha erken regress yakalama
 - Sync ve operasyonel hata gorunurlugu icin log/panel tarafinda daha tutarli event izleme
+- Offline/Online gecisin kalan fazlarini tamamlama:
+  - sync katmanini adapter-aware hale getirme
+  - UI'deki dogrudan Google cagri noktalarini adapter'a tasima
+  - ayarlar ekranindan mode yonetimi
 
 ## 1) Proje Ozeti
 
@@ -58,6 +67,17 @@ Not: `sync_status` ve `updated_at` gibi teknik kolonlar lokal takip icin kullani
 - Testleri calistirma: `pytest -q`
 - Migration sozlesmesi degisikliklerinde test beklentileri birlikte guncellenmelidir.
 - Tablo PK/sync kararlarinda `table_config` ve testler birlikte hizalanmalidir.
+
+## 6.1) Offline/Online Gecis Plani (2026-02-17)
+
+Fazlar:
+
+1. Faz 1 (tamamlandi): mode tanimi ve config cozumleme
+2. Faz 2 (tamamlandi): CloudAdapter arayuzu + online/offline implementasyon
+3. Faz 3 (planli): sync servislerinin adapter-aware refactor'u
+4. Faz 4 (planli): UI'deki GoogleDriveService kullanimlarinin adapter'a alinmasi
+5. Faz 5 (planli): ayarlar ekranindan mode secimi ve persist
+6. Faz 6 (planli): test + dokumantasyon tamamlayici guncellemeler
 
 ## 7) 2026-02-16 Guncelleme Eki
 

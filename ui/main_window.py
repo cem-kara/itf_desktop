@@ -470,6 +470,12 @@ class MainWindow(QMainWindow):
     # ── SENKRONİZASYON ──
 
     def _setup_sync(self):
+        if not AppConfig.is_online_mode():
+            self.sidebar.sync_btn.setEnabled(False)
+            self.sidebar.sync_btn.setText("  Offline Mod")
+            self.sidebar.set_sync_status("Offline mod", self.STATUS_SYNCING_COLOR)
+            self._set_sync_status_label("Offline mod", self.STATUS_SYNCING_COLOR)
+            return
         if AppConfig.AUTO_SYNC:
             QTimer.singleShot(3000, self._start_sync)
             self._sync_timer = QTimer(self)
@@ -477,6 +483,9 @@ class MainWindow(QMainWindow):
             self._sync_timer.start(AppConfig.SYNC_INTERVAL_MIN * 60 * 1000)
 
     def _start_sync(self):
+        if not AppConfig.is_online_mode():
+            logger.info("Sync atlandi: uygulama offline modda")
+            return
         if self._sync_worker and self._sync_worker.isRunning():
             logger.warning("Sync zaten çalışıyor, yeni sync atlanıyor")
             return

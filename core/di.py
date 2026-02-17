@@ -1,4 +1,5 @@
 from database.repository_registry import RepositoryRegistry
+from database.cloud_adapter import get_cloud_adapter as _get_cloud_adapter
 
 
 _fallback_registry_cache = {}
@@ -26,3 +27,10 @@ def get_registry(db):
         _fallback_registry_cache[id(db)] = registry
 
     return registry
+
+
+def get_cloud_adapter(mode=None):
+    """
+    Uygulama çalışma moduna göre cloud adapter döndürür.
+    """
+    return _get_cloud_adapter(mode=mode)

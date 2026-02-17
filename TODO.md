@@ -183,6 +183,26 @@ Pull-only tablolar artık:
 
 ---
 
+### 6.1) Offline / Online Mod Geçişi (Yeni)
+**Yapılacaklar**
+- İlk kurulum/ayar seviyesinde `app_mode` (`offline|online`) kararı.
+- Bulut erişimini tek arayüzde toplama (`CloudAdapter`).
+- Sync ve Google Drive çağrılarını adapter üstünden yürütme.
+- Offline modda UI davranışlarını kontrollü kapatma/fallback.
+
+**Durum (2026-02-17)**
+- [x] Aşama 1: `AppConfig` içine mode çözümleme eklendi.
+- [x] Aşama 1: `ITF_APP_MODE` + `ayarlar.json(app_mode)` + credentials fallback aktif.
+- [x] Aşama 2: `database/cloud_adapter.py` eklendi (`OnlineCloudAdapter`, `OfflineCloudAdapter`).
+- [x] Aşama 2: `core/di.py` içine `get_cloud_adapter()` eklendi.
+- [x] Aşama 2: `ui/main_window.py` offline modda sync başlatmayı engelliyor.
+- [ ] Aşama 3: `database/sync_service.py` ve `database/gsheet_manager.py` adapter-aware refactor.
+- [ ] Aşama 4: UI katmanındaki doğrudan `GoogleDriveService()` çağrılarının adapter’a taşınması.
+- [ ] Aşama 5: Ayarlar ekranından mode değişimi + kullanıcı akışı.
+- [ ] Aşama 6: Test ve dokümantasyon tamamlayıcıları.
+
+---
+
 ## P2 — Orta
 
 ### 7) Dokümantasyonu kodla senkronize et

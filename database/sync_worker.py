@@ -1,5 +1,6 @@
 from PySide6.QtCore import QThread, Signal
 from core.logger import logger, log_sync_error, get_user_friendly_error
+from core.config import AppConfig
 
 from database.sqlite_manager import SQLiteManager
 from core.di import get_registry
@@ -28,6 +29,11 @@ class SyncWorker(QThread):
         """
         Worker thread — tüm DB işlemleri burada başlar ve biter.
         """
+        if not AppConfig.is_online_mode():
+            logger.info("Offline mod: SyncWorker atlandi")
+            self.finished.emit()
+            return
+
         logger.info("=" * 60)
         logger.info("SYNC İŞLEMİ BAŞLADI")
         logger.info("=" * 60)
@@ -91,5 +97,6 @@ class SyncWorker(QThread):
         self._running = False
         self.quit()
         self.wait()
+
 
 

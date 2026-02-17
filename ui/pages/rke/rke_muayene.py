@@ -212,8 +212,8 @@ class KayitWorkerThread(QThread):
 
             # Drive yükleme
             if self._dosya_yolu:
-                from database.google import GoogleDriveService
-                drive = GoogleDriveService()
+                from core.di import get_cloud_adapter
+                cloud = get_cloud_adapter()
                 # Klasör ID'sini Sabitler'den al
                 all_sabit    = registry.get("Sabitler").get_all()
                 rke_folder   = next(
@@ -222,9 +222,11 @@ class KayitWorkerThread(QThread):
                      if r.get("Kod") == "Sistem_DriveID" and r.get("MenuEleman") == "RKE_Raporlar"),
                     ""
                 )
-                link = drive.upload_file(self._dosya_yolu, parent_folder_id=rke_folder)
+                link = cloud.upload_file(self._dosya_yolu, parent_folder_id=rke_folder)
                 if link:
                     self._veri["Rapor"] = link
+                else:
+                    logger.info("RKE Muayene: rapor yukleme atlandi/basarisiz (offline olabilir)")
 
             registry.get("RKE_Muayene").insert(self._veri)
 
@@ -282,8 +284,8 @@ class TopluKayitWorkerThread(QThread):
 
             dosya_link = ""
             if self._dosya_yolu:
-                from database.google import GoogleDriveService
-                drive        = GoogleDriveService()
+                from core.di import get_cloud_adapter
+                cloud        = get_cloud_adapter()
                 all_sabit    = registry.get("Sabitler").get_all()
                 rke_folder   = next(
                     (str(r.get("Aciklama", "")).strip()
@@ -291,7 +293,7 @@ class TopluKayitWorkerThread(QThread):
                      if r.get("Kod") == "Sistem_DriveID" and r.get("MenuEleman") == "RKE_Raporlar"),
                     ""
                 )
-                dosya_link = drive.upload_file(self._dosya_yolu, parent_folder_id=rke_folder) or ""
+                dosya_link = cloud.upload_file(self._dosya_yolu, parent_folder_id=rke_folder) or ""
 
             for ekipman_no in self._ekipmanlar:
                 item = self._ortak_veri.copy()

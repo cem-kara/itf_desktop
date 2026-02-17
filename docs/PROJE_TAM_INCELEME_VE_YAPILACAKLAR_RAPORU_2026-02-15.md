@@ -179,3 +179,12 @@ Bu dosya 15.02.2026 tarihli referans rapordur. Asagidaki maddeler, sonrasinda pr
 - `tests/test_bildirim_servisi.py`
 - `tests/test_yedek_yonetimi.py`
 - `tests/test_dashboard_worker.py`
+
+6. Offline/Online mode gecisi (yeni)
+- Asama 1 tamamlandi: `core/config.py` icinde `app_mode` cozumleme eklendi
+  - oncelik: env -> ayarlar.json -> credentials fallback -> default
+- Asama 2 tamamlandi: `database/cloud_adapter.py` ve DI baglantisi (`core/di.py`)
+- Offline modda sync davranisi `ui/main_window.py` tarafinda devre disi akisa alinmaya baslandi
+- Kalan fazlar:
+  - sync katmanini adapter-aware refactor
+  - UI'deki dogrudan GoogleDriveService cagri noktalarini adapter'a tasima
