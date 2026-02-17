@@ -19,6 +19,8 @@ from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QIcon, QColor, QCursor, QPixmap
 
 from ui.theme_manager import ThemeManager
+from ui.styles import Colors, DarkTheme
+from ui.styles.icons import IconRenderer
 from core.personel_ozet_servisi import personel_ozet_getir
 from core.logger import logger
 from ui.components.personel_overview_panel import PersonelOverviewPanel
@@ -43,13 +45,15 @@ class PersonelMerkezPage(QWidget):
         self._initial_load_complete = False
         # Modül cache (açılan sayfaları tekrar oluşturmamak için)
         self.modules = {}
+        # İşlem formu referansları
+        self._current_form = None
         
         self._setup_ui()
         self._load_data()
 
     def _setup_ui(self):
         """Ana iskelet kurulumu."""
-        self.setStyleSheet("background-color: #16172b; color: #e0e2ea;")
+        self.setStyleSheet(S["page"])
         
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -58,14 +62,14 @@ class PersonelMerkezPage(QWidget):
         # 1. HEADER (Sabit Üst Kart)
         self.header_frame = QFrame()
         self.header_frame.setFixedHeight(90)
-        self.header_frame.setStyleSheet("background-color: #1e202c; border-bottom: 1px solid #2d303e;")
+        self.header_frame.setStyleSheet(f"background-color: {DarkTheme.BG_SECONDARY}; border-bottom: 1px solid {DarkTheme.BORDER_PRIMARY};")
         header_layout = QHBoxLayout(self.header_frame)
         header_layout.setContentsMargins(24, 12, 24, 12)
         
         # Avatar / İsim Alanı
-        self.lbl_avatar = QLabel("👤")
+        self.lbl_avatar = QLabel("")
         self.lbl_avatar.setFixedSize(50, 50)
-        self.lbl_avatar.setStyleSheet("background: #2d303e; border-radius: 25px; font-size: 24px; qproperty-alignment: AlignCenter;")
+        self.lbl_avatar.setStyleSheet(f"background: {DarkTheme.BG_TERTIARY}; border-radius: 25px; font-size: 24px; qproperty-alignment: AlignCenter;")
         header_layout.addWidget(self.lbl_avatar)
         
         info_layout = QVBoxLayout()
@@ -73,7 +77,7 @@ class PersonelMerkezPage(QWidget):
         self.lbl_ad = QLabel("Yükleniyor...")
         self.lbl_ad.setStyleSheet("font-size: 18px; font-weight: bold; color: white;")
         self.lbl_detay = QLabel("...")
-        self.lbl_detay.setStyleSheet("color: #8b8fa3; font-size: 13px;")
+        self.lbl_detay.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 13px;")
         info_layout.addWidget(self.lbl_ad)
         info_layout.addWidget(self.lbl_detay)
         header_layout.addLayout(info_layout)
@@ -81,20 +85,21 @@ class PersonelMerkezPage(QWidget):
         header_layout.addStretch()
         
         # Kapat Butonu
-        btn_kapat = QPushButton("✕")
+        btn_kapat = QPushButton("Kapat")
         btn_kapat.setFixedSize(32, 32)
         btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
-        btn_kapat.setStyleSheet("background: transparent; color: #8b8fa3; font-size: 16px; border: none;")
+        btn_kapat.setStyleSheet(f"background: transparent; color: {DarkTheme.TEXT_MUTED}; font-size: 16px; border: none;")
         btn_kapat.clicked.connect(self.kapat_istegi.emit)
+        IconRenderer.set_button_icon(btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         header_layout.addWidget(btn_kapat)
         
         main_layout.addWidget(self.header_frame)
 
-        # 2. BODY (Nav + Content + RightPanel)
+        # 2. BODY (Nav+Content | Sağ Stacked Panel)
         body_layout = QHBoxLayout()
         body_layout.setSpacing(0)
         
-        # 2.1 SOL: Navigasyon + İçerik
+        # 2.1 SOL/ORTA: Navigasyon + İçerik
         left_container = QWidget()
         left_layout = QVBoxLayout(left_container)
         left_layout.setContentsMargins(0, 0, 0, 0)
@@ -103,7 +108,7 @@ class PersonelMerkezPage(QWidget):
         # Navigasyon Şeridi
         self.nav_frame = QFrame()
         self.nav_frame.setFixedHeight(45)
-        self.nav_frame.setStyleSheet("background-color: #1a1c28; border-bottom: 1px solid #2d303e;")
+        self.nav_frame.setStyleSheet(f"background-color: {DarkTheme.BG_PRIMARY}; border-bottom: 1px solid {DarkTheme.BORDER_PRIMARY};")
         self.nav_layout = QHBoxLayout(self.nav_frame)
         self.nav_layout.setContentsMargins(10, 0, 10, 0)
         self.nav_layout.setSpacing(20)
@@ -119,17 +124,7 @@ class PersonelMerkezPage(QWidget):
         # Geri Butonu
         btn_geri = QPushButton("← Listeye Dön")
         btn_geri.setCursor(QCursor(Qt.PointingHandCursor))
-        btn_geri.setStyleSheet("""
-            QPushButton {
-                background-color: rgba(255, 255, 255, 0.05);
-                color: #aab0c4;
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 6px;
-                padding: 5px 12px;
-                font-weight: bold;
-            }
-            QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); color: white; }
-        """)
+        btn_geri.setStyleSheet(S["back_btn"])
         btn_geri.clicked.connect(self.kapat_istegi.emit)
         self.nav_layout.addWidget(btn_geri)
 
@@ -141,48 +136,79 @@ class PersonelMerkezPage(QWidget):
         
         body_layout.addWidget(left_container, 1) # Esnek genişlik
         
-        # 2.2 SAĞ: Kritik Durumlar Paneli
-        self.right_panel = QFrame()
-        self.right_panel.setFixedWidth(280)
-        self.right_panel.setStyleSheet("background-color: #1a1c28; border-left: 1px solid #2d303e;")
-        right_layout = QVBoxLayout(self.right_panel)
-        right_layout.setContentsMargins(16, 20, 16, 20)
-        right_layout.setSpacing(15)
+        # 2.2 SAĞ: Stacked Panel (Durum Özeti | İşlem Formu)
+        self.right_panel_stack = QStackedWidget()
+        self.right_panel_stack.setFixedWidth(380)
+        
+        # Sayfa 0: Durum Özeti + Hızlı İşlemler
+        overview_page = QFrame()
+        overview_page.setStyleSheet(f"background-color: {DarkTheme.BG_PRIMARY}; border-left: 1px solid {DarkTheme.BORDER_PRIMARY};")
+        overview_layout = QVBoxLayout(overview_page)
+        overview_layout.setContentsMargins(16, 20, 16, 20)
+        overview_layout.setSpacing(15)
         
         # Başlık
         lbl_sag_baslik = QLabel("DURUM ÖZETİ")
-        lbl_sag_baslik.setStyleSheet("color: #6bd3ff; font-weight: bold; font-size: 12px; letter-spacing: 1px;")
-        right_layout.addWidget(lbl_sag_baslik)
+        lbl_sag_baslik.setStyleSheet(S.get("section_title", ""))
+        overview_layout.addWidget(lbl_sag_baslik)
         
         # Kritik Uyarılar Listesi
         self.alert_container = QVBoxLayout()
-        right_layout.addLayout(self.alert_container)
+        overview_layout.addLayout(self.alert_container)
         
         # Hızlı Aksiyonlar
-        right_layout.addSpacing(20)
+        overview_layout.addSpacing(20)
         lbl_aksiyon = QLabel("HIZLI İŞLEMLER")
-        lbl_aksiyon.setStyleSheet("color: #6bd3ff; font-weight: bold; font-size: 12px; letter-spacing: 1px;")
-        right_layout.addWidget(lbl_aksiyon)
+        lbl_aksiyon.setStyleSheet(S.get("section_title", ""))
+        overview_layout.addWidget(lbl_aksiyon)
         
-        self._add_action_btn(right_layout, "➕ İzin Ekle", self._hizli_izin_gir)
-        self._add_action_btn(right_layout, "🩺 Muayene Ekle", self._hizli_saglik_gir)
+        self._add_action_btn(overview_layout, "Izin Ekle", "calendar", lambda: self._show_islem_panel("IZIN"))
+        self._add_action_btn(overview_layout, "Muayene Ekle", "stethoscope", lambda: self._show_islem_panel("SAGLIK"))
         
-        right_layout.addStretch()
+        overview_layout.addStretch()
         
-        body_layout.addWidget(self.right_panel)
+        self.right_panel_stack.addWidget(overview_page)  # Page 0
+        
+        # Sayfa 1: İşlem Formu (dinamik olarak yüklenir)
+        form_page = QFrame()
+        form_page.setStyleSheet(f"background-color: {DarkTheme.BG_PRIMARY}; border-left: 1px solid {DarkTheme.BORDER_PRIMARY};")
+        self.form_layout = QVBoxLayout(form_page)
+        self.form_layout.setContentsMargins(10, 10, 10, 10)
+        self.form_layout.setSpacing(10)
+        
+        # Kapat butonunu form sayfasına ekle
+        header_h = QHBoxLayout()
+        self.lbl_form_title = QLabel("İşlem")
+        self.lbl_form_title.setStyleSheet(S.get("section_title", ""))
+        header_h.addWidget(self.lbl_form_title)
+        header_h.addStretch()
+        
+        btn_form_kapat = QPushButton("Kapat")
+        btn_form_kapat.setFixedSize(28, 28)
+        btn_form_kapat.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_form_kapat.setStyleSheet(f"background: transparent; color: {DarkTheme.TEXT_MUTED}; border: none;")
+        btn_form_kapat.clicked.connect(lambda: self.right_panel_stack.setCurrentIndex(0))
+        IconRenderer.set_button_icon(btn_form_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
+        header_h.addWidget(btn_form_kapat)
+        
+        self.form_layout.addLayout(header_h)
+        self.form_layout.addSpacing(10)
+        
+        self.right_panel_stack.addWidget(form_page)  # Page 1
+        
+        body_layout.addWidget(self.right_panel_stack)
         main_layout.addLayout(body_layout)
 
     def _add_nav_btn(self, text, code, active=False):
         btn = QPushButton(text)
         btn.setCursor(QCursor(Qt.PointingHandCursor))
-        btn.setFixedHeight(44)
         # Alt çizgi efekti için stil
         base_style = """
             QPushButton {
                 background: transparent; border: none; 
-                color: #8b8fa3; font-weight: bold; font-size: 13px;
+                color: """ + DarkTheme.TEXT_MUTED + """; font-weight: bold; font-size: 13px;
                 border-bottom: 3px solid transparent;
-                padding: 0 10px;
+                padding: 10px;
             }
             QPushButton:hover { color: #e0e2ea; }
         """
@@ -191,7 +217,7 @@ class PersonelMerkezPage(QWidget):
                 background: transparent; border: none; 
                 color: #3b82f6; font-weight: bold; font-size: 13px;
                 border-bottom: 3px solid #3b82f6;
-                padding: 0 10px;
+                padding: 10px;
             }
         """
         btn.setStyleSheet(active_style if active else base_style)
@@ -203,40 +229,59 @@ class PersonelMerkezPage(QWidget):
             self.nav_btns = {}
         self.nav_btns[code] = btn
 
-    def _add_action_btn(self, layout, text, callback):
+    def _add_action_btn(self, layout, text, icon_name, callback):
         btn = QPushButton(text)
         btn.setCursor(QCursor(Qt.PointingHandCursor))
-        btn.setStyleSheet("""
-            QPushButton {
-                background-color: #2d303e; color: #e0e2ea; border: 1px solid #3f4252;
-                border-radius: 6px; padding: 8px; text-align: left;
-            }
-            QPushButton:hover { background-color: #363949; border-color: #555; }
-        """)
+        btn.setStyleSheet(S.get("action_btn", ""))
         btn.clicked.connect(callback)
+        IconRenderer.set_button_icon(btn, icon_name, color=DarkTheme.TEXT_PRIMARY, size=14)
         layout.addWidget(btn)
 
-    def _hizli_izin_gir(self):
-        """Hızlı izin girişi için bir dialog açar."""
+    def _show_islem_panel(self, panel_type):
+        """Sağ panelinde işlem formunu göster."""
         if not self.ozet_data.get("personel"):
             QMessageBox.warning(self, "Hata", "Personel verisi yüklenemedi.")
             return
-
-        dialog = HizliIzinGirisDialog(self.db, self.ozet_data["personel"], self)
-        # İzin kaydedildiğinde, bu ana sayfadaki verileri (özet, panel) yenile
-        dialog.izin_kaydedildi.connect(self._load_data)
-        dialog.exec()
-
-    def _hizli_saglik_gir(self):
-        """Hızlı sağlık muayene girişi için bir dialog açar."""
-        if not self.ozet_data.get("personel"):
-            QMessageBox.warning(self, "Hata", "Personel verisi yüklenemedi.")
+        
+        # Önceki form temizle
+        while self.form_layout.count() > 2:  # Header ve spacing hariç
+            item = self.form_layout.takeAt(2)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        # Panel tipine göre uygun form yükle
+        try:
+            if panel_type == "IZIN":
+                self.lbl_form_title.setText("Izin Giris")
+                # HızlıIzinGirisDialog'unu widget'a embed et
+                form = HizliIzinGirisDialog(self.db, self.ozet_data["personel"], parent=self)
+                form.izin_kaydedildi.connect(self._on_form_saved)
+                form.cancelled.connect(lambda: self.right_panel_stack.setCurrentIndex(0))
+                self.form_layout.addWidget(form, 1)
+                self._current_form = form
+            
+            elif panel_type == "SAGLIK":
+                self.lbl_form_title.setText("Muayene Giris")
+                # HızlıSaglikGirisDialog'unu widget'a embed et
+                form = HizliSaglikGirisDialog(self.db, self.ozet_data["personel"], parent=self)
+                form.saglik_kaydedildi.connect(self._on_form_saved)
+                form.cancelled.connect(lambda: self.right_panel_stack.setCurrentIndex(0))
+                self.form_layout.addWidget(form, 1)
+                self._current_form = form
+        
+        except Exception as e:
+            logger.error(f"Form yükleme hatası ({panel_type}): {e}")
+            QMessageBox.critical(self, "Hata", f"Form yüklenemedi: {e}")
             return
-
-        dialog = HizliSaglikGirisDialog(self.db, self.ozet_data["personel"], self)
-        # Kayıt başarılı olduğunda verileri yenile
-        dialog.saglik_kaydedildi.connect(self._load_data)
-        dialog.exec()
+        
+        # Sayfa 1'e geç (İşlem Formu)
+        self.right_panel_stack.setCurrentIndex(1)
+    
+    def _on_form_saved(self):
+        """Form'da veri kaydedildiğinde çağrılır."""
+        self._load_data()
+        # Sayfa 0'a geri dön (Durum Özeti)
+        self.right_panel_stack.setCurrentIndex(0)
 
     def _load_data(self):
         """Verileri servisten çek ve UI güncelle."""
@@ -251,7 +296,7 @@ class PersonelMerkezPage(QWidget):
                 tc = p.get("KimlikNo", "")
                 
                 self.lbl_ad.setText(ad)
-                self.lbl_detay.setText(f"{unvan} • {birim} • {tc}")
+                self.lbl_detay.setText(f"{unvan} - {birim} - {tc}")
 
                 # Avatar / Resim Yükleme
                 resim_path = str(p.get("Resim", "")).strip()
@@ -261,7 +306,7 @@ class PersonelMerkezPage(QWidget):
                         self.lbl_avatar.setPixmap(pixmap.scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation))
                         self.lbl_avatar.setText("")
                 else:
-                    self.lbl_avatar.setText("👤")
+                    self.lbl_avatar.setText("")
                     self.lbl_avatar.setPixmap(QPixmap())
             
             # Sağ panel uyarıları
@@ -277,8 +322,8 @@ class PersonelMerkezPage(QWidget):
                 self.alert_container.addWidget(lbl)
             else:
                 for msg in kritikler:
-                    lbl = QLabel(f"⚠️ {msg}")
-                    lbl.setStyleSheet("color: #f59e0b; background: rgba(245, 158, 11, 0.1); padding: 8px; border-radius: 4px;")
+                    lbl = QLabel(f"Uyari: {msg}")
+                    lbl.setStyleSheet(f"color: {Colors.YELLOW_500}; background: rgba(245, 158, 11, 0.1); padding: 8px; border-radius: 4px;")
                     lbl.setWordWrap(True)
                     self.alert_container.addWidget(lbl)
                     
@@ -301,7 +346,7 @@ class PersonelMerkezPage(QWidget):
             is_active = (key == code)
             # Stil stringlerini tekrar tanımlamak yerine basit replace yapabiliriz veya yukarıdaki sabitleri kullanabiliriz
             # Basitlik için rengi değiştiriyoruz
-            color = "#3b82f6" if is_active else "#8b8fa3"
+            color = Colors.BLUE_500 if is_active else DarkTheme.TEXT_MUTED
             border = f"3px solid {color}" if is_active else "3px solid transparent"
             btn.setStyleSheet(f"""
                 QPushButton {{
@@ -344,7 +389,7 @@ class PersonelMerkezPage(QWidget):
         except Exception as e:
             logger.error(f"Modül yükleme hatası ({code}): {e}")
             lbl = QLabel(f"Modül yüklenemedi: {code}\n{e}")
-            lbl.setStyleSheet("color: #ef4444;")
+            lbl.setStyleSheet(f"color: {Colors.DANGER};")
             lbl.setAlignment(Qt.AlignCenter)
             return lbl
 
@@ -355,3 +400,5 @@ class PersonelMerkezPage(QWidget):
             return widget
         
         return QLabel(f"Modül Bulunamadı: {code}")
+
+

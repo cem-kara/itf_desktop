@@ -6,9 +6,9 @@ import uuid
 from datetime import datetime, date
 from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QComboBox, QDateEdit, QLineEdit, QFrame, QGridLayout, QWidget,
-    QMessageBox, QGroupBox, QScrollArea
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
+    QComboBox, QDateEdit, QLineEdit, QFrame, QGridLayout,
+    QMessageBox, QGroupBox, QScrollArea, QTextEdit
 )
 from PySide6.QtGui import QCursor
 
@@ -19,12 +19,13 @@ from ui.theme_manager import ThemeManager
 S = ThemeManager.get_all_component_styles()
 STATUS_OPTIONS = ["", "Uygun", "Şartlı Uygun", "Uygun Değil"]
 
-class HizliSaglikGirisDialog(QDialog):
+class HizliSaglikGirisDialog(QWidget):
     """
-    Personel Merkez ekranından hızlı sağlık muayene girişi için kullanılan modal dialog.
+    Personel Merkez ekranında sol panelde hızlı sağlık muayene girişi widget'ı.
     ui/pages/personel/saglik_takip.py referans alınarak tasarlanmıştır.
     """
     saglik_kaydedildi = Signal()
+    cancelled = Signal()
 
     def __init__(self, db, personel_data, parent=None):
         super().__init__(parent)
@@ -33,47 +34,44 @@ class HizliSaglikGirisDialog(QDialog):
         self._exam_keys = ["Dermatoloji", "Dahiliye", "Goz", "Goruntuleme"]
         self._exam_widgets = {}
 
-        self.setWindowTitle(f"Hızlı Muayene Girişi — {self._personel.get('AdSoyad', '')}")
-        self.setMinimumWidth(550)
         self.setStyleSheet(S["page"])
-        self.setModal(True)
 
         self._setup_ui()
         self._connect_signals()
 
     def _setup_ui(self):
         main = QVBoxLayout(self)
-        main.setContentsMargins(15, 15, 15, 15)
-        main.setSpacing(12)
+        main.setContentsMargins(12, 12, 12, 12)
+        main.setSpacing(10)
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setMaximumWidth(320)
         scroll.setStyleSheet(S.get("scroll", ""))
         
         form_content = QWidget()
         form_content.setStyleSheet("background: transparent;")
         form_lay = QVBoxLayout(form_content)
         form_lay.setContentsMargins(0, 0, 8, 0)
-        form_lay.setSpacing(12)
+        form_lay.setSpacing(10)
 
         # Muayene Durumları
-        grp_durum = QGroupBox("Muayene Durumları")
-        grp_durum.setStyleSheet(S["group"])
-        g2 = QGridLayout(grp_durum)
-        g2.setContentsMargins(12, 12, 12, 12)
-        g2.setHorizontalSpacing(10)
-        g2.setVerticalSpacing(8)
+        muayene_container = QWidget()
+        muayene_layout = QVBoxLayout(muayene_container)
+        muayene_layout.setContentsMargins(0, 0, 0, 0)
+        muayene_layout.setSpacing(15)
 
-        self._add_exam_fields(g2, 0, "Dermatoloji", "Dermatoloji Muayenesi")
-        self._add_exam_fields(g2, 1, "Dahiliye", "Dahiliye Muayenesi")
-        self._add_exam_fields(g2, 2, "Goz", "Göz Muayenesi")
-        self._add_exam_fields(g2, 3, "Goruntuleme", "Görüntüleme Teknikleri (Varsa)")
-        form_lay.addWidget(grp_durum)
+        self._add_exam_fields(muayene_layout, 0, "Dermatoloji", "Dermatoloji Muayenesi")
+        self._add_exam_fields(muayene_layout, 1, "Dahiliye", "Dahiliye Muayenesi")
+        self._add_exam_fields(muayene_layout, 2, "Goz", "Göz Muayenesi")
+        self._add_exam_fields(muayene_layout, 3, "Goruntuleme", "Görüntüleme Teknikleri (Varsa)")
+        form_lay.addWidget(muayene_container)
 
         # Ek Bilgiler
         grp_ek = QGroupBox("Ek Bilgiler")
         grp_ek.setStyleSheet(S["group"])
+        grp_ek.setMaximumWidth(300)
         g3 = QGridLayout(grp_ek)
         g3.setContentsMargins(12, 12, 12, 12)
         g3.setHorizontalSpacing(10)
@@ -81,11 +79,11 @@ class HizliSaglikGirisDialog(QDialog):
         
         g3.addWidget(QLabel("Not"), 0, 0)
         self.inp_not = QLineEdit()
+        self.inp_not.setMaximumWidth(280)
         self.inp_not.setStyleSheet(S["input"])
         g3.addWidget(self.inp_not, 0, 1)
         form_lay.addWidget(grp_ek)
         
-        form_lay.addStretch()
         scroll.setWidget(form_content)
         main.addWidget(scroll)
 
@@ -93,53 +91,76 @@ class HizliSaglikGirisDialog(QDialog):
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
         btn_iptal = QPushButton("İptal", styleSheet=S["cancel_btn"], cursor=QCursor(Qt.PointingHandCursor))
-        btn_iptal.clicked.connect(self.reject)
+        btn_iptal.clicked.connect(self.cancelled.emit)
         btn_layout.addWidget(btn_iptal)
-        btn_kaydet = QPushButton("✓ Kaydet", styleSheet=S["save_btn"], cursor=QCursor(Qt.PointingHandCursor))
+        btn_kaydet = QPushButton("Kaydet", styleSheet=S["save_btn"], cursor=QCursor(Qt.PointingHandCursor))
         btn_kaydet.clicked.connect(self._on_save)
         btn_layout.addWidget(btn_kaydet)
         main.addLayout(btn_layout)
 
     def _add_exam_fields(self, layout, row_idx, key, title):
-        """saglik_takip.py'den alınan yardımcı metod."""
-        box = QGroupBox(title)
-        box.setStyleSheet(S["group"])
-        gl = QGridLayout(box)
-        gl.setContentsMargins(10, 8, 10, 8)
-        gl.setHorizontalSpacing(8)
-        gl.setVerticalSpacing(6)
-
-        lbl_tarih = QLabel("Muayene Tarihi")
+        """Muayene alanlarını sade biçimde ekle."""
+        # Başlık
+        lbl_title = QLabel(title)
+        lbl_title.setStyleSheet(S.get("section_title", ""))
+        layout.addWidget(lbl_title)
+        
+        # Grid layout for inputs
+        grid = QGridLayout()
+        grid.setContentsMargins(0, 0, 0, 0)
+        grid.setHorizontalSpacing(20)
+        grid.setVerticalSpacing(4)
+        
+        # Row 0: Labels
+        lbl_tarih = QLabel("Tarih")
         lbl_tarih.setStyleSheet(S.get("label", ""))
-        gl.addWidget(lbl_tarih, 0, 0)
-
+        lbl_tarih.setMaximumWidth(100)
+        grid.addWidget(lbl_tarih, 0, 0)
+        
+        lbl_durum = QLabel("Durum")
+        lbl_durum.setStyleSheet(S.get("label", ""))
+        lbl_durum.setMaximumWidth(150)
+        grid.addWidget(lbl_durum, 0, 1)
+        
+        # Row 1: Inputs
         de = QDateEdit(QDate.currentDate())
         de.setDisplayFormat("dd.MM.yyyy")
         de.setCalendarPopup(True)
+        de.setMaximumWidth(100)
+        de.setMinimumHeight(35)
         de.setStyleSheet(S["date"])
         ThemeManager.setup_calendar_popup(de)
-        gl.addWidget(de, 0, 1)
-
-        lbl_durum = QLabel("Durum")
-        lbl_durum.setStyleSheet(S.get("label", ""))
-        gl.addWidget(lbl_durum, 0, 2)
-
+        grid.addWidget(de, 1, 0)
+        
         cmb = QComboBox()
         cmb.addItems(STATUS_OPTIONS)
+        cmb.setMaximumWidth(150)
+        cmb.setMinimumHeight(35)
         cmb.setStyleSheet(S["combo"])
-        gl.addWidget(cmb, 0, 3)
-
+        grid.addWidget(cmb, 1, 1)
+        
+        layout.addLayout(grid)
+        
+        # Açıklama
         lbl_aciklama = QLabel("Açıklama")
         lbl_aciklama.setStyleSheet(S.get("label", ""))
-        gl.addWidget(lbl_aciklama, 1, 0)
-
-        inp = QLineEdit()
-        inp.setPlaceholderText("Gerekiyorsa kısa açıklama...")
+        layout.addWidget(lbl_aciklama)
+        
+        inp = QTextEdit()
+        inp.setPlaceholderText("Gerekiyorsa açıklama...")
+        inp.setMinimumHeight(35)
+        inp.setMaximumHeight(60)
         inp.setStyleSheet(S["input"])
         inp.setEnabled(False)
-        gl.addWidget(inp, 1, 1, 1, 3)
-
-        layout.addWidget(box, row_idx, 0, 1, 2)
+        layout.addWidget(inp)
+        
+        # Separator
+        sep = QFrame()
+        sep.setFrameShape(QFrame.HLine)
+        sep.setFrameShadow(QFrame.Sunken)
+        sep.setStyleSheet(S.get("separator", ""))
+        layout.addWidget(sep)
+        
         self._exam_widgets[key] = {"tarih": de, "durum": cmb, "aciklama": inp}
 
     def _connect_signals(self):

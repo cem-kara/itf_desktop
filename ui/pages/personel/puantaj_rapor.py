@@ -23,6 +23,8 @@ from PySide6.QtGui import QColor, QCursor, QFont, QPainter, QBrush, QPen, QPaint
 from core.logger import logger
 from core.hesaplamalar import sua_hak_edis_hesapla, tr_upper
 from ui.theme_manager import ThemeManager
+from ui.styles import Colors, DarkTheme
+from ui.styles.icons import IconRenderer
 
 
 AY_ISIMLERI = [
@@ -70,7 +72,7 @@ class SuaDelegate(QStyledItemDelegate):
         if deger >= 20:
             c_bg, c_border, c_text = QColor(27, 94, 32, 160), QColor("#66bb6a"), QColor("#ffffff")
         elif deger >= 10:
-            c_bg, c_border, c_text = QColor(133, 100, 0, 140), QColor("#facc15"), QColor("#ffffff")
+            c_bg, c_border, c_text = QColor(133, 100, 0, 140), QColor(Colors.YELLOW_400), QColor("#ffffff")
         elif deger > 0:
             c_bg, c_border, c_text = QColor(21, 101, 192, 120), QColor("#42a5f5"), QColor("#ffffff")
         else:
@@ -118,8 +120,8 @@ class PuantajRaporPage(QWidget):
         fp.setContentsMargins(12, 8, 12, 8)
         fp.setSpacing(8)
 
-        lbl_t = QLabel("📊 Puantaj Raporlama ve Şua Takip")
-        lbl_t.setStyleSheet("color: #6bd3ff; font-size: 14px; font-weight: bold; background: transparent;")
+        lbl_t = QLabel("Puantaj Raporlama ve Sua Takip")
+        lbl_t.setStyleSheet(S.get("section_title", ""))
         fp.addWidget(lbl_t)
 
         self._add_sep(fp)
@@ -146,19 +148,19 @@ class PuantajRaporPage(QWidget):
 
         fp.addStretch()
 
-        self.btn_getir = QPushButton("📋 Raporu Oluştur")
+        self.btn_getir = QPushButton("Raporu Olustur")
         self.btn_getir.setStyleSheet(S["report_btn"])
         self.btn_getir.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_getir.setFixedHeight(34)
+        IconRenderer.set_button_icon(self.btn_getir, "clipboard_list", color=DarkTheme.TEXT_PRIMARY, size=14)
         fp.addWidget(self.btn_getir)
 
         self._add_sep(fp)
 
-        self.btn_kapat = QPushButton("✕ Kapat")
+        self.btn_kapat = QPushButton("Kapat")
         self.btn_kapat.setToolTip("Kapat")
-        self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S["close_btn"])
+        IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         fp.addWidget(self.btn_kapat)
 
         main.addWidget(filter_frame)
@@ -208,39 +210,37 @@ class PuantajRaporPage(QWidget):
         self.progress.setRange(0, 0)
         self.progress.setFixedWidth(160)
         self.progress.setFixedHeight(14)
-        self.progress.setStyleSheet("""
-            QProgressBar {
+        self.progress.setStyleSheet(f"""
+            QProgressBar {{
                 background-color: rgba(255,255,255,0.05);
                 border: 1px solid rgba(255,255,255,0.08);
-                border-radius: 3px; font-size: 10px; color: #8b8fa3;
-            }
-            QProgressBar::chunk {
+                border-radius: 3px; font-size: 10px; color: {DarkTheme.TEXT_MUTED};
+            }}
+            QProgressBar::chunk {{
                 background-color: rgba(29,117,254,0.5); border-radius: 2px;
-            }
+            }}
         """)
         bf.addWidget(self.progress)
 
-        btn_kapat2 = QPushButton("✕ Kapat")
+        btn_kapat2 = QPushButton("Kapat")
         btn_kapat2.setStyleSheet(S["close_btn"])
-        btn_kapat2.setFixedSize(100, 36)
         btn_kapat2.setCursor(QCursor(Qt.PointingHandCursor))
         btn_kapat2.clicked.connect(self.btn_kapat.click)
+        IconRenderer.set_button_icon(btn_kapat2, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         bf.addWidget(btn_kapat2)
 
-        self.btn_excel = QPushButton("📥 Excel İndir")
+        self.btn_excel = QPushButton("Excel Indir")
         self.btn_excel.setStyleSheet(S["excel_btn"])
         self.btn_excel.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_excel.setFixedHeight(36)
-        self.btn_excel.setFixedWidth(130)
         self.btn_excel.setEnabled(False)
+        IconRenderer.set_button_icon(self.btn_excel, "download", color=DarkTheme.TEXT_PRIMARY, size=14)
         bf.addWidget(self.btn_excel)
 
-        self.btn_pdf = QPushButton("📄 PDF İndir")
+        self.btn_pdf = QPushButton("PDF Indir")
         self.btn_pdf.setStyleSheet(S["pdf_btn"])
         self.btn_pdf.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_pdf.setFixedHeight(36)
-        self.btn_pdf.setFixedWidth(130)
         self.btn_pdf.setEnabled(False)
+        IconRenderer.set_button_icon(self.btn_pdf, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         bf.addWidget(self.btn_pdf)
 
         main.addWidget(bot_frame)
@@ -255,7 +255,7 @@ class PuantajRaporPage(QWidget):
     def _add_sep(self, layout):
         sep = QFrame()
         sep.setFixedWidth(1); sep.setFixedHeight(20)
-        sep.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        sep.setStyleSheet(f"background-color: {DarkTheme.BORDER_PRIMARY};")
         layout.addWidget(sep)
 
     # ═══════════════════════════════════════════
@@ -423,7 +423,7 @@ class PuantajRaporPage(QWidget):
             self.lbl_bilgi.setText(
                 f"{personel_sayisi} personel  •  {len(rows)} kayıt  •  {donem_info}  •  {yil_str}"
             )
-            self.lbl_durum.setText(f"✓ Rapor hazır  •  {len(rows)} satır")
+            self.lbl_durum.setText(f"Rapor hazir - {len(rows)} satir")
             self.btn_excel.setEnabled(len(rows) > 0)
             self.btn_pdf.setEnabled(len(rows) > 0)
 
@@ -534,7 +534,7 @@ class PuantajRaporPage(QWidget):
 
             wb.save(path)
 
-            self.lbl_durum.setText(f"✓ Excel kaydedildi: {os.path.basename(path)}")
+            self.lbl_durum.setText(f"Excel kaydedildi: {os.path.basename(path)}")
             QMessageBox.information(self, "Başarılı", f"Excel dosyası kaydedildi:\n{path}")
             logger.info(f"Puantaj rapor Excel: {path}")
 
@@ -660,7 +660,7 @@ class PuantajRaporPage(QWidget):
 
             doc.build(elements)
 
-            self.lbl_durum.setText(f"✓ PDF kaydedildi: {os.path.basename(path)}")
+            self.lbl_durum.setText(f"PDF kaydedildi: {os.path.basename(path)}")
             QMessageBox.information(self, "Başarılı", f"PDF dosyası kaydedildi:\n{path}")
             logger.info(f"Puantaj rapor PDF: {path}")
 

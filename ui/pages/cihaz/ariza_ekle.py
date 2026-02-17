@@ -19,6 +19,8 @@ from PySide6.QtWidgets import (
 
 from core.logger import logger
 from ui.theme_manager import ThemeManager
+from ui.styles import DarkTheme
+from ui.styles.icons import IconRenderer
 
 S = ThemeManager.get_all_component_styles()
 
@@ -107,7 +109,7 @@ class ArizaEklePanel(QWidget):
         main.setSpacing(12)
 
         lbl_baslik = QLabel("Arıza Bildirimi")
-        lbl_baslik.setStyleSheet("color:#e57373; font-size:14px; font-weight:bold; border-bottom:2px solid #444; padding-bottom:5px;")
+        lbl_baslik.setStyleSheet(S["header_name"])
         main.addWidget(lbl_baslik)
 
         form = QVBoxLayout(); form.setSpacing(10)
@@ -115,7 +117,6 @@ class ArizaEklePanel(QWidget):
         form.addWidget(self.inputs["Arizaid"])
 
         self._add_lbl_input(form, "İlgili Cihaz:", "Cihazid", read_only=True)
-        self.inputs["Cihazid"].setStyleSheet("background:#333; color:#4dabf7; font-weight:bold; border:1px solid #555;")
 
         self._add_lbl_input(form, "Bildiren:", "Bildiren")
         self._add_lbl_input(form, "Konu / Başlık:", "Baslik", placeholder="Kısaca sorun nedir?")
@@ -133,8 +134,9 @@ class ArizaEklePanel(QWidget):
         lbl_dosya = QLabel("Görsel / Tutanak Ekleri:"); lbl_dosya.setStyleSheet(S["label"])
         form.addWidget(lbl_dosya)
         h_dosya = QHBoxLayout()
-        self.btn_dosya_sec = QPushButton("📎 Dosya Seç"); self.btn_dosya_sec.setStyleSheet(S["file_btn"]); self.btn_dosya_sec.clicked.connect(self._dosya_sec)
-        self.lbl_dosya_durum = QLabel("Dosya seçilmedi"); self.lbl_dosya_durum.setStyleSheet("color: #888; font-style: italic; margin-left:10px;")
+        self.btn_dosya_sec = QPushButton("Dosya Sec"); self.btn_dosya_sec.setStyleSheet(S["file_btn"]); self.btn_dosya_sec.clicked.connect(self._dosya_sec)
+        IconRenderer.set_button_icon(self.btn_dosya_sec, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
+        self.lbl_dosya_durum = QLabel("Dosya secilmedi"); self.lbl_dosya_durum.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-style: italic; margin-left:10px;")
         h_dosya.addWidget(self.btn_dosya_sec); h_dosya.addWidget(self.lbl_dosya_durum, 1)
         form.addLayout(h_dosya)
 
@@ -173,7 +175,7 @@ class ArizaEklePanel(QWidget):
         self.inputs["ArizaTipi"].setCurrentIndex(0)
         self.inputs["Oncelik"].setCurrentIndex(0)
         self._secilen_dosyalar = []
-        self.lbl_dosya_durum.setText("Dosya seçilmedi"); self.lbl_dosya_durum.setStyleSheet("color: #888; font-style: italic; margin-left:10px;")
+        self.lbl_dosya_durum.setText("Dosya secilmedi"); self.lbl_dosya_durum.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-style: italic; margin-left:10px;")
         self.btn_kaydet.setEnabled(True); self.btn_kaydet.setText("Kaydet")
         self.progress.setVisible(False)
 
@@ -182,7 +184,7 @@ class ArizaEklePanel(QWidget):
         if yollar:
             self._secilen_dosyalar = yollar
             self.lbl_dosya_durum.setText(f"{len(yollar)} dosya seçildi.")
-            self.lbl_dosya_durum.setStyleSheet("color: #4caf50; font-weight: bold; margin-left:10px;")
+            self.lbl_dosya_durum.setStyleSheet(f"color: {DarkTheme.STATUS_SUCCESS}; font-weight: bold; margin-left:10px;")
 
     def _kaydet_baslat(self):
         if not self.inputs["Baslik"].text().strip():
@@ -235,5 +237,3 @@ class ArizaEklePanel(QWidget):
         self.progress.setVisible(False)
         self.btn_kaydet.setEnabled(True); self.btn_kaydet.setText("Kaydet")
         QMessageBox.critical(self, "Hata", mesaj)
-
-

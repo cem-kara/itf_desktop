@@ -69,6 +69,8 @@ from PySide6.QtGui import QCursor
 from core.logger import logger
 from core.rapor_servisi import RaporServisi
 from ui.theme_manager import ThemeManager
+from ui.styles import Colors, DarkTheme
+from ui.styles.icons import IconRenderer
 
 S = ThemeManager.get_all_component_styles()
 
@@ -117,38 +119,44 @@ class RaporButon(QWidget):
 
         if self._mod in ("her_ikisi", "excel"):
             self._btn_excel = self._buton(
-                "📊  Excel", "export_excel_btn",
-                "#216e39", "#2ea04f", self._excel_al
+                "Excel", "export_excel_btn",
+                Colors.GREEN_700, Colors.GREEN_600, self._excel_al, "file_excel"
             )
             lay.addWidget(self._btn_excel)
 
         if self._mod in ("her_ikisi", "pdf"):
             self._btn_pdf = self._buton(
-                "📄  PDF", "export_pdf_btn",
-                "#9d1721", "#c0392b", self._pdf_al
+                "PDF", "export_pdf_btn",
+                Colors.RED_700, Colors.RED_600, self._pdf_al, "file_pdf"
             )
             lay.addWidget(self._btn_pdf)
 
     @staticmethod
-    def _buton(metin: str, obj_name: str, renk1: str, renk2: str,
-               slot: Callable) -> QPushButton:
+    def _buton(
+        metin: str,
+        obj_name: str,
+        renk1: str,
+        renk2: str,
+        slot: Callable,
+        icon_name: str,
+    ) -> QPushButton:
         btn = QPushButton(metin)
         btn.setObjectName(obj_name)
-        btn.setFixedHeight(34)
         btn.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(btn, icon_name, color=DarkTheme.TEXT_PRIMARY, size=14)
         btn.setStyleSheet(f"""
             QPushButton {{
                 background: {renk1};
                 color: #ffffff;
                 border: none;
                 border-radius: 6px;
-                padding: 0 14px;
+                padding: 8px 16px;
                 font-size: 12px;
                 font-weight: 600;
             }}
             QPushButton:hover  {{ background: {renk2}; }}
             QPushButton:pressed{{ background: {renk1}; opacity: 0.85; }}
-            QPushButton:disabled {{ background: #2d3340; color: #555; }}
+            QPushButton:disabled {{ background: {DarkTheme.BG_TERTIARY}; color: {DarkTheme.TEXT_DISABLED}; }}
         """)
         btn.clicked.connect(slot)
         return btn

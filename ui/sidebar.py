@@ -1,82 +1,70 @@
+# ui/sidebar.py — Icons entegrasyon örneği
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Bu dosya, sidebar.py'ye Icons kütüphanesini nasıl
+# entegre edeceğinizi gösterir.
+# Değişiklikler: emoji → SVG ikon
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 import json
 import os
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QPushButton,
     QScrollArea, QFrame
 )
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtCore import Signal, Qt, QSize
 from PySide6.QtGui import QCursor
 from core.config import AppConfig
-from ui.theme_manager import ThemeManager
-from ui.styles.colors import DarkTheme
+from ui.styles.colors import DarkTheme, Colors
+# ── YENİ IMPORT ──────────────────────────────────────────────
+from ui.styles.icons import Icons, IconColors, MENU_ICON_MAP, GROUP_ICON_MAP
 
-MENU_ICONS = {
-    "Personel Listesi":  "👥",
-    "Personel Ekle":     "➕",
-    "İzin Takip":        "📅",
-    "FHSZ Yönetim":      "📊",
-    "Puantaj Rapor":     "📋",
-    "Saglik Takip":      "🩺",
-    "Personel Verileri": "📈",
-    "Cihaz Listesi":     "🔬",
-    "Cihaz Ekle":        "🆕",
-    "Arıza Kayıt":       "⚠️",  # Typo düzeltildi: Ariza -> Arıza
-    "Arıza Listesi":     "🔧",  # Typo düzeltildi: Ariza -> Arıza
-    "Periyodik Bakım":   "🛠️",  # Typo düzeltildi: Bakim -> Bakım
-    "Kalibrasyon Takip": "📐",
-    "RKE Listesi":       "🛡️",
-    "Muayene Girişi":    "🔍",
-    "RKE Raporlama":     "📋",
-    "Yıl Sonu İzin":     "📆",
-    "Ayarlar":           "⚙️",
-}
 
-GROUP_ICONS = {
-    "PERSONEL":            "👤",
-    "CİHAZ":              "🔬",
-    "RKE":                "🛡️",
-    "YÖNETİCİ İŞLEMLERİ": "⚙️",
-}
-
-# ─── MERKEZİ RENK YÖNETİMİ (DarkTheme'den) ───
+# ── SidebarTheme (değişmedi) ──────────────────────────────────
 class SidebarTheme:
-    """Sidebar için merkezi renkler (DarkTheme tabanlı)"""
-    BG = DarkTheme.BG_PRIMARY                    # #16172b
-    HEADER_BG = "rgba(255, 255, 255, 0.05)"
-    HEADER_HOVER = "rgba(255, 255, 255, 0.10)"
-    HEADER_TEXT = DarkTheme.TEXT_PRIMARY         # #e0e2ea
-    ITEM_TEXT = "#8b8fa3"
-    ITEM_HOVER = "rgba(255, 255, 255, 0.07)"
-    ITEM_HOVER_T = DarkTheme.TEXT_PRIMARY        # #e0e2ea
-    ACTIVE_BG = "rgba(29, 117, 254, 0.35)"      # Mavi hover
-    ACTIVE_BORDER = "#1d75fe"                   # Accent Blue
-    ACTIVE_TEXT = "#ffffff"
-    SEPARATOR = "rgba(255, 255, 255, 0.06)"
-    TITLE = "#e8eaef"
-    VERSION = "#5a5d6e"
-    SYNC_BG = "rgba(29, 117, 254, 0.25)"
-    SYNC_HOVER = "rgba(29, 117, 254, 0.40)"
-    SYNC_BORDER = "#1d75fe"
+    BG            = DarkTheme.BG_PRIMARY
+    HEADER_BG     = "rgba(255, 255, 255, 0.05)"
+    HEADER_HOVER  = "rgba(255, 255, 255, 0.10)"
+    HEADER_TEXT   = DarkTheme.TEXT_PRIMARY
+    ITEM_TEXT     = DarkTheme.TEXT_MUTED
+    ITEM_HOVER    = "rgba(255, 255, 255, 0.07)"
+    ITEM_HOVER_T  = DarkTheme.TEXT_PRIMARY
+    ACTIVE_BG     = "rgba(29, 117, 254, 0.35)"
+    ACTIVE_BORDER = DarkTheme.INPUT_BORDER_FOCUS
+    ACTIVE_TEXT   = DarkTheme.TEXT_PRIMARY
+    SEPARATOR     = DarkTheme.BORDER_PRIMARY
+    TITLE         = DarkTheme.TEXT_PRIMARY
+    VERSION       = DarkTheme.TEXT_DISABLED
+    SYNC_BG       = DarkTheme.BTN_PRIMARY_BG
+    SYNC_HOVER    = DarkTheme.BTN_PRIMARY_HOVER
+    SYNC_BORDER   = DarkTheme.INPUT_BORDER_FOCUS
     SYNC_DISABLED = "rgba(255, 255, 255, 0.05)"
-    SYNC_TEXT = "#6bd3ff"                       # Light Blue
+    SYNC_TEXT     = DarkTheme.BTN_PRIMARY_TEXT
+    STATUS_READY  = DarkTheme.STATUS_SUCCESS
+    STATUS_WARN   = DarkTheme.STATUS_WARNING
+    STATUS_ERROR  = DarkTheme.STATUS_ERROR
+    NOTIFY_BG     = "rgba(255, 193, 7, 0.15)"
+    NOTIFY_HOVER  = "rgba(255, 193, 7, 0.25)"
+    NOTIFY_TEXT   = Colors.YELLOW_400
+    NOTIFY_BORDER = "rgba(255, 193, 7, 0.4)"
 
 
+# ── AccordionGroup ─────────────────────────────────────────────
 class AccordionGroup(QWidget):
 
-    def __init__(self, group_name, icon, parent=None):
+    def __init__(self, group_name: str, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(f"background-color: transparent;")
+        self.setStyleSheet("background-color: transparent;")
         self.group_name = group_name
-        self._expanded = False
-        self._buttons = []
-        self._icon = icon
+        self._expanded  = False
+        self._buttons   = []
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        self.header = QPushButton(f"  {icon}  {group_name}  [+]")
-        self.header.setFixedHeight(38)
+        # ── Grup başlık butonu (SVG ikon) ──────────────────────
+        self.header = QPushButton(f"  {group_name}")
+        self.header.setFixedHeight(36)
         self.header.setCursor(QCursor(Qt.PointingHandCursor))
         self.header.setStyleSheet(f"""
             QPushButton {{
@@ -94,8 +82,19 @@ class AccordionGroup(QWidget):
                 background-color: {SidebarTheme.HEADER_HOVER};
             }}
         """)
+
+        # Grup ikonunu SVG'den al
+        icon_key = GROUP_ICON_MAP.get(group_name)
+        if icon_key:
+            self.header.setIcon(Icons.get(icon_key, size=20, color=IconColors.GROUP_HEADER))
+            self.header.setIconSize(QSize(15, 15))
+
         self.header.clicked.connect(self._toggle)
         layout.addWidget(self.header)
+
+        # Chevron ikonu (açma/kapama göstergesi) ──────────────
+        self._chevron_closed = Icons.get("chevron_right", size=15, color=IconColors.MUTED)
+        self._chevron_open   = Icons.get("chevron_down",  size=15, color=IconColors.GROUP_HEADER)
 
         self.content = QWidget()
         self.content.setStyleSheet("background-color: transparent;")
@@ -105,16 +104,19 @@ class AccordionGroup(QWidget):
         layout.addWidget(self.content)
         self.content.setVisible(False)
 
-    def add_item(self, baslik, callback):
-        # Icon'u JSON'dan alıyoruz artık, ama fallback için hala MENU_ICONS var
-        icon = MENU_ICONS.get(baslik, "•")
-        
-        btn = QPushButton(f"  {icon}   {baslik}")
-        btn.setFixedHeight(34)
+    def add_item(self, baslik: str, callback) -> QPushButton:
+        btn = QPushButton(f"   {baslik}")
         btn.setCursor(QCursor(Qt.PointingHandCursor))
         btn.setCheckable(True)
         btn._baslik = baslik
         btn.setStyleSheet(self._item_css(False))
+
+        # Menü ikonunu SVG'den al
+        icon_key = MENU_ICON_MAP.get(baslik)
+        if icon_key:
+            btn.setIcon(Icons.get(icon_key, size=14, color=IconColors.MENU_ITEM))
+            btn.setIconSize(QSize(14, 14))
+
         btn.clicked.connect(lambda: callback(self.group_name, baslik))
         self.content_layout.addWidget(btn)
         self._buttons.append(btn)
@@ -123,10 +125,12 @@ class AccordionGroup(QWidget):
     def _toggle(self):
         self._expanded = not self._expanded
         self.content.setVisible(self._expanded)
-        arrow = "[-]" if self._expanded else "[+]"
-        self.header.setText(f"  {self._icon}  {self.group_name}  {arrow}")
+        # Chevron yönünü güncelle
+        self.header.setIcon(
+            self._chevron_open if self._expanded else self._chevron_closed
+        )
 
-    def _item_css(self, active):
+    def _item_css(self, active: bool) -> str:
         if active:
             return f"""
                 QPushButton {{
@@ -154,20 +158,27 @@ class AccordionGroup(QWidget):
             QPushButton:hover {{
                 background-color: {SidebarTheme.ITEM_HOVER};
                 color: {SidebarTheme.ITEM_HOVER_T};
-                border-left: 3px solid rgba(29, 117, 254, 0.4);
+                border-left: 3px solid {SidebarTheme.SYNC_BORDER};
             }}
         """
 
-    def set_active(self, baslik):
+    def set_active(self, baslik: str | None):
         for btn in self._buttons:
             is_active = (btn._baslik == baslik)
             btn.setChecked(is_active)
             btn.setStyleSheet(self._item_css(is_active))
 
+            # Aktif iken ikon rengini parlat
+            icon_key = MENU_ICON_MAP.get(btn._baslik)
+            if icon_key:
+                color = IconColors.MENU_ACTIVE if is_active else IconColors.MENU_ITEM
+                btn.setIcon(Icons.get(icon_key, size=14, color=color))
 
+
+# ── Sidebar ────────────────────────────────────────────────────
 class Sidebar(QWidget):
 
-    menu_clicked = Signal(str, str)
+    menu_clicked      = Signal(str, str)
     dashboard_clicked = Signal()
 
     def __init__(self, parent=None):
@@ -176,8 +187,8 @@ class Sidebar(QWidget):
         self.setAutoFillBackground(True)
         self.setStyleSheet(f"background-color: {SidebarTheme.BG};")
 
-        self._groups = {}
-        self._all_buttons = {}
+        self._groups       = {}
+        self._all_buttons  = {}
         self._active_baslik = None
         self._build_ui()
 
@@ -186,20 +197,33 @@ class Sidebar(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # Başlık
+        # ── Başlık ────────────────────────────────────────────
         hdr = QWidget()
-        hdr.setStyleSheet(f"background-color: transparent;")
+        hdr.setStyleSheet("background-color: transparent;")
         hl = QVBoxLayout(hdr)
         hl.setContentsMargins(16, 16, 16, 6)
         hl.setSpacing(2)
 
-        t = QLabel(f"🏥  {AppConfig.APP_NAME}")
+        t = QLabel(f"  {AppConfig.APP_NAME}")
         t.setWordWrap(True)
         t.setStyleSheet(f"""
             color: {SidebarTheme.TITLE}; font-size: 15px; font-weight: bold;
             background: transparent;
         """)
-        hl.addWidget(t)
+        # Logo ikonu
+        from PySide6.QtWidgets import QHBoxLayout
+        title_row = QWidget()
+        title_row.setStyleSheet("background: transparent;")
+        tr = QHBoxLayout(title_row)
+        tr.setContentsMargins(0, 0, 0, 0)
+        tr.setSpacing(8)
+        logo_lbl = QLabel()
+        logo_lbl.setPixmap(Icons.pixmap("hospital", size=22, color=SidebarTheme.SYNC_TEXT))
+        logo_lbl.setFixedSize(22, 22)
+        tr.addWidget(logo_lbl)
+        tr.addWidget(t)
+        tr.addStretch()
+        hl.addWidget(title_row)
 
         v = QLabel(f"v{AppConfig.VERSION}")
         v.setStyleSheet(f"color: {SidebarTheme.VERSION}; font-size: 11px; background: transparent;")
@@ -211,7 +235,7 @@ class Sidebar(QWidget):
         sep.setStyleSheet(f"background-color: {SidebarTheme.SEPARATOR};")
         layout.addWidget(sep)
 
-        # Scroll menü
+        # ── Scroll menü ───────────────────────────────────────
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -222,7 +246,7 @@ class Sidebar(QWidget):
                 background-color: transparent; width: 4px;
             }}
             QScrollBar::handle:vertical {{
-                background-color: rgba(255,255,255,0.15); border-radius: 2px; min-height: 30px;
+                background-color: {SidebarTheme.SEPARATOR}; border-radius: 2px; min-height: 30px;
             }}
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
         """)
@@ -235,39 +259,46 @@ class Sidebar(QWidget):
 
         self._load_menu()
         self._ml.addStretch()
-
         scroll.setWidget(menu_w)
         layout.addWidget(scroll, 1)
 
-        # Alt kısım
+        # ── Alt kısım ─────────────────────────────────────────
         bot = QWidget()
         bot.setStyleSheet("background-color: transparent;")
         bl = QVBoxLayout(bot)
         bl.setContentsMargins(12, 4, 12, 10)
         bl.setSpacing(6)
 
-        self.notifications_btn = QPushButton("🔔 Bildirimler")
-        self.notifications_btn.setFixedHeight(36)
+        # Bildirimler butonu — bell ikonu
+        self.notifications_btn = QPushButton("Bildirimler")
         self.notifications_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.notifications_btn.setIcon(
+            Icons.get("bell_dot", size=16, color=IconColors.NOTIFICATION)
+        )
+        self.notifications_btn.setIconSize(QSize(16, 16))
         self.notifications_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: rgba(255, 193, 7, 0.15);
-                color: #ffca28;
-                border: 1px solid rgba(255, 193, 7, 0.4);
+                background-color: {SidebarTheme.NOTIFY_BG};
+                color: {SidebarTheme.NOTIFY_TEXT};
+                border: 1px solid {SidebarTheme.NOTIFY_BORDER};
                 border-radius: 8px;
                 font-size: 13px; font-weight: 600;
+                padding: 6px 12px;
+                text-align: left;
             }}
             QPushButton:hover {{
-                background-color: rgba(255, 193, 7, 0.25);
-                color: #ffdd72;
+                background-color: {SidebarTheme.NOTIFY_HOVER};
+                color: {SidebarTheme.NOTIFY_TEXT};
             }}
         """)
         self.notifications_btn.clicked.connect(self.dashboard_clicked.emit)
         bl.addWidget(self.notifications_btn)
 
-        self.sync_btn = QPushButton("⟳ Yenile  Senkronize Et")
-        self.sync_btn.setFixedHeight(36)
+        # Sync butonu — sync ikonu
+        self.sync_btn = QPushButton("Senkronize Et")
         self.sync_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.sync_btn.setIcon(Icons.get("sync", size=15, color=IconColors.SYNC))
+        self.sync_btn.setIconSize(QSize(15, 15))
         self.sync_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {SidebarTheme.SYNC_BG};
@@ -275,6 +306,8 @@ class Sidebar(QWidget):
                 border: 1px solid {SidebarTheme.SYNC_BORDER};
                 border-radius: 8px;
                 font-size: 13px; font-weight: 600;
+                padding: 6px 12px;
+                text-align: left;
             }}
             QPushButton:hover {{
                 background-color: {SidebarTheme.SYNC_HOVER};
@@ -282,16 +315,29 @@ class Sidebar(QWidget):
             }}
             QPushButton:disabled {{
                 background-color: {SidebarTheme.SYNC_DISABLED};
-                color: #5a5d6e;
-                border: 1px solid rgba(255,255,255,0.05);
+                color: {SidebarTheme.VERSION};
+                border: 1px solid {SidebarTheme.SEPARATOR};
             }}
         """)
         bl.addWidget(self.sync_btn)
 
-        self.status_label = QLabel("● Hazır")
-        self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setStyleSheet("color: #22c55e; font-size: 11px; background: transparent;")
-        bl.addWidget(self.status_label)
+        # Durum etiketi — check_circle ikonu
+        status_row = QWidget()
+        status_row.setStyleSheet("background: transparent;")
+        from PySide6.QtWidgets import QHBoxLayout
+        sr = QHBoxLayout(status_row)
+        sr.setContentsMargins(4, 0, 0, 0)
+        sr.setSpacing(6)
+        self._status_icon_lbl = QLabel()
+        self._status_icon_lbl.setPixmap(Icons.pixmap("check_circle", size=12, color=SidebarTheme.STATUS_READY))
+        self._status_icon_lbl.setFixedSize(12, 12)
+        self.status_label = QLabel("Hazır")
+        self.status_label.setStyleSheet(f"color: {SidebarTheme.STATUS_READY}; font-size: 11px; background: transparent;")
+        sr.addWidget(self._status_icon_lbl)
+        sr.addWidget(self.status_label)
+        sr.addStretch()
+        bl.addWidget(status_row)
+
         layout.addWidget(bot)
 
     def _load_menu(self):
@@ -303,30 +349,21 @@ class Sidebar(QWidget):
             with open(cfg_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             menu_cfg = data.get("menu_yapilandirma", {})
-            
         except Exception as e:
-            # Fallback: Hata durumunda minimal menü göster
             from core.logger import logger
             logger.error(f"ayarlar.json yüklenemedi: {e}")
             menu_cfg = {}
 
         for gname, items in menu_cfg.items():
-            icon = GROUP_ICONS.get(gname, "📁")
-            grp = AccordionGroup(gname, icon)
-
+            grp = AccordionGroup(gname)       # emoji yok artık
             for item in items:
                 baslik = item.get("baslik", "?")
-                
-                # Gelecek: implemented=False olan menüleri disabled göster
-                # is_implemented = item.get("implemented", True)
-                
                 btn = grp.add_item(baslik, self._on_click)
                 self._all_buttons[baslik] = (grp, btn)
-
             self._groups[gname] = grp
             self._ml.addWidget(grp)
 
-    def _on_click(self, group, baslik):
+    def _on_click(self, group: str, baslik: str):
         if self._active_baslik and self._active_baslik in self._all_buttons:
             old_grp, _ = self._all_buttons[self._active_baslik]
             old_grp.set_active(None)
@@ -336,12 +373,10 @@ class Sidebar(QWidget):
         self._active_baslik = baslik
         self.menu_clicked.emit(group, baslik)
 
-    def set_active(self, baslik):
-        # Programatik seçimde menü tıklama sinyali üretme.
+    def set_active(self, baslik: str):
         if self._active_baslik and self._active_baslik in self._all_buttons:
             old_grp, _ = self._all_buttons[self._active_baslik]
             old_grp.set_active(None)
-
         if baslik and baslik in self._all_buttons:
             grp, _ = self._all_buttons[baslik]
             grp.set_active(baslik)
@@ -349,10 +384,22 @@ class Sidebar(QWidget):
         else:
             self._active_baslik = None
 
-    def set_sync_status(self, text, color="#22c55e"):
+    def set_sync_status(self, text: str, color: str = SidebarTheme.STATUS_READY):
         self.status_label.setText(text)
-        self.status_label.setStyleSheet(f"color: {color}; font-size: 11px; background: transparent;")
+        self.status_label.setStyleSheet(
+            f"color: {color}; font-size: 11px; background: transparent;"
+        )
+        # İkonu da renge göre güncelle
+        icon_name = "check_circle" if color == SidebarTheme.STATUS_READY else \
+                    "alert_triangle" if color == SidebarTheme.STATUS_ERROR else "info"
+        self._status_icon_lbl.setPixmap(Icons.pixmap(icon_name, size=12, color=color))
 
-    def set_sync_enabled(self, enabled):
+    def set_sync_enabled(self, enabled: bool):
         self.sync_btn.setEnabled(enabled)
-        self.sync_btn.setText("⟳ Yenile  Senkronize Et" if enabled else "⏳ Senkronize ediliyor...")
+        if enabled:
+            self.sync_btn.setText("  Yenile / Senkronize Et")
+            self.sync_btn.setIcon(Icons.get("sync", size=15, color=IconColors.SYNC))
+        else:
+            self.sync_btn.setText("  Senkronize ediliyor...")
+            self.sync_btn.setIcon(Icons.get("refresh", size=15, color=IconColors.MUTED))
+        self.sync_btn.setIconSize(QSize(15, 15))

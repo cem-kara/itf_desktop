@@ -7,6 +7,7 @@ from PySide6.QtCore import Qt, QDate, QAbstractTableModel, QModelIndex
 
 from core.logger import logger
 from ui.theme_manager import ThemeManager
+from ui.styles import Colors, DarkTheme
 from datetime import datetime, date
 
 S = ThemeManager.get_all_component_styles()
@@ -92,7 +93,7 @@ class PersonelSaglikPanel(QWidget):
         main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(20)
 
-        summary_group = QGroupBox("🩺 Sağlık Durum Özeti")
+        summary_group = QGroupBox("Sağlık Durum Özeti")
         summary_group.setStyleSheet(S["group"])
         summary_layout = QGridLayout(summary_group)
         summary_layout.setHorizontalSpacing(20)
@@ -104,7 +105,7 @@ class PersonelSaglikPanel(QWidget):
         summary_layout.setColumnStretch(3, 1)
         main_layout.addWidget(summary_group)
 
-        history_group = QGroupBox("📋 Geçmiş Muayene Kayıtları")
+        history_group = QGroupBox("Geçmiş Muayene Kayıtları")
         history_group.setStyleSheet(S["group"])
         history_layout = QVBoxLayout(history_group)
 
@@ -135,11 +136,11 @@ class PersonelSaglikPanel(QWidget):
         l.setSpacing(2)
         
         lbl_t = QLabel(text)
-        lbl_t.setStyleSheet("color: #8b8fa3; font-size: 11px;")
+        lbl_t.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 11px;")
         l.addWidget(lbl_t)
         
         val = QLabel("—")
-        val.setStyleSheet("color: #e0e2ea; font-size: 14px; font-weight: 500;")
+        val.setStyleSheet(f"color: {DarkTheme.TEXT_PRIMARY}; font-size: 14px; font-weight: 500;")
         l.addWidget(val)
         
         grid.addWidget(container, row, col)
@@ -174,9 +175,9 @@ class PersonelSaglikPanel(QWidget):
                 try:
                     next_check_date = datetime.strptime(str(next_check_date_str).split(' ')[0], '%Y-%m-%d').date()
                     if next_check_date < date.today():
-                        self.lbl_sonraki_muayene.setStyleSheet("color: #f85149; font-size: 14px; font-weight: bold;")
+                        self.lbl_sonraki_muayene.setStyleSheet(f"color: {Colors.RED_500}; font-size: 14px; font-weight: bold;")
                     else:
-                        self.lbl_sonraki_muayene.setStyleSheet("color: #e0e2ea; font-size: 14px; font-weight: 500;")
+                        self.lbl_sonraki_muayene.setStyleSheet(f"color: {DarkTheme.TEXT_PRIMARY}; font-size: 14px; font-weight: 500;")
                 except ValueError: pass
         else:
             self._clear_ui()

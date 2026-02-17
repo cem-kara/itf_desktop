@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import (
     Qt, QSortFilterProxyModel, QAbstractTableModel, QModelIndex
 )
+from ui.styles import DarkTheme
 
 
 class DictTableModel(QAbstractTableModel):
@@ -97,13 +98,13 @@ class DataTableWidget(QWidget):
 
         self.search_input = QLineEdit()
         self.search_input.setObjectName("search_input")
-        self.search_input.setPlaceholderText("🔍  Ara...")
+        self.search_input.setPlaceholderText("Ara...")
         self.search_input.setClearButtonEnabled(True)
         self.search_input.textChanged.connect(self._on_search)
         toolbar.addWidget(self.search_input, 1)
 
         self.count_label = QLabel("0 kayıt")
-        self.count_label.setStyleSheet("color: #64748b; font-size: 12px; padding-right: 4px;")
+        self.count_label.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 12px; padding-right: 4px;")
         toolbar.addWidget(self.count_label)
 
         layout.addLayout(toolbar)

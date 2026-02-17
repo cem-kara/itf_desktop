@@ -11,6 +11,7 @@ from core.config import AppConfig
 LOG_FILE = os.path.join(LOG_DIR, "app.log")
 SYNC_LOG_FILE = os.path.join(LOG_DIR, "sync.log")
 ERROR_LOG_FILE = os.path.join(LOG_DIR, "errors.log")
+UI_LOG_FILE = os.path.join(LOG_DIR, "ui_log.log")
 
 # Log dizinini oluştur
 Path(LOG_DIR).mkdir(parents=True, exist_ok=True)
@@ -26,6 +27,12 @@ class ErrorLogFilter(logging.Filter):
     """Sadece ERROR ve üstü logları filtrele"""
     def filter(self, record):
         return record.levelno >= logging.ERROR
+
+
+class UILogFilter(logging.Filter):
+    """Sadece UI context ile işaretlenen logları filtrele"""
+    def filter(self, record):
+        return hasattr(record, "ui_context")
 
 
 class StructuredFormatter(logging.Formatter):
@@ -45,6 +52,16 @@ class StructuredFormatter(logging.Formatter):
                 extra += f" | Adım: {ctx['step']}"
             if 'count' in ctx:
                 extra += f" | Kayıt: {ctx['count']}"
+            base += extra
+
+        # UI bağlam bilgisi varsa ekle
+        if hasattr(record, "ui_context"):
+            ctx = record.ui_context
+            extra = f" | UI: {ctx.get('action', 'N/A')}"
+            if "group" in ctx:
+                extra += f" | Grup: {ctx['group']}"
+            if "page" in ctx:
+                extra += f" | Sayfa: {ctx['page']}"
             base += extra
         
         return base
@@ -88,6 +105,19 @@ error_handler.setFormatter(StructuredFormatter(
     "%(asctime)s - %(levelname)s - %(message)s"
 ))
 
+# UI log handler — RotatingFileHandler
+ui_handler = RotatingFileHandler(
+    UI_LOG_FILE,
+    maxBytes=AppConfig.LOG_MAX_BYTES,
+    backupCount=AppConfig.LOG_BACKUP_COUNT,
+    encoding="utf-8"
+)
+ui_handler.setLevel(logging.ERROR)
+ui_handler.addFilter(UILogFilter())
+ui_handler.setFormatter(StructuredFormatter(
+    "%(asctime)s - %(levelname)s - %(message)s"
+))
+
 # Console handler
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
@@ -98,7 +128,7 @@ console_handler.setFormatter(logging.Formatter(
 # Logger yapılandırması
 logging.basicConfig(
     level=logging.INFO,
-    handlers=[file_handler, sync_handler, error_handler, console_handler]
+    handlers=[file_handler, sync_handler, error_handler, ui_handler, console_handler]
 )
 
 logger = logging.getLogger("ITF_APP")
@@ -155,6 +185,17 @@ def log_sync_complete(table_name, stats=None):
         msg += f" | Push: {stats.get('pushed', 0)}, Pull: {stats.get('pulled', 0)}"
     
     logger.info(msg, extra=extra)
+
+
+def log_ui_error(action, error, group=None, page=None):
+    """UI akışında yakalanan hataları ui_log.log dosyasına yazar."""
+    ctx = {"action": action}
+    if group is not None:
+        ctx["group"] = group
+    if page is not None:
+        ctx["page"] = page
+    extra = {"ui_context": ctx}
+    logger.error(f"UI hata: {type(error).__name__}: {error}", extra=extra, exc_info=True)
 
 
 def get_user_friendly_error(error, table_name=None):

@@ -37,6 +37,7 @@ from PySide6.QtGui import QCursor
 
 from core.logger import logger
 from ui.theme_manager import ThemeManager
+from ui.styles import DarkTheme
 
 S = ThemeManager.get_all_component_styles()
 
@@ -240,12 +241,12 @@ class YilSonuIslemleriPage(QWidget):
         # Uyari Grubu
         grp_uyari = QGroupBox("DIKKAT - YIL SONU ISLEMI")
         grp_uyari.setStyleSheet(
-            "QGroupBox {"
-            "  border: 1px solid #c62828;"
+            f"QGroupBox {{"
+            f"  border: 1px solid {DarkTheme.BTN_DANGER_BORDER};"
             "  border-radius: 6px;"
             "  margin-top: 10px;"
             "  font-weight: bold;"
-            "  color: #ef5350;"
+            f"  color: {DarkTheme.BTN_DANGER_TEXT};"
             "  font-size: 13px;"
             "}"
             "QGroupBox::title {"
@@ -274,12 +275,12 @@ class YilSonuIslemleriPage(QWidget):
 
         sep = QFrame()
         sep.setFrameShape(QFrame.HLine)
-        sep.setStyleSheet("color: rgba(255,255,255,0.08);")
+        sep.setStyleSheet(f"color: {DarkTheme.BORDER_PRIMARY};")
         v_uyari.addWidget(sep)
 
         self._chk_onay = QCheckBox("Riskleri anladim, islemi onayliyorum.")
         self._chk_onay.setStyleSheet(
-            "QCheckBox { color: #ef5350; font-weight: bold; font-size: 13px; }"
+            f"QCheckBox {{ color: {DarkTheme.BTN_DANGER_TEXT}; font-weight: bold; font-size: 13px; }}"
             "QCheckBox::indicator { width: 16px; height: 16px; }"
         )
         v_uyari.addWidget(self._chk_onay)
@@ -293,11 +294,11 @@ class YilSonuIslemleriPage(QWidget):
         self._txt_log = QTextEdit()
         self._txt_log.setReadOnly(True)
         self._txt_log.setStyleSheet(
-            "background-color: #0d1117;"
-            "color: #3fb950;"
+            f"background-color: {DarkTheme.BG_PRIMARY};"
+            f"color: {DarkTheme.STATUS_SUCCESS};"
             "font-family: 'Consolas', 'IBM Plex Mono', monospace;"
             "font-size: 12px;"
-            "border: 1px solid #30363d;"
+            f"border: 1px solid {DarkTheme.BORDER_PRIMARY};"
             "border-radius: 6px;"
             "padding: 8px;"
         )
@@ -326,7 +327,7 @@ class YilSonuIslemleriPage(QWidget):
         sep_v = QFrame()
         sep_v.setFrameShape(QFrame.VLine)
         sep_v.setFixedHeight(30)
-        sep_v.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        sep_v.setStyleSheet(f"background-color: {DarkTheme.BORDER_PRIMARY};")
 
         self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setFixedHeight(36)
@@ -395,27 +396,27 @@ class YilSonuIslemleriPage(QWidget):
     @staticmethod
     def _style_btn_aktif() -> str:
         return (
-            "QPushButton {"
-            "  background-color: #c62828;"
-            "  color: white;"
+            f"QPushButton {{"
+            f"  background-color: {DarkTheme.BTN_DANGER_BG};"
+            f"  color: {DarkTheme.BTN_DANGER_TEXT};"
             "  font-weight: bold;"
             "  font-size: 13px;"
             "  border-radius: 6px;"
-            "  border: none;"
+            f"  border: 1px solid {DarkTheme.BTN_DANGER_BORDER};"
             "}"
-            "QPushButton:hover { background-color: #b71c1c; }"
+            f"QPushButton:hover {{ background-color: {DarkTheme.BTN_DANGER_HOVER}; }}"
         )
 
     @staticmethod
     def _style_btn_pasif() -> str:
         return (
-            "QPushButton {"
-            "  background-color: #2a2a2a;"
-            "  color: #555;"
+            f"QPushButton {{"
+            f"  background-color: {DarkTheme.BG_TERTIARY};"
+            f"  color: {DarkTheme.TEXT_DISABLED};"
             "  font-weight: bold;"
             "  font-size: 13px;"
             "  border-radius: 6px;"
-            "  border: none;"
+            f"  border: 1px solid {DarkTheme.BORDER_SECONDARY};"
             "}"
         )
 

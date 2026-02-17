@@ -4,8 +4,6 @@ from PySide6.QtWidgets import (
     QGroupBox, QScrollArea, QTableView, QHeaderView
 )
 from PySide6.QtCore import Qt, QDate, QAbstractTableModel, QModelIndex
-from PySide6.QtGui import QColor
-
 from core.logger import logger
 from ui.theme_manager import ThemeManager
 from datetime import datetime, timedelta, date
@@ -108,7 +106,7 @@ class PersonelIzinPanel(QWidget):
         summary_layout.setSpacing(20)
 
         # Yıllık İzin
-        grp_yillik = QGroupBox("📅  Yıllık İzin Durumu")
+        grp_yillik = QGroupBox("Yıllık İzin Durumu")
         grp_yillik.setStyleSheet(S["group"])
         g = QGridLayout(grp_yillik)
         g.setHorizontalSpacing(10)
@@ -133,7 +131,7 @@ class PersonelIzinPanel(QWidget):
         summary_layout.addWidget(grp_yillik)
 
         # Şua ve Diğer
-        grp_diger = QGroupBox("☢️  Şua ve Diğer İzinler")
+        grp_diger = QGroupBox("Şua ve Diğer İzinler")
         grp_diger.setStyleSheet(S["group"])
         g2 = QGridLayout(grp_diger)
         g2.setHorizontalSpacing(10)
@@ -160,7 +158,7 @@ class PersonelIzinPanel(QWidget):
         main_layout.addLayout(summary_layout)
 
         # Son 1 Yıllık İzinler Listesi
-        grp_recent_leaves = QGroupBox("🗓️  Geçmiş İzin Hareketleri")
+        grp_recent_leaves = QGroupBox("Geçmiş İzin Hareketleri")
         grp_recent_leaves.setStyleSheet(S["group"])
         v_recent_leaves = QVBoxLayout(grp_recent_leaves)
 

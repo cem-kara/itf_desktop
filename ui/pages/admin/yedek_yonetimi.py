@@ -26,11 +26,12 @@ from PySide6.QtWidgets import (
     QSizePolicy, QFrame,
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QCursor, QColor
+from PySide6.QtGui import QCursor
 
 from core.logger import logger
 from core.paths import DB_PATH
 from ui.theme_manager import ThemeManager
+from ui.styles import Colors, DarkTheme
 
 S = ThemeManager.get_all_component_styles()
 
@@ -123,25 +124,27 @@ class YedekYonetimiPage(QWidget):
 
         # ── Tablo ────────────────────────────────────────────────────────────
         tablo_group = QGroupBox("Mevcut Yedekler")
-        tablo_group.setStyleSheet("""
-            QGroupBox {
-                border: 1px solid rgba(116,139,173,0.30);
+        tablo_group.setStyleSheet(
+            f"""
+            QGroupBox {{
+                border: 1px solid {DarkTheme.BORDER_FOCUS};
                 border-radius: 10px;
                 margin-top: 12px;
                 padding-top: 8px;
                 font-size: 13px;
                 font-weight: 700;
-                color: #bfd7ff;
-                background: rgba(15, 20, 29, 0.6);
-            }
-            QGroupBox::title {
+                color: {DarkTheme.BTN_PRIMARY_TEXT};
+                background: {DarkTheme.BG_PRIMARY};
+            }}
+            QGroupBox::title {{
                 subcontrol-origin: margin;
                 left: 14px;
                 padding: 0 8px;
-                background: #0f141d;
+                background: {DarkTheme.BG_PRIMARY};
                 border-radius: 6px;
-            }
-        """)
+            }}
+            """
+        )
         tablo_layout = QVBoxLayout(tablo_group)
         tablo_layout.setContentsMargins(12, 12, 12, 12)
 
@@ -161,29 +164,31 @@ class YedekYonetimiPage(QWidget):
         hdr.setSectionResizeMode(1, QHeaderView.ResizeToContents)
         hdr.setSectionResizeMode(2, QHeaderView.ResizeToContents)
 
-        self.tablo.setStyleSheet("""
-            QTableWidget {
-                background-color: #0d1117;
-                alternate-background-color: #111827;
-                color: #c9d1d9;
+        self.tablo.setStyleSheet(
+            f"""
+            QTableWidget {{
+                background-color: {DarkTheme.BG_PRIMARY};
+                alternate-background-color: {DarkTheme.BG_SECONDARY};
+                color: {DarkTheme.TEXT_SECONDARY};
                 border: none;
                 gridline-color: transparent;
                 font-size: 13px;
-            }
-            QTableWidget::item:selected {
-                background-color: rgba(63,140,255,0.20);
-                color: #e0e2ea;
-            }
-            QHeaderView::section {
-                background-color: #161b26;
-                color: #8b949e;
+            }}
+            QTableWidget::item:selected {{
+                background-color: {DarkTheme.BG_SELECTED};
+                color: {DarkTheme.TEXT_PRIMARY};
+            }}
+            QHeaderView::section {{
+                background-color: {DarkTheme.BG_SECONDARY};
+                color: {DarkTheme.TEXT_MUTED};
                 font-size: 12px;
                 font-weight: 600;
                 border: none;
-                border-bottom: 1px solid rgba(116,139,173,0.20);
+                border-bottom: 1px solid {DarkTheme.BORDER_PRIMARY};
                 padding: 6px 10px;
-            }
-        """)
+            }}
+            """
+        )
         self.tablo.selectionModel().selectionChanged.connect(self._secim_degisti)
         tablo_layout.addWidget(self.tablo)
 
@@ -194,9 +199,9 @@ class YedekYonetimiPage(QWidget):
         )
         self.lbl_not.setWordWrap(True)
         self.lbl_not.setStyleSheet(
-            "color: #e3b341; font-size: 12px; "
-            "background: rgba(227,179,65,0.07); "
-            "border: 1px solid rgba(227,179,65,0.25); "
+            f"color: {Colors.YELLOW_500}; font-size: 12px; "
+            f"background: rgba(227,179,65,0.07); "
+            f"border: 1px solid rgba(227,179,65,0.25); "
             "border-radius: 6px; padding: 8px 12px;"
         )
         tablo_layout.addWidget(self.lbl_not)
@@ -209,13 +214,15 @@ class YedekYonetimiPage(QWidget):
         frame.setFixedHeight(72)
         frame.setMinimumWidth(160)
         frame.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
-        frame.setStyleSheet("""
-            QFrame {
-                background: #151b24;
-                border: 1px solid rgba(116,139,173,0.25);
+        frame.setStyleSheet(
+            f"""
+            QFrame {{
+                background: {DarkTheme.BG_SECONDARY};
+                border: 1px solid {DarkTheme.BORDER_FOCUS};
                 border-radius: 10px;
-            }
-        """)
+            }}
+            """
+        )
         lay = QHBoxLayout(frame)
         lay.setContentsMargins(14, 8, 14, 8)
         lay.setSpacing(10)
@@ -224,16 +231,20 @@ class YedekYonetimiPage(QWidget):
         lbl_ikon.setFixedSize(34, 34)
         lbl_ikon.setAlignment(Qt.AlignCenter)
         lbl_ikon.setStyleSheet(
-            "font-size: 18px; background: rgba(74,144,255,0.15); "
-            "border: 1px solid rgba(74,144,255,0.30); border-radius: 17px;"
+            f"font-size: 18px; background: {DarkTheme.BTN_PRIMARY_BG}; "
+            f"border: 1px solid {DarkTheme.BTN_PRIMARY_BORDER}; border-radius: 17px;"
         )
 
         v = QVBoxLayout()
         v.setSpacing(0)
         lbl_deger = QLabel(deger)
-        lbl_deger.setStyleSheet("font-size: 18px; font-weight: bold; color: #e0e2ea; border: none; background: transparent;")
+        lbl_deger.setStyleSheet(
+            f"font-size: 18px; font-weight: bold; color: {DarkTheme.TEXT_PRIMARY}; border: none; background: transparent;"
+        )
         lbl_baslik = QLabel(baslik)
-        lbl_baslik.setStyleSheet("font-size: 11px; color: #8b949e; border: none; background: transparent;")
+        lbl_baslik.setStyleSheet(
+            f"font-size: 11px; color: {DarkTheme.TEXT_MUTED}; border: none; background: transparent;"
+        )
         v.addWidget(lbl_deger)
         v.addWidget(lbl_baslik)
 
@@ -279,11 +290,11 @@ class YedekYonetimiPage(QWidget):
         # MAX_YEDEK uyarısı
         if adet >= MAX_YEDEK:
             self.lbl_adet[1].setStyleSheet(
-                "font-size: 18px; font-weight: bold; color: #e3b341; border: none; background: transparent;"
+                f"font-size: 18px; font-weight: bold; color: {Colors.YELLOW_500}; border: none; background: transparent;"
             )
         else:
             self.lbl_adet[1].setStyleSheet(
-                "font-size: 18px; font-weight: bold; color: #e0e2ea; border: none; background: transparent;"
+                f"font-size: 18px; font-weight: bold; color: {DarkTheme.TEXT_PRIMARY}; border: none; background: transparent;"
             )
 
         self._secim_degisti()

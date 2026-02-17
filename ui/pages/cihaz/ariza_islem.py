@@ -11,6 +11,8 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
 from core.logger import logger
 from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
+from ui.styles import DarkTheme
+from ui.styles.icons import IconRenderer
 
 # Merkezi stil
 S = ThemeManager.get_all_component_styles()
@@ -150,7 +152,7 @@ class ArizaIslemPenceresi(QWidget):
         self.lbl_baslik = QLabel(f"Arıza No: {self.ariza_id if self.ariza_id else '---'}")
         self.lbl_baslik.setFont(QFont("Segoe UI", 12, QFont.Bold))
         self.lbl_baslik.setStyleSheet(
-            "color:#e57373; border-bottom:2px solid #444; padding-bottom:5px;"
+            f"color:{DarkTheme.STATUS_ERROR}; border-bottom:2px solid {DarkTheme.BORDER_PRIMARY}; padding-bottom:5px;"
         )
         main_layout.addWidget(self.lbl_baslik)
 
@@ -162,21 +164,21 @@ class ArizaIslemPenceresi(QWidget):
         h_info = QHBoxLayout()
         self._add_lbl_input(h_info, "Cihaz No:", "CihazID", read_only=True)
         self.inputs["CihazID"].setStyleSheet(
-            "background:#333; color:#4dabf7; font-weight:bold; border:1px solid #555;"
+            f"background:{DarkTheme.BG_SECONDARY}; color:{DarkTheme.STATUS_INFO}; font-weight:bold; border:1px solid {DarkTheme.BORDER_PRIMARY};"
         )
         self._add_lbl_input(h_info, "Tarih:", "Tarih", read_only=True)
         self.inputs["Tarih"].setStyleSheet(
-            "background:#333; color:#aaa; border:1px solid #444;"
+            f"background:{DarkTheme.BG_SECONDARY}; color:{DarkTheme.TEXT_SECONDARY}; border:1px solid {DarkTheme.BORDER_PRIMARY};"
         )
         form.addLayout(h_info)
 
         # Arıza Açıklaması
         lbl_acik = QLabel("Arıza Detayı:")
-        lbl_acik.setStyleSheet("color:#aaa; font-size:11px;")
+        lbl_acik.setStyleSheet(f"color:{DarkTheme.TEXT_SECONDARY}; font-size:11px;")
         self.inputs["Aciklama"] = QTextEdit()
         self.inputs["Aciklama"].setReadOnly(True)
         self.inputs["Aciklama"].setStyleSheet(
-            "background:#333; color:#ddd; border:1px solid #444;"
+            f"background:{DarkTheme.BG_SECONDARY}; color:{DarkTheme.TEXT_PRIMARY}; border:1px solid {DarkTheme.BORDER_PRIMARY};"
         )
         self.inputs["Aciklama"].setMaximumHeight(60)
         form.addWidget(lbl_acik)
@@ -186,12 +188,12 @@ class ArizaIslemPenceresi(QWidget):
         line = QFrame()
         line.setFrameShape(QFrame.HLine)
         line.setFrameShadow(QFrame.Sunken)
-        line.setStyleSheet("background-color: #444;")
+        line.setStyleSheet(f"background-color: {DarkTheme.BORDER_PRIMARY};")
         form.addWidget(line)
 
         # Müdahale Başlık
         self.lbl_mudahale = QLabel("Müdahale Girişi")
-        self.lbl_mudahale.setStyleSheet("color:#4CAF50; font-weight:bold; font-size:12px;")
+        self.lbl_mudahale.setStyleSheet(f"color:{DarkTheme.STATUS_SUCCESS}; font-weight:bold; font-size:12px;")
         form.addWidget(self.lbl_mudahale)
 
         # İşlem Tarih / Saat
@@ -209,7 +211,7 @@ class ArizaIslemPenceresi(QWidget):
 
         # Yapılan İşlem
         lbl_yapilan = QLabel("Yapılan İşlem:")
-        lbl_yapilan.setStyleSheet("color:#aaa; font-size:11px;")
+        lbl_yapilan.setStyleSheet(f"color:{DarkTheme.TEXT_SECONDARY}; font-size:11px;")
         self.inputs["YapilanIslem"] = QTextEdit()
         self.inputs["YapilanIslem"].setStyleSheet(S["input"])
         self.inputs["YapilanIslem"].setMinimumHeight(80)
@@ -221,7 +223,7 @@ class ArizaIslemPenceresi(QWidget):
 
         # Rapor Dosyası
         lbl_rapor = QLabel("Rapor (Opsiyonel):")
-        lbl_rapor.setStyleSheet("color:#aaa; font-size:11px;")
+        lbl_rapor.setStyleSheet(f"color:{DarkTheme.TEXT_SECONDARY}; font-size:11px;")
         form.addWidget(lbl_rapor)
         
         h_rapor = QHBoxLayout()
@@ -250,13 +252,15 @@ class ArizaIslemPenceresi(QWidget):
 
         # Butonlar
         h_btn = QHBoxLayout()
-        self.btn_kapat = QPushButton("✕ Vazgeç")
+        self.btn_kapat = QPushButton("Vazgec")
         self.btn_kapat.setStyleSheet(S["cancel_btn"])
         self.btn_kapat.clicked.connect(self.kapanma_istegi.emit)
+        IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         
         self.btn_kaydet = QPushButton("Kaydet")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
         self.btn_kaydet.clicked.connect(self.kaydet_baslat)
+        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         
         h_btn.addWidget(self.btn_kapat)
         h_btn.addWidget(self.btn_kaydet)
@@ -268,7 +272,7 @@ class ArizaIslemPenceresi(QWidget):
 
     def _add_lbl_input(self, layout, text, key, read_only=False):
         lbl = QLabel(text)
-        lbl.setStyleSheet("color:#aaa; font-size:11px;")
+        lbl.setStyleSheet(f"color:{DarkTheme.TEXT_SECONDARY}; font-size:11px;")
         w = QLineEdit()
         w.setStyleSheet(S["input"])
         if read_only:
@@ -282,7 +286,7 @@ class ArizaIslemPenceresi(QWidget):
         col.setContentsMargins(0, 0, 0, 0)
         col.setSpacing(2)
         lbl = QLabel(text)
-        lbl.setStyleSheet("color:#aaa; font-size:11px;")
+        lbl.setStyleSheet(f"color:{DarkTheme.TEXT_SECONDARY}; font-size:11px;")
         cb = QComboBox()
         cb.addItems(items)
         cb.setStyleSheet(S["combo"])
@@ -293,7 +297,7 @@ class ArizaIslemPenceresi(QWidget):
 
     def _add_lbl_date(self, layout, text, key):
         lbl = QLabel(text)
-        lbl.setStyleSheet("color:#aaa; font-size:11px;")
+        lbl.setStyleSheet(f"color:{DarkTheme.TEXT_SECONDARY}; font-size:11px;")
         de = QDateEdit()
         de.setCalendarPopup(True)
         de.setDisplayFormat("dd.MM.yyyy")
@@ -346,7 +350,7 @@ class ArizaIslemPenceresi(QWidget):
         index = self.inputs["YeniDurum"].findText(mevcut_durum)
         if index >= 0: self.inputs["YeniDurum"].setCurrentIndex(index)
 
-        # 🛑 KAPALI KONTROLÜ
+        # Kapali kontrolu
         self.ariza_kapali_mi = "kapalı" in mevcut_durum.lower()
         if self.ariza_kapali_mi:
             self.form_durumunu_ayarla(kapali=True)
@@ -364,7 +368,7 @@ class ArizaIslemPenceresi(QWidget):
                 rapor = islem.get("Rapor", "")
                 
                 log_text += f"[{zaman}] {yapan} ({tur}): {detay}"
-                if rapor: log_text += " [📄 Rapor Var]"
+                if rapor: log_text += " [Rapor Var]"
                 log_text += "\n"
        
 
@@ -380,16 +384,21 @@ class ArizaIslemPenceresi(QWidget):
         self.inputs["YeniDurum"].setEnabled(durum)
         
         if kapali:
-            self.lbl_mudahale.setText("🔒 Arıza Kapatılmış (Sadece Rapor Eklenebilir)")
-            self.lbl_mudahale.setStyleSheet("color: #e57373; font-weight: bold; font-size: 13px; margin-top: 5px;")
+            self.lbl_mudahale.setText("Ariza Kapatilmis (Sadece Rapor Eklenebilir)")
+            self.lbl_mudahale.setStyleSheet(
+                f"color: {DarkTheme.STATUS_ERROR}; font-weight: bold; font-size: 13px; margin-top: 5px;"
+            )
             self.btn_kaydet.setText("Raporu Kaydet")
             # Arkaplanları gri yapalım ki kapalı olduğu anlaşılsın
-            disabled_style = "background: rgba(255,255,255,0.05); color: #666; border: 1px solid #333;"
+            disabled_style = (
+                f"background: {DarkTheme.BG_HOVER}; color: {DarkTheme.TEXT_DISABLED}; "
+                f"border: 1px solid {DarkTheme.BORDER_PRIMARY};"
+            )
             self.inputs["IslemYapan"].setStyleSheet(disabled_style)
             self.inputs["YapilanIslem"].setStyleSheet(disabled_style)
         else:
-            self.lbl_mudahale.setText("🛠️ Müdahale ve Çözüm Girişi")
-            self.lbl_mudahale.setStyleSheet("color:#4CAF50; font-weight:bold; font-size:12px;")
+            self.lbl_mudahale.setText("Mudahale ve Cozum Girisi")
+            self.lbl_mudahale.setStyleSheet(f"color:{DarkTheme.STATUS_SUCCESS}; font-weight:bold; font-size:12px;")
             self.btn_kaydet.setText("Kaydet")
 
     def rapor_dosyasi_sec(self):
@@ -398,7 +407,7 @@ class ArizaIslemPenceresi(QWidget):
             self.secilen_rapor_yolu = yol
             dosya_adi = os.path.basename(yol)
             self.txt_rapor_yolu.setText(dosya_adi)
-            self.txt_rapor_yolu.setStyleSheet("color: #4caf50; font-weight: bold;")
+            self.txt_rapor_yolu.setStyleSheet(f"color: {DarkTheme.STATUS_SUCCESS}; font-weight: bold;")
 
     def kaydet_baslat(self):
         if self.ariza_kapali_mi:

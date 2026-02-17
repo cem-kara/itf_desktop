@@ -11,6 +11,8 @@ from PySide6.QtGui import QCursor, QPixmap
 from core.logger import logger
 from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
+from ui.styles import DarkTheme
+from ui.styles.icons import IconRenderer
 
 
 # ─── Drive Yükleme Worker (UI donmasın) ───
@@ -130,7 +132,7 @@ class CihazEklePage(QWidget):
         left_l.setContentsMargins(0, 0, 0, 0)
 
         # Cihaz Görseli
-        photo_grp = QGroupBox("📷  Cihaz Görseli")
+        photo_grp = QGroupBox("Cihaz Gorseli")
         photo_grp.setStyleSheet(S["group"])
         photo_lay = QVBoxLayout(photo_grp)
         photo_lay.setAlignment(Qt.AlignCenter)
@@ -141,15 +143,16 @@ class CihazEklePage(QWidget):
         self.lbl_resim.setStyleSheet(S["photo_area"])
         photo_lay.addWidget(self.lbl_resim, alignment=Qt.AlignCenter)
 
-        btn_resim = QPushButton("📷 Görsel Seç")
+        btn_resim = QPushButton("Gorsel Sec")
         btn_resim.setStyleSheet(S["photo_btn"])
         btn_resim.setCursor(QCursor(Qt.PointingHandCursor))
         btn_resim.clicked.connect(lambda: self._select_file("Img"))
+        IconRenderer.set_button_icon(btn_resim, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
         photo_lay.addWidget(btn_resim, alignment=Qt.AlignCenter)
         left_l.addWidget(photo_grp)
 
         # Temel Bilgiler
-        basic_grp = QGroupBox("📋  Temel Bilgiler")
+        basic_grp = QGroupBox("Temel Bilgiler")
         basic_grp.setStyleSheet(S["group"])
         basic_lay = QHBoxLayout(basic_grp)
         basic_lay.setSpacing(10)
@@ -160,7 +163,7 @@ class CihazEklePage(QWidget):
         self.ui["cihaz_id"].setStyleSheet(S["input"] + """
             QLineEdit {
                 background-color: rgba(255,255,255,0.02);
-                color: #8b8fa3;
+                color: {DarkTheme.TEXT_MUTED};
             }
         """)
 
@@ -170,7 +173,7 @@ class CihazEklePage(QWidget):
         left_l.addWidget(basic_grp)
 
         # Kimlik Bilgileri
-        identity_grp = QGroupBox("🔬  Cihaz Kimlik Bilgileri")
+        identity_grp = QGroupBox("Cihaz Kimlik Bilgileri")
         identity_grp.setStyleSheet(S["group"])
         identity_lay = QVBoxLayout(identity_grp)
         identity_lay.setSpacing(10)
@@ -203,7 +206,7 @@ class CihazEklePage(QWidget):
         right_l.setContentsMargins(0, 0, 0, 0)
 
         # Lokasyon Bilgileri
-        location_grp = QGroupBox("📍  Lokasyon Bilgileri")
+        location_grp = QGroupBox("Lokasyon Bilgileri")
         location_grp.setStyleSheet(S["group"])
         location_lay = QVBoxLayout(location_grp)
         location_lay.setSpacing(10)
@@ -220,7 +223,7 @@ class CihazEklePage(QWidget):
         right_l.addWidget(location_grp)
 
         # Lisans Bilgileri
-        license_grp = QGroupBox("📜  Lisans Bilgileri")
+        license_grp = QGroupBox("Lisans Bilgileri")
         license_grp.setStyleSheet(S["group"])
         license_lay = QVBoxLayout(license_grp)
         license_lay.setSpacing(10)
@@ -236,20 +239,23 @@ class CihazEklePage(QWidget):
         self.ui["lisans_bitis"] = self._make_date("Lisans Bitiş Tarihi", row_l2)
         license_lay.addLayout(row_l2)
 
-        btn_lisans = QPushButton("📄 Lisans Belgesi Seç")
+        btn_lisans = QPushButton("Lisans Belgesi Sec")
         btn_lisans.setStyleSheet(S["file_btn"])
         btn_lisans.setCursor(QCursor(Qt.PointingHandCursor))
         btn_lisans.clicked.connect(lambda: self._select_file("NDKLisansBelgesi"))
+        IconRenderer.set_button_icon(btn_lisans, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
         license_lay.addWidget(btn_lisans)
 
         lbl_lisans_file = QLabel("")
-        lbl_lisans_file.setStyleSheet("color: #4ade80; font-size: 11px; background: transparent;")
+        lbl_lisans_file.setStyleSheet(
+            f"color: {DarkTheme.STATUS_SUCCESS}; font-size: 11px; background: transparent;"
+        )
         license_lay.addWidget(lbl_lisans_file)
         self.ui["lisans_file_lbl"] = lbl_lisans_file
         right_l.addWidget(license_grp)
 
         # Teknik Bilgiler
-        tech_info_grp = QGroupBox("🔧  Teknik Bilgiler")
+        tech_info_grp = QGroupBox("Teknik Bilgiler")
         tech_info_grp.setStyleSheet(S["group"])
         tech_info_lay = QVBoxLayout(tech_info_grp)
         tech_info_lay.setSpacing(10)
@@ -268,7 +274,7 @@ class CihazEklePage(QWidget):
         right_l.addWidget(tech_info_grp)
 
         # Garanti ve Bakım
-        maint_grp = QGroupBox("🛠️  Garanti ve Bakım Durumu")
+        maint_grp = QGroupBox("Garanti ve Bakim Durumu")
         maint_grp.setStyleSheet(S["group"])
         maint_lay = QVBoxLayout(maint_grp)
         maint_lay.setSpacing(10)
@@ -306,29 +312,29 @@ class CihazEklePage(QWidget):
             QProgressBar {
                 background-color: rgba(255,255,255,0.05);
                 border: 1px solid rgba(255,255,255,0.08);
-                border-radius: 4px; color: #8b8fa3; font-size: 11px;
+                border-radius: 4px; color: %s; font-size: 11px;
             }
             QProgressBar::chunk {
-                background-color: rgba(29, 117, 254, 0.6);
+                background-color: %s;
                 border-radius: 3px;
             }
-        """)
+        """ % (DarkTheme.TEXT_MUTED, DarkTheme.BTN_PRIMARY_HOVER))
         footer.addWidget(self.progress)
         footer.addStretch()
 
-        btn_iptal = QPushButton("✕  İPTAL")
+        btn_iptal = QPushButton("IPTAL")
         btn_iptal.setStyleSheet(S["cancel_btn"])
-        btn_iptal.setFixedHeight(42)
         btn_iptal.setCursor(QCursor(Qt.PointingHandCursor))
         btn_iptal.clicked.connect(self._on_cancel)
+        IconRenderer.set_button_icon(btn_iptal, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         footer.addWidget(btn_iptal)
 
         title = "GÜNCELLE" if self._is_edit else "KAYDET"
-        self.btn_kaydet = QPushButton(f"✓  CİHAZI {title}")
+        self.btn_kaydet = QPushButton(f"CIHAZI {title}")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
-        self.btn_kaydet.setFixedHeight(42)
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kaydet.clicked.connect(self._on_save)
+        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         footer.addWidget(self.btn_kaydet)
 
         main.addLayout(footer)
@@ -544,7 +550,7 @@ class CihazEklePage(QWidget):
                     self.lbl_resim.setScaledContents(False)
             elif alan_adi == "NDKLisansBelgesi":
                 file_name = os.path.basename(file_path)
-                self.ui["lisans_file_lbl"].setText(f"✓ {file_name}")
+                self.ui["lisans_file_lbl"].setText(file_name)
 
     # ═══════════════════════════════════════════
     #  FORM İŞLEMLERİ

@@ -12,6 +12,8 @@ from core.logger import logger
 from core.hata_yonetici import exc_logla
 from core.date_utils import parse_date
 from ui.theme_manager import ThemeManager
+from ui.styles import DarkTheme
+from ui.styles.icons import IconRenderer
 
 
 # ─── Drive Yükleme Worker (UI donmasın) ───
@@ -125,7 +127,7 @@ class PersonelEklePage(QWidget):
         left_l.setContentsMargins(0, 0, 0, 0)
 
         # Fotoğraf
-        photo_grp = QGroupBox("📷  Fotoğraf")
+        photo_grp = QGroupBox("Fotograf")
         photo_grp.setStyleSheet(S["group"])
         photo_lay = QVBoxLayout(photo_grp)
         photo_lay.setAlignment(Qt.AlignCenter)
@@ -136,15 +138,16 @@ class PersonelEklePage(QWidget):
         self.lbl_resim.setStyleSheet(S["photo_area"])
         photo_lay.addWidget(self.lbl_resim, alignment=Qt.AlignCenter)
 
-        btn_resim = QPushButton("📷 Fotoğraf Seç")
+        btn_resim = QPushButton("Fotograf Sec")
         btn_resim.setStyleSheet(S["photo_btn"])
         btn_resim.setCursor(QCursor(Qt.PointingHandCursor))
         btn_resim.clicked.connect(self._select_photo)
+        IconRenderer.set_button_icon(btn_resim, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
         photo_lay.addWidget(btn_resim, alignment=Qt.AlignCenter)
         left_l.addWidget(photo_grp)
 
         # Kimlik Bilgileri
-        id_grp = QGroupBox("🪪  Kimlik Bilgileri")
+        id_grp = QGroupBox("Kimlik Bilgileri")
         id_grp.setStyleSheet(S["group"])
         id_lay = QVBoxLayout(id_grp)
         id_lay.setSpacing(10)
@@ -166,7 +169,7 @@ class PersonelEklePage(QWidget):
         left_l.addWidget(id_grp)
 
         # İletişim
-        contact_grp = QGroupBox("📞  İletişim Bilgileri")
+        contact_grp = QGroupBox("Iletisim Bilgileri")
         contact_grp.setStyleSheet(S["group"])
         contact_lay = QVBoxLayout(contact_grp)
 
@@ -186,7 +189,7 @@ class PersonelEklePage(QWidget):
         right_l.setContentsMargins(0, 0, 0, 0)
 
         # Kurumsal
-        corp_grp = QGroupBox("🏛️  Kadro ve Kurumsal Bilgiler")
+        corp_grp = QGroupBox("Kadro ve Kurumsal Bilgiler")
         corp_grp.setStyleSheet(S["group"])
         corp_lay = QVBoxLayout(corp_grp)
         corp_lay.setSpacing(10)
@@ -209,7 +212,7 @@ class PersonelEklePage(QWidget):
         right_l.addWidget(corp_grp)
 
         # Eğitim
-        edu_grp = QGroupBox("🎓  Eğitim Bilgileri")
+        edu_grp = QGroupBox("Egitim Bilgileri")
         edu_grp.setStyleSheet(S["group"])
         edu_main = QHBoxLayout(edu_grp)
         edu_main.setSpacing(16)
@@ -219,7 +222,7 @@ class PersonelEklePage(QWidget):
             col.setSpacing(8)
 
             header = QLabel(f"{'Lise / Önlisans / Lisans' if i == '1' else 'Lisans / Yüksek Lisans / Lisans Tamamlama'}")
-            header.setStyleSheet("color: #6bd3ff; font-size: 12px; font-weight: bold; background: transparent;")
+            header.setStyleSheet(S.get("section_title", ""))
             col.addWidget(header)
 
             self.ui[f"okul{i}"] = self._make_combo_v(f"Okul Adı", col, editable=True)
@@ -227,15 +230,18 @@ class PersonelEklePage(QWidget):
             self.ui[f"mezun_tarihi{i}"] = self._make_input_v(f"Mezuniyet Tarihi", col)
             self.ui[f"diploma_no{i}"] = self._make_input_v(f"Diploma No", col)
 
-            btn_dip = QPushButton(f"📄 Diploma {i} Seç")
+            btn_dip = QPushButton(f"Diploma {i} Sec")
             btn_dip.setStyleSheet(S["file_btn"])
             btn_dip.setCursor(QCursor(Qt.PointingHandCursor))
             btn_dip.clicked.connect(lambda checked, idx=i: self._select_diploma(idx))
+            IconRenderer.set_button_icon(btn_dip, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
             col.addWidget(btn_dip)
 
             # Seçili dosya etiketi
             lbl_file = QLabel("")
-            lbl_file.setStyleSheet("color: #4ade80; font-size: 11px; background: transparent;")
+            lbl_file.setStyleSheet(
+                f"color: {DarkTheme.STATUS_SUCCESS}; font-size: 11px; background: transparent;"
+            )
             col.addWidget(lbl_file)
             self.ui[f"diploma_file_lbl{i}"] = lbl_file
 
@@ -264,33 +270,33 @@ class PersonelEklePage(QWidget):
         self.progress.setFixedWidth(150)
         self.progress.setFixedHeight(16)
         self.progress.setVisible(False)
-        self.progress.setStyleSheet("""
-            QProgressBar {
+        self.progress.setStyleSheet(f"""
+            QProgressBar {{
                 background-color: rgba(255,255,255,0.05);
                 border: 1px solid rgba(255,255,255,0.08);
-                border-radius: 4px; color: #8b8fa3; font-size: 11px;
-            }
-            QProgressBar::chunk {
+                border-radius: 4px; color: {DarkTheme.TEXT_MUTED}; font-size: 11px;
+            }}
+            QProgressBar::chunk {{
                 background-color: rgba(29, 117, 254, 0.6);
                 border-radius: 3px;
-            }
+            }}
         """)
         footer.addWidget(self.progress)
         footer.addStretch()
 
-        btn_iptal = QPushButton("✕  İPTAL")
+        btn_iptal = QPushButton("IPTAL")
         btn_iptal.setStyleSheet(S["cancel_btn"])
-        btn_iptal.setFixedHeight(42)
         btn_iptal.setCursor(QCursor(Qt.PointingHandCursor))
         btn_iptal.clicked.connect(self._on_cancel)
+        IconRenderer.set_button_icon(btn_iptal, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         footer.addWidget(btn_iptal)
 
         title = "GÜNCELLE" if self._is_edit else "KAYDET"
-        self.btn_kaydet = QPushButton(f"✓  PERSONELİ {title}")
+        self.btn_kaydet = QPushButton(f"PERSONELI {title}")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
-        self.btn_kaydet.setFixedHeight(42)
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kaydet.clicked.connect(self._on_save)
+        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         footer.addWidget(self.btn_kaydet)
 
         main.addLayout(footer)
@@ -547,7 +553,7 @@ class PersonelEklePage(QWidget):
             self._file_paths[key] = path
             lbl = self.ui.get(f"diploma_file_lbl{idx}")
             if lbl:
-                lbl.setText(f"✓ {os.path.basename(path)}")
+                lbl.setText(os.path.basename(path))
             logger.info(f"Diploma {idx} seçildi: {path}")
 
     def _get_drive_folder_id(self, folder_name):

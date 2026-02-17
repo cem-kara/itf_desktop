@@ -17,6 +17,7 @@ from core.date_utils import parse_date, to_db_date
 from core.log_manager import LogStatistics
 from core.paths import DB_PATH
 from ui.theme_manager import ThemeManager
+from ui.styles.colors import Colors, DarkTheme
 
 S = ThemeManager.get_all_component_styles()
 
@@ -177,22 +178,22 @@ class StatCard(QGroupBox):
             QGroupBox#statCard {{
                 font-size: 13px;
                 font-weight: 700;
-                color: #c9d1d9;
-                border: 1px solid {ThemeManager.get_dark_theme_color("BORDER_PRIMARY")};
+                color: {DarkTheme.TEXT_SECONDARY};
+                border: 1px solid {DarkTheme.BORDER_PRIMARY};
                 border-radius: 14px;
                 margin-top: 11px;
-                background-color: #151b24;
+                background-color: {DarkTheme.BG_SECONDARY};
             }}
             QGroupBox#statCard:hover {{
-                border: 1px solid #3f8cff;
-                background-color: #192233;
+                border: 1px solid {DarkTheme.BORDER_FOCUS};
+                background-color: {DarkTheme.BG_TERTIARY};
             }}
             QGroupBox#statCard::title {{
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 padding: 0 10px;
                 left: 10px;
-                color: #dce7ff;
+                color: {DarkTheme.TEXT_PRIMARY};
             }}
         """
         )
@@ -211,9 +212,8 @@ class StatCard(QGroupBox):
         self.icon_label.setAlignment(Qt.AlignCenter)
         self.icon_label.setStyleSheet(
             "font-size: 24px; "
-            "background-color: rgba(74, 144, 255, 0.18); "
-            "color: #9ec5ff; "
-            "border: 1px solid rgba(74, 144, 255, 0.35); "
+            "background-color: rgba(29, 117, 254, 0.20); "
+            f"border: 1px solid {DarkTheme.BORDER_FOCUS}; "
             "border-radius: 24px;"
         )
         layout.addWidget(self.icon_label)
@@ -222,11 +222,15 @@ class StatCard(QGroupBox):
         v_layout.setSpacing(0)
         
         self.value_label = QLabel("...")
-        self.value_label.setStyleSheet("font-size: 28px; font-weight: bold; color: #e0e2ea; border: none; background: transparent;")
+        self.value_label.setStyleSheet(
+            f"font-size: 28px; font-weight: bold; color: {DarkTheme.TEXT_PRIMARY}; border: none; background: transparent;"
+        )
         v_layout.addWidget(self.value_label)
 
         self.desc_label = QLabel("Yükleniyor")
-        self.desc_label.setStyleSheet("font-size: 12px; color: #8b949e; border: none; background: transparent;")
+        self.desc_label.setStyleSheet(
+            f"font-size: 12px; color: {DarkTheme.TEXT_MUTED}; border: none; background: transparent;"
+        )
         v_layout.addWidget(self.desc_label)
         
         layout.addLayout(v_layout)
@@ -235,10 +239,14 @@ class StatCard(QGroupBox):
     def set_data(self, value, description):
         if isinstance(value, int) and value == -1:
             self.value_label.setText("Hata")
-            self.value_label.setStyleSheet("font-size: 22px; font-weight: bold; color: #f85149; border: none; background: transparent;")
+            self.value_label.setStyleSheet(
+                f"font-size: 22px; font-weight: bold; color: {DarkTheme.STATUS_ERROR}; border: none; background: transparent;"
+            )
         else:
             self.value_label.setText(str(value))
-            self.value_label.setStyleSheet("font-size: 28px; font-weight: bold; color: #e0e2ea; border: none; background: transparent;")
+            self.value_label.setStyleSheet(
+                f"font-size: 28px; font-weight: bold; color: {DarkTheme.TEXT_PRIMARY}; border: none; background: transparent;"
+            )
         self.desc_label.setText(description)
 
     def mouseReleaseEvent(self, event):
@@ -268,7 +276,7 @@ class DashboardPage(QWidget):
         # Header
         header_layout = QHBoxLayout()
         title = QLabel("Genel Bakış")
-        title.setStyleSheet("font-size: 24px; font-weight: bold; color: #e0e2ea;")
+        title.setStyleSheet(f"font-size: 24px; font-weight: bold; color: {DarkTheme.TEXT_PRIMARY};")
         
         self.refresh_button = QPushButton("↻ Yenile")
         self.refresh_button.setFixedSize(100, 36)
@@ -324,7 +332,7 @@ class DashboardPage(QWidget):
         content_layout.addWidget(self.fhsz_reminder_frame)
 
         # --- Cihaz Grubu ---
-        cihaz_group = QGroupBox("🔬 Cihaz Yönetimi")
+        cihaz_group = QGroupBox("Cihaz Yönetimi")
         cihaz_group.setStyleSheet(self._group_style())
         cihaz_grid = QGridLayout(cihaz_group)
         cihaz_grid.setSpacing(20)
@@ -430,25 +438,27 @@ class DashboardPage(QWidget):
 
     def _create_reminder_box(self, title, text):
         frame = QGroupBox(f"🔔 {title}")
-        frame.setStyleSheet("""
-            QGroupBox {
-                border: 1px solid #e3b341;
+        frame.setStyleSheet(f"""
+            QGroupBox {{
+                border: 1px solid {Colors.YELLOW_500};
                 border-radius: 8px;
                 margin-top: 10px;
                 font-weight: bold;
-                color: #e3b341;
+                color: {Colors.YELLOW_400};
                 background-color: rgba(227, 179, 65, 0.08);
-            }
-            QGroupBox::title {
+            }}
+            QGroupBox::title {{
                 subcontrol-origin: margin;
                 left: 12px;
                 padding: 0 6px;
-            }
+            }}
         """)
         layout = QVBoxLayout(frame)
         label = QLabel(text)
         label.setWordWrap(True)
-        label.setStyleSheet("font-weight: normal; color: #c9d1d9; border: none; background: transparent;")
+        label.setStyleSheet(
+            f"font-weight: normal; color: {DarkTheme.TEXT_SECONDARY}; border: none; background: transparent;"
+        )
         layout.addWidget(label)
         frame.setVisible(False)
         return frame
@@ -456,39 +466,39 @@ class DashboardPage(QWidget):
     def _apply_visual_styles(self):
         self.setStyleSheet(
             S.get("page", "")
-            + """
-            QWidget#dashboardPage {
-                background-color: #0f141d;
-            }
-            QLabel {
-                color: #d8e1f0;
-            }
-            QPushButton {
+            + f"""
+            QWidget#dashboardPage {{
+                background-color: {DarkTheme.BG_PRIMARY};
+            }}
+            QLabel {{
+                color: {DarkTheme.TEXT_PRIMARY};
+            }}
+            QPushButton {{
                 border-radius: 8px;
-            }
+            }}
             """
         )
 
     def _group_style(self):
-        return """
-            QGroupBox {
-                border: 1px solid rgba(116, 139, 173, 0.35);
+        return f"""
+            QGroupBox {{
+                border: 1px solid {DarkTheme.BORDER_PRIMARY};
                 border-radius: 14px;
                 margin-top: 14px;
                 padding-top: 10px;
                 font-size: 14px;
                 font-weight: 700;
-                color: #dce7ff;
+                color: {DarkTheme.TEXT_PRIMARY};
                 background-color: rgba(23, 31, 44, 0.75);
-            }
-            QGroupBox::title {
+            }}
+            QGroupBox::title {{
                 subcontrol-origin: margin;
                 left: 12px;
                 padding: 1px 10px;
-                background-color: #101926;
+                background-color: {DarkTheme.BG_SECONDARY};
                 border-radius: 8px;
-                color: #bfd7ff;
-            }
+                color: {DarkTheme.TEXT_SECONDARY};
+            }}
         """
 
     def load_data(self):
@@ -538,7 +548,7 @@ class DashboardPage(QWidget):
         self.card_gecmis_saglik.set_data(gecmis, "Zamanında yapılmamış muayeneler")
         if isinstance(gecmis, int) and gecmis > 0:
             self.card_gecmis_saglik.value_label.setStyleSheet(
-                "font-size: 28px; font-weight: bold; color: #f85149; border: none; background: transparent;"
+                f"font-size: 28px; font-weight: bold; color: {DarkTheme.STATUS_ERROR}; border: none; background: transparent;"
             )
 
         # Sistem

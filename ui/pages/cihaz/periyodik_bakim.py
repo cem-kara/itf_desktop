@@ -30,6 +30,8 @@ from PySide6.QtWidgets import (
 
 from core.logger import logger
 from ui.theme_manager import ThemeManager
+from ui.styles import DarkTheme
+from ui.styles.icons import IconRenderer
 
 
 S = ThemeManager.get_all_component_styles()
@@ -38,10 +40,10 @@ BAKIM_PERIYOTLARI = ["3 Ay", "6 Ay", "1 Yıl", "Tek Seferlik"]
 DURUM_SECENEKLERI = ["Planlandı", "Yapıldı", "Gecikti", "İptal"]
 
 DURUM_RENK = {
-    "Yapıldı":   "#4caf50",
-    "Gecikti":   "#f44336",
-    "Planlandı": "#ffeb3b",
-    "İptal":     "#9ca3af",
+    "Yapıldı":   DarkTheme.STATUS_SUCCESS,
+    "Gecikti":   DarkTheme.STATUS_ERROR,
+    "Planlandı": DarkTheme.STATUS_WARNING,
+    "İptal":     DarkTheme.TEXT_MUTED,
 }
 
 
@@ -157,9 +159,9 @@ class AkilliTakvimBandi(QWidget):
 
         self._kartlar = {}
         tanim = [
-            ("acil",  "🔴 ACIL",  "#f44336"),
-            ("yakin", "🟡 YAKIN", "#ff9800"),
-            ("normal","🔵 NORMAL","#4dabf7"),
+            ("acil",  "ACIL",  DarkTheme.STATUS_ERROR),
+            ("yakin", "YAKIN", DarkTheme.STATUS_WARNING),
+            ("normal","NORMAL", DarkTheme.STATUS_INFO),
         ]
         for key, metin, renk in tanim:
             btn = QPushButton(f"{metin}: 0")
@@ -202,9 +204,9 @@ class AkilliTakvimBandi(QWidget):
             else:
                 normal += 1
 
-        self._kartlar["acil"].setText(f"🔴 ACIL: {acil}")
-        self._kartlar["yakin"].setText(f"🟡 YAKIN: {yakin}")
-        self._kartlar["normal"].setText(f"🔵 NORMAL: {normal}")
+        self._kartlar["acil"].setText(f"ACIL: {acil}")
+        self._kartlar["yakin"].setText(f"YAKIN: {yakin}")
+        self._kartlar["normal"].setText(f"NORMAL: {normal}")
 
 
 # ═══════════════════════════════════════════════
@@ -226,7 +228,7 @@ class TopluPlanlamaDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Toplu Bakım Planı Oluştur")
         self.setMinimumSize(720, 560)
-        self.setStyleSheet("background:#1e1e1e; color:#e0e2ea;")
+        self.setStyleSheet(f"background:{DarkTheme.BG_SECONDARY}; color:{DarkTheme.TEXT_PRIMARY};")
 
         self._cihaz_combo   = cihaz_combo   # ["ID | Marka Model", ...]
         self._cihaz_dict    = cihaz_dict    # {id: "Marka Model"}
@@ -242,33 +244,28 @@ class TopluPlanlamaDialog(QDialog):
         root.setSpacing(12)
 
         # Başlık
-        lbl_baslik = QLabel("📋  Toplu Bakım Planı Oluştur")
-        lbl_baslik.setStyleSheet("font-size:15px; font-weight:bold; color:#4dabf7;")
+        lbl_baslik = QLabel("Toplu Bakim Plani Olustur")
+        lbl_baslik.setStyleSheet(f"font-size:15px; font-weight:bold; color:{DarkTheme.STATUS_INFO};")
         root.addWidget(lbl_baslik)
 
         # ── ADIM 1: CİHAZ SEÇİMİ ──
-        grp_cihaz = QGroupBox("1️⃣  Cihaz Seçimi")
-        grp_cihaz.setStyleSheet("QGroupBox {color:#4CAF50; font-weight:bold; "
-                                "border:1px solid #444; border-radius:6px; margin-top:16px;}"
-                                "QGroupBox::title {subcontrol-origin:margin; left:10px; padding:0 8px;}")
+        grp_cihaz = QGroupBox("1. Cihaz Secimi")
+        grp_cihaz.setStyleSheet(S["group"])
         g_lay = QVBoxLayout(grp_cihaz)
 
         # Arama satırı
         h_ara = QHBoxLayout()
         self._ara_input = QLineEdit()
         self._ara_input.setPlaceholderText("Cihaz adı / ID ile filtrele...")
-        self._ara_input.setStyleSheet("background:#2d2d2d; color:#e0e2ea; border:1px solid #555;"
-                                       "border-radius:4px; padding:4px 8px; min-height:30px;")
+        self._ara_input.setStyleSheet(S["search"])
         self._ara_input.textChanged.connect(self._tabloyu_filtrele)
 
-        btn_hepsini_sec = QPushButton("☑ Tümünü Seç")
-        btn_hepsini_sec.setStyleSheet("background:#2d2d2d; color:#4dabf7; border:1px solid #4dabf7;"
-                                       "border-radius:4px; padding:4px 10px;")
+        btn_hepsini_sec = QPushButton("Tumunu Sec")
+        btn_hepsini_sec.setStyleSheet(S["action_btn"])
         btn_hepsini_sec.clicked.connect(lambda: self._toplu_sec(True))
 
-        btn_hepsini_kaldir = QPushButton("☐ Temizle")
-        btn_hepsini_kaldir.setStyleSheet("background:#2d2d2d; color:#aaa; border:1px solid #555;"
-                                          "border-radius:4px; padding:4px 10px;")
+        btn_hepsini_kaldir = QPushButton("Temizle")
+        btn_hepsini_kaldir.setStyleSheet(S["file_btn"])
         btn_hepsini_kaldir.clicked.connect(lambda: self._toplu_sec(False))
 
         h_ara.addWidget(self._ara_input, 1)
@@ -287,10 +284,7 @@ class TopluPlanlamaDialog(QDialog):
         self._cihaz_tablo.verticalHeader().setVisible(False)
         self._cihaz_tablo.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self._cihaz_tablo.setSelectionMode(QAbstractItemView.NoSelection)
-        self._cihaz_tablo.setStyleSheet(
-            "QTableWidget {background:#1a1a1a; color:#e0e2ea; gridline-color:#333;}"
-            "QHeaderView::section {background:#2d2d2d; color:#aaa; border:none; padding:4px;}"
-        )
+        self._cihaz_tablo.setStyleSheet(S["table"])
         self._cihaz_tablo.setMaximumHeight(200)
         self._cihaz_tablo.itemChanged.connect(self._secim_degisti)
         g_lay.addWidget(self._cihaz_tablo)
@@ -302,25 +296,17 @@ class TopluPlanlamaDialog(QDialog):
         root.addWidget(grp_cihaz)
 
         # ── ADIM 2: PLAN PARAMETRELERİ ──
-        grp_param = QGroupBox("2️⃣  Plan Parametreleri")
-        grp_param.setStyleSheet("QGroupBox {color:#FF9800; font-weight:bold; "
-                                "border:1px solid #444; border-radius:6px; margin-top:16px;}"
-                                "QGroupBox::title {subcontrol-origin:margin; left:10px; padding:0 8px;}")
+        grp_param = QGroupBox("2. Plan Parametreleri")
+        grp_param.setStyleSheet(S["group"])
         p_lay = QHBoxLayout(grp_param)
-
-        combo_style = ("background:#2d2d2d; color:#e0e2ea; border:1px solid #555;"
-                       "border-radius:4px; padding:4px; min-height:30px;")
-        date_style  = ("background:#2d2d2d; color:#e0e2ea; border:1px solid #555;"
-                       "border-radius:4px; padding:4px; min-height:30px;")
-        spin_style  = ("background:#2d2d2d; color:#e0e2ea; border:1px solid #555;"
-                       "border-radius:4px; padding:4px; min-height:30px;")
 
         # Periyot
         col1 = QVBoxLayout()
         col1.addWidget(QLabel("Bakım Periyodu:"))
         self._cmb_periyot = QComboBox()
         self._cmb_periyot.addItems(BAKIM_PERIYOTLARI)
-        self._cmb_periyot.setStyleSheet(combo_style)
+        self._cmb_periyot.setStyleSheet(S["combo"])
+        self._cmb_periyot.setMinimumHeight(35)
         self._cmb_periyot.currentIndexChanged.connect(self._onizleme_guncelle)
         col1.addWidget(self._cmb_periyot)
 
@@ -330,7 +316,8 @@ class TopluPlanlamaDialog(QDialog):
         self._tarih = QDateEdit(QDate.currentDate())
         self._tarih.setCalendarPopup(True)
         self._tarih.setDisplayFormat("yyyy-MM-dd")
-        self._tarih.setStyleSheet(date_style)
+        self._tarih.setStyleSheet(S["date"])
+        self._tarih.setMinimumHeight(35)
         ThemeManager.setup_calendar_popup(self._tarih)
         self._tarih.dateChanged.connect(self._onizleme_guncelle)
         col2.addWidget(self._tarih)
@@ -341,7 +328,8 @@ class TopluPlanlamaDialog(QDialog):
         self._spin_donem = QSpinBox()
         self._spin_donem.setRange(1, 12)
         self._spin_donem.setValue(4)
-        self._spin_donem.setStyleSheet(spin_style)
+        self._spin_donem.setStyleSheet(S["input"])
+        self._spin_donem.setMinimumHeight(35)
         self._spin_donem.valueChanged.connect(self._onizleme_guncelle)
         col3.addWidget(self._spin_donem)
 
@@ -349,8 +337,8 @@ class TopluPlanlamaDialog(QDialog):
         col4 = QVBoxLayout()
         col4.addWidget(QLabel("Teknisyen:"))
         self._teknisyen = QLineEdit()
-        self._teknisyen.setStyleSheet("background:#2d2d2d; color:#e0e2ea; border:1px solid #555;"
-                                       "border-radius:4px; padding:4px; min-height:30px;")
+        self._teknisyen.setStyleSheet(S["input"])
+        self._teknisyen.setMinimumHeight(35)
         col4.addWidget(self._teknisyen)
 
         for col in (col1, col2, col3, col4):
@@ -361,10 +349,8 @@ class TopluPlanlamaDialog(QDialog):
         root.addWidget(grp_param)
 
         # ── ADIM 3: ÖNİZLEME ──
-        grp_onizleme = QGroupBox("3️⃣  Önizleme")
-        grp_onizleme.setStyleSheet("QGroupBox {color:#4dabf7; font-weight:bold; "
-                                   "border:1px solid #444; border-radius:6px; margin-top:16px;}"
-                                   "QGroupBox::title {subcontrol-origin:margin; left:10px; padding:0 8px;}")
+        grp_onizleme = QGroupBox("3. Onizleme")
+        grp_onizleme.setStyleSheet(S["group"])
         o_lay = QVBoxLayout(grp_onizleme)
         self._lbl_onizleme = QLabel("— Henüz cihaz seçilmedi —")
         self._lbl_onizleme.setStyleSheet("color:#aaa; padding:6px;")
@@ -373,24 +359,16 @@ class TopluPlanlamaDialog(QDialog):
         root.addWidget(grp_onizleme)
 
         # ── BUTONLAR ──
-        self._btn_olustur = QPushButton("✓  PLANLA")
+        self._btn_olustur = QPushButton("PLANLA")
         self._btn_olustur.setMinimumHeight(42)
         self._btn_olustur.setEnabled(False)
-        self._btn_olustur.setStyleSheet(
-            "QPushButton {background:#4CAF50; color:white; font-weight:bold; "
-            "border-radius:6px; font-size:13px;}"
-            "QPushButton:disabled {background:#555; color:#888;}"
-            "QPushButton:hover:!disabled {background:#45a049;}"
-        )
+        self._btn_olustur.setStyleSheet(S["save_btn"])
         self._btn_olustur.clicked.connect(self._planlari_olustur)
+        IconRenderer.set_button_icon(self._btn_olustur, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
 
         btn_iptal = QPushButton("İptal")
         btn_iptal.setMinimumHeight(42)
-        btn_iptal.setStyleSheet(
-            "QPushButton {background:#2d2d2d; color:#aaa; border:1px solid #555;"
-            "border-radius:6px; font-size:13px;}"
-            "QPushButton:hover {background:#383838;}"
-        )
+        btn_iptal.setStyleSheet(S["cancel_btn"])
         btn_iptal.clicked.connect(self.reject)
 
         h_btn = QHBoxLayout()
@@ -485,7 +463,7 @@ class TopluPlanlamaDialog(QDialog):
         )
         self._lbl_onizleme.setText(metin)
         self._btn_olustur.setEnabled(True)
-        self._btn_olustur.setText(f"✓  PLANLA  ({toplam} kayıt)")
+        self._btn_olustur.setText(f"PLANLA ({toplam} kayit)")
 
     # ── Oluştur ────────────────────────────────────────────────
 
@@ -608,7 +586,7 @@ class PeriyodikBakimPage(QWidget):
 
         # Kart 1: Planlama
         card_plan = QGroupBox("Bakım Planlama")
-        card_plan.setStyleSheet(S["group"] + "QGroupBox { color: #4CAF50; }")
+        card_plan.setStyleSheet(S["group"])
         card_plan_layout = QVBoxLayout(card_plan)
         card_plan_layout.setContentsMargins(15, 22, 15, 15)
         card_plan_layout.setSpacing(10)
@@ -618,6 +596,7 @@ class PeriyodikBakimPage(QWidget):
         self.inputs["Cihazid"].setInsertPolicy(QComboBox.NoInsert)
         self.inputs["Cihazid"].setPlaceholderText("ID veya Marka ile arayın...")
         self.inputs["Cihazid"].setStyleSheet(S["combo"])
+        self.inputs["Cihazid"].setMinimumHeight(35)
         comp = self.inputs["Cihazid"].completer()
         comp.setCompletionMode(QCompleter.PopupCompletion)
         comp.setFilterMode(Qt.MatchContains)
@@ -630,10 +609,12 @@ class PeriyodikBakimPage(QWidget):
         self.inputs["BakimPeriyodu"] = QComboBox()
         self.inputs["BakimPeriyodu"].addItems(BAKIM_PERIYOTLARI)
         self.inputs["BakimPeriyodu"].setStyleSheet(S["combo"])
+        self.inputs["BakimPeriyodu"].setMinimumHeight(35)
         self.inputs["PlanlananTarih"] = QDateEdit(QDate.currentDate())
         self.inputs["PlanlananTarih"].setCalendarPopup(True)
         self.inputs["PlanlananTarih"].setDisplayFormat("yyyy-MM-dd")
         self.inputs["PlanlananTarih"].setStyleSheet(S["date"])
+        self.inputs["PlanlananTarih"].setMinimumHeight(35)
         self._setup_calendar(self.inputs["PlanlananTarih"])
 
         v_periyot = QVBoxLayout(); v_periyot.setSpacing(3)
@@ -651,7 +632,7 @@ class PeriyodikBakimPage(QWidget):
 
         # Kart 2: Aksiyon / Durum
         card_islem = QGroupBox("Aksiyon / Durum")
-        card_islem.setStyleSheet(S["group"] + "QGroupBox { color: #FF9800; }")
+        card_islem.setStyleSheet(S["group"])
         card_islem_layout = QVBoxLayout(card_islem)
         card_islem_layout.setContentsMargins(15, 22, 15, 15)
         card_islem_layout.setSpacing(10)
@@ -661,11 +642,13 @@ class PeriyodikBakimPage(QWidget):
         self.inputs["Durum"] = QComboBox()
         self.inputs["Durum"].addItems(DURUM_SECENEKLERI)
         self.inputs["Durum"].setStyleSheet(S["combo"])
+        self.inputs["Durum"].setMinimumHeight(35)
         self.inputs["Durum"].currentTextChanged.connect(self._durum_kontrol)
         self.inputs["BakimTarihi"] = QDateEdit(QDate.currentDate())
         self.inputs["BakimTarihi"].setCalendarPopup(True)
         self.inputs["BakimTarihi"].setDisplayFormat("yyyy-MM-dd")
         self.inputs["BakimTarihi"].setStyleSheet(S["date"])
+        self.inputs["BakimTarihi"].setMinimumHeight(35)
         self._setup_calendar(self.inputs["BakimTarihi"])
 
         v_durum = QVBoxLayout(); v_durum.setSpacing(3)
@@ -682,6 +665,7 @@ class PeriyodikBakimPage(QWidget):
 
         self.inputs["Teknisyen"] = QLineEdit()
         self.inputs["Teknisyen"].setStyleSheet(S["input"])
+        self.inputs["Teknisyen"].setMinimumHeight(35)
         lbl_teknisyen = QLabel("Teknisyen:"); lbl_teknisyen.setStyleSheet(S["label"])
         card_islem_layout.addWidget(lbl_teknisyen)
         card_islem_layout.addWidget(self.inputs["Teknisyen"])
@@ -706,17 +690,19 @@ class PeriyodikBakimPage(QWidget):
         lbl_rapor.setStyleSheet(S["label"])
         h_rapor = QHBoxLayout()
         self.lbl_dosya = QLabel("Rapor Yok")
-        self.lbl_dosya.setStyleSheet("color:#666; font-style:italic;")
-        self.btn_dosya_ac = QPushButton("📄 Aç")
+        self.lbl_dosya.setStyleSheet(f"color:{DarkTheme.TEXT_DISABLED}; font-style:italic;")
+        self.btn_dosya_ac = QPushButton("Ac")
         self.btn_dosya_ac.setFixedSize(58, 32)
         self.btn_dosya_ac.setStyleSheet(S["action_btn"])
         self.btn_dosya_ac.setVisible(False)
         self.btn_dosya_ac.clicked.connect(self._dosyayi_ac)
-        btn_yukle = QPushButton("📂 Yükle")
+        IconRenderer.set_button_icon(self.btn_dosya_ac, "file_text", color=DarkTheme.TEXT_PRIMARY, size=14)
+        btn_yukle = QPushButton("Yukle")
         btn_yukle.setFixedSize(68, 32)
         btn_yukle.setStyleSheet(S["file_btn"])
         btn_yukle.setCursor(QCursor(Qt.PointingHandCursor))
         btn_yukle.clicked.connect(self._dosya_sec)
+        IconRenderer.set_button_icon(btn_yukle, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
         h_rapor.addWidget(self.lbl_dosya)
         h_rapor.addStretch()
         h_rapor.addWidget(self.btn_dosya_ac)
@@ -732,22 +718,20 @@ class PeriyodikBakimPage(QWidget):
         sol.addWidget(self.btn_yeni)
 
         # ── Toplu Planlama ──────────────────────────────────────
-        self.btn_toplu = QPushButton("📋  Toplu Planlama (Çoklu Cihaz)")
+        self.btn_toplu = QPushButton("Toplu Planlama (Coklu Cihaz)")
         self.btn_toplu.setMinimumHeight(40)
-        self.btn_toplu.setStyleSheet(
-            "QPushButton {background:#1a3a5c; color:#4dabf7; border:1px solid #4dabf7;"
-            "border-radius:6px; font-weight:bold; font-size:12px;}"
-            "QPushButton:hover {background:#234870;}"
-        )
+        self.btn_toplu.setStyleSheet(S["action_btn"])
         self.btn_toplu.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_toplu.clicked.connect(self._toplu_planla)
+        IconRenderer.set_button_icon(self.btn_toplu, "clipboard", color=DarkTheme.TEXT_PRIMARY, size=14)
         sol.addWidget(self.btn_toplu)
 
-        self.btn_kaydet = QPushButton("🗓️  Planı Oluştur")
+        self.btn_kaydet = QPushButton("Plani Olustur")
         self.btn_kaydet.setMinimumHeight(48)
         self.btn_kaydet.setStyleSheet(S["save_btn"])
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kaydet.clicked.connect(self._kaydet_baslat)
+        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         sol.addWidget(self.btn_kaydet)
         sol.addStretch()
 
@@ -761,29 +745,28 @@ class PeriyodikBakimPage(QWidget):
 
         grp_filtre = QGroupBox("Bakım Takvimi")
         grp_filtre.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
-        grp_filtre.setStyleSheet(
-            "QGroupBox { font-size:14px; font-weight:bold; "
-            "color:#4dabf7; margin-top:10px; }"
-        )
+        grp_filtre.setStyleSheet(S["group"])
         filter_lay = QHBoxLayout(grp_filtre)
         lbl_ay = QLabel("Ay Filtresi:")
-        lbl_ay.setStyleSheet("color:#aaa;")
+        lbl_ay.setStyleSheet(f"color:{DarkTheme.TEXT_SECONDARY};")
         self.cmb_filtre_ay = QComboBox()
         self.cmb_filtre_ay.addItems(["Tüm Aylar"] + list(calendar.month_name)[1:])
         self.cmb_filtre_ay.setFixedWidth(155)
         self.cmb_filtre_ay.setStyleSheet(S["combo"])
         self.cmb_filtre_ay.currentIndexChanged.connect(self._tabloyu_guncelle)
-        btn_yenile = QPushButton("⟳ Yenile")
+        btn_yenile = QPushButton("Yenile")
         btn_yenile.setFixedSize(100, 36)
         btn_yenile.setStyleSheet(S["refresh_btn"])
         btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         btn_yenile.clicked.connect(self._verileri_yukle)
+        IconRenderer.set_button_icon(btn_yenile, "sync", color=DarkTheme.TEXT_PRIMARY, size=14)
 
-        self.btn_kapat = QPushButton("✕ Kapat")
+        self.btn_kapat = QPushButton("Kapat")
         self.btn_kapat.setToolTip("Kapat")
         self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S["close_btn"])
+        IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
 
         filter_lay.addStretch()
         filter_lay.addWidget(lbl_ay)
@@ -903,7 +886,7 @@ class PeriyodikBakimPage(QWidget):
                     delta  = (plan_t - bugun).days
                     if delta < 0:
                         item_tarih.setForeground(QColor("#f44336"))   # ACIL - kırmızı
-                        item_tarih.setToolTip(f"⚠️ {abs(delta)} gün gecikti!")
+                        item_tarih.setToolTip(f"{abs(delta)} gun gecikti!")
                     elif delta <= 7:
                         item_tarih.setForeground(QColor("#ff9800"))   # YAKIN - turuncu
                         item_tarih.setToolTip(f"⏰ {delta} gün kaldı")
@@ -968,7 +951,7 @@ class PeriyodikBakimPage(QWidget):
             item_t = QTableWidgetItem(tarih_str)
             if delta < 0:
                 item_t.setForeground(QColor("#f44336"))
-                item_t.setToolTip(f"⚠️ {abs(delta)} gün gecikti!")
+                item_t.setToolTip(f"{abs(delta)} gun gecikti!")
             elif delta <= 7:
                 item_t.setForeground(QColor("#ff9800"))
                 item_t.setToolTip(f"⏰ {delta} gün kaldı")
@@ -983,7 +966,7 @@ class PeriyodikBakimPage(QWidget):
             self.tablo.item(r, 0).setData(Qt.UserRole, row)
             gosterilen += 1
 
-        etiketler = {"acil": "🔴 ACIL", "yakin": "🟡 YAKIN", "tumu": "Tümü"}
+        etiketler = {"acil": "ACIL", "yakin": "YAKIN", "tumu": "Tumu"}
         self.lbl_count.setText(
             f"{etiketler.get(filtre, filtre)}: {gosterilen} kayıt gösteriliyor"
         )
@@ -1015,7 +998,7 @@ class PeriyodikBakimPage(QWidget):
             return
 
         self.btn_toplu.setEnabled(False)
-        self.btn_toplu.setText("⏳  Kaydediliyor...")
+        self.btn_toplu.setText("Kaydediliyor...")
         self.progress.setVisible(True)
         self.progress.setRange(0, 0)
 
@@ -1027,7 +1010,7 @@ class PeriyodikBakimPage(QWidget):
     def _toplu_islem_bitti(self):
         self.progress.setVisible(False)
         self.btn_toplu.setEnabled(True)
-        self.btn_toplu.setText("📋  Toplu Planlama (Çoklu Cihaz)")
+        self.btn_toplu.setText("Toplu Planlama (Coklu Cihaz)")
         QMessageBox.information(self, "Başarılı", "Toplu bakım planları oluşturuldu.")
         self._verileri_yukle()
 
@@ -1042,7 +1025,7 @@ class PeriyodikBakimPage(QWidget):
             return
 
         self._secilen_plan_id = str(row_data.get("Planid", ""))
-        self.btn_kaydet.setText("💾  Değişiklikleri Kaydet")
+        self.btn_kaydet.setText("Degisiklikleri Kaydet")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
 
         self.inputs["Cihazid"].setEnabled(False)
@@ -1075,12 +1058,12 @@ class PeriyodikBakimPage(QWidget):
             self._mevcut_link = link
             self.btn_dosya_ac.setVisible(True)
             self.lbl_dosya.setText("✅  Rapor Mevcut")
-            self.lbl_dosya.setStyleSheet("color:#4caf50; font-weight:bold;")
+            self.lbl_dosya.setStyleSheet(f"color:{DarkTheme.STATUS_SUCCESS}; font-weight:bold;")
         else:
             self._mevcut_link = None
             self.btn_dosya_ac.setVisible(False)
             self.lbl_dosya.setText("Rapor Yok")
-            self.lbl_dosya.setStyleSheet("color:#666; font-style:italic;")
+            self.lbl_dosya.setStyleSheet(f"color:{DarkTheme.TEXT_DISABLED}; font-style:italic;")
 
         self._kilit_yonet(str(row_data.get("Durum", "")) == "Yapıldı")
 
@@ -1090,12 +1073,12 @@ class PeriyodikBakimPage(QWidget):
         durum = self.inputs["Durum"].currentText()
         if durum == "Yapıldı":
             self.lbl_dosya.setText("Rapor Yükleyiniz")
-            self.lbl_dosya.setStyleSheet("color:#ff9800; font-weight:bold;")
+            self.lbl_dosya.setStyleSheet(f"color:{DarkTheme.STATUS_WARNING}; font-weight:bold;")
             self.inputs["Aciklama"].setPlaceholderText("Mutlaka giriniz")
         else:
             if not self._mevcut_link and not self._secilen_dosya:
                 self.lbl_dosya.setText("Rapor Gerekmiyor")
-                self.lbl_dosya.setStyleSheet("color:#666; font-style:italic;")
+                self.lbl_dosya.setStyleSheet(f"color:{DarkTheme.TEXT_DISABLED}; font-style:italic;")
 
     def _kilit_yonet(self, tamamlandi_mi: bool):
         self.inputs["Durum"].setEnabled(not tamamlandi_mi)
@@ -1105,8 +1088,8 @@ class PeriyodikBakimPage(QWidget):
         self.inputs["YapilanIslemler"].setReadOnly(False)
         self.btn_dosya_ac.setEnabled(True)
         self.btn_kaydet.setText(
-            "💾  Notları / Dosyayı Güncelle" if tamamlandi_mi
-            else "💾  Değişiklikleri Kaydet"
+            "Notlari / Dosyayi Guncelle" if tamamlandi_mi
+            else "Degisiklikleri Kaydet"
         )
 
     def _formu_temizle(self):
@@ -1129,10 +1112,10 @@ class PeriyodikBakimPage(QWidget):
         self.inputs["Teknisyen"].clear()
 
         self.lbl_dosya.setText("Rapor Yok")
-        self.lbl_dosya.setStyleSheet("color:#666; font-style:italic;")
+        self.lbl_dosya.setStyleSheet(f"color:{DarkTheme.TEXT_DISABLED}; font-style:italic;")
         self.btn_dosya_ac.setVisible(False)
 
-        self.btn_kaydet.setText("🗓️  Planı Oluştur")
+        self.btn_kaydet.setText("Plani Olustur")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
         self.btn_kaydet.setEnabled(True)
 
@@ -1145,8 +1128,8 @@ class PeriyodikBakimPage(QWidget):
         )
         if yol:
             self._secilen_dosya = yol
-            self.lbl_dosya.setText(f"📎  {os.path.basename(yol)}")
-            self.lbl_dosya.setStyleSheet("color:#ff9800; font-weight:bold;")
+            self.lbl_dosya.setText(os.path.basename(yol))
+            self.lbl_dosya.setStyleSheet(f"color:{DarkTheme.STATUS_WARNING}; font-weight:bold;")
 
     def _dosyayi_ac(self):
         if self._mevcut_link:
@@ -1247,7 +1230,7 @@ class PeriyodikBakimPage(QWidget):
     def _hata_goster(self, mesaj: str):
         self.progress.setVisible(False)
         self.btn_kaydet.setEnabled(True)
-        self.btn_kaydet.setText("🗓️  Planı Oluştur")
+        self.btn_kaydet.setText("Plani Olustur")
         QMessageBox.critical(self, "Hata", mesaj)
 
     def closeEvent(self, event):
@@ -1257,5 +1240,3 @@ class PeriyodikBakimPage(QWidget):
                 w.quit()
                 w.wait(500)
         event.accept()
-
-

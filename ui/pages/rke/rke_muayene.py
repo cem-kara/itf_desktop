@@ -24,6 +24,8 @@ from PySide6.QtGui import QColor, QCursor, QPalette, QStandardItemModel, QStanda
 from core.logger import logger
 from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
+from ui.styles import DarkTheme
+from ui.styles.icons import IconRenderer
 
 # ─── Merkezi Stiller ───
 S = ThemeManager.get_all_component_styles()
@@ -39,9 +41,9 @@ RKE_COLUMNS = [
 ]
 
 DURUM_RENK = {
-    "Kullanıma Uygun":       QColor("#4ade80"),
-    "Kullanıma Uygun Değil": QColor("#f87171"),
-    "Hurda":                  QColor("#ef4444"),
+    "Kullanıma Uygun":       QColor(DarkTheme.STATUS_SUCCESS),
+    "Kullanıma Uygun Değil": QColor(DarkTheme.STATUS_ERROR),
+    "Hurda":                  QColor(DarkTheme.STATUS_ERROR),
 }
 
 
@@ -59,8 +61,8 @@ class CheckableComboBox(QComboBox):
         self.setEditable(True)
         self.lineEdit().setReadOnly(True)
         p = self.lineEdit().palette()
-        p.setColor(QPalette.Base, QColor("#1e202c"))
-        p.setColor(QPalette.Text, QColor("#e0e2ea"))
+        p.setColor(QPalette.Base, QColor(DarkTheme.INPUT_BG))
+        p.setColor(QPalette.Text, QColor(DarkTheme.TEXT_PRIMARY))
         self.lineEdit().setPalette(p)
 
     def _handle_pressed(self, index):
@@ -121,7 +123,7 @@ class RKEListTableModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             return str(row.get(col, ""))
         if role == Qt.ForegroundRole and col == "Durum":
-            return DURUM_RENK.get(str(row.get(col, "")), QColor("#8b8fa3"))
+            return DURUM_RENK.get(str(row.get(col, "")), QColor(DarkTheme.TEXT_MUTED))
         if role == Qt.TextAlignmentRole:
             return Qt.AlignCenter if col in ("KontrolTarihi", "Durum") else Qt.AlignVCenter | Qt.AlignLeft
         return None
@@ -412,10 +414,11 @@ class TopluMuayeneDialog(QDialog):
 
         h_dosya = QHBoxLayout()
         self._lbl_dosya = QLabel("Dosya seçilmedi")
-        self._lbl_dosya.setStyleSheet("color:#8b8fa3; font-size:11px;")
-        btn_dosya = QPushButton("📂 Ortak Rapor Seç")
+        self._lbl_dosya.setStyleSheet(S.get("label", ""))
+        btn_dosya = QPushButton("Rapor Sec")
         btn_dosya.setStyleSheet(S.get("file_btn", ""))
         btn_dosya.clicked.connect(self._sec_dosya)
+        IconRenderer.set_button_icon(btn_dosya, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
         h_dosya.addWidget(self._lbl_dosya)
         h_dosya.addWidget(btn_dosya)
         v_ortak.addLayout(h_dosya)
@@ -431,12 +434,14 @@ class TopluMuayeneDialog(QDialog):
 
         h_btn = QHBoxLayout()
         h_btn.addStretch()
-        btn_iptal = QPushButton("✕  İptal")
+        btn_iptal = QPushButton("Iptal")
         btn_iptal.setStyleSheet(S.get("cancel_btn", ""))
         btn_iptal.clicked.connect(self.reject)
-        self._btn_baslat = QPushButton("✓  Başlat")
+        self._btn_baslat = QPushButton("Baslat")
         self._btn_baslat.setStyleSheet(S.get("save_btn", ""))
         self._btn_baslat.clicked.connect(self._on_save)
+        IconRenderer.set_button_icon(btn_iptal, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self._btn_baslat, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         h_btn.addWidget(btn_iptal)
         h_btn.addWidget(self._btn_baslat)
         main.addLayout(h_btn)
@@ -569,7 +574,7 @@ class RKEMuayenePage(QWidget):
         form_lay.setSpacing(12)
 
         # 1. Ekipman Seçimi
-        grp_ekipman = QGroupBox("🛡️  Ekipman Seçimi")
+        grp_ekipman = QGroupBox("Ekipman Secimi")
         grp_ekipman.setStyleSheet(S.get("group", ""))
         v_ekip = QVBoxLayout(grp_ekipman)
         self._cmb_rke = QComboBox()
@@ -580,7 +585,7 @@ class RKEMuayenePage(QWidget):
         form_lay.addWidget(grp_ekipman)
 
         # 2. Muayene Detayları
-        grp_detay = QGroupBox("🔬  Muayene Detayları")
+        grp_detay = QGroupBox("Muayene Detaylari")
         grp_detay.setStyleSheet(S.get("group", ""))
         v_detay = QVBoxLayout(grp_detay)
 
@@ -599,7 +604,7 @@ class RKEMuayenePage(QWidget):
         form_lay.addWidget(grp_detay)
 
         # 3. Sonuç ve Raporlama
-        grp_sonuc = QGroupBox("📄  Sonuç ve Raporlama")
+        grp_sonuc = QGroupBox("Sonuc ve Raporlama")
         grp_sonuc.setStyleSheet(S.get("group", ""))
         v_sonuc = QVBoxLayout(grp_sonuc)
 
@@ -621,11 +626,12 @@ class RKEMuayenePage(QWidget):
 
         h_dosya = QHBoxLayout()
         self._lbl_dosya = QLabel("Rapor seçilmedi")
-        self._lbl_dosya.setStyleSheet("color:#8b8fa3; font-size:11px; font-style:italic;")
-        btn_dosya = QPushButton("📂 Rapor Seç")
+        self._lbl_dosya.setStyleSheet(f"color:{DarkTheme.TEXT_MUTED}; font-size:11px; font-style:italic;")
+        btn_dosya = QPushButton("Rapor Sec")
         btn_dosya.setStyleSheet(S.get("file_btn", ""))
         btn_dosya.setCursor(QCursor(Qt.PointingHandCursor))
         btn_dosya.clicked.connect(self._sec_dosya)
+        IconRenderer.set_button_icon(btn_dosya, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
         h_dosya.addWidget(self._lbl_dosya)
         h_dosya.addWidget(btn_dosya)
         v_sonuc.addWidget(self._labeled("Varsa Rapor", QWidget()))  # placeholder
@@ -634,7 +640,7 @@ class RKEMuayenePage(QWidget):
         form_lay.addWidget(grp_sonuc)
 
         # 4. Geçmiş Muayeneler
-        grp_gecmis = QGroupBox("📋  Geçmiş Muayeneler")
+        grp_gecmis = QGroupBox("Gecmis Muayeneler")
         grp_gecmis.setStyleSheet(S.get("group", ""))
         v_gec = QVBoxLayout(grp_gecmis)
 
@@ -666,14 +672,14 @@ class RKEMuayenePage(QWidget):
         # Butonlar
         h_btn = QHBoxLayout()
         h_btn.setSpacing(8)
-        self._btn_temizle = QPushButton("✕  TEMİZLE")
+        self._btn_temizle = QPushButton("TEMIZLE")
         self._btn_temizle.setStyleSheet(S.get("cancel_btn", ""))
-        self._btn_temizle.setFixedHeight(40)
         self._btn_temizle.setCursor(QCursor(Qt.PointingHandCursor))
-        self._btn_kaydet = QPushButton("✓  KAYDET")
+        self._btn_kaydet = QPushButton("KAYDET")
         self._btn_kaydet.setStyleSheet(S.get("save_btn", ""))
-        self._btn_kaydet.setFixedHeight(40)
         self._btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self._btn_temizle, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self._btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         h_btn.addWidget(self._btn_temizle)
         h_btn.addWidget(self._btn_kaydet)
         sol_lay.addLayout(h_btn)
@@ -683,7 +689,7 @@ class RKEMuayenePage(QWidget):
         # Dikey ayraç
         sep = QFrame()
         sep.setFrameShape(QFrame.VLine)
-        sep.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        sep.setStyleSheet(S.get("separator", ""))
         root.addWidget(sep)
 
         # ── SAĞ: LİSTE ──
@@ -705,31 +711,31 @@ class RKEMuayenePage(QWidget):
         fl.addWidget(self._cmb_filtre_abd)
 
         self._txt_ara = QLineEdit()
-        self._txt_ara.setPlaceholderText("🔍 Ekipman ara...")
+        self._txt_ara.setPlaceholderText("Ekipman ara...")
         self._txt_ara.setClearButtonEnabled(True)
         self._txt_ara.setStyleSheet(S.get("search", ""))
         fl.addWidget(self._txt_ara)
 
         fl.addStretch()
 
-        self._btn_yenile = QPushButton("⟳ Yenile")
+        self._btn_yenile = QPushButton("Yenile")
         self._btn_yenile.setToolTip("Yenile")
-        self._btn_yenile.setFixedSize(100, 36)
         self._btn_yenile.setStyleSheet(S.get("refresh_btn", ""))
         self._btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self._btn_yenile, "sync", color=DarkTheme.TEXT_PRIMARY, size=14)
         fl.addWidget(self._btn_yenile)
 
         _sep_k = QFrame()
         _sep_k.setFrameShape(QFrame.VLine)
         _sep_k.setFixedHeight(20)
-        _sep_k.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        _sep_k.setStyleSheet(S.get("separator", ""))
         fl.addWidget(_sep_k)
 
-        self.btn_kapat = QPushButton("✕ Kapat")
+        self.btn_kapat = QPushButton("Kapat")
         self.btn_kapat.setToolTip("Pencereyi Kapat")
-        self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S.get("close_btn", ""))
+        IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         fl.addWidget(self.btn_kapat)
 
         sag_lay.addWidget(filter_frame)
@@ -757,14 +763,15 @@ class RKEMuayenePage(QWidget):
         sag_lay.addWidget(self._list_view, 1)
 
         # Toplu İşlem Butonu + Footer
-        self._btn_toplu = QPushButton("⚡  Seçili Ekipmanlara Toplu Muayene Ekle")
+        self._btn_toplu = QPushButton("Secili Ekipmanlara Toplu Muayene Ekle")
         self._btn_toplu.setStyleSheet(S.get("action_btn", ""))
         self._btn_toplu.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self._btn_toplu, "clipboard", color=DarkTheme.TEXT_PRIMARY, size=14)
         sag_lay.addWidget(self._btn_toplu)
 
         footer = QHBoxLayout()
         self._lbl_sayi = QLabel("0 kayıt")
-        self._lbl_sayi.setStyleSheet(S.get("footer_label", "color:#8b8fa3; font-size:11px;"))
+        self._lbl_sayi.setStyleSheet(S.get("footer_label", f"color:{DarkTheme.TEXT_MUTED}; font-size:11px;"))
         footer.addStretch()
         footer.addWidget(self._lbl_sayi)
         sag_lay.addLayout(footer)
@@ -1077,7 +1084,7 @@ class _GecmisMuayeneModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             return str(row.get(col, ""))
         if role == Qt.ForegroundRole and col == "FizikselDurum":
-            return QColor("#f87171") if "Değil" in str(row.get(col, "")) else QColor("#4ade80")
+            return QColor(DarkTheme.STATUS_ERROR) if "Değil" in str(row.get(col, "")) else QColor(DarkTheme.STATUS_SUCCESS)
         if role == Qt.TextAlignmentRole:
             return Qt.AlignCenter if col in ("FMuayeneTarihi", "SMuayeneTarihi", "FizikselDurum") else Qt.AlignVCenter | Qt.AlignLeft
         return None
@@ -1091,5 +1098,3 @@ class _GecmisMuayeneModel(QAbstractTableModel):
         self.beginResetModel()
         self._data = data or []
         self.endResetModel()
-
-

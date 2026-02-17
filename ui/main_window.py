@@ -1,4 +1,3 @@
-import os
 from datetime import datetime
 
 from PySide6.QtWidgets import (
@@ -8,15 +7,19 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QTimer, Slot
 
 from core.config import AppConfig
-from core.logger import logger
+from core.logger import logger, log_ui_error
 from core.paths import DB_PATH
 from ui.sidebar import Sidebar 
 from ui.pages.placeholder import WelcomePage, PlaceholderPage 
+from ui.styles.colors import DarkTheme
 from database.sync_worker import SyncWorker
 from database.sqlite_manager import SQLiteManager
 
 
 class MainWindow(QMainWindow):
+    STATUS_READY_COLOR = DarkTheme.STATUS_SUCCESS
+    STATUS_SYNCING_COLOR = DarkTheme.STATUS_WARNING
+    STATUS_ERROR_COLOR = DarkTheme.STATUS_ERROR
 
     def __init__(self):
         super().__init__()
@@ -29,21 +32,10 @@ class MainWindow(QMainWindow):
         self._sync_worker = None
         self._bildirim_worker = None
         self._db = SQLiteManager()
-        self._load_theme()
         self._build_ui()
         self._build_status_bar()
         self._setup_sync()
         self._setup_bildirim()
-
-    def _load_theme(self):
-        theme_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "theme.qss"
-        )
-        try:
-            with open(theme_path, "r", encoding="utf-8") as f:
-                self.setStyleSheet(f.read())
-        except FileNotFoundError:
-            logger.warning("Tema dosyası bulunamadı")
 
     def _build_ui(self):
         central = QWidget()
@@ -65,9 +57,9 @@ class MainWindow(QMainWindow):
         content.setObjectName("content_area")
         content.setStyleSheet("""
             #content_area {
-                background-color: #16172b;
+                background-color: %s;
             }
-        """)
+        """ % DarkTheme.BG_PRIMARY)
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(0)
@@ -76,9 +68,9 @@ class MainWindow(QMainWindow):
         self.page_title = QLabel("")
         self.page_title.setStyleSheet("""
             font-size: 20px; font-weight: bold;
-            color: #e0e2ea; padding: 16px 24px 8px 24px;
+            color: %s; padding: 16px 24px 8px 24px;
             background-color: transparent;
-        """)
+        """ % DarkTheme.TEXT_PRIMARY)
         self.page_title.setVisible(False)
         content_layout.addWidget(self.page_title)
 
@@ -104,18 +96,18 @@ class MainWindow(QMainWindow):
         self.status = QStatusBar()
         self.status.setStyleSheet("""
             QStatusBar {
-                background-color: #0f1020;
-                border-top: 1px solid rgba(255, 255, 255, 0.06);
+                background-color: %s;
+                border-top: 1px solid %s;
                 padding: 2px 8px;
             }
             QStatusBar QLabel {
-                font-size: 12px; color: #5a5d6e; padding: 0 8px;
+                font-size: 12px; color: %s; padding: 0 8px;
             }
-        """)
+        """ % (DarkTheme.BG_SECONDARY, DarkTheme.BORDER_PRIMARY, DarkTheme.TEXT_DISABLED))
         self.setStatusBar(self.status)
 
-        self.sync_status_label = QLabel("● Hazır")
-        self.sync_status_label.setStyleSheet("color: #22c55e;")
+        self.sync_status_label = QLabel("Hazır")
+        self._set_sync_status_label("Hazır", self.STATUS_READY_COLOR)
         self.status.addWidget(self.sync_status_label)
 
         self.last_sync_label = QLabel("")
@@ -138,25 +130,35 @@ class MainWindow(QMainWindow):
         filters = args[0] if args else {}
         logger.info(f"Menü seçildi: {group} → {baslik} (Filtreler: {filters})")
 
-        if baslik in self._pages:
-            page = self._pages[baslik]
-        else:
-            page = self._create_page(group, baslik)
-            if isinstance(page, PlaceholderPage) or page is None:
-                if page:
-                    self.stack.addWidget(page)
-                    self.stack.setCurrentWidget(page)
-                return
-            self._pages[baslik] = page
-            self.stack.addWidget(page)
+        try:
+            if baslik in self._pages:
+                page = self._pages[baslik]
+            else:
+                page = self._create_page(group, baslik)
+                if isinstance(page, PlaceholderPage) or page is None:
+                    if page:
+                        self.stack.addWidget(page)
+                        self.stack.setCurrentWidget(page)
+                    return
+                self._pages[baslik] = page
+                self.stack.addWidget(page)
 
-        self.stack.setCurrentWidget(page)
-        self.page_title.setText(baslik)
-        self.page_title.setVisible(True)
+            self.stack.setCurrentWidget(page)
+            self.page_title.setText(baslik)
+            self.page_title.setVisible(True)
 
-        if filters and hasattr(page, "apply_filters"):
-            logger.info(f"'{baslik}' sayfasına filtreler uygulanıyor: {filters}")
-            page.apply_filters(filters)
+            if filters and hasattr(page, "apply_filters"):
+                logger.info(f"'{baslik}' sayfasına filtreler uygulanıyor: {filters}")
+                page.apply_filters(filters)
+        except Exception as e:
+            log_ui_error("menu_click", e, group=group, page=baslik)
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.critical(
+                self,
+                "Sayfa Acma Hatasi",
+                f"'{baslik}' sayfasi acilirken bir hata olustu.\n"
+                f"Detaylar ui_log.log dosyasina yazildi.\n\n{type(e).__name__}: {e}"
+            )
 
     def _create_page(self, group, baslik):
         if baslik == "Genel Bakış":
@@ -235,8 +237,8 @@ class MainWindow(QMainWindow):
         if baslik == "Arıza Kayıt":
             from ui.pages.cihaz.ariza_kayit import ArizaKayitPenceresi
             page = ArizaKayitPenceresi(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Arıza Kayıt"))
-            page.load_data()
+            if hasattr(page, "btn_iptal"):
+                page.btn_iptal.clicked.connect(lambda: self._close_page("Arıza Kayıt"))
             return page
         
         if baslik == "Arıza Listesi":
@@ -481,9 +483,8 @@ class MainWindow(QMainWindow):
         
         logger.info("Sync başlatılıyor...")
         self.sidebar.set_sync_enabled(False)
-        self.sidebar.set_sync_status("⏳ Senkronize ediliyor...", "#f59e0b")
-        self.sync_status_label.setText("⏳ Senkronize ediliyor...")
-        self.sync_status_label.setStyleSheet("color: #f59e0b;")
+        self.sidebar.set_sync_status("Senkronize ediliyor...", self.STATUS_SYNCING_COLOR)
+        self._set_sync_status_label("Senkronize ediliyor...", self.STATUS_SYNCING_COLOR)
 
         self._sync_worker = SyncWorker()
         self._sync_worker.finished.connect(self._on_sync_finished)
@@ -496,9 +497,8 @@ class MainWindow(QMainWindow):
         logger.info(f"Sync başarıyla tamamlandı ({now})")
         
         self.sidebar.set_sync_enabled(True)
-        self.sidebar.set_sync_status("● Senkronize", "#22c55e")
-        self.sync_status_label.setText("● Senkronize")
-        self.sync_status_label.setStyleSheet("color: #22c55e;")
+        self.sidebar.set_sync_status("Senkronize", self.STATUS_READY_COLOR)
+        self._set_sync_status_label("Senkronize", self.STATUS_READY_COLOR)
         self.last_sync_label.setText(f"Son sync: {now}")
         self._refresh_active_page()
         # Dashboard açıksa onu da yenile
@@ -525,11 +525,10 @@ class MainWindow(QMainWindow):
         
         # UI güncelleme
         self.sidebar.set_sync_enabled(True)
-        self.sidebar.set_sync_status(f"● {short_msg}", "#ef4444")
+        self.sidebar.set_sync_status(short_msg, self.STATUS_ERROR_COLOR)
         
         # Status bar'da kısa mesaj
-        self.sync_status_label.setText(f"● {short_msg}")
-        self.sync_status_label.setStyleSheet("color: #ef4444;")
+        self._set_sync_status_label(short_msg, self.STATUS_ERROR_COLOR)
         
         # Detaylı mesajı tooltip olarak ekle
         self.sync_status_label.setToolTip(
@@ -564,8 +563,8 @@ class MainWindow(QMainWindow):
             msg_box.setDetailedText(f"Hata Detayı:\n{detail_msg}")
             
             # UI'da da daha anlaşılır bir mesaj göster
-            self.sidebar.set_sync_status(f"● {service_error_short}", "#ef4444")
-            self.sync_status_label.setText(f"● {service_error_short}")
+            self.sidebar.set_sync_status(service_error_short, self.STATUS_ERROR_COLOR)
+            self._set_sync_status_label(service_error_short, self.STATUS_ERROR_COLOR)
         else:
             msg_box.setText(short_msg)
             msg_box.setInformativeText(detail_msg)
@@ -585,8 +584,22 @@ class MainWindow(QMainWindow):
         msg_box.exec()
 
     def closeEvent(self, event):
+        # Eğer sync çalışıyorsa kullanıcıyı bilgilendir ve animasyonlu modal göster
         if self._sync_worker and self._sync_worker.isRunning():
-            self._sync_worker.stop()
+            from ui.components.shutdown_sync_dialog import ShutdownSyncDialog
+
+            dlg = ShutdownSyncDialog(self, sync_worker=self._sync_worker)
+            # exec() bloklayıcıdır ama worker başka thread'de çalıştığı için uygulama donmaz;
+            # dialog worker'ın `finished` veya `error` sinyali ile kapanacaktır.
+            dlg.exec()
+
+            # Dialog kapandığında sync durduysa devam et, yoksa yine stop() çağır
+            if self._sync_worker and self._sync_worker.isRunning():
+                try:
+                    self._sync_worker.stop()
+                except Exception:
+                    pass
+
         if self._bildirim_worker and self._bildirim_worker.isRunning():
             self._bildirim_worker.quit()
             self._bildirim_worker.wait(1000)
@@ -601,6 +614,10 @@ class MainWindow(QMainWindow):
                 current.load_data()
             except Exception as e:
                 logger.error(f"Sayfa yenileme hatası: {e}")
+
+    def _set_sync_status_label(self, text: str, color: str):
+        self.sync_status_label.setText(text)
+        self.sync_status_label.setStyleSheet(f"color: {color};")
 
     def _on_personel_saved(self):
         """Personel kaydedildikten sonra listeye dön ve yenile."""

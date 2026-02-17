@@ -30,6 +30,8 @@ from PySide6.QtCore import QMarginsF
 from core.logger import logger
 from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
+from ui.styles import DarkTheme
+from ui.styles.icons import IconRenderer
 
 # ─── Merkezi Stiller ───
 S = ThemeManager.get_all_component_styles()
@@ -47,8 +49,8 @@ COLUMNS = [
 ]
 
 SONUC_RENK = {
-    "Kullanıma Uygun":       QColor("#4ade80"),
-    "Kullanıma Uygun Değil": QColor("#f87171"),
+    "Kullanıma Uygun":       QColor(DarkTheme.STATUS_SUCCESS),
+    "Kullanıma Uygun Değil": QColor(DarkTheme.STATUS_ERROR),
 }
 
 
@@ -195,7 +197,7 @@ class RaporTableModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             return str(row.get(col, ""))
         if role == Qt.ForegroundRole and col == "Sonuc":
-            return SONUC_RENK.get(str(row.get(col, "")), QColor("#8b8fa3"))
+            return SONUC_RENK.get(str(row.get(col, "")), QColor(DarkTheme.TEXT_MUTED))
         if role == Qt.TextAlignmentRole:
             return Qt.AlignCenter if col in ("Tarih", "Pb", "Sonuc") else Qt.AlignVCenter | Qt.AlignLeft
         return None
@@ -322,7 +324,7 @@ class RaporOlusturucuThread(QThread):
             if self._mod == 1:
                 # Genel Kontrol Raporu
                 if not self._veriler:
-                    self.log_mesaji.emit("⚠️ Rapor için veri bulunamadı.")
+                    self.log_mesaji.emit("UYARI: Rapor icin veri bulunamadi.")
                     return
                 dosya_adi = f"RKE_Genel_{zaman}.pdf"
                 html = html_genel_rapor(self._veriler, self._ozet)
@@ -330,13 +332,13 @@ class RaporOlusturucuThread(QThread):
                     gecici_dosyalar.append(dosya_adi)
                     self._yukle_drive(dosya_adi)
                 else:
-                    self.log_mesaji.emit("❌ PDF oluşturulamadı.")
+                    self.log_mesaji.emit("HATA: PDF olusturulamadi.")
 
             elif self._mod == 2:
                 # Hurda Raporu
                 hurda = [v for v in self._veriler if "Değil" in v.get("Sonuc", "")]
                 if not hurda:
-                    self.log_mesaji.emit("⚠️ Hurda adayı kayıt bulunamadı.")
+                    self.log_mesaji.emit("UYARI: Hurda adayi kayit bulunamadi.")
                     return
                 dosya_adi = f"RKE_Hurda_{zaman}.pdf"
                 html = html_hurda_rapor(hurda)
@@ -344,7 +346,7 @@ class RaporOlusturucuThread(QThread):
                     gecici_dosyalar.append(dosya_adi)
                     self._yukle_drive(dosya_adi)
                 else:
-                    self.log_mesaji.emit("❌ Hurda PDF oluşturulamadı.")
+                    self.log_mesaji.emit("HATA: Hurda PDF olusturulamadi.")
 
             elif self._mod == 3:
                 # Personel Bazlı (kişi × tarih grupları)
@@ -353,7 +355,7 @@ class RaporOlusturucuThread(QThread):
                     key = (item.get("KontrolEden", ""), item.get("Tarih", ""))
                     gruplar.setdefault(key, []).append(item)
 
-                self.log_mesaji.emit(f"ℹ️ {len(gruplar)} farklı rapor hazırlanıyor...")
+                self.log_mesaji.emit(f"BILGI: {len(gruplar)} farkli rapor hazirlaniyor...")
                 for (kisi, tarih), liste in gruplar.items():
                     ad       = f"Rapor_{kisi}_{tarih}".replace(" ", "_")
                     dosya_adi = f"{ad}_{zaman}.pdf"
@@ -361,10 +363,10 @@ class RaporOlusturucuThread(QThread):
                     if pdf_olustur(html, dosya_adi):
                         gecici_dosyalar.append(dosya_adi)
                         self._yukle_drive(dosya_adi)
-                        self.log_mesaji.emit(f"✅ {dosya_adi} yüklendi.")
+                        self.log_mesaji.emit(f"BASARILI: {dosya_adi} yuklendi.")
 
         except Exception as e:
-            self.log_mesaji.emit(f"❌ Hata: {e}")
+            self.log_mesaji.emit(f"HATA: {e}")
             logger.error(f"RaporOlusturucu hatası: {e}")
         finally:
             for f in gecici_dosyalar:
@@ -395,11 +397,11 @@ class RaporOlusturucuThread(QThread):
             drive = GoogleDriveService()
             link  = drive.upload_file(dosya_adi, parent_folder_id=folder_id)
             if link:
-                self.log_mesaji.emit(f"✅ Drive'a yüklendi.")
+                self.log_mesaji.emit("BASARILI: Drive'a yuklendi.")
             else:
-                self.log_mesaji.emit("⚠️ Drive yükleme başarısız.")
+                self.log_mesaji.emit("UYARI: Drive yukleme basarisiz.")
         except Exception as e:
-            self.log_mesaji.emit(f"⚠️ Drive hatası: {e}")
+            self.log_mesaji.emit(f"UYARI: Drive hatasi: {e}")
             logger.warning(f"Drive yükleme hatası: {e}")
 
 
@@ -434,7 +436,7 @@ class RKERaporPage(QWidget):
         main.setSpacing(12)
 
         # ── KONTROL PANELİ ──
-        panel = QGroupBox("📊  Rapor Ayarları ve Filtreler")
+        panel = QGroupBox("Rapor Ayarlari ve Filtreler")
         panel.setStyleSheet(S.get("group", ""))
         panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         h_panel = QHBoxLayout(panel)
@@ -444,14 +446,14 @@ class RKERaporPage(QWidget):
         v_left = QVBoxLayout()
         v_left.setSpacing(8)
         lbl_tur = QLabel("RAPOR TÜRÜ")
-        lbl_tur.setStyleSheet("color:#8b8fa3; font-size:11px; font-weight:bold; letter-spacing:1px;")
+        lbl_tur.setStyleSheet(S.get("section_title", ""))
         v_left.addWidget(lbl_tur)
 
-        radio_ss = """
-            QRadioButton { color:#c8cad0; font-size:13px; padding:4px; background:transparent; }
-            QRadioButton::indicator { width:16px; height:16px; border-radius:9px; border:2px solid #444; background:#222; }
-            QRadioButton::indicator:checked { background-color:#ab47bc; border-color:#ab47bc; }
-            QRadioButton:hover { color:#ffffff; }
+        radio_ss = f"""
+            QRadioButton {{ color:{DarkTheme.TEXT_SECONDARY}; font-size:13px; padding:4px; background:transparent; }}
+            QRadioButton::indicator {{ width:16px; height:16px; border-radius:9px; border:2px solid {DarkTheme.BORDER_PRIMARY}; background:{DarkTheme.BG_SECONDARY}; }}
+            QRadioButton::indicator:checked {{ background-color:{DarkTheme.INPUT_BORDER_FOCUS}; border-color:{DarkTheme.INPUT_BORDER_FOCUS}; }}
+            QRadioButton:hover {{ color:{DarkTheme.TEXT_PRIMARY}; }}
         """
         self._rb_genel = QRadioButton("A.  Kontrol Raporu (Genel)")
         self._rb_genel.setChecked(True)
@@ -471,7 +473,7 @@ class RKERaporPage(QWidget):
         # Dikey ayraç
         sep = QFrame()
         sep.setFrameShape(QFrame.VLine)
-        sep.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        sep.setStyleSheet(S.get("separator", ""))
         h_panel.addWidget(sep)
 
         # Sağ: Filtreler + Butonlar
@@ -497,7 +499,7 @@ class RKERaporPage(QWidget):
         tw.setSpacing(4)
         tw.addWidget(QLabel("Ara"))
         self._txt_ara = QLineEdit()
-        self._txt_ara.setPlaceholderText("🔍 Ekipman / Cins / Birim...")
+        self._txt_ara.setPlaceholderText("Ekipman / Cins / Birim...")
         self._txt_ara.setClearButtonEnabled(True)
         self._txt_ara.setStyleSheet(S.get("search", ""))
         tw.addWidget(self._txt_ara)
@@ -509,20 +511,15 @@ class RKERaporPage(QWidget):
         h_btn = QHBoxLayout()
         h_btn.setSpacing(10)
 
-        self._btn_yenile = QPushButton("⟳ VERİLERİ YENİLE")
-        self._btn_yenile.setFixedHeight(40)
+        self._btn_yenile = QPushButton("VERILERI YENILE")
         self._btn_yenile.setStyleSheet(S.get("refresh_btn", ""))
         self._btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self._btn_yenile, "sync", color=DarkTheme.TEXT_PRIMARY, size=14)
 
-        self._btn_olustur = QPushButton("📄  PDF RAPOR OLUŞTUR")
-        self._btn_olustur.setFixedHeight(40)
-        self._btn_olustur.setStyleSheet(
-            "QPushButton { background-color:#c62828; color:white; font-weight:bold; "
-            "font-size:13px; border-radius:6px; border:none; padding:0 16px; } "
-            "QPushButton:hover { background-color:#b71c1c; } "
-            "QPushButton:disabled { background-color:#333; color:#555; }"
-        )
+        self._btn_olustur = QPushButton("PDF RAPOR OLUSTUR")
+        self._btn_olustur.setStyleSheet(S.get("pdf_btn", ""))
         self._btn_olustur.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self._btn_olustur, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
 
         h_btn.addWidget(self._btn_yenile)
         h_btn.addWidget(self._btn_olustur)
@@ -531,14 +528,14 @@ class RKERaporPage(QWidget):
         _sep_k = QFrame()
         _sep_k.setFrameShape(QFrame.VLine)
         _sep_k.setFixedHeight(28)
-        _sep_k.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        _sep_k.setStyleSheet(S.get("separator", ""))
         h_btn.addWidget(_sep_k)
 
-        self.btn_kapat = QPushButton("✕  KAPAT")
-        self.btn_kapat.setFixedHeight(40)
+        self.btn_kapat = QPushButton("KAPAT")
         self.btn_kapat.setToolTip("Pencereyi Kapat")
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S.get("close_btn", ""))
+        IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         h_btn.addWidget(self.btn_kapat)
 
         v_right.addLayout(h_btn)
@@ -582,7 +579,7 @@ class RKERaporPage(QWidget):
         # ── FOOTER ──
         footer = QHBoxLayout()
         self._lbl_sayi = QLabel("0 kayıt")
-        self._lbl_sayi.setStyleSheet(S.get("footer_label", "color:#8b8fa3; font-size:11px;"))
+        self._lbl_sayi.setStyleSheet(S.get("footer_label", f"color:{DarkTheme.TEXT_MUTED}; font-size:11px;"))
         footer.addWidget(self._lbl_sayi)
         footer.addStretch()
         main.addLayout(footer)
@@ -638,7 +635,7 @@ class RKERaporPage(QWidget):
     def _on_loader_finished(self):
         self._pbar.setVisible(False)
         self._btn_olustur.setEnabled(True)
-        self._btn_yenile.setText("⟳ Yenile  VERİLERİ YENİLE")
+        self._btn_yenile.setText("VERILERI YENILE")
 
     def _on_data_ready(self, data, abd_listesi, birim_listesi, tarih_listesi):
         self._ham_veriler = data
@@ -747,7 +744,7 @@ class RKERaporPage(QWidget):
     def _on_rapor_bitti(self):
         self._pbar.setVisible(False)
         self._btn_olustur.setEnabled(True)
-        self._btn_olustur.setText("📄  PDF RAPOR OLUŞTUR")
+        self._btn_olustur.setText("PDF RAPOR OLUSTUR")
         QMessageBox.information(
             self, "Tamamlandı",
             "Rapor işlemi tamamlandı. PDF oluşturulduysa Drive'a yüklenmiştir."
@@ -755,14 +752,12 @@ class RKERaporPage(QWidget):
 
     def _on_log(self, msg):
         logger.info(f"[RKERapor] {msg}")
-        if "HATA" in msg or "❌" in msg:
+        if "HATA" in msg:
             QMessageBox.warning(self, "Uyarı", msg)
 
     def _on_error(self, msg):
         self._pbar.setVisible(False)
         self._btn_olustur.setEnabled(True)
-        self._btn_yenile.setText("⟳ Yenile  VERİLERİ YENİLE")
+        self._btn_yenile.setText("VERILERI YENILE")
         logger.error(f"RKERapor hatası: {msg}")
         QMessageBox.critical(self, "Hata", msg)
-
-

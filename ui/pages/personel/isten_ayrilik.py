@@ -20,98 +20,12 @@ from PySide6.QtGui import QCursor
 from core.logger import logger
 from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
+from ui.styles import Colors, DarkTheme
+from ui.styles.icons import IconRenderer
 
 
 # ─── MERKEZİ STİL YÖNETIMI ───
-S = {
-    "page": "background-color: transparent;",
-    "group": """
-        QGroupBox {
-            background-color: rgba(30, 32, 44, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            margin-top: 14px; padding: 16px 12px 12px 12px;
-            font-size: 13px; font-weight: bold; color: #8b8fa3;
-        }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            padding: 0 8px; color: #6bd3ff;
-        }
-    """,
-    "label": "color: #8b8fa3; font-size: 12px; background: transparent;",
-    "value": "color: #e0e2ea; font-size: 13px; font-weight: 600; background: transparent;",
-    "combo": """
-        QComboBox {
-            background-color: #1e202c;
-            border: 1px solid #292b41; border-bottom: 2px solid #9dcbe3;
-            border-radius: 6px; padding: 5px 10px; font-size: 13px;
-            color: #e0e2ea; min-height: 24px;
-        }
-        QComboBox:focus { border-bottom: 2px solid #1d75fe; }
-        QComboBox::drop-down { border: none; width: 24px; }
-        QComboBox QAbstractItemView {
-            background-color: #1e202c; border: 1px solid rgba(255,255,255,0.1);
-            color: #c8cad0; selection-background-color: rgba(29,117,254,0.3);
-            selection-color: #ffffff;
-        }
-    """,
-    "date": """
-        QDateEdit {
-            background-color: #1e202c;
-            border: 1px solid #292b41; border-bottom: 2px solid #9dcbe3;
-            border-radius: 6px; padding: 5px 10px; font-size: 13px;
-            color: #e0e2ea; min-height: 24px;
-        }
-        QDateEdit:focus { border-bottom: 2px solid #1d75fe; }
-        QDateEdit::drop-down { border: none; width: 24px; }
-    """,
-    "file_btn": """
-        QPushButton {
-            background-color: rgba(255,255,255,0.06); color: #8b8fa3;
-            border: 1px solid rgba(255,255,255,0.08); border-radius: 6px;
-            padding: 8px 16px; font-size: 12px;
-        }
-        QPushButton:hover { background-color: rgba(255,255,255,0.10); color: #c8cad0; }
-    """,
-    "danger_btn": """
-        QPushButton {
-            background-color: rgba(239, 68, 68, 0.25); color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px;
-            padding: 12px 28px; font-size: 14px; font-weight: bold;
-        }
-        QPushButton:hover { background-color: rgba(239, 68, 68, 0.4); color: #ffffff; }
-        QPushButton:disabled {
-            background-color: rgba(255,255,255,0.05); color: #5a5d6e;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-    """,
-    "back_btn": """
-        QPushButton {
-            background-color: rgba(239, 68, 68, 0.15); color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px;
-            padding: 8px 16px; font-size: 13px; font-weight: 600;
-        }
-        QPushButton:hover { background-color: rgba(239, 68, 68, 0.3); color: #ffffff; }
-    """,
-    "header_name": "font-size: 18px; font-weight: bold; color: #e0e2ea; background: transparent;",
-    "separator": "QFrame { background-color: rgba(255, 255, 255, 0.06); }",
-    "stat_label": "color: #8b8fa3; font-size: 12px; background: transparent;",
-    "stat_value": "color: #e0e2ea; font-size: 14px; font-weight: bold; background: transparent;",
-    "stat_green": "color: #4ade80; font-size: 14px; font-weight: bold; background: transparent;",
-    "stat_red": "color: #f87171; font-size: 14px; font-weight: bold; background: transparent;",
-    "section_title": "color: #6bd3ff; font-size: 12px; font-weight: bold; background: transparent;",
-    "scroll": """
-        QScrollArea { border: none; background: transparent; }
-        QWidget { background: transparent; }
-        QScrollBar:vertical {
-            background: transparent; width: 5px;
-        }
-        QScrollBar::handle:vertical {
-            background: rgba(255,255,255,0.12); border-radius: 2px; min-height: 30px;
-        }
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
-    """,
-}
+S = ThemeManager.get_all_component_styles()
 
 
 # ═══════════════════════════════════════════════
@@ -317,7 +231,7 @@ class IstenAyrilikPage(QWidget):
         hdr.setSpacing(12)
 
         ad = self._data.get("AdSoyad", "")
-        lbl = QLabel(f"⚠️  İşten Ayrılış — {ad}")
+        lbl = QLabel(f"Isten Ayrilis - {ad}")
         lbl.setStyleSheet(S["header_name"])
         hdr.addWidget(lbl)
         hdr.addStretch()
@@ -342,7 +256,7 @@ class IstenAyrilikPage(QWidget):
         left_l.setSpacing(12)
 
         # Personel Özet
-        grp_ozet = QGroupBox("👤  Personel Bilgileri")
+        grp_ozet = QGroupBox("Personel Bilgileri")
         grp_ozet.setStyleSheet(S["group"])
         og = QGridLayout(grp_ozet)
         og.setSpacing(6)
@@ -366,7 +280,7 @@ class IstenAyrilikPage(QWidget):
         left_l.addWidget(grp_ozet)
 
         # Ayrılış Formu
-        grp_form = QGroupBox("📋  Ayrılış Bilgileri")
+        grp_form = QGroupBox("Ayrilis Bilgileri")
         grp_form.setStyleSheet(S["group"])
         fg = QGridLayout(grp_form)
         fg.setSpacing(10)
@@ -395,20 +309,21 @@ class IstenAyrilikPage(QWidget):
         lbl_d.setStyleSheet(S["label"])
         fg.addWidget(lbl_d, 2, 0)
         dosya_h = QHBoxLayout()
-        self.btn_dosya = QPushButton("📎 Dosya Seç")
+        self.btn_dosya = QPushButton("Dosya Sec")
         self.btn_dosya.setStyleSheet(S["file_btn"])
         self.btn_dosya.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_dosya.clicked.connect(self._select_file)
+        IconRenderer.set_button_icon(self.btn_dosya, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
         dosya_h.addWidget(self.btn_dosya)
         self.lbl_dosya = QLabel("")
-        self.lbl_dosya.setStyleSheet("color: #4ade80; font-size: 11px; background: transparent;")
+        self.lbl_dosya.setStyleSheet(f"color: {Colors.SUCCESS}; font-size: 11px; background: transparent;")
         dosya_h.addWidget(self.lbl_dosya, 1)
         fg.addLayout(dosya_h, 2, 1)
 
         left_l.addWidget(grp_form)
 
         # Mevcut Dosyalar
-        grp_dosya = QGroupBox("📁  Mevcut Drive Dosyaları")
+        grp_dosya = QGroupBox("Mevcut Drive Dosyalari")
         grp_dosya.setStyleSheet(S["group"])
         dg = QGridLayout(grp_dosya)
         dg.setSpacing(6)
@@ -425,11 +340,11 @@ class IstenAyrilikPage(QWidget):
             l.setStyleSheet(S["label"])
             dg.addWidget(l, i, 0)
             if val and str(val).startswith("http"):
-                v = QLabel("✓ Mevcut")
-                v.setStyleSheet("color: #4ade80; font-size: 12px; background: transparent;")
+                v = QLabel("Mevcut")
+                v.setStyleSheet(f"color: {Colors.SUCCESS}; font-size: 12px; background: transparent;")
             else:
                 v = QLabel("—")
-                v.setStyleSheet("color: #5a5d6e; font-size: 12px; background: transparent;")
+                v.setStyleSheet(f"color: {DarkTheme.TEXT_DISABLED}; font-size: 12px; background: transparent;")
             dg.addWidget(v, i, 1)
         left_l.addWidget(grp_dosya)
 
@@ -442,7 +357,7 @@ class IstenAyrilikPage(QWidget):
         right_l.setSpacing(12)
 
         # İzin Özeti
-        grp_izin = QGroupBox("📊  İzin Özeti")
+        grp_izin = QGroupBox("Izin Ozeti")
         grp_izin.setStyleSheet(S["group"])
         ig = QGridLayout(grp_izin)
         ig.setSpacing(4)
@@ -472,7 +387,7 @@ class IstenAyrilikPage(QWidget):
         right_l.addWidget(grp_izin)
 
         # Uyarı + Buton
-        grp_onay = QGroupBox("⚠️  İşlemi Onayla")
+        grp_onay = QGroupBox("Islemi Onayla")
         grp_onay.setStyleSheet(S["group"])
         onay_l = QVBoxLayout(grp_onay)
         onay_l.setSpacing(12)
@@ -486,14 +401,14 @@ class IstenAyrilikPage(QWidget):
             "• Eski Drive dosyalarını silecek"
         )
         uyari.setWordWrap(True)
-        uyari.setStyleSheet("color: #f87171; font-size: 12px; background: transparent;")
+        uyari.setStyleSheet(f"color: {Colors.DANGER}; font-size: 12px; background: transparent;")
         onay_l.addWidget(uyari)
 
-        self.btn_onayla = QPushButton("⚠️ ONAYLA VE BİTİR")
+        self.btn_onayla = QPushButton("ONAYLA VE BITIR")
         self.btn_onayla.setStyleSheet(S["danger_btn"])
         self.btn_onayla.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_onayla.setFixedHeight(45)
         self.btn_onayla.clicked.connect(self._on_confirm)
+        IconRenderer.set_button_icon(self.btn_onayla, "alert_triangle", color=DarkTheme.TEXT_PRIMARY, size=14)
         onay_l.addWidget(self.btn_onayla)
 
         right_l.addWidget(grp_onay)
@@ -509,11 +424,11 @@ class IstenAyrilikPage(QWidget):
         self.progress.setFixedHeight(16)
         self.progress.setVisible(False)
         self.progress.setRange(0, 0)
-        self.progress.setStyleSheet("""
+        self.progress.setStyleSheet(f"""
             QProgressBar {
                 background-color: rgba(255,255,255,0.05);
                 border: 1px solid rgba(255,255,255,0.08);
-                border-radius: 4px; color: #8b8fa3; font-size: 11px;
+                border-radius: 4px; color: {DarkTheme.TEXT_MUTED}; font-size: 11px;
             }
             QProgressBar::chunk {
                 background-color: rgba(239, 68, 68, 0.6);
@@ -523,7 +438,7 @@ class IstenAyrilikPage(QWidget):
         main.addWidget(self.progress)
 
         self.lbl_status = QLabel("")
-        self.lbl_status.setStyleSheet("color: #8b8fa3; font-size: 12px; background: transparent;")
+        self.lbl_status.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 12px; background: transparent;")
         main.addWidget(self.lbl_status)
 
     def _add_stat(self, grid, row, text, style_key):
@@ -599,7 +514,7 @@ class IstenAyrilikPage(QWidget):
         )
         if path:
             self._ek_dosya = path
-            self.lbl_dosya.setText(f"✓ {os.path.basename(path)}")
+            self.lbl_dosya.setText(os.path.basename(path))
 
     # ═══════════════════════════════════════════
     #  ONAYLA
@@ -685,7 +600,7 @@ class IstenAyrilikPage(QWidget):
             except Exception as e:
                 logger.error(f"Arşiv link kayıt hatası: {e}")
 
-        self.lbl_status.setText("✓ İşlem tamamlandı.")
+        self.lbl_status.setText("Islem tamamlandi.")
         QMessageBox.information(self, "Tamamlandı",
             f"{ad} personeli PASİF duruma getirildi.\n"
             f"{'Dosyaları arşivlendi.' if arsiv_link else 'Arşivlenecek dosya bulunamadı.'}")
@@ -695,7 +610,7 @@ class IstenAyrilikPage(QWidget):
     def _on_error(self, hata):
         self.progress.setVisible(False)
         self.btn_onayla.setEnabled(True)
-        self.lbl_status.setText(f"⚠ Arşiv hatası: {hata}")
+        self.lbl_status.setText(f"Arsiv hatasi: {hata}")
         logger.error(f"Arşiv hatası: {hata}")
         QMessageBox.warning(self, "Arşiv Uyarısı",
             f"Personel PASİF yapıldı ancak arşivleme hatası:\n{hata}")

@@ -155,8 +155,8 @@ class ThemeManager(QObject):
     def setup_calendar_popup(date_edit: QDateEdit) -> None:
         """QDateEdit takvim popup stilini merkezi olarak uygular."""
         cal = date_edit.calendarWidget()
-        cal.setMinimumWidth(350)
-        cal.setMinimumHeight(250)
+        cal.setMinimumWidth(300)
+        cal.setMinimumHeight(200)
         cal.setStyleSheet(
             """
             QCalendarWidget {
@@ -166,8 +166,8 @@ class ThemeManager(QObject):
             QCalendarWidget QToolButton {
                 background-color: #1e202c;
                 color: #e0e2ea;
-                border: none; padding: 6px 10px;
-                font-size: 13px; font-weight: bold;
+                border: none; padding: 6px 12px;
+                font-size: 12px; font-weight: bold;
             }
             QCalendarWidget QToolButton:hover {
                 background-color: rgba(29, 117, 254, 0.3);
@@ -178,14 +178,14 @@ class ThemeManager(QObject):
             }
             QCalendarWidget QSpinBox {
                 background-color: #1e202c; color: #e0e2ea;
-                border: 1px solid #292b41; font-size: 13px;
+                border: 1px solid #292b41; padding: 6px 8px; font-size: 12px;
             }
             QCalendarWidget QAbstractItemView {
                 background-color: #1e202c;
                 color: #c8cad0;
                 selection-background-color: rgba(29, 117, 254, 0.4);
                 selection-color: #ffffff;
-                font-size: 13px;
+                font-size: 12px;
                 outline: none;
             }
             QCalendarWidget QAbstractItemView:enabled {

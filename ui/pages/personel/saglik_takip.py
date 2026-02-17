@@ -14,6 +14,8 @@ from PySide6.QtWidgets import (
 from core.logger import logger
 from core.date_utils import parse_date, to_db_date, to_ui_date
 from ui.theme_manager import ThemeManager
+from ui.styles import DarkTheme
+from ui.styles.icons import IconRenderer
 
 S = ThemeManager.get_all_component_styles()
 STATUS_OPTIONS = ["Uygun", "Sartli Uygun", "Uygun Degil"]
@@ -160,6 +162,7 @@ class SaglikTakipPage(QWidget):
         self.btn_rapor = QPushButton("Sec")
         self.btn_rapor.setStyleSheet(S["action_btn"])
         self.btn_rapor.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_rapor, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
         rapor_row.addWidget(self.btn_rapor)
         g3.addLayout(rapor_row, 0, 1)
 
@@ -178,10 +181,12 @@ class SaglikTakipPage(QWidget):
         self.btn_temizle = QPushButton("Temizle / Yeni")
         self.btn_temizle.setStyleSheet(S["action_btn"])
         self.btn_temizle.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_temizle, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         btn_row.addWidget(self.btn_temizle)
         self.btn_kaydet = QPushButton("Kaydet")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         btn_row.addWidget(self.btn_kaydet)
         left_lay.addLayout(btn_row)
 
@@ -189,7 +194,7 @@ class SaglikTakipPage(QWidget):
 
         sep = QFrame()
         sep.setFrameShape(QFrame.VLine)
-        sep.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        sep.setStyleSheet(f"background-color: {DarkTheme.BORDER_PRIMARY};")
         root.addWidget(sep)
 
         # Sag panel: RKE benzeri filtre + liste
@@ -235,18 +240,21 @@ class SaglikTakipPage(QWidget):
         self.btn_toplu = QPushButton("Toplu Yillik Plan")
         self.btn_toplu.setStyleSheet(S["action_btn"])
         self.btn_toplu.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_toplu, "clipboard_list", color=DarkTheme.TEXT_PRIMARY, size=14)
         fb.addWidget(self.btn_toplu)
 
         self.btn_yenile = QPushButton("Yenile")
         self.btn_yenile.setStyleSheet(S["refresh_btn"])
         self.btn_yenile.setFixedSize(100, 36)
         self.btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_yenile, "sync", color=DarkTheme.TEXT_PRIMARY, size=14)
         fb.addWidget(self.btn_yenile)
 
         self.btn_kapat = QPushButton("Kapat")
         self.btn_kapat.setStyleSheet(S["close_btn"])
         self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         fb.addWidget(self.btn_kapat)
         right_lay.addWidget(filter_frame)
 

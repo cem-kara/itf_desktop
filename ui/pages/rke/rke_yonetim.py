@@ -18,6 +18,8 @@ from PySide6.QtGui import QColor, QCursor, QIntValidator
 from core.logger import logger
 from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
+from ui.styles import Colors, DarkTheme
+from ui.styles.icons import IconRenderer
 
 # ─── Merkezi Stiller ───
 S = ThemeManager.get_all_component_styles()
@@ -35,11 +37,11 @@ COLUMNS = [
 ]
 
 DURUM_RENK = {
-    "Kullanıma Uygun":       QColor("#4ade80"),
-    "Kullanıma Uygun Değil": QColor("#f87171"),
-    "Hurda":                  QColor("#ef4444"),
-    "Tamirde":                QColor("#facc15"),
-    "Kayıp":                  QColor("#a78bfa"),
+    "Kullanıma Uygun":       QColor(Colors.GREEN_400),
+    "Kullanıma Uygun Değil": QColor(Colors.RED_400),
+    "Hurda":                 QColor(Colors.RED_500),
+    "Tamirde":               QColor(Colors.YELLOW_400),
+    "Kayıp":                 QColor(Colors.GRAY_400),
 }
 
 
@@ -72,7 +74,7 @@ class RKETableModel(QAbstractTableModel):
 
         if role == Qt.ForegroundRole and col_key == "Durum":
             durum = str(row.get("Durum", ""))
-            return DURUM_RENK.get(durum, QColor("#8b8fa3"))
+            return DURUM_RENK.get(durum, QColor(DarkTheme.TEXT_MUTED))
 
         if role == Qt.TextAlignmentRole:
             if col_key in ("KayitNo", "KontrolTarihi", "Durum"):
@@ -258,7 +260,7 @@ class RKEYonetimPage(QWidget):
         self.ui["KayitNo"].setVisible(False)
 
         # 1. Kimlik
-        grp_kimlik = QGroupBox("🔖  Kimlik Bilgileri")
+        grp_kimlik = QGroupBox("Kimlik Bilgileri")
         grp_kimlik.setStyleSheet(S.get("group", ""))
         v_kimlik = QVBoxLayout(grp_kimlik)
         v_kimlik.setSpacing(10)
@@ -276,7 +278,7 @@ class RKEYonetimPage(QWidget):
         inner.addWidget(grp_kimlik)
 
         # 2. Özellikler
-        grp_ozel = QGroupBox("⚙️  Ekipman Özellikleri")
+        grp_ozel = QGroupBox("Ekipman Özellikleri")
         grp_ozel.setStyleSheet(S.get("group", ""))
         v_ozel = QVBoxLayout(grp_ozel)
         v_ozel.setSpacing(10)
@@ -320,7 +322,7 @@ class RKEYonetimPage(QWidget):
         inner.addWidget(grp_ozel)
 
         # 3. Durum
-        grp_durum = QGroupBox("🟢  Durum Bilgileri")
+        grp_durum = QGroupBox("Durum Bilgileri")
         grp_durum.setStyleSheet(S.get("group", ""))
         v_durum = QVBoxLayout(grp_durum)
         v_durum.setSpacing(10)
@@ -335,7 +337,7 @@ class RKEYonetimPage(QWidget):
         inner.addWidget(grp_durum)
 
         # 4. Muayene Geçmişi
-        grp_gecmis = QGroupBox("📋  Muayene Geçmişi")
+        grp_gecmis = QGroupBox("Muayene Geçmişi")
         grp_gecmis.setStyleSheet(S.get("group", ""))
         v_gecmis = QVBoxLayout(grp_gecmis)
 
@@ -369,15 +371,15 @@ class RKEYonetimPage(QWidget):
         h_btn = QHBoxLayout()
         h_btn.setSpacing(8)
 
-        self.btn_temizle = QPushButton("✕  TEMİZLE / YENİ")
+        self.btn_temizle = QPushButton("TEMİZLE / YENİ")
         self.btn_temizle.setStyleSheet(S.get("cancel_btn", ""))
-        self.btn_temizle.setFixedHeight(40)
         self.btn_temizle.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_temizle, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
 
-        self.btn_kaydet = QPushButton("✓  KAYDET")
+        self.btn_kaydet = QPushButton("KAYDET")
         self.btn_kaydet.setStyleSheet(S.get("save_btn", ""))
-        self.btn_kaydet.setFixedHeight(40)
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
 
         h_btn.addWidget(self.btn_temizle)
         h_btn.addWidget(self.btn_kaydet)
@@ -388,7 +390,7 @@ class RKEYonetimPage(QWidget):
         # Dikey ayraç
         sep = QFrame()
         sep.setFrameShape(QFrame.VLine)
-        sep.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        sep.setStyleSheet(S.get("separator", ""))
         root.addWidget(sep)
 
         # ── SAĞ: LİSTE ──
@@ -420,7 +422,7 @@ class RKEYonetimPage(QWidget):
         fl.addWidget(self._cmb_filter_cins)
 
         self._txt_ara = QLineEdit()
-        self._txt_ara.setPlaceholderText("🔍 Ara...")
+        self._txt_ara.setPlaceholderText("Ara...")
         self._txt_ara.setClearButtonEnabled(True)
         self._txt_ara.setStyleSheet(S.get("search", ""))
         self._txt_ara.setFixedWidth(180)
@@ -428,24 +430,24 @@ class RKEYonetimPage(QWidget):
 
         fl.addStretch()
 
-        self._btn_yenile = QPushButton("⟳ Yenile")
+        self._btn_yenile = QPushButton("Yenile")
         self._btn_yenile.setToolTip("Listeyi Yenile")
-        self._btn_yenile.setFixedSize(100, 36)
         self._btn_yenile.setStyleSheet(S.get("refresh_btn", ""))
         self._btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self._btn_yenile, "sync", color=DarkTheme.TEXT_PRIMARY, size=14)
         fl.addWidget(self._btn_yenile)
 
         _sep_k = QFrame()
         _sep_k.setFrameShape(QFrame.VLine)
         _sep_k.setFixedHeight(20)
-        _sep_k.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        _sep_k.setStyleSheet(S.get("separator", ""))
         fl.addWidget(_sep_k)
 
-        self.btn_kapat = QPushButton("✕ Kapat")
+        self.btn_kapat = QPushButton("Kapat")
         self.btn_kapat.setToolTip("Pencereyi Kapat")
-        self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S.get("close_btn", ""))
+        IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         fl.addWidget(self.btn_kapat)
 
         list_lay.addWidget(filter_frame)
@@ -480,7 +482,7 @@ class RKEYonetimPage(QWidget):
         # Footer
         footer = QHBoxLayout()
         self._lbl_sayi = QLabel("0 kayıt")
-        self._lbl_sayi.setStyleSheet(S.get("footer_label", "color:#8b8fa3; font-size:11px;"))
+        self._lbl_sayi.setStyleSheet(S.get("footer_label", f"color:{DarkTheme.TEXT_MUTED}; font-size:11px;"))
         footer.addWidget(self._lbl_sayi)
         footer.addStretch()
         list_lay.addLayout(footer)
@@ -501,11 +503,9 @@ class RKEYonetimPage(QWidget):
         lbl.setStyleSheet(S.get("label", ""))
         lay.addWidget(lbl)
         inp = QLineEdit()
+        inp.setStyleSheet(S.get("input", ""))
         if read_only:
             inp.setReadOnly(True)
-            inp.setStyleSheet("background-color: #2b2b2b; color: #aaa; border: 1px solid #3a3a3a; border-radius: 5px; padding: 5px;")
-        else:
-            inp.setStyleSheet(S.get("input", ""))
         if placeholder:
             inp.setPlaceholderText(placeholder)
         lay.addWidget(inp)
@@ -665,11 +665,7 @@ class RKEYonetimPage(QWidget):
         self._secili = row_data
         self._fill_form(row_data)
         self._gecmis_yukle(row_data.get("EkipmanNo", ""))
-        self.btn_kaydet.setText("✓  GÜNCELLE")
-        self.btn_kaydet.setStyleSheet(
-            "background-color: #e65100; color: white; font-weight: bold; "
-            "border-radius: 6px; padding: 6px 16px; font-size: 13px;"
-        )
+        self.btn_kaydet.setText("GÜNCELLE")
 
     def _show_context_menu(self, pos):
         idx = self._table.indexAt(pos)
@@ -677,7 +673,7 @@ class RKEYonetimPage(QWidget):
             return
         menu = QMenu(self)
         menu.setStyleSheet(S.get("context_menu", ""))
-        act_sec = menu.addAction("✏️  Düzenle")
+        act_sec = menu.addAction("Düzenle")
         act_sec.triggered.connect(lambda: self._on_row_double_click(idx))
         menu.exec(self._table.viewport().mapToGlobal(pos))
 
@@ -769,7 +765,7 @@ class RKEYonetimPage(QWidget):
         self.ui["Durum"].setCurrentText("Kullanıma Uygun")
         self._gecmis_model.set_data([])
 
-        self.btn_kaydet.setText("✓  KAYDET")
+        self.btn_kaydet.setText("KAYDET")
         self.btn_kaydet.setStyleSheet(S.get("save_btn", ""))
 
     def _hesapla_kod(self):
@@ -844,7 +840,7 @@ class _GecmisTableModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             return str(row.get(col, ""))
         if role == Qt.ForegroundRole and col == "FizikselDurum":
-            return QColor("#f87171") if "Değil" in str(row.get(col, "")) else QColor("#4ade80")
+            return QColor(Colors.RED_400) if "Değil" in str(row.get(col, "")) else QColor(Colors.GREEN_400)
         return None
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
@@ -856,5 +852,3 @@ class _GecmisTableModel(QAbstractTableModel):
         self.beginResetModel()
         self._data = data or []
         self.endResetModel()
-
-

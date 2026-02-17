@@ -18,6 +18,8 @@ from PySide6.QtGui import QColor, QCursor
 from core.logger import logger
 from core.date_utils import parse_date as parse_any_date, to_ui_date
 from ui.theme_manager import ThemeManager
+from ui.styles import DarkTheme
+from ui.styles.icons import IconRenderer
 
 def _parse_date(val):
     """Merkezi date_utils üzerinden tarih parse eder."""
@@ -94,11 +96,11 @@ class IzinTableModel(QAbstractTableModel):
         if role == Qt.ForegroundRole and col_key == "Durum":
             durum = str(row.get("Durum", ""))
             colors = {
-                "Onaylandı": QColor("#4ade80"),
-                "Beklemede": QColor("#facc15"),
-                "İptal": QColor("#f87171"),
+                "Onaylandı": QColor(DarkTheme.STATUS_SUCCESS),
+                "Beklemede": QColor(DarkTheme.STATUS_WARNING),
+                "İptal": QColor(DarkTheme.STATUS_ERROR),
             }
-            return colors.get(durum, QColor("#8b8fa3"))
+            return colors.get(durum, QColor(DarkTheme.TEXT_MUTED))
 
         if role == Qt.TextAlignmentRole:
             if col_key in ("Gun", "Durum"):
@@ -174,13 +176,12 @@ class IzinGirisPage(QWidget):
         btn_back = QPushButton("← Geri")
         btn_back.setStyleSheet(S["back_btn"])
         btn_back.setCursor(QCursor(Qt.PointingHandCursor))
-        btn_back.setFixedHeight(34)
         btn_back.clicked.connect(self._go_back)
         hdr.addWidget(btn_back)
 
         ad = self._personel.get("AdSoyad", "")
         tc = self._personel.get("KimlikNo", "")
-        self.lbl_header = QLabel(f"🏖️  {ad}  —  İzin Takip")
+        self.lbl_header = QLabel(f"{ad} - Izin Takip")
         self.lbl_header.setStyleSheet(S["header_name"])
         hdr.addWidget(self.lbl_header)
         hdr.addStretch()
@@ -199,7 +200,7 @@ class IzinGirisPage(QWidget):
         left_l.setSpacing(12)
 
         # Giriş Kutusu
-        grp_giris = QGroupBox("📝  Yeni İzin Girişi")
+        grp_giris = QGroupBox("Yeni Izin Girisi")
         grp_giris.setStyleSheet(S["group"])
         form = QGridLayout(grp_giris)
         form.setSpacing(10)
@@ -251,11 +252,11 @@ class IzinGirisPage(QWidget):
         form.addWidget(self.ui["bitis"], 2, 1)
 
         # Kaydet butonu
-        self.btn_kaydet = QPushButton("✓  İZİN KAYDET")
+        self.btn_kaydet = QPushButton("IZIN KAYDET")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_kaydet.setFixedHeight(40)
         self.btn_kaydet.clicked.connect(self._on_save)
+        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         form.addWidget(self.btn_kaydet, 3, 0, 1, 2)
 
         # Sinyaller
@@ -265,7 +266,7 @@ class IzinGirisPage(QWidget):
         left_l.addWidget(grp_giris)
 
         # Bakiye Panosu
-        grp_bakiye = QGroupBox("📊  İzin Bakiyesi")
+        grp_bakiye = QGroupBox("Izin Bakiyesi")
         grp_bakiye.setStyleSheet(S["group"])
         bg = QGridLayout(grp_bakiye)
         bg.setSpacing(4)
@@ -310,7 +311,7 @@ class IzinGirisPage(QWidget):
         right_l.setContentsMargins(0, 0, 0, 0)
         right_l.setSpacing(8)
 
-        grp_gecmis = QGroupBox("📋  İzin Geçmişi")
+        grp_gecmis = QGroupBox("Izin Gecmisi")
         grp_gecmis.setStyleSheet(S["group"])
         gecmis_l = QVBoxLayout(grp_gecmis)
         gecmis_l.setContentsMargins(8, 8, 8, 8)
@@ -340,7 +341,7 @@ class IzinGirisPage(QWidget):
         # Toplam satırı
         footer_h = QHBoxLayout()
         self.lbl_toplam = QLabel("")
-        self.lbl_toplam.setStyleSheet("color: #8b8fa3; font-size: 12px; background: transparent;")
+        self.lbl_toplam.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 12px; background: transparent;")
         footer_h.addWidget(self.lbl_toplam)
         footer_h.addStretch()
         gecmis_l.addLayout(footer_h)
@@ -572,7 +573,7 @@ class IzinGirisPage(QWidget):
                 if vt_bas and vt_bit:
                     if (yeni_bas <= vt_bit) and (yeni_bit >= vt_bas):
                         QMessageBox.warning(
-                            self, "❌ Tarih Çakışması",
+                            self, "Tarih Cakismasi",
                             f"Bu tarihlerde zaten bir kayıt mevcut!\n"
                             f"Mevcut İzin: {vt_bas.strftime('%d.%m.%Y')} - {vt_bit.strftime('%d.%m.%Y')}"
                         )
@@ -586,7 +587,7 @@ class IzinGirisPage(QWidget):
                     kalan = float(izin_bilgi.get(alan, 0))
                     if gun > kalan:
                         cevap = QMessageBox.question(
-                            self, "⚠️ Yetersiz Bakiye",
+                            self, "Yetersiz Bakiye",
                             f"Kalan bakiye: {kalan} gün. Girilen: {gun} gün.\nDevam edilsin mi?",
                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No
                         )

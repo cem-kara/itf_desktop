@@ -14,6 +14,8 @@ from PySide6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout,
                                QProgressBar, QTextEdit, QCompleter, QGroupBox, QMessageBox, QSizePolicy)
 
 from ui.theme_manager import ThemeManager
+from ui.styles import DarkTheme
+from ui.styles.icons import IconRenderer
 
 # LOGLAMA
 logging.basicConfig(level=logging.INFO)
@@ -159,14 +161,13 @@ class ArizaKayitPenceresi(QWidget):
         # 1. Arıza ID
         self.create_input_vbox(v_genel, "Arıza ID (Otomatik):", "ArizaID", "text")
         self.inputs["ArizaID"].setReadOnly(True)
-        self.inputs["ArizaID"].setStyleSheet("font-weight: bold; color: #e57373; background-color: #2b2b2b; border: 1px solid #444;")
         
         # 2. İlgili Cihaz (YERİ DEĞİŞTİRİLDİ - ARTIK 2. SIRADA)
         self.create_input_vbox(v_genel, "İlgili Cihaz (ID veya Marka Ara):", "CihazID", "combo")
         self.inputs["CihazID"].setEditable(True) 
         self.inputs["CihazID"].setInsertPolicy(QComboBox.NoInsert) # Yeni veri eklenmesin
         
-        # 🟢 Gelişmiş Arama Ayarı (MatchContains)
+        # Gelismis arama ayari (MatchContains)
         completer = self.inputs["CihazID"].completer()
         completer.setCompletionMode(QCompleter.PopupCompletion)
         completer.setFilterMode(Qt.MatchContains) # İçinde geçen kelimeyi bulur (Samsung gibi)
@@ -186,11 +187,12 @@ class ArizaKayitPenceresi(QWidget):
         v_dosya.setSpacing(10)
         
         self.lbl_dosya_durum = QLabel("Dosya seçilmedi")
-        self.lbl_dosya_durum.setStyleSheet("color: #888; font-style: italic;")
+        self.lbl_dosya_durum.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-style: italic;")
         self.lbl_dosya_durum.setAlignment(Qt.AlignCenter)
         
-        self.btn_dosya = QPushButton("📎 Görsel / Tutanak Ekle")
+        self.btn_dosya = QPushButton("Gorsel / Tutanak Ekle")
         self.btn_dosya.setStyleSheet(S["file_btn"])
+        IconRenderer.set_button_icon(self.btn_dosya, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
         self.btn_dosya.clicked.connect(self.dosya_sec)
         
         v_dosya.addWidget(self.lbl_dosya_durum)
@@ -230,7 +232,7 @@ class ArizaKayitPenceresi(QWidget):
         self.txt_aciklama.setPlaceholderText("Arızanın oluş şekli, belirtileri vb...")
         self.txt_aciklama.setStyleSheet(S["input"])
         
-        # 🟢 Yükseklik Azaltıldı (Daha kompakt)
+        # Yukseklik azaltildi (daha kompakt)
         self.txt_aciklama.setMinimumHeight(120) 
         self.inputs["Aciklama"] = self.txt_aciklama
         
@@ -245,14 +247,16 @@ class ArizaKayitPenceresi(QWidget):
 
         # --- FOOTER ---
         footer = QHBoxLayout()
-        self.btn_iptal = QPushButton("✕ İptal")
+        self.btn_iptal = QPushButton("Iptal")
         self.btn_iptal.setFixedSize(100, 36)
         self.btn_iptal.setStyleSheet(S["cancel_btn"])
+        IconRenderer.set_button_icon(self.btn_iptal, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         self.btn_iptal.clicked.connect(self.close)
         
-        self.btn_kaydet = QPushButton("⚠️ Kaydı Oluştur")
+        self.btn_kaydet = QPushButton("Kaydi Olustur")
         self.btn_kaydet.setFixedSize(200, 36)
         self.btn_kaydet.setStyleSheet(S["save_btn"])
+        IconRenderer.set_button_icon(self.btn_kaydet, "alert_triangle", color=DarkTheme.TEXT_PRIMARY, size=14)
         self.btn_kaydet.clicked.connect(self.kaydet_baslat)
         
         footer.addWidget(self.btn_iptal)
@@ -319,8 +323,8 @@ class ArizaKayitPenceresi(QWidget):
         if yol:
             self.secilen_dosyalar = [yol]
             dosya_adi = os.path.basename(yol)
-            self.lbl_dosya_durum.setText(f"✅ {dosya_adi}")
-            self.lbl_dosya_durum.setStyleSheet("color: #4caf50; font-weight: bold;")
+            self.lbl_dosya_durum.setText(dosya_adi)
+            self.lbl_dosya_durum.setStyleSheet(f"color: {DarkTheme.STATUS_SUCCESS}; font-weight: bold;")
 
     def kaydet_baslat(self):
         cihaz_secim = self.inputs["CihazID"].currentText()
@@ -361,12 +365,10 @@ class ArizaKayitPenceresi(QWidget):
     def kayit_hatali(self, hata):
         QApplication.restoreOverrideCursor()
         self.progress.setRange(0, 100); self.progress.setValue(0)
-        self.btn_kaydet.setEnabled(True); self.btn_kaydet.setText("⚠️ Kaydı Oluştur")
+        self.btn_kaydet.setEnabled(True); self.btn_kaydet.setText("Kaydi Olustur")
         QMessageBox.critical(self, "Hata", f"Kayıt Hatası: {hata}")
 
     def closeEvent(self, event):
         if hasattr(self, 'loader') and self.loader.isRunning(): self.loader.quit(); self.loader.wait(500)
         if hasattr(self, 'saver') and self.saver.isRunning(): self.saver.quit(); self.saver.wait(500)
         event.accept()
-
-

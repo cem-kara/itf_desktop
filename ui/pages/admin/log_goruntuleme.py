@@ -2,8 +2,8 @@
 """
 Log Görüntüleyici Sayfası
 ══════════════════════════════════════════════════════════════
-• 3 log dosyası: app.log / sync.log / errors.log
-• Rotated dosyalar: app.log.1 ... app.log.5
+• 4 log dosyası: app.log / sync.log / errors.log / ui_log.log
+• Rotated dosyalar: *.log.1 ... *.log.5
 • Seviye filtresi: TÜMÜ / INFO / WARNING / ERROR / DEBUG
 • Metin arama (anlık)
 • Canlı takip: 5 saniyede bir dosya değişimi kontrolü
@@ -42,6 +42,7 @@ LOG_DOSYALARI = [
     ("app.log",    "Uygulama Logu"),
     ("sync.log",   "Senkronizasyon Logu"),
     ("errors.log", "Hata Logu"),
+    ("ui_log.log", "UI Hata Logu"),
 ]
 MAX_BACKUP = 5   # RotatingFileHandler backupCount
 

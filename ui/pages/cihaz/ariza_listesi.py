@@ -20,6 +20,8 @@ from PySide6.QtGui import QColor, QCursor, QAction
 
 from core.logger import logger
 from ui.theme_manager import ThemeManager
+from ui.styles import DarkTheme
+from ui.styles.icons import IconRenderer
 from ui.pages.cihaz.ariza_islem import ArizaIslemPenceresi
 
 
@@ -148,7 +150,7 @@ class ArizaListesiPage(QWidget):
         fl.setSpacing(12)
 
         self.txt_search = QLineEdit()
-        self.txt_search.setPlaceholderText("🔍  Arıza ID, Cihaz ID, Konu ara...")
+        self.txt_search.setPlaceholderText("Ariza ID, Cihaz ID, Konu ara...")
         self.txt_search.setStyleSheet(S["search"])
         self.txt_search.setFixedWidth(280)
         fl.addWidget(self.txt_search)
@@ -173,18 +175,20 @@ class ArizaListesiPage(QWidget):
 
         fl.addStretch()
 
-        self.btn_refresh = QPushButton("⟳ Yenile")
+        self.btn_refresh = QPushButton("Yenile")
         self.btn_refresh.setToolTip("Listeyi Yenile")
         self.btn_refresh.setFixedSize(100, 36)
         self.btn_refresh.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_refresh.setStyleSheet(S["refresh_btn"])
+        IconRenderer.set_button_icon(self.btn_refresh, "sync", color=DarkTheme.TEXT_PRIMARY, size=14)
         fl.addWidget(self.btn_refresh)
 
-        self.btn_kapat = QPushButton("✕ Kapat")
+        self.btn_kapat = QPushButton("Kapat")
         self.btn_kapat.setToolTip("Kapat")
         self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S["close_btn"])
+        IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         fl.addWidget(self.btn_kapat)
 
         main.addWidget(filter_frame)
@@ -232,25 +236,26 @@ class ArizaListesiPage(QWidget):
         splitter.addWidget(list_wrap)
 
         # Detay paneli
-        detail_box = QGroupBox("📋  Seçili Arıza Detayı")
+        detail_box = QGroupBox("Secili Ariza Detayi")
         detail_box.setStyleSheet(S["group"])
         d_lay = QVBoxLayout(detail_box)
         d_lay.setContentsMargins(10, 10, 10, 10)
 
         self.lbl_detail = QTextBrowser()
         self.lbl_detail.setStyleSheet(
-            "background:transparent; border:none; color:#e0e2ea;"
+            f"background:transparent; border:none; color:{DarkTheme.TEXT_PRIMARY};"
         )
         self.lbl_detail.setHtml(
-            "<p style='color:#8b8fa3'>Listeden bir arıza seçiniz.</p>"
+            f"<p style='color:{DarkTheme.TEXT_MUTED}'>Listeden bir ariza seciniz.</p>"
         )
         d_lay.addWidget(self.lbl_detail)
 
         h_det_btn = QHBoxLayout()
         h_det_btn.addStretch()
-        self.btn_islem = QPushButton("🛠️  İşlem Ekle")
+        self.btn_islem = QPushButton("Islem Ekle")
         self.btn_islem.setStyleSheet(S["action_btn"])
         self.btn_islem.setEnabled(False)
+        IconRenderer.set_button_icon(self.btn_islem, "tools", color=DarkTheme.TEXT_PRIMARY, size=14)
         h_det_btn.addWidget(self.btn_islem)
         d_lay.addLayout(h_det_btn)
 
@@ -273,7 +278,9 @@ class ArizaListesiPage(QWidget):
         self.islem_panel = ArizaIslemPenceresi(ana_pencere=self)
         self.islem_panel.setVisible(False)
         self.islem_panel.setFixedWidth(460)
-        self.islem_panel.setStyleSheet("border-left: 1px solid rgba(255, 255, 255, 0.1); background-color: #16172b;")
+        self.islem_panel.setStyleSheet(
+            f"border-left: 1px solid {DarkTheme.BORDER_PRIMARY}; background-color: {DarkTheme.BG_PRIMARY};"
+        )
         self.islem_panel.kapanma_istegi.connect(lambda: self.islem_panel.setVisible(False))
         self.root_layout.addWidget(self.islem_panel, 0)
 
@@ -355,7 +362,7 @@ class ArizaListesiPage(QWidget):
         self.btn_islem.setEnabled(row is not None)
         if row is None:
             self.lbl_detail.setHtml(
-                "<p style='color:#8b8fa3'>Listeden bir arıza seçiniz.</p>"
+                f"<p style='color:{DarkTheme.TEXT_MUTED}'>Listeden bir ariza seciniz.</p>"
             )
             return
         self._show_detail(row)
@@ -366,7 +373,7 @@ class ArizaListesiPage(QWidget):
         
         idx = self.table.indexAt(pos)
         if idx.isValid():
-            action_islem = QAction("🛠️ İşlem Yap", self)
+            action_islem = QAction("Islem Yap", self)
             action_islem.triggered.connect(self._on_islem_clicked)
             menu.addAction(action_islem)
             
@@ -384,44 +391,44 @@ class ArizaListesiPage(QWidget):
 
     def _show_detail(self, data: dict):
         durum  = data.get("Durum", "Açık")
-        d_renk = DURUM_RENK.get(durum, QColor("#8b8fa3")).name()
+        d_renk = DURUM_RENK.get(durum, QColor(DarkTheme.TEXT_MUTED)).name()
         onc    = data.get("Oncelik", "")
-        o_renk = ONCELIK_RENK.get(onc, QColor("#8b8fa3")).name()
+        o_renk = ONCELIK_RENK.get(onc, QColor(DarkTheme.TEXT_MUTED)).name()
 
         html = f"""
-        <h4 style="color:#4dabf7;margin-bottom:8px;">
+        <h4 style="color:{DarkTheme.STATUS_INFO};margin-bottom:8px;">
             {data.get("Baslik","—")}
         </h3>
         <table width="100%" cellpadding="5" cellspacing="0" style="font-size:11px;">
             <tr>
-                <td width="100" style="color:#8b8fa3;"><b>Arıza ID:</b></td>
-                <td style="color:#e0e2ea;">{data.get("Arizaid","")}</td>
-                <td width="100" style="color:#8b8fa3;"><b>Cihaz ID:</b></td>
-                <td style="color:#e0e2ea;">{data.get("Cihazid","")}</td>
+                <td width="100" style="color:{DarkTheme.TEXT_MUTED};"><b>Ariza ID:</b></td>
+                <td style="color:{DarkTheme.TEXT_PRIMARY};">{data.get("Arizaid","")}</td>
+                <td width="100" style="color:{DarkTheme.TEXT_MUTED};"><b>Cihaz ID:</b></td>
+                <td style="color:{DarkTheme.TEXT_PRIMARY};">{data.get("Cihazid","")}</td>
             </tr>
             <tr>
-                <td style="color:#8b8fa3;"><b>Bildiren:</b></td>
-                <td style="color:#e0e2ea;">{data.get("Bildiren","")}</td>
-                <td style="color:#8b8fa3;"><b>Tarih / Saat:</b></td>
-                <td style="color:#e0e2ea;">
+                <td style="color:{DarkTheme.TEXT_MUTED};"><b>Bildiren:</b></td>
+                <td style="color:{DarkTheme.TEXT_PRIMARY};">{data.get("Bildiren","")}</td>
+                <td style="color:{DarkTheme.TEXT_MUTED};"><b>Tarih / Saat:</b></td>
+                <td style="color:{DarkTheme.TEXT_PRIMARY};">
                     {data.get("BaslangicTarihi","")} {data.get("Saat","")}
                 </td>
             </tr>
             <tr>
-                <td style="color:#8b8fa3;"><b>Arıza Tipi:</b></td>
-                <td style="color:#e0e2ea;">{data.get("ArizaTipi","")}</td>
-                <td style="color:#8b8fa3;"><b>Öncelik:</b></td>
+                <td style="color:{DarkTheme.TEXT_MUTED};"><b>Ariza Tipi:</b></td>
+                <td style="color:{DarkTheme.TEXT_PRIMARY};">{data.get("ArizaTipi","")}</td>
+                <td style="color:{DarkTheme.TEXT_MUTED};"><b>Oncelik:</b></td>
                 <td style="color:{o_renk};font-weight:bold;">{onc}</td>
             </tr>
             <tr>
-                <td style="color:#8b8fa3;"><b>Durum:</b></td>
+                <td style="color:{DarkTheme.TEXT_MUTED};"><b>Durum:</b></td>
                 <td style="color:{d_renk};font-weight:bold;">{durum}</td>
                 <td></td><td></td>
             </tr>
         </table>
-        <hr style="border:1px solid #333;margin:10px 0;">
-        <p style="color:#8b8fa3;font-size:12px;"><b>Açıklama:</b></p>
-        <p style="color:#e0e0e0;background:rgba(255,255,255,0.04);
+        <hr style="border:1px solid {DarkTheme.BORDER_PRIMARY};margin:10px 0;">
+        <p style="color:{DarkTheme.TEXT_MUTED};font-size:12px;"><b>Aciklama:</b></p>
+        <p style="color:{DarkTheme.TEXT_PRIMARY};background:{DarkTheme.BG_HOVER};
                   padding:8px;border-radius:4px;font-size:11px;">
             {data.get("ArizaAcikla","—") or "—"}
         </p>

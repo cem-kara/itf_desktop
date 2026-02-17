@@ -10,7 +10,8 @@ from PySide6.QtGui import QColor, QCursor, QAction
 from core.logger import logger
 from core.date_utils import parse_date, to_db_date
 from ui.theme_manager import ThemeManager
-
+from ui.styles import DarkTheme
+from PySide6.QtCore import QSize
 
 # ─── Tablo sütun tanımları ───
 COLUMNS = [
@@ -73,12 +74,7 @@ class PersonelTableModel(QAbstractTableModel):
         if role == Qt.ForegroundRole:
             if col_key == "Durum":
                 durum = str(row.get("Durum", ""))
-                colors = {
-                    "Aktif": QColor("#4ade80"),
-                    "Pasif": QColor("#f87171"),
-                    "İzinli": QColor("#facc15"),
-                }
-                return colors.get(durum, QColor("#8b8fa3"))
+                return QColor(ThemeManager.get_status_text_color(durum))
             # Diğer kolonlar QSS ile yönetilir (selection-color çalışsın)
             return None
 
@@ -108,7 +104,7 @@ class PersonelListesiPage(QWidget):
 
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self.setStyleSheet("background-color: transparent;")
+        self.setStyleSheet(STYLES["page"])
         self._db = db
         self._all_data = []
         self._active_filter = "Tümü"
@@ -116,7 +112,10 @@ class PersonelListesiPage(QWidget):
         self._setup_ui()
         self._connect_signals()
 
+    
     def _setup_ui(self):
+        from ui.styles.icons import Icons, IconColors
+
         main = QVBoxLayout(self)
         main.setContentsMargins(20, 12, 20, 12)
         main.setSpacing(12)
@@ -132,7 +131,6 @@ class PersonelListesiPage(QWidget):
             btn = QPushButton(text)
             btn.setCheckable(True)
             btn.setStyleSheet(STYLES["filter_btn_all"] if text == "Tümü" else STYLES["filter_btn"])
-            btn.setFixedHeight(28)
             if text == "Aktif":
                 btn.setChecked(True)
             fp.addWidget(btn)
@@ -141,7 +139,7 @@ class PersonelListesiPage(QWidget):
         sep = QFrame()
         sep.setFixedWidth(1)
         sep.setFixedHeight(20)
-        sep.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        sep.setStyleSheet(f"background-color: {DarkTheme.BORDER_PRIMARY};")
         fp.addWidget(sep)
 
         self.cmb_gorev_yeri = QComboBox()
@@ -159,7 +157,7 @@ class PersonelListesiPage(QWidget):
         sep2 = QFrame()
         sep2.setFixedWidth(1)
         sep2.setFixedHeight(20)
-        sep2.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        sep2.setStyleSheet(f"background-color: {DarkTheme.BORDER_PRIMARY};")
         fp.addWidget(sep2)
 
         self.search_input = QLineEdit()
@@ -173,38 +171,31 @@ class PersonelListesiPage(QWidget):
 
         self.btn_yenile = QPushButton("Yenile")
         self.btn_yenile.setStyleSheet(STYLES["refresh_btn"])
-        self.btn_yenile.setFixedSize(100, 36)
         self.btn_yenile.setToolTip("Yenile")
         self.btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         fp.addWidget(self.btn_yenile)
 
         self.btn_yeni = QPushButton("Yeni")
         self.btn_yeni.setStyleSheet(STYLES["action_btn"])
-        self.btn_yeni.setFixedHeight(36)
         self.btn_yeni.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_yeni.setIcon(Icons.get("user_add", size=30, color=IconColors.SUCCESS))
+        self.btn_yeni.setIconSize(QSize(15, 15)) 
         fp.addWidget(self.btn_yeni)
 
         sep3 = QFrame()
         sep3.setFixedWidth(1)
         sep3.setFixedHeight(20)
-        sep3.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        sep3.setStyleSheet(f"background-color: {DarkTheme.BORDER_PRIMARY};")
         fp.addWidget(sep3)
 
-        self.btn_kapat = QPushButton("✕ Kapat")
+        
+
+        self.btn_kapat = QPushButton("Kapat")
         self.btn_kapat.setToolTip("Pencereyi Kapat")
-        self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_kapat.setStyleSheet("""
-            QPushButton {
-                background-color: rgba(239, 68, 68, 0.15);
-                color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25);
-                border-radius: 6px; font-size: 14px; font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: rgba(239, 68, 68, 0.35);
-                color: #ffffff;
-            }
-        """)
+        self.btn_kapat.setStyleSheet(STYLES["close_btn"])
+        self.btn_kapat.setIcon(Icons.get("x_circle", size=30, color=IconColors.DANGER))  # ← ikon
+        self.btn_kapat.setIconSize(QSize(15, 15))                                         # ← boyu15
         fp.addWidget(self.btn_kapat)
 
         main.addWidget(filter_frame)
@@ -253,22 +244,22 @@ class PersonelListesiPage(QWidget):
         self.progress.setFixedWidth(150)
         self.progress.setFixedHeight(16)
         self.progress.setVisible(False)
-        self.progress.setStyleSheet("""
-            QProgressBar {
+        self.progress.setStyleSheet(f"""
+            QProgressBar {{
                 background-color: rgba(255,255,255,0.05);
                 border: 1px solid rgba(255,255,255,0.08);
-                border-radius: 4px; color: #8b8fa3; font-size: 11px;
-            }
-            QProgressBar::chunk {
+                border-radius: 4px; color: {DarkTheme.TEXT_MUTED}; font-size: 11px;
+            }}
+            QProgressBar::chunk {{
                 background-color: rgba(29, 117, 254, 0.6);
                 border-radius: 3px;
-            }
+            }}
         """)
         footer.addWidget(self.progress)
 
-        self.btn_excel = QPushButton("📥 Excel'e Aktar")
+        self.btn_excel = QPushButton("Excel'e Aktar")
         self.btn_excel.setStyleSheet(STYLES["excel_btn"])
-        self.btn_excel.setFixedHeight(28)
+        #self.btn_excel.setFixedHeight(28)
         self.btn_excel.setCursor(QCursor(Qt.PointingHandCursor))
         footer.addWidget(self.btn_excel)
 
@@ -459,28 +450,28 @@ class PersonelListesiPage(QWidget):
         menu.setStyleSheet(STYLES["context_menu"])
 
         # Detay aç
-        act_detay = menu.addAction("📋 Detay Görüntüle")
+        act_detay = menu.addAction("Detay Goruntule")
         act_detay.triggered.connect(lambda: self.table.doubleClicked.emit(index))
 
         menu.addSeparator()
 
         # İzin Girişi
-        act_izin = menu.addAction("🏖️ İzin Girişi")
+        act_izin = menu.addAction("Izin Girisi")
         act_izin.triggered.connect(lambda: self._izin_girisi(row_data))
 
         menu.addSeparator()
 
         # Durum değiştirme
         if durum != "Aktif":
-            act_aktif = menu.addAction("✅ Aktif Yap")
+            act_aktif = menu.addAction("Aktif Yap")
             act_aktif.triggered.connect(lambda: self._change_durum(tc, ad, "Aktif"))
 
         if durum != "Pasif":
-            act_pasif = menu.addAction("⛔ Pasif Yap")
+            act_pasif = menu.addAction("Pasif Yap")
             act_pasif.triggered.connect(lambda: self._change_durum(tc, ad, "Pasif"))
 
         if durum != "İzinli":
-            act_izinli = menu.addAction("⏸️ İzinli Yap")
+            act_izinli = menu.addAction("Izinli Yap")
             act_izinli.triggered.connect(lambda: self._change_durum(tc, ad, "İzinli"))
 
         menu.exec(self.table.viewport().mapToGlobal(pos))
@@ -509,6 +500,3 @@ class PersonelListesiPage(QWidget):
     def _izin_girisi(self, row_data):
         """İzin girişi sinyali gönder."""
         self.izin_requested.emit(row_data)
-
-
-

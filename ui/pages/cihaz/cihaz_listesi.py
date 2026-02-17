@@ -9,6 +9,8 @@ from PySide6.QtGui import QCursor, QAction, QColor
 
 from core.logger import logger
 from ui.theme_manager import ThemeManager
+from ui.styles import DarkTheme
+from ui.styles.icons import IconRenderer
 from ui.pages.cihaz.ariza_ekle import ArizaEklePanel
 
 # Merkezi stil
@@ -75,19 +77,19 @@ class CihazListesiPage(QWidget):
         fl.addStretch()
 
         # Yenile Butonu
-        self.btn_refresh = QPushButton("⟳ Yenile")
+        self.btn_refresh = QPushButton("Yenile")
         self.btn_refresh.setToolTip("Listeyi Yenile")
-        self.btn_refresh.setFixedSize(100, 36)
         self.btn_refresh.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_refresh.setStyleSheet(S["refresh_btn"])
+        IconRenderer.set_button_icon(self.btn_refresh, "sync", color=DarkTheme.TEXT_PRIMARY, size=14)
         fl.addWidget(self.btn_refresh)
 
         # Kapat Butonu
-        self.btn_kapat = QPushButton("✕ Kapat")
+        self.btn_kapat = QPushButton("Kapat")
         self.btn_kapat.setToolTip("Kapat")
-        self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S["close_btn"])
+        IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         fl.addWidget(self.btn_kapat)
 
         layout.addWidget(filter_frame)
@@ -122,11 +124,10 @@ class CihazListesiPage(QWidget):
         
         footer.addStretch()
 
-        self.btn_new = QPushButton("➕ YENİ CİHAZ EKLE")
+        self.btn_new = QPushButton("YENI CIHAZ EKLE")
         self.btn_new.setStyleSheet(S["action_btn"])
         self.btn_new.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_new.setFixedHeight(40)
-        self.btn_new.setFixedWidth(200)
+        IconRenderer.set_button_icon(self.btn_new, "device_add", color=DarkTheme.TEXT_PRIMARY, size=14)
         footer.addWidget(self.btn_new)
 
         layout.addLayout(footer)
@@ -136,7 +137,9 @@ class CihazListesiPage(QWidget):
         # ── SAĞ PANEL (Arıza Ekle) ──
         self.ariza_panel = ArizaEklePanel(db=self._db, parent=self)
         self.ariza_panel.setVisible(False)
-        self.ariza_panel.setStyleSheet("border-left: 1px solid rgba(255, 255, 255, 0.1); background-color: #16172b;")
+        self.ariza_panel.setStyleSheet(
+            f"border-left: 1px solid {DarkTheme.BORDER_PRIMARY}; background-color: {DarkTheme.BG_PRIMARY};"
+        )
         self.ariza_panel.kapanma_istegi.connect(self._close_ariza_panel)
         self.ariza_panel.kayit_basarili_sinyali.connect(self._on_ariza_saved)
         self.root_layout.addWidget(self.ariza_panel, 0)
@@ -264,17 +267,17 @@ class CihazListesiPage(QWidget):
         if not idx.isValid():
             return
             
-        edit_action = QAction("✏️ Düzenle", self)
+        edit_action = QAction("Duzenle", self)
         edit_action.triggered.connect(lambda: self._on_row_double_clicked(idx))
         menu.addAction(edit_action)
         
         menu.addSeparator()
         
-        ariza_action = QAction("⚠️ Arıza Bildir", self)
+        ariza_action = QAction("Ariza Bildir", self)
         ariza_action.triggered.connect(lambda: self._open_ariza_panel(idx))
         menu.addAction(ariza_action)
 
-        bakim_action = QAction("🗓️ Periyodik Bakım Ekle", self)
+        bakim_action = QAction("Periyodik Bakim Ekle", self)
         bakim_action.triggered.connect(lambda: self._request_periodic_maintenance(idx))
         menu.addAction(bakim_action)
               

@@ -30,6 +30,8 @@ from core.logger import logger
 from core.date_utils import parse_date as parse_any_date
 from core.hesaplamalar import sua_hak_edis_hesapla, is_gunu_hesapla, tr_upper
 from ui.theme_manager import ThemeManager
+from ui.styles import Colors, DarkTheme
+from ui.styles.icons import IconRenderer
 
 def _parse_date(val):
     parsed = parse_any_date(val)
@@ -83,10 +85,10 @@ class KosulDelegate(QStyledItemDelegate):
     def createEditor(self, parent, option, index):
         editor = QComboBox(parent)
         editor.addItems(self.items)
-        editor.setStyleSheet("""
+        editor.setStyleSheet(f"""
             QComboBox {
-                background-color: #1e202c; color: #e0e2ea;
-                border: 2px solid #1d75fe; border-radius: 4px;
+                background-color: {DarkTheme.INPUT_BG}; color: {DarkTheme.TEXT_PRIMARY};
+                border: 2px solid {DarkTheme.INPUT_BORDER_FOCUS}; border-radius: 4px;
                 padding: 4px 8px; font-size: 12px; min-height: 24px;
             }
             QComboBox::drop-down { border: none; width: 26px; }
@@ -94,13 +96,13 @@ class KosulDelegate(QStyledItemDelegate):
                 image: none;
                 border-left: 5px solid transparent;
                 border-right: 5px solid transparent;
-                border-top: 6px solid #1d75fe;
+                border-top: 6px solid {DarkTheme.INPUT_BORDER_FOCUS};
                 margin-right: 8px;
             }
             QComboBox QAbstractItemView {
-                background-color: #1e202c; color: #c8cad0;
+                background-color: {DarkTheme.INPUT_BG}; color: {DarkTheme.TEXT_SECONDARY};
                 selection-background-color: rgba(29,117,254,0.4);
-                selection-color: #ffffff; border: 1px solid #1d75fe;
+                selection-color: {Colors.WHITE}; border: 1px solid {DarkTheme.INPUT_BORDER_FOCUS};
             }
             QComboBox QAbstractItemView::item { min-height: 28px; padding: 4px; }
         """)
@@ -218,8 +220,8 @@ class FHSZYonetimPage(QWidget):
         fp.setContentsMargins(12, 8, 12, 8)
         fp.setSpacing(8)
 
-        lbl_t = QLabel("📊 FHSZ Hesaplama ve Düzenleme")
-        lbl_t.setStyleSheet("color: #6bd3ff; font-size: 14px; font-weight: bold; background: transparent;")
+        lbl_t = QLabel("FHSZ Hesaplama ve Duzenleme")
+        lbl_t.setStyleSheet(S.get("section_title", ""))
         fp.addWidget(lbl_t)
 
         self._add_sep(fp)
@@ -252,19 +254,19 @@ class FHSZYonetimPage(QWidget):
 
         fp.addStretch()
 
-        self.btn_hesapla = QPushButton("⚡ LİSTELE VE HESAPLA")
+        self.btn_hesapla = QPushButton("LISTELE VE HESAPLA")
         self.btn_hesapla.setStyleSheet(S["calc_btn"])
         self.btn_hesapla.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_hesapla.setFixedHeight(34)
+        IconRenderer.set_button_icon(self.btn_hesapla, "bar_chart", color=DarkTheme.TEXT_PRIMARY, size=14)
         fp.addWidget(self.btn_hesapla)
 
         self._add_sep(fp)
 
-        self.btn_kapat = QPushButton("✕ Kapat")
+        self.btn_kapat = QPushButton("Kapat")
         self.btn_kapat.setToolTip("Kapat")
-        self.btn_kapat.setFixedSize(28, 28)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S["close_btn"])
+        IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         fp.addWidget(self.btn_kapat)
 
         main.addWidget(filter_frame)
@@ -314,30 +316,29 @@ class FHSZYonetimPage(QWidget):
         self.progress.setRange(0, 0)
         self.progress.setFixedWidth(160)
         self.progress.setFixedHeight(14)
-        self.progress.setStyleSheet("""
-            QProgressBar {
+        self.progress.setStyleSheet(f"""
+            QProgressBar {{
                 background-color: rgba(255,255,255,0.05);
                 border: 1px solid rgba(255,255,255,0.08);
-                border-radius: 3px; font-size: 10px; color: #8b8fa3;
-            }
-            QProgressBar::chunk {
+                border-radius: 3px; font-size: 10px; color: {DarkTheme.TEXT_MUTED};
+            }}
+            QProgressBar::chunk {{
                 background-color: rgba(29,117,254,0.5); border-radius: 2px;
-            }
+            }}
         """)
         bf.addWidget(self.progress)
 
-        btn_kapat2 = QPushButton("✕ Kapat")
+        btn_kapat2 = QPushButton("Kapat")
         btn_kapat2.setStyleSheet(S["close_btn"])
-        btn_kapat2.setFixedSize(100, 36)
         btn_kapat2.setCursor(QCursor(Qt.PointingHandCursor))
         btn_kapat2.clicked.connect(self.btn_kapat.click)
+        IconRenderer.set_button_icon(btn_kapat2, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         bf.addWidget(btn_kapat2)
 
-        self.btn_kaydet = QPushButton("💾 KAYDET / GÜNCELLE")
+        self.btn_kaydet = QPushButton("KAYDET / GUNCELLE")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_kaydet.setFixedHeight(36)
-        self.btn_kaydet.setFixedWidth(220)
+        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         bf.addWidget(self.btn_kaydet)
 
         main.addWidget(bot_frame)
@@ -354,7 +355,7 @@ class FHSZYonetimPage(QWidget):
         sep = QFrame()
         sep.setFixedWidth(1)
         sep.setFixedHeight(20)
-        sep.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        sep.setStyleSheet(f"background-color: {DarkTheme.BORDER_PRIMARY};")
         layout.addWidget(sep)
 
     # ═══════════════════════════════════════════
@@ -840,7 +841,7 @@ class FHSZYonetimPage(QWidget):
 
             # 1. Eski kayıtları sil
             if mevcut_sayisi > 0:
-                self.lbl_durum.setText("🧹 Eski kayıtlar temizleniyor...")
+                self.lbl_durum.setText("Eski kayitlar temizleniyor...")
                 for r in tum:
                     if str(r.get("AitYil", "")).strip() == yil_str \
                        and str(r.get("Donem", "")).strip() == ay_str:
@@ -855,7 +856,7 @@ class FHSZYonetimPage(QWidget):
                             pass
 
             # 2. Yeni kaydet (tablodan oku)
-            self.lbl_durum.setText("💾 Güncel veriler kaydediliyor...")
+            self.lbl_durum.setText("Guncel veriler kaydediliyor...")
             kayit_sayisi = 0
             for r in range(self.tablo.rowCount()):
                 data = {
@@ -873,12 +874,12 @@ class FHSZYonetimPage(QWidget):
                 kayit_sayisi += 1
 
             # 3. Şua bakiyesi güncelle
-            self.lbl_durum.setText("🔄 Şua hesaplanıyor...")
+            self.lbl_durum.setText("Sua hesaplaniyor...")
             self._sua_bakiye_guncelle(repo, yil_str)
 
             self.progress.setVisible(False)
             self.btn_kaydet.setEnabled(True)
-            self.lbl_durum.setText(f"✓ {kayit_sayisi} kayıt kaydedildi  •  {ay_str} {yil_str}")
+            self.lbl_durum.setText(f"{kayit_sayisi} kayit kaydedildi  -  {ay_str} {yil_str}")
 
             logger.info(f"FHSZ kaydedildi: {ay_str} {yil_str}, {kayit_sayisi} kayıt")
             QMessageBox.information(self, "Başarılı", "Kayıt işlemi tamamlandı.")

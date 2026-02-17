@@ -7,11 +7,12 @@ from PySide6.QtWidgets import (
     QTabWidget, QDateEdit, QInputDialog, QComboBox, QGroupBox
 )
 from PySide6.QtCore import Qt, QThread, Signal, QDate
-from PySide6.QtGui import QColor, QCursor
+from PySide6.QtGui import QCursor
 
 # --- MODÜLLER ---
 from core.logger import logger
 from ui.theme_manager import ThemeManager
+from ui.styles import DarkTheme
 
 S = ThemeManager.get_all_component_styles()
 
@@ -158,7 +159,7 @@ class AyarlarPenceresi(QWidget):
         l_layout.addWidget(btn_yeni); layout.addWidget(left_frame)
         
         r_layout = QVBoxLayout(); h_add = QHBoxLayout()
-        self.lbl_secili_kat = QLabel("Seçiniz..."); self.lbl_secili_kat.setStyleSheet("color:#4dabf7; font-weight:bold;")
+        self.lbl_secili_kat = QLabel("Seçiniz..."); self.lbl_secili_kat.setStyleSheet(f"color:{DarkTheme.BTN_PRIMARY_TEXT}; font-weight:bold;")
         self.txt_deger = QLineEdit(); self.txt_deger.setPlaceholderText("Değer"); self.txt_deger.setStyleSheet(S.get("input", ""))
         self.txt_aciklama = QLineEdit(); self.txt_aciklama.setPlaceholderText("Açıklama"); self.txt_aciklama.setStyleSheet(S.get("input", ""))
         self.btn_ekle_sabit = QPushButton("EKLE"); self.btn_ekle_sabit.setStyleSheet(S.get("save_btn", "")); self.btn_ekle_sabit.setCursor(QCursor(Qt.PointingHandCursor))
