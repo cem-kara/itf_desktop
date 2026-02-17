@@ -371,12 +371,10 @@ class RKEYonetimPage(QWidget):
 
         self.btn_temizle = QPushButton("✕  TEMİZLE / YENİ")
         self.btn_temizle.setStyleSheet(S.get("cancel_btn", ""))
-        self.btn_temizle.setFixedHeight(40)
         self.btn_temizle.setCursor(QCursor(Qt.PointingHandCursor))
 
         self.btn_kaydet = QPushButton("✓  KAYDET")
         self.btn_kaydet.setStyleSheet(S.get("save_btn", ""))
-        self.btn_kaydet.setFixedHeight(40)
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
 
         h_btn.addWidget(self.btn_temizle)
@@ -388,7 +386,7 @@ class RKEYonetimPage(QWidget):
         # Dikey ayraç
         sep = QFrame()
         sep.setFrameShape(QFrame.VLine)
-        sep.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        sep.setStyleSheet(S.get("separator", ""))
         root.addWidget(sep)
 
         # ── SAĞ: LİSTE ──
@@ -430,7 +428,6 @@ class RKEYonetimPage(QWidget):
 
         self._btn_yenile = QPushButton("⟳ Yenile")
         self._btn_yenile.setToolTip("Listeyi Yenile")
-        self._btn_yenile.setFixedSize(100, 36)
         self._btn_yenile.setStyleSheet(S.get("refresh_btn", ""))
         self._btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         fl.addWidget(self._btn_yenile)
@@ -438,12 +435,11 @@ class RKEYonetimPage(QWidget):
         _sep_k = QFrame()
         _sep_k.setFrameShape(QFrame.VLine)
         _sep_k.setFixedHeight(20)
-        _sep_k.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        _sep_k.setStyleSheet(S.get("separator", ""))
         fl.addWidget(_sep_k)
 
         self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Pencereyi Kapat")
-        self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S.get("close_btn", ""))
         fl.addWidget(self.btn_kapat)
@@ -501,11 +497,9 @@ class RKEYonetimPage(QWidget):
         lbl.setStyleSheet(S.get("label", ""))
         lay.addWidget(lbl)
         inp = QLineEdit()
+        inp.setStyleSheet(S.get("input", ""))
         if read_only:
             inp.setReadOnly(True)
-            inp.setStyleSheet("background-color: #2b2b2b; color: #aaa; border: 1px solid #3a3a3a; border-radius: 5px; padding: 5px;")
-        else:
-            inp.setStyleSheet(S.get("input", ""))
         if placeholder:
             inp.setPlaceholderText(placeholder)
         lay.addWidget(inp)
@@ -666,10 +660,6 @@ class RKEYonetimPage(QWidget):
         self._fill_form(row_data)
         self._gecmis_yukle(row_data.get("EkipmanNo", ""))
         self.btn_kaydet.setText("✓  GÜNCELLE")
-        self.btn_kaydet.setStyleSheet(
-            "background-color: #e65100; color: white; font-weight: bold; "
-            "border-radius: 6px; padding: 6px 16px; font-size: 13px;"
-        )
 
     def _show_context_menu(self, pos):
         idx = self._table.indexAt(pos)
@@ -856,5 +846,3 @@ class _GecmisTableModel(QAbstractTableModel):
         self.beginResetModel()
         self._data = data or []
         self.endResetModel()
-
-

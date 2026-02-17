@@ -51,7 +51,6 @@ class CihazDetayPage(CihazEklePage):
         self.btn_back = QPushButton("← Listeye Dön")
         self.btn_back.setStyleSheet(S["back_btn"])
         self.btn_back.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_back.setFixedHeight(42)
         self.btn_back.clicked.connect(self.back_requested.emit)
         footer_layout.addWidget(self.btn_back)
         
@@ -61,7 +60,6 @@ class CihazDetayPage(CihazEklePage):
         self.btn_edit = QPushButton("✏️ Düzenle")
         self.btn_edit.setStyleSheet(S["edit_btn"])
         self.btn_edit.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_edit.setFixedHeight(42)
         self.btn_edit.clicked.connect(self._enable_edit)
         footer_layout.addWidget(self.btn_edit)
 
@@ -69,7 +67,6 @@ class CihazDetayPage(CihazEklePage):
         self.btn_save_custom = QPushButton("✓ Değişiklikleri Kaydet")
         self.btn_save_custom.setStyleSheet(S["save_btn"])
         self.btn_save_custom.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_save_custom.setFixedHeight(42)
         self.btn_save_custom.clicked.connect(self._on_save) # Base method
         self.btn_save_custom.setVisible(False)
         footer_layout.addWidget(self.btn_save_custom)
@@ -78,7 +75,6 @@ class CihazDetayPage(CihazEklePage):
         self.btn_cancel_edit = QPushButton("✕ Vazgeç")
         self.btn_cancel_edit.setStyleSheet(S["cancel_btn"])
         self.btn_cancel_edit.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_cancel_edit.setFixedHeight(42)
         self.btn_cancel_edit.clicked.connect(self._disable_edit)
         self.btn_cancel_edit.setVisible(False)
         footer_layout.insertWidget(footer_layout.count()-1, self.btn_cancel_edit)

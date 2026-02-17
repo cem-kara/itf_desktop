@@ -2,7 +2,7 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QGridLayout, 
     QGroupBox, QScrollArea, QLineEdit, QPushButton, QMessageBox, QComboBox,
-    QCompleter, QDateEdit
+    QCompleter, QDateEdit, QFileDialog
 )
 from PySide6.QtCore import Qt, QDate
 from PySide6.QtGui import QCursor, QPixmap
@@ -10,6 +10,8 @@ from core.logger import logger
 from ui.theme_manager import ThemeManager
 import os
 import tempfile
+
+S = ThemeManager.get_all_component_styles()
 
 class PersonelOverviewPanel(QWidget):
     """
@@ -22,7 +24,16 @@ class PersonelOverviewPanel(QWidget):
         self.db = db
         self.personel_data = self.data.get("personel", {})
         self._widgets = {}  # Alan adı -> QLineEdit
+        self._upload_buttons = {}  # Alan adı -> QPushButton (diploma gibi)
         self._groups = {}   # Grup adı -> (layout, edit_btn, save_btn, cancel_btn)
+        # Dosya upload yönetimi (personel_ekle ile uyumlu)
+        self._file_paths = {}          # {'Resim': local_path, 'Diploma1': local_path, ...}
+        self._drive_links = {}         # {'Resim': drive_link, 'Diploma1': link, ...}
+        self._drive_folders = {}       # {'Personel_Resim': folder_id, ...}
+        self._upload_workers = []
+        self._pending_uploads = 0
+        self._upload_errors = []
+        self._view_buttons = {}     # db_key -> QPushButton
         self._setup_ui()
         self._populate_combos()
 
@@ -60,12 +71,24 @@ class PersonelOverviewPanel(QWidget):
         h_main_layout.setContentsMargins(15, 15, 15, 15)
         h_main_layout.setSpacing(20)
 
-        # Sol: Fotoğraf
+        # Sol: Fotoğraf + yükleme butonu
         self.lbl_resim = QLabel()
         self.lbl_resim.setFixedSize(80, 100)
         self.lbl_resim.setAlignment(Qt.AlignCenter)
         self.lbl_resim.setStyleSheet("border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; background: rgba(0,0,0,0.2); color: #666;")
-        h_main_layout.addWidget(self.lbl_resim)
+
+        photo_v = QVBoxLayout()
+        photo_v_widget = QWidget()
+        photo_v_widget.setLayout(photo_v)
+        photo_v.addWidget(self.lbl_resim, 0, Qt.AlignHCenter)
+
+        self._photo_upload_btn = QPushButton("📸Resim Yükle")
+        self._photo_upload_btn.setFixedSize(90, 26)
+        self._photo_upload_btn.setStyleSheet("background: rgba(59,130,246,0.12); border-radius:4px;")
+        self._photo_upload_btn.clicked.connect(self._on_photo_upload)
+        photo_v.addWidget(self._photo_upload_btn, 0, Qt.AlignHCenter)
+
+        h_main_layout.addWidget(photo_v_widget)
 
         # Sağ: Bilgiler
         info_widget = QWidget()
@@ -91,6 +114,9 @@ class PersonelOverviewPanel(QWidget):
         layout.addWidget(header_frame)
         
         self._set_photo_preview(self.personel_data.get("Resim"))
+
+        # Fotoğraf yükle butonunu yalnızca düzenleme sırasında etkinleştirmek istiyorsanız,
+        # grup düzenleme mantığına bağlayabilirsiniz. Şu an varsayılan olarak aktif bırakıyoruz.
 
         # ── 2. İletişim ve Kadro (Yan Yana) ──
         mid_layout = QHBoxLayout()
@@ -428,11 +454,37 @@ class PersonelOverviewPanel(QWidget):
         inp.setReadOnly(True)
         inp.setPlaceholderText("-")
         inp.setStyleSheet("background: transparent; border: none; color: #e0e2ea; font-size: 13px;")
-        
-        layout.addWidget(inp, row, col)
-        
+
+        # Container: input + upload button (diploma için)
+        container = QWidget()
+        h = QHBoxLayout(container)
+        h.setContentsMargins(0, 0, 0, 0)
+        h.setSpacing(6)
+        h.addWidget(inp, 1)
+
+        upload_btn = QPushButton("Yükle")
+        upload_btn.setFixedSize(70, 26)
+        upload_btn.setEnabled(False)  # yalnızca edit modda etkin olacak
+        upload_btn.setStyleSheet("background: rgba(255,255,255,0.04); border-radius:4px;")
+        upload_btn.clicked.connect(lambda _checked, k=db_key: self._on_upload_diploma(k))
+        h.addWidget(upload_btn)
+
+        # Görüntüle butonu (edit modda da her zaman görünür, ama dosya yoksa tıklanamaz)
+        view_btn = QPushButton("Aç")
+        view_btn.setFixedSize(40, 22)
+        view_btn.setEnabled(False)
+        view_btn.clicked.connect(lambda _checked, k=db_key: self._on_view_diploma(k))
+        h.addWidget(view_btn)
+
+        layout.addWidget(container, row, col)
+
         self._widgets[db_key] = inp
+        self._upload_buttons[db_key] = upload_btn
+        self._view_buttons[db_key] = view_btn
         self._groups[group_id]["fields"].append(db_key)
+
+        # İlk durum için gösterimi güncelle
+        self._refresh_diploma_display(db_key)
 
     def _add_editable_date(self, layout, row, col, label, db_key, group_id):
         """Etiket + QDateEdit şeklinde ekler."""
@@ -492,37 +544,7 @@ class PersonelOverviewPanel(QWidget):
         
         style_edit = "background: #1e202c; border: 1px solid #3b82f6; border-radius: 4px; padding: 4px; color: white;"
         style_read = "background: transparent; border: none; color: #e0e2ea; font-weight: 500;"
-        style_combo_edit = """
-            QComboBox {
-                background: #1e202c;
-                border: 1px solid #3b82f6;
-                border-radius: 4px;
-                padding: 3px;
-                color: white;
-            }
-            QComboBox::drop-down { border: none; }
-            QComboBox QAbstractItemView {
-                background-color: #2d2d2d;
-                color: #e0e2ea;
-                selection-background-color: #3b82f6;
-            }
-        """
         style_combo_read = "background: transparent; border: none; color: #e0e2ea; font-size: 13px; font-weight: 500; padding: 4px;"
-        style_date_edit = """
-            QDateEdit {
-                background: #1e202c;
-                border: 1px solid #3b82f6;
-                border-radius: 4px;
-                padding: 3px;
-                color: white;
-            }
-            QDateEdit::drop-down { border: none; }
-            QDateEdit QAbstractItemView {
-                background-color: #2d2d2d;
-                color: #e0e2ea;
-                selection-background-color: #3b82f6;
-            }
-        """
         style_date_read = "background: transparent; border: none; color: #e0e2ea; font-size: 13px; font-weight: 500; padding: 4px;"
         
         for key in grp["fields"]:
@@ -532,10 +554,10 @@ class PersonelOverviewPanel(QWidget):
                 widget.setStyleSheet(style_edit if edit_mode else style_read)
             elif isinstance(widget, QComboBox):
                 widget.setEnabled(edit_mode)
-                widget.setStyleSheet(style_combo_edit if edit_mode else style_combo_read)
+                widget.setStyleSheet(S["combo"] if edit_mode else style_combo_read)
             elif isinstance(widget, QDateEdit):
                 widget.setEnabled(edit_mode)
-                widget.setStyleSheet(style_date_edit if edit_mode else style_date_read)
+                widget.setStyleSheet(S["date"] if edit_mode else style_date_read)
             
             # İptal edilirse eski veriyi geri yükle
             if not edit_mode:
@@ -547,6 +569,25 @@ class PersonelOverviewPanel(QWidget):
                 elif isinstance(widget, QDateEdit):
                     d = QDate.fromString(str(val), "yyyy-MM-dd")
                     widget.setDate(d if d.isValid() else QDate.currentDate())
+            
+            # Diploma yükleme ve açma butonlarını grup düzenleme moduna göre etkinleştir
+            if key in self._upload_buttons:
+                try:
+                    self._upload_buttons[key].setEnabled(edit_mode)
+                except Exception:
+                    pass
+            if key in self._view_buttons:
+                try:
+                    # "Aç" butonu: dosya varsa tıklanabilir olsun (edit modu fark etmiyor)
+                    # ama stil olarak edit modunda ara bilgilendirme yapabiliriz
+                    # Şimdilik: sadece dosya varsa etkin yap
+                    has_file = bool(self.personel_data.get({
+                        'DiplomaNo': 'Diploma1',
+                        'DiplomaNo2': 'Diploma2'
+                    }.get(key)) or self.personel_data.get(f"{key}_file"))
+                    self._view_buttons[key].setEnabled(has_file)
+                except Exception:
+                    pass
 
     def _save_group(self, group_id):
         if not self.db:
@@ -572,25 +613,223 @@ class PersonelOverviewPanel(QWidget):
             from database.repository_registry import RepositoryRegistry
             registry = RepositoryRegistry(self.db)
             repo = registry.get("Personel")
-            
+
             tc = self.personel_data.get("KimlikNo")
             if not tc:
                 raise ValueError("TC Kimlik No bulunamadı.")
-                
-            repo.update(tc, update_data)
-            
-            # Yerel veriyi güncelle
-            self.personel_data.update(update_data)
-            
-            # UI'ı normal moda döndür
-            self._toggle_edit(group_id, False)
-            
-            # Kullanıcıya bilgi ver (opsiyonel, çok sık çıkmasın diye logluyoruz)
-            logger.info(f"Personel güncellendi ({group_id}): {tc}")
-            
+
+            # Dosya yükleme adımı: eğer kullanıcı diploma veya fotoğraf seçtiyse
+            # önce Drive'a yükle, sonra DB güncellemesini yap
+            # _file_paths oluştur
+            self._file_paths = {}
+            foto = self.personel_data.get("Resim", "")
+            if foto and os.path.exists(str(foto)):
+                self._file_paths["Resim"] = foto
+
+            if self.personel_data.get("DiplomaNo_file"):
+                self._file_paths["Diploma1"] = self.personel_data.get("DiplomaNo_file")
+            if self.personel_data.get("DiplomaNo2_file"):
+                self._file_paths["Diploma2"] = self.personel_data.get("DiplomaNo2_file")
+
+            # Eğer yükleme gerekmiyorsa doğrudan kaydet
+            if not self._file_paths:
+                repo.update(tc, update_data)
+                self.personel_data.update(update_data)
+                self._toggle_edit(group_id, False)
+                logger.info(f"Personel güncellendi ({group_id}): {tc}")
+                return
+
+            # Upload callback sonrası DB güncellemesi
+            def _after_upload():
+                for drive_key, link in self._drive_links.items():
+                    if drive_key == 'Resim':
+                        update_data['Resim'] = link
+                    elif drive_key == 'Diploma1':
+                        update_data['Diploma1'] = link
+                    elif drive_key == 'Diploma2':
+                        update_data['Diploma2'] = link
+
+                repo.update(tc, update_data)
+                self.personel_data.update(update_data)
+                self._toggle_edit(group_id, False)
+                logger.info(f"Personel güncellendi ({group_id}): {tc}")
+
+            self._upload_files_to_drive(tc, _after_upload)
+
         except Exception as e:
             logger.error(f"Güncelleme hatası: {e}")
             QMessageBox.critical(self, "Hata", f"Güncelleme başarısız:\n{e}")
+
+    def _on_upload_diploma(self, db_key):
+        """Diploma veya ek dosya yükleme işlemini tetikler (dosya seçici)."""
+        try:
+            path, _ = QFileDialog.getOpenFileName(self, "Diploma Dosyası Seç", "", "PDF Dosyaları (*.pdf);;Tüm Dosyalar (*)")
+            if not path:
+                return
+
+            # Seçilen dosyanın yolunu widget'a ve iç veriye kaydet
+            widget = self._widgets.get(db_key)
+            if isinstance(widget, QLineEdit):
+                widget.setText(path)
+                widget.setToolTip(path)
+
+            # Ayrıca personel_data içine dosya yolunu saklayalım (DB kaydı opsiyonel)
+            self.personel_data[f"{db_key}_file"] = path
+            # Güncelle UI
+            self._refresh_diploma_display(db_key)
+
+        except Exception as e:
+            logger.error(f"Diploma yükleme hatası ({db_key}): {e}")
+            QMessageBox.warning(self, "Yükleme Hatası", f"Dosya yüklenemedi: {e}")
+
+    def _on_photo_upload(self):
+        try:
+            path, _ = QFileDialog.getOpenFileName(self, "Fotoğraf Seç", "", "Görüntü Dosyaları (*.png *.jpg *.jpeg *.bmp);;Tüm Dosyalar (*)")
+            if not path:
+                return
+            # Önizlemeyi güncelle
+            self._set_photo_preview(path)
+            self.personel_data["Resim"] = path
+        except Exception as e:
+            logger.warning(f"Fotoğraf yüklenemedi: {e}")
+
+    def _upload_files_to_drive(self, tc_no, callback):
+        """Seçili dosyaları Drive'a yükler, bitince callback çağırır."""
+        # Dosya map: self._file_paths örn {'Resim': path, 'Diploma1': path}
+        if not getattr(self, "_file_paths", None):
+            callback()
+            return
+
+        upload_map = {
+            "Resim": ("Personel_Resim", "Resim"),
+            "Diploma1": ("Personel_Diploma", "Diploma1"),
+            "Diploma2": ("Personel_Diploma", "Diploma2"),
+        }
+
+        self._pending_uploads = 0
+        self._upload_errors = []
+        self._drive_links = {}
+
+        for file_key, file_path in list(self._file_paths.items()):
+            if file_key not in upload_map:
+                continue
+            folder_name, db_field = upload_map[file_key]
+            folder_id = self._drive_folders.get(folder_name, "")
+            if not folder_id:
+                logger.warning(f"Drive klasör bulunamadı: {folder_name}")
+                continue
+
+            ext = os.path.splitext(file_path)[1]
+            custom_name = f"{tc_no}_{db_field}{ext}"
+
+            try:
+                from ui.pages.personel.personel_ekle import DriveUploadWorker
+            except Exception:
+                from ui.pages.personel.personel_ekle import DriveUploadWorker
+
+            self._pending_uploads += 1
+            worker = DriveUploadWorker(file_path, folder_id, custom_name, db_field)
+            worker.finished.connect(self._on_upload_finished)
+            worker.error.connect(self._on_upload_error)
+            self._upload_workers.append(worker)
+            worker.start()
+
+        if self._pending_uploads == 0:
+            callback()
+        else:
+            self._upload_callback = callback
+
+    def _on_upload_finished(self, alan_adi, link):
+        """Tek dosya yükleme tamamlandı."""
+        # alan_adi: db field like 'Resim' or 'Diploma1'
+        self._drive_links[alan_adi] = link
+        logger.info(f"Drive yükleme OK: {alan_adi} → {link}")
+        self._pending_uploads -= 1
+        # UI'ı güncelle: personel_data'ya ekle ve label'ı set et
+        try:
+            if alan_adi == 'Diploma1':
+                self.personel_data['Diploma1'] = link
+            elif alan_adi == 'Diploma2':
+                self.personel_data['Diploma2'] = link
+            elif alan_adi == 'Resim':
+                self.personel_data['Resim'] = link
+            # refresh display for diploma keys
+            if alan_adi in ('Diploma1', 'Diploma2'):
+                key = 'DiplomaNo' if alan_adi == 'Diploma1' else 'DiplomaNo2'
+                self._refresh_diploma_display(key)
+        except Exception:
+            pass
+        if self._pending_uploads <= 0:
+            self._finalize_uploads()
+
+    def _refresh_diploma_display(self, db_key):
+        """Update diploma view button state based on saved or staged file."""
+        # db_key is like 'DiplomaNo' or 'DiplomaNo2'
+        # map to Drive fields: DiplomaNo -> Diploma1, DiplomaNo2 -> Diploma2
+        mapping = { 'DiplomaNo': 'Diploma1', 'DiplomaNo2': 'Diploma2' }
+        drive_key = mapping.get(db_key, None)
+        view = self._view_buttons.get(db_key)
+        if view is None:
+            return
+        # Prefer saved drive link
+        link = ''
+        if drive_key and self.personel_data.get(drive_key):
+            link = self.personel_data.get(drive_key)
+        # Fallback local staged file
+        elif self.personel_data.get(f"{db_key}_file"):
+            link = self.personel_data.get(f"{db_key}_file")
+
+        # Enable "Aç" button only if file exists
+        view.setEnabled(bool(link))
+
+    def _on_view_diploma(self, db_key):
+        """Open diploma: web link or local file."""
+        mapping = { 'DiplomaNo': 'Diploma1', 'DiplomaNo2': 'Diploma2' }
+        drive_key = mapping.get(db_key, None)
+        link = None
+        if drive_key and self.personel_data.get(drive_key):
+            link = self.personel_data.get(drive_key)
+        elif self.personel_data.get(f"{db_key}_file"):
+            link = self.personel_data.get(f"{db_key}_file")
+        if not link:
+            return
+        try:
+            import webbrowser
+            if link.startswith('http'):
+                webbrowser.open(link)
+            else:
+                # local file
+                try:
+                    os.startfile(link)
+                except Exception:
+                    webbrowser.open('file://' + os.path.abspath(link))
+        except Exception as e:
+            logger.error(f"Diploma görüntülenemedi: {e}")
+
+    def _on_upload_error(self, alan_adi, hata):
+        """Tek dosya yükleme hatası."""
+        self._upload_errors.append(f"{alan_adi}: {hata}")
+        logger.error(f"Drive yükleme HATA: {alan_adi} → {hata}")
+        self._pending_uploads -= 1
+        if self._pending_uploads <= 0:
+            self._finalize_uploads()
+
+    def _finalize_uploads(self):
+        """Tüm yüklemeler tamamlandığında çağrılır."""
+        # Temizle
+        self._upload_workers.clear()
+
+        if self._upload_errors:
+            QMessageBox.warning(
+                self, "Drive Yükleme Uyarısı",
+                "Bazı dosyalar yüklenemedi:\n" + "\n".join(self._upload_errors)
+            )
+
+        if hasattr(self, "_upload_callback") and callable(self._upload_callback):
+            try:
+                self._upload_callback()
+            except Exception as e:
+                logger.error(f"Upload callback hatası: {e}")
 
     def _fmt_date(self, val):
         if not val: return "-"

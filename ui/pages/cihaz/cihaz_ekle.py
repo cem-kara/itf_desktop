@@ -318,7 +318,6 @@ class CihazEklePage(QWidget):
 
         btn_iptal = QPushButton("✕  İPTAL")
         btn_iptal.setStyleSheet(S["cancel_btn"])
-        btn_iptal.setFixedHeight(42)
         btn_iptal.setCursor(QCursor(Qt.PointingHandCursor))
         btn_iptal.clicked.connect(self._on_cancel)
         footer.addWidget(btn_iptal)
@@ -326,7 +325,6 @@ class CihazEklePage(QWidget):
         title = "GÜNCELLE" if self._is_edit else "KAYDET"
         self.btn_kaydet = QPushButton(f"✓  CİHAZI {title}")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
-        self.btn_kaydet.setFixedHeight(42)
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kaydet.clicked.connect(self._on_save)
         footer.addWidget(self.btn_kaydet)

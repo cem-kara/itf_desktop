@@ -444,7 +444,7 @@ class RKERaporPage(QWidget):
         v_left = QVBoxLayout()
         v_left.setSpacing(8)
         lbl_tur = QLabel("RAPOR TÜRÜ")
-        lbl_tur.setStyleSheet("color:#8b8fa3; font-size:11px; font-weight:bold; letter-spacing:1px;")
+        lbl_tur.setStyleSheet(S.get("section_title", ""))
         v_left.addWidget(lbl_tur)
 
         radio_ss = """
@@ -471,7 +471,7 @@ class RKERaporPage(QWidget):
         # Dikey ayraç
         sep = QFrame()
         sep.setFrameShape(QFrame.VLine)
-        sep.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        sep.setStyleSheet(S.get("separator", ""))
         h_panel.addWidget(sep)
 
         # Sağ: Filtreler + Butonlar
@@ -510,18 +510,11 @@ class RKERaporPage(QWidget):
         h_btn.setSpacing(10)
 
         self._btn_yenile = QPushButton("⟳ VERİLERİ YENİLE")
-        self._btn_yenile.setFixedHeight(40)
         self._btn_yenile.setStyleSheet(S.get("refresh_btn", ""))
         self._btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
 
         self._btn_olustur = QPushButton("📄  PDF RAPOR OLUŞTUR")
-        self._btn_olustur.setFixedHeight(40)
-        self._btn_olustur.setStyleSheet(
-            "QPushButton { background-color:#c62828; color:white; font-weight:bold; "
-            "font-size:13px; border-radius:6px; border:none; padding:0 16px; } "
-            "QPushButton:hover { background-color:#b71c1c; } "
-            "QPushButton:disabled { background-color:#333; color:#555; }"
-        )
+        self._btn_olustur.setStyleSheet(S.get("pdf_btn", ""))
         self._btn_olustur.setCursor(QCursor(Qt.PointingHandCursor))
 
         h_btn.addWidget(self._btn_yenile)
@@ -531,11 +524,10 @@ class RKERaporPage(QWidget):
         _sep_k = QFrame()
         _sep_k.setFrameShape(QFrame.VLine)
         _sep_k.setFixedHeight(28)
-        _sep_k.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        _sep_k.setStyleSheet(S.get("separator", ""))
         h_btn.addWidget(_sep_k)
 
         self.btn_kapat = QPushButton("✕  KAPAT")
-        self.btn_kapat.setFixedHeight(40)
         self.btn_kapat.setToolTip("Pencereyi Kapat")
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S.get("close_btn", ""))
@@ -764,5 +756,3 @@ class RKERaporPage(QWidget):
         self._btn_yenile.setText("⟳ Yenile  VERİLERİ YENİLE")
         logger.error(f"RKERapor hatası: {msg}")
         QMessageBox.critical(self, "Hata", msg)
-
-

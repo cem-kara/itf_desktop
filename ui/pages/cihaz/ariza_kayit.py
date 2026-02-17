@@ -159,7 +159,6 @@ class ArizaKayitPenceresi(QWidget):
         # 1. Arıza ID
         self.create_input_vbox(v_genel, "Arıza ID (Otomatik):", "ArizaID", "text")
         self.inputs["ArizaID"].setReadOnly(True)
-        self.inputs["ArizaID"].setStyleSheet("font-weight: bold; color: #e57373; background-color: #2b2b2b; border: 1px solid #444;")
         
         # 2. İlgili Cihaz (YERİ DEĞİŞTİRİLDİ - ARTIK 2. SIRADA)
         self.create_input_vbox(v_genel, "İlgili Cihaz (ID veya Marka Ara):", "CihazID", "combo")
@@ -368,5 +367,3 @@ class ArizaKayitPenceresi(QWidget):
         if hasattr(self, 'loader') and self.loader.isRunning(): self.loader.quit(); self.loader.wait(500)
         if hasattr(self, 'saver') and self.saver.isRunning(): self.saver.quit(); self.saver.wait(500)
         event.accept()
-
-

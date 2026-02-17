@@ -134,7 +134,6 @@ class RaporButon(QWidget):
                slot: Callable) -> QPushButton:
         btn = QPushButton(metin)
         btn.setObjectName(obj_name)
-        btn.setFixedHeight(34)
         btn.setCursor(QCursor(Qt.PointingHandCursor))
         btn.setStyleSheet(f"""
             QPushButton {{
@@ -142,7 +141,7 @@ class RaporButon(QWidget):
                 color: #ffffff;
                 border: none;
                 border-radius: 6px;
-                padding: 0 14px;
+                padding: 8px 16px;
                 font-size: 12px;
                 font-weight: 600;
             }}

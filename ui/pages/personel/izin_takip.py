@@ -199,7 +199,6 @@ class IzinTakipPage(QWidget):
 
         self.btn_yenile = QPushButton("⟳ Yenile")
         self.btn_yenile.setStyleSheet(S["refresh_btn"])
-        self.btn_yenile.setFixedSize(100, 36)
         self.btn_yenile.setToolTip("Yenile")
         self.btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         fp.addWidget(self.btn_yenile)
@@ -208,7 +207,6 @@ class IzinTakipPage(QWidget):
 
         self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Kapat")
-        self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S["close_btn"])
         fp.addWidget(self.btn_kapat)
@@ -312,7 +310,6 @@ class IzinTakipPage(QWidget):
         self.btn_kaydet = QPushButton("✓  İZİN KAYDET")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_kaydet.setFixedHeight(40)
         self.btn_kaydet.setEnabled(False)
         fg.addWidget(self.btn_kaydet, 4, 0, 1, 2)
 

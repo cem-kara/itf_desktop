@@ -585,8 +585,22 @@ class MainWindow(QMainWindow):
         msg_box.exec()
 
     def closeEvent(self, event):
+        # Eğer sync çalışıyorsa kullanıcıyı bilgilendir ve animasyonlu modal göster
         if self._sync_worker and self._sync_worker.isRunning():
-            self._sync_worker.stop()
+            from ui.components.shutdown_sync_dialog import ShutdownSyncDialog
+
+            dlg = ShutdownSyncDialog(self, sync_worker=self._sync_worker)
+            # exec() bloklayıcıdır ama worker başka thread'de çalıştığı için uygulama donmaz;
+            # dialog worker'ın `finished` veya `error` sinyali ile kapanacaktır.
+            dlg.exec()
+
+            # Dialog kapandığında sync durduysa devam et, yoksa yine stop() çağır
+            if self._sync_worker and self._sync_worker.isRunning():
+                try:
+                    self._sync_worker.stop()
+                except Exception:
+                    pass
+
         if self._bildirim_worker and self._bildirim_worker.isRunning():
             self._bildirim_worker.quit()
             self._bildirim_worker.wait(1000)

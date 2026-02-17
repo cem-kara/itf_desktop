@@ -149,14 +149,12 @@ class PuantajRaporPage(QWidget):
         self.btn_getir = QPushButton("📋 Raporu Oluştur")
         self.btn_getir.setStyleSheet(S["report_btn"])
         self.btn_getir.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_getir.setFixedHeight(34)
         fp.addWidget(self.btn_getir)
 
         self._add_sep(fp)
 
         self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Kapat")
-        self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S["close_btn"])
         fp.addWidget(self.btn_kapat)
@@ -222,7 +220,6 @@ class PuantajRaporPage(QWidget):
 
         btn_kapat2 = QPushButton("✕ Kapat")
         btn_kapat2.setStyleSheet(S["close_btn"])
-        btn_kapat2.setFixedSize(100, 36)
         btn_kapat2.setCursor(QCursor(Qt.PointingHandCursor))
         btn_kapat2.clicked.connect(self.btn_kapat.click)
         bf.addWidget(btn_kapat2)
@@ -230,16 +227,12 @@ class PuantajRaporPage(QWidget):
         self.btn_excel = QPushButton("📥 Excel İndir")
         self.btn_excel.setStyleSheet(S["excel_btn"])
         self.btn_excel.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_excel.setFixedHeight(36)
-        self.btn_excel.setFixedWidth(130)
         self.btn_excel.setEnabled(False)
         bf.addWidget(self.btn_excel)
 
         self.btn_pdf = QPushButton("📄 PDF İndir")
         self.btn_pdf.setStyleSheet(S["pdf_btn"])
         self.btn_pdf.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_pdf.setFixedHeight(36)
-        self.btn_pdf.setFixedWidth(130)
         self.btn_pdf.setEnabled(False)
         bf.addWidget(self.btn_pdf)
 

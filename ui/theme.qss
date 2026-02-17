@@ -1,148 +1,34 @@
-/* ═══════════════════════════════════════════════
-   ITF Desktop — İçerik Alanı Teması
-   Not: Sidebar kendi inline stillerini yönetiyor
-   ═══════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   ITF Desktop — Merkezi Tema Yönetimi
+   
+   ⚠️ ÖNEMLİ NOTLAR:
+   ───────────────────────────────────────────────────────────────
+   • Form kontrolleri (QLineEdit, QComboBox, QDateEdit, vb.)
+     merkezi ui/styles/components.py dosyasından uygulanıyor.
+   
+   • Tablo stilleri (QTableView) merkezi ComponentStyles'dan
+     uygulanıyor (dark tema renkler).
+   
+   • ScrollBar, GroupBox, Tab stilleri merkezi ComponentStyles'dan
+     uygulanıyor.
+   
+   • Sidebar inline stiller sidebar.py tarafından yönetiliyor.
+   
+   • Dark tema paletleri theme_manager.py'deki apply_app_theme()
+     tarafından ana uygulamaya uygulanıyor.
+   
+   • Bu dosya sadece platform bileşenlerinin fallback stillerini
+     ve özel durumları içeriyor.
+   ═══════════════════════════════════════════════════════════════ */
 
-/* ── TABLO (QTableView) ── */
-
-QTableView {
-    background-color: #ffffff;
-    alternate-background-color: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    gridline-color: #e2e8f0;
-    selection-background-color: #dbeafe;
-    selection-color: #1e293b;
-    font-size: 13px;
-}
-
-QTableView::item {
-    padding: 6px 8px;
-}
-
-QTableView::item:selected {
-    background-color: #dbeafe;
-    color: #1e293b;
-}
-
-QHeaderView::section {
-    background-color: #f1f5f9;
-    color: #334155;
-    font-weight: 600;
-    font-size: 12px;
-    padding: 8px;
-    border: none;
-    border-bottom: 2px solid #cbd5e1;
-    border-right: 1px solid #e2e8f0;
-}
-
-/* ── FORM ALANLARI ── */
-
-#content_area QLineEdit,
-#content_area QComboBox,
-#content_area QSpinBox,
-#content_area QDateEdit {
-    background-color: #ffffff;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    padding: 6px 6px;
-    font-size: 13px;
-    color: #1e293b;
-    min-height: 16px;
-}
-
-#content_area QLineEdit:focus,
-#content_area QComboBox:focus {
-    border: 2px solid #2563eb;
-    padding: 5px 9px;
-}
-
-/* ── BUTONLAR (içerik alanı) ── */
-
-#content_area QPushButton {
-    background-color: #2563eb;
-    color: #ffffff;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 16px;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-#content_area QPushButton:hover {
-    background-color: #1d4ed8;
-}
-
-#content_area QPushButton:disabled {
-    background-color: #cbd5e1;
-    color: #94a3b8;
-}
-
-#content_area QPushButton[class="secondary"] {
-    background-color: #e2e8f0;
-    color: #334155;
-}
-
-#content_area QPushButton[class="danger"] {
-    background-color: #dc2626;
-}
-
-/* ── SCROLLBAR ── */
-
-#content_area QScrollBar:vertical {
-    background-color: #f1f5f9;
-    width: 10px;
-    border: none;
-}
-
-#content_area QScrollBar::handle:vertical {
-    background-color: #94a3b8;
-    border-radius: 4px;
-    min-height: 30px;
-}
-
-#content_area QScrollBar::add-line:vertical,
-#content_area QScrollBar::sub-line:vertical {
-    height: 0px;
-}
-
-/* ── GRUPBOX & TAB ── */
-
-QGroupBox {
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    margin-top: 12px;
-    padding-top: 16px;
-    font-weight: 600;
-}
-
-QGroupBox::title {
-    subcontrol-origin: margin;
-    padding: 0px 8px;
-    color: #334155;
-}
-
-QTabWidget::pane {
-    border: 1px solid #e2e8f0;
-    border-radius: 0 0 8px 8px;
-    background-color: #ffffff;
-}
-
-QTabBar::tab {
-    background-color: #f1f5f9;
-    color: #475569;
-    padding: 8px 16px;
-    border: 1px solid #e2e8f0;
-    border-bottom: none;
-    border-radius: 6px 6px 0 0;
-    margin-right: 2px;
-}
-
-QTabBar::tab:selected {
-    background-color: #ffffff;
-    color: #1e293b;
-    font-weight: 600;
-}
+/* ══════════════════════════════════════════════════════════════
+   ⚠️ NOTLAR:
+   - Form kontrolleri (QLineEdit, QComboBox, QDateEdit vb.) 
+     merkezi ComponentStyles'dan uygulanıyor.
+   - Sidebar için inline stiller sidebar.py'de yönetiliyor.
+   - Dark tema theme_manager.py'deki apply_app_theme() tarafından
+     uygulanıyor.
+   ════════════════════════════════════════════════════════════════ */
 
 /* —— MESSAGE BOX (platform bağımsız görünüm) —— */
 
@@ -156,14 +42,14 @@ QMessageBox QLabel {
 }
 
 QMessageBox QPushButton {
-    background-color: #2563eb;
-    color: #ffffff;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 14px;
-    min-width: 80px;
+    background-color: rgba(29, 117, 254, 0.25);
+    color: #6bd3ff;
+    border: 1px solid rgba(29, 117, 254, 0.4);
+    border-radius: 4px;
+    padding: 8px 16px;
 }
 
 QMessageBox QPushButton:hover {
-    background-color: #1d4ed8;
+    background-color: rgba(29, 117, 254, 0.4);
+    color: #ffffff;
 }

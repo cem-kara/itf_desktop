@@ -174,7 +174,6 @@ class IzinGirisPage(QWidget):
         btn_back = QPushButton("← Geri")
         btn_back.setStyleSheet(S["back_btn"])
         btn_back.setCursor(QCursor(Qt.PointingHandCursor))
-        btn_back.setFixedHeight(34)
         btn_back.clicked.connect(self._go_back)
         hdr.addWidget(btn_back)
 
@@ -254,7 +253,6 @@ class IzinGirisPage(QWidget):
         self.btn_kaydet = QPushButton("✓  İZİN KAYDET")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_kaydet.setFixedHeight(40)
         self.btn_kaydet.clicked.connect(self._on_save)
         form.addWidget(self.btn_kaydet, 3, 0, 1, 2)
 

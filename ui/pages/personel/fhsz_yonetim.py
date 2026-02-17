@@ -255,14 +255,12 @@ class FHSZYonetimPage(QWidget):
         self.btn_hesapla = QPushButton("⚡ LİSTELE VE HESAPLA")
         self.btn_hesapla.setStyleSheet(S["calc_btn"])
         self.btn_hesapla.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_hesapla.setFixedHeight(34)
         fp.addWidget(self.btn_hesapla)
 
         self._add_sep(fp)
 
         self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Kapat")
-        self.btn_kapat.setFixedSize(28, 28)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S["close_btn"])
         fp.addWidget(self.btn_kapat)
@@ -328,7 +326,6 @@ class FHSZYonetimPage(QWidget):
 
         btn_kapat2 = QPushButton("✕ Kapat")
         btn_kapat2.setStyleSheet(S["close_btn"])
-        btn_kapat2.setFixedSize(100, 36)
         btn_kapat2.setCursor(QCursor(Qt.PointingHandCursor))
         btn_kapat2.clicked.connect(self.btn_kapat.click)
         bf.addWidget(btn_kapat2)
@@ -336,8 +333,6 @@ class FHSZYonetimPage(QWidget):
         self.btn_kaydet = QPushButton("💾 KAYDET / GÜNCELLE")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_kaydet.setFixedHeight(36)
-        self.btn_kaydet.setFixedWidth(220)
         bf.addWidget(self.btn_kaydet)
 
         main.addWidget(bot_frame)

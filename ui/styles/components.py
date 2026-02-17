@@ -33,17 +33,17 @@ class ComponentStyles:
             background-color: {Colors.BTN_SECONDARY_BG};
             color: {Colors.BTN_SECONDARY_TEXT};
             border: 1px solid {Colors.BTN_SECONDARY_BORDER};
-            border-radius: 6px;
-            padding: 6px 14px;
+            border-radius: 4px;
+            padding: 6px 12px;
             font-size: 12px;
             font-weight: 600;
         }}
         QPushButton:hover {{
-            background-color: rgba(255, 255, 255, 0.10);
+            background-color: {Colors.BG_HOVER};
             color: {Colors.TEXT_SECONDARY};
         }}
         QPushButton:checked {{
-            background-color: rgba(29, 117, 254, 0.35);
+            background-color: {Colors.BG_SELECTED};
             color: {Colors.TEXT_PRIMARY};
             border: 1px solid {Colors.BTN_PRIMARY_BORDER};
         }}
@@ -54,19 +54,19 @@ class ComponentStyles:
             background-color: {Colors.BTN_SECONDARY_BG};
             color: {Colors.BTN_SECONDARY_TEXT};
             border: 1px solid {Colors.BTN_SECONDARY_BORDER};
-            border-radius: 6px;
-            padding: 6px 14px;
+            border-radius: 4px;
+            padding: 6px 12px;
             font-size: 12px;
             font-weight: 600;
         }}
         QPushButton:hover {{
-            background-color: rgba(255, 255, 255, 0.10);
+            background-color: {Colors.BG_HOVER};
             color: {Colors.TEXT_SECONDARY};
         }}
         QPushButton:checked {{
-            background-color: rgba(255, 255, 255, 0.12);
+            background-color: {Colors.BG_HOVER};
             color: {Colors.TEXT_PRIMARY};
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: 1px solid {Colors.BORDER_PRIMARY};
         }}
     """
 
@@ -75,10 +75,11 @@ class ComponentStyles:
             background-color: {Colors.BTN_PRIMARY_BG};
             color: {Colors.BTN_PRIMARY_TEXT};
             border: 1px solid {Colors.BTN_PRIMARY_BORDER};
-            border-radius: 6px;
-            padding: 7px 16px;
+            border-radius: 4px;
+            padding: 8px 16px;
             font-size: 12px;
             font-weight: 600;
+            margin-bottom: 6px;
         }}
         QPushButton:hover {{
             background-color: {Colors.BTN_PRIMARY_HOVER};
@@ -88,15 +89,16 @@ class ComponentStyles:
 
     BTN_REFRESH = f"""
         QPushButton {{
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: {Colors.BTN_SECONDARY_BG};
             color: {Colors.BTN_SECONDARY_TEXT};
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 6px;
-            padding: 7px 12px;
+            border: 1px solid {Colors.BTN_SECONDARY_BORDER};
+            border-radius: 4px;
+            padding: 8px 16px;
             font-size: 12px;
+            margin-bottom: 6px;
         }}
         QPushButton:hover {{
-            background-color: rgba(255, 255, 255, 0.10);
+            background-color: {Colors.BG_HOVER};
             color: {Colors.TEXT_SECONDARY};
         }}
     """
@@ -106,9 +108,11 @@ class ComponentStyles:
             background-color: {Colors.BTN_DANGER_BG};
             color: {Colors.BTN_DANGER_TEXT};
             border: 1px solid {Colors.BTN_DANGER_BORDER};
-            border-radius: 6px;
-            font-size: 14px;
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 12px;
             font-weight: bold;
+            margin-bottom: 6px;
         }}
         QPushButton:hover {{
             background-color: {Colors.BTN_DANGER_HOVER};
@@ -121,10 +125,11 @@ class ComponentStyles:
             background-color: {Colors.BTN_SUCCESS_BG};
             color: {Colors.BTN_SUCCESS_TEXT};
             border: 1px solid {Colors.BTN_SUCCESS_BORDER};
-            border-radius: 6px;
-            padding: 6px 14px;
+            border-radius: 4px;
+            padding: 8px 16px;
             font-size: 12px;
             font-weight: 600;
+            margin-bottom: 6px;
         }}
         QPushButton:hover {{
             background-color: {Colors.BTN_SUCCESS_HOVER};
@@ -138,16 +143,17 @@ class ComponentStyles:
 
     INPUT_SEARCH = f"""
         QLineEdit {{
-            background-color: #1e202c;
+            background-color: {Colors.INPUT_BG};
             border: 1px solid {Colors.INPUT_BORDER};
-            border-bottom: 2px solid #9dcbe3;
+            border-bottom: 2px solid rgba(29, 117, 254, 0.3);
             border-radius: 8px;
-            padding: 7px 12px;
+            padding: 6px 8px;
             font-size: 13px;
             color: {Colors.TEXT_PRIMARY};
+            margin-bottom: 6px;
         }}
         QLineEdit:focus {{
-            border: 1px solid rgba(29, 117, 254, 0.5);
+            border: 1px solid {Colors.INPUT_BORDER_FOCUS};
             border-bottom: 2px solid {Colors.INPUT_BORDER_FOCUS};
         }}
         QLineEdit::placeholder {{
@@ -157,28 +163,27 @@ class ComponentStyles:
 
     INPUT_COMBO = f"""
         QComboBox {{
-            background-color: #1e202c;
-            border: 1px solid {Colors.INPUT_BORDER};
-            border-bottom: 2px solid #9dcbe3;
-            border-radius: 6px;
-            padding: 5px 10px;
-            font-size: 12px;
-            color: {Colors.TEXT_PRIMARY};
-            min-height: 22px;
+            background-color: {Colors.INPUT_BG};
+            border: 1px solid {Colors.INPUT_BORDER_FOCUS};
+            border-radius: 4px;
+            padding: 6px 8px;
+            color: white;
+            margin-bottom: 6px;
         }}
         QComboBox:focus {{
-            border-bottom: 2px solid {Colors.INPUT_BORDER_FOCUS};
+            border: 1px solid {Colors.INPUT_BORDER_FOCUS};
+            background-color: {Colors.INPUT_BG};
         }}
         QComboBox::drop-down {{
             border: none;
-            width: 24px;
+            width: 20px;
         }}
         QComboBox QAbstractItemView {{
-            background-color: #1e202c;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: #2d2d2d;
+            border: 1px solid {Colors.BORDER_PRIMARY};
             color: {Colors.TEXT_SECONDARY};
-            selection-background-color: rgba(29, 117, 254, 0.3);
-            selection-color: {Colors.TEXT_PRIMARY};
+            selection-background-color: {Colors.INPUT_BORDER_FOCUS};
+            selection-color: white;
         }}
     """
 
@@ -235,8 +240,8 @@ class ComponentStyles:
 
     CONTEXT_MENU = f"""
         QMenu {{
-            background-color: #1e202c;
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background-color: {Colors.INPUT_BG};
+            border: 1px solid {Colors.BORDER_PRIMARY};
             border-radius: 8px;
             padding: 4px;
             color: {Colors.TEXT_SECONDARY};
@@ -248,12 +253,12 @@ class ComponentStyles:
             margin: 2px;
         }}
         QMenu::item:selected {{
-            background-color: rgba(29, 117, 254, 0.35);
+            background-color: {Colors.BG_SELECTED};
             color: {Colors.TEXT_PRIMARY};
         }}
         QMenu::separator {{
             height: 1px;
-            background: rgba(255, 255, 255, 0.08);
+            background: {Colors.BORDER_SECONDARY};
             margin: 4px 8px;
         }}
     """
@@ -264,14 +269,14 @@ class ComponentStyles:
 
     PROGRESS_BAR = f"""
         QProgressBar {{
-            background-color: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.08);
+            background-color: {Colors.BG_HOVER};
+            border: 1px solid {Colors.BORDER_PRIMARY};
             border-radius: 4px;
             color: {Colors.TEXT_MUTED};
             font-size: 11px;
         }}
         QProgressBar::chunk {{
-            background-color: rgba(29, 117, 254, 0.6);
+            background-color: {Colors.BTN_PRIMARY_HOVER};
             border-radius: 3px;
         }}
     """
@@ -298,17 +303,18 @@ class ComponentStyles:
             background-color: {Colors.BTN_SUCCESS_BG};
             color: {Colors.BTN_SUCCESS_TEXT};
             border: 1px solid {Colors.BTN_SUCCESS_BORDER};
-            border-radius: 6px;
-            padding: 7px 16px;
+            border-radius: 4px;
+            padding: 8px 16px;
             font-size: 12px;
             font-weight: 600;
+            margin-bottom: 6px;
         }}
         QPushButton:hover {{
             background-color: {Colors.BTN_SUCCESS_HOVER};
             color: {Colors.TEXT_PRIMARY};
         }}
         QPushButton:pressed {{
-            background-color: rgba(74, 222, 128, 0.4);
+            background-color: {Colors.BG_SELECTED};
         }}
     """
 
@@ -317,36 +323,38 @@ class ComponentStyles:
             background-color: {Colors.BTN_PRIMARY_BG};
             color: {Colors.BTN_PRIMARY_TEXT};
             border: 1px solid {Colors.BTN_PRIMARY_BORDER};
-            border-radius: 6px;
-            padding: 7px 16px;
+            border-radius: 4px;
+            padding: 8px 16px;
             font-size: 12px;
             font-weight: 600;
+            margin-bottom: 6px;
         }}
         QPushButton:hover {{
             background-color: {Colors.BTN_PRIMARY_HOVER};
             color: {Colors.TEXT_PRIMARY};
         }}
         QPushButton:pressed {{
-            background-color: rgba(29, 117, 254, 0.6);
+            background-color: {Colors.BG_SELECTED};
         }}
     """
 
     CANCEL_BTN = f"""
         QPushButton {{
-            background-color: rgba(255, 255, 255, 0.05);
-            color: {Colors.TEXT_SECONDARY};
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 6px;
-            padding: 7px 16px;
+            background-color: {Colors.BTN_SECONDARY_BG};
+            color: {Colors.BTN_SECONDARY_TEXT};
+            border: 1px solid {Colors.BTN_SECONDARY_BORDER};
+            border-radius: 4px;
+            padding: 8px 16px;
             font-size: 12px;
             font-weight: 600;
+            margin-bottom: 6px;
         }}
         QPushButton:hover {{
-            background-color: rgba(255, 255, 255, 0.10);
+            background-color: {Colors.BG_HOVER};
             color: {Colors.TEXT_PRIMARY};
         }}
         QPushButton:pressed {{
-            background-color: rgba(255, 255, 255, 0.15);
+            background-color: {Colors.BG_SELECTED};
         }}
     """
 
@@ -355,17 +363,18 @@ class ComponentStyles:
             background-color: {Colors.BTN_DANGER_BG};
             color: {Colors.BTN_DANGER_TEXT};
             border: 1px solid {Colors.BTN_DANGER_BORDER};
-            border-radius: 6px;
-            padding: 7px 16px;
+            border-radius: 4px;
+            padding: 8px 16px;
             font-size: 12px;
             font-weight: 600;
+            margin-bottom: 6px;
         }}
         QPushButton:hover {{
             background-color: {Colors.BTN_DANGER_HOVER};
             color: {Colors.TEXT_PRIMARY};
         }}
         QPushButton:pressed {{
-            background-color: rgba(248, 113, 113, 0.6);
+            background-color: {Colors.BG_SELECTED};
         }}
     """
 
@@ -380,7 +389,7 @@ class ComponentStyles:
         }}
         QTabBar {{
             background-color: transparent;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom: 1px solid {Colors.BORDER_PRIMARY};
         }}
         QTabBar::tab {{
             background-color: transparent;
@@ -395,7 +404,7 @@ class ComponentStyles:
         }}
         QTabBar::tab:selected {{
             color: {Colors.TEXT_PRIMARY};
-            border-bottom: 2px solid rgba(29, 117, 254, 0.8);
+            border-bottom: 2px solid {Colors.BTN_PRIMARY_HOVER};
         }}
     """
 
@@ -410,12 +419,12 @@ class ComponentStyles:
             border: none;
         }}
         QScrollBar::handle:vertical {{
-            background-color: rgba(255, 255, 255, 0.2);
+            background-color: {Colors.BORDER_SECONDARY};
             border-radius: 4px;
             min-height: 20px;
         }}
         QScrollBar::handle:vertical:hover {{
-            background-color: rgba(255, 255, 255, 0.3);
+            background-color: {Colors.BORDER_PRIMARY};
         }}
         QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
             border: none;
@@ -426,13 +435,15 @@ class ComponentStyles:
     GROUP = f"""
         QGroupBox {{
             color: {Colors.TEXT_SECONDARY};
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid {Colors.BORDER_PRIMARY};
             border-radius: 8px;
             padding-top: 16px;
             padding-left: 12px;
             padding-right: 12px;
+            padding-bottom: 12px;
             font-size: 12px;
             font-weight: 600;
+            margin-bottom: 16px;
         }}
         QGroupBox::title {{
             subcontrol-origin: margin;
@@ -443,8 +454,8 @@ class ComponentStyles:
     """
 
     PHOTO_AREA = f"""
-        background-color: rgba(255, 255, 255, 0.03);
-        border: 2px dashed rgba(255, 255, 255, 0.15);
+        background-color: {Colors.BG_HOVER};
+        border: 2px dashed {Colors.BORDER_SECONDARY};
         border-radius: 8px;
         color: {Colors.TEXT_MUTED};
         font-size: 12px;
@@ -455,17 +466,18 @@ class ComponentStyles:
             background-color: {Colors.BTN_PRIMARY_BG};
             color: {Colors.BTN_PRIMARY_TEXT};
             border: 1px solid {Colors.BTN_PRIMARY_BORDER};
-            border-radius: 6px;
-            padding: 6px 14px;
+            border-radius: 4px;
+            padding: 8px 16px;
             font-size: 12px;
             font-weight: 600;
+            margin-bottom: 6px;
         }}
         QPushButton:hover {{
             background-color: {Colors.BTN_PRIMARY_HOVER};
             color: {Colors.TEXT_PRIMARY};
         }}
         QPushButton:pressed {{
-            background-color: rgba(29, 117, 254, 0.6);
+            background-color: {Colors.BG_SELECTED};
         }}
     """
 
@@ -478,6 +490,7 @@ class ComponentStyles:
         font-size: 12px;
         font-weight: 600;
         background: transparent;
+        margin-bottom: 4px;
     """
 
     VALUE = f"""
@@ -491,20 +504,22 @@ class ComponentStyles:
         font-size: 12px;
         font-weight: 600;
         background: transparent;
+        margin-bottom: 4px;
     """
 
     INPUT = f"""
         QLineEdit {{
-            background-color: rgba(255, 255, 255, 0.03);
+            background-color: {Colors.INPUT_BG};
             border: 1px solid {Colors.INPUT_BORDER};
             border-radius: 6px;
-            padding: 7px 10px;
+            padding: 6px 8px;
             font-size: 12px;
             color: {Colors.TEXT_PRIMARY};
+            margin-bottom: 6px;
         }}
         QLineEdit:focus {{
             border: 1px solid {Colors.INPUT_BORDER_FOCUS};
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: {Colors.BG_HOVER};
         }}
         QLineEdit::placeholder {{
             color: {Colors.TEXT_MUTED};
@@ -513,16 +528,17 @@ class ComponentStyles:
 
     DATE = f"""
         QDateEdit {{
-            background-color: rgba(255, 255, 255, 0.03);
+            background-color: {Colors.INPUT_BG};
             border: 1px solid {Colors.INPUT_BORDER};
             border-radius: 6px;
-            padding: 7px 10px;
+            padding: 6px 8px;
             font-size: 12px;
             color: {Colors.TEXT_PRIMARY};
+            margin-bottom: 6px;
         }}
         QDateEdit:focus {{
             border: 1px solid {Colors.INPUT_BORDER_FOCUS};
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: {Colors.BG_HOVER};
         }}
         QDateEdit::down-arrow {{
             image: none;
@@ -532,52 +548,53 @@ class ComponentStyles:
 
     COMBO_FILTER = f"""
         QComboBox {{
-            background-color: rgba(255, 255, 255, 0.03);
+            background-color: {Colors.INPUT_BG};
             border: 1px solid {Colors.INPUT_BORDER};
             border-radius: 6px;
-            padding: 5px 8px;
-            font-size: 11px;
+            padding: 6px 8px;
+            font-size: 12px;
             color: {Colors.TEXT_SECONDARY};
-            min-height: 20px;
+            margin-bottom: 6px;
         }}
         QComboBox:focus {{
             border: 1px solid {Colors.INPUT_BORDER_FOCUS};
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: {Colors.BG_HOVER};
         }}
         QComboBox::drop-down {{
             border: none;
             width: 20px;
         }}
         QComboBox QAbstractItemView {{
-            background-color: #1e202c;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: {Colors.INPUT_BG};
+            border: 1px solid {Colors.BORDER_PRIMARY};
             color: {Colors.TEXT_SECONDARY};
-            selection-background-color: rgba(29, 117, 254, 0.3);
+            selection-background-color: {Colors.BG_SELECTED};
             selection-color: {Colors.TEXT_PRIMARY};
         }}
     """
 
     FILE_BTN = f"""
         QPushButton {{
-            background-color: rgba(255, 255, 255, 0.08);
-            color: {Colors.TEXT_SECONDARY};
-            border: 1px dashed rgba(255, 255, 255, 0.2);
-            border-radius: 6px;
-            padding: 6px 12px;
-            font-size: 11px;
+            background-color: {Colors.BTN_SECONDARY_BG};
+            color: {Colors.BTN_SECONDARY_TEXT};
+            border: 1px dashed {Colors.BTN_SECONDARY_BORDER};
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 12px;
             font-weight: 500;
+            margin-bottom: 6px;
         }}
         QPushButton:hover {{
-            background-color: rgba(255, 255, 255, 0.12);
+            background-color: {Colors.BG_HOVER};
             color: {Colors.TEXT_PRIMARY};
         }}
         QPushButton:pressed {{
-            background-color: rgba(255, 255, 255, 0.15);
+            background-color: {Colors.BG_SELECTED};
         }}
     """
 
     SEPARATOR = f"""
-        background-color: rgba(255, 255, 255, 0.08);
+        background-color: {Colors.BORDER_PRIMARY};
     """
 
     STAT_LABEL = f"""
@@ -598,7 +615,7 @@ class ComponentStyles:
         font-size: 16px;
         font-weight: 700;
         background: rgba(29, 117, 254, 0.12);
-        padding: 6px 10px;
+        padding: 7px 12px;
         border-radius: 6px;
     """
 
@@ -607,9 +624,9 @@ class ComponentStyles:
             background-color: rgba(255, 255, 255, 0.03);
             border: 1px solid {Colors.INPUT_BORDER};
             border-radius: 6px;
-            padding: 4px 8px;
+            padding: 6px 8px;
             color: {Colors.TEXT_PRIMARY};
-            min-height: 26px;
+            margin-bottom: 6px;
         }}
         QSpinBox::up-button, QSpinBox::down-button {{
             width: 18px;
@@ -621,10 +638,11 @@ class ComponentStyles:
             background-color: rgba(29, 117, 254, 0.3);
             color: {Colors.TEXT_PRIMARY};
             border: 1px solid rgba(29, 117, 254, 0.6);
-            border-radius: 6px;
-            padding: 7px 14px;
+            border-radius: 4px;
+            padding: 8px 16px;
             font-size: 12px;
             font-weight: 700;
+            margin-bottom: 6px;
         }}
         QPushButton:hover {{
             background-color: rgba(29, 117, 254, 0.4);
@@ -657,16 +675,18 @@ class ComponentStyles:
         font-size: 12px;
         font-weight: 600;
         background: transparent;
+        margin-bottom: 4px;
     """
     BACK_BTN = f"""
         QPushButton {{
             background-color: rgba(255, 255, 255, 0.05);
             color: {Colors.TEXT_SECONDARY};
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 6px;
-            padding: 7px 14px;
+            border-radius: 4px;
+            padding: 8px 16px;
             font-size: 12px;
             font-weight: 600;
+            margin-bottom: 6px;
         }}
         QPushButton:hover {{
             background-color: rgba(255, 255, 255, 0.10);
@@ -725,10 +745,11 @@ class ComponentStyles:
             background-color: rgba(29, 117, 254, 0.25);
             color: {Colors.TEXT_PRIMARY};
             border: 1px solid rgba(29, 117, 254, 0.5);
-            border-radius: 6px;
-            padding: 7px 16px;
+            border-radius: 4px;
+            padding: 8px 16px;
             font-size: 12px;
             font-weight: 600;
+            margin-bottom: 6px;
         }}
         QPushButton:hover {{
             background-color: rgba(29, 117, 254, 0.35);
@@ -750,10 +771,11 @@ class ComponentStyles:
             background-color: rgba(239, 68, 68, 0.25);
             color: #fca5a5;
             border: 1px solid rgba(239, 68, 68, 0.5);
-            border-radius: 6px;
-            padding: 6px 14px;
+            border-radius: 4px;
+            padding: 8px 16px;
             font-size: 12px;
             font-weight: 600;
+            margin-bottom: 6px;
         }}
         QPushButton:hover {{
             background-color: rgba(239, 68, 68, 0.35);

@@ -412,7 +412,7 @@ class TopluMuayeneDialog(QDialog):
 
         h_dosya = QHBoxLayout()
         self._lbl_dosya = QLabel("Dosya seçilmedi")
-        self._lbl_dosya.setStyleSheet("color:#8b8fa3; font-size:11px;")
+        self._lbl_dosya.setStyleSheet(S.get("label", ""))
         btn_dosya = QPushButton("📂 Ortak Rapor Seç")
         btn_dosya.setStyleSheet(S.get("file_btn", ""))
         btn_dosya.clicked.connect(self._sec_dosya)
@@ -668,11 +668,9 @@ class RKEMuayenePage(QWidget):
         h_btn.setSpacing(8)
         self._btn_temizle = QPushButton("✕  TEMİZLE")
         self._btn_temizle.setStyleSheet(S.get("cancel_btn", ""))
-        self._btn_temizle.setFixedHeight(40)
         self._btn_temizle.setCursor(QCursor(Qt.PointingHandCursor))
         self._btn_kaydet = QPushButton("✓  KAYDET")
         self._btn_kaydet.setStyleSheet(S.get("save_btn", ""))
-        self._btn_kaydet.setFixedHeight(40)
         self._btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
         h_btn.addWidget(self._btn_temizle)
         h_btn.addWidget(self._btn_kaydet)
@@ -683,7 +681,7 @@ class RKEMuayenePage(QWidget):
         # Dikey ayraç
         sep = QFrame()
         sep.setFrameShape(QFrame.VLine)
-        sep.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        sep.setStyleSheet(S.get("separator", ""))
         root.addWidget(sep)
 
         # ── SAĞ: LİSTE ──
@@ -714,7 +712,6 @@ class RKEMuayenePage(QWidget):
 
         self._btn_yenile = QPushButton("⟳ Yenile")
         self._btn_yenile.setToolTip("Yenile")
-        self._btn_yenile.setFixedSize(100, 36)
         self._btn_yenile.setStyleSheet(S.get("refresh_btn", ""))
         self._btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         fl.addWidget(self._btn_yenile)
@@ -722,12 +719,11 @@ class RKEMuayenePage(QWidget):
         _sep_k = QFrame()
         _sep_k.setFrameShape(QFrame.VLine)
         _sep_k.setFixedHeight(20)
-        _sep_k.setStyleSheet("background-color: rgba(255,255,255,0.08);")
+        _sep_k.setStyleSheet(S.get("separator", ""))
         fl.addWidget(_sep_k)
 
         self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Pencereyi Kapat")
-        self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S.get("close_btn", ""))
         fl.addWidget(self.btn_kapat)
@@ -1091,5 +1087,3 @@ class _GecmisMuayeneModel(QAbstractTableModel):
         self.beginResetModel()
         self._data = data or []
         self.endResetModel()
-
-

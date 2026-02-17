@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime, timedelta, date
 from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QDateEdit, QSpinBox, QFrame, QGridLayout,
     QAbstractSpinBox, QMessageBox
 )
@@ -25,11 +25,12 @@ if "max_label" not in S:
 def _parse_date(val):
     return parse_any_date(val)
 
-class HizliIzinGirisDialog(QDialog):
+class HizliIzinGirisDialog(QWidget):
     """
-    Personel Merkez ekranından hızlı izin girişi için kullanılan modal dialog.
+    Personel Merkez ekranında sol panelde hızlı izin girişi widget'ı.
     """
     izin_kaydedildi = Signal()
+    cancelled = Signal()
 
     def __init__(self, db, personel_data, parent=None):
         super().__init__(parent)
@@ -40,10 +41,7 @@ class HizliIzinGirisDialog(QDialog):
         self._izin_max_gun = {}
         self.ui = {}
 
-        self.setWindowTitle(f"Hızlı İzin Girişi — {self._personel.get('AdSoyad', '')}")
-        self.setMinimumWidth(450)
         self.setStyleSheet(S["page"])
-        self.setModal(True)
 
         self._setup_ui()
         self._load_sabitler()
@@ -89,7 +87,7 @@ class HizliIzinGirisDialog(QDialog):
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
         btn_iptal = QPushButton("İptal", styleSheet=S["cancel_btn"], cursor=QCursor(Qt.PointingHandCursor))
-        btn_iptal.clicked.connect(self.reject)
+        btn_iptal.clicked.connect(self.cancelled.emit)
         btn_layout.addWidget(btn_iptal)
         btn_kaydet = QPushButton("✓ Kaydet", styleSheet=S["save_btn"], cursor=QCursor(Qt.PointingHandCursor))
         btn_kaydet.clicked.connect(self._on_save)

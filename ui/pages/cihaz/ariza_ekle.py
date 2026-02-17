@@ -107,7 +107,7 @@ class ArizaEklePanel(QWidget):
         main.setSpacing(12)
 
         lbl_baslik = QLabel("Arıza Bildirimi")
-        lbl_baslik.setStyleSheet("color:#e57373; font-size:14px; font-weight:bold; border-bottom:2px solid #444; padding-bottom:5px;")
+        lbl_baslik.setStyleSheet(S["header_name"])
         main.addWidget(lbl_baslik)
 
         form = QVBoxLayout(); form.setSpacing(10)
@@ -115,7 +115,6 @@ class ArizaEklePanel(QWidget):
         form.addWidget(self.inputs["Arizaid"])
 
         self._add_lbl_input(form, "İlgili Cihaz:", "Cihazid", read_only=True)
-        self.inputs["Cihazid"].setStyleSheet("background:#333; color:#4dabf7; font-weight:bold; border:1px solid #555;")
 
         self._add_lbl_input(form, "Bildiren:", "Bildiren")
         self._add_lbl_input(form, "Konu / Başlık:", "Baslik", placeholder="Kısaca sorun nedir?")
@@ -235,5 +234,3 @@ class ArizaEklePanel(QWidget):
         self.progress.setVisible(False)
         self.btn_kaydet.setEnabled(True); self.btn_kaydet.setText("Kaydet")
         QMessageBox.critical(self, "Hata", mesaj)
-
-

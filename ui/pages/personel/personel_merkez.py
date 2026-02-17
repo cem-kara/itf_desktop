@@ -43,13 +43,15 @@ class PersonelMerkezPage(QWidget):
         self._initial_load_complete = False
         # Modül cache (açılan sayfaları tekrar oluşturmamak için)
         self.modules = {}
+        # İşlem formu referansları
+        self._current_form = None
         
         self._setup_ui()
         self._load_data()
 
     def _setup_ui(self):
         """Ana iskelet kurulumu."""
-        self.setStyleSheet("background-color: #16172b; color: #e0e2ea;")
+        self.setStyleSheet(S["page"])
         
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -90,11 +92,11 @@ class PersonelMerkezPage(QWidget):
         
         main_layout.addWidget(self.header_frame)
 
-        # 2. BODY (Nav + Content + RightPanel)
+        # 2. BODY (Nav+Content | Sağ Stacked Panel)
         body_layout = QHBoxLayout()
         body_layout.setSpacing(0)
         
-        # 2.1 SOL: Navigasyon + İçerik
+        # 2.1 SOL/ORTA: Navigasyon + İçerik
         left_container = QWidget()
         left_layout = QVBoxLayout(left_container)
         left_layout.setContentsMargins(0, 0, 0, 0)
@@ -119,17 +121,7 @@ class PersonelMerkezPage(QWidget):
         # Geri Butonu
         btn_geri = QPushButton("← Listeye Dön")
         btn_geri.setCursor(QCursor(Qt.PointingHandCursor))
-        btn_geri.setStyleSheet("""
-            QPushButton {
-                background-color: rgba(255, 255, 255, 0.05);
-                color: #aab0c4;
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 6px;
-                padding: 5px 12px;
-                font-weight: bold;
-            }
-            QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); color: white; }
-        """)
+        btn_geri.setStyleSheet(S["back_btn"])
         btn_geri.clicked.connect(self.kapat_istegi.emit)
         self.nav_layout.addWidget(btn_geri)
 
@@ -141,48 +133,78 @@ class PersonelMerkezPage(QWidget):
         
         body_layout.addWidget(left_container, 1) # Esnek genişlik
         
-        # 2.2 SAĞ: Kritik Durumlar Paneli
-        self.right_panel = QFrame()
-        self.right_panel.setFixedWidth(280)
-        self.right_panel.setStyleSheet("background-color: #1a1c28; border-left: 1px solid #2d303e;")
-        right_layout = QVBoxLayout(self.right_panel)
-        right_layout.setContentsMargins(16, 20, 16, 20)
-        right_layout.setSpacing(15)
+        # 2.2 SAĞ: Stacked Panel (Durum Özeti | İşlem Formu)
+        self.right_panel_stack = QStackedWidget()
+        self.right_panel_stack.setFixedWidth(380)
+        
+        # Sayfa 0: Durum Özeti + Hızlı İşlemler
+        overview_page = QFrame()
+        overview_page.setStyleSheet("background-color: #1a1c28; border-left: 1px solid #2d303e;")
+        overview_layout = QVBoxLayout(overview_page)
+        overview_layout.setContentsMargins(16, 20, 16, 20)
+        overview_layout.setSpacing(15)
         
         # Başlık
         lbl_sag_baslik = QLabel("DURUM ÖZETİ")
         lbl_sag_baslik.setStyleSheet("color: #6bd3ff; font-weight: bold; font-size: 12px; letter-spacing: 1px;")
-        right_layout.addWidget(lbl_sag_baslik)
+        overview_layout.addWidget(lbl_sag_baslik)
         
         # Kritik Uyarılar Listesi
         self.alert_container = QVBoxLayout()
-        right_layout.addLayout(self.alert_container)
+        overview_layout.addLayout(self.alert_container)
         
         # Hızlı Aksiyonlar
-        right_layout.addSpacing(20)
+        overview_layout.addSpacing(20)
         lbl_aksiyon = QLabel("HIZLI İŞLEMLER")
         lbl_aksiyon.setStyleSheet("color: #6bd3ff; font-weight: bold; font-size: 12px; letter-spacing: 1px;")
-        right_layout.addWidget(lbl_aksiyon)
+        overview_layout.addWidget(lbl_aksiyon)
         
-        self._add_action_btn(right_layout, "➕ İzin Ekle", self._hizli_izin_gir)
-        self._add_action_btn(right_layout, "🩺 Muayene Ekle", self._hizli_saglik_gir)
+        self._add_action_btn(overview_layout, "➕ İzin Ekle", lambda: self._show_islem_panel("IZIN"))
+        self._add_action_btn(overview_layout, "🩺 Muayene Ekle", lambda: self._show_islem_panel("SAGLIK"))
         
-        right_layout.addStretch()
+        overview_layout.addStretch()
         
-        body_layout.addWidget(self.right_panel)
+        self.right_panel_stack.addWidget(overview_page)  # Page 0
+        
+        # Sayfa 1: İşlem Formu (dinamik olarak yüklenir)
+        form_page = QFrame()
+        form_page.setStyleSheet("background-color: #1a1c28; border-left: 1px solid #2d303e;")
+        self.form_layout = QVBoxLayout(form_page)
+        self.form_layout.setContentsMargins(10, 10, 10, 10)
+        self.form_layout.setSpacing(10)
+        
+        # Kapat butonunu form sayfasına ekle
+        header_h = QHBoxLayout()
+        self.lbl_form_title = QLabel("İşlem")
+        self.lbl_form_title.setStyleSheet("color: #6bd3ff; font-weight: bold; font-size: 12px;")
+        header_h.addWidget(self.lbl_form_title)
+        header_h.addStretch()
+        
+        btn_form_kapat = QPushButton("✕")
+        btn_form_kapat.setFixedSize(28, 28)
+        btn_form_kapat.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_form_kapat.setStyleSheet("background: transparent; color: #8b8fa3; border: none;")
+        btn_form_kapat.clicked.connect(lambda: self.right_panel_stack.setCurrentIndex(0))
+        header_h.addWidget(btn_form_kapat)
+        
+        self.form_layout.addLayout(header_h)
+        self.form_layout.addSpacing(10)
+        
+        self.right_panel_stack.addWidget(form_page)  # Page 1
+        
+        body_layout.addWidget(self.right_panel_stack)
         main_layout.addLayout(body_layout)
 
     def _add_nav_btn(self, text, code, active=False):
         btn = QPushButton(text)
         btn.setCursor(QCursor(Qt.PointingHandCursor))
-        btn.setFixedHeight(44)
         # Alt çizgi efekti için stil
         base_style = """
             QPushButton {
                 background: transparent; border: none; 
                 color: #8b8fa3; font-weight: bold; font-size: 13px;
                 border-bottom: 3px solid transparent;
-                padding: 0 10px;
+                padding: 10px;
             }
             QPushButton:hover { color: #e0e2ea; }
         """
@@ -191,7 +213,7 @@ class PersonelMerkezPage(QWidget):
                 background: transparent; border: none; 
                 color: #3b82f6; font-weight: bold; font-size: 13px;
                 border-bottom: 3px solid #3b82f6;
-                padding: 0 10px;
+                padding: 10px;
             }
         """
         btn.setStyleSheet(active_style if active else base_style)
@@ -216,27 +238,51 @@ class PersonelMerkezPage(QWidget):
         btn.clicked.connect(callback)
         layout.addWidget(btn)
 
-    def _hizli_izin_gir(self):
-        """Hızlı izin girişi için bir dialog açar."""
+    def _show_islem_panel(self, panel_type):
+        """Sağ panelinde işlem formunu göster."""
         if not self.ozet_data.get("personel"):
             QMessageBox.warning(self, "Hata", "Personel verisi yüklenemedi.")
             return
-
-        dialog = HizliIzinGirisDialog(self.db, self.ozet_data["personel"], self)
-        # İzin kaydedildiğinde, bu ana sayfadaki verileri (özet, panel) yenile
-        dialog.izin_kaydedildi.connect(self._load_data)
-        dialog.exec()
-
-    def _hizli_saglik_gir(self):
-        """Hızlı sağlık muayene girişi için bir dialog açar."""
-        if not self.ozet_data.get("personel"):
-            QMessageBox.warning(self, "Hata", "Personel verisi yüklenemedi.")
+        
+        # Önceki form temizle
+        while self.form_layout.count() > 2:  # Header ve spacing hariç
+            item = self.form_layout.takeAt(2)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        # Panel tipine göre uygun form yükle
+        try:
+            if panel_type == "IZIN":
+                self.lbl_form_title.setText("➕ İzin Giriş")
+                # HızlıIzinGirisDialog'unu widget'a embed et
+                form = HizliIzinGirisDialog(self.db, self.ozet_data["personel"], parent=self)
+                form.izin_kaydedildi.connect(self._on_form_saved)
+                form.cancelled.connect(lambda: self.right_panel_stack.setCurrentIndex(0))
+                self.form_layout.addWidget(form, 1)
+                self._current_form = form
+            
+            elif panel_type == "SAGLIK":
+                self.lbl_form_title.setText("🩺 Muayene Giriş")
+                # HızlıSaglikGirisDialog'unu widget'a embed et
+                form = HizliSaglikGirisDialog(self.db, self.ozet_data["personel"], parent=self)
+                form.saglik_kaydedildi.connect(self._on_form_saved)
+                form.cancelled.connect(lambda: self.right_panel_stack.setCurrentIndex(0))
+                self.form_layout.addWidget(form, 1)
+                self._current_form = form
+        
+        except Exception as e:
+            logger.error(f"Form yükleme hatası ({panel_type}): {e}")
+            QMessageBox.critical(self, "Hata", f"Form yüklenemedi: {e}")
             return
-
-        dialog = HizliSaglikGirisDialog(self.db, self.ozet_data["personel"], self)
-        # Kayıt başarılı olduğunda verileri yenile
-        dialog.saglik_kaydedildi.connect(self._load_data)
-        dialog.exec()
+        
+        # Sayfa 1'e geç (İşlem Formu)
+        self.right_panel_stack.setCurrentIndex(1)
+    
+    def _on_form_saved(self):
+        """Form'da veri kaydedildiğinde çağrılır."""
+        self._load_data()
+        # Sayfa 0'a geri dön (Durum Özeti)
+        self.right_panel_stack.setCurrentIndex(0)
 
     def _load_data(self):
         """Verileri servisten çek ve UI güncelle."""

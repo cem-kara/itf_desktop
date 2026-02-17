@@ -23,95 +23,7 @@ from ui.theme_manager import ThemeManager
 
 
 # ─── MERKEZİ STİL YÖNETIMI ───
-S = {
-    "page": "background-color: transparent;",
-    "group": """
-        QGroupBox {
-            background-color: rgba(30, 32, 44, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            margin-top: 14px; padding: 16px 12px 12px 12px;
-            font-size: 13px; font-weight: bold; color: #8b8fa3;
-        }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            padding: 0 8px; color: #6bd3ff;
-        }
-    """,
-    "label": "color: #8b8fa3; font-size: 12px; background: transparent;",
-    "value": "color: #e0e2ea; font-size: 13px; font-weight: 600; background: transparent;",
-    "combo": """
-        QComboBox {
-            background-color: #1e202c;
-            border: 1px solid #292b41; border-bottom: 2px solid #9dcbe3;
-            border-radius: 6px; padding: 5px 10px; font-size: 13px;
-            color: #e0e2ea; min-height: 24px;
-        }
-        QComboBox:focus { border-bottom: 2px solid #1d75fe; }
-        QComboBox::drop-down { border: none; width: 24px; }
-        QComboBox QAbstractItemView {
-            background-color: #1e202c; border: 1px solid rgba(255,255,255,0.1);
-            color: #c8cad0; selection-background-color: rgba(29,117,254,0.3);
-            selection-color: #ffffff;
-        }
-    """,
-    "date": """
-        QDateEdit {
-            background-color: #1e202c;
-            border: 1px solid #292b41; border-bottom: 2px solid #9dcbe3;
-            border-radius: 6px; padding: 5px 10px; font-size: 13px;
-            color: #e0e2ea; min-height: 24px;
-        }
-        QDateEdit:focus { border-bottom: 2px solid #1d75fe; }
-        QDateEdit::drop-down { border: none; width: 24px; }
-    """,
-    "file_btn": """
-        QPushButton {
-            background-color: rgba(255,255,255,0.06); color: #8b8fa3;
-            border: 1px solid rgba(255,255,255,0.08); border-radius: 6px;
-            padding: 8px 16px; font-size: 12px;
-        }
-        QPushButton:hover { background-color: rgba(255,255,255,0.10); color: #c8cad0; }
-    """,
-    "danger_btn": """
-        QPushButton {
-            background-color: rgba(239, 68, 68, 0.25); color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px;
-            padding: 12px 28px; font-size: 14px; font-weight: bold;
-        }
-        QPushButton:hover { background-color: rgba(239, 68, 68, 0.4); color: #ffffff; }
-        QPushButton:disabled {
-            background-color: rgba(255,255,255,0.05); color: #5a5d6e;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-    """,
-    "back_btn": """
-        QPushButton {
-            background-color: rgba(239, 68, 68, 0.15); color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px;
-            padding: 8px 16px; font-size: 13px; font-weight: 600;
-        }
-        QPushButton:hover { background-color: rgba(239, 68, 68, 0.3); color: #ffffff; }
-    """,
-    "header_name": "font-size: 18px; font-weight: bold; color: #e0e2ea; background: transparent;",
-    "separator": "QFrame { background-color: rgba(255, 255, 255, 0.06); }",
-    "stat_label": "color: #8b8fa3; font-size: 12px; background: transparent;",
-    "stat_value": "color: #e0e2ea; font-size: 14px; font-weight: bold; background: transparent;",
-    "stat_green": "color: #4ade80; font-size: 14px; font-weight: bold; background: transparent;",
-    "stat_red": "color: #f87171; font-size: 14px; font-weight: bold; background: transparent;",
-    "section_title": "color: #6bd3ff; font-size: 12px; font-weight: bold; background: transparent;",
-    "scroll": """
-        QScrollArea { border: none; background: transparent; }
-        QWidget { background: transparent; }
-        QScrollBar:vertical {
-            background: transparent; width: 5px;
-        }
-        QScrollBar::handle:vertical {
-            background: rgba(255,255,255,0.12); border-radius: 2px; min-height: 30px;
-        }
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
-    """,
-}
+S = ThemeManager.get_all_component_styles()
 
 
 # ═══════════════════════════════════════════════
@@ -492,7 +404,6 @@ class IstenAyrilikPage(QWidget):
         self.btn_onayla = QPushButton("⚠️ ONAYLA VE BİTİR")
         self.btn_onayla.setStyleSheet(S["danger_btn"])
         self.btn_onayla.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_onayla.setFixedHeight(45)
         self.btn_onayla.clicked.connect(self._on_confirm)
         onay_l.addWidget(self.btn_onayla)
 

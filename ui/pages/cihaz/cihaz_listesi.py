@@ -77,7 +77,6 @@ class CihazListesiPage(QWidget):
         # Yenile Butonu
         self.btn_refresh = QPushButton("⟳ Yenile")
         self.btn_refresh.setToolTip("Listeyi Yenile")
-        self.btn_refresh.setFixedSize(100, 36)
         self.btn_refresh.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_refresh.setStyleSheet(S["refresh_btn"])
         fl.addWidget(self.btn_refresh)
@@ -85,7 +84,6 @@ class CihazListesiPage(QWidget):
         # Kapat Butonu
         self.btn_kapat = QPushButton("✕ Kapat")
         self.btn_kapat.setToolTip("Kapat")
-        self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kapat.setStyleSheet(S["close_btn"])
         fl.addWidget(self.btn_kapat)
@@ -125,8 +123,6 @@ class CihazListesiPage(QWidget):
         self.btn_new = QPushButton("➕ YENİ CİHAZ EKLE")
         self.btn_new.setStyleSheet(S["action_btn"])
         self.btn_new.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_new.setFixedHeight(40)
-        self.btn_new.setFixedWidth(200)
         footer.addWidget(self.btn_new)
 
         layout.addLayout(footer)
