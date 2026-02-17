@@ -665,11 +665,7 @@ class RKEYonetimPage(QWidget):
         self._secili = row_data
         self._fill_form(row_data)
         self._gecmis_yukle(row_data.get("EkipmanNo", ""))
-<<<<<<< HEAD
         self.btn_kaydet.setText("GÜNCELLE")
-=======
-        self.btn_kaydet.setText("✓  GÜNCELLE")
->>>>>>> 2039ff2a97f96e87ebba357b0622ca89e8af45e6
 
     def _show_context_menu(self, pos):
         idx = self._table.indexAt(pos)

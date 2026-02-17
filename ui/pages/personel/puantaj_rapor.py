@@ -151,10 +151,7 @@ class PuantajRaporPage(QWidget):
         self.btn_getir = QPushButton("Raporu Olustur")
         self.btn_getir.setStyleSheet(S["report_btn"])
         self.btn_getir.setCursor(QCursor(Qt.PointingHandCursor))
-<<<<<<< HEAD
         IconRenderer.set_button_icon(self.btn_getir, "clipboard_list", color=DarkTheme.TEXT_PRIMARY, size=14)
-=======
->>>>>>> 2039ff2a97f96e87ebba357b0622ca89e8af45e6
         fp.addWidget(self.btn_getir)
 
         self._add_sep(fp)

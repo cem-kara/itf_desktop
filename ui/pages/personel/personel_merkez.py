@@ -389,7 +389,7 @@ class PersonelMerkezPage(QWidget):
         except Exception as e:
             logger.error(f"Modül yükleme hatası ({code}): {e}")
             lbl = QLabel(f"Modül yüklenemedi: {code}\n{e}")
-            lbl.setStyleSheet(f"color: {Colors.DANGER};")
+            lbl.setStyleSheet(f"color: {Colors.RED_400};")
             lbl.setAlignment(Qt.AlignCenter)
             return lbl
 

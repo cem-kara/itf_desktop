@@ -316,7 +316,7 @@ class IstenAyrilikPage(QWidget):
         IconRenderer.set_button_icon(self.btn_dosya, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
         dosya_h.addWidget(self.btn_dosya)
         self.lbl_dosya = QLabel("")
-        self.lbl_dosya.setStyleSheet(f"color: {Colors.SUCCESS}; font-size: 11px; background: transparent;")
+        self.lbl_dosya.setStyleSheet(f"color: {Colors.GREEN_400}; font-size: 11px; background: transparent;")
         dosya_h.addWidget(self.lbl_dosya, 1)
         fg.addLayout(dosya_h, 2, 1)
 
@@ -341,7 +341,7 @@ class IstenAyrilikPage(QWidget):
             dg.addWidget(l, i, 0)
             if val and str(val).startswith("http"):
                 v = QLabel("Mevcut")
-                v.setStyleSheet(f"color: {Colors.SUCCESS}; font-size: 12px; background: transparent;")
+                v.setStyleSheet(f"color: {Colors.GREEN_400}; font-size: 12px; background: transparent;")
             else:
                 v = QLabel("—")
                 v.setStyleSheet(f"color: {DarkTheme.TEXT_DISABLED}; font-size: 12px; background: transparent;")
@@ -401,7 +401,7 @@ class IstenAyrilikPage(QWidget):
             "• Eski Drive dosyalarını silecek"
         )
         uyari.setWordWrap(True)
-        uyari.setStyleSheet(f"color: {Colors.DANGER}; font-size: 12px; background: transparent;")
+        uyari.setStyleSheet(f"color: {Colors.RED_400}; font-size: 12px; background: transparent;")
         onay_l.addWidget(uyari)
 
         self.btn_onayla = QPushButton("ONAYLA VE BITIR")
