@@ -416,8 +416,8 @@ class TopluMuayeneDialog(QDialog):
 
         h_dosya = QHBoxLayout()
         self._lbl_dosya = QLabel("Dosya seçilmedi")
-        self._lbl_dosya.setStyleSheet(S.get("label", ""))
-        btn_dosya = QPushButton("Rapor Sec")
+        self._lbl_dosya.setStyleSheet("color:#8b8fa3; font-size:11px;")
+        btn_dosya = QPushButton("Ortak Rapor Sec")
         btn_dosya.setStyleSheet(S.get("file_btn", ""))
         btn_dosya.clicked.connect(self._sec_dosya)
         IconRenderer.set_button_icon(btn_dosya, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)

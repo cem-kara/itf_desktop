@@ -90,20 +90,20 @@ class KosulDelegate(QStyledItemDelegate):
                 background-color: {DarkTheme.INPUT_BG}; color: {DarkTheme.TEXT_PRIMARY};
                 border: 2px solid {DarkTheme.INPUT_BORDER_FOCUS}; border-radius: 4px;
                 padding: 4px 8px; font-size: 12px; min-height: 24px;
-            }
-            QComboBox::drop-down { border: none; width: 26px; }
+            },
+            QComboBox::drop-down { border: none; width: 26px; },
             QComboBox::down-arrow {
                 image: none;
                 border-left: 5px solid transparent;
                 border-right: 5px solid transparent;
                 border-top: 6px solid {DarkTheme.INPUT_BORDER_FOCUS};
                 margin-right: 8px;
-            }
+            },
             QComboBox QAbstractItemView {
                 background-color: {DarkTheme.INPUT_BG}; color: {DarkTheme.TEXT_SECONDARY};
                 selection-background-color: rgba(29,117,254,0.4);
                 selection-color: {Colors.WHITE}; border: 1px solid {DarkTheme.INPUT_BORDER_FOCUS};
-            }
+            },
             QComboBox QAbstractItemView::item { min-height: 28px; padding: 4px; }
         """)
         editor.showPopup()

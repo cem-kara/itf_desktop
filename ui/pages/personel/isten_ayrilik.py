@@ -425,15 +425,15 @@ class IstenAyrilikPage(QWidget):
         self.progress.setVisible(False)
         self.progress.setRange(0, 0)
         self.progress.setStyleSheet(f"""
-            QProgressBar {
+            QProgressBar {{
                 background-color: rgba(255,255,255,0.05);
                 border: 1px solid rgba(255,255,255,0.08);
                 border-radius: 4px; color: {DarkTheme.TEXT_MUTED}; font-size: 11px;
-            }
-            QProgressBar::chunk {
+            }}
+            QProgressBar::chunk {{
                 background-color: rgba(239, 68, 68, 0.6);
                 border-radius: 3px;
-            }
+            }}
         """)
         main.addWidget(self.progress)
 

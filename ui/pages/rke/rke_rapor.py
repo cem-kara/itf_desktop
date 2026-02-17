@@ -382,18 +382,18 @@ class RaporOlusturucuThread(QThread):
         try:
             from database.sqlite_manager import SQLiteManager
             from core.di import get_registry, get_cloud_adapter
+            from database.google.utils import resolve_storage_target
 
             db       = SQLiteManager()
             registry = get_registry(db)
             all_sabit = registry.get("Sabitler").get_all()
-            folder_id = next(
-                (str(r.get("Aciklama", "")).strip()
-                 for r in all_sabit
-                 if r.get("Kod") == "Sistem_DriveID" and r.get("MenuEleman") == "RKE_Raporlar"),
-                ""
-            )
+            storage_target = resolve_storage_target(all_sabit, "RKE_Raporlar")
             cloud = get_cloud_adapter()
-            link  = cloud.upload_file(dosya_adi, parent_folder_id=folder_id)
+            link  = cloud.upload_file(
+                dosya_adi,
+                parent_folder_id=storage_target["drive_folder_id"],
+                offline_folder_name=storage_target["offline_folder_name"]
+            )
             if link:
                 self.log_mesaji.emit("BASARILI: Drive'a yuklendi.")
             else:
