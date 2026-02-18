@@ -1,5 +1,6 @@
 from database.repository_registry import RepositoryRegistry
 from database.cloud_adapter import get_cloud_adapter as _get_cloud_adapter
+from database.repository_registry import RepositoryRegistry
 
 
 _fallback_registry_cache = {}

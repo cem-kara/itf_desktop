@@ -213,16 +213,15 @@ class KayitWorkerThread(QThread):
             # Drive yükleme
             if self._dosya_yolu:
                 from core.di import get_cloud_adapter
+                from database.google.utils import resolve_storage_target
                 cloud = get_cloud_adapter()
-                # Klasör ID'sini Sabitler'den al
-                all_sabit    = registry.get("Sabitler").get_all()
-                rke_folder   = next(
-                    (str(r.get("Aciklama", "")).strip()
-                     for r in all_sabit
-                     if r.get("Kod") == "Sistem_DriveID" and r.get("MenuEleman") == "RKE_Raporlar"),
-                    ""
+                all_sabit = registry.get("Sabitler").get_all()
+                storage_target = resolve_storage_target(all_sabit, "RKE_Raporlar")
+                link = cloud.upload_file(
+                    self._dosya_yolu,
+                    parent_folder_id=storage_target["drive_folder_id"],
+                    offline_folder_name=storage_target["offline_folder_name"]
                 )
-                link = cloud.upload_file(self._dosya_yolu, parent_folder_id=rke_folder)
                 if link:
                     self._veri["Rapor"] = link
                 else:
@@ -285,15 +284,15 @@ class TopluKayitWorkerThread(QThread):
             dosya_link = ""
             if self._dosya_yolu:
                 from core.di import get_cloud_adapter
+                from database.google.utils import resolve_storage_target
                 cloud        = get_cloud_adapter()
                 all_sabit    = registry.get("Sabitler").get_all()
-                rke_folder   = next(
-                    (str(r.get("Aciklama", "")).strip()
-                     for r in all_sabit
-                     if r.get("Kod") == "Sistem_DriveID" and r.get("MenuEleman") == "RKE_Raporlar"),
-                    ""
-                )
-                dosya_link = cloud.upload_file(self._dosya_yolu, parent_folder_id=rke_folder) or ""
+                storage_target = resolve_storage_target(all_sabit, "RKE_Raporlar")
+                dosya_link = cloud.upload_file(
+                    self._dosya_yolu,
+                    parent_folder_id=storage_target["drive_folder_id"],
+                    offline_folder_name=storage_target["offline_folder_name"]
+                ) or ""
 
             for ekipman_no in self._ekipmanlar:
                 item = self._ortak_veri.copy()

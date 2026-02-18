@@ -188,3 +188,17 @@ Bu dosya 15.02.2026 tarihli referans rapordur. Asagidaki maddeler, sonrasinda pr
 - Kalan fazlar:
   - sync katmanini adapter-aware refactor
   - UI'deki dogrudan GoogleDriveService cagri noktalarini adapter'a tasima
+
+## Ek D) 2026-02-18 Guncelleme (Offline/Online Gecisi)
+
+Yapilanlar (net):
+- Asama 1-3 kapsaminda eksik importlar ve `APP_MODE` varsayilani duzeltildi.
+- Offline local upload altyapisi eklendi:
+  - `database/cloud_adapter.py`: offline modda `data/offline_uploads/<klasor>` altina kopyalama.
+  - `database/google/utils.py`: `resolve_storage_target` eklendi.
+- RKE modulu test icin stabilize edildi:
+  - `rke_muayene` ve `rke_rapor` upload akislarinda `offline_folder_name` kullaniliyor.
+  - `rke_rapor` mesajlari offline icin “Yerel klasore kaydedildi” seklinde guncellendi.
+
+Not:
+- Bu ortamda `python/py` komutu bulunmadigi icin `py_compile` dogrulamalari calistirilamadi.

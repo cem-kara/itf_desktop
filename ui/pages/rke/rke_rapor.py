@@ -395,7 +395,10 @@ class RaporOlusturucuThread(QThread):
                 offline_folder_name=storage_target["offline_folder_name"]
             )
             if link:
-                self.log_mesaji.emit("BASARILI: Drive'a yuklendi.")
+                if cloud.is_online and str(link).startswith("http"):
+                    self.log_mesaji.emit("BASARILI: Drive'a yuklendi.")
+                else:
+                    self.log_mesaji.emit("BASARILI: Yerel klasore kaydedildi.")
             else:
                 self.log_mesaji.emit("UYARI: Drive yukleme atlandi/basarisiz (offline olabilir).")
         except Exception as e:
@@ -748,7 +751,7 @@ class RKERaporPage(QWidget):
         self._btn_olustur.setText("PDF RAPOR OLUSTUR")
         QMessageBox.information(
             self, "Tamamlandı",
-            "Rapor işlemi tamamlandı. PDF oluşturulduysa Drive'a yüklenmiştir."
+            "Rapor işlemi tamamlandı. PDF oluşturulduysa Drive'a veya yerel klasore kaydedilmiştir."
         )
 
     def _on_log(self, msg):

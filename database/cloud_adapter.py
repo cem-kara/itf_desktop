@@ -8,8 +8,11 @@ Amaç:
 """
 
 from abc import ABC, abstractmethod
+import os
+import shutil
 
 from core.config import AppConfig
+from core.paths import DATA_DIR
 from core.logger import logger
 
 
@@ -29,7 +32,7 @@ class CloudAdapter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def upload_file(self, file_path, parent_folder_id=None, custom_name=None):
+    def upload_file(self, file_path, parent_folder_id=None, custom_name=None, offline_folder_name=None):
         raise NotImplementedError
 
     @abstractmethod
@@ -66,7 +69,7 @@ class OnlineCloudAdapter(CloudAdapter):
             logger.error(f"Cloud health_check hatasi: {e}")
             return False, str(e)
 
-    def upload_file(self, file_path, parent_folder_id=None, custom_name=None):
+    def upload_file(self, file_path, parent_folder_id=None, custom_name=None, offline_folder_name=None):
         drive = self._get_drive()
         return drive.upload_file(
             file_path,
@@ -96,9 +99,43 @@ class OfflineCloudAdapter(CloudAdapter):
     def health_check(self):
         return False, "offline_mode"
 
-    def upload_file(self, file_path, parent_folder_id=None, custom_name=None):
-        logger.info("Offline mod: upload_file atlandi")
-        return None
+    def upload_file(self, file_path, parent_folder_id=None, custom_name=None, offline_folder_name=None):
+        """
+        Offline modda dosyayi yerel klasore kopyalar.
+        """
+        if not file_path or not os.path.exists(file_path):
+            logger.info("Offline mod: upload_file atlandi (dosya yok)")
+            return None
+
+        base_dir = os.path.join(DATA_DIR, "offline_uploads/d")
+        folder = offline_folder_name or "Genel"
+        safe_folder = "".join(c for c in folder if c.isalnum() or c in ("-", "_", " ")).strip() or "Genel"
+        target_dir = os.path.join(base_dir, safe_folder)
+        os.makedirs(target_dir, exist_ok=True)
+
+        if custom_name:
+            name = custom_name
+        else:
+            name = os.path.basename(file_path)
+
+        target_path = os.path.join(target_dir, name)
+        if os.path.exists(target_path):
+            root, ext = os.path.splitext(name)
+            i = 1
+            while True:
+                candidate = os.path.join(target_dir, f"{root}_{i}{ext}")
+                if not os.path.exists(candidate):
+                    target_path = candidate
+                    break
+                i += 1
+
+        try:
+            shutil.copy2(file_path, target_path)
+            logger.info(f"Offline mod: dosya yerel kaydedildi -> {target_path}")
+            return target_path
+        except Exception as e:
+            logger.warning(f"Offline mod: dosya kaydedilemedi: {e}")
+            return None
 
     def find_or_create_folder(self, folder_name, parent_folder_id=None):
         logger.info("Offline mod: find_or_create_folder atlandi")

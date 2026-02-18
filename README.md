@@ -187,6 +187,17 @@ Geçiş durumu (2026-02-17):
 - Başlatıldı: Offline modda `main_window` sync davranışı devre dışı bırakma.
 - Planlanan: Sync servisi ve tüm Google çağrılarının adapter üzerinden taşınması.
 
+Geçiş durumu güncellemesi (2026-02-18):
+
+- Aşama 1-3 düzeltmeleri: eksik importlar ve varsayılan `APP_MODE` değeri düzeltildi.
+- Offline local upload altyapısı eklendi:
+  - `database/cloud_adapter.py`: offline modda `data/offline_uploads/<klasor>` altına kopyalama.
+  - `database/google/utils.py`: `resolve_storage_target` eklendi (Drive ID + offline klasör adı).
+- RKE tarafı test için stabilize edildi:
+  - `rke_muayene` ve `rke_rapor` upload akışları `offline_folder_name` ile uyumlu.
+  - `rke_rapor` mesajları offline için “Yerel klasöre kaydedildi” şeklinde güncellendi.
+- Not: Bu ortamda `python/py` komutu bulunmadığından `py_compile` doğrulaması çalıştırılamadı.
+
 ---
 
 ## 🚀 Çalıştırma
@@ -488,12 +499,14 @@ python main.pyw  # Yeni DB oluşturulacak
 
 ## 📚 Dokümantasyon
 
-Daha fazla bilgi için:
-- [Operasyon ve Raporlama Merkezi](docs/OPERASYON_VE_RAPORLAMA_MERKEZI.md)
-- [Detaylı Proje Dokümantasyonu](docs/proje_dokumantasyonu.md)
-- Not: Modül dokümantasyonları (Personel/Cihaz/RKE/Admin/Veri-Sync) bu dosya içinde birleştirilmiştir.
-- [Gizli Bilgi Yönetimi](SECRETS_MANAGEMENT.md)
-- [Geliştirme TODO Listesi](TODO.md)
+Güncel dokümanlar:
+- `docs/DURUM_VE_YOL_HARITASI.md` (yapılanlar + yapılacaklar + net durum)
+- `docs/MIMARI_OVERVIEW.md` (mimari özet)
+- `docs/ARSIV_INDEX.md` (arşive alınan eski dokümanların listesi)
+
+Diğer:
+- `SECRETS_MANAGEMENT.md`
+- `TODO.md`
 
 ---
 

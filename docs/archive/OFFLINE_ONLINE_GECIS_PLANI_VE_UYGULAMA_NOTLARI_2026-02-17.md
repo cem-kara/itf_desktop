@@ -168,3 +168,29 @@ RKE derleme dogrulamasi:
 
 Bu dokuman tarihli gecis kaydidir. Guncel operasyon durumu icin:
 - `docs/OPERASYON_VE_RAPORLAMA_MERKEZI.md`
+
+## 9) 2026-02-18 Guncelleme (Net Durum Ozeti)
+
+### A) Asama 1-3 Duzeltmeleri (Derleme/Calisma Hatasi Giderildi)
+- `core/config.py`: cift `import json` temizlendi; `APP_MODE = DEFAULT_MODE`, `APP_MODE_SOURCE = "default"` seklinde duzeltildi.
+- `core/di.py`: `RepositoryRegistry` importu eklendi.
+- `database/gsheet_manager.py`: `import time` eklendi.
+- `database/sync_worker.py`: `QThread`, `Signal` importlari eklendi.
+- Not: Ortamda `python/py` komutu olmadigi icin `py_compile` dogrulamasi calistirilamadi.
+
+### B) Offline Local Upload Altyapisi (Asama 2-4 Arasi)
+- `database/cloud_adapter.py`: `upload_file(..., offline_folder_name=None)` imzasina gecildi.
+  - Offline modda dosya `data/offline_uploads/<klasor>` altina kopyalaniyor.
+  - Cakisma durumunda `_1`, `_2` ekleniyor.
+- `database/google/utils.py`: `resolve_storage_target(all_sabit, folder_name)` eklendi.
+  - Online: `Sistem_DriveID` -> `Aciklama` (Drive ID)
+  - Offline: `Sistem_DriveID` -> `MenuEleman` (klasor adi)
+
+### C) RKE Modulu (Test icin stabil hale getirildi)
+- `ui/pages/rke/rke_muayene.py`: upload akisi `resolve_storage_target` + `offline_folder_name` kullanacak sekilde guncellendi.
+- `ui/pages/rke/rke_rapor.py`: offline durumda "Yerel klasore kaydedildi" mesaji eklendi, final bilgi metni guncellendi.
+- `ui/pages/rke/rke_yonetim.py`: Drive/upload kullanimi yok, degisiklik gerekmedi.
+
+### D) Devam Eden Isler
+- Personel ve Cihaz tarafindaki upload noktalarinin `resolve_storage_target` + `offline_folder_name` ile standardize edilmesi.
+- Offline/online davranislarinin UI mesajlarinda netlestirilmesi.

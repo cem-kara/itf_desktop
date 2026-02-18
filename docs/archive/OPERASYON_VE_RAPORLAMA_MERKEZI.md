@@ -131,3 +131,17 @@ Onay Kriterleri:
 - Test suiti yesil (`pytest -v`).
 - Merkezi sozlesme testleri yesil (`test_contract_smoke`, `test_personel_saglik_takip_contract`).
 - Dokuman yonlendirmeleri merkezi kaynaga bagli.
+
+## 9) 2026-02-18 Guncelleme (Offline/Online Gecisi)
+
+Yapilanlar (net):
+- Asama 1-3 kapsaminda eksik importlar ve `APP_MODE` varsayilani duzeltildi.
+- Offline local upload altyapisi eklendi:
+  - `database/cloud_adapter.py`: offline modda `data/offline_uploads/<klasor>` altina kopyalama.
+  - `database/google/utils.py`: `resolve_storage_target` eklendi.
+- RKE modulu test icin stabilize edildi:
+  - `rke_muayene` ve `rke_rapor` upload akislarinda `offline_folder_name` kullaniliyor.
+  - `rke_rapor` mesajlari offline icin “Yerel klasore kaydedildi” seklinde guncellendi.
+
+Not:
+- Bu ortamda `python/py` komutu bulunmadigi icin `py_compile` dogrulamalari calistirilamadi.

@@ -89,6 +89,28 @@ def extract_file_id_from_link(drive_link: str) -> Optional[str]:
     return None
 
 
+def resolve_storage_target(all_sabit: list, folder_name: str) -> Dict[str, str]:
+    """
+    Sistem_DriveID kayitlarini tarayip hedef klasor icin online/offline bilgi dondurur.
+
+    Online: Aciklama -> Drive ID
+    Offline: MenuEleman -> yerel klasor adi
+    """
+    drive_id = ""
+    offline_name = ""
+    for r in all_sabit or []:
+        if str(r.get("Kod", "")).strip() != "Sistem_DriveID":
+            continue
+        if str(r.get("MenuEleman", "")).strip() == str(folder_name).strip():
+            drive_id = str(r.get("Aciklama", "")).strip()
+            offline_name = str(r.get("MenuEleman", "")).strip()
+            break
+    return {
+        "drive_folder_id": drive_id,
+        "offline_folder_name": offline_name or str(folder_name).strip()
+    }
+
+
 # Tablo adından (vt_tipi, sayfa_adi) eşlemesi
 TABLE_TO_SHEET_MAP = {
     # personel vt

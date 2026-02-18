@@ -6,7 +6,7 @@ from core.paths import BASE_DIR
 
 class AppConfig:
     APP_NAME = "Radyoloji Envanter ve Personel Yönetim Sistemi"
-    VERSION = "1.0.3"
+    VERSION = "1.0.8"
 
     AUTO_SYNC = True
     SYNC_INTERVAL_MIN = 15
@@ -14,7 +14,7 @@ class AppConfig:
     # Uygulama çalışma modu
     MODE_ONLINE = "online"
     MODE_OFFLINE = "offline"
-    DEFAULT_MODE = MODE_ONLINE
+    DEFAULT_MODE = MODE_OFFLINE
 
     SETTINGS_PATH = os.path.join(BASE_DIR, "ayarlar.json")
     CREDENTIALS_PATH = os.path.join(BASE_DIR, "database", "credentials.json")

@@ -1,4 +1,5 @@
 from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import QThread, Signal
 from core.logger import logger, log_sync_error, get_user_friendly_error
 from core.config import AppConfig
 
