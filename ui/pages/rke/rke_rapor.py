@@ -1,49 +1,531 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
-RKE Raporlama – Ana Sayfa (Koordinatör)
-─────────────────────────────────────────
-Bu dosya mevcut import path'ini korur; iş mantığı alt modüllere taşınmıştır:
+RKE Raporlama Sayfası
+──────────────────────
+• Filtre paneli: ABD / Birim / Tarih + rapor türü (Genel / Hurda / Personel Bazlı)
+• QAbstractTableModel tablosu
+• PDF oluşturma ve Google Drive'a yükleme
+• itf_desktop mimarisine uygun (get_registry(db), core.logger, GoogleDriveService)
+"""
+import os
+import datetime
 
-  rke/rapor/rke_pdf_builder.py   → HTML şablonları, pdf_olustur()
-  rke/rapor/rke_rapor_models.py  → RaporTableModel
-  rke/rapor/rke_rapor_workers.py → VeriYukleyiciThread, RaporOlusturucuThread
-"""
-from PySide6.QtCore import Qt, QSortFilterProxyModel
+from PySide6.QtCore import (
+    Qt, QThread, Signal,
+    QAbstractTableModel, QModelIndex, QSortFilterProxyModel
+)
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QProgressBar, QFrame, QComboBox, QLineEdit,
     QGroupBox, QMessageBox, QTableView, QHeaderView,
     QAbstractItemView, QRadioButton, QButtonGroup, QSizePolicy,
+    QFileDialog
 )
-from PySide6.QtGui import QCursor
+from PySide6.QtGui import (
+    QColor, QCursor,
+    QTextDocument, QPdfWriter, QPageSize, QPageLayout, QFont
+)
+from PySide6.QtCore import QMarginsF
 
 from core.logger import logger
+from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
 from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer
 
-from ui.pages.rke.rapor.rke_rapor_models import RaporTableModel, COLUMNS
-from ui.pages.rke.rapor.rke_rapor_workers import VeriYukleyiciThread, RaporOlusturucuThread, _parse_date
-
+# ─── Merkezi Stiller ───
 S = ThemeManager.get_all_component_styles()
 
+# ─── Tablo sütun tanımları ───
+COLUMNS = [
+    ("EkipmanNo",  "Ekipman No",   110),
+    ("Cins",       "Cins",         120),
+    ("Pb",         "Pb (mm)",       80),
+    ("Birim",      "Birim",        130),
+    ("Tarih",      "Tarih",         90),
+    ("Sonuc",      "Sonuç",        140),
+    ("Aciklama",   "Açıklama",     200),
+    ("KontrolEden","Kontrol Eden", 140),
+]
+
+# Rapor Türleri
+RAPOR_TIPLERI = {
+    1: "Genel Kontrol Raporu",
+    2: "Hurda (HEK) Raporu",
+    3: "Ana Bilim Dalı Envanter Listesi",
+    4: "Ana Bilim Dalı + Birim Envanter Listesi",
+}
+
+SONUC_RENK = {
+    "Kullanıma Uygun":       QColor(DarkTheme.STATUS_SUCCESS),
+    "Kullanıma Uygun Değil": QColor(DarkTheme.STATUS_ERROR),
+}
+
+
+# ═══════════════════════════════════════════════
+#  PDF ŞABLONLARI
+# ═══════════════════════════════════════════════
+
+def _base_css():
+    return """
+        body { font-family: 'Times New Roman', serif; font-size: 11pt; color: #000; }
+        h1 { text-align: center; font-size: 14pt; font-weight: bold; margin-bottom: 5px; }
+        h2 { font-size: 12pt; font-weight: bold; margin-top: 15px; text-decoration: underline; }
+        .center { text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10pt; }
+        th, td { border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle; }
+        th { background-color: #f0f0f0; font-weight: bold; }
+        .left { text-align: left; }
+        .sig-table { width: 100%; border: none; margin-top: 40px; }
+        .sig-table td { border: none; text-align: center; vertical-align: top; padding: 20px; }
+        .line { border-top: 1px solid #000; width: 80%; margin: 30px auto 0; }
+        .legal { text-align: justify; margin: 5px 0; line-height: 1.4; }
+    """
+
+
+def html_genel_rapor(veriler, filtre_ozeti):
+    tarih = datetime.datetime.now().strftime("%d.%m.%Y")
+    rows  = "".join(
+        f"<tr><td>{r['Cins']}</td><td>{r['EkipmanNo']}</td><td>{r['Pb']}</td>"
+        f"<td>{r['Tarih']}<br>{r['Sonuc']}</td>"
+        f"<td class='left'>{r['Aciklama']}</td></tr>"
+        for r in veriler
+    )
+    return f"""
+    <html><head><style>{_base_css()}</style></head><body>
+    <h1>RADYASYON KORUYUCU EKİPMAN (RKE) KONTROL RAPORU</h1>
+    <div class="center">Filtre: {filtre_ozeti} | Tarih: {tarih}</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Koruyucu Cinsi</th><th>Ekipman No</th><th>Pb (mm)</th>
+          <th>Kontrol (Tarih – Sonuç)</th><th>Açıklama</th>
+        </tr>
+      </thead>
+      <tbody>{rows}</tbody>
+    </table>
+    <p style="font-size:9pt; font-style:italic; margin-top:8px;">
+      * Bu form toplu kontroller için üretilmiştir.
+    </p>
+    <table class="sig-table">
+      <tr>
+        <td><b>Kontrol Eden</b><div class="line">İmza</div></td>
+        <td><b>Birim Sorumlusu</b><div class="line">İmza</div></td>
+        <td><b>Radyasyon Koruma Sorumlusu</b><div class="line">İmza</div></td>
+      </tr>
+    </table>
+    </body></html>
+    """
+
+
+def html_hurda_rapor(veriler):
+    tarih = datetime.datetime.now().strftime("%d.%m.%Y")
+    rows  = ""
+    for i, r in enumerate(veriler, 1):
+        sorunlar = []
+        if "Değil" in r.get("Sonuc", ""):
+            sorunlar.append(f"Muayene: {r['Sonuc']}")
+        if r.get("Aciklama"):
+            sorunlar.append(r["Aciklama"])
+        rows += (
+            f"<tr><td>{i}</td><td>{r['Cins']}</td><td>{r['EkipmanNo']}</td>"
+            f"<td>{r.get('ABD','')}</td><td>{r['Pb']}</td>"
+            f"<td class='left'>{' | '.join(sorunlar)}</td></tr>"
+        )
+    return f"""
+    <html><head><style>{_base_css()}</style></head><body>
+    <h1>HURDA (HEK) EKİPMAN TEKNİK RAPORU</h1>
+    <div class="center">Tarih: {tarih}</div>
+    <h2>A. İmha Edilecek Ekipman Listesi</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Sıra</th><th>Cinsi</th><th>Ekipman No</th>
+          <th>Bölüm</th><th>Pb (mm)</th><th>Uygunsuzluk</th>
+        </tr>
+      </thead>
+      <tbody>{rows}</tbody>
+    </table>
+    <h2>B. Teknik Rapor ve Talep</h2>
+    <p class="legal">
+      Yukarıda bilgileri belirtilen ekipmanların fiziksel veya radyolojik bütünlüklerini
+      yitirdikleri tespit edilmiştir. Hizmet dışı bırakılarak (HEK) demirbaş kayıtlarından
+      düşülmesi arz olunur.
+    </p>
+    <table class="sig-table">
+      <tr>
+        <td><b>Kontrol Eden</b><div class="line">İmza</div></td>
+        <td><b>Birim Sorumlusu</b><div class="line">İmza</div></td>
+        <td><b>RKS</b><div class="line">İmza</div></td>
+      </tr>
+    </table>
+    </body></html>
+    """
+
+
+def html_abd_envanter_rapor(veriler, filtre_ozeti):
+    """Ana Bilim Dalı Genel Envanter Listesi"""
+    tarih = datetime.datetime.now().strftime("%d.%m.%Y")
+    rows = "".join(
+        f"<tr><td>{v['EkipmanNo']}</td><td>{v['Cins']}</td>"
+        f"<td>{v['Pb']}</td><td>{v['Birim']}</td>"
+        f"<td>{v.get('HizmetYili', '-')}</td>"
+        f"<td class='left'>{v.get('Aciklama', '-')}</td></tr>"
+        for v in veriler
+    )
+    return f"""
+    <html><head><style>{_base_css()}</style></head><body>
+    <h1>RADYASYON KORUYUCU EKİPMAN (RKE) ENVANTERI</h1>
+    <h2>Ana Bilim Dalı: {filtre_ozeti}</h2>
+    <div class="center">Rapor Tarihi: {tarih}</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Ekipman No</th><th>Cinsi</th><th>Pb (mm)</th><th>Birim</th><th>Yıl</th><th>Açıklama</th>
+        </tr>
+      </thead>
+      <tbody>{rows}</tbody>
+    </table>
+    <p style="font-size:9pt; margin-top:15px;">Toplam Ekipman: {len(veriler)} adet</p>
+    </body></html>
+    """
+
+
+def html_abd_birim_envanter_rapor(veriler, filtre_ozeti):
+    """Ana Bilim Dalı + Birim Genel Envanter Listesi"""
+    tarih = datetime.datetime.now().strftime("%d.%m.%Y")
+    rows = "".join(
+        f"<tr><td>{v['EkipmanNo']}</td><td>{v['Cins']}</td>"
+        f"<td>{v['Pb']}</td><td>{v.get('HizmetYili', '-')}</td>"
+        f"<td>{v.get('Tarih', '-')}</td><td>{v.get('Sonuc', '-')}</td>"
+        f"<td class='left'>{v.get('Aciklama', '-')}</td></tr>"
+        for v in veriler
+    )
+    return f"""
+    <html><head><style>{_base_css()}</style></head><body>
+    <h1>RADYASYON KORUYUCU EKİPMAN (RKE) DETAYLI ENVANTERI</h1>
+    <h2>Filtre: {filtre_ozeti}</h2>
+    <div class="center">Rapor Tarihi: {tarih}</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Ekipman No</th><th>Cinsi</th><th>Pb (mm)</th><th>Yıl</th><th>Son Kontrol</th><th>Durum</th><th>Açıklama</th>
+        </tr>
+      </thead>
+      <tbody>{rows}</tbody>
+    </table>
+    <p style="font-size:9pt; margin-top:15px;">Toplam Ekipman: {len(veriler)} adet</p>
+    </body></html>
+    """
+
+
+def pdf_olustur(html_content: str, dosya_yolu: str) -> bool:
+    """HTML içeriğini A4 PDF olarak kaydeder."""
+    try:
+        doc = QTextDocument()
+        doc.setHtml(html_content)
+        writer = QPdfWriter(dosya_yolu)
+        writer.setPageSize(QPageSize(QPageSize.A4))
+        writer.setResolution(300)
+        layout = QPageLayout()
+        layout.setPageSize(QPageSize(QPageSize.A4))
+        layout.setOrientation(QPageLayout.Portrait)
+        layout.setMargins(QMarginsF(15, 15, 15, 15))
+        writer.setPageLayout(layout)
+        doc.print_(writer)
+        return True
+    except Exception as e:
+        logger.error(f"PDF oluşturma hatası: {e}")
+        return False
+
+
+# ═══════════════════════════════════════════════
+#  TABLO MODELİ
+# ═══════════════════════════════════════════════
+
+class RaporTableModel(QAbstractTableModel):
+
+    def __init__(self, data=None, parent=None):
+        super().__init__(parent)
+        self._data    = data or []
+        self._keys    = [c[0] for c in COLUMNS]
+        self._headers = [c[1] for c in COLUMNS]
+
+    def rowCount(self, parent=QModelIndex()):    return len(self._data)
+    def columnCount(self, parent=QModelIndex()): return len(COLUMNS)
+
+    def data(self, index, role=Qt.DisplayRole):
+        if not index.isValid(): return None
+        row = self._data[index.row()]
+        col = self._keys[index.column()]
+        if role == Qt.DisplayRole:
+            return str(row.get(col, ""))
+        if role == Qt.ForegroundRole and col == "Sonuc":
+            return SONUC_RENK.get(str(row.get(col, "")), QColor(DarkTheme.TEXT_MUTED))
+        if role == Qt.TextAlignmentRole:
+            return Qt.AlignCenter if col in ("Tarih", "Pb", "Sonuc") else Qt.AlignVCenter | Qt.AlignLeft
+        return None
+
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
+        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
+            return self._headers[section]
+        return None
+
+    def get_row(self, row_idx):
+        return self._data[row_idx] if 0 <= row_idx < len(self._data) else None
+
+    def set_data(self, data):
+        self.beginResetModel()
+        self._data = data or []
+        self.endResetModel()
+
+
+# ═══════════════════════════════════════════════
+#  WORKER THREAD'LER
+# ═══════════════════════════════════════════════
+
+class VeriYukleyiciThread(QThread):
+    """RKE_List + RKE_Muayene birleştirerek rapor verisi hazırlar."""
+    veri_hazir  = Signal(list, list, list, list)   # data, abd_listesi, birim_listesi, tarih_listesi
+    hata_olustu = Signal(str)
+
+    def run(self):
+        from database.sqlite_manager import SQLiteManager
+        from core.di import get_registry
+        db = None
+        try:
+            db       = SQLiteManager()
+            registry = get_registry(db)
+
+            envanter_map = {}
+            for row in registry.get("RKE_List").get_all():
+                eno = str(row.get("EkipmanNo", "")).strip()
+                if eno:
+                    envanter_map[eno] = {
+                        "ABD":   str(row.get("AnaBilimDali",    "")).strip(),
+                        "Birim": str(row.get("Birim",           "")).strip(),
+                        "Cins":  str(row.get("KoruyucuCinsi",   "")).strip(),
+                        "Pb":    str(row.get("KursunEsdegeri",  "")).strip(),
+                    }
+
+            birlesik = []
+            abd_set   = set()
+            birim_set = set()
+            tarih_set = set()
+
+            for row in registry.get("RKE_Muayene").get_all():
+                eno    = str(row.get("EkipmanNo",      "")).strip()
+                tarih  = str(row.get("FMuayeneTarihi", "")).strip()
+                fiz    = str(row.get("FizikselDurum",  "")).strip()
+                sko    = str(row.get("SkopiDurum",     "")).strip()
+                env    = envanter_map.get(eno, {})
+
+                abd_set.add(env.get("ABD",   ""))
+                birim_set.add(env.get("Birim", ""))
+                if tarih:
+                    tarih_set.add(tarih)
+
+                sonuc = (
+                    "Kullanıma Uygun Değil"
+                    if "Değil" in fiz or "Değil" in sko
+                    else "Kullanıma Uygun"
+                )
+
+                birlesik.append({
+                    "EkipmanNo":   eno,
+                    "Cins":        env.get("Cins",  ""),
+                    "Pb":          env.get("Pb",    ""),
+                    "Birim":       env.get("Birim", ""),
+                    "ABD":         env.get("ABD",   ""),
+                    "Tarih":       tarih,
+                    "Fiziksel":    fiz,
+                    "Skopi":       sko,
+                    "Sonuc":       sonuc,
+                    "KontrolEden": str(row.get("KontrolEdenUnvani", "")).strip(),
+                    "Aciklama":    str(row.get("Aciklamalar",       "")).strip(),
+                })
+
+            def parse_date(s):
+                for fmt in ("%Y-%m-%d", "%d.%m.%Y"):
+                    try:
+                        return datetime.datetime.strptime(s, fmt).date()
+                    except Exception:
+                        continue
+                return datetime.date.min
+
+            sirali_tarih = sorted(tarih_set, key=parse_date, reverse=True)
+
+            self.veri_hazir.emit(
+                birlesik,
+                sorted(abd_set   - {""}),
+                sorted(birim_set - {""}),
+                sirali_tarih
+            )
+        except Exception as e:
+            exc_logla("RKERapor.Worker", e)
+            self.hata_olustu.emit(str(e))
+        finally:
+            if db:
+                db.close()
+
+
+class RaporOlusturucuThread(QThread):
+    """PDF oluşturur ve Drive'a yükler."""
+    log_mesaji  = Signal(str)
+    islem_bitti = Signal()
+
+    def __init__(self, mod, veriler, ozet, filtre_info=None):
+        super().__init__()
+        self._mod    = mod     # 1: Genel, 2: Hurda, 3: ABD Envanter, 4: ABD+Birim Envanter
+        self._veriler = veriler
+        self._ozet   = ozet
+        self._filtre_info = filtre_info or {"abd": "", "birim": "", "tarih": ""}
+
+    def run(self):
+        gecici_dosyalar = []
+        try:
+            zaman = datetime.datetime.now().strftime("%d%m%Y")
+            
+            # Filtre bilgilerinden dosya adı bileşenleri oluştur
+            abd = self._filtre_info.get("abd", "").replace(" ", "_").replace("/", "_") or "Tum_Bolumler"
+            birim = self._filtre_info.get("birim", "").replace(" ", "_").replace("/", "_") or "Tum_Birimler"
+            
+            # Tarih formatını DD MM YYYY olarak düzenle
+            tarih_raw = self._filtre_info.get("tarih", "")
+            if tarih_raw:
+                try:
+                    # Çeşitli tarih formatlarını try et
+                    for fmt in ("%Y%m%d", "%d%m%Y", "%Y-%m-%d", "%d.%m.%Y"):
+                        try:
+                            dt = datetime.datetime.strptime(tarih_raw, fmt).date()
+                            tarih = dt.strftime("%d%m%Y")
+                            break
+                        except ValueError:
+                            continue
+                    else:
+                        tarih = zaman
+                except Exception:
+                    tarih = zaman
+            else:
+                tarih = zaman
+
+            if self._mod == 1:
+                # A. Genel Kontrol Raporu: RKE_Muayene_{ABD}_{Birim}_{Tarih}.pdf
+                if not self._veriler:
+                    self.log_mesaji.emit("UYARI: Rapor oluşturmak için veri bulunamadı.")
+                    return
+                dosya_adi = f"RKE_Muayene_{abd}_{birim}_{tarih}.pdf"
+                html = html_genel_rapor(self._veriler, self._ozet)
+                if pdf_olustur(html, dosya_adi):
+                    gecici_dosyalar.append(dosya_adi)
+                    self._yukle_drive(dosya_adi)
+                else:
+                    self.log_mesaji.emit("HATA: PDF oluşturulamadı.")
+
+            elif self._mod == 2:
+                # B. Hurda Raporu: RKE_Hurda_{ABD}_{Birim}_{Tarih}.pdf
+                hurda = [v for v in self._veriler if "Değil" in v.get("Sonuc", "")]
+                if not hurda:
+                    self.log_mesaji.emit("UYARI: Hurda adayı kayıt bulunamadı.")
+                    return
+                dosya_adi = f"RKE_Hurda_{abd}_{birim}_{tarih}.pdf"
+                html = html_hurda_rapor(hurda)
+                if pdf_olustur(html, dosya_adi):
+                    gecici_dosyalar.append(dosya_adi)
+                    self._yukle_drive(dosya_adi)
+                else:
+                    self.log_mesaji.emit("HATA: Hurda PDF oluşturulamadı.")
+
+            elif self._mod == 3:
+                # C. Ana Bilim Dalı Envanter: RKE_Envanter_{ABD}_{Tarih}.pdf
+                if not self._veriler:
+                    self.log_mesaji.emit("UYARI: Rapor oluşturmak için veri bulunamadı.")
+                    return
+                dosya_adi = f"RKE_Envanter_{abd}_{tarih}.pdf"
+                html = html_abd_envanter_rapor(self._veriler, self._ozet)
+                if pdf_olustur(html, dosya_adi):
+                    gecici_dosyalar.append(dosya_adi)
+                    self._yukle_drive(dosya_adi)
+                else:
+                    self.log_mesaji.emit("HATA: ABD Envanter PDF oluşturulamadı.")
+
+            elif self._mod == 4:
+                # D. Ana Bilim Dalı + Birim Envanter: RKE_Envanteri_{ABD}_{Birim}_{Tarih}.pdf
+                if not self._veriler:
+                    self.log_mesaji.emit("UYARI: Rapor oluşturmak için veri bulunamadı.")
+                    return
+                dosya_adi = f"RKE_Envanteri_{abd}_{birim}_{tarih}.pdf"
+                html = html_abd_birim_envanter_rapor(self._veriler, self._ozet)
+                if pdf_olustur(html, dosya_adi):
+                    gecici_dosyalar.append(dosya_adi)
+                    self._yukle_drive(dosya_adi)
+                else:
+                    self.log_mesaji.emit("HATA: ABD+Birim Envanter PDF oluşturulamadı.")
+
+        except Exception as e:
+            self.log_mesaji.emit(f"HATA: {e}")
+            logger.error(f"RaporOlusturucu hatası: {e}")
+        finally:
+            for f in gecici_dosyalar:
+                try:
+                    if os.path.exists(f):
+                        os.remove(f)
+                except Exception as _e:
+                    logger.warning(f"Geçici dosya silinemedi: {f} — {_e}")
+            self.islem_bitti.emit()
+
+    def _yukle_drive(self, dosya_adi: str):
+        db = None
+        try:
+            from database.sqlite_manager import SQLiteManager
+            from core.di import get_registry, get_cloud_adapter
+            from database.google.utils import resolve_storage_target
+
+            db       = SQLiteManager()
+            registry = get_registry(db)
+            all_sabit = registry.get("Sabitler").get_all()
+            storage_target = resolve_storage_target(all_sabit, "RKE_Raporlar")
+            cloud = get_cloud_adapter()
+            link  = cloud.upload_file(
+                dosya_adi,
+                parent_folder_id=storage_target["drive_folder_id"],
+                offline_folder_name=storage_target["offline_folder_name"]
+            )
+            if link:
+                self.log_mesaji.emit("BASARILI: Drive'a yuklendi.")
+            else:
+                self.log_mesaji.emit("UYARI: Drive yukleme atlandi/basarisiz (offline olabilir).")
+        except Exception as e:
+            self.log_mesaji.emit(f"UYARI: Drive hatasi: {e}")
+            logger.warning(f"Drive yükleme hatası: {e}")
+        finally:
+            if db:
+                db.close()
+
+
+# ═══════════════════════════════════════════════
+#  ANA SAYFA
+# ═══════════════════════════════════════════════
 
 class RKERaporPage(QWidget):
-    """RKE Raporlama ve Analiz sayfası."""
+    """
+    RKE Raporlama ve Analiz sayfası.
+    db: SQLiteManager instance
+    """
 
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
         self.setStyleSheet(S.get("page", "background-color: transparent;"))
-        self._db            = db
-        self._ham_veriler   = []
-        self._filtreli_veri = []
+        self._db             = db
+        self._ham_veriler    = []
+        self._filtreli_veri  = []
 
         self._setup_ui()
         self._connect_signals()
         self.load_data()
 
     # ═══════════════════════════════════════════
-    #  UI KURULUMU
+    #  UI
     # ═══════════════════════════════════════════
 
     def _setup_ui(self):
@@ -52,7 +534,7 @@ class RKERaporPage(QWidget):
         main.setSpacing(12)
 
         # ── KONTROL PANELİ ──
-        panel = QGroupBox("Rapor Ayarları ve Filtreler")
+        panel = QGroupBox("Rapor Ayarlari ve Filtreler")
         panel.setStyleSheet(S.get("group", ""))
         panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         h_panel = QHBoxLayout(panel)
@@ -76,16 +558,19 @@ class RKERaporPage(QWidget):
         self._rb_genel.setStyleSheet(radio_ss)
         self._rb_hurda = QRadioButton("B.  Hurda (HEK) Raporu")
         self._rb_hurda.setStyleSheet(radio_ss)
-        self._rb_kisi  = QRadioButton("C.  Personel Bazlı Raporlar")
-        self._rb_kisi.setStyleSheet(radio_ss)
+        self._rb_abd_env = QRadioButton("C.  Ana Bilim Dalı Envanteri")
+        self._rb_abd_env.setStyleSheet(radio_ss)
+        self._rb_abd_birim_env = QRadioButton("D.  Ana Bilim Dalı + Birim Envanteri")
+        self._rb_abd_birim_env.setStyleSheet(radio_ss)
 
         self._btn_group = QButtonGroup(self)
-        for rb in (self._rb_genel, self._rb_hurda, self._rb_kisi):
+        for rb in (self._rb_genel, self._rb_hurda, self._rb_abd_env, self._rb_abd_birim_env):
             v_left.addWidget(rb)
             self._btn_group.addButton(rb)
         v_left.addStretch()
         h_panel.addLayout(v_left)
 
+        # Dikey ayraç
         sep = QFrame()
         sep.setFrameShape(QFrame.VLine)
         sep.setStyleSheet(S.get("separator", ""))
@@ -95,14 +580,18 @@ class RKERaporPage(QWidget):
         v_right = QVBoxLayout()
         v_right.setSpacing(12)
 
+        # Filtre comboları
         h_filters = QHBoxLayout()
         h_filters.setSpacing(12)
-        self._cmb_abd   = self._make_labeled_combo("Ana Bilim Dalı", "Tüm Bölümler")
-        self._cmb_birim = self._make_labeled_combo("Birim",          "Tüm Birimler")
-        self._cmb_tarih = self._make_labeled_combo("İşlem Tarihi",   "Tüm Tarihler")
+
+        self._cmb_abd   = self._make_labeled_combo("Ana Bilim Dalı",  "Tüm Bölümler")
+        self._cmb_birim = self._make_labeled_combo("Birim",           "Tüm Birimler")
+        self._cmb_tarih = self._make_labeled_combo("İşlem Tarihi",    "Tüm Tarihler")
+
         for w in (self._cmb_abd, self._cmb_birim, self._cmb_tarih):
             h_filters.addWidget(w["container"])
 
+        # Arama
         txt_wrap = QWidget()
         txt_wrap.setStyleSheet("background: transparent;")
         tw = QVBoxLayout(txt_wrap)
@@ -115,16 +604,19 @@ class RKERaporPage(QWidget):
         self._txt_ara.setStyleSheet(S.get("search", ""))
         tw.addWidget(self._txt_ara)
         h_filters.addWidget(txt_wrap)
+
         v_right.addLayout(h_filters)
 
+        # Butonlar
         h_btn = QHBoxLayout()
         h_btn.setSpacing(10)
-        self._btn_yenile = QPushButton("VERİLERİ YENİLE")
+
+        self._btn_yenile = QPushButton("VERILERI YENILE")
         self._btn_yenile.setStyleSheet(S.get("refresh_btn", ""))
         self._btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         IconRenderer.set_button_icon(self._btn_yenile, "sync", color=DarkTheme.TEXT_PRIMARY, size=14)
 
-        self._btn_olustur = QPushButton("PDF RAPOR OLUŞTUR")
+        self._btn_olustur = QPushButton("PDF RAPOR OLUSTUR")
         self._btn_olustur.setStyleSheet(S.get("pdf_btn", ""))
         self._btn_olustur.setCursor(QCursor(Qt.PointingHandCursor))
         IconRenderer.set_button_icon(self._btn_olustur, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
@@ -148,6 +640,7 @@ class RKERaporPage(QWidget):
 
         v_right.addLayout(h_btn)
         v_right.addStretch()
+
         h_panel.addLayout(v_right)
         main.addWidget(panel)
 
@@ -180,19 +673,18 @@ class RKERaporPage(QWidget):
         hdr.setSectionResizeMode(QHeaderView.Stretch)
         hdr.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # Tarih
         hdr.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Pb
+
         main.addWidget(self._table, 1)
 
         # ── FOOTER ──
         footer = QHBoxLayout()
         self._lbl_sayi = QLabel("0 kayıt")
-        self._lbl_sayi.setStyleSheet(
-            S.get("footer_label", f"color:{DarkTheme.TEXT_MUTED}; font-size:11px;")
-        )
+        self._lbl_sayi.setStyleSheet(S.get("footer_label", f"color:{DarkTheme.TEXT_MUTED}; font-size:11px;"))
         footer.addWidget(self._lbl_sayi)
         footer.addStretch()
         main.addLayout(footer)
 
-    def _make_labeled_combo(self, label_text: str, default_item: str) -> dict:
+    def _make_labeled_combo(self, label_text, default_item):
         c = QWidget()
         c.setStyleSheet("background: transparent;")
         lay = QVBoxLayout(c)
@@ -222,10 +714,11 @@ class RKERaporPage(QWidget):
         self._btn_group.buttonClicked.connect(lambda _: self._filtrele())
 
     # ═══════════════════════════════════════════
-    #  VERİ YÜKLEME
+    #  VERİ
     # ═══════════════════════════════════════════
 
     def load_data(self):
+        # Önceki thread hâlâ çalışıyorsa yeni başlatma
         if hasattr(self, "_loader") and self._loader.isRunning():
             return
         self._pbar.setVisible(True)
@@ -242,43 +735,49 @@ class RKERaporPage(QWidget):
     def _on_loader_finished(self):
         self._pbar.setVisible(False)
         self._btn_olustur.setEnabled(True)
-        self._btn_yenile.setText("VERİLERİ YENİLE")
+        self._btn_yenile.setText("VERILERI YENILE")
 
     def _on_data_ready(self, data, abd_listesi, birim_listesi, tarih_listesi):
         self._ham_veriler = data
-        self._fill_combo(self._cmb_abd,   abd_listesi,   "Tüm Bölümler")
-        self._fill_combo(self._cmb_birim, birim_listesi, "Tüm Birimler")
-        self._fill_combo(self._cmb_tarih, tarih_listesi, "Tüm Tarihler")
+
+        def fill(widget_dict, items, default):
+            cmb = widget_dict["combo"]
+            cmb.blockSignals(True)
+            curr = cmb.currentText()
+            cmb.clear()
+            cmb.addItem(default)
+            cmb.addItems(items)
+            idx = cmb.findText(curr)
+            cmb.setCurrentIndex(idx if idx >= 0 else 0)
+            cmb.blockSignals(False)
+
+        fill(self._cmb_abd,   abd_listesi,  "Tüm Bölümler")
+        fill(self._cmb_birim, birim_listesi, "Tüm Birimler")
+        fill(self._cmb_tarih, tarih_listesi, "Tüm Tarihler")
+
         self._on_abd_birim_degisti()
 
-    @staticmethod
-    def _fill_combo(widget_dict: dict, items: list, default: str):
-        cmb = widget_dict["combo"]
-        cmb.blockSignals(True)
-        curr = cmb.currentText()
-        cmb.clear()
-        cmb.addItem(default)
-        cmb.addItems(items)
-        idx = cmb.findText(curr)
-        cmb.setCurrentIndex(idx if idx >= 0 else 0)
-        cmb.blockSignals(False)
-
-    # ═══════════════════════════════════════════
-    #  FİLTRELEME
-    # ═══════════════════════════════════════════
-
     def _on_abd_birim_degisti(self):
+        """ABD veya Birim değişince Tarih combosu yeniden hesaplanır."""
         f_abd   = self._cmb_abd["combo"].currentText()
         f_birim = self._cmb_birim["combo"].currentText()
 
-        mevcut_tarihler = {
-            row["Tarih"]
-            for row in self._ham_veriler
-            if row.get("Tarih")
-            and ("Tüm" in f_abd   or row.get("ABD",   "") == f_abd)
-            and ("Tüm" in f_birim or row.get("Birim", "") == f_birim)
-        }
-        sirali = sorted(mevcut_tarihler, key=_parse_date, reverse=True)
+        mevcut_tarihler = set()
+        for row in self._ham_veriler:
+            if "Tüm" not in f_abd   and row.get("ABD",   "") != f_abd:   continue
+            if "Tüm" not in f_birim and row.get("Birim", "") != f_birim: continue
+            if row.get("Tarih"):
+                mevcut_tarihler.add(row["Tarih"])
+
+        def parse(s):
+            for fmt in ("%Y-%m-%d", "%d.%m.%Y"):
+                try:
+                    return datetime.datetime.strptime(s, fmt).date()
+                except Exception:
+                    pass
+            return datetime.date.min
+
+        sirali = sorted(mevcut_tarihler, key=parse, reverse=True)
 
         cmb = self._cmb_tarih["combo"]
         cmb.blockSignals(True)
@@ -294,41 +793,95 @@ class RKERaporPage(QWidget):
         f_birim = self._cmb_birim["combo"].currentText()
         f_tarih = self._cmb_tarih["combo"].currentText()
 
-        filtered = [
-            row for row in self._ham_veriler
-            if ("Tüm" in f_abd   or row.get("ABD",   "") == f_abd)
-            and ("Tüm" in f_birim or row.get("Birim", "") == f_birim)
-            and ("Tüm" in f_tarih or row.get("Tarih", "") == f_tarih)
-            and (not self._rb_hurda.isChecked() or "Değil" in row.get("Sonuc", ""))
-        ]
+        filtered = []
+        for row in self._ham_veriler:
+            if "Tüm" not in f_abd   and row.get("ABD",   "") != f_abd:   continue
+            if "Tüm" not in f_birim and row.get("Birim", "") != f_birim: continue
+            if "Tüm" not in f_tarih and row.get("Tarih", "") != f_tarih: continue
+            if self._rb_hurda.isChecked() and "Değil" not in row.get("Sonuc", ""):
+                continue
+            filtered.append(row)
+
         self._filtreli_veri = filtered
         self._model.set_data(filtered)
         self._lbl_sayi.setText(f"{len(filtered)} kayıt")
+        
+        # Veri boşsa rapor oluştur butonunu devre dışı bırak
+        self._btn_olustur.setEnabled(len(filtered) > 0)
 
     # ═══════════════════════════════════════════
     #  RAPOR OLUŞTURMA
     # ═══════════════════════════════════════════
 
     def _on_rapor_olustur(self):
+        # Filtre kontrolü: 3'ü de "Tüm" ise uyarı ver
+        f_abd   = self._cmb_abd["combo"].currentText()
+        f_birim = self._cmb_birim["combo"].currentText()
+        f_tarih = self._cmb_tarih["combo"].currentText()
+        
+        if f_abd == "Tüm Bölümler" and f_birim == "Tüm Birimler" and f_tarih == "Tüm Tarihler":
+            QMessageBox.warning(self, "Uyarı", "Lütfen en az bir filtre seçiniz.")
+            return
+        
         if not self._filtreli_veri:
             QMessageBox.warning(self, "Uyarı", "Rapor oluşturmak için tabloda veri olmalıdır.")
             return
+
+        mod = 1
+        if self._rb_hurda.isChecked():
+            mod = 2
+        elif self._rb_abd_env.isChecked():
+            mod = 3
+        elif self._rb_abd_birim_env.isChecked():
+            mod = 4
+
+        # Dosya adı için filtre bilgilerini hazırla
+        abd_kisa   = f_abd.replace("Tüm Bölümler", "").strip()
+        birim_kisa = f_birim.replace("Tüm Birimler", "").strip()
+        
+        # Tarih formatını DD MM YYYY (DDMMYYYY) olarak düzenle
+        tarih_raw = f_tarih.replace("Tüm Tarihler", "").strip()
+        if tarih_raw:
+            try:
+                # Çeşitli formatı detect et ve DD MM YYYY formatına çevir
+                if "." in tarih_raw:
+                    # DD.MM.YYYY formatı
+                    dt = datetime.datetime.strptime(tarih_raw, "%d.%m.%Y").date()
+                elif "-" in tarih_raw:
+                    # YYYY-MM-DD formatı
+                    dt = datetime.datetime.strptime(tarih_raw, "%Y-%m-%d").date()
+                else:
+                    # YYYYMMDD veya DDMMYYYY fallback
+                    dt = None
+                
+                if dt:
+                    tarih_kisa = dt.strftime("%d%m%Y")
+                else:
+                    tarih_kisa = ""
+            except Exception:
+                tarih_kisa = ""
+        else:
+            tarih_kisa = ""
+        
+        filtre_info = {
+            "abd": abd_kisa,
+            "birim": birim_kisa,
+            "tarih": tarih_kisa
+        }
+
+        ozet = f"{f_abd} — {f_birim}"
+
+        # Önceki rapor işlemi hâlâ sürüyorsa yeni başlatma
         if hasattr(self, "_worker") and self._worker.isRunning():
             QMessageBox.warning(self, "Uyarı", "Önceki rapor işlemi henüz tamamlanmadı.")
             return
-
-        mod = 1
-        if self._rb_hurda.isChecked():   mod = 2
-        elif self._rb_kisi.isChecked():  mod = 3
-
-        ozet = f"{self._cmb_abd['combo'].currentText()} — {self._cmb_birim['combo'].currentText()}"
 
         self._btn_olustur.setEnabled(False)
         self._btn_olustur.setText("İşleniyor…")
         self._pbar.setVisible(True)
         self._pbar.setRange(0, 0)
 
-        self._worker = RaporOlusturucuThread(mod, self._filtreli_veri, ozet)
+        self._worker = RaporOlusturucuThread(mod, self._filtreli_veri, ozet, filtre_info)
         self._worker.log_mesaji.connect(self._on_log)
         self._worker.islem_bitti.connect(self._on_rapor_bitti)
         self._worker.start()
@@ -336,20 +889,20 @@ class RKERaporPage(QWidget):
     def _on_rapor_bitti(self):
         self._pbar.setVisible(False)
         self._btn_olustur.setEnabled(True)
-        self._btn_olustur.setText("PDF RAPOR OLUŞTUR")
+        self._btn_olustur.setText("PDF RAPOR OLUSTUR")
         QMessageBox.information(
             self, "Tamamlandı",
-            "Rapor işlemi tamamlandı. PDF oluşturulduysa Drive'a veya yerel klasöre kaydedilmiştir."
+            "Rapor işlemi tamamlandı. PDF oluşturulduysa Drive'a yüklenmiştir."
         )
 
-    def _on_log(self, msg: str):
+    def _on_log(self, msg):
         logger.info(f"[RKERapor] {msg}")
         if "HATA" in msg:
             QMessageBox.warning(self, "Uyarı", msg)
 
-    def _on_error(self, msg: str):
+    def _on_error(self, msg):
         self._pbar.setVisible(False)
         self._btn_olustur.setEnabled(True)
-        self._btn_yenile.setText("VERİLERİ YENİLE")
+        self._btn_yenile.setText("VERILERI YENILE")
         logger.error(f"RKERapor hatası: {msg}")
         QMessageBox.critical(self, "Hata", msg)

@@ -1,13 +1,16 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 RKE Muayene Worker Thread'leri
-ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-ï¿½ VeriYukleyiciThread       ï¿½  sayfa verilerini yï¿½kler
-ï¿½ KayitWorkerThread         ï¿½ Tekli muayene kaydï¿½ + durum gï¿½ncelleme
-ï¿½ TopluKayitWorkerThread    ï¿½ Toplu muayene kaydï¿½ + durum gï¿½ncelleme
+────────────────────────────────
+• VeriYukleyiciThread       – Tüm sayfa verilerini yükler
+• KayitWorkerThread         – Tekli muayene kaydı + RKE_List güncelleme
+• TopluKayitWorkerThread    – Toplu muayene kaydı + RKE_List güncelleme
 
-Drive yï¿½kleme iï¿½in projenin mevcut upload altyapï¿½sï¿½ kullanï¿½lï¿½r;
-baï¿½ï¿½msï¿½z bir yardï¿½mcï¿½ yazï¿½lmamï¿½ï¿½tï¿½r.
+RKE_List güncelleme kuralı (_guncelle_durum):
+  - KontrolTarihi  ← fiziksel muayene tarihi
+  - Durum          ← fiziksel VEYA skopi "Uygun Değil" ise "Kullanıma Uygun Değil",
+                     ikisi de uygunsa "Kullanıma Uygun"
+  - Aciklama       ← muayene açıklaması (üzerine yazılır)
 """
 import time
 
@@ -17,14 +20,13 @@ from core.logger import logger
 from core.hata_yonetici import exc_logla
 
 
-# ===============================================
-#  VERÄ° YÃœKLEYÄ°CÄ°
-# ===============================================
+# ═══════════════════════════════════════════════
+#  VERİ YÜKLEYİCİ
+# ═══════════════════════════════════════════════
 
 class VeriYukleyiciThread(QThread):
     """
-    Sayfa aÃ§Ä±lÄ±ÅŸÄ±nda ve yenileme sÄ±rasÄ±nda tÃ¼m verileri arka planda yÃ¼kler.
-
+    Sayfa açılışında ve yenileme sırasında tüm verileri arka planda yükler.
     Sinyal: veri_hazir(rke_data, teknik_acik, kontrol_edenler, birim_sorumlulari, tum_muayene)
     """
     veri_hazir  = Signal(list, list, list, list, list)
@@ -60,7 +62,9 @@ class VeriYukleyiciThread(QThread):
                 if str(r.get("BirimSorumlusuUnvani", "")).strip()
             })
 
-            self.veri_hazir.emit(rke_data, teknik, kontrol_edenler, birim_sorumlulari, tum_muayene)
+            self.veri_hazir.emit(
+                rke_data, teknik, kontrol_edenler, birim_sorumlulari, tum_muayene
+            )
         except Exception as e:
             exc_logla("RKEMuayene.VeriYukleyici", e)
             self.hata_olustu.emit(str(e))
@@ -69,14 +73,70 @@ class VeriYukleyiciThread(QThread):
                 db.close()
 
 
-# ===============================================
-#  TEKLÄ° KAYIT WORKER
-# ===============================================
+# ═══════════════════════════════════════════════
+#  ORTAK GÜNCELLEME MANTIĞI
+# ═══════════════════════════════════════════════
+
+def _hesapla_durum(fiziksel: str, skopi: str) -> str:
+    """
+    Her iki muayene de "Kullanıma Uygun" ise → "Kullanıma Uygun"
+    Birinde bile "Değil" varsa → "Kullanıma Uygun Değil"
+    """
+    if "Değil" in fiziksel or "Değil" in skopi:
+        return "Kullanıma Uygun Değil"
+    return "Kullanıma Uygun"
+
+
+def guncelle_rke_list(registry, veri: dict):
+    """
+    Muayene verisi kaydedildikten sonra RKE_List tablosunu günceller.
+
+    Güncellenen alanlar:
+      KontrolTarihi  ← FMuayeneTarihi
+      Durum          ← fiziksel + skopi sonucuna göre hesaplanır
+      Aciklama       ← muayene Aciklamalar alanından alınır
+    """
+    ekipman_no = str(veri.get("EkipmanNo", "")).strip()
+    if not ekipman_no:
+        return
+
+    fiziksel  = str(veri.get("FizikselDurum", ""))
+    skopi     = str(veri.get("SkopiDurum",    ""))
+    aciklama  = str(veri.get("Aciklamalar",   "")).strip()
+    tarih     = str(veri.get("FMuayeneTarihi","")).strip()
+
+    yeni_durum = _hesapla_durum(fiziksel, skopi)
+
+    repo_list = registry.get("RKE_List")
+    target = next(
+        (x for x in repo_list.get_all()
+         if str(x.get("EkipmanNo", "")).strip() == ekipman_no),
+        None,
+    )
+    if not target:
+        logger.warning(f"RKE_List'te ekipman bulunamadı: {ekipman_no}")
+        return
+
+    guncelleme = {
+        "Durum":         yeni_durum,
+        "KontrolTarihi": tarih,
+        "Aciklama":      aciklama,
+    }
+    repo_list.update(target["EkipmanNo"], guncelleme)
+    logger.info(
+        f"RKE_List güncellendi — {ekipman_no}: "
+        f"Durum={yeni_durum}, Tarih={tarih}, Açıklama={aciklama!r}"
+    )
+
+
+# ═══════════════════════════════════════════════
+#  TEKLİ KAYIT WORKER
+# ═══════════════════════════════════════════════
 
 class KayitWorkerThread(QThread):
     """
-    Tek ekipman muayene kaydÄ± ekler, RKE_List durumunu gÃ¼nceller,
-    varsa rapor dosyasÄ±nÄ± Drive'a yÃ¼kler.
+    Tek ekipman muayene kaydı ekler, RKE_List'i günceller,
+    varsa rapor dosyasını Drive'a yükler.
     """
     kayit_tamam = Signal(str)
     hata_olustu = Signal(str)
@@ -94,7 +154,7 @@ class KayitWorkerThread(QThread):
             db       = SQLiteManager()
             registry = get_registry(db)
 
-            # Drive yÃ¼kleme
+            # Drive yükleme
             if self._dosya_yolu:
                 from core.di import get_cloud_adapter
                 from database.google.utils import resolve_storage_target
@@ -110,15 +170,15 @@ class KayitWorkerThread(QThread):
                 if link:
                     self._veri["Rapor"] = link
                 else:
-                    logger.info("RKE Muayene: rapor yÃ¼kleme atlandÄ±/baÅŸarÄ±sÄ±z (offline olabilir)")
+                    logger.info("RKE Muayene: rapor yükleme atlandı/başarısız (offline olabilir)")
 
-            # Muayene kaydÄ±
+            # Muayene kaydı
             registry.get("RKE_Muayene").insert(self._veri)
 
-            # RKE_List durum gÃ¼ncelle
-            self._guncelle_durum(registry, self._veri)
+            # RKE_List: Durum + KontrolTarihi + Aciklama güncelle
+            guncelle_rke_list(registry, self._veri)
 
-            self.kayit_tamam.emit("KayÄ±t BaÅŸarÄ±lÄ±")
+            self.kayit_tamam.emit("Kayıt Başarılı")
         except Exception as e:
             exc_logla("RKEMuayene.KayitWorker", e)
             self.hata_olustu.emit(str(e))
@@ -126,37 +186,15 @@ class KayitWorkerThread(QThread):
             if db:
                 db.close()
 
-    @staticmethod
-    def _guncelle_durum(registry, veri: dict):
-        """Muayene sonucuna gÃ¶re RKE_List tablosundaki durumu gÃ¼nceller."""
-        ekipman_no = veri.get("EkipmanNo")
-        if not ekipman_no:
-            return
-        yeni_durum = (
-            "KullanÄ±ma Uygun DeÄŸil"
-            if "DeÄŸil" in veri.get("FizikselDurum", "") or "DeÄŸil" in veri.get("SkopiDurum", "")
-            else "KullanÄ±ma Uygun"
-        )
-        repo_list = registry.get("RKE_List")
-        target    = next(
-            (x for x in repo_list.get_all() if str(x.get("EkipmanNo")) == str(ekipman_no)),
-            None,
-        )
-        if target and target.get("EkipmanNo"):
-            repo_list.update(target["EkipmanNo"], {
-                "Durum":         yeni_durum,
-                "KontrolTarihi": veri.get("FMuayeneTarihi"),
-            })
 
-
-# ===============================================
+# ═══════════════════════════════════════════════
 #  TOPLU KAYIT WORKER
-# ===============================================
+# ═══════════════════════════════════════════════
 
 class TopluKayitWorkerThread(QThread):
     """
-    Birden fazla ekipman iÃ§in toplu muayene kaydÄ± ekler.
-    Her ekipman iÃ§in aynÄ± ortak_veri kullanÄ±lÄ±r; EkipmanNo alanÄ± ekipmana gÃ¶re set edilir.
+    Birden fazla ekipman için toplu muayene kaydı ekler.
+    Her ekipman için ortak_veri kopyalanır, EkipmanNo ayrıştırılır.
     """
     kayit_tamam = Signal(str)
     hata_olustu = Signal(str)
@@ -176,10 +214,8 @@ class TopluKayitWorkerThread(QThread):
             registry = get_registry(db)
 
             repo_muayene = registry.get("RKE_Muayene")
-            repo_list    = registry.get("RKE_List")
-            all_rke      = repo_list.get_all()
 
-            # Ortak rapor dosyasÄ± Drive'a bir kez yÃ¼klenir
+            # Ortak rapor dosyası Drive'a bir kez yüklenir
             dosya_link = ""
             if self._dosya_yolu:
                 from core.di import get_cloud_adapter
@@ -203,23 +239,10 @@ class TopluKayitWorkerThread(QThread):
 
                 repo_muayene.insert(item)
 
-                # Durum gÃ¼ncelle
-                yeni_durum = (
-                    "KullanÄ±ma Uygun DeÄŸil"
-                    if "DeÄŸil" in item.get("FizikselDurum", "") or "DeÄŸil" in item.get("SkopiDurum", "")
-                    else "KullanÄ±ma Uygun"
-                )
-                target = next(
-                    (x for x in all_rke if str(x.get("EkipmanNo")) == str(ekipman_no)),
-                    None,
-                )
-                if target and target.get("EkipmanNo"):
-                    repo_list.update(target["EkipmanNo"], {
-                        "Durum":         yeni_durum,
-                        "KontrolTarihi": item.get("FMuayeneTarihi"),
-                    })
+                # RKE_List: Durum + KontrolTarihi + Aciklama güncelle
+                guncelle_rke_list(registry, item)
 
-            self.kayit_tamam.emit("Toplu KayÄ±t BaÅŸarÄ±lÄ±")
+            self.kayit_tamam.emit("Toplu Kayıt Başarılı")
         except Exception as e:
             exc_logla("RKEMuayene.TopluKayitWorker", e)
             self.hata_olustu.emit(str(e))

@@ -1,14 +1,14 @@
 ﻿# -*- coding: utf-8 -*-
 """
 RKE Rapor Worker Thread'leri
-ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-ï¿½ VeriYukleyiciThread    ï¿½ RKE_List + RKE_Muayene birleï¿½tirerek rapor verisi hazï¿½rlar
-ï¿½ RaporOlusturucuThread  ï¿½ PDF oluï¿½turur ve Drive'a yï¿½kler
 
-Rapor modlarï¿½:
-    1 ï¿½ Genel Kontrol Raporu
-    2 ï¿½ Hurda (HEK) Raporu
-    3 ï¿½ Personel Bazlï¿½ Raporlar (kiï¿½i ï¿½ tarih gruplarï¿½)
+ VeriYukleyiciThread     RKE_List + RKE_Muayene birletirerek rapor verisi hazrlar
+ RaporOlusturucuThread   PDF oluturur ve Drive'a ykler
+
+Rapor modlar:
+    1  Genel Kontrol Raporu
+    2  Hurda (HEK) Raporu
+    3  Personel Bazl Raporlar (kii  tarih gruplar)
 """
 import os
 import datetime
@@ -21,7 +21,7 @@ from core.hata_yonetici import exc_logla
 from .rke_pdf_builder import html_genel_rapor, html_hurda_rapor, pdf_olustur
 
 
-# ï¿½ï¿½ï¿½ Tarih ayrï¿½ï¿½tï¿½rma (iki yerde kullanï¿½lï¿½rdï¿½, artï¿½k tek yerde) ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+#  Tarih ayrtrma (iki yerde kullanlrd, artk tek yerde) 
 
 def _parse_date(s: str) -> datetime.date:
     for fmt in ("%Y-%m-%d", "%d.%m.%Y"):
@@ -33,13 +33,13 @@ def _parse_date(s: str) -> datetime.date:
 
 
 # ===============================================
-#  VERï¿½ Yï¿½KLEYICI
+#  VER YKLEYICI
 # ===============================================
 
 class VeriYukleyiciThread(QThread):
     """
-    RKE_List ve RKE_Muayene tablolarï¿½nï¿½ birleï¿½tirerek
-    raporlama iï¿½in hazï¿½r veri seti oluï¿½turur.
+    RKE_List ve RKE_Muayene tablolarn birletirerek
+    raporlama iin hazr veri seti oluturur.
 
     Sinyal: veri_hazir(data, abd_listesi, birim_listesi, tarih_listesi)
     """
@@ -54,7 +54,7 @@ class VeriYukleyiciThread(QThread):
             db       = SQLiteManager()
             registry = get_registry(db)
 
-            # Envanter haritasï¿½: EkipmanNo ï¿½ {ABD, Birim, Cins, Pb}
+            # Envanter haritas: EkipmanNo  {ABD, Birim, Cins, Pb}
             envanter_map = {
                 str(row.get("EkipmanNo", "")).strip(): {
                     "ABD":   str(row.get("AnaBilimDali",   "")).strip(),
@@ -84,9 +84,9 @@ class VeriYukleyiciThread(QThread):
                     tarih_set.add(tarih)
 
                 sonuc = (
-                    "Kullanï¿½ma Uygun Deï¿½il"
-                    if "Deï¿½il" in fiz or "Deï¿½il" in sko
-                    else "Kullanï¿½ma Uygun"
+                    "Kullanıma Uygun Değil"
+                    if "Değil" in fiz or "Değil" in sko
+                    else "Kullanıma Uygun"
                 )
 
                 birlesik.append({
@@ -120,14 +120,14 @@ class VeriYukleyiciThread(QThread):
 
 
 # ===============================================
-#  RAPOR OLUï¿½TURUCU
+#  RAPOR OLUTURUCU
 # ===============================================
 
 class RaporOlusturucuThread(QThread):
     """
-    Seï¿½ili mod ve verilerle PDF ï¿½retir, Drive'a yï¿½kler.
+    Seili mod ve verilerle PDF retir, Drive'a ykler.
 
-    mod: 1 = Genel, 2 = Hurda, 3 = Personel Bazlï¿½
+    mod: 1 = Genel, 2 = Hurda, 3 = Personel Bazl
     """
     log_mesaji  = Signal(str)
     islem_bitti = Signal()
@@ -150,36 +150,36 @@ class RaporOlusturucuThread(QThread):
                 gecici_dosyalar += self._mod_personel(zaman)
         except Exception as e:
             self.log_mesaji.emit(f"HATA: {e}")
-            logger.error(f"RaporOlusturucu hatasï¿½: {e}")
+            logger.error(f"RaporOlusturucu hatas: {e}")
         finally:
             self._temizle(gecici_dosyalar)
             self.islem_bitti.emit()
 
-    # ï¿½ï¿½ Mod iï¿½leyicileri ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    #  Mod ileyicileri 
 
     def _mod_genel(self, zaman: str) -> list:
         if not self._veriler:
-            self.log_mesaji.emit("UYARI: Rapor iï¿½in veri bulunamadï¿½.")
+            self.log_mesaji.emit("UYARI: Rapor iin veri bulunamad.")
             return []
         dosya_adi = f"RKE_Genel_{zaman}.pdf"
         html = html_genel_rapor(self._veriler, self._ozet)
         if pdf_olustur(html, dosya_adi):
             self._yukle_drive(dosya_adi)
             return [dosya_adi]
-        self.log_mesaji.emit("HATA: PDF oluï¿½turulamadï¿½.")
+        self.log_mesaji.emit("HATA: PDF oluturulamad.")
         return []
 
     def _mod_hurda(self, zaman: str) -> list:
-        hurda = [v for v in self._veriler if "Deï¿½il" in v.get("Sonuc", "")]
+        hurda = [v for v in self._veriler if "Deil" in v.get("Sonuc", "")]
         if not hurda:
-            self.log_mesaji.emit("UYARI: Hurda adayï¿½ kayï¿½t bulunamadï¿½.")
+            self.log_mesaji.emit("UYARI: Hurda aday kayt bulunamad.")
             return []
         dosya_adi = f"RKE_Hurda_{zaman}.pdf"
         html = html_hurda_rapor(hurda)
         if pdf_olustur(html, dosya_adi):
             self._yukle_drive(dosya_adi)
             return [dosya_adi]
-        self.log_mesaji.emit("HATA: Hurda PDF oluï¿½turulamadï¿½.")
+        self.log_mesaji.emit("HATA: Hurda PDF oluturulamad.")
         return []
 
     def _mod_personel(self, zaman: str) -> list:
@@ -188,19 +188,19 @@ class RaporOlusturucuThread(QThread):
             key = (item.get("KontrolEden", ""), item.get("Tarih", ""))
             gruplar.setdefault(key, []).append(item)
 
-        self.log_mesaji.emit(f"Bï¿½LGï¿½: {len(gruplar)} farklï¿½ rapor hazï¿½rlanï¿½yor...")
+        self.log_mesaji.emit(f"BLG: {len(gruplar)} farkl rapor hazrlanyor...")
         dosyalar = []
         for (kisi, tarih), liste in gruplar.items():
             ad        = f"Rapor_{kisi}_{tarih}".replace(" ", "_")
             dosya_adi = f"{ad}_{zaman}.pdf"
-            html = html_genel_rapor(liste, f"Kontrolï¿½r: {kisi} ï¿½ {tarih}")
+            html = html_genel_rapor(liste, f"Kontrolr: {kisi}  {tarih}")
             if pdf_olustur(html, dosya_adi):
                 dosyalar.append(dosya_adi)
                 self._yukle_drive(dosya_adi)
-                self.log_mesaji.emit(f"BAï¿½ARILI: {dosya_adi} yï¿½klendi.")
+                self.log_mesaji.emit(f"BAARILI: {dosya_adi} yklendi.")
         return dosyalar
 
-    # ï¿½ï¿½ Drive yï¿½kleme ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    #  Drive ykleme 
 
     def _yukle_drive(self, dosya_adi: str):
         db = None
@@ -221,18 +221,18 @@ class RaporOlusturucuThread(QThread):
                 offline_folder_name=storage_target["offline_folder_name"],
             )
             if link:
-                hedef = "Drive'a yï¿½klendi" if cloud.is_online and str(link).startswith("http") else "Yerel klasï¿½re kaydedildi"
-                self.log_mesaji.emit(f"BAï¿½ARILI: {hedef}.")
+                hedef = "Drive'a yklendi" if cloud.is_online and str(link).startswith("http") else "Yerel klasre kaydedildi"
+                self.log_mesaji.emit(f"BAARILI: {hedef}.")
             else:
-                self.log_mesaji.emit("UYARI: Drive yï¿½kleme atlandï¿½/baï¿½arï¿½sï¿½z (offline olabilir).")
+                self.log_mesaji.emit("UYARI: Drive ykleme atland/baarsz (offline olabilir).")
         except Exception as e:
-            self.log_mesaji.emit(f"UYARI: Drive hatasï¿½: {e}")
-            logger.warning(f"Drive yï¿½kleme hatasï¿½: {e}")
+            self.log_mesaji.emit(f"UYARI: Drive hatas: {e}")
+            logger.warning(f"Drive ykleme hatas: {e}")
         finally:
             if db:
                 db.close()
 
-    # ï¿½ï¿½ Temizlik ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    #  Temizlik 
 
     @staticmethod
     def _temizle(dosyalar: list):
@@ -241,4 +241,4 @@ class RaporOlusturucuThread(QThread):
                 if os.path.exists(f):
                     os.remove(f)
             except Exception as e:
-                logger.warning(f"Geï¿½ici dosya silinemedi: {f} ï¿½ {e}")
+                logger.warning(f"Geici dosya silinemedi: {f}  {e}")

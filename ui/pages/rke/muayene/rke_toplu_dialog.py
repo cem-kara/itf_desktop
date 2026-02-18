@@ -85,7 +85,7 @@ class TopluMuayeneDialog(QDialog):
         self._grp_fiz.setStyleSheet(S.get("group", ""))
         h_fiz = QHBoxLayout(self._grp_fiz)
         self._dt_fiz  = self._make_date("Tarih")
-        self._cmb_fiz = self._make_combo("Durum", ["KullanÄ±ma Uygun", "KullanÄ±ma Uygun DeÄŸil"])
+        self._cmb_fiz = self._make_combo("Durum", ["Kullanıma Uygun", "Kullanıma Uygun Değil"])
         h_fiz.addWidget(self._dt_fiz["widget"])
         h_fiz.addWidget(self._cmb_fiz["widget"])
         main.addWidget(self._grp_fiz)
@@ -97,7 +97,7 @@ class TopluMuayeneDialog(QDialog):
         self._grp_sko.setStyleSheet(S.get("group", ""))
         h_sko = QHBoxLayout(self._grp_sko)
         self._dt_sko  = self._make_date("Tarih")
-        self._cmb_sko = self._make_combo("Durum", ["KullanÄ±ma Uygun", "KullanÄ±ma Uygun DeÄŸil", "YapÄ±lmadÄ±"])
+        self._cmb_sko = self._make_combo("Durum", ["Kullanıma Uygun", "Kullanıma Uygun Değil", "Yapılmadı"])
         h_sko.addWidget(self._dt_sko["widget"])
         h_sko.addWidget(self._cmb_sko["widget"])
         main.addWidget(self._grp_sko)
@@ -126,12 +126,12 @@ class TopluMuayeneDialog(QDialog):
         self._cmb_aciklama = CheckableComboBox()
         self._cmb_aciklama.setStyleSheet(S.get("combo", ""))
         self._cmb_aciklama.addItems(self._teknik_aciklamalar)
-        v_ortak.addWidget(self._labeled("Teknik AÃ§Ä±klama (Ã‡oklu SeÃ§im)", self._cmb_aciklama))
+        v_ortak.addWidget(self._labeled("Teknik Açıklama (Ã‡oklu Seçim)", self._cmb_aciklama))
 
         h_dosya = QHBoxLayout()
-        self._lbl_dosya = QLabel("Dosya seÃ§ilmedi")
+        self._lbl_dosya = QLabel("Dosya seçilmedi")
         self._lbl_dosya.setStyleSheet("color:#8b8fa3; font-size:11px;")
-        btn_dosya = QPushButton("Ortak Rapor SeÃ§")
+        btn_dosya = QPushButton("Ortak Rapor Seç")
         btn_dosya.setStyleSheet(S.get("file_btn", ""))
         btn_dosya.clicked.connect(self._sec_dosya)
         IconRenderer.set_button_icon(btn_dosya, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
@@ -157,7 +157,7 @@ class TopluMuayeneDialog(QDialog):
         btn_iptal.clicked.connect(self.reject)
         IconRenderer.set_button_icon(btn_iptal, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
 
-        self._btn_baslat = QPushButton("BaÅŸlat")
+        self._btn_baslat = QPushButton("Başlat")
         self._btn_baslat.setStyleSheet(S.get("save_btn", ""))
         self._btn_baslat.setCursor(QCursor(Qt.PointingHandCursor))
         self._btn_baslat.clicked.connect(self._on_save)
@@ -222,7 +222,7 @@ class TopluMuayeneDialog(QDialog):
 
     def _sec_dosya(self):
         yol, _ = QFileDialog.getOpenFileName(
-            self, "Rapor SeÃ§", "", "PDF / Resim (*.pdf *.jpg *.jpeg *.png)"
+            self, "Rapor Seç", "", "PDF / Resim (*.pdf *.jpg *.jpeg *.png)"
         )
         if yol:
             self._dosya_yolu = yol
@@ -237,7 +237,7 @@ class TopluMuayeneDialog(QDialog):
             "Aciklamalar":          self._cmb_aciklama.get_checked_items(),
             "KontrolEdenUnvani":    self._cmb_kontrol.currentText(),
             "BirimSorumlusuUnvani": self._cmb_sorumlu.currentText(),
-            "Notlar":               "Toplu KayÄ±t",
+            "Notlar":               "Toplu Kayıt",
         }
         self._btn_baslat.setEnabled(False)
         self._pbar.setVisible(True)

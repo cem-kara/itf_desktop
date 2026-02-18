@@ -21,8 +21,8 @@ COLUMNS = [
 ]
 
 SONUC_RENK = {
-    "Kullanï¿½ma Uygun":       QColor(DarkTheme.STATUS_SUCCESS),
-    "Kullanï¿½ma Uygun Deï¿½il": QColor(DarkTheme.STATUS_ERROR),
+    "Kullanıma Uygun":       QColor(DarkTheme.STATUS_SUCCESS),
+    "Kullanıma Uygun Değil": QColor(DarkTheme.STATUS_ERROR),
 }
 
 

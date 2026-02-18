@@ -1,11 +1,11 @@
 ﻿# -*- coding: utf-8 -*-
 """
 RKE PDF Builder
-ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-HTML ï¿½ablonlarï¿½ ve PDF ï¿½retim fonksiyonlarï¿½.
-Qt veya UI'a baï¿½ï¿½mlï¿½lï¿½ï¿½ï¿½ yoktur ï¿½ saf iï¿½ mantï¿½ï¿½ï¿½ katmanï¿½.
 
-Dï¿½ï¿½a aï¿½ï¿½k API:
+HTML ablonlar ve PDF retim fonksiyonlar.
+Qt veya UI'a bamll yoktur  saf i mant katman.
+
+Da ak API:
     html_genel_rapor(veriler, filtre_ozeti) -> str
     html_hurda_rapor(veriler)               -> str
     pdf_olustur(html_content, dosya_yolu)   -> bool
@@ -40,11 +40,11 @@ def _base_css() -> str:
 
 
 # ===============================================
-#  HTML ï¿½ABLONLARI
+#  HTML ABLONLARI
 # ===============================================
 
 def html_genel_rapor(veriler: list, filtre_ozeti: str) -> str:
-    """Genel kontrol raporu HTML'i ï¿½retir."""
+    """Genel kontrol raporu HTML'i retir."""
     tarih = datetime.datetime.now().strftime("%d.%m.%Y")
     rows  = "".join(
         f"<tr>"
@@ -58,25 +58,25 @@ def html_genel_rapor(veriler: list, filtre_ozeti: str) -> str:
     )
     return f"""
     <html><head><style>{_base_css()}</style></head><body>
-    <h1>RADYASYON KORUYUCU EKï¿½PMAN (RKE) KONTROL RAPORU</h1>
+    <h1>RADYASYON KORUYUCU EKPMAN (RKE) KONTROL RAPORU</h1>
     <div class="center">Filtre: {filtre_ozeti} | Tarih: {tarih}</div>
     <table>
       <thead>
         <tr>
           <th>Koruyucu Cinsi</th><th>Ekipman No</th><th>Pb (mm)</th>
-          <th>Kontrol (Tarih ï¿½ Sonuï¿½)</th><th>Aï¿½ï¿½klama</th>
+          <th>Kontrol (Tarih  Sonu)</th><th>Aklama</th>
         </tr>
       </thead>
       <tbody>{rows}</tbody>
     </table>
     <p style="font-size:9pt; font-style:italic; margin-top:8px;">
-      * Bu form toplu kontroller iï¿½in ï¿½retilmiï¿½tir.
+      * Bu form toplu kontroller iin retilmitir.
     </p>
     <table class="sig-table">
       <tr>
-        <td><b>Kontrol Eden</b><div class="line">ï¿½mza</div></td>
-        <td><b>Birim Sorumlusu</b><div class="line">ï¿½mza</div></td>
-        <td><b>Radyasyon Koruma Sorumlusu</b><div class="line">ï¿½mza</div></td>
+        <td><b>Kontrol Eden</b><div class="line">mza</div></td>
+        <td><b>Birim Sorumlusu</b><div class="line">mza</div></td>
+        <td><b>Radyasyon Koruma Sorumlusu</b><div class="line">mza</div></td>
       </tr>
     </table>
     </body></html>
@@ -84,12 +84,12 @@ def html_genel_rapor(veriler: list, filtre_ozeti: str) -> str:
 
 
 def html_hurda_rapor(veriler: list) -> str:
-    """Hurda (HEK) ekipman teknik raporu HTML'i ï¿½retir."""
+    """Hurda (HEK) ekipman teknik raporu HTML'i retir."""
     tarih = datetime.datetime.now().strftime("%d.%m.%Y")
     rows  = ""
     for i, r in enumerate(veriler, 1):
         sorunlar = []
-        if "Deï¿½il" in r.get("Sonuc", ""):
+        if "Deil" in r.get("Sonuc", ""):
             sorunlar.append(f"Muayene: {r['Sonuc']}")
         if r.get("Aciklama"):
             sorunlar.append(r["Aciklama"])
@@ -105,29 +105,29 @@ def html_hurda_rapor(veriler: list) -> str:
         )
     return f"""
     <html><head><style>{_base_css()}</style></head><body>
-    <h1>HURDA (HEK) EKï¿½PMAN TEKNï¿½K RAPORU</h1>
+    <h1>HURDA (HEK) EKPMAN TEKNK RAPORU</h1>
     <div class="center">Tarih: {tarih}</div>
-    <h2>A. ï¿½mha Edilecek Ekipman Listesi</h2>
+    <h2>A. mha Edilecek Ekipman Listesi</h2>
     <table>
       <thead>
         <tr>
-          <th>Sï¿½ra</th><th>Cinsi</th><th>Ekipman No</th>
-          <th>Bï¿½lï¿½m</th><th>Pb (mm)</th><th>Uygunsuzluk</th>
+          <th>Sra</th><th>Cinsi</th><th>Ekipman No</th>
+          <th>Blm</th><th>Pb (mm)</th><th>Uygunsuzluk</th>
         </tr>
       </thead>
       <tbody>{rows}</tbody>
     </table>
     <h2>B. Teknik Rapor ve Talep</h2>
     <p class="legal">
-      Yukarï¿½da bilgileri belirtilen ekipmanlarï¿½n fiziksel veya radyolojik bï¿½tï¿½nlï¿½klerini
-      yitirdikleri tespit edilmiï¿½tir. Hizmet dï¿½ï¿½ï¿½ bï¿½rakï¿½larak (HEK) demirbaï¿½ kayï¿½tlarï¿½ndan
-      dï¿½ï¿½ï¿½lmesi arz olunur.
+      Yukarda bilgileri belirtilen ekipmanlarn fiziksel veya radyolojik btnlklerini
+      yitirdikleri tespit edilmitir. Hizmet d braklarak (HEK) demirba kaytlarndan
+      dlmesi arz olunur.
     </p>
     <table class="sig-table">
       <tr>
-        <td><b>Kontrol Eden</b><div class="line">ï¿½mza</div></td>
-        <td><b>Birim Sorumlusu</b><div class="line">ï¿½mza</div></td>
-        <td><b>RKS</b><div class="line">ï¿½mza</div></td>
+        <td><b>Kontrol Eden</b><div class="line">mza</div></td>
+        <td><b>Birim Sorumlusu</b><div class="line">mza</div></td>
+        <td><b>RKS</b><div class="line">mza</div></td>
       </tr>
     </table>
     </body></html>
@@ -135,14 +135,14 @@ def html_hurda_rapor(veriler: list) -> str:
 
 
 # ===============================================
-#  PDF ï¿½REï¿½
+#  PDF RE
 # ===============================================
 
 def pdf_olustur(html_content: str, dosya_yolu: str) -> bool:
     """
-    HTML iï¿½eriï¿½ini A4 PDF olarak kaydeder.
+    HTML ieriini A4 PDF olarak kaydeder.
 
-    Dï¿½nï¿½ï¿½: True ï¿½ baï¿½arï¿½lï¿½, False ï¿½ hata oluï¿½tu.
+    Dn: True  baarl, False  hata olutu.
     """
     try:
         doc = QTextDocument()
@@ -161,5 +161,5 @@ def pdf_olustur(html_content: str, dosya_yolu: str) -> bool:
         doc.print_(writer)
         return True
     except Exception as e:
-        logger.error(f"PDF oluï¿½turma hatasï¿½: {e}")
+        logger.error(f"PDF oluturma hatas: {e}")
         return False
