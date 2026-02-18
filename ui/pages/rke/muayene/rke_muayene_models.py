@@ -1,16 +1,16 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 RKE Muayene Tablo Modelleri
-────────────────────────────
-• RKEListTableModel    – Sağ paneldeki ekipman listesi
-• GecmisMuayeneModel   – Sol formdaki muayene geçmişi
+
+• RKEListTableModel    → Sağ paneldeki ekipman listesi
+• GecmisMuayeneModel   → Sol formdaki muayene geçmişi
 """
 from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex
 from PySide6.QtGui import QColor
 
 from ui.styles import DarkTheme
 
-# ─── Sütun tanımları ────────────────────────────────────────────────────────
+# ─── Sütun tanımları 
 
 RKE_COLUMNS = [
     ("EkipmanNo",     "Ekipman No",   120),
@@ -35,9 +35,9 @@ DURUM_RENK = {
 }
 
 
-# ═══════════════════════════════════════════════
+# ===============================================
 #  EKİPMAN LİSTE MODELİ
-# ═══════════════════════════════════════════════
+# ===============================================
 
 class RKEListTableModel(QAbstractTableModel):
 
@@ -78,9 +78,9 @@ class RKEListTableModel(QAbstractTableModel):
         self.endResetModel()
 
 
-# ═══════════════════════════════════════════════
-#  GEÇMIŞ MUAYENE MODELİ
-# ═══════════════════════════════════════════════
+# ===============================================
+#  GEÇMİŞ MUAYENE MODELİ
+# ===============================================
 
 class GecmisMuayeneModel(QAbstractTableModel):
 

@@ -128,15 +128,15 @@ Pull-only tablolar artık:
 
 ### 5) Menü config ile gerçek kodu hizala
 **Yapılacaklar**
-- `ayarlar.json` ve `database/ayarlar.json` içindeki modül/sınıf adlarını güncel kodla eşitle.
+- `ayarlar.json` ve `database/veritabani.json` içindeki modül/sınıf adlarını güncel kodla eşitle.
 - Kullanılmayan alanları sadeleştir veya gerçek dinamik yükleme mekanizmasına geçir.
 
 **Neden**
-- Konfig-kod drift’i bakım maliyetini artırır ve yanlış beklenti oluşturur.
+- Konfig-kod drift'i bakım maliyetini artırır ve yanlış beklenti oluşturur.
 
 **Dosyalar**
 - `ayarlar.json`
-- `database/ayarlar.json`
+- `database/veritabani.json`
 - `ui/sidebar.py`
 - `ui/main_window.py`
 

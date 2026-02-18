@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 RKE Rapor Tablo Modeli
-───────────────────────
-• RaporTableModel – Birleşik muayene + envanter verisi görünümü
+�����������������������
+� RaporTableModel � Birle�ik muayene + envanter verisi g�r�n�m�
 """
 from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex
 from PySide6.QtGui import QColor
@@ -15,14 +15,14 @@ COLUMNS = [
     ("Pb",          "Pb (mm)",        80),
     ("Birim",       "Birim",         130),
     ("Tarih",       "Tarih",          90),
-    ("Sonuc",       "Sonuç",         140),
-    ("Aciklama",    "Açıklama",      200),
+    ("Sonuc",       "Sonu�",         140),
+    ("Aciklama",    "A��klama",      200),
     ("KontrolEden", "Kontrol Eden",  140),
 ]
 
 SONUC_RENK = {
-    "Kullanıma Uygun":       QColor(DarkTheme.STATUS_SUCCESS),
-    "Kullanıma Uygun Değil": QColor(DarkTheme.STATUS_ERROR),
+    "Kullan�ma Uygun":       QColor(DarkTheme.STATUS_SUCCESS),
+    "Kullan�ma Uygun De�il": QColor(DarkTheme.STATUS_ERROR),
 }
 
 

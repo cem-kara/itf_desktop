@@ -186,13 +186,13 @@ cython_debug/
 
 # Google API Kimlik Bilgileri
 token.json
-credentials.json
+database/token.json
+database/credentials.json
 *.authorized_user.json
 secrets.json
+credentials.json
 
 # Uygulama Ayarları (Ortama özgü)
-ayarlar.json
-database/ayarlar.json
 .env
 .env.local
 .env.*.local
@@ -212,9 +212,21 @@ private_key*
 data/local.db
 data/*.db
 
+# Yedekler (runtime'da oluşur)
+data/backups/
+
+# Offline upload kuyruğu
+data/offline_uploads/
+
 # Loglar
 logs/
 *.log
+
+# SQLiteStudio proje dosyası
+*.sqbpro
+
+# Geliştirme araçları (tek kullanımlık scriptler)
+scripts/
 
 # IDE
 .vscode/

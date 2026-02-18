@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Toplu Muayene Dialog
-─────────────────────
-Listeden seçilen birden fazla ekipmana aynı anda muayene kaydı ekler.
-rke_muayene.py tarafından açılır; bağımsız QDialog penceresidir.
+���������������������
+Listeden se�ilen birden fazla ekipmana ayn� anda muayene kayd� ekler.
+rke_muayene.py taraf�ndan a��l�r; ba��ms�z QDialog penceresidir.
 """
 import os
 
@@ -27,15 +27,15 @@ S = ThemeManager.get_all_component_styles()
 
 class TopluMuayeneDialog(QDialog):
     """
-    Seçili ekipmanlara aynı anda muayene kaydı ekler.
+    Se�ili ekipmanlara ayn� anda muayene kayd� ekler.
 
     Parametreler
-    ────────────
+    ������������
     secilen_ekipmanlar  : ["RKE-001", "RKE-002", ...] listesi
     teknik_aciklamalar  : Sabitler tablosundan gelen RKE_Teknik listesi
-    kontrol_listesi     : Daha önce kullanılmış KontrolEdenUnvani değerleri
-    sorumlu_listesi     : Daha önce kullanılmış BirimSorumlusuUnvani değerleri
-    kullanici_adi       : Oturum açık kullanıcı adı (opsiyonel)
+    kontrol_listesi     : Daha �nce kullan�lm�� KontrolEdenUnvani de�erleri
+    sorumlu_listesi     : Daha �nce kullan�lm�� BirimSorumlusuUnvani de�erleri
+    kullanici_adi       : Oturum a��k kullan�c� ad� (opsiyonel)
     """
 
     def __init__(
@@ -48,7 +48,7 @@ class TopluMuayeneDialog(QDialog):
         parent=None,
     ):
         super().__init__(parent)
-        self.setWindowTitle(f"Toplu Muayene — {len(secilen_ekipmanlar)} Ekipman")
+        self.setWindowTitle(f"Toplu Muayene – {len(secilen_ekipmanlar)} Ekipman")
         self.resize(680, 640)
 
         self._ekipmanlar         = secilen_ekipmanlar
@@ -60,15 +60,15 @@ class TopluMuayeneDialog(QDialog):
 
         self._setup_ui()
 
-    # ═══════════════════════════════════════════
+    # ===========================================
     #  UI
-    # ═══════════════════════════════════════════
+    # ===========================================
 
     def _setup_ui(self):
         main = QVBoxLayout(self)
         main.setSpacing(12)
 
-        # Ekipman listesi özeti
+        # Ekipman listesi Özeti
         grp_list = QGroupBox(f"Ekipmanlar ({len(self._ekipmanlar)})")
         grp_list.setStyleSheet(S.get("group", ""))
         v_list = QVBoxLayout(grp_list)
@@ -167,9 +167,9 @@ class TopluMuayeneDialog(QDialog):
         h_btn.addWidget(self._btn_baslat)
         main.addLayout(h_btn)
 
-    # ═══════════════════════════════════════════
+    # ===========================================
     #  YARDIMCI FABRİKALAR
-    # ═══════════════════════════════════════════
+    # ===========================================
 
     def _labeled(self, label_text: str, widget) -> QWidget:
         c = QWidget()
@@ -216,9 +216,9 @@ class TopluMuayeneDialog(QDialog):
         lay.addWidget(cmb)
         return {"widget": c, "combo": cmb}
 
-    # ═══════════════════════════════════════════
+    # ===========================================
     #  DOSYA / KAYDET
-    # ═══════════════════════════════════════════
+    # ===========================================
 
     def _sec_dosya(self):
         yol, _ = QFileDialog.getOpenFileName(

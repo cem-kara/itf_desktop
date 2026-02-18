@@ -1,10 +1,10 @@
 ﻿# -*- coding: utf-8 -*-
 """
 RKE Worker Thread'leri
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-â€¢ VeriYukleyiciThread    â€“ Sabitler + RKE_List + RKE_Muayene verisini yÃ¼kler
-â€¢ IslemKaydediciThread   â€“ INSERT / UPDATE iÅŸlemi yapar
-â€¢ GecmisYukleyiciThread  â€“ SeÃ§ili ekipmanÄ±n muayene geÃ§miÅŸini yÃ¼kler
+───────────────────────
+• VeriYukleyiciThread    – Sabitler + RKE_List + RKE_Muayene verisini yükler
+• IslemKaydediciThread   – INSERT / UPDATE işlemi yapar
+• GecmisYukleyiciThread  – Seçili ekipmanın muayene geçmişini yükler
 """
 from PySide6.QtCore import QThread, Signal
 
@@ -12,12 +12,12 @@ from core.logger import logger
 from core.hata_yonetici import exc_logla
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-#  VERÄ° YÃœKLEYICI
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ═══════════════════════════════════════════════
+#  VERİ YÜKLEYICI
+# ═══════════════════════════════════════════════
 
 class VeriYukleyiciThread(QThread):
-    """Sabitler + RKE_List + RKE_Muayene verisini arka planda yÃ¼kler."""
+    """Sabitler + RKE_List + RKE_Muayene verisini arka planda yükler."""
     veri_hazir  = Signal(dict, dict, list, list)   # sabitler, kisaltma_maps, rke_data, muayene_data
     hata_olustu = Signal(str)
 
@@ -52,18 +52,18 @@ class VeriYukleyiciThread(QThread):
             self.veri_hazir.emit(sabitler, maps, rke_data, muayene_data)
         except Exception as e:
             exc_logla("RKEYonetim.VeriYukleyici", e)
-            self.hata_olustu.emit(f"Veri yÃ¼kleme hatasÄ±: {e}")
+            self.hata_olustu.emit(f"Veri yükleme hatası: {e}")
         finally:
             if db:
                 db.close()
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-#  Ä°ÅLEM KAYDEDÄ°CÄ°
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ═══════════════════════════════════════════════
+#  İŞLEM KAYDEDİCİ
+# ═══════════════════════════════════════════════
 
 class IslemKaydediciThread(QThread):
-    """INSERT veya UPDATE iÅŸlemini arka planda yapar."""
+    """INSERT veya UPDATE işlemini arka planda yapar."""
     islem_tamam = Signal()
     hata_olustu = Signal(str)
 
@@ -84,23 +84,23 @@ class IslemKaydediciThread(QThread):
             if self._mod == "INSERT":
                 repo.insert(self._veri)
             elif self._mod == "UPDATE":
-                repo.update(self._veri.get("KayitNo"), self._veri)
+                repo.update(self._veri.get("EkipmanNo"), self._veri)
 
             self.islem_tamam.emit()
         except Exception as e:
             exc_logla("RKEYonetim.IslemKaydedici", e)
-            self.hata_olustu.emit(f"Ä°ÅŸlem hatasÄ±: {e}")
+            self.hata_olustu.emit(f"İşlem hatası: {e}")
         finally:
             if db:
                 db.close()
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-#  GEÃ‡MÄ°Å YÃœKLEYICI
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ═══════════════════════════════════════════════
+#  GEÇMİŞ YÜKLEYICI
+# ═══════════════════════════════════════════════
 
 class GecmisYukleyiciThread(QThread):
-    """SeÃ§ili ekipmanÄ±n muayene geÃ§miÅŸini yÃ¼kler."""
+    """Seçili ekipmanın muayene geçmişini yükler."""
     gecmis_hazir = Signal(list)
 
     def __init__(self, ekipman_no: str):
@@ -122,7 +122,7 @@ class GecmisYukleyiciThread(QThread):
             gecmis.sort(key=lambda x: x.get("FMuayeneTarihi", ""), reverse=True)
             self.gecmis_hazir.emit(gecmis)
         except Exception as e:
-            logger.error(f"GeÃ§miÅŸ yÃ¼kleme hatasÄ±: {e}")
+            logger.error(f"Geçmiş yükleme hatası: {e}")
             self.gecmis_hazir.emit([])
         finally:
             if db:

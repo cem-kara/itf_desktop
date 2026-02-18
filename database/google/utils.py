@@ -32,26 +32,26 @@ def internet_kontrol(timeout: int = 3) -> bool:
 
 def db_ayarlarini_yukle() -> Dict[str, Any]:
     """
-    Database ayarlarını ayarlar.json'dan yükler.
+    Database ayarlarını veritabani.json'dan yükler.
     
     Returns:
         dict: Veritabanı yapısı konfigürasyonu
     """
     mevcut_dizin = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    config_path = os.path.join(mevcut_dizin, 'ayarlar.json')
+    config_path = os.path.join(mevcut_dizin, 'veritabani.json')
     
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
             return data.get("veritabani_yapisi", {})
     except FileNotFoundError:
-        logger.warning(f"ayarlar.json bulunamadı: {config_path}")
+        logger.warning(f"veritabani.json bulunamadı: {config_path}")
         return {}
     except json.JSONDecodeError as e:
-        logger.error(f"ayarlar.json parse hatası: {e}")
+        logger.error(f"veritabani.json parse hatası: {e}")
         return {}
     except Exception as e:
-        logger.error(f"ayarlar.json yükleme hatası: {e}")
+        logger.error(f"veritabani.json yükleme hatası: {e}")
         return {}
 
 

@@ -107,7 +107,7 @@ class OfflineCloudAdapter(CloudAdapter):
             logger.info("Offline mod: upload_file atlandi (dosya yok)")
             return None
 
-        base_dir = os.path.join(DATA_DIR, "offline_uploads/d")
+        base_dir = os.path.join(DATA_DIR, "offline_uploads")
         folder = offline_folder_name or "Genel"
         safe_folder = "".join(c for c in folder if c.isalnum() or c in ("-", "_", " ")).strip() or "Genel"
         target_dir = os.path.join(base_dir, safe_folder)

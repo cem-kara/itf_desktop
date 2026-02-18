@@ -114,21 +114,5 @@
         "implemented": false
       }
     ]
-  },
-  "_notes": {
-    "version": "2.0",
-    "description": "Sadeleştirilmiş menü konfigürasyonu",
-    "changes": [
-      "Kullanılmayan 'modul' ve 'sinif' alanları kaldırıldı",
-      "Sayfa oluşturma main_window.py:_create_page() içinde hardcoded",
-      "Icon'lar sidebar.py ile senkronize edildi",
-      "'implemented' flag ile hangi sayfaların çalıştığı belirtildi"
-    ],
-    "implementation_status": {
-      "PERSONEL": "5/6 sayfa implement edildi",
-      "CİHAZ": "0/6 sayfa implement edildi",
-      "RKE": "0/3 sayfa implement edildi",
-      "YÖNETİCİ İŞLEMLERİ": "0/2 sayfa implement edildi"
-    }
   }
 }

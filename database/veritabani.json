@@ -1,0 +1,43 @@
+{
+    "veritabani_yapisi": {
+        "personel": {
+            "dosya": "itf_personel_vt",
+            "sayfalar": [
+                "Personel",
+                "Izin_Giris",
+                "Izin_Bilgi",
+                "FHSZ_Puantaj"
+            ]
+        },
+        "cihaz": {
+            "dosya": "itf_cihaz_vt",
+            "sayfalar": [
+                "Cihazlar",
+                "Cihaz_Ariza",
+                "Ariza_Islem",
+                "Periyodik_Bakim",
+                "Kalibrasyon"
+            ]
+        },
+        "rke": {
+            "dosya": "itf_rke_vt",
+            "sayfalar": [
+                "RKE_List",
+                "RKE_Muayene"
+            ]
+        },
+        "user": {
+            "dosya": "itf_user_vt",
+            "sayfalar": [
+                "user_login"
+            ]
+        },
+        "sabit": {
+            "dosya": "itf_sabit_vt",
+            "sayfalar": [
+                "Sabitler",
+                "Tatiller"
+            ]
+        }
+    }
+}

@@ -1,18 +1,17 @@
 ﻿# -*- coding: utf-8 -*-
 """
 RKE Tablo Modelleri
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-â€¢ RKETableModel      â€“ Ana ekipman listesi (QAbstractTableModel)
-â€¢ _GecmisTableModel  â€“ Muayene geÃ§miÅŸi (QAbstractTableModel)
+────────────────────
+• RKETableModel      – Ana ekipman listesi (QAbstractTableModel)
+• _GecmisTableModel  – Muayene geçmişi (QAbstractTableModel)
 """
 from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex
 from PySide6.QtGui import QColor
 
 from ui.styles import Colors, DarkTheme
 
-# â”€â”€â”€ SÃ¼tun tanÄ±mlarÄ± â”€â”€â”€
+# ─── Sütun tanımları ───
 COLUMNS = [
-    ("KayitNo",          "ID",           80),
     ("EkipmanNo",        "Ekipman No",  120),
     ("KoruyucuNumarasi", "Koruyucu No", 130),
     ("AnaBilimDali",     "ABD",         140),
@@ -23,23 +22,23 @@ COLUMNS = [
 ]
 
 DURUM_RENK = {
-    "KullanÄ±ma Uygun":       QColor(Colors.GREEN_400),
-    "KullanÄ±ma Uygun DeÄŸil": QColor(Colors.RED_400),
+    "Kullanıma Uygun":       QColor(Colors.GREEN_400),
+    "Kullanıma Uygun Değil": QColor(Colors.RED_400),
     "Hurda":                 QColor(Colors.RED_500),
     "Tamirde":               QColor(Colors.YELLOW_400),
-    "KayÄ±p":                 QColor(Colors.GRAY_400),
+    "Kayıp":                 QColor(Colors.GRAY_400),
 }
 
 _GECMIS_COLS = [
     ("FMuayeneTarihi", "Fiz. Tarih"),
-    ("FizikselDurum",  "Fiziksel SonuÃ§"),
-    ("Aciklamalar",    "AÃ§Ä±klama"),
+    ("FizikselDurum",  "Fiziksel Sonuç"),
+    ("Aciklamalar",    "Açıklama"),
 ]
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-#  ANA LÄ°STE MODELÄ°
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ═══════════════════════════════════════════════
+#  ANA LİSTE MODELİ
+# ═══════════════════════════════════════════════
 
 class RKETableModel(QAbstractTableModel):
 
@@ -69,7 +68,7 @@ class RKETableModel(QAbstractTableModel):
             return DURUM_RENK.get(durum, QColor(DarkTheme.TEXT_MUTED))
 
         if role == Qt.TextAlignmentRole:
-            if col_key in ("KayitNo", "KontrolTarihi", "Durum"):
+            if col_key in ("KontrolTarihi", "Durum"):
                 return Qt.AlignCenter
             return Qt.AlignVCenter | Qt.AlignLeft
 
@@ -91,9 +90,9 @@ class RKETableModel(QAbstractTableModel):
         self.endResetModel()
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-#  MUAYENe GEÃ‡MÄ°ÅÄ° MODELÄ°
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ═══════════════════════════════════════════════
+#  MUAYENe GEÇMİŞİ MODELİ
+# ═══════════════════════════════════════════════
 
 class GecmisTableModel(QAbstractTableModel):
 
@@ -120,7 +119,7 @@ class GecmisTableModel(QAbstractTableModel):
 
         if role == Qt.ForegroundRole and col == "FizikselDurum":
             val = str(row.get(col, ""))
-            return QColor(Colors.RED_400) if "DeÄŸil" in val else QColor(Colors.GREEN_400)
+            return QColor(Colors.RED_400) if "Değil" in val else QColor(Colors.GREEN_400)
 
         return None
 

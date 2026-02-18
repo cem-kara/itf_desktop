@@ -21,10 +21,6 @@ from ui.theme_manager import ThemeManager
 from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer
 
-def _parse_date(val):
-    """Merkezi date_utils üzerinden tarih parse eder."""
-    return parse_any_date(val)
-
 
 # ─── W11 Dark Glass Stiller (MERKEZİ KAYNAKTAN) ───
 S = ThemeManager.get_all_component_styles()

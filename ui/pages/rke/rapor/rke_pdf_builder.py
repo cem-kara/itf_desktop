@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 RKE PDF Builder
-────────────────
-HTML şablonları ve PDF üretim fonksiyonları.
-Qt veya UI'a bağımlılığı yoktur — saf iş mantığı katmanı.
+����������������
+HTML �ablonlar� ve PDF �retim fonksiyonlar�.
+Qt veya UI'a ba��ml�l��� yoktur � saf i� mant��� katman�.
 
-Dışa açık API:
+D��a a��k API:
     html_genel_rapor(veriler, filtre_ozeti) -> str
     html_hurda_rapor(veriler)               -> str
     pdf_olustur(html_content, dosya_yolu)   -> bool
@@ -18,9 +18,9 @@ from PySide6.QtCore import QMarginsF
 from core.logger import logger
 
 
-# ═══════════════════════════════════════════════
+# ===============================================
 #  ORTAK CSS
-# ═══════════════════════════════════════════════
+# ===============================================
 
 def _base_css() -> str:
     return """
@@ -39,12 +39,12 @@ def _base_css() -> str:
     """
 
 
-# ═══════════════════════════════════════════════
-#  HTML ŞABLONLARI
-# ═══════════════════════════════════════════════
+# ===============================================
+#  HTML �ABLONLARI
+# ===============================================
 
 def html_genel_rapor(veriler: list, filtre_ozeti: str) -> str:
-    """Genel kontrol raporu HTML'i üretir."""
+    """Genel kontrol raporu HTML'i �retir."""
     tarih = datetime.datetime.now().strftime("%d.%m.%Y")
     rows  = "".join(
         f"<tr>"
@@ -58,25 +58,25 @@ def html_genel_rapor(veriler: list, filtre_ozeti: str) -> str:
     )
     return f"""
     <html><head><style>{_base_css()}</style></head><body>
-    <h1>RADYASYON KORUYUCU EKİPMAN (RKE) KONTROL RAPORU</h1>
+    <h1>RADYASYON KORUYUCU EK�PMAN (RKE) KONTROL RAPORU</h1>
     <div class="center">Filtre: {filtre_ozeti} | Tarih: {tarih}</div>
     <table>
       <thead>
         <tr>
           <th>Koruyucu Cinsi</th><th>Ekipman No</th><th>Pb (mm)</th>
-          <th>Kontrol (Tarih – Sonuç)</th><th>Açıklama</th>
+          <th>Kontrol (Tarih � Sonu�)</th><th>A��klama</th>
         </tr>
       </thead>
       <tbody>{rows}</tbody>
     </table>
     <p style="font-size:9pt; font-style:italic; margin-top:8px;">
-      * Bu form toplu kontroller için üretilmiştir.
+      * Bu form toplu kontroller i�in �retilmi�tir.
     </p>
     <table class="sig-table">
       <tr>
-        <td><b>Kontrol Eden</b><div class="line">İmza</div></td>
-        <td><b>Birim Sorumlusu</b><div class="line">İmza</div></td>
-        <td><b>Radyasyon Koruma Sorumlusu</b><div class="line">İmza</div></td>
+        <td><b>Kontrol Eden</b><div class="line">�mza</div></td>
+        <td><b>Birim Sorumlusu</b><div class="line">�mza</div></td>
+        <td><b>Radyasyon Koruma Sorumlusu</b><div class="line">�mza</div></td>
       </tr>
     </table>
     </body></html>
@@ -84,12 +84,12 @@ def html_genel_rapor(veriler: list, filtre_ozeti: str) -> str:
 
 
 def html_hurda_rapor(veriler: list) -> str:
-    """Hurda (HEK) ekipman teknik raporu HTML'i üretir."""
+    """Hurda (HEK) ekipman teknik raporu HTML'i �retir."""
     tarih = datetime.datetime.now().strftime("%d.%m.%Y")
     rows  = ""
     for i, r in enumerate(veriler, 1):
         sorunlar = []
-        if "Değil" in r.get("Sonuc", ""):
+        if "De�il" in r.get("Sonuc", ""):
             sorunlar.append(f"Muayene: {r['Sonuc']}")
         if r.get("Aciklama"):
             sorunlar.append(r["Aciklama"])
@@ -105,44 +105,44 @@ def html_hurda_rapor(veriler: list) -> str:
         )
     return f"""
     <html><head><style>{_base_css()}</style></head><body>
-    <h1>HURDA (HEK) EKİPMAN TEKNİK RAPORU</h1>
+    <h1>HURDA (HEK) EK�PMAN TEKN�K RAPORU</h1>
     <div class="center">Tarih: {tarih}</div>
-    <h2>A. İmha Edilecek Ekipman Listesi</h2>
+    <h2>A. �mha Edilecek Ekipman Listesi</h2>
     <table>
       <thead>
         <tr>
-          <th>Sıra</th><th>Cinsi</th><th>Ekipman No</th>
-          <th>Bölüm</th><th>Pb (mm)</th><th>Uygunsuzluk</th>
+          <th>S�ra</th><th>Cinsi</th><th>Ekipman No</th>
+          <th>B�l�m</th><th>Pb (mm)</th><th>Uygunsuzluk</th>
         </tr>
       </thead>
       <tbody>{rows}</tbody>
     </table>
     <h2>B. Teknik Rapor ve Talep</h2>
     <p class="legal">
-      Yukarıda bilgileri belirtilen ekipmanların fiziksel veya radyolojik bütünlüklerini
-      yitirdikleri tespit edilmiştir. Hizmet dışı bırakılarak (HEK) demirbaş kayıtlarından
-      düşülmesi arz olunur.
+      Yukar�da bilgileri belirtilen ekipmanlar�n fiziksel veya radyolojik b�t�nl�klerini
+      yitirdikleri tespit edilmi�tir. Hizmet d��� b�rak�larak (HEK) demirba� kay�tlar�ndan
+      d���lmesi arz olunur.
     </p>
     <table class="sig-table">
       <tr>
-        <td><b>Kontrol Eden</b><div class="line">İmza</div></td>
-        <td><b>Birim Sorumlusu</b><div class="line">İmza</div></td>
-        <td><b>RKS</b><div class="line">İmza</div></td>
+        <td><b>Kontrol Eden</b><div class="line">�mza</div></td>
+        <td><b>Birim Sorumlusu</b><div class="line">�mza</div></td>
+        <td><b>RKS</b><div class="line">�mza</div></td>
       </tr>
     </table>
     </body></html>
     """
 
 
-# ═══════════════════════════════════════════════
-#  PDF ÜRETİMİ
-# ═══════════════════════════════════════════════
+# ===============================================
+#  PDF �RE�
+# ===============================================
 
 def pdf_olustur(html_content: str, dosya_yolu: str) -> bool:
     """
-    HTML içeriğini A4 PDF olarak kaydeder.
+    HTML i�eri�ini A4 PDF olarak kaydeder.
 
-    Dönüş: True → başarılı, False → hata oluştu.
+    D�n��: True � ba�ar�l�, False � hata olu�tu.
     """
     try:
         doc = QTextDocument()
@@ -161,5 +161,5 @@ def pdf_olustur(html_content: str, dosya_yolu: str) -> bool:
         doc.print_(writer)
         return True
     except Exception as e:
-        logger.error(f"PDF oluşturma hatası: {e}")
+        logger.error(f"PDF olu�turma hatas�: {e}")
         return False

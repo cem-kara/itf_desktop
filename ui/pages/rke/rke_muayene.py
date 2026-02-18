@@ -1,13 +1,13 @@
 ﻿# -*- coding: utf-8 -*-
 """
-RKE Muayene GiriÅŸi â€“ Ana Sayfa (KoordinatÃ¶r)
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-Bu dosya mevcut import path'ini korur; iÅŸ mantÄ±ÄŸÄ± alt modÃ¼llere taÅŸÄ±nmÄ±ÅŸtÄ±r:
+RKE Muayene Girişi – Ana Sayfa (Koordinatör)
+──────────────────────────────────────────────
+Bu dosya mevcut import path'ini korur; iş mantığı alt modüllere taşınmıştır:
 
-  rke/muayene/rke_muayene_models.py  â†’ RKEListTableModel, GecmisMuayeneModel
-  rke/muayene/rke_muayene_workers.py â†’ VeriYukleyiciThread, KayitWorkerThread, TopluKayitWorkerThread
-  rke/muayene/rke_muayene_form.py    â†’ RKEMuayeneFormWidget
-  rke/muayene/rke_toplu_dialog.py    â†’ TopluMuayeneDialog
+  rke/muayene/rke_muayene_models.py  → RKEListTableModel, GecmisMuayeneModel
+  rke/muayene/rke_muayene_workers.py → VeriYukleyiciThread, KayitWorkerThread, TopluKayitWorkerThread
+  rke/muayene/rke_muayene_form.py    → RKEMuayeneFormWidget
+  rke/muayene/rke_toplu_dialog.py    → TopluMuayeneDialog
 """
 from PySide6.QtCore import Qt, QSortFilterProxyModel
 from PySide6.QtWidgets import (
@@ -33,8 +33,8 @@ S = ThemeManager.get_all_component_styles()
 
 class RKEMuayenePage(QWidget):
     """
-    RKE Muayene GiriÅŸi sayfasÄ±.
-    kullanici_adi: oturum aÃ§mÄ±ÅŸ kullanÄ±cÄ± (Kontrol Eden alanÄ±na otomatik yazÄ±lÄ±r)
+    RKE Muayene Girişi sayfası.
+    kullanici_adi: oturum açmış kullanıcı (Kontrol Eden alanına otomatik yazılır)
     """
 
     def __init__(self, db=None, kullanici_adi: str = None, parent=None):
@@ -51,26 +51,26 @@ class RKEMuayenePage(QWidget):
         self._connect_signals()
         self.load_data()
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
     #  UI KURULUMU
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
 
     def _setup_ui(self, kullanici_adi: str):
         root = QHBoxLayout(self)
         root.setContentsMargins(10, 10, 10, 10)
         root.setSpacing(10)
 
-        # â”€â”€ SOL: FORM â”€â”€
+        # ── SOL: FORM ──
         self._form = RKEMuayeneFormWidget(kullanici_adi=kullanici_adi)
         root.addWidget(self._form, 35)
 
-        # Dikey ayraÃ§
+        # Dikey ayraç
         sep = QFrame()
         sep.setFrameShape(QFrame.VLine)
         sep.setStyleSheet(S.get("separator", ""))
         root.addWidget(sep)
 
-        # â”€â”€ SAÄ: LÄ°STE â”€â”€
+        # ── SAĞ: LİSTE ──
         sag_widget = QWidget()
         sag_lay = QVBoxLayout(sag_widget)
         sag_lay.setContentsMargins(0, 0, 0, 0)
@@ -84,7 +84,7 @@ class RKEMuayenePage(QWidget):
         fl.setSpacing(8)
 
         self._cmb_filtre_abd = QComboBox()
-        self._cmb_filtre_abd.addItem("TÃ¼m BÃ¶lÃ¼mler")
+        self._cmb_filtre_abd.addItem("Tüm Bölümler")
         self._cmb_filtre_abd.setStyleSheet(S.get("combo", ""))
         fl.addWidget(self._cmb_filtre_abd)
 
@@ -141,8 +141,8 @@ class RKEMuayenePage(QWidget):
 
         sag_lay.addWidget(self._list_view, 1)
 
-        # Toplu Ä°ÅŸlem Butonu
-        self._btn_toplu = QPushButton("SeÃ§ili Ekipmanlara Toplu Muayene Ekle")
+        # Toplu İşlem Butonu
+        self._btn_toplu = QPushButton("Seçili Ekipmanlara Toplu Muayene Ekle")
         self._btn_toplu.setStyleSheet(S.get("action_btn", ""))
         self._btn_toplu.setCursor(QCursor(Qt.PointingHandCursor))
         IconRenderer.set_button_icon(self._btn_toplu, "clipboard", color=DarkTheme.TEXT_PRIMARY, size=14)
@@ -150,7 +150,7 @@ class RKEMuayenePage(QWidget):
 
         # Footer
         footer = QHBoxLayout()
-        self._lbl_sayi = QLabel("0 kayÄ±t")
+        self._lbl_sayi = QLabel("0 kayıt")
         self._lbl_sayi.setStyleSheet(
             S.get("footer_label", f"color:{DarkTheme.TEXT_MUTED}; font-size:11px;")
         )
@@ -166,9 +166,9 @@ class RKEMuayenePage(QWidget):
 
         root.addWidget(sag_widget, 65)
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    #  SÄ°NYALLER
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
+    #  SİNYALLER
+    # ═══════════════════════════════════════════
 
     def _connect_signals(self):
         self._btn_yenile.clicked.connect(self.load_data)
@@ -178,9 +178,9 @@ class RKEMuayenePage(QWidget):
         self._list_view.selectionModel().selectionChanged.connect(self._on_list_selection)
         self._form.kaydet_istendi.connect(self._on_kaydet_istendi)
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    #  VERÄ° YÃœKLEME
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
+    #  VERİ YÜKLEME
+    # ═══════════════════════════════════════════
 
     def load_data(self):
         if hasattr(self, "_loader") and self._loader.isRunning():
@@ -205,7 +205,7 @@ class RKEMuayenePage(QWidget):
         abd_set = {str(r.get("AnaBilimDali", "")).strip() for r in rke_data if r.get("AnaBilimDali")}
         self._cmb_filtre_abd.blockSignals(True)
         self._cmb_filtre_abd.clear()
-        self._cmb_filtre_abd.addItem("TÃ¼m BÃ¶lÃ¼mler")
+        self._cmb_filtre_abd.addItem("Tüm Bölümler")
         self._cmb_filtre_abd.addItems(sorted(abd_set))
         self._cmb_filtre_abd.blockSignals(False)
 
@@ -215,14 +215,14 @@ class RKEMuayenePage(QWidget):
         f_abd = self._cmb_filtre_abd.currentText()
         filtered = [
             r for r in self._rke_data
-            if f_abd == "TÃ¼m BÃ¶lÃ¼mler" or str(r.get("AnaBilimDali", "")).strip() == f_abd
+            if f_abd == "Tüm Bölümler" or str(r.get("AnaBilimDali", "")).strip() == f_abd
         ]
         self._list_model.set_data(filtered)
         self._lbl_sayi.setText(f"{len(filtered)} Ekipman")
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    #  TABLO SEÃ‡Ä°MÄ°
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
+    #  TABLO SEÇİMİ
+    # ═══════════════════════════════════════════
 
     def _on_list_selection(self):
         indexes = self._list_view.selectionModel().selectedRows()
@@ -234,9 +234,9 @@ class RKEMuayenePage(QWidget):
             return
         self._form.goster_gecmis_ekipman(str(row_data.get("EkipmanNo", "")).strip())
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
     #  KAYDETME
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
 
     def _on_kaydet_istendi(self, veri: dict, dosya_yolu):
         self._form.set_busy(True)
@@ -247,17 +247,17 @@ class RKEMuayenePage(QWidget):
 
     def _on_save_success(self, msg: str):
         self._form.set_busy(False)
-        QMessageBox.information(self, "BaÅŸarÄ±lÄ±", msg)
+        QMessageBox.information(self, "Başarılı", msg)
         self.load_data()
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
     #  TOPLU MUAYENE
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
 
     def _ac_toplu_dialog(self):
         indexes = self._list_view.selectionModel().selectedRows()
         if not indexes:
-            QMessageBox.warning(self, "UyarÄ±", "Listeden en az bir ekipman seÃ§in (Ctrl/Shift ile Ã§oklu seÃ§im).")
+            QMessageBox.warning(self, "Uyarı", "Listeden en az bir ekipman seçin (Ctrl/Shift ile çoklu seçim).")
             return
 
         ekipmanlar = sorted({
@@ -276,15 +276,15 @@ class RKEMuayenePage(QWidget):
             self,
         )
         if dlg.exec() == QDialog.Accepted:
-            QMessageBox.information(self, "Bilgi", "Toplu kayÄ±t tamamlandÄ±.")
+            QMessageBox.information(self, "Bilgi", "Toplu kayıt tamamlandı.")
             self.load_data()
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
     #  HATA
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
 
     def _on_error(self, msg: str):
         self._pbar.setVisible(False)
         self._form.set_busy(False)
-        logger.error(f"RKEMuayene hatasÄ±: {msg}")
+        logger.error(f"RKEMuayene hatası: {msg}")
         QMessageBox.critical(self, "Hata", msg)

@@ -1,12 +1,12 @@
 ﻿# -*- coding: utf-8 -*-
 """
-RKE Raporlama â€“ Ana Sayfa (KoordinatÃ¶r)
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-Bu dosya mevcut import path'ini korur; iÅŸ mantÄ±ÄŸÄ± alt modÃ¼llere taÅŸÄ±nmÄ±ÅŸtÄ±r:
+RKE Raporlama – Ana Sayfa (Koordinatör)
+─────────────────────────────────────────
+Bu dosya mevcut import path'ini korur; iş mantığı alt modüllere taşınmıştır:
 
-  rke/rapor/rke_pdf_builder.py   â†’ HTML ÅŸablonlarÄ±, pdf_olustur()
-  rke/rapor/rke_rapor_models.py  â†’ RaporTableModel
-  rke/rapor/rke_rapor_workers.py â†’ VeriYukleyiciThread, RaporOlusturucuThread
+  rke/rapor/rke_pdf_builder.py   → HTML şablonları, pdf_olustur()
+  rke/rapor/rke_rapor_models.py  → RaporTableModel
+  rke/rapor/rke_rapor_workers.py → VeriYukleyiciThread, RaporOlusturucuThread
 """
 from PySide6.QtCore import Qt, QSortFilterProxyModel
 from PySide6.QtWidgets import (
@@ -29,7 +29,7 @@ S = ThemeManager.get_all_component_styles()
 
 
 class RKERaporPage(QWidget):
-    """RKE Raporlama ve Analiz sayfasÄ±."""
+    """RKE Raporlama ve Analiz sayfası."""
 
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
@@ -42,26 +42,26 @@ class RKERaporPage(QWidget):
         self._connect_signals()
         self.load_data()
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
     #  UI KURULUMU
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
 
     def _setup_ui(self):
         main = QVBoxLayout(self)
         main.setContentsMargins(16, 12, 16, 12)
         main.setSpacing(12)
 
-        # â”€â”€ KONTROL PANELÄ° â”€â”€
-        panel = QGroupBox("Rapor AyarlarÄ± ve Filtreler")
+        # ── KONTROL PANELİ ──
+        panel = QGroupBox("Rapor Ayarları ve Filtreler")
         panel.setStyleSheet(S.get("group", ""))
         panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         h_panel = QHBoxLayout(panel)
         h_panel.setSpacing(20)
 
-        # Sol: Rapor TÃ¼rÃ¼
+        # Sol: Rapor Türü
         v_left = QVBoxLayout()
         v_left.setSpacing(8)
-        lbl_tur = QLabel("RAPOR TÃœRÃœ")
+        lbl_tur = QLabel("RAPOR TÜRÜ")
         lbl_tur.setStyleSheet(S.get("section_title", ""))
         v_left.addWidget(lbl_tur)
 
@@ -76,7 +76,7 @@ class RKERaporPage(QWidget):
         self._rb_genel.setStyleSheet(radio_ss)
         self._rb_hurda = QRadioButton("B.  Hurda (HEK) Raporu")
         self._rb_hurda.setStyleSheet(radio_ss)
-        self._rb_kisi  = QRadioButton("C.  Personel BazlÄ± Raporlar")
+        self._rb_kisi  = QRadioButton("C.  Personel Bazlı Raporlar")
         self._rb_kisi.setStyleSheet(radio_ss)
 
         self._btn_group = QButtonGroup(self)
@@ -91,15 +91,15 @@ class RKERaporPage(QWidget):
         sep.setStyleSheet(S.get("separator", ""))
         h_panel.addWidget(sep)
 
-        # SaÄŸ: Filtreler + Butonlar
+        # Sağ: Filtreler + Butonlar
         v_right = QVBoxLayout()
         v_right.setSpacing(12)
 
         h_filters = QHBoxLayout()
         h_filters.setSpacing(12)
-        self._cmb_abd   = self._make_labeled_combo("Ana Bilim DalÄ±", "TÃ¼m BÃ¶lÃ¼mler")
-        self._cmb_birim = self._make_labeled_combo("Birim",          "TÃ¼m Birimler")
-        self._cmb_tarih = self._make_labeled_combo("Ä°ÅŸlem Tarihi",   "TÃ¼m Tarihler")
+        self._cmb_abd   = self._make_labeled_combo("Ana Bilim Dalı", "Tüm Bölümler")
+        self._cmb_birim = self._make_labeled_combo("Birim",          "Tüm Birimler")
+        self._cmb_tarih = self._make_labeled_combo("İşlem Tarihi",   "Tüm Tarihler")
         for w in (self._cmb_abd, self._cmb_birim, self._cmb_tarih):
             h_filters.addWidget(w["container"])
 
@@ -119,12 +119,12 @@ class RKERaporPage(QWidget):
 
         h_btn = QHBoxLayout()
         h_btn.setSpacing(10)
-        self._btn_yenile = QPushButton("VERÄ°LERÄ° YENÄ°LE")
+        self._btn_yenile = QPushButton("VERİLERİ YENİLE")
         self._btn_yenile.setStyleSheet(S.get("refresh_btn", ""))
         self._btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         IconRenderer.set_button_icon(self._btn_yenile, "sync", color=DarkTheme.TEXT_PRIMARY, size=14)
 
-        self._btn_olustur = QPushButton("PDF RAPOR OLUÅTUR")
+        self._btn_olustur = QPushButton("PDF RAPOR OLUŞTUR")
         self._btn_olustur.setStyleSheet(S.get("pdf_btn", ""))
         self._btn_olustur.setCursor(QCursor(Qt.PointingHandCursor))
         IconRenderer.set_button_icon(self._btn_olustur, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
@@ -151,7 +151,7 @@ class RKERaporPage(QWidget):
         h_panel.addLayout(v_right)
         main.addWidget(panel)
 
-        # â”€â”€ PROGRESS â”€â”€
+        # ── PROGRESS ──
         self._pbar = QProgressBar()
         self._pbar.setFixedHeight(4)
         self._pbar.setTextVisible(False)
@@ -159,7 +159,7 @@ class RKERaporPage(QWidget):
         self._pbar.setVisible(False)
         main.addWidget(self._pbar)
 
-        # â”€â”€ TABLO â”€â”€
+        # ── TABLO ──
         self._model = RaporTableModel()
         self._proxy = QSortFilterProxyModel()
         self._proxy.setSourceModel(self._model)
@@ -182,9 +182,9 @@ class RKERaporPage(QWidget):
         hdr.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Pb
         main.addWidget(self._table, 1)
 
-        # â”€â”€ FOOTER â”€â”€
+        # ── FOOTER ──
         footer = QHBoxLayout()
-        self._lbl_sayi = QLabel("0 kayÄ±t")
+        self._lbl_sayi = QLabel("0 kayıt")
         self._lbl_sayi.setStyleSheet(
             S.get("footer_label", f"color:{DarkTheme.TEXT_MUTED}; font-size:11px;")
         )
@@ -208,9 +208,9 @@ class RKERaporPage(QWidget):
         lay.addWidget(cmb)
         return {"container": c, "combo": cmb}
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    #  SÄ°NYALLER
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
+    #  SİNYALLER
+    # ═══════════════════════════════════════════
 
     def _connect_signals(self):
         self._btn_yenile.clicked.connect(self.load_data)
@@ -221,9 +221,9 @@ class RKERaporPage(QWidget):
         self._cmb_tarih["combo"].currentTextChanged.connect(self._filtrele)
         self._btn_group.buttonClicked.connect(lambda _: self._filtrele())
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    #  VERÄ° YÃœKLEME
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
+    #  VERİ YÜKLEME
+    # ═══════════════════════════════════════════
 
     def load_data(self):
         if hasattr(self, "_loader") and self._loader.isRunning():
@@ -231,7 +231,7 @@ class RKERaporPage(QWidget):
         self._pbar.setVisible(True)
         self._pbar.setRange(0, 0)
         self._btn_olustur.setEnabled(False)
-        self._btn_yenile.setText("YÃ¼kleniyorâ€¦")
+        self._btn_yenile.setText("Yükleniyor…")
 
         self._loader = VeriYukleyiciThread()
         self._loader.veri_hazir.connect(self._on_data_ready)
@@ -242,13 +242,13 @@ class RKERaporPage(QWidget):
     def _on_loader_finished(self):
         self._pbar.setVisible(False)
         self._btn_olustur.setEnabled(True)
-        self._btn_yenile.setText("VERÄ°LERÄ° YENÄ°LE")
+        self._btn_yenile.setText("VERİLERİ YENİLE")
 
     def _on_data_ready(self, data, abd_listesi, birim_listesi, tarih_listesi):
         self._ham_veriler = data
-        self._fill_combo(self._cmb_abd,   abd_listesi,   "TÃ¼m BÃ¶lÃ¼mler")
-        self._fill_combo(self._cmb_birim, birim_listesi, "TÃ¼m Birimler")
-        self._fill_combo(self._cmb_tarih, tarih_listesi, "TÃ¼m Tarihler")
+        self._fill_combo(self._cmb_abd,   abd_listesi,   "Tüm Bölümler")
+        self._fill_combo(self._cmb_birim, birim_listesi, "Tüm Birimler")
+        self._fill_combo(self._cmb_tarih, tarih_listesi, "Tüm Tarihler")
         self._on_abd_birim_degisti()
 
     @staticmethod
@@ -263,9 +263,9 @@ class RKERaporPage(QWidget):
         cmb.setCurrentIndex(idx if idx >= 0 else 0)
         cmb.blockSignals(False)
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    #  FÄ°LTRELEME
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
+    #  FİLTRELEME
+    # ═══════════════════════════════════════════
 
     def _on_abd_birim_degisti(self):
         f_abd   = self._cmb_abd["combo"].currentText()
@@ -275,15 +275,15 @@ class RKERaporPage(QWidget):
             row["Tarih"]
             for row in self._ham_veriler
             if row.get("Tarih")
-            and ("TÃ¼m" in f_abd   or row.get("ABD",   "") == f_abd)
-            and ("TÃ¼m" in f_birim or row.get("Birim", "") == f_birim)
+            and ("Tüm" in f_abd   or row.get("ABD",   "") == f_abd)
+            and ("Tüm" in f_birim or row.get("Birim", "") == f_birim)
         }
         sirali = sorted(mevcut_tarihler, key=_parse_date, reverse=True)
 
         cmb = self._cmb_tarih["combo"]
         cmb.blockSignals(True)
         cmb.clear()
-        cmb.addItem("TÃ¼m Tarihler")
+        cmb.addItem("Tüm Tarihler")
         cmb.addItems(sirali)
         cmb.blockSignals(False)
 
@@ -296,35 +296,35 @@ class RKERaporPage(QWidget):
 
         filtered = [
             row for row in self._ham_veriler
-            if ("TÃ¼m" in f_abd   or row.get("ABD",   "") == f_abd)
-            and ("TÃ¼m" in f_birim or row.get("Birim", "") == f_birim)
-            and ("TÃ¼m" in f_tarih or row.get("Tarih", "") == f_tarih)
-            and (not self._rb_hurda.isChecked() or "DeÄŸil" in row.get("Sonuc", ""))
+            if ("Tüm" in f_abd   or row.get("ABD",   "") == f_abd)
+            and ("Tüm" in f_birim or row.get("Birim", "") == f_birim)
+            and ("Tüm" in f_tarih or row.get("Tarih", "") == f_tarih)
+            and (not self._rb_hurda.isChecked() or "Değil" in row.get("Sonuc", ""))
         ]
         self._filtreli_veri = filtered
         self._model.set_data(filtered)
-        self._lbl_sayi.setText(f"{len(filtered)} kayÄ±t")
+        self._lbl_sayi.setText(f"{len(filtered)} kayıt")
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    #  RAPOR OLUÅTURMA
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # ═══════════════════════════════════════════
+    #  RAPOR OLUŞTURMA
+    # ═══════════════════════════════════════════
 
     def _on_rapor_olustur(self):
         if not self._filtreli_veri:
-            QMessageBox.warning(self, "UyarÄ±", "Rapor oluÅŸturmak iÃ§in tabloda veri olmalÄ±dÄ±r.")
+            QMessageBox.warning(self, "Uyarı", "Rapor oluşturmak için tabloda veri olmalıdır.")
             return
         if hasattr(self, "_worker") and self._worker.isRunning():
-            QMessageBox.warning(self, "UyarÄ±", "Ã–nceki rapor iÅŸlemi henÃ¼z tamamlanmadÄ±.")
+            QMessageBox.warning(self, "Uyarı", "Önceki rapor işlemi henüz tamamlanmadı.")
             return
 
         mod = 1
         if self._rb_hurda.isChecked():   mod = 2
         elif self._rb_kisi.isChecked():  mod = 3
 
-        ozet = f"{self._cmb_abd['combo'].currentText()} â€” {self._cmb_birim['combo'].currentText()}"
+        ozet = f"{self._cmb_abd['combo'].currentText()} — {self._cmb_birim['combo'].currentText()}"
 
         self._btn_olustur.setEnabled(False)
-        self._btn_olustur.setText("Ä°ÅŸleniyorâ€¦")
+        self._btn_olustur.setText("İşleniyor…")
         self._pbar.setVisible(True)
         self._pbar.setRange(0, 0)
 
@@ -336,20 +336,20 @@ class RKERaporPage(QWidget):
     def _on_rapor_bitti(self):
         self._pbar.setVisible(False)
         self._btn_olustur.setEnabled(True)
-        self._btn_olustur.setText("PDF RAPOR OLUÅTUR")
+        self._btn_olustur.setText("PDF RAPOR OLUŞTUR")
         QMessageBox.information(
-            self, "TamamlandÄ±",
-            "Rapor iÅŸlemi tamamlandÄ±. PDF oluÅŸturulduysa Drive'a veya yerel klasÃ¶re kaydedilmiÅŸtir."
+            self, "Tamamlandı",
+            "Rapor işlemi tamamlandı. PDF oluşturulduysa Drive'a veya yerel klasöre kaydedilmiştir."
         )
 
     def _on_log(self, msg: str):
         logger.info(f"[RKERapor] {msg}")
         if "HATA" in msg:
-            QMessageBox.warning(self, "UyarÄ±", msg)
+            QMessageBox.warning(self, "Uyarı", msg)
 
     def _on_error(self, msg: str):
         self._pbar.setVisible(False)
         self._btn_olustur.setEnabled(True)
-        self._btn_yenile.setText("VERÄ°LERÄ° YENÄ°LE")
-        logger.error(f"RKERapor hatasÄ±: {msg}")
+        self._btn_yenile.setText("VERİLERİ YENİLE")
+        logger.error(f"RKERapor hatası: {msg}")
         QMessageBox.critical(self, "Hata", msg)

@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 RKE Muayene Form Widget'ı
-──────────────────────────
+------------------------------------------
 Sol panel: tekli muayene giriş formu + geçmiş muayene tablosu.
 
 Sinyaller (dışarıya):
@@ -34,7 +34,7 @@ class RKEMuayeneFormWidget(QWidget):
     Sol panel widget'ı.
 
     Sinyal              Açıklama
-    ──────────────────  ──────────────────────────────────────
+   ------------------------------------------  ------------------------------------------
     kaydet_istendi      Kaydet tuşuna basıldığında (veri, dosya_yolu)
     temizle_istendi     Temizle tuşuna basıldığında
     """
@@ -50,9 +50,9 @@ class RKEMuayeneFormWidget(QWidget):
         self._setup_ui()
         self._connect_signals()
 
-    # ═══════════════════════════════════════════
+    # ===========================================
     #  DIŞ ARABIRIM
-    # ═══════════════════════════════════════════
+    # ===========================================
 
     def set_context(
         self,
@@ -76,7 +76,7 @@ class RKEMuayeneFormWidget(QWidget):
         self._cmb_rke.setCurrentIndex(-1)
         self._cmb_rke.blockSignals(False)
 
-        # Teknik açıklama
+        # Teknik Açıklama
         self._cmb_aciklama.clear()
         self._cmb_aciklama.addItems(teknik)
 
@@ -118,9 +118,9 @@ class RKEMuayeneFormWidget(QWidget):
         ]
         self._gecmis_model.set_data(gecmis)
 
-    # ═══════════════════════════════════════════
+    # ===========================================
     #  UI KURULUMU
-    # ═══════════════════════════════════════════
+    # ===========================================
 
     def _setup_ui(self):
         root = QVBoxLayout(self)
@@ -251,9 +251,9 @@ class RKEMuayeneFormWidget(QWidget):
         h_btn.addWidget(self._btn_kaydet)
         root.addLayout(h_btn)
 
-    # ═══════════════════════════════════════════
+    # ===========================================
     #  YARDIMCI FABRİKALAR
-    # ═══════════════════════════════════════════
+    # ===========================================
 
     def _labeled(self, text: str, widget) -> QWidget:
         c = QWidget()
@@ -301,9 +301,9 @@ class RKEMuayeneFormWidget(QWidget):
         parent_layout.addWidget(c)
         return cmb
 
-    # ═══════════════════════════════════════════
+    # ===========================================
     #  SİNYALLER
-    # ═══════════════════════════════════════════
+    # ===========================================
 
     def _connect_signals(self):
         self._btn_kaydet.clicked.connect(self._on_save)
@@ -321,9 +321,9 @@ class RKEMuayeneFormWidget(QWidget):
         ]
         self._gecmis_model.set_data(gecmis)
 
-    # ═══════════════════════════════════════════
+    # ===========================================
     #  KAYDET / TEMİZLE
-    # ═══════════════════════════════════════════
+    # ===========================================
 
     def _on_save(self):
         import time
@@ -364,9 +364,9 @@ class RKEMuayeneFormWidget(QWidget):
         self._gecmis_model.set_data([])
         self.temizle_istendi.emit()
 
-    # ═══════════════════════════════════════════
+    # ===========================================
     #  DOSYA SEÇİMİ
-    # ═══════════════════════════════════════════
+    # ===========================================
 
     def _sec_dosya(self):
         yol, _ = QFileDialog.getOpenFileName(

@@ -1,13 +1,13 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 RKE Muayene Worker Thread'leri
-────────────────────────────────
-• VeriYukleyiciThread       – Tüm sayfa verilerini yükler
-• KayitWorkerThread         – Tekli muayene kaydı + durum güncelleme
-• TopluKayitWorkerThread    – Toplu muayene kaydı + durum güncelleme
+��������������������������������
+� VeriYukleyiciThread       �  sayfa verilerini y�kler
+� KayitWorkerThread         � Tekli muayene kayd� + durum g�ncelleme
+� TopluKayitWorkerThread    � Toplu muayene kayd� + durum g�ncelleme
 
-Drive yükleme için projenin mevcut upload altyapısı kullanılır;
-bağımsız bir yardımcı yazılmamıştır.
+Drive y�kleme i�in projenin mevcut upload altyap�s� kullan�l�r;
+ba��ms�z bir yard�mc� yaz�lmam��t�r.
 """
 import time
 
@@ -17,9 +17,9 @@ from core.logger import logger
 from core.hata_yonetici import exc_logla
 
 
-# ═══════════════════════════════════════════════
-#  VERİ YÜKLEYICI
-# ═══════════════════════════════════════════════
+# ===============================================
+#  VERİ YÜKLEYİCİ
+# ===============================================
 
 class VeriYukleyiciThread(QThread):
     """
@@ -69,9 +69,9 @@ class VeriYukleyiciThread(QThread):
                 db.close()
 
 
-# ═══════════════════════════════════════════════
+# ===============================================
 #  TEKLİ KAYIT WORKER
-# ═══════════════════════════════════════════════
+# ===============================================
 
 class KayitWorkerThread(QThread):
     """
@@ -142,21 +142,21 @@ class KayitWorkerThread(QThread):
             (x for x in repo_list.get_all() if str(x.get("EkipmanNo")) == str(ekipman_no)),
             None,
         )
-        if target and target.get("KayitNo"):
-            repo_list.update(target["KayitNo"], {
+        if target and target.get("EkipmanNo"):
+            repo_list.update(target["EkipmanNo"], {
                 "Durum":         yeni_durum,
                 "KontrolTarihi": veri.get("FMuayeneTarihi"),
             })
 
 
-# ═══════════════════════════════════════════════
+# ===============================================
 #  TOPLU KAYIT WORKER
-# ═══════════════════════════════════════════════
+# ===============================================
 
 class TopluKayitWorkerThread(QThread):
     """
     Birden fazla ekipman için toplu muayene kaydı ekler.
-    Her ekipman için aynı ortak_veri kullanılır; EkipmanNo ve KayitNo ayrıştırılır.
+    Her ekipman için aynı ortak_veri kullanılır; EkipmanNo alanı ekipmana göre set edilir.
     """
     kayit_tamam = Signal(str)
     hata_olustu = Signal(str)
@@ -213,8 +213,8 @@ class TopluKayitWorkerThread(QThread):
                     (x for x in all_rke if str(x.get("EkipmanNo")) == str(ekipman_no)),
                     None,
                 )
-                if target and target.get("KayitNo"):
-                    repo_list.update(target["KayitNo"], {
+                if target and target.get("EkipmanNo"):
+                    repo_list.update(target["EkipmanNo"], {
                         "Durum":         yeni_durum,
                         "KontrolTarihi": item.get("FMuayeneTarihi"),
                     })
