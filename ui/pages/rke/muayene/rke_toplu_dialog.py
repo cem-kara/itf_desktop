@@ -1,9 +1,9 @@
 ﻿# -*- coding: utf-8 -*-
 """
 Toplu Muayene Dialog
-���������������������
-Listeden se�ilen birden fazla ekipmana ayn� anda muayene kayd� ekler.
-rke_muayene.py taraf�ndan a��l�r; ba��ms�z QDialog penceresidir.
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+Listeden seï¿½ilen birden fazla ekipmana aynï¿½ anda muayene kaydï¿½ ekler.
+rke_muayene.py tarafï¿½ndan aï¿½ï¿½lï¿½r; baï¿½ï¿½msï¿½z QDialog penceresidir.
 """
 import os
 
@@ -19,23 +19,23 @@ from ui.theme_manager import ThemeManager
 from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer
 
-from rke.shared.checkable_combo import CheckableComboBox
-from rke.muayene.rke_muayene_workers import TopluKayitWorkerThread
+from ui.pages.rke.shared.checkable_combo import CheckableComboBox
+from ui.pages.rke.muayene.rke_muayene_workers import TopluKayitWorkerThread
 
 S = ThemeManager.get_all_component_styles()
 
 
 class TopluMuayeneDialog(QDialog):
     """
-    Se�ili ekipmanlara ayn� anda muayene kayd� ekler.
+    Seï¿½ili ekipmanlara aynï¿½ anda muayene kaydï¿½ ekler.
 
     Parametreler
-    ������������
+    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     secilen_ekipmanlar  : ["RKE-001", "RKE-002", ...] listesi
     teknik_aciklamalar  : Sabitler tablosundan gelen RKE_Teknik listesi
-    kontrol_listesi     : Daha �nce kullan�lm�� KontrolEdenUnvani de�erleri
-    sorumlu_listesi     : Daha �nce kullan�lm�� BirimSorumlusuUnvani de�erleri
-    kullanici_adi       : Oturum a��k kullan�c� ad� (opsiyonel)
+    kontrol_listesi     : Daha ï¿½nce kullanï¿½lmï¿½ï¿½ KontrolEdenUnvani deï¿½erleri
+    sorumlu_listesi     : Daha ï¿½nce kullanï¿½lmï¿½ï¿½ BirimSorumlusuUnvani deï¿½erleri
+    kullanici_adi       : Oturum aï¿½ï¿½k kullanï¿½cï¿½ adï¿½ (opsiyonel)
     """
 
     def __init__(
@@ -48,7 +48,7 @@ class TopluMuayeneDialog(QDialog):
         parent=None,
     ):
         super().__init__(parent)
-        self.setWindowTitle(f"Toplu Muayene – {len(secilen_ekipmanlar)} Ekipman")
+        self.setWindowTitle(f"Toplu Muayene â€“ {len(secilen_ekipmanlar)} Ekipman")
         self.resize(680, 640)
 
         self._ekipmanlar         = secilen_ekipmanlar
@@ -68,7 +68,7 @@ class TopluMuayeneDialog(QDialog):
         main = QVBoxLayout(self)
         main.setSpacing(12)
 
-        # Ekipman listesi Özeti
+        # Ekipman listesi Ã–zeti
         grp_list = QGroupBox(f"Ekipmanlar ({len(self._ekipmanlar)})")
         grp_list.setStyleSheet(S.get("group", ""))
         v_list = QVBoxLayout(grp_list)
@@ -85,7 +85,7 @@ class TopluMuayeneDialog(QDialog):
         self._grp_fiz.setStyleSheet(S.get("group", ""))
         h_fiz = QHBoxLayout(self._grp_fiz)
         self._dt_fiz  = self._make_date("Tarih")
-        self._cmb_fiz = self._make_combo("Durum", ["Kullanıma Uygun", "Kullanıma Uygun Değil"])
+        self._cmb_fiz = self._make_combo("Durum", ["KullanÄ±ma Uygun", "KullanÄ±ma Uygun DeÄŸil"])
         h_fiz.addWidget(self._dt_fiz["widget"])
         h_fiz.addWidget(self._cmb_fiz["widget"])
         main.addWidget(self._grp_fiz)
@@ -97,7 +97,7 @@ class TopluMuayeneDialog(QDialog):
         self._grp_sko.setStyleSheet(S.get("group", ""))
         h_sko = QHBoxLayout(self._grp_sko)
         self._dt_sko  = self._make_date("Tarih")
-        self._cmb_sko = self._make_combo("Durum", ["Kullanıma Uygun", "Kullanıma Uygun Değil", "Yapılmadı"])
+        self._cmb_sko = self._make_combo("Durum", ["KullanÄ±ma Uygun", "KullanÄ±ma Uygun DeÄŸil", "YapÄ±lmadÄ±"])
         h_sko.addWidget(self._dt_sko["widget"])
         h_sko.addWidget(self._cmb_sko["widget"])
         main.addWidget(self._grp_sko)
@@ -126,12 +126,12 @@ class TopluMuayeneDialog(QDialog):
         self._cmb_aciklama = CheckableComboBox()
         self._cmb_aciklama.setStyleSheet(S.get("combo", ""))
         self._cmb_aciklama.addItems(self._teknik_aciklamalar)
-        v_ortak.addWidget(self._labeled("Teknik Açıklama (Çoklu Seçim)", self._cmb_aciklama))
+        v_ortak.addWidget(self._labeled("Teknik AÃ§Ä±klama (Ã‡oklu SeÃ§im)", self._cmb_aciklama))
 
         h_dosya = QHBoxLayout()
-        self._lbl_dosya = QLabel("Dosya seçilmedi")
+        self._lbl_dosya = QLabel("Dosya seÃ§ilmedi")
         self._lbl_dosya.setStyleSheet("color:#8b8fa3; font-size:11px;")
-        btn_dosya = QPushButton("Ortak Rapor Seç")
+        btn_dosya = QPushButton("Ortak Rapor SeÃ§")
         btn_dosya.setStyleSheet(S.get("file_btn", ""))
         btn_dosya.clicked.connect(self._sec_dosya)
         IconRenderer.set_button_icon(btn_dosya, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
@@ -151,13 +151,13 @@ class TopluMuayeneDialog(QDialog):
         h_btn = QHBoxLayout()
         h_btn.addStretch()
 
-        btn_iptal = QPushButton("İptal")
+        btn_iptal = QPushButton("Ä°ptal")
         btn_iptal.setStyleSheet(S.get("cancel_btn", ""))
         btn_iptal.setCursor(QCursor(Qt.PointingHandCursor))
         btn_iptal.clicked.connect(self.reject)
         IconRenderer.set_button_icon(btn_iptal, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
 
-        self._btn_baslat = QPushButton("Başlat")
+        self._btn_baslat = QPushButton("BaÅŸlat")
         self._btn_baslat.setStyleSheet(S.get("save_btn", ""))
         self._btn_baslat.setCursor(QCursor(Qt.PointingHandCursor))
         self._btn_baslat.clicked.connect(self._on_save)
@@ -168,7 +168,7 @@ class TopluMuayeneDialog(QDialog):
         main.addLayout(h_btn)
 
     # ===========================================
-    #  YARDIMCI FABRİKALAR
+    #  YARDIMCI FABRÄ°KALAR
     # ===========================================
 
     def _labeled(self, label_text: str, widget) -> QWidget:
@@ -222,7 +222,7 @@ class TopluMuayeneDialog(QDialog):
 
     def _sec_dosya(self):
         yol, _ = QFileDialog.getOpenFileName(
-            self, "Rapor Seç", "", "PDF / Resim (*.pdf *.jpg *.jpeg *.png)"
+            self, "Rapor SeÃ§", "", "PDF / Resim (*.pdf *.jpg *.jpeg *.png)"
         )
         if yol:
             self._dosya_yolu = yol
@@ -237,7 +237,7 @@ class TopluMuayeneDialog(QDialog):
             "Aciklamalar":          self._cmb_aciklama.get_checked_items(),
             "KontrolEdenUnvani":    self._cmb_kontrol.currentText(),
             "BirimSorumlusuUnvani": self._cmb_sorumlu.currentText(),
-            "Notlar":               "Toplu Kayıt",
+            "Notlar":               "Toplu KayÄ±t",
         }
         self._btn_baslat.setEnabled(False)
         self._pbar.setVisible(True)

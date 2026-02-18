@@ -1,10 +1,10 @@
 ﻿# -*- coding: utf-8 -*-
 """
 Checkable ComboBox
-�������������������
-�oklu se�im yap�labilen QComboBox bile�eni.
-RKE Muayene formunda teknik a��klama se�imi i�in kullan�l�r,
-ancak ba�ka sayfalarda da yeniden kullan�labilir.
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ï¿½oklu seï¿½im yapï¿½labilen QComboBox bileï¿½eni.
+RKE Muayene formunda teknik aï¿½ï¿½klama seï¿½imi iï¿½in kullanï¿½lï¿½r,
+ancak baï¿½ka sayfalarda da yeniden kullanï¿½labilir.
 """
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QComboBox
@@ -15,13 +15,13 @@ from ui.styles import DarkTheme
 
 class CheckableComboBox(QComboBox):
     """
-    Her ��enin yan�nda onay kutusu bulunan QComboBox.
+    Her ï¿½ï¿½enin yanï¿½nda onay kutusu bulunan QComboBox.
 
-    Kullan�m:
+    Kullanï¿½m:
         cmb = CheckableComboBox()
-        cmb.addItems(["Se�enek A", "Se�enek B"])
-        cmb.set_checked_items(["Se�enek A"])
-        secili = cmb.get_checked_items()   # "Se�enek A"
+        cmb.addItems(["Seï¿½enek A", "Seï¿½enek B"])
+        cmb.set_checked_items(["Seï¿½enek A"])
+        secili = cmb.get_checked_items()   # "Seï¿½enek A"
     """
 
     def __init__(self, parent=None):
@@ -36,7 +36,7 @@ class CheckableComboBox(QComboBox):
         p.setColor(QPalette.Text, QColor(DarkTheme.TEXT_PRIMARY))
         self.lineEdit().setPalette(p)
 
-    # �� �zel addItem / addItems ����������������������������������������������
+    # ï¿½ï¿½ ï¿½zel addItem / addItems ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
     def addItem(self, text, data=None):
         item = QStandardItem(text)
@@ -48,7 +48,7 @@ class CheckableComboBox(QComboBox):
         for t in texts:
             self.addItem(t)
 
-    # �� Se�im y�netimi �������������������������������������������������������
+    # ï¿½ï¿½ Seï¿½im yï¿½netimi ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
     def _handle_pressed(self, index):
         item = self.model().itemFromIndex(index)
@@ -65,12 +65,12 @@ class CheckableComboBox(QComboBox):
         ]
         self.lineEdit().setText(", ".join(checked))
 
-    # �� D�� Aray�z �����������������������������������������������������������
+    # ï¿½ï¿½ Dï¿½ï¿½ Arayï¿½z ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
     def set_checked_items(self, text_list):
         """
-        Verilen liste elemanlar�n� i�aretler, geri kalanlar� temizler.
-        text_list: list[str] ya da virg�lle ayr�lm�� str kabul eder.
+        Verilen liste elemanlarï¿½nï¿½ iï¿½aretler, geri kalanlarï¿½ temizler.
+        text_list: list[str] ya da virgï¿½lle ayrï¿½lmï¿½ï¿½ str kabul eder.
         """
         if isinstance(text_list, str):
             text_list = [x.strip() for x in text_list.split(",") if x.strip()] if text_list else []
@@ -83,5 +83,5 @@ class CheckableComboBox(QComboBox):
         self._update_text()
 
     def get_checked_items(self) -> str:
-        """��aretli ��eleri virg�lle ayr�lm�� string olarak d�nd�r�r."""
+        """ï¿½ï¿½aretli ï¿½ï¿½eleri virgï¿½lle ayrï¿½lmï¿½ï¿½ string olarak dï¿½ndï¿½rï¿½r."""
         return self.lineEdit().text()

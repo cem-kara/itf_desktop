@@ -1,20 +1,20 @@
 # ui/styles/icons.py
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Profesyonel SVG İkon Kütüphanesi — PySide6 Uyumlu
+# -------------------------------------------------------------
+# Profesyonel SVG kon Ktphanesi  PySide6 Uyumlu
 #
-# Kullanım:
+# Kullanm:
 #   from ui.styles.icons import Icons, IconRenderer
 #
-#   # QIcon olarak al (QPushButton, QAction için):
+#   # QIcon olarak al (QPushButton, QAction iin):
 #   btn.setIcon(Icons.get("users"))
 #
-#   # QPixmap olarak al (QLabel için):
+#   # QPixmap olarak al (QLabel iin):
 #   label.setPixmap(Icons.pixmap("users", size=20, color="#6bd3ff"))
 #
-#   # İkon + Metin buton:
+#   # kon + Metin buton:
 #   IconRenderer.set_button_icon(btn, "users", color="#6bd3ff", size=16)
 #
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# -------------------------------------------------------------
 
 from PySide6.QtGui import QIcon, QPixmap, QPainter, QColor
 from PySide6.QtCore import Qt, QSize, QByteArray
@@ -22,15 +22,15 @@ from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QPushButton, QLabel
 
 
-# ════════════════════════════════════════════════════════════════
-# SVG TANIMI — Tüm ikonlar inline SVG olarak tanımlı
-# Stroke tabanlı, temiz çizgi ikonlar (Lucide/Tabler stili)
+# ================================================================
+# SVG TANIMI  Tm ikonlar inline SVG olarak tanml
+# Stroke tabanl, temiz izgi ikonlar (Lucide/Tabler stili)
 # viewBox: 0 0 24 24, stroke-width: 1.75
-# ════════════════════════════════════════════════════════════════
+# ================================================================
 
 _SVG_PATHS: dict[str, str] = {
 
-    # ── PERSONEL ─────────────────────────────────────────────
+    #  PERSONEL 
     "users": """
         <circle cx="9" cy="7" r="3.5"/>
         <path d="M2 20c0-3.866 3.134-7 7-7s7 3.134 7 7"/>
@@ -56,7 +56,7 @@ _SVG_PATHS: dict[str, str] = {
         <path d="M14 10h4M14 14h3" stroke-linecap="round"/>
     """,
 
-    # ── DEVAM / İZİN ─────────────────────────────────────────
+    #  DEVAM / ZN 
     "calendar": """
         <rect x="3" y="4" width="18" height="17" rx="2"/>
         <path d="M3 9h18" stroke-linecap="round"/>
@@ -80,7 +80,7 @@ _SVG_PATHS: dict[str, str] = {
         <path d="M9 14l6 4M15 14l-6 4" stroke-linecap="round"/>
     """,
 
-    # ── FHSZ / RAPOR ─────────────────────────────────────────
+    #  FHSZ / RAPOR 
     "bar_chart": """
         <rect x="3" y="12" width="4" height="9" rx="1"/>
         <rect x="10" y="7" width="4" height="14" rx="1"/>
@@ -107,7 +107,7 @@ _SVG_PATHS: dict[str, str] = {
         <circle cx="7.5" cy="16" r="0.75" fill="currentColor" stroke="none"/>
     """,
 
-    # ── SAĞLIK ───────────────────────────────────────────────
+    #  SALIK 
     "activity": """
         <polyline points="22,12 18,12 15,20 9,4 6,12 2,12"
                   stroke-linecap="round" stroke-linejoin="round"/>
@@ -124,7 +124,7 @@ _SVG_PATHS: dict[str, str] = {
         <circle cx="20" cy="10" r="2"/>
     """,
 
-    # ── CİHAZ ────────────────────────────────────────────────
+    #  CHAZ 
     "microscope": """
         <path d="M6 18h8M3 22h18M14 22a7 7 0 1 0-7-7"/>
         <path d="M9 4h2v2H9zM11 4h2v6h-2z"/>
@@ -152,7 +152,7 @@ _SVG_PATHS: dict[str, str] = {
               stroke-linecap="round"/>
     """,
 
-    # ── ARIZA / BAKIM ─────────────────────────────────────────
+    #  ARIZA / BAKIM 
     "alert_triangle": """
         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
         <line x1="12" y1="9" x2="12" y2="13" stroke-linecap="round"/>
@@ -179,7 +179,7 @@ _SVG_PATHS: dict[str, str] = {
         <path d="M2 12l3-3 2 2-3 3-2-2z" stroke-linejoin="round"/>
     """,
 
-    # ── KALİBRASYON ──────────────────────────────────────────
+    #  KALBRASYON 
     "target": """
         <circle cx="12" cy="12" r="9"/>
         <circle cx="12" cy="12" r="5"/>
@@ -193,7 +193,7 @@ _SVG_PATHS: dict[str, str] = {
         <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
     """,
 
-    # ── RKE / GÜVENLİK ───────────────────────────────────────
+    #  RKE / GVENLK 
     "shield": """
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
     """,
@@ -222,7 +222,7 @@ _SVG_PATHS: dict[str, str] = {
         <line x1="15" y1="10" x2="22" y2="3" stroke-linecap="round"/>
     """,
 
-    # ── RAPORLAMA ─────────────────────────────────────────────
+    #  RAPORLAMA 
     "file_text": """
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
         <polyline points="14,2 14,8 20,8"/>
@@ -237,7 +237,7 @@ _SVG_PATHS: dict[str, str] = {
         <rect x="14" y="14" width="2" height="5"/>
     """,
 
-    # ── YIL SONU ──────────────────────────────────────────────
+    #  YIL SONU 
     "calendar_year": """
         <rect x="3" y="4" width="18" height="17" rx="2"/>
         <path d="M3 9h18" stroke-linecap="round"/>
@@ -246,7 +246,7 @@ _SVG_PATHS: dict[str, str] = {
         <path d="M8 17h8" stroke-linecap="round"/>
     """,
 
-    # ── AYARLAR / YÖNETİM ─────────────────────────────────────
+    #  AYARLAR / YNETM 
     "settings": """
         <circle cx="12" cy="12" r="3"/>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -261,7 +261,7 @@ _SVG_PATHS: dict[str, str] = {
         <circle cx="10" cy="18" r="2" fill="none"/>
     """,
 
-    # ── GENELGEÇEKLİ İKONLAR ─────────────────────────────────
+    #  GENELGEEKL KONLAR 
     "plus": """
         <line x1="12" y1="5" x2="12" y2="19" stroke-linecap="round"/>
         <line x1="5" y1="12" x2="19" y2="12" stroke-linecap="round"/>
@@ -425,7 +425,7 @@ _SVG_PATHS: dict[str, str] = {
         <line x1="3" y1="18" x2="21" y2="18" stroke-linecap="round"/>
     """,
 
-    # ── DURUM İKONLARI ────────────────────────────────────────
+    #  DURUM KONLARI 
     "status_active": """
         <circle cx="12" cy="12" r="9"/>
         <path d="M8 12l3 3 5-5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -443,7 +443,7 @@ _SVG_PATHS: dict[str, str] = {
         <circle cx="12" cy="16" r="0.5" fill="currentColor" stroke="none"/>
     """,
 
-    # ── HASTANE / LOGO ────────────────────────────────────────
+    #  HASTANE / LOGO 
     "hospital": """
         <path d="M12 6V2H8v4H4a2 2 0 0 0-2 2v14h20V8a2 2 0 0 0-2-2h-4V2h-4v4z"/>
         <path d="M10 14v-3h4v3"/>
@@ -458,7 +458,7 @@ _SVG_PATHS: dict[str, str] = {
               stroke-linecap="round" stroke-width="2.5"/>
     """,
 
-    # ── EXCEL / PDF BUTONLARI ─────────────────────────────────
+    #  EXCEL / PDF BUTONLARI 
     "file_excel": """
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
         <polyline points="14,2 14,8 20,8"/>
@@ -494,10 +494,10 @@ _SVG_PATHS: dict[str, str] = {
 }
 
 
-# ════════════════════════════════════════════════════════════════
-# MENU İKON HARITALAMASI
-# sidebar.py'deki MENU_ICONS'u emojiden SVG key'e taşıyın
-# ════════════════════════════════════════════════════════════════
+# ================================================================
+# MENU IKON HARITALAMASI
+# sidebar.py'deki MENU_ICONS'u emojiden SVG key'e tasiyin
+# ================================================================
 
 MENU_ICON_MAP: dict[str, str] = {
     "Personel Listesi":  "users",
@@ -505,7 +505,7 @@ MENU_ICON_MAP: dict[str, str] = {
     "İzin Takip":        "calendar_check",
     "FHSZ Yönetim":      "bar_chart",
     "Puantaj Rapor":     "clipboard_list",
-    "Saglik Takip":      "activity",
+    "Sağlık Takip":      "activity",
     "Personel Verileri": "file_chart",
     "Cihaz Listesi":     "microscope",
     "Cihaz Ekle":        "device_add",
@@ -513,27 +513,27 @@ MENU_ICON_MAP: dict[str, str] = {
     "Arıza Listesi":     "wrench_list",
     "Periyodik Bakım":   "tools",
     "Kalibrasyon Takip": "crosshair",
-    "RKE Listesi":       "shield_check",
-    "Muayene Girişi":    "check_in",
+    "RKE Envanter":      "shield_check",
+    "RKE Muayene":       "check_in",
     "RKE Raporlama":     "file_text",
     "Yıl Sonu İzin":     "calendar_year",
     "Ayarlar":           "settings",
 }
 
 GROUP_ICON_MAP: dict[str, str] = {
-    "PERSONEL":             "user",
-    "CİHAZ":               "microscope",
-    "RKE":                 "shield",
+    "PERSONEL":           "user",
+    "CİHAZ":              "microscope",
+    "RKE":                "shield",
     "YÖNETİCİ İŞLEMLERİ": "settings_sliders",
 }
 
 
-# ════════════════════════════════════════════════════════════════
+# ================================================================
 # SVG RENDER MOTORu
-# ════════════════════════════════════════════════════════════════
+# ================================================================
 
 def _build_svg(paths: str, color: str, size: int) -> str:
-    """Ham path verisinden tam SVG belgesi oluşturur."""
+    """Ham path verisinden tam SVG belgesi oluturur."""
     return f"""<svg xmlns="http://www.w3.org/2000/svg"
      width="{size}" height="{size}" viewBox="0 0 24 24"
      fill="none"
@@ -546,7 +546,7 @@ def _build_svg(paths: str, color: str, size: int) -> str:
 
 
 def _render_svg(svg_str: str, size: int) -> QPixmap:
-    """SVG string'i QPixmap'e dönüştürür."""
+    """SVG string'i QPixmap'e dntrr."""
     pixmap = QPixmap(size, size)
     pixmap.fill(Qt.transparent)
     renderer = QSvgRenderer(QByteArray(svg_str.encode("utf-8")))
@@ -557,34 +557,34 @@ def _render_svg(svg_str: str, size: int) -> QPixmap:
     return pixmap
 
 
-# ════════════════════════════════════════════════════════════════
-# ANA API — Icons sınıfı
-# ════════════════════════════════════════════════════════════════
+# ================================================================
+# ANA API  Icons snf
+# ================================================================
 
 class Icons:
     """
-    Merkezi SVG ikon erişim noktası.
+    Merkezi SVG ikon eriim noktas.
 
-    Örnekler
+    rnekler
     --------
-    # Varsayılan renk ve boyutla QIcon al:
+    # Varsaylan renk ve boyutla QIcon al:
     icon = Icons.get("users")
 
-    # Özel renk ve boyut:
+    # zel renk ve boyut:
     icon = Icons.get("settings", color="#6bd3ff", size=20)
 
-    # QPixmap olarak (QLabel için):
+    # QPixmap olarak (QLabel iin):
     pm = Icons.pixmap("bell", size=24, color="#ffca28")
 
-    # Mevcut tüm ikon isimlerini listele:
+    # Mevcut tm ikon isimlerini listele:
     Icons.available()
     """
 
-    # Varsayılan değerler (DarkTheme uyumlu)
-    DEFAULT_COLOR: str = "#8b8fa3"    # TEXT_MUTED benzeri nötr gri
+    # Varsaylan deerler (DarkTheme uyumlu)
+    DEFAULT_COLOR: str = "#8b8fa3"    # TEXT_MUTED benzeri ntr gri
     DEFAULT_SIZE:  int = 16
 
-    # İç önbellek — aynı (name, color, size) üçlüsü için tekrar render etme
+    #  nbellek  ayn (name, color, size) ls iin tekrar render etme
     _cache: dict[tuple, QPixmap] = {}
 
     @classmethod
@@ -594,14 +594,14 @@ class Icons:
         size:  int = DEFAULT_SIZE,
         color: str = DEFAULT_COLOR,
     ) -> QPixmap:
-        """İkon adından QPixmap döndürür. Bulunamazsa boş pixmap."""
+        """kon adndan QPixmap dndrr. Bulunamazsa bo pixmap."""
         key = (name, size, color)
         if key in cls._cache:
             return cls._cache[key]
 
         paths = _SVG_PATHS.get(name)
         if paths is None:
-            # Bilinmeyen ikon → soru işareti benzeri minimal placeholder
+            # Bilinmeyen ikon  soru iareti benzeri minimal placeholder
             paths = '<circle cx="12" cy="12" r="8"/><text x="12" y="17" text-anchor="middle" font-size="12" fill="{c}" stroke="none">?</text>'.replace("{c}", color)
 
         svg = _build_svg(paths, color, size)
@@ -616,14 +616,14 @@ class Icons:
         size:  int = DEFAULT_SIZE,
         color: str = DEFAULT_COLOR,
     ) -> QIcon:
-        """İkon adından QIcon döndürür (QPushButton.setIcon için)."""
+        """kon adndan QIcon dndrr (QPushButton.setIcon iin)."""
         return QIcon(cls.pixmap(name, size, color))
 
     @classmethod
     def menu_icon(cls, menu_title: str, size: int = 16) -> QIcon | None:
         """
-        Menü başlığından QIcon döndürür.
-        MENU_ICON_MAP üzerinden çalışır.
+        Men balndan QIcon dndrr.
+        MENU_ICON_MAP zerinden alr.
         """
         key = MENU_ICON_MAP.get(menu_title)
         if key:
@@ -632,7 +632,7 @@ class Icons:
 
     @classmethod
     def group_icon(cls, group_name: str, size: int = 16) -> QIcon | None:
-        """Grup başlığından QIcon döndürür."""
+        """Grup balndan QIcon dndrr."""
         key = GROUP_ICON_MAP.get(group_name)
         if key:
             return cls.get(key, size=size, color="#6bd3ff")
@@ -640,24 +640,24 @@ class Icons:
 
     @classmethod
     def available(cls) -> list[str]:
-        """Kayıtlı tüm ikon isimlerini döndürür."""
+        """Kaytl tm ikon isimlerini dndrr."""
         return sorted(_SVG_PATHS.keys())
 
     @classmethod
     def clear_cache(cls) -> None:
-        """Render önbelleğini temizler."""
+        """Render nbelleini temizler."""
         cls._cache.clear()
 
 
-# ════════════════════════════════════════════════════════════════
-# YARDIMCI — IconRenderer (widget entegrasyonu)
-# ════════════════════════════════════════════════════════════════
+# ================================================================
+# YARDIMCI  IconRenderer (widget entegrasyonu)
+# ================================================================
 
 class IconRenderer:
     """
-    Widget'lara pratik ikon atama yardımcıları.
+    Widget'lara pratik ikon atama yardmclar.
 
-    Örnekler
+    rnekler
     --------
     IconRenderer.set_button_icon(btn, "users", color="#6bd3ff", size=16)
     IconRenderer.set_label_icon(label, "bell", size=24, color="#ffca28")
@@ -690,7 +690,7 @@ class IconRenderer:
     @staticmethod
     def status_icon(status: str, size: int = 14) -> QIcon:
         """
-        Personel durumuna göre renkli durum ikonu döndürür.
+        Personel durumuna gre renkli durum ikonu dndrr.
 
         Parametreler
         ------------
@@ -705,27 +705,27 @@ class IconRenderer:
         return Icons.get(icon_name, size=size, color=color)
 
 
-# ════════════════════════════════════════════════════════════════
-# HAZIR RENK SABİTLERİ (DarkTheme ile uyumlu)
-# Sık kullanılan ikon renklerini merkezi tutar
-# ════════════════════════════════════════════════════════════════
+# ================================================================
+# HAZIR RENK SABTLER (DarkTheme ile uyumlu)
+# Sk kullanlan ikon renklerini merkezi tutar
+# ================================================================
 
 class IconColors:
-    """Uygulamada tutarlı ikon renkleri için sabitler."""
+    """Uygulamada tutarl ikon renkleri iin sabitler."""
 
     # Sidebar menu item (pasif)
     MENU_ITEM      = "#8b8fa3"
     # Sidebar menu item (aktif / hover)
     MENU_ACTIVE    = "#ffffff"
-    # Sidebar grup başlığı
+    # Sidebar grup bal
     GROUP_HEADER   = "#6bd3ff"
-    # Primary aksiyon butonları
+    # Primary aksiyon butonlar
     PRIMARY        = "#6bd3ff"
     # Tehlike / silme
     DANGER         = "#f87171"
-    # Başarı / aktif durum
+    # Baar / aktif durum
     SUCCESS        = "#4ade80"
-    # Uyarı / izin
+    # Uyar / izin
     WARNING        = "#facc15"
     # Bilgi
     INFO           = "#60a5fa"

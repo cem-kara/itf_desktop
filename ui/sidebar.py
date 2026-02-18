@@ -102,16 +102,21 @@ class AccordionGroup(QWidget):
         self.content.setVisible(False)
         layout.addWidget(self.content)
 
-    def add_item(self, baslik: str, callback) -> QPushButton:
+    def add_item(self, baslik: str, callback, icon_key: str | None = None) -> QPushButton:
         btn = QPushButton(f"   {baslik}")
         btn.setCursor(QCursor(Qt.PointingHandCursor))
         btn.setCheckable(True)
         btn._baslik = baslik
         btn.setStyleSheet(self._item_css(False))
 
-        icon_key = MENU_ICON_MAP.get(baslik)
-        if icon_key:
-            btn.setIcon(Icons.get(icon_key, size=14, color=IconColors.MENU_ITEM))
+        resolved_icon = None
+        if icon_key and icon_key in Icons.available():
+            resolved_icon = icon_key
+        else:
+            resolved_icon = MENU_ICON_MAP.get(baslik)
+        btn._icon_key = resolved_icon
+        if resolved_icon:
+            btn.setIcon(Icons.get(resolved_icon, size=14, color=IconColors.MENU_ITEM))
             btn.setIconSize(QSize(14, 14))
 
         btn.clicked.connect(lambda: callback(self.group_name, baslik))
@@ -174,7 +179,7 @@ class AccordionGroup(QWidget):
             btn.setChecked(is_active)
             btn.setStyleSheet(self._item_css(is_active))
 
-            icon_key = MENU_ICON_MAP.get(btn._baslik)
+            icon_key = getattr(btn, "_icon_key", None) or MENU_ICON_MAP.get(btn._baslik)
             if icon_key:
                 color = IconColors.MENU_ACTIVE if is_active else IconColors.MENU_ITEM
                 btn.setIcon(Icons.get(icon_key, size=14, color=color))
@@ -355,7 +360,7 @@ class Sidebar(QWidget):
     def _load_menu(self):
         cfg_path = os.path.join(BASE_DIR, "ayarlar.json")
         try:
-            with open(cfg_path, "r", encoding="utf-8") as f:
+            with open(cfg_path, "r", encoding="utf-8-sig") as f:
                 data = json.load(f)
             menu_cfg = data.get("menu_yapilandirma", {})
         except Exception:
@@ -365,7 +370,8 @@ class Sidebar(QWidget):
             group = AccordionGroup(group_name)
             for item in items:
                 baslik = item.get("baslik", "?")
-                btn = group.add_item(baslik, self._on_click)
+                icon_key = item.get("icon")
+                btn = group.add_item(baslik, self._on_click, icon_key=icon_key)
                 self._all_buttons[baslik] = (group, btn)
             self._groups[group_name] = group
             self._menu_layout.addWidget(group)

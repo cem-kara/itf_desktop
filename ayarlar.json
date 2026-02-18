@@ -3,37 +3,30 @@
     "PERSONEL": [
       {
         "baslik": "Personel Listesi",
-        "icon": "👥",
         "implemented": true
       },
       {
         "baslik": "Personel Ekle",
-        "icon": "➕",
         "implemented": true
       },
       {
         "baslik": "İzin Takip",
-        "icon": "📅",
         "implemented": true
       },
       {
         "baslik": "FHSZ Yönetim",
-        "icon": "📊",
         "implemented": true
       },
       {
         "baslik": "Puantaj Rapor",
-        "icon": "📋",
         "implemented": true
       },
       {
-        "baslik": "Saglik Takip",
-        "icon": "ST",
+        "baslik": "Sağlık Takip",
         "implemented": true
       },
       {
         "baslik": "Personel Verileri",
-        "icon": "📈",
         "implemented": false,
         "note": "Dashboard - gelecek versiyon"
       }
@@ -41,76 +34,63 @@
     "CİHAZ": [
       {
         "baslik": "Cihaz Listesi",
-        "icon": "🔬",
         "implemented": false,
         "note": "Geliştirme aşamasında"
       },
       {
         "baslik": "Cihaz Ekle",
-        "icon": "🆕",
         "implemented": false
       },
       {
         "baslik": "Arıza Kayıt",
-        "icon": "⚠️",
         "implemented": false
       },
       {
         "baslik": "Arıza Listesi",
-        "icon": "🔧",
         "implemented": false
       },
       {
         "baslik": "Periyodik Bakım",
-        "icon": "🛠️",
         "implemented": false
       },
       {
         "baslik": "Kalibrasyon Takip",
-        "icon": "📐",
         "implemented": false
       }
     ],
     "RKE": [
       {
         "baslik": "RKE Envanter",
-        "icon": "🛡️",
-        "implemented": false,
+        "implemented": true,
         "note": "Geliştirme aşamasında"
       },
       {
         "baslik": "RKE Muayene",
-        "icon": "🔍",
-        "implemented": false
+        "implemented": true
       },
       {
         "baslik": "RKE Raporlama",
-        "icon": "📋",
-        "implemented": false
+        "implemented": true
       }
     ],
     "YÖNETİCİ İŞLEMLERİ": [
       {
         "baslik": "Yıl Sonu İzin",
-        "icon": "📆",
         "implemented": false,
         "note": "Yıl sonu izin devir işlemleri"
       },
       {
         "baslik": "Log Görüntüleyici",
-        "icon": "📜",
         "implemented": true,
         "note": "Uygulama log dosyalarını incele"
       },
       {
         "baslik": "Yedek Yönetimi",
-        "icon": "💾",
         "implemented": true,
         "note": "Veritabanı yedeklerini listele, al ve geri yükle"
       },
       {
         "baslik": "Ayarlar",
-        "icon": "⚙️",
         "implemented": false
       }
     ]
