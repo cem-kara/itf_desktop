@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-RKE Muayene Girişi – Ana Sayfa (Koordinatör)
-──────────────────────────────────────────────
-Bu dosya mevcut import path'ini korur; iş mantığı alt modüllere taşınmıştır:
+RKE Muayene Girişi – Ana Sayfa
+────────────────────────────────
+• Sol : RKEMuayeneFormWidget  (tekli muayene formu + geçmiş)
+• Sağ : QTableView            (RKEListTableModel + QSortFilterProxyModel)
 
-  rke/muayene/rke_muayene_models.py  → RKEListTableModel, GecmisMuayeneModel
-  rke/muayene/rke_muayene_workers.py → VeriYukleyiciThread, KayitWorkerThread, TopluKayitWorkerThread
-  rke/muayene/rke_muayene_form.py    → RKEMuayeneFormWidget
-  rke/muayene/rke_toplu_dialog.py    → TopluMuayeneDialog
+Bu modül yalnızca koordinasyon ve sinyal bağlantılarından sorumludur.
+İş mantığı alt modüllere taşınmıştır:
+  rke_muayene_models  → RKEListTableModel, GecmisMuayeneModel
+  rke_muayene_workers → VeriYukleyiciThread, KayitWorkerThread, TopluKayitWorkerThread
+  rke_muayene_form    → RKEMuayeneFormWidget
+  rke_toplu_dialog    → TopluMuayeneDialog
 """
 from PySide6.QtCore import Qt, QSortFilterProxyModel
 from PySide6.QtWidgets import (
@@ -23,10 +26,10 @@ from ui.theme_manager import ThemeManager
 from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer
 
-from ui.pages.rke.muayene.rke_muayene_models import RKEListTableModel, RKE_COLUMNS
-from ui.pages.rke.muayene.rke_muayene_workers import VeriYukleyiciThread, KayitWorkerThread
-from ui.pages.rke.muayene.rke_muayene_form import RKEMuayeneFormWidget
-from ui.pages.rke.muayene.rke_toplu_dialog import TopluMuayeneDialog
+from .rke_muayene_models import RKEListTableModel, RKE_COLUMNS
+from .rke_muayene_workers import VeriYukleyiciThread, KayitWorkerThread
+from .rke_muayene_form import RKEMuayeneFormWidget
+from .rke_toplu_dialog import TopluMuayeneDialog
 
 S = ThemeManager.get_all_component_styles()
 
@@ -176,6 +179,8 @@ class RKEMuayenePage(QWidget):
         self._txt_ara.textChanged.connect(self._list_proxy.setFilterFixedString)
         self._cmb_filtre_abd.currentTextChanged.connect(self._apply_filter)
         self._list_view.selectionModel().selectionChanged.connect(self._on_list_selection)
+
+        # Form sinyalleri
         self._form.kaydet_istendi.connect(self._on_kaydet_istendi)
 
     # ═══════════════════════════════════════════
@@ -202,6 +207,7 @@ class RKEMuayenePage(QWidget):
 
         self._form.set_context(rke_data, teknik, kontrol_listesi, sorumlu_listesi, tum_muayene)
 
+        # ABD filtre combo
         abd_set = {str(r.get("AnaBilimDali", "")).strip() for r in rke_data if r.get("AnaBilimDali")}
         self._cmb_filtre_abd.blockSignals(True)
         self._cmb_filtre_abd.clear()
@@ -232,7 +238,8 @@ class RKEMuayenePage(QWidget):
         row_data = self._list_model.get_row(src_idx.row())
         if not row_data:
             return
-        self._form.goster_gecmis_ekipman(str(row_data.get("EkipmanNo", "")).strip())
+        ekipman_no = str(row_data.get("EkipmanNo", "")).strip()
+        self._form.goster_gecmis_ekipman(ekipman_no)
 
     # ═══════════════════════════════════════════
     #  KAYDETME

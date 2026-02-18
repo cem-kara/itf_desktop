@@ -150,7 +150,7 @@ Başarılıysa, `token.json` otomatik oluşturulacak.
 ```json
 {
     "APP_NAME": "ITF Desktop",
-    "VERSION": "1.0.1",
+    "VERSION": "1.0.8",
     "AUTO_SYNC": true,
     "SYNC_INTERVAL_MIN": 15
 }

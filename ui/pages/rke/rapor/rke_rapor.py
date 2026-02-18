@@ -1,13 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-RKE Raporlama – Ana Sayfa (Koordinatör)
-─────────────────────────────────────────
-Bu dosya mevcut import path'ini korur; iş mantığı alt modüllere taşınmıştır:
+RKE Raporlama – Ana Sayfa
+───────────────────────────
+• Filtre paneli : ABD / Birim / Tarih + rapor türü (Genel / Hurda / Personel Bazlı)
+• QTableView    : RaporTableModel + QSortFilterProxyModel
+• Rapor butonu  : RaporOlusturucuThread → PDF + Drive
 
-  rke/rapor/rke_pdf_builder.py   → HTML şablonları, pdf_olustur()
-  rke/rapor/rke_rapor_models.py  → RaporTableModel
-  rke/rapor/rke_rapor_workers.py → VeriYukleyiciThread, RaporOlusturucuThread
+Bu modül yalnızca koordinasyon ve sinyal bağlantılarından sorumludur.
+İş mantığı alt modüllere taşınmıştır:
+  rke_pdf_builder    → HTML şablonları, pdf_olustur()
+  rke_rapor_models   → RaporTableModel
+  rke_rapor_workers  → VeriYukleyiciThread, RaporOlusturucuThread
 """
+import datetime
+
 from PySide6.QtCore import Qt, QSortFilterProxyModel
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
@@ -22,8 +28,8 @@ from ui.theme_manager import ThemeManager
 from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer
 
-from ui.pages.rke.rapor.rke_rapor_models import RaporTableModel, COLUMNS
-from ui.pages.rke.rapor.rke_rapor_workers import VeriYukleyiciThread, RaporOlusturucuThread, _parse_date
+from .rke_rapor_models import RaporTableModel, COLUMNS
+from .rke_rapor_workers import VeriYukleyiciThread, RaporOlusturucuThread, _parse_date
 
 S = ThemeManager.get_all_component_styles()
 
@@ -58,7 +64,7 @@ class RKERaporPage(QWidget):
         h_panel = QHBoxLayout(panel)
         h_panel.setSpacing(20)
 
-        # Sol: Rapor Türü
+        # Sol: Rapor Türü (radio butonlar)
         v_left = QVBoxLayout()
         v_left.setSpacing(8)
         lbl_tur = QLabel("RAPOR TÜRÜ")
@@ -86,6 +92,7 @@ class RKERaporPage(QWidget):
         v_left.addStretch()
         h_panel.addLayout(v_left)
 
+        # Dikey ayraç
         sep = QFrame()
         sep.setFrameShape(QFrame.VLine)
         sep.setStyleSheet(S.get("separator", ""))
@@ -97,12 +104,14 @@ class RKERaporPage(QWidget):
 
         h_filters = QHBoxLayout()
         h_filters.setSpacing(12)
+
         self._cmb_abd   = self._make_labeled_combo("Ana Bilim Dalı", "Tüm Bölümler")
         self._cmb_birim = self._make_labeled_combo("Birim",          "Tüm Birimler")
         self._cmb_tarih = self._make_labeled_combo("İşlem Tarihi",   "Tüm Tarihler")
         for w in (self._cmb_abd, self._cmb_birim, self._cmb_tarih):
             h_filters.addWidget(w["container"])
 
+        # Arama
         txt_wrap = QWidget()
         txt_wrap.setStyleSheet("background: transparent;")
         tw = QVBoxLayout(txt_wrap)
@@ -115,10 +124,13 @@ class RKERaporPage(QWidget):
         self._txt_ara.setStyleSheet(S.get("search", ""))
         tw.addWidget(self._txt_ara)
         h_filters.addWidget(txt_wrap)
+
         v_right.addLayout(h_filters)
 
+        # Butonlar
         h_btn = QHBoxLayout()
         h_btn.setSpacing(10)
+
         self._btn_yenile = QPushButton("VERİLERİ YENİLE")
         self._btn_yenile.setStyleSheet(S.get("refresh_btn", ""))
         self._btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
@@ -180,6 +192,7 @@ class RKERaporPage(QWidget):
         hdr.setSectionResizeMode(QHeaderView.Stretch)
         hdr.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # Tarih
         hdr.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Pb
+
         main.addWidget(self._table, 1)
 
         # ── FOOTER ──
@@ -192,7 +205,10 @@ class RKERaporPage(QWidget):
         footer.addStretch()
         main.addLayout(footer)
 
+    # ─── Yardımcı fabrika ────────────────────────────────────────────────────
+
     def _make_labeled_combo(self, label_text: str, default_item: str) -> dict:
+        """{"container": QWidget, "combo": QComboBox} döndürür."""
         c = QWidget()
         c.setStyleSheet("background: transparent;")
         lay = QVBoxLayout(c)
@@ -268,6 +284,7 @@ class RKERaporPage(QWidget):
     # ═══════════════════════════════════════════
 
     def _on_abd_birim_degisti(self):
+        """ABD veya Birim değişince Tarih combo'su yeniden hesaplanır."""
         f_abd   = self._cmb_abd["combo"].currentText()
         f_birim = self._cmb_birim["combo"].currentText()
 
@@ -301,6 +318,7 @@ class RKERaporPage(QWidget):
             and ("Tüm" in f_tarih or row.get("Tarih", "") == f_tarih)
             and (not self._rb_hurda.isChecked() or "Değil" in row.get("Sonuc", ""))
         ]
+
         self._filtreli_veri = filtered
         self._model.set_data(filtered)
         self._lbl_sayi.setText(f"{len(filtered)} kayıt")
@@ -318,8 +336,10 @@ class RKERaporPage(QWidget):
             return
 
         mod = 1
-        if self._rb_hurda.isChecked():   mod = 2
-        elif self._rb_kisi.isChecked():  mod = 3
+        if self._rb_hurda.isChecked():
+            mod = 2
+        elif self._rb_kisi.isChecked():
+            mod = 3
 
         ozet = f"{self._cmb_abd['combo'].currentText()} — {self._cmb_birim['combo'].currentText()}"
 
