@@ -1,15 +1,15 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-RKE Envanter Yönetimi – Ana Sayfa
-──────────────────────────────────
-• Sol : RKEFormWidget   (ekle / güncelle formu + muayene geçmişi)
-• Sağ : QTableView      (RKETableModel + QSortFilterProxyModel)
+RKE Envanter YÃ¶netimi â€“ Ana Sayfa
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+â€¢ Sol : RKEFormWidget   (ekle / güncelle formu + muayene geÃ§miÅŸi)
+â€¢ SaÄŸ : QTableView      (RKETableModel + QSortFilterProxyModel)
 
-Bu modül yalnızca koordinasyon ve sinyal bağlantılarından sorumludur;
-iş mantığı alt modüllere taşınmıştır:
-  rke/yonetim/rke_table_models  → RKETableModel, GecmisTableModel
-  rke/yonetim/rke_workers       → VeriYukleyiciThread, IslemKaydediciThread, GecmisYukleyiciThread
-  rke/yonetim/rke_form_widget   → RKEFormWidget
+Bu modül yalnÄ±zca koordinasyon ve sinyal baÄŸlantÄ±larÄ±ndan sorumludur;
+iÅŸ mantÄ±ÄŸÄ± alt modüllere taÅŸÄ±nmÄ±ÅŸtÄ±r:
+  rke/yonetim/rke_table_models  â†’ RKETableModel, GecmisTableModel
+  rke/yonetim/rke_workers       â†’ VeriYukleyiciThread, IslemKaydediciThread, GecmisYukleyiciThread
+  rke/yonetim/rke_form_widget   â†’ RKEFormWidget
 """
 from PySide6.QtCore import Qt, QSortFilterProxyModel
 from PySide6.QtWidgets import (
@@ -34,9 +34,9 @@ S = ThemeManager.get_all_component_styles()
 
 class RKEYonetimPage(QWidget):
     """
-    RKE Envanter Yönetimi sayfası.
-    db parametresi ileride doğrudan enjeksiyon için tutulmaktadır;
-    thread'ler kendi bağlantılarını yönetir.
+    RKE Envanter YÃ¶netimi sayfasÄ±.
+    db parametresi ileride doÄŸrudan enjeksiyon iÃ§in tutulmaktadÄ±r;
+    thread'ler kendi baÄŸlantÄ±larÄ±nÄ± yÃ¶netir.
     """
 
     def __init__(self, db=None, parent=None):
@@ -50,28 +50,28 @@ class RKEYonetimPage(QWidget):
         self._connect_signals()
         self.load_data()
 
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     #  UI KURULUMU
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _setup_ui(self):
         root = QHBoxLayout(self)
         root.setContentsMargins(10, 10, 10, 10)
         root.setSpacing(10)
 
-        # ── SOL: FORM ──
+        # â”€â”€ SOL: FORM â”€â”€
         self._form = RKEFormWidget()
         self._form.setVisible(False)
         root.addWidget(self._form, 30)
 
-        # Dikey ayraç
+        # Dikey ayraÃ§
         self._panel_sep = QFrame()
         self._panel_sep.setFrameShape(QFrame.VLine)
         self._panel_sep.setStyleSheet(S.get("separator", ""))
         self._panel_sep.setVisible(False)
         root.addWidget(self._panel_sep)
 
-        # ── SAĞ: LİSTE ──
+        # â”€â”€ SAÄ: LÄ°STE â”€â”€
         list_container = QWidget()
         list_lay = QVBoxLayout(list_container)
         list_lay.setContentsMargins(0, 0, 0, 0)
@@ -85,7 +85,7 @@ class RKEYonetimPage(QWidget):
         fl.setSpacing(8)
 
         self._cmb_filter_abd = QComboBox()
-        self._cmb_filter_abd.addItem("Tüm Bölümler")
+        self._cmb_filter_abd.addItem("Tüm BÃ¶lümler")
         self._cmb_filter_abd.setStyleSheet(S.get("combo", ""))
         fl.addWidget(self._cmb_filter_abd)
 
@@ -116,7 +116,7 @@ class RKEYonetimPage(QWidget):
         fl.addWidget(self._btn_yenile)
 
         self._btn_yeni = QPushButton("Yeni")
-        self._btn_yeni.setToolTip("Yeni kayıt aç")
+        self._btn_yeni.setToolTip("Yeni kayÄ±t aÃ§")
         self._btn_yeni.setStyleSheet(S.get("action_btn", S.get("save_btn", "")))
         self._btn_yeni.setCursor(QCursor(Qt.PointingHandCursor))
         IconRenderer.set_button_icon(self._btn_yeni, "plus", color=DarkTheme.TEXT_PRIMARY, size=14)
@@ -164,7 +164,7 @@ class RKEYonetimPage(QWidget):
 
         # Footer
         footer = QHBoxLayout()
-        self._lbl_sayi = QLabel("0 kayıt")
+        self._lbl_sayi = QLabel("0 kayÄ±t")
         self._lbl_sayi.setStyleSheet(
             S.get("footer_label", f"color:{DarkTheme.TEXT_MUTED}; font-size:11px;")
         )
@@ -181,9 +181,9 @@ class RKEYonetimPage(QWidget):
         list_lay.addLayout(footer)
         root.addWidget(list_container, 70)
 
-    # ═══════════════════════════════════════════
-    #  SİNYALLER
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  SÄ°NYALLER
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _connect_signals(self):
         # Toolbar
@@ -201,12 +201,12 @@ class RKEYonetimPage(QWidget):
 
         # Form sinyalleri
         self._form.kaydet_istendi.connect(self._on_kaydet_istendi)
-        self._form.temizle_istendi.connect(lambda: None)   # ek işlem gerekmez
+        self._form.temizle_istendi.connect(lambda: None)   # ek iÅŸlem gerekmez
         self._form.kapat_istendi.connect(self._on_form_close)
 
-    # ═══════════════════════════════════════════
-    #  FORM AÇMA / KAPAMA
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  FORM AÃ‡MA / KAPAMA
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _on_new_clicked(self):
         self._form.set_context(self._rke_listesi, {})   # kisaltma ana sayfada tutulmaz
@@ -236,9 +236,9 @@ class RKEYonetimPage(QWidget):
         act_sec.triggered.connect(lambda: self._on_row_selected(idx))
         menu.exec(self._table.viewport().mapToGlobal(pos))
 
-    # ═══════════════════════════════════════════
-    #  VERİ YÜKLEME
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  VERÄ° YÃœKLEME
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def load_data(self):
         if hasattr(self, "_loader") and self._loader.isRunning():
@@ -256,16 +256,16 @@ class RKEYonetimPage(QWidget):
         self._kisaltma    = maps
         self._rke_listesi = rke_data
 
-        # Form combolarını güncelle
+        # Form combolarÄ±nÄ± güncelle
         self._form.fill_combos(sabitler)
         self._form.set_context(rke_data, maps)
 
-        # Filtre combolarını doldur
+        # Filtre combolarÄ±nÄ± doldur
         abd_set   = {str(r.get("AnaBilimDali",  "")).strip() for r in rke_data if r.get("AnaBilimDali")}
         birim_set = {str(r.get("Birim",         "")).strip() for r in rke_data if r.get("Birim")}
         cins_set  = {str(r.get("KoruyucuCinsi", "")).strip() for r in rke_data if r.get("KoruyucuCinsi")}
 
-        self._fill_filter(self._cmb_filter_abd,   abd_set,   "Tüm Bölümler")
+        self._fill_filter(self._cmb_filter_abd,   abd_set,   "Tüm BÃ¶lümler")
         self._fill_filter(self._cmb_filter_birim, birim_set, "Tüm Birimler")
         self._fill_filter(self._cmb_filter_cins,  cins_set,  "Tüm Cinsler")
 
@@ -290,17 +290,17 @@ class RKEYonetimPage(QWidget):
 
         filtered = [
             r for r in self._rke_listesi
-            if (f_abd   == "Tüm Bölümler" or str(r.get("AnaBilimDali",  "")).strip() == f_abd)
+            if (f_abd   == "Tüm BÃ¶lümler" or str(r.get("AnaBilimDali",  "")).strip() == f_abd)
             and (f_birim == "Tüm Birimler" or str(r.get("Birim",         "")).strip() == f_birim)
             and (f_cins  == "Tüm Cinsler"  or str(r.get("KoruyucuCinsi", "")).strip() == f_cins)
         ]
 
         self._model.set_data(filtered)
-        self._lbl_sayi.setText(f"{len(filtered)} kayıt")
+        self._lbl_sayi.setText(f"{len(filtered)} kayÄ±t")
 
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     #  KAYDETME
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _on_kaydet_istendi(self, mod: str, veri: dict):
         self._form.set_busy(True)
@@ -311,12 +311,12 @@ class RKEYonetimPage(QWidget):
 
     def _on_save_success(self):
         self._form.set_busy(False)
-        QMessageBox.information(self, "Başarılı", "İşlem tamamlandı.")
+        QMessageBox.information(self, "BaÅŸarÄ±lÄ±", "Ä°ÅŸlem tamamlandÄ±.")
         self._on_form_close()
         self.load_data()
 
     def _on_error(self, msg: str):
         self._pbar.setVisible(False)
         self._form.set_busy(False)
-        logger.error(f"RKEYonetim hatası: {msg}")
+        logger.error(f"RKEYonetim hatasÄ±: {msg}")
         QMessageBox.critical(self, "Hata", msg)

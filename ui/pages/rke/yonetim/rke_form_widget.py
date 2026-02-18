@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-RKE Form Widget'ı
-──────────────────
-Sol panel: ekipman ekleme / güncelleme formu + muayene geçmişi tablosu.
+RKE Form Widget'Ä±
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+Sol panel: ekipman ekleme / gÃ¼ncelleme formu + muayene geÃ§miÅŸi tablosu.
 
-Sinyaller (dışarıya):
-    kaydet_istendi(str mod, dict veri)  – "INSERT" veya "UPDATE"
+Sinyaller (dÄ±ÅŸarÄ±ya):
+    kaydet_istendi(str mod, dict veri)  â€“ "INSERT" veya "UPDATE"
     temizle_istendi()
     kapat_istendi()
 """
@@ -32,11 +32,11 @@ class RKEFormWidget(QWidget):
     """
     Sol panel.
 
-    Sinyal         Açıklama
-    ─────────────  ─────────────────────────────────────────
-    kaydet_istendi(mod, veri)   Kaydet butonuna basıldığında
-    temizle_istendi()           Temizle/Yeni butonuna basıldığında
-    kapat_istendi()             Vazgeç butonuna basıldığında
+    Sinyal         AÃ§Ä±klama
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    kaydet_istendi(mod, veri)   Kaydet butonuna basÄ±ldÄ±ÄŸÄ±nda
+    temizle_istendi()           Temizle/Yeni butonuna basÄ±ldÄ±ÄŸÄ±nda
+    kapat_istendi()             VazgeÃ§ butonuna basÄ±ldÄ±ÄŸÄ±nda
     """
     kaydet_istendi  = Signal(str, dict)   # mod, veri
     temizle_istendi = Signal()
@@ -44,26 +44,26 @@ class RKEFormWidget(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._secili      = None    # dict | None  (mevcut seçili satır)
-        self._rke_listesi = []      # kod hesaplaması için dışarıdan set edilir
-        self._kisaltma    = {}      # dışarıdan set edilir
-        self.ui           = {}      # widget_key → QWidget
-        self._combo_db    = {}      # ui_key → sabit_kod
+        self._secili      = None    # dict | None  (mevcut seÃ§ili satÄ±r)
+        self._rke_listesi = []      # kod hesaplamasÄ± iÃ§in dÄ±ÅŸarÄ±dan set edilir
+        self._kisaltma    = {}      # dÄ±ÅŸarÄ±dan set edilir
+        self.ui           = {}      # widget_key â†’ QWidget
+        self._combo_db    = {}      # ui_key â†’ sabit_kod
 
         self._setup_ui()
         self._connect_signals()
 
-    # ═══════════════════════════════════════════
-    #  DIŞ ARABIRIM
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  DIÅ ARABIRIM
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def set_context(self, rke_listesi: list, kisaltma: dict):
-        """Ana sayfa tarafından her veri yüklemesinden sonra çağrılır."""
+        """Ana sayfa tarafÄ±ndan her veri yÃ¼klemesinden sonra Ã§aÄŸrÄ±lÄ±r."""
         self._rke_listesi = rke_listesi
         self._kisaltma    = kisaltma
 
     def fill_combos(self, sabitler: dict):
-        """Form combo kutularını sabitler dict'iyle doldurur."""
+        """Form combo kutularÄ±nÄ± sabitler dict'iyle doldurur."""
         for ui_key, db_kod in self._combo_db.items():
             w = self.ui.get(ui_key)
             if w and db_kod in sabitler:
@@ -77,7 +77,7 @@ class RKEFormWidget(QWidget):
                 w.blockSignals(False)
 
     def load_row(self, row_data: dict):
-        """Tabloda bir satır seçildiğinde formu bu veriyle açar (güncelleme modu)."""
+        """Tabloda bir satÄ±r seÃ§ildiÄŸinde formu bu veriyle aÃ§ar (gÃ¼ncelleme modu)."""
         self._secili = row_data
         self.setVisible(True)
         self._grp_durum.setVisible(True)
@@ -89,7 +89,7 @@ class RKEFormWidget(QWidget):
         self.btn_temizle.setVisible(False)
 
     def open_new(self):
-        """Yeni kayıt modunda formu açar."""
+        """Yeni kayÄ±t modunda formu aÃ§ar."""
         self.setVisible(True)
         self._grp_durum.setVisible(False)
         self._grp_gecmis.setVisible(False)
@@ -97,21 +97,21 @@ class RKEFormWidget(QWidget):
         self._clear()
 
     def set_busy(self, busy: bool):
-        """Kaydetme sırasında progress bar ve buton durumunu yönetir."""
+        """Kaydetme sÄ±rasÄ±nda progress bar ve buton durumunu yÃ¶netir."""
         self._pbar.setVisible(busy)
         self._pbar.setRange(0, 0 if busy else 1)
         self.btn_kaydet.setEnabled(not busy)
 
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     #  UI KURULUMU
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _setup_ui(self):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        # ── Scroll ──
+        # â”€â”€ Scroll â”€â”€
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
@@ -139,18 +139,18 @@ class RKEFormWidget(QWidget):
         v_kimlik.addLayout(row1)
 
         row2 = QHBoxLayout()
-        self.ui["Varsa_Demirbaş_No"] = self._make_input("Demirbaş No", row2)
+        self.ui["Varsa_DemirbaÅŸ_No"] = self._make_input("DemirbaÅŸ No", row2)
         v_kimlik.addLayout(row2)
 
         inner.addWidget(grp_kimlik)
 
-        # 2. Özellikler
-        grp_ozel = QGroupBox("Ekipman Özellikleri")
+        # 2. Ã–zellikler
+        grp_ozel = QGroupBox("Ekipman Ã–zellikleri")
         grp_ozel.setStyleSheet(S.get("group", ""))
         v_ozel = QVBoxLayout(grp_ozel)
         v_ozel.setSpacing(10)
 
-        self.ui["AnaBilimDali"] = self._make_combo("Ana Bilim Dalı *", v_ozel, required=True)
+        self.ui["AnaBilimDali"] = self._make_combo("Ana Bilim DalÄ± *", v_ozel, required=True)
         self._combo_db["AnaBilimDali"] = "AnaBilimDali"
 
         row3 = QHBoxLayout()
@@ -162,7 +162,7 @@ class RKEFormWidget(QWidget):
 
         row4 = QHBoxLayout()
         self.ui["Bedeni"]         = self._make_combo("Beden", row4)
-        self.ui["KursunEsdegeri"] = self._make_combo("Kurşun Eşdeğeri", row4, editable=True)
+        self.ui["KursunEsdegeri"] = self._make_combo("KurÅŸun EÅŸdeÄŸeri", row4, editable=True)
         self._combo_db["Bedeni"] = "Bedeni"
         v_ozel.addLayout(row4)
 
@@ -170,20 +170,20 @@ class RKEFormWidget(QWidget):
             self.ui["KursunEsdegeri"].addItem(val)
 
         row5 = QHBoxLayout()
-        self.ui["HizmetYili"] = self._make_input("Üretim Yılı", row5)
-        self.ui["KayitTarih"] = self._make_date("Envanter Giriş", row5)
+        self.ui["HizmetYili"] = self._make_input("Ãœretim YÄ±lÄ±", row5)
+        self.ui["KayitTarih"] = self._make_date("Envanter GiriÅŸ", row5)
         v_ozel.addLayout(row5)
 
         self.ui["HizmetYili"].setValidator(QIntValidator(1900, 2100))
-        self.ui["HizmetYili"].setPlaceholderText("Örn: 2024")
+        self.ui["HizmetYili"].setPlaceholderText("Ã–rn: 2024")
 
-        lbl_acik = QLabel("Açıklama:")
+        lbl_acik = QLabel("AÃ§Ä±klama:")
         lbl_acik.setStyleSheet(S.get("label", ""))
-        self.ui["Açiklama"] = QTextEdit()
-        self.ui["Açiklama"].setMaximumHeight(60)
-        self.ui["Açiklama"].setStyleSheet(S.get("input", ""))
+        self.ui["AÃ§iklama"] = QTextEdit()
+        self.ui["AÃ§iklama"].setMaximumHeight(60)
+        self.ui["AÃ§iklama"].setStyleSheet(S.get("input", ""))
         v_ozel.addWidget(lbl_acik)
-        v_ozel.addWidget(self.ui["Açiklama"])
+        v_ozel.addWidget(self.ui["AÃ§iklama"])
 
         inner.addWidget(grp_ozel)
 
@@ -195,15 +195,15 @@ class RKEFormWidget(QWidget):
 
         row6 = QHBoxLayout()
         self.ui["Durum"] = self._make_combo("Durum", row6)
-        for d in ["Kullanıma Uygun", "Kullanıma Uygun Değil", "Hurda", "Tamirde", "Kayıp"]:
+        for d in ["KullanÄ±ma Uygun", "KullanÄ±ma Uygun DeÄŸil", "Hurda", "Tamirde", "KayÄ±p"]:
             self.ui["Durum"].addItem(d)
         self.ui["KontrolTarihi"] = self._make_date("Son Kontrol Tarihi", row6)
         v_durum.addLayout(row6)
 
         inner.addWidget(self._grp_durum)
 
-        # 4. Muayene Geçmişi
-        self._grp_gecmis = QGroupBox("Muayene Geçmişi")
+        # 4. Muayene GeÃ§miÅŸi
+        self._grp_gecmis = QGroupBox("Muayene GeÃ§miÅŸi")
         self._grp_gecmis.setStyleSheet(S.get("group", ""))
         v_gecmis = QVBoxLayout(self._grp_gecmis)
 
@@ -236,7 +236,7 @@ class RKEFormWidget(QWidget):
         h_btn = QHBoxLayout()
         h_btn.setSpacing(8)
 
-        self.btn_temizle = QPushButton("TEMİZLE / YENİ")
+        self.btn_temizle = QPushButton("TEMÄ°ZLE / YENÄ°")
         self.btn_temizle.setStyleSheet(S.get("cancel_btn", ""))
         self.btn_temizle.setCursor(QCursor(Qt.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_temizle, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
@@ -246,7 +246,7 @@ class RKEFormWidget(QWidget):
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
 
-        self._btn_vazgec = QPushButton("VAZGEÇ")
+        self._btn_vazgec = QPushButton("VAZGEÃ‡")
         self._btn_vazgec.setStyleSheet(S.get("close_btn", S.get("cancel_btn", "")))
         self._btn_vazgec.setCursor(QCursor(Qt.PointingHandCursor))
         IconRenderer.set_button_icon(self._btn_vazgec, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
@@ -256,9 +256,9 @@ class RKEFormWidget(QWidget):
         h_btn.addWidget(self._btn_vazgec)
         root.addLayout(h_btn)
 
-    # ═══════════════════════════════════════════
-    #  YARDIMCI WIDGET FABRİKALARI
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  YARDIMCI WIDGET FABRÄ°KALARI
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _make_input(self, label: str, parent_layout, read_only=False, placeholder="") -> QLineEdit:
         container, lay = self._labeled_container()
@@ -301,7 +301,7 @@ class RKEFormWidget(QWidget):
         return de
 
     def _labeled_container(self):
-        """Şeffaf arka planlı label+widget sarmalayıcı döndürür."""
+        """Åeffaf arka planlÄ± label+widget sarmalayÄ±cÄ± dÃ¶ndÃ¼rÃ¼r."""
         container = QWidget()
         container.setStyleSheet("background: transparent;")
         lay = QVBoxLayout(container)
@@ -314,9 +314,9 @@ class RKEFormWidget(QWidget):
         lbl.setStyleSheet(S.get("required_label" if required else "label", ""))
         return lbl
 
-    # ═══════════════════════════════════════════
-    #  SİNYALLER
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  SÄ°NYALLER
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _connect_signals(self):
         self.btn_kaydet.clicked.connect(self._on_save)
@@ -332,13 +332,13 @@ class RKEFormWidget(QWidget):
         self._clear()
         self.temizle_istendi.emit()
 
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     #  KAYDET
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _on_save(self):
         if not self.ui["EkipmanNo"].text().strip():
-            QMessageBox.warning(self, "Eksik Bilgi", "Ekipman No zorunludur (Ana Bilim Dalı ve Cinsi seçin).")
+            QMessageBox.warning(self, "Eksik Bilgi", "Ekipman No zorunludur (Ana Bilim DalÄ± ve Cinsi seÃ§in).")
             return
 
         veri = {}
@@ -357,13 +357,13 @@ class RKEFormWidget(QWidget):
             veri["KayitNo"] = self._secili.get("KayitNo")
         else:
             veri["KontrolTarihi"] = veri.get("KayitTarih", "")
-            veri["Durum"]         = "Kullanıma Uygun"
+            veri["Durum"]         = "KullanÄ±ma Uygun"
 
         self.kaydet_istendi.emit(mod, veri)
 
-    # ═══════════════════════════════════════════
-    #  TEMİZLE
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  TEMÄ°ZLE
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _clear(self):
         self._secili = None
@@ -378,7 +378,7 @@ class RKEFormWidget(QWidget):
                 w.clear()
 
         self.ui["HizmetYili"].setText(str(QDate.currentDate().year()))
-        self.ui["Durum"].setCurrentText("Kullanıma Uygun")
+        self.ui["Durum"].setCurrentText("KullanÄ±ma Uygun")
         self.ui["KontrolTarihi"].setDate(self.ui["KayitTarih"].date())
         self.ui["KoruyucuCinsi"].setEnabled(True)
         self._gecmis_model.set_data([])
@@ -387,9 +387,9 @@ class RKEFormWidget(QWidget):
         self.btn_kaydet.setStyleSheet(S.get("save_btn", ""))
         self.btn_temizle.setVisible(True)
 
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     #  FORM DOLDURMAK
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _fill_form(self, data: dict):
         for key, w in self.ui.items():
@@ -409,9 +409,9 @@ class RKEFormWidget(QWidget):
             elif isinstance(w, QTextEdit):
                 w.setPlainText(val)
 
-    # ═══════════════════════════════════════════
-    #  MUAYENe GEÇMİŞİ
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    #  MUAYENe GEÃ‡MÄ°ÅÄ°
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _gecmis_yukle(self, ekipman_no: str):
         if not ekipman_no:
@@ -422,9 +422,9 @@ class RKEFormWidget(QWidget):
         self._gecmis_loader.gecmis_hazir.connect(self._gecmis_model.set_data)
         self._gecmis_loader.start()
 
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     #  KOD HESAPLAMA
-    # ═══════════════════════════════════════════
+    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _hesapla_kod(self):
         abd   = self.ui["AnaBilimDali"].currentText()

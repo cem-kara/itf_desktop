@@ -19,8 +19,8 @@ from ui.theme_manager import ThemeManager
 from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer
 
-from ui.pages.rke.shared.checkable_combo import CheckableComboBox
-from ui.pages.rke.muayene.rke_muayene_workers import TopluKayitWorkerThread
+from rke.shared.checkable_combo import CheckableComboBox
+from rke.muayene.rke_muayene_workers import TopluKayitWorkerThread
 
 S = ThemeManager.get_all_component_styles()
 
