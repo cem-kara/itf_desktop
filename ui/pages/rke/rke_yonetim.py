@@ -208,7 +208,8 @@ class RKEYonetimPage(QWidget):
     # ═══════════════════════════════════════════
 
     def _on_new_clicked(self):
-        self._form.set_context(self._rke_listesi, {})   # kisaltma ana sayfada tutulmaz
+        # Yeni kayıtta da kod üretimi için sabit kısaltma haritaları gerekir.
+        self._form.set_context(self._rke_listesi, getattr(self, "_kisaltma", {}))
         self._form.open_new()
         self._panel_sep.setVisible(True)
 

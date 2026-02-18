@@ -422,19 +422,34 @@ class RKEFormWidget(QWidget):
     #  KOD HESAPLAMA
     # ═══════════════════════════════════════════
 
+    def _get_kisaltma(self, grup: str, deger: str, fallback: bool = True) -> str:
+        """Kısaltma haritasından değeri bulur, yoksa ilk 3 harfi alır."""
+        deger = str(deger or "").strip()
+        if not deger:
+            return ""
+
+        grup_map = self._kisaltma.get(grup, {})
+        # Doğrudan eşleşme (en hızlı ve yaygın durum)
+        if deger in grup_map:
+            return grup_map[deger]
+
+        # Olası veri tutarsızlıklarına karşı daha esnek kontrol (boşluk vb.)
+        for key, value in grup_map.items():
+            if key.strip() == deger:
+                return value
+
+        # Eşleşme bulunamazsa fallback
+        return deger[:3].upper() if fallback else ""
+
     def _hesapla_kod(self):
         abd   = self.ui["AnaBilimDali"].currentText()
         birim = self.ui["Birim"].currentText()
         cins  = self.ui["KoruyucuCinsi"].currentText()
 
-        def kisaltma(grup, deger):
-            if not deger:
-                return "UNK"
-            return self._kisaltma.get(grup, {}).get(deger, deger[:3].upper())
-
-        k_abd  = kisaltma("AnaBilimDali",   abd)
-        k_bir  = kisaltma("Birim",          birim)
-        k_cins = kisaltma("Koruyucu_Cinsi", cins)
+        k_abd  = self._get_kisaltma("AnaBilimDali",   abd)
+        k_bir  = self._get_kisaltma("Birim",          birim)
+        # Koruyucu cinsi kodu yalnızca Sabitler.Aciklama'dan gelmeli.
+        k_cins = self._get_kisaltma("Koruyucu_Cinsi", cins, fallback=False)
 
         sayac_genel = sum(
             1 for k in self._rke_listesi
@@ -447,13 +462,20 @@ class RKEFormWidget(QWidget):
             and str(k.get("Birim",         "")).strip() == birim
         )
 
-        if not self._secili:
+        if not self._secili and k_cins:
             self.ui["EkipmanNo"].setText(f"RKE-{k_cins}-{str(sayac_genel + 1).zfill(3)}")
+        elif not self._secili:
+            self.ui["EkipmanNo"].setText("")
 
-        if abd and birim and cins:
+        if birim == "Radyoloji Depo":
+            self.ui["KoruyucuNumarasi"].setText("")
+        elif abd and birim and cins and k_cins:
             self.ui["KoruyucuNumarasi"].setText(
                 f"{k_abd}-{k_bir}-{k_cins}-{str(sayac_yerel + 1).zfill(3)}"
             )
+        else:
+            if not self._secili:
+                self.ui["KoruyucuNumarasi"].setText("")
 
     def _tarih_hesapla(self):
         if not self._secili:
