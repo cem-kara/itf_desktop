@@ -137,14 +137,12 @@ class PersonelMerkezPage(QWidget):
 
         # İzin / Muayene header butonları
         self.btn_izin_ekle = QPushButton("+ İzin Gir")
-        self.btn_izin_ekle.setFixedHeight(28)
         self.btn_izin_ekle.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_izin_ekle.setStyleSheet(STYLES["refresh_btn"])
         self.btn_izin_ekle.clicked.connect(lambda: self._toggle_form("IZIN"))
         top_lay.addWidget(self.btn_izin_ekle)
 
         self.btn_muayene_ekle = QPushButton("+ Muayene")
-        self.btn_muayene_ekle.setFixedHeight(28)
         self.btn_muayene_ekle.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_muayene_ekle.setStyleSheet(STYLES["refresh_btn"])
         self.btn_muayene_ekle.clicked.connect(lambda: self._toggle_form("SAGLIK"))

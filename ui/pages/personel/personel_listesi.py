@@ -30,14 +30,14 @@ STYLES = ThemeManager.get_all_component_styles()    # merkezi stil dict
 
 # ─── Sütun tanımları ──────────────────────────────────────────
 COLUMNS = [
-    ("_avatar",     "",               36),
-    ("AdSoyad",     "Ad Soyad",      180),
-    ("_tc_sicil",   "TC / Sicil",    140),
-    ("_birim",      "Birim · Ünvan", 180),
+    ("_avatar",     "",               60),
+    ("AdSoyad",     "Ad Soyad",      100),
+    ("_tc_sicil",   "TC / Sicil",    100),
+    ("_birim",      "Birim · Ünvan", 100),
     ("CepTelefonu", "Telefon",       120),
-    ("_izin_bar",   "İzin Bakiye",   110),
-    ("Durum",       "Durum",          80),
-    ("_actions",    "",               84),
+    ("_izin_bar",   "İzin Bakiye",   160),
+    ("Durum",       "Durum",          100),
+    ("_actions",    "",               190),
 ]
 COL_IDX = {c[0]: i for i, c in enumerate(COLUMNS)}
 
@@ -162,11 +162,13 @@ class PersonelDelegate(QStyledItemDelegate):
 
         # ── Zemin (temadan) ──
         if is_sel:
-            # BG_SELECTED = "rgba(29, 117, 254, 0.45)"
-            painter.fillRect(rect, QColor(29, 117, 254, 60))
+            c = QColor(C.BTN_PRIMARY_BG)
+            c.setAlpha(60)
+            painter.fillRect(rect, c)
         elif is_hover:
-            # BG_HOVER = "rgba(255, 255, 255, 0.04)"
-            painter.fillRect(rect, QColor(255, 255, 255, 10))
+            c = QColor(C.TEXT_PRIMARY)
+            c.setAlpha(10)
+            painter.fillRect(rect, c)
 
         raw = index.model().data(index, PersonelTableModel.RAW_ROW_ROLE)
         if raw is None:
@@ -306,9 +308,15 @@ class PersonelDelegate(QStyledItemDelegate):
             bx = x + i * (self.BTN_W + self.BTN_GAP)
             br = QRect(bx, y, self.BTN_W, self.BTN_H)
             self._btn_rects[(row, i)] = br
-            # BTN_SECONDARY_BG benzeri
-            p.setBrush(QBrush(QColor(255, 255, 255, 15)))
-            p.setPen(QPen(QColor(255, 255, 255, 40), 1))
+            
+            bg = QColor(C.TEXT_PRIMARY)
+            bg.setAlpha(15)
+            p.setBrush(QBrush(bg))
+            
+            pen = QColor(C.TEXT_PRIMARY)
+            pen.setAlpha(40)
+            p.setPen(QPen(pen, 1))
+            
             p.drawRoundedRect(br, 4, 4)
             p.setFont(QFont("", 8))
             p.setPen(QColor(C.TEXT_SECONDARY))

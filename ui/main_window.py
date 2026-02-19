@@ -177,6 +177,7 @@ class MainWindow(QMainWindow):
             )
             #page.btn_kapat.clicked.connect(lambda: self._close_page("Personel Listesi"))
             page.btn_yeni.clicked.connect(lambda: self._on_menu_clicked("Personel", "Personel Ekle"))
+            page.detay_requested.connect(self._open_personel_merkez)
             page.izin_requested.connect(lambda data: self.open_izin_giris(data))
             page.load_data()
             return page
@@ -209,10 +210,10 @@ class MainWindow(QMainWindow):
             page.btn_kapat.clicked.connect(lambda: self._close_page("Puantaj Rapor"))
             return page
 
-        if baslik == "Sağlik Takip":
+        if baslik == "Saglik Takip":
             from ui.pages.personel.saglik_takip import SaglikTakipPage
             page = SaglikTakipPage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Sağlik Takip"))
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Saglik Takip"))
             page.load_data()
             return page
 
@@ -230,7 +231,7 @@ class MainWindow(QMainWindow):
             page.add_requested.connect(lambda: self._on_menu_clicked("Cihaz", "Cihaz Ekle"))
             page.edit_requested.connect(self._open_cihaz_detay)
             page.periodic_maintenance_requested.connect(self.open_periodic_maintenance_for_device)
-            #page.btn_kapat.clicked.connect(lambda: self._close_page("Cihaz Listesi"))
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Cihaz Listesi"))
             page.load_data()
             return page
 
@@ -311,10 +312,8 @@ class MainWindow(QMainWindow):
             subtitle=f"{group} modülü — geliştirme aşamasında"
         )
 
-    def _open_personel_detay(self, liste_page, index):
-        """Personel listesinde çift tıklama → Personel Merkez (360) sayfası aç."""
-        source_idx = liste_page._proxy.mapToSource(index)
-        row_data = liste_page._model.get_row(source_idx.row())
+    def _open_personel_merkez(self, row_data):
+        """Personel verisi ile merkez sayfasını açar."""
         if not row_data:
             return
 
@@ -341,6 +340,12 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(page)
         self.stack.setCurrentWidget(page)
         self.page_title.setText(f"Personel Kartı — {ad}")
+
+    def _open_personel_detay(self, liste_page, index):
+        """Personel listesinde çift tıklama → Personel Merkez (360) sayfası aç."""
+        source_idx = liste_page._proxy.mapToSource(index)
+        row_data = liste_page._model.get_row(source_idx.row())
+        self._open_personel_merkez(row_data)
 
     def _back_to_personel_listesi(self, detay_key):
         """Detay sayfasından listeye geri dön."""

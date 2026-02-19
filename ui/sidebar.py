@@ -2,7 +2,7 @@ import json
 import os
 
 from PySide6.QtCore import Qt, QSize, Signal
-from PySide6.QtGui import QCursor
+from PySide6.QtGui import QCursor, QPixmap
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -209,35 +209,40 @@ class Sidebar(QWidget):
         header = QWidget()
         header.setStyleSheet("background-color: transparent;")
         header_layout = QVBoxLayout(header)
-        header_layout.setContentsMargins(16, 16, 16, 6)
-        header_layout.setSpacing(2)
+        header_layout.setContentsMargins(16, 24, 16, 12)
+        header_layout.setSpacing(10)
 
-        title_row = QWidget()
-        title_row.setStyleSheet("background: transparent;")
-        title_layout = QHBoxLayout(title_row)
-        title_layout.setContentsMargins(0, 0, 0, 0)
-        title_layout.setSpacing(8)
-
+        # Logo
         logo_lbl = QLabel()
-        logo_lbl.setPixmap(Icons.pixmap("hospital", size=22, color=SidebarTheme.SYNC_TEXT))
-        logo_lbl.setFixedSize(22, 22)
-        title_layout.addWidget(logo_lbl)
+        logo_lbl.setAlignment(Qt.AlignCenter)
+        
+        # Logo dosyasını yükle
+        logo_path = os.path.join(BASE_DIR, "ui", "styles", "logo.png")
+        pixmap = Icons.pixmap("hospital", size=64, color=SidebarTheme.SYNC_TEXT)
+        
+        if os.path.exists(logo_path):
+            loaded = QPixmap(logo_path)
+            if not loaded.isNull():
+                pixmap = loaded.scaled(80, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        
+        logo_lbl.setPixmap(pixmap)
+        header_layout.addWidget(logo_lbl, 0, Qt.AlignCenter)
 
+        # Başlık
         title_lbl = QLabel(AppConfig.APP_NAME)
         title_lbl.setWordWrap(True)
+        title_lbl.setAlignment(Qt.AlignCenter)
         title_lbl.setStyleSheet(
-            f"color: {SidebarTheme.TITLE}; font-size: 15px; font-weight: bold; background: transparent;"
+            f"color: {SidebarTheme.TITLE}; font-size: 16px; font-weight: bold; background: transparent;"
         )
-        title_layout.addWidget(title_lbl)
-        title_layout.addStretch()
-
-        header_layout.addWidget(title_row)
+        header_layout.addWidget(title_lbl, 0, Qt.AlignCenter)
 
         ver_lbl = QLabel(f"v{AppConfig.VERSION}")
+        ver_lbl.setAlignment(Qt.AlignCenter)
         ver_lbl.setStyleSheet(
             f"color: {SidebarTheme.VERSION}; font-size: 11px; background: transparent;"
         )
-        header_layout.addWidget(ver_lbl)
+        header_layout.addWidget(ver_lbl, 0, Qt.AlignCenter)
 
         layout.addWidget(header)
 
@@ -424,3 +429,29 @@ class Sidebar(QWidget):
             self.sync_btn.setText("  Senkronize ediliyor...")
             self.sync_btn.setIcon(Icons.get("refresh", size=15, color=IconColors.MUTED))
         self.sync_btn.setIconSize(QSize(15, 15))
+
+    def set_notification_badge(self, count: int):
+        """Bildirim butonuna sayı rozeti ekler."""
+        if count > 0:
+            self.notifications_btn.setText(f"Bildirimler ({count})")
+            self.notifications_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {SidebarTheme.NOTIFY_HOVER};
+                    color: {SidebarTheme.NOTIFY_TEXT};
+                    border: 1px solid {SidebarTheme.NOTIFY_BORDER};
+                    border-radius: 8px; font-size: 13px; font-weight: 700;
+                    padding: 6px 12px; text-align: left;
+                }}
+            """)
+        else:
+            self.notifications_btn.setText("Bildirimler")
+            self.notifications_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {SidebarTheme.NOTIFY_BG};
+                    color: {SidebarTheme.NOTIFY_TEXT};
+                    border: 1px solid {SidebarTheme.NOTIFY_BORDER};
+                    border-radius: 8px; font-size: 13px; font-weight: 600;
+                    padding: 6px 12px; text-align: left;
+                }}
+                QPushButton:hover {{ background-color: {SidebarTheme.NOTIFY_HOVER}; }}
+            """)

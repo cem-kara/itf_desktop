@@ -53,7 +53,7 @@ class PersonelOverviewPanel(QWidget):
         content.setStyleSheet("background: transparent;")
         layout = QVBoxLayout(content)
         layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(20)
+        layout.setSpacing(10)
 
         if not self.personel_data:
             layout.addWidget(QLabel("Personel verisi bulunamadı."))
@@ -129,7 +129,7 @@ class PersonelOverviewPanel(QWidget):
 
         # ── 2. İletişim ve Kadro (Yan Yana) ──
         mid_layout = QHBoxLayout()
-        mid_layout.setSpacing(20)
+        mid_layout.setSpacing(10)
 
         # İletişim Grubu
         grp_iletisim = self._create_editable_group("İletişim Bilgileri", "iletisim")
@@ -293,15 +293,15 @@ class PersonelOverviewPanel(QWidget):
 
     def _create_editable_group(self, title, group_id):
         grp = QGroupBox()
-        grp.setStyleSheet("""
-            QGroupBox {
+        grp.setStyleSheet(f"""
+            QGroupBox {{
                 background-color: rgba(30, 32, 44, 0.6);
                 border: 1px solid rgba(255, 255, 255, 0.08);
                 border-radius: 8px;
-                margin-top: 24px;
+                margin-top: 0px;
                 font-weight: bold;
                 color: {DarkTheme.TEXT_PRIMARY};
-            }
+            }}
         """)
         
         # Başlık ve Butonlar için Layout
