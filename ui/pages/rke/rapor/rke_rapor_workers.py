@@ -127,7 +127,7 @@ class RaporOlusturucuThread(QThread):
     """
     Seili mod ve verilerle PDF retir, Drive'a ykler.
 
-    mod: 1 = Genel, 2 = Hurda, 3 = Personel Bazl
+    mod: 1 = Genel, 2 = Hurda, 
     """
     log_mesaji  = Signal(str)
     islem_bitti = Signal()
@@ -159,20 +159,20 @@ class RaporOlusturucuThread(QThread):
 
     def _mod_genel(self, zaman: str) -> list:
         if not self._veriler:
-            self.log_mesaji.emit("UYARI: Rapor iin veri bulunamad.")
+            self.log_mesaji.emit("UYARI: Rapor için veri bulunamadı.")
             return []
         dosya_adi = f"RKE_Genel_{zaman}.pdf"
         html = html_genel_rapor(self._veriler, self._ozet)
         if pdf_olustur(html, dosya_adi):
             self._yukle_drive(dosya_adi)
             return [dosya_adi]
-        self.log_mesaji.emit("HATA: PDF oluturulamad.")
+        self.log_mesaji.emit("HATA: PDF oluturulamadı.")
         return []
 
     def _mod_hurda(self, zaman: str) -> list:
-        hurda = [v for v in self._veriler if "Deil" in v.get("Sonuc", "")]
+        hurda = [v for v in self._veriler if "Değil" in v.get("Sonuc", "")]
         if not hurda:
-            self.log_mesaji.emit("UYARI: Hurda aday kayt bulunamad.")
+            self.log_mesaji.emit("UYARI: Hurda adayı kayıt bulunamadı.")
             return []
         dosya_adi = f"RKE_Hurda_{zaman}.pdf"
         html = html_hurda_rapor(hurda)
@@ -197,7 +197,7 @@ class RaporOlusturucuThread(QThread):
             if pdf_olustur(html, dosya_adi):
                 dosyalar.append(dosya_adi)
                 self._yukle_drive(dosya_adi)
-                self.log_mesaji.emit(f"BAARILI: {dosya_adi} yklendi.")
+                self.log_mesaji.emit(f"BAŞARILI: {dosya_adi} yüklendi.")
         return dosyalar
 
     #  Drive ykleme 
@@ -221,13 +221,13 @@ class RaporOlusturucuThread(QThread):
                 offline_folder_name=storage_target["offline_folder_name"],
             )
             if link:
-                hedef = "Drive'a yklendi" if cloud.is_online and str(link).startswith("http") else "Yerel klasre kaydedildi"
+                hedef = "Drive'a yüklendi" if cloud.is_online and str(link).startswith("http") else "Yerel klasre kaydedildi"
                 self.log_mesaji.emit(f"BAARILI: {hedef}.")
             else:
-                self.log_mesaji.emit("UYARI: Drive ykleme atland/baarsz (offline olabilir).")
+                self.log_mesaji.emit("UYARI: Drive yükleme atlandı/başarısız oldu (offline olabilir).")
         except Exception as e:
-            self.log_mesaji.emit(f"UYARI: Drive hatas: {e}")
-            logger.warning(f"Drive ykleme hatas: {e}")
+            self.log_mesaji.emit(f"UYARI: Drive hatası: {e}")
+            logger.warning(f"Drive yükleme hatası: {e}")
         finally:
             if db:
                 db.close()

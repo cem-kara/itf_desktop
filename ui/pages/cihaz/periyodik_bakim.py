@@ -131,13 +131,29 @@ class DosyaYukleyici(QThread):
         self._yol = yerel_yol
 
     def run(self):
+        db = None
         try:
-            from database.google import GoogleDriveService
-            link = GoogleDriveService().upload_file(self._yol)
-            self.yuklendi.emit(link if link else "-")
+            from core.di import get_cloud_adapter, get_registry
+            from database.sqlite_manager import SQLiteManager
+            from database.google.utils import resolve_storage_target
+
+            db = SQLiteManager()
+            registry = get_registry(db)
+            all_sabit = registry.get("Sabitler").get_all()
+            target = resolve_storage_target(all_sabit, "Cihaz_Bakim")
+
+            cloud = get_cloud_adapter()
+            link = cloud.upload_file(
+                self._yol,
+                parent_folder_id=target.get("drive_folder_id"),
+                offline_folder_name=target.get("offline_folder_name")
+            )
+            self.yuklendi.emit(str(link) if link else "-")
         except Exception as e:
             logger.warning(f"Drive yükleme başarısız (devam ediliyor): {e}")
             self.yuklendi.emit("-")
+        finally:
+            if db: db.close()
 
 
 # ═══════════════════════════════════════════════

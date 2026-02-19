@@ -1,8 +1,8 @@
 ﻿# -*- coding: utf-8 -*-
 """
 RKE Rapor Tablo Modeli
-ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-ï¿½ RaporTableModel ï¿½ Birleï¿½ik muayene + envanter verisi gï¿½rï¿½nï¿½mï¿½
+
+ RaporTableModel  Birleik muayene + envanter verisi grnm
 """
 from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex
 from PySide6.QtGui import QColor
@@ -15,8 +15,8 @@ COLUMNS = [
     ("Pb",          "Pb (mm)",        80),
     ("Birim",       "Birim",         130),
     ("Tarih",       "Tarih",          90),
-    ("Sonuc",       "Sonuï¿½",         140),
-    ("Aciklama",    "Aï¿½ï¿½klama",      200),
+    ("Sonuc",       "Sonuç",         140),
+    ("Aciklama",    "Açıklama",      200),
     ("KontrolEden", "Kontrol Eden",  140),
 ]
 

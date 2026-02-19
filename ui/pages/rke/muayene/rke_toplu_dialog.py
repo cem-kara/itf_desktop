@@ -30,12 +30,12 @@ class TopluMuayeneDialog(QDialog):
     Seï¿½ili ekipmanlara aynï¿½ anda muayene kaydï¿½ ekler.
 
     Parametreler
-    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    ½½½½½½
     secilen_ekipmanlar  : ["RKE-001", "RKE-002", ...] listesi
     teknik_aciklamalar  : Sabitler tablosundan gelen RKE_Teknik listesi
-    kontrol_listesi     : Daha ï¿½nce kullanï¿½lmï¿½ï¿½ KontrolEdenUnvani deï¿½erleri
-    sorumlu_listesi     : Daha ï¿½nce kullanï¿½lmï¿½ï¿½ BirimSorumlusuUnvani deï¿½erleri
-    kullanici_adi       : Oturum aï¿½ï¿½k kullanï¿½cï¿½ adï¿½ (opsiyonel)
+    kontrol_listesi     : Daha nce kullanlm KontrolEdenUnvani deerleri
+    sorumlu_listesi     : Daha nce kullanlm BirimSorumlusuUnvani deerleri
+    kullanici_adi       : Oturum ak kullanc ad (opsiyonel)
     """
 
     def __init__(

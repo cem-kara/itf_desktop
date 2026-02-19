@@ -175,7 +175,7 @@ class MainWindow(QMainWindow):
             page.table.doubleClicked.connect(
                 lambda idx: self._open_personel_detay(page, idx)
             )
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Personel Listesi"))
+            #page.btn_kapat.clicked.connect(lambda: self._close_page("Personel Listesi"))
             page.btn_yeni.clicked.connect(lambda: self._on_menu_clicked("Personel", "Personel Ekle"))
             page.izin_requested.connect(lambda data: self.open_izin_giris(data))
             page.load_data()
@@ -209,10 +209,10 @@ class MainWindow(QMainWindow):
             page.btn_kapat.clicked.connect(lambda: self._close_page("Puantaj Rapor"))
             return page
 
-        if baslik == "Saglik Takip":
+        if baslik == "Sağlik Takip":
             from ui.pages.personel.saglik_takip import SaglikTakipPage
             page = SaglikTakipPage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Saglik Takip"))
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Sağlik Takip"))
             page.load_data()
             return page
 
@@ -230,7 +230,7 @@ class MainWindow(QMainWindow):
             page.add_requested.connect(lambda: self._on_menu_clicked("Cihaz", "Cihaz Ekle"))
             page.edit_requested.connect(self._open_cihaz_detay)
             page.periodic_maintenance_requested.connect(self.open_periodic_maintenance_for_device)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Cihaz Listesi"))
+            #page.btn_kapat.clicked.connect(lambda: self._close_page("Cihaz Listesi"))
             page.load_data()
             return page
 

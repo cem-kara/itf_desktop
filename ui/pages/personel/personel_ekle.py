@@ -21,26 +21,28 @@ class DriveUploadWorker(QThread):
     finished = Signal(str, str)   # (alan_adi, webViewLink)
     error = Signal(str, str)      # (alan_adi, hata_mesaji)
 
-    def __init__(self, file_path, folder_id, custom_name, alan_adi):
+    def __init__(self, file_path, folder_id, custom_name, alan_adi, offline_folder_name=None):
         super().__init__()
         self._file_path = file_path
         self._folder_id = folder_id
         self._custom_name = custom_name
         self._alan_adi = alan_adi
+        self._offline_folder_name = offline_folder_name
 
     def run(self):
         try:
-            from database.google import GoogleDriveService
-            drive = GoogleDriveService()
-            link = drive.upload_file(
+            from core.di import get_cloud_adapter
+            cloud = get_cloud_adapter()
+            link = cloud.upload_file(
                 self._file_path,
                 parent_folder_id=self._folder_id,
-                custom_name=self._custom_name
+                custom_name=self._custom_name,
+                offline_folder_name=self._offline_folder_name
             )
             if link:
-                self.finished.emit(self._alan_adi, link)
+                self.finished.emit(self._alan_adi, str(link))
             else:
-                self.error.emit(self._alan_adi, "Yükleme başarısız")
+                self.error.emit(self._alan_adi, "Yükleme başarısız (Offline modda hedef klasör tanımlı olmayabilir)")
         except Exception as e:
             exc_logla("PersonelEkle.DosyaYukleyici", e)
             self.error.emit(self._alan_adi, str(e))
@@ -92,6 +94,7 @@ class PersonelEklePage(QWidget):
         self._drive_links = {}         # {"Resim": link, "Diploma1": link, ...}
         self._drive_folders = {}       # {"Personel_Resim": folder_id, ...}
         self._upload_workers = []
+        self._all_sabit = []
 
         self._setup_ui()
         self._populate_combos()
@@ -397,6 +400,7 @@ class PersonelEklePage(QWidget):
             # ── Sabitler'den ──
             sabitler = registry.get("Sabitler")
             all_sabit = sabitler.get_all()
+            self._all_sabit = all_sabit
 
             def get_sabit(kod):
                 return sorted([
@@ -562,6 +566,7 @@ class PersonelEklePage(QWidget):
 
     def _upload_files_to_drive(self, tc_no, callback):
         """Seçili dosyaları Drive'a yükler, bitince callback çağırır."""
+        from database.google.utils import resolve_storage_target
         # Yüklenecek dosya yoksa direkt callback
         if not self._file_paths:
             callback()
@@ -580,17 +585,17 @@ class PersonelEklePage(QWidget):
             if file_key not in upload_map:
                 continue
             folder_name, db_field = upload_map[file_key]
-            folder_id = self._get_drive_folder_id(folder_name)
-            if not folder_id:
-                logger.warning(f"Drive klasör bulunamadı: {folder_name}")
-                continue
+            
+            target = resolve_storage_target(self._all_sabit, folder_name)
+            folder_id = target.get("drive_folder_id")
+            offline_folder_name = target.get("offline_folder_name")
 
             # Dosya adı: TC_alan.uzantı
             ext = os.path.splitext(file_path)[1]
             custom_name = f"{tc_no}_{db_field}{ext}"
 
             self._pending_uploads += 1
-            worker = DriveUploadWorker(file_path, folder_id, custom_name, db_field)
+            worker = DriveUploadWorker(file_path, folder_id, custom_name, db_field, offline_folder_name)
             worker.finished.connect(self._on_upload_finished)
             worker.error.connect(self._on_upload_error)
             self._upload_workers.append(worker)
@@ -754,5 +759,3 @@ class PersonelEklePage(QWidget):
         """İptal — listeye geri dön."""
         if self._on_saved:
             self._on_saved()
-
-

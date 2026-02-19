@@ -196,8 +196,6 @@ Pull-only tablolar artık:
 - [x] Aşama 2: `database/cloud_adapter.py` eklendi (`OnlineCloudAdapter`, `OfflineCloudAdapter`).
 - [x] Aşama 2: `core/di.py` içine `get_cloud_adapter()` eklendi.
 - [x] Aşama 2: `ui/main_window.py` offline modda sync başlatmayı engelliyor.
-- [ ] Aşama 3: `database/sync_service.py` ve `database/gsheet_manager.py` adapter-aware refactor.
-- [ ] Aşama 4: UI katmanındaki doğrudan `GoogleDriveService()` çağrılarının adapter’a taşınması.
 - [ ] Aşama 5: Ayarlar ekranından mode değişimi + kullanıcı akışı.
 - [ ] Aşama 6: Test ve dokümantasyon tamamlayıcıları.
 

@@ -17,20 +17,27 @@ Bu dosya "yarin nerede kaldik" sorusuna net cevap vermek icin tek kaynaktir.
   - `ui/pages/rke/rke_muayene.py`: `resolve_storage_target` + `offline_folder_name` ile upload.
   - `ui/pages/rke/rke_rapor.py`: offline mesajlari "Yerel klasore kaydedildi" olarak guncellendi.
   - `ui/pages/rke/rke_yonetim.py`: Drive/upload yok, degisiklik gerekmedi.
+- Cihaz modulu upload standardizasyonu baslatildi:
+  - [x] `ui/pages/cihaz/ariza_islem.py`: `CloudAdapter` entegrasyonu yapildi.
+  - [x] `ui/pages/cihaz/cihaz_ekle.py`: Cihaz resmi yukleme (CloudAdapter entegrasyonu yapildi)
+  - [x] `ui/pages/cihaz/kalibrasyon_takip.py`: Sertifika yukleme (CloudAdapter entegrasyonu yapildi)
+  - [x] `ui/pages/cihaz/periyodik_bakim.py`: Bakim raporu yukleme (CloudAdapter entegrasyonu yapildi)
+  - [x] `ui/pages/cihaz/ariza_ekle.py`: Ariza gorseli yukleme (CloudAdapter entegrasyonu yapildi)
+- Personel modulu upload standardizasyonu tamamlandi:
+  - [x] `ui/pages/personel/personel_ekle.py`: Resim/Diploma yukleme (CloudAdapter entegrasyonu yapildi)
 
 ### Bilinen Notlar
 - Bu ortamda `python/py` komutu yok, `py_compile` dogrulamalari calistirilamadi.
 
 ## Hemen Devam Edilecek Is (Yarin Baslangic Noktasi)
 
-1. Personel ve Cihaz modullerinde upload noktalarini `resolve_storage_target` + `offline_folder_name` ile standardize etmek.
-2. Offline/online mesajlarini tum upload noktalarinda tutarli hale getirmek.
+1. Offline/online mesajlarini tum upload noktalarinda tutarli hale getirmek.
 
 ## Asama Durumu
 
 - Asama 1: Tamamlandi
 - Asama 2: Tamamlandi (offline local upload destegi eklendi)
 - Asama 3: Tamamlandi
-- Asama 4: RKE tam, Personel/Cihaz bekliyor
+- Asama 4: RKE tam, Cihaz tam, Personel tam
 - Asama 5: Bekliyor
 - Asama 6: Bekliyor

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+      <meta charset="utf-8">
+      <style>
+            body {
+                  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                  font-size: 10pt;
+                  color: #333;
+            }
+
+            .header {
+                  text-align: center;
+                  border-bottom: 2px solid #b71c1c;
+                  /* Hurda için Kırmızı ton */
+                  padding-bottom: 15px;
+                  margin-bottom: 20px;
+            }
+
+            .header h1 {
+                  margin: 0;
+                  font-size: 18pt;
+                  color: #b71c1c;
+                  text-transform: uppercase;
+            }
+
+            .header p {
+                  margin: 5px 0 0 0;
+                  color: #666;
+                  font-size: 10pt;
+            }
+
+            h2 {
+                  font-size: 12pt;
+                  color: #333;
+                  border-left: 4px solid #b71c1c;
+                  padding-left: 10px;
+                  margin-top: 25px;
+                  background: #fce4ec;
+                  padding: 5px 10px;
+            }
+
+            table {
+                  width: 100%;
+                  border-collapse: collapse;
+                  margin-top: 10px;
+            }
+
+            th {
+                  background-color: #b71c1c;
+                  color: white;
+                  padding: 8px;
+                  text-align: left;
+                  border: 1px solid #b71c1c;
+            }
+
+            td {
+                  border: 1px solid #ddd;
+                  padding: 8px;
+                  vertical-align: middle;
+            }
+
+            tr:nth-child(even) {
+                  background-color: #fff5f5;
+            }
+
+            .legal-box {
+                  border: 1px solid #ccc;
+                  background-color: #fafafa;
+                  padding: 15px;
+                  margin-top: 10px;
+                  text-align: justify;
+                  line-height: 1.5;
+                  font-size: 10pt;
+            }
+
+            .sig-table {
+                  width: 100%;
+                  border: none;
+                  margin-top: 50px;
+                  page-break-inside: avoid;
+            }
+
+            .sig-table td {
+                  border: none;
+                  text-align: center;
+                  vertical-align: top;
+                  padding: 10px;
+            }
+
+            .line {
+                  border-top: 1px solid #333;
+                  width: 80%;
+                  margin: 40px auto 5px auto;
+            }
+      </style>
+</head>
+
+<body>
+      <div class="header">
+            <h1>HURDA (HEK) TEKNİK RAPORU</h1>
+            <p>Radyasyon Koruyucu Ekipman İmha Tutanağı</p>
+            <p style="font-weight:bold; margin-top:10px;">Tarih: {{ rapor_tarihi }}</p>
+      </div>
+
+      <h2>A. İmha Edilecek Ekipman Listesi</h2>
+      <table>
+            <thead>
+                  <tr>
+                        <th style="width:5%">#</th>
+                        <th style="width:15%">Cinsi</th>
+                        <th style="width:15%">Ekipman No</th>
+                        <th style="width:20%">Bölüm</th>
+                        <th style="width:10%">Pb</th>
+                        <th style="width:35%">Uygunsuzluk Nedeni</th>
+                  </tr>
+            </thead>
+            <tbody>
+                  {% for r in tablo %}
+                  <tr>
+                        <td style="text-align:center;">{{ loop.index }}</td>
+                        <td>{{ r.Cins }}</td>
+                        <td style="font-weight:bold;">{{ r.EkipmanNo }}</td>
+                        <td>{{ r.ABD }}</td>
+                        <td style="text-align:center;">{{ r.Pb }}</td>
+                        <td>
+                              {% if 'Değil' in r.Sonuc %}Muayene Sonucu: {{ r.Sonuc }}{% endif %}
+                              {% if r.Aciklama %}<br>Not: {{ r.Aciklama }}{% endif %}
+                        </td>
+                  </tr>
+                  {% endfor %}
+            </tbody>
+      </table>
+
+      <h2>B. Teknik Rapor ve Talep</h2>
+      <div class="legal-box">
+            Yukarıda kimlik bilgileri ve durumları belirtilen radyasyon koruyucu ekipmanların yapılan fiziksel ve
+            radyolojik kontrolleri neticesinde;
+            koruyucu özelliklerini yitirdikleri, bütünlüklerinin bozulduğu ve kullanımlarının personel sağlığı açısından
+            risk oluşturduğu tespit edilmiştir.
+            <br><br>
+            Bu nedenle ilgili ekipmanların hizmet dışı bırakılarak (HEK) demirbaş kayıtlarından düşülmesi ve usulüne
+            uygun şekilde imha edilmesi arz olunur.
+      </div>
+
+      <table class="sig-table">
+            <tr>
+                  <td>
+                        <b>Kontrol Eden</b>
+                        <div class="line">İmza</div>
+                  </td>
+                  <td>
+                        <b>Birim Sorumlusu</b>
+                        <div class="line">İmza</div>
+                  </td>
+                  <td>
+                        <b>Radyasyon Koruma Sorumlusu</b>
+                        <div class="line">İmza</div>
+                  </td>
+            </tr>
+      </table>
+</body>
+
+</html>

@@ -43,24 +43,43 @@ class DosyaYukleyici(QThread):
         self._ariza_id = ariza_id
 
     def run(self):
+        db = None
         try:
-            from database.google import GoogleDriveService
-            drive = GoogleDriveService()
-            # Cihaz klasörünü bul veya oluştur
-            cihaz_folder_id = drive.find_or_create_folder(self._cihaz_id, drive.get_folder_id("Cihazlar"))
-            # Arıza klasörünü bul veya oluştur
-            ariza_folder_id = drive.find_or_create_folder(self._ariza_id, cihaz_folder_id)
+            from core.di import get_cloud_adapter, get_registry
+            from database.sqlite_manager import SQLiteManager
+            from database.google.utils import resolve_storage_target
+
+            cloud = get_cloud_adapter()
+            
+            db = SQLiteManager()
+            registry = get_registry(db)
+            all_sabit = registry.get("Sabitler").get_all()
+            target = resolve_storage_target(all_sabit, "Cihaz_Ariza")
+
+            parent_id = None
+            if cloud.is_online:
+                root_id = cloud.get_folder_id("Cihazlar") or target.get("drive_folder_id")
+                cihaz_folder_id = cloud.find_or_create_folder(self._cihaz_id, root_id)
+                ariza_folder_id = cloud.find_or_create_folder(self._ariza_id, cihaz_folder_id)
+                parent_id = ariza_folder_id
 
             links = []
             for i, yol in enumerate(self._yollar):
                 dosya_adi = f"{self._ariza_id}_ek_{i+1}{os.path.splitext(yol)[1]}"
-                link = drive.upload_file(yol, parent_folder_id=ariza_folder_id, custom_name=dosya_adi)
+                link = cloud.upload_file(
+                    yol, 
+                    parent_folder_id=parent_id, 
+                    custom_name=dosya_adi,
+                    offline_folder_name=target.get("offline_folder_name")
+                )
                 if link:
-                    links.append(link)
+                    links.append(str(link))
             self.yuklendi.emit(links)
         except Exception as e:
             logger.error(f"Drive yükleme hatası: {e}")
             self.hata_olustu.emit(f"Dosya yüklenemedi: {e}")
+        finally:
+            if db: db.close()
 
 # ─── Thread: Veritabanı Kaydı ─────────────────────────────────
 

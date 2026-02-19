@@ -103,23 +103,52 @@ class DosyaYukleyici(QThread):
         self._ariza_id = ariza_id
 
     def run(self):
+        db = None
         try:
-            from database.google import GoogleDriveService
-            drive = GoogleDriveService()
-            cihaz_folder_id = drive.find_or_create_folder(self._cihaz_id, drive.get_folder_id("Cihazlar"))
-            ariza_folder_id = drive.find_or_create_folder(self._ariza_id, cihaz_folder_id)
+            from core.di import get_cloud_adapter, get_registry
+            from database.sqlite_manager import SQLiteManager
+            from database.google.utils import resolve_storage_target
 
+            # 1. Adapter ve Hedef Çözümleme
+            cloud = get_cloud_adapter()
+            
+            db = SQLiteManager()
+            registry = get_registry(db)
+            all_sabit = registry.get("Sabitler").get_all()
+            
+            # "Cihaz_Ariza" anahtarı ile hedef klasörü belirle (yoksa varsayılan kullanılır)
+            storage_target = resolve_storage_target(all_sabit, "Cihaz_Ariza")
+
+            # 2. Dosya Adı ve Klasör Yapısı
             islem_id = f"islem_{datetime.now().strftime('%Y%m%d%H%M%S')}"
             dosya_adi = f"{islem_id}{os.path.splitext(self._yol)[1]}"
             
-            link = drive.upload_file(self._yol, parent_folder_id=ariza_folder_id, custom_name=dosya_adi)
+            parent_id = None
+            if cloud.is_online:
+                # Online modda hiyerarşik yapı: Cihazlar -> CihazID -> ArizaID
+                root_id = cloud.get_folder_id("Cihazlar") or storage_target.get("drive_folder_id")
+                cihaz_folder_id = cloud.find_or_create_folder(self._cihaz_id, root_id)
+                ariza_folder_id = cloud.find_or_create_folder(self._ariza_id, cihaz_folder_id)
+                parent_id = ariza_folder_id
+
+            # 3. Yükleme (Online -> Drive, Offline -> Yerel Klasör)
+            link = cloud.upload_file(
+                self._yol, 
+                parent_folder_id=parent_id, 
+                custom_name=dosya_adi,
+                offline_folder_name=storage_target["offline_folder_name"]
+            )
+
             if link:
-                self.yuklendi.emit(link)
+                self.yuklendi.emit(str(link))
             else:
-                self.hata_olustu.emit("Dosya yüklenemedi, ancak işlem kaydedildi.")
+                self.hata_olustu.emit("Dosya yüklenemedi (Offline modda hedef klasör yapılandırması eksik olabilir).")
         except Exception as e:
-            logger.error(f"Drive yükleme hatası (ariza_islem): {e}")
+            logger.error(f"Upload hatası (ariza_islem): {e}")
             self.hata_olustu.emit(f"Dosya yüklenemedi: {e}")
+        finally:
+            if db:
+                db.close()
 
 # =============================================================================
 # 3. ANA PENCERE: KOMPAKT ARIZA İŞLEM
@@ -486,5 +515,3 @@ class ArizaIslemPenceresi(QWidget):
         if hasattr(self, 'saver') and self.saver.isRunning(): self.saver.quit(); self.saver.wait(500)
         if hasattr(self, 'uploader') and self.uploader.isRunning(): self.uploader.quit(); self.uploader.wait(500)
         event.accept()
-
-

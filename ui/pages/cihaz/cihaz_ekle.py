@@ -20,26 +20,28 @@ class DriveUploadWorker(QThread):
     finished = Signal(str, str)   # (alan_adi, webViewLink)
     error = Signal(str, str)      # (alan_adi, hata_mesaji)
 
-    def __init__(self, file_path, folder_id, custom_name, alan_adi):
+    def __init__(self, file_path, folder_id, custom_name, alan_adi, offline_folder_name=None):
         super().__init__()
         self._file_path = file_path
         self._folder_id = folder_id
         self._custom_name = custom_name
         self._alan_adi = alan_adi
+        self._offline_folder_name = offline_folder_name
 
     def run(self):
         try:
-            from database.google import GoogleDriveService
-            drive = GoogleDriveService()
-            link = drive.upload_file(
+            from core.di import get_cloud_adapter
+            cloud = get_cloud_adapter()
+            link = cloud.upload_file(
                 self._file_path,
                 parent_folder_id=self._folder_id,
-                custom_name=self._custom_name
+                custom_name=self._custom_name,
+                offline_folder_name=self._offline_folder_name
             )
             if link:
-                self.finished.emit(self._alan_adi, link)
+                self.finished.emit(self._alan_adi, str(link))
             else:
-                self.error.emit(self._alan_adi, "Yükleme başarısız")
+                self.error.emit(self._alan_adi, "Yükleme başarısız (Offline modda hedef klasör tanımlı olmayabilir)")
         except Exception as e:
             exc_logla("CihazEkle.DosyaYukleyici", e)
             self.error.emit(self._alan_adi, str(e))
@@ -96,6 +98,7 @@ class CihazEklePage(QWidget):
         self._drive_folders = {}       # {"Cihaz_Resim": folder_id, ...}
         self._upload_workers = []
         self._sabit_maps = {}
+        self._all_sabit = []
         self._next_cihaz_sira = 1
 
         self._setup_ui()
@@ -446,6 +449,7 @@ class CihazEklePage(QWidget):
             registry = get_registry(self._db)
             sabitler_repo = registry.get("Sabitler")
             all_sabit = sabitler_repo.get_all()
+            self._all_sabit = all_sabit
 
             sabitler_map = {}
             self._sabit_maps = {"AnaBilimDali": {}, "Cihaz_Tipi": {}, "Kaynak": {}}
@@ -635,11 +639,16 @@ class CihazEklePage(QWidget):
 
     def _upload_to_drive(self, data):
         """Dosyaları Drive'a yükle"""
+        from database.google.utils import resolve_storage_target
+
         for alan_adi, file_path in self._file_paths.items():
-            folder_id = self._drive_folders.get(f"Cihaz_{alan_adi}", None)
+            target = resolve_storage_target(self._all_sabit, f"Cihaz_{alan_adi}")
+            folder_id = target.get("drive_folder_id")
+            offline_folder_name = target.get("offline_folder_name")
+            
             custom_name = f"{data['Cihazid']}_{alan_adi}{os.path.splitext(file_path)[1]}"
 
-            worker = DriveUploadWorker(file_path, folder_id, custom_name, alan_adi)
+            worker = DriveUploadWorker(file_path, folder_id, custom_name, alan_adi, offline_folder_name)
             worker.finished.connect(lambda a, l: self._on_upload_finished(a, l, data))
             worker.error.connect(self._on_upload_error)
             worker.start()
@@ -701,5 +710,3 @@ class CihazEklePage(QWidget):
         if reply == QMessageBox.Yes:
             if self._on_saved:
                 self._on_saved()
-
-
