@@ -511,7 +511,7 @@ MENU_ICON_MAP: dict[str, str] = {
     "Cihaz Ekle":        "device_add",
     "Arıza Kayıt":       "alert_triangle",
     "Arıza Listesi":     "wrench_list",
-    "Periyodik Bakım":   "tools",
+    "Teknik Hizmetler":   "tools",
     "Kalibrasyon Takip": "crosshair",
     "RKE Envanter":      "shield_check",
     "RKE Muayene":       "check_in",

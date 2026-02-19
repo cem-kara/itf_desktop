@@ -175,9 +175,8 @@ class MainWindow(QMainWindow):
             page.table.doubleClicked.connect(
                 lambda idx: self._open_personel_detay(page, idx)
             )
-            #page.btn_kapat.clicked.connect(lambda: self._close_page("Personel Listesi"))
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Personel Listesi"))
             page.btn_yeni.clicked.connect(lambda: self._on_menu_clicked("Personel", "Personel Ekle"))
-            page.detay_requested.connect(self._open_personel_merkez)
             page.izin_requested.connect(lambda data: self.open_izin_giris(data))
             page.load_data()
             return page
@@ -229,9 +228,9 @@ class MainWindow(QMainWindow):
             from ui.pages.cihaz.cihaz_listesi import CihazListesiPage
             page = CihazListesiPage(db=self._db)
             page.add_requested.connect(lambda: self._on_menu_clicked("Cihaz", "Cihaz Ekle"))
-            page.edit_requested.connect(self._open_cihaz_detay)
+            page.detay_requested.connect(self._open_cihaz_merkez)
+            page.edit_requested.connect(self._open_cihaz_merkez)
             page.periodic_maintenance_requested.connect(self.open_periodic_maintenance_for_device)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Cihaz Listesi"))
             page.load_data()
             return page
 
@@ -242,23 +241,22 @@ class MainWindow(QMainWindow):
                 page.btn_iptal.clicked.connect(lambda: self._close_page("Arıza Kayıt"))
             return page
         
-        if baslik == "Arıza Listesi":
-            from ui.pages.cihaz.ariza_listesi import ArizaListesiPage
-            page = ArizaListesiPage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Arıza Listesi"))
-            page.load_data()
-            return page
+        # Eski menü adları → Teknik Hizmetler'e yönlendir
+        if baslik in ("Arıza Listesi", "Periyodik Bakım", "Kalibrasyon Takip"):
+            tab_map = {
+                "Arıza Listesi":     "ARIZA",
+                "Periyodik Bakım":   "BAKIM",
+                "Kalibrasyon Takip": "KALIBRASYON",
+            }
+            self._on_menu_clicked("CİHAZ", "Teknik Hizmetler")
+            page = self._pages.get("Teknik Hizmetler")
+            if page and hasattr(page, "open_tab"):
+                page.open_tab(tab_map[baslik])
+            return None
 
-        if baslik == "Periyodik Bakım":
-            from ui.pages.cihaz.periyodik_bakim import PeriyodikBakimPage
-            page = PeriyodikBakimPage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Periyodik Bakım"))
-            return page
-
-        if baslik == "Kalibrasyon Takip":
-            from ui.pages.cihaz.kalibrasyon_takip import KalibrasyonTakipPage
-            page = KalibrasyonTakipPage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Kalibrasyon Takip"))
+        if baslik == "Teknik Hizmetler":
+            from ui.pages.cihaz.teknik_hizmetler import TeknikHizmetlerPage
+            page = TeknikHizmetlerPage(db=self._db)
             return page
         
         if baslik == "RKE Envanter":
@@ -312,8 +310,10 @@ class MainWindow(QMainWindow):
             subtitle=f"{group} modülü — geliştirme aşamasında"
         )
 
-    def _open_personel_merkez(self, row_data):
-        """Personel verisi ile merkez sayfasını açar."""
+    def _open_personel_detay(self, liste_page, index):
+        """Personel listesinde çift tıklama → Personel Merkez (360) sayfası aç."""
+        source_idx = liste_page._proxy.mapToSource(index)
+        row_data = liste_page._model.get_row(source_idx.row())
         if not row_data:
             return
 
@@ -340,12 +340,6 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(page)
         self.stack.setCurrentWidget(page)
         self.page_title.setText(f"Personel Kartı — {ad}")
-
-    def _open_personel_detay(self, liste_page, index):
-        """Personel listesinde çift tıklama → Personel Merkez (360) sayfası aç."""
-        source_idx = liste_page._proxy.mapToSource(index)
-        row_data = liste_page._model.get_row(source_idx.row())
-        self._open_personel_merkez(row_data)
 
     def _back_to_personel_listesi(self, detay_key):
         """Detay sayfasından listeye geri dön."""
@@ -691,35 +685,33 @@ class MainWindow(QMainWindow):
         self.page_title.setText(f"Cihaz Düzenle — {marka} {model}")
         self.page_title.setVisible(True)
 
-    def _open_cihaz_detay(self, data):
-        """Cihaz detay sayfasını aç."""
+    def _open_cihaz_merkez(self, data):
+        """Cihaz 360° merkez sayfasını aç (v3)."""
         cihaz_id = data.get("Cihazid", "")
-        detay_key = f"__cihaz_detay_{cihaz_id}"
+        merkez_key = f"__cihaz_merkez_{cihaz_id}"
 
-        # Eğer zaten açıksa kapat
-        if detay_key in self._pages:
-            old = self._pages.pop(detay_key)
+        # Eğer zaten açıksa kapat ve yeniden oluştur
+        if merkez_key in self._pages:
+            old = self._pages.pop(merkez_key)
             self.stack.removeWidget(old)
             old.deleteLater()
 
-        from ui.pages.cihaz.cihaz_detay import CihazDetayPage
-        page = CihazDetayPage(
-            db=self._db,
-            data=data,
-            on_saved=self._on_cihaz_saved
-        )
-        
-        # Sinyalleri bağla
-        page.back_requested.connect(lambda: self._back_to_cihaz_listesi(detay_key))
+        from ui.pages.cihaz.cihaz_merkez import CihazMerkezPage
+        page = CihazMerkezPage(db=self._db, cihaz_data=data)
+        page.kapat_istegi.connect(lambda: self._back_to_cihaz_listesi(merkez_key))
 
-        self._pages[detay_key] = page
+        self._pages[merkez_key] = page
         self.stack.addWidget(page)
         self.stack.setCurrentWidget(page)
-        
+
         marka = data.get("Marka", "")
         model = data.get("Model", "")
-        self.page_title.setText(f"Cihaz Detay — {marka} {model}")
+        self.page_title.setText(f"Cihaz — {marka} {model}")
         self.page_title.setVisible(True)
+
+    def _open_cihaz_detay(self, data):
+        """Geriye dönük uyumluluk — merkeze yönlendir."""
+        self._open_cihaz_merkez(data)
 
     def _back_to_cihaz_listesi(self, detay_key):
         """Detay sayfasından cihaz listesine geri dön."""
@@ -740,5 +732,10 @@ class MainWindow(QMainWindow):
 
     def open_periodic_maintenance_for_device(self, device_data):
         """Cihaz listesinden periyodik bakım sayfasına yönlendir."""
-        self._on_menu_clicked("Cihaz", "Periyodik Bakım")
+        # Teknik Hizmetler → Periyodik Bakım sekmesini aç
+        self._on_menu_clicked("CİHAZ", "Teknik Hizmetler")
+        page = self._pages.get("Teknik Hizmetler")
+        if page and hasattr(page, "open_tab"):
+            cihaz_id = data.get("Cihazid", "") if isinstance(data, dict) else ""
+            page.open_tab("BAKIM", cihaz_id=cihaz_id)
         # İleride: page.filter_by_device(device_data['Cihazid']) eklenebilir

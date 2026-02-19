@@ -34,28 +34,19 @@
     "CİHAZ": [
       {
         "baslik": "Cihaz Listesi",
-        "implemented": false,
-        "note": "Geliştirme aşamasında"
+        "implemented": true
       },
       {
         "baslik": "Cihaz Ekle",
-        "implemented": false
+        "implemented": true
       },
       {
         "baslik": "Arıza Kayıt",
-        "implemented": false
+        "implemented": true
       },
       {
-        "baslik": "Arıza Listesi",
-        "implemented": false
-      },
-      {
-        "baslik": "Periyodik Bakım",
-        "implemented": false
-      },
-      {
-        "baslik": "Kalibrasyon Takip",
-        "implemented": false
+        "baslik": "Teknik Hizmetler",
+        "implemented": true
       }
     ],
     "RKE": [

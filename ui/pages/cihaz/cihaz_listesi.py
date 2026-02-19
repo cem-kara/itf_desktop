@@ -360,7 +360,6 @@ class CihazListesiPage(QWidget):
             btn = QPushButton(lbl)
             btn.setCheckable(True)
             btn.setCursor(QCursor(Qt.PointingHandCursor))
-            btn.setFixedHeight(28)
             btn.setStyleSheet(STYLES["filter_btn_all" if lbl == "Tümü" else "filter_btn"])
             btn.setChecked(lbl == self._active_filter)
             self._filter_btns[lbl] = btn
@@ -379,14 +378,12 @@ class CihazListesiPage(QWidget):
 
         self.btn_yenile = QPushButton("⟳")
         self.btn_yenile.setToolTip("Yenile")
-        self.btn_yenile.setFixedSize(32, 28)
         self.btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_yenile.setStyleSheet(STYLES["refresh_btn"])
         lay.addWidget(self.btn_yenile)
 
         self.btn_yeni = QPushButton("+ Yeni Cihaz")
         self.btn_yeni.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_yeni.setFixedHeight(28)
         self.btn_yeni.setStyleSheet(STYLES["action_btn"])
         lay.addWidget(self.btn_yeni)
         return frame
@@ -408,26 +405,22 @@ class CihazListesiPage(QWidget):
 
         self.cmb_tip = QComboBox()
         self.cmb_tip.addItem("Tüm Tipler")
-        self.cmb_tip.setFixedSize(150, 26)
         self.cmb_tip.setStyleSheet(STYLES["combo"])
         lay.addWidget(self.cmb_tip)
 
         self.cmb_birim = QComboBox()
         self.cmb_birim.addItem("Tüm Birimler")
-        self.cmb_birim.setFixedSize(160, 26)
         self.cmb_birim.setStyleSheet(STYLES["combo"])
         lay.addWidget(self.cmb_birim)
 
         self.cmb_kaynak = QComboBox()
         self.cmb_kaynak.addItem("Tüm Kaynaklar")
-        self.cmb_kaynak.setFixedSize(140, 26)
         self.cmb_kaynak.setStyleSheet(STYLES["combo"])
         lay.addWidget(self.cmb_kaynak)
 
         lay.addStretch()
 
         self.btn_excel = QPushButton("↓ Excel")
-        self.btn_excel.setFixedHeight(26)
         self.btn_excel.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_excel.setStyleSheet(STYLES["excel_btn"])
         lay.addWidget(self.btn_excel)
