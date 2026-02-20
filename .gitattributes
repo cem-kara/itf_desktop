@@ -1,2 +1,50 @@
-# Auto detect text files and perform LF normalization
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ITF Desktop v3 — .gitattributes
+# Satır sonu karakteri normalizasyonu ve binary dosyalar
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# ─── Otomatik satır sonu normalizasyonu ──────────────────────────
 * text=auto
+
+# ─── Python dosyaları ───────────────────────────────────────────
+*.py text eol=lf diff=python
+*.pyw text eol=lf diff=python
+*.pyx text eol=lf diff=python
+*.pyi text eol=lf diff=python
+
+# ─── Text dosyaları ─────────────────────────────────────────────
+*.md text eol=lf
+*.txt text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf
+*.cfg text eol=lf
+*.conf text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# ─── Web dosyaları ──────────────────────────────────────────────
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.svg text eol=lf
+
+# ─── Binary dosyaları ───────────────────────────────────────────
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.zip binary
+*.exe binary
+*.dll binary
+*.db binary
+*.sqlite binary
+
+# ─── Veritabanı dosyaları ───────────────────────────────────────
+*.db binary
+*.sqlite binary
+*.sqlite3 binary

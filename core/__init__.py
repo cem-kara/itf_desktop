@@ -1,2 +1,2 @@
-"""Core package for ITF Desktop."""
+"""Core package for REPYS"""
 

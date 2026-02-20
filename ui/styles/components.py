@@ -1,880 +1,491 @@
-# ui/styles/components.py
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Bileşen Stilleri (QSS) — Merkezi Yönetim
-#
-# Tüm sayfa ve form bileşenleri bu stillerden kullanır.
-# Inline QSS yerine merkezi tanımlar.
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-from ui.styles.colors import DarkTheme as Colors
+# ui/styles/components.py  ─  REPYS v3 · Medikal Dark-Blue
+from ui.styles.colors import DarkTheme as C
 
 
 class ComponentStyles:
-    """Tüm UI bileşenlerinin stillerini sağlar."""
 
-    # ══════════════════════════════════════════
-    # PANEL / FRAME STİLLERİ
-    # ══════════════════════════════════════════
+    PAGE = f"QWidget {{ background-color: {C.BG_PRIMARY}; }}"
 
     FILTER_PANEL = f"""
         QFrame {{
-            background-color: rgba(30, 32, 44, 0.85);
-            border: 1px solid {Colors.BORDER_PRIMARY};
+            background-color: {C.BG_SECONDARY};
+            border: 1px solid {C.BORDER_PRIMARY};
             border-radius: 10px;
         }}
     """
 
-    # ══════════════════════════════════════════
-    # BUTTON STİLLERİ
-    # ══════════════════════════════════════════
-
-    BTN_FILTER = f"""
-        QPushButton {{
-            background-color: {Colors.BTN_SECONDARY_BG};
-            color: {Colors.BTN_SECONDARY_TEXT};
-            border: 1px solid {Colors.BTN_SECONDARY_BORDER};
-            border-radius: 4px;
-            padding: 6px 12px;
-            font-size: 12px;
-            font-weight: 600;
-        }}
-        QPushButton:hover {{
-            background-color: {Colors.BG_HOVER};
-            color: {Colors.TEXT_SECONDARY};
-        }}
-        QPushButton:checked {{
-            background-color: {Colors.BG_SELECTED};
-            color: {Colors.TEXT_PRIMARY};
-            border: 1px solid {Colors.BTN_PRIMARY_BORDER};
-        }}
-    """
-
-    BTN_FILTER_ALL = f"""
-        QPushButton {{
-            background-color: {Colors.BTN_SECONDARY_BG};
-            color: {Colors.BTN_SECONDARY_TEXT};
-            border: 1px solid {Colors.BTN_SECONDARY_BORDER};
-            border-radius: 4px;
-            padding: 6px 12px;
-            font-size: 12px;
-            font-weight: 600;
-        }}
-        QPushButton:hover {{
-            background-color: {Colors.BG_HOVER};
-            color: {Colors.TEXT_SECONDARY};
-        }}
-        QPushButton:checked {{
-            background-color: {Colors.BG_HOVER};
-            color: {Colors.TEXT_PRIMARY};
-            border: 1px solid {Colors.BORDER_PRIMARY};
-        }}
-    """
-
+    # ── Butonlar ─────────────────────────────────────────────────
     BTN_ACTION = f"""
         QPushButton {{
-            background-color: {Colors.BTN_PRIMARY_BG};
-            color: {Colors.BTN_PRIMARY_TEXT};
-            border: 1px solid {Colors.BTN_PRIMARY_BORDER};
-            border-radius: 4px;
-            padding: 8px 16px;
+            background-color: {C.BTN_PRIMARY_BG};
+            color: {C.BTN_PRIMARY_TEXT};
+            border: none;
+            border-radius: 7px;
+            padding: 6px 16px;
             font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 6px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
         }}
-        QPushButton:hover {{
-            background-color: {Colors.BTN_PRIMARY_HOVER};
-            color: {Colors.TEXT_PRIMARY};
+        QPushButton:hover  {{ background-color: {C.BTN_PRIMARY_HOVER}; }}
+        QPushButton:pressed {{ background-color: #0090b0; }}
+        QPushButton:disabled {{
+            background-color: rgba(0,180,216,0.20);
+            color: rgba(6,13,26,0.5);
         }}
     """
 
     BTN_REFRESH = f"""
         QPushButton {{
-            background-color: {Colors.BTN_SECONDARY_BG};
-            color: {Colors.BTN_SECONDARY_TEXT};
-            border: 1px solid {Colors.BTN_SECONDARY_BORDER};
-            border-radius: 4px;
-            padding: 8px 16px;
+            background-color: {C.BTN_SECONDARY_BG};
+            color: {C.TEXT_SECONDARY};
+            border: 1px solid {C.BORDER_STRONG};
+            border-radius: 7px;
+            padding: 6px 12px;
             font-size: 12px;
-            margin-bottom: 6px;
         }}
-        QPushButton:hover {{
-            background-color: {Colors.BG_HOVER};
-            color: {Colors.TEXT_SECONDARY};
+        QPushButton:hover  {{
+            background-color: {C.BG_TERTIARY};
+            color: {C.TEXT_PRIMARY};
+            border-color: {C.ACCENT};
+        }}
+        QPushButton:pressed {{ background-color: {C.BG_ELEVATED}; }}
+    """
+
+    BTN_FILTER = f"""
+        QPushButton {{
+            background-color: transparent;
+            color: {C.TEXT_SECONDARY};
+            border: 1px solid {C.BORDER_STRONG};
+            border-radius: 20px;
+            padding: 4px 13px;
+            font-size: 12px;
+            font-weight: 500;
+        }}
+        QPushButton:hover  {{
+            background-color: {C.BG_TERTIARY};
+            color: {C.TEXT_PRIMARY};
+        }}
+        QPushButton:checked {{
+            background-color: {C.ACCENT_BG};
+            color: {C.ACCENT2};
+            border-color: {C.ACCENT};
+            font-weight: 700;
+        }}
+    """
+
+    BTN_FILTER_ALL = f"""
+        QPushButton {{
+            background-color: transparent;
+            color: {C.TEXT_SECONDARY};
+            border: 1px solid {C.BORDER_STRONG};
+            border-radius: 20px;
+            padding: 4px 13px;
+            font-size: 12px;
+        }}
+        QPushButton:hover  {{
+            background-color: {C.BG_TERTIARY};
+            color: {C.TEXT_PRIMARY};
+        }}
+        QPushButton:checked {{
+            background-color: {C.BG_ELEVATED};
+            color: {C.TEXT_PRIMARY};
+            border-color: {C.BORDER_STRONG};
+            font-weight: 600;
         }}
     """
 
     BTN_CLOSE = f"""
         QPushButton {{
-            background-color: {Colors.BTN_DANGER_BG};
-            color: {Colors.BTN_DANGER_TEXT};
-            border: 1px solid {Colors.BTN_DANGER_BORDER};
-            border-radius: 4px;
-            padding: 8px 16px;
+            background-color: {C.BTN_DANGER_BG};
+            color: {C.BTN_DANGER_TEXT};
+            border: 1px solid {C.BTN_DANGER_BORDER};
+            border-radius: 7px;
+            padding: 6px 14px;
             font-size: 12px;
-            font-weight: bold;
-            margin-bottom: 6px;
+            font-weight: 600;
         }}
-        QPushButton:hover {{
-            background-color: {Colors.BTN_DANGER_HOVER};
-            color: {Colors.TEXT_PRIMARY};
-        }}
+        QPushButton:hover {{ background-color: {C.BTN_DANGER_HOVER}; }}
     """
 
     BTN_EXCEL = f"""
         QPushButton {{
-            background-color: {Colors.BTN_SUCCESS_BG};
-            color: {Colors.BTN_SUCCESS_TEXT};
-            border: 1px solid {Colors.BTN_SUCCESS_BORDER};
-            border-radius: 4px;
-            padding: 8px 16px;
+            background-color: {C.BTN_SUCCESS_BG};
+            color: {C.BTN_SUCCESS_TEXT};
+            border: 1px solid {C.BTN_SUCCESS_BORDER};
+            border-radius: 7px;
+            padding: 6px 14px;
             font-size: 12px;
             font-weight: 600;
-            margin-bottom: 6px;
         }}
-        QPushButton:hover {{
-            background-color: {Colors.BTN_SUCCESS_HOVER};
-            color: {Colors.TEXT_PRIMARY};
-        }}
+        QPushButton:hover {{ background-color: {C.BTN_SUCCESS_HOVER}; }}
     """
 
-    # ══════════════════════════════════════════
-    # INPUT STİLLERİ (QLineEdit, QComboBox)
-    # ══════════════════════════════════════════
+    SAVE_BTN   = BTN_EXCEL
+    CANCEL_BTN = BTN_REFRESH
+    EDIT_BTN   = BTN_REFRESH
+    DANGER_BTN = BTN_CLOSE
+    REPORT_BTN = BTN_REFRESH
+    PDF_BTN    = BTN_REFRESH
+    BACK_BTN   = BTN_REFRESH
+    CALC_BTN   = BTN_REFRESH
 
+    # ── Input Alanları ───────────────────────────────────────────
     INPUT_SEARCH = f"""
         QLineEdit {{
-            background-color: {Colors.INPUT_BG};
-            border: 1px solid {Colors.INPUT_BORDER};
-            border-bottom: 2px solid rgba(29, 117, 254, 0.3);
+            background-color: {C.INPUT_BG};
+            border: 1.5px solid {C.INPUT_BORDER};
             border-radius: 8px;
-            padding: 6px 8px;
+            padding: 6px 10px 6px 30px;
             font-size: 13px;
-            color: {Colors.TEXT_PRIMARY};
-            margin-bottom: 6px;
+            color: {C.TEXT_PRIMARY};
         }}
         QLineEdit:focus {{
-            border: 1px solid {Colors.INPUT_BORDER_FOCUS};
-            border-bottom: 2px solid {Colors.INPUT_BORDER_FOCUS};
+            border-color: {C.INPUT_BORDER_FOCUS};
+            background-color: {C.BG_ELEVATED};
         }}
-        QLineEdit::placeholder {{
-            color: {Colors.TEXT_MUTED};
-        }}
+        QLineEdit::placeholder {{ color: {C.TEXT_MUTED}; }}
     """
 
     INPUT_COMBO = f"""
         QComboBox {{
-            background-color: {Colors.INPUT_BG};
-            border: 1px solid {Colors.INPUT_BORDER_FOCUS};
-            border-radius: 4px;
-            padding: 6px 8px;
-            color: white;
-            margin-bottom: 6px;
+            background-color: {C.INPUT_BG};
+            border: 1.5px solid {C.INPUT_BORDER};
+            border-radius: 8px;
+            padding: 6px 10px;
+            color: {C.TEXT_PRIMARY};
+            font-size: 13px;
         }}
-        QComboBox:focus {{
-            border: 1px solid {Colors.INPUT_BORDER_FOCUS};
-            background-color: {Colors.INPUT_BG};
-        }}
-        QComboBox::drop-down {{
-            border: none;
-            width: 20px;
+        QComboBox:focus {{ border-color: {C.INPUT_BORDER_FOCUS}; }}
+        QComboBox:hover {{ border-color: {C.BORDER_STRONG}; }}
+        QComboBox::drop-down {{ border: none; width: 20px; }}
+        QComboBox::down-arrow {{
+            image: none;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid {C.TEXT_MUTED};
+            width: 0; height: 0;
         }}
         QComboBox QAbstractItemView {{
-            background-color: #2d2d2d;
-            border: 1px solid {Colors.BORDER_PRIMARY};
-            color: {Colors.TEXT_SECONDARY};
-            selection-background-color: {Colors.INPUT_BORDER_FOCUS};
-            selection-color: white;
+            background-color: {C.BG_ELEVATED};
+            border: 1px solid {C.BORDER_STRONG};
+            border-radius: 8px;
+            color: {C.TEXT_SECONDARY};
+            selection-background-color: {C.BG_SELECTED};
+            selection-color: {C.ACCENT2};
+            outline: 0;
+            padding: 4px;
+        }}
+        QComboBox QAbstractItemView::item {{
+            padding: 6px 10px;
+            border-radius: 5px;
+            min-height: 26px;
+        }}
+        QComboBox QAbstractItemView::item:hover {{
+            background-color: {C.BG_HOVER};
+            color: {C.ACCENT2};
         }}
     """
 
-    # ══════════════════════════════════════════
-    # TABLO STİLLERİ
-    # ══════════════════════════════════════════
-
-    TABLE = f"""
-        QTableView {{
-            background-color: rgba(30, 32, 44, 0.7);
-            alternate-background-color: rgba(255, 255, 255, 0.02);
-            border: 1px solid {Colors.BORDER_PRIMARY};
+    INPUT_FIELD = f"""
+        QLineEdit {{
+            background-color: {C.INPUT_BG};
+            border: 1.5px solid {C.INPUT_BORDER};
             border-radius: 8px;
-            gridline-color: rgba(255, 255, 255, 0.04);
-            selection-background-color: {Colors.BG_SELECTED};
-            selection-color: {Colors.TEXT_PRIMARY};
-            color: {Colors.TEXT_SECONDARY};
+            padding: 6px 10px;
             font-size: 13px;
+            color: {C.TEXT_PRIMARY};
         }}
-        QTableView::item {{
-            padding: 6px 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        QLineEdit:focus {{
+            border-color: {C.INPUT_BORDER_FOCUS};
+            background-color: {C.BG_ELEVATED};
         }}
-        QTableView::item:selected {{
-            background-color: {Colors.BG_SELECTED};
-            color: {Colors.TEXT_PRIMARY};
+        QLineEdit:read-only {{
+            background-color: {C.BG_SECONDARY};
+            color: {C.TEXT_SECONDARY};
         }}
-        QTableView::item:hover:!selected {{
-            background-color: {Colors.BG_HOVER};
+        QLineEdit::placeholder {{ color: {C.TEXT_MUTED}; }}
+    """
+
+    INPUT_DATE = f"""
+        QDateEdit {{
+            background-color: {C.INPUT_BG};
+            border: 1.5px solid {C.INPUT_BORDER};
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 13px;
+            color: {C.TEXT_PRIMARY};
+        }}
+        QDateEdit:focus {{ border-color: {C.INPUT_BORDER_FOCUS}; }}
+        QDateEdit::drop-down {{ border: none; width: 20px; }}
+    """
+
+    CALENDAR = f"""
+        QCalendarWidget {{
+            background-color: {C.BG_SECONDARY};
+            color: {C.TEXT_PRIMARY};
+            border: 1px solid {C.BORDER_PRIMARY};
+            border-radius: 10px;
+        }}
+        QCalendarWidget QToolButton {{
+            background-color: transparent;
+            color: {C.TEXT_PRIMARY};
+            border: none;
+            padding: 6px 12px;
+            font-size: 13px; font-weight: 600;
+        }}
+        QCalendarWidget QToolButton:hover {{
+            background-color: rgba(0,180,216,0.12);
+            border-radius: 6px;
+            color: {C.ACCENT2};
+        }}
+        QCalendarWidget QMenu {{
+            background-color: {C.BG_ELEVATED};
+            color: {C.TEXT_PRIMARY};
+            border: 1px solid rgba(0,180,216,0.20);
+            border-radius: 8px;
+        }}
+        QCalendarWidget QSpinBox {{
+            background-color: {C.INPUT_BG};
+            color: {C.TEXT_PRIMARY};
+            border: 1.5px solid rgba(255,255,255,0.10);
+            padding: 4px 8px;
+            font-size: 13px;
+            border-radius: 6px;
+        }}
+        QCalendarWidget QAbstractItemView {{
+            background-color: {C.BG_SECONDARY};
+            color: {C.TEXT_MUTED};
+            selection-background-color: rgba(0,180,216,0.18);
+            selection-color: {C.ACCENT2};
+            font-size: 13px;
+            outline: none;
+        }}
+        QCalendarWidget QAbstractItemView:disabled {{ color: #263850; }}
+        QCalendarWidget #qt_calendar_navigationbar {{
+            background-color: {C.BG_TERTIARY};
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            padding: 4px;
+        }}
+    """
+
+    INPUT_TEXT = f"""
+        QTextEdit {{
+            background-color: {C.INPUT_BG};
+            border: 1.5px solid {C.INPUT_BORDER};
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 13px;
+            color: {C.TEXT_PRIMARY};
+        }}
+        QTextEdit:focus {{ border-color: {C.INPUT_BORDER_FOCUS}; }}
+    """
+
+    LABEL_FORM = f"""
+        QLabel {{
+            color: {C.TEXT_SECONDARY};
+            font-size: 11px;
+            font-weight: 700;
+            background: transparent;
+            letter-spacing: 0.04em;
+        }}
+    """
+
+    LABEL_TITLE = f"""
+        QLabel {{
+            color: {C.TEXT_PRIMARY};
+            font-size: 15px;
+            font-weight: 700;
+            background: transparent;
+        }}
+    """
+
+    # ── Tablo ────────────────────────────────────────────────────
+    TABLE = f"""
+        QTableView, QTableWidget {{
+            background-color: {C.BG_SECONDARY};
+            border: 1px solid {C.BORDER_PRIMARY};
+            border-radius: 10px;
+            gridline-color: {C.BORDER_SECONDARY};
+            color: {C.TEXT_PRIMARY};
+            selection-background-color: {C.BG_SELECTED};
+            selection-color: {C.ACCENT2};
+            alternate-background-color: {C.BG_TERTIARY};
+            outline: 0;
         }}
         QHeaderView::section {{
-            background-color: rgba(255, 255, 255, 0.05);
-            color: {Colors.TEXT_MUTED};
-            font-weight: 600;
-            font-size: 12px;
-            padding: 8px;
+            background-color: {C.BG_TERTIARY};
+            color: {C.TEXT_SECONDARY};
             border: none;
-            border-bottom: 1px solid rgba(29, 117, 254, 0.3);
-            border-right: 1px solid rgba(255, 255, 255, 0.03);
-        }}
-    """
-
-    # ══════════════════════════════════════════
-    # LABEL / TEKSİT STİLLERİ
-    # ══════════════════════════════════════════
-
-    LABEL_FOOTER = f"color: {Colors.TEXT_DISABLED}; font-size: 12px; background: transparent;"
-
-    LABEL_SECTION = f"color: {Colors.TEXT_DISABLED}; font-size: 11px; font-weight: bold; background: transparent;"
-
-    # ══════════════════════════════════════════
-    # MENU / CONTEXT STİLLERİ
-    # ══════════════════════════════════════════
-
-    CONTEXT_MENU = f"""
-        QMenu {{
-            background-color: {Colors.INPUT_BG};
-            border: 1px solid {Colors.BORDER_PRIMARY};
-            border-radius: 8px;
-            padding: 4px;
-            color: {Colors.TEXT_SECONDARY};
-            font-size: 13px;
-        }}
-        QMenu::item {{
-            padding: 8px 24px 8px 12px;
-            border-radius: 4px;
-            margin: 2px;
-        }}
-        QMenu::item:selected {{
-            background-color: {Colors.BG_SELECTED};
-            color: {Colors.TEXT_PRIMARY};
-        }}
-        QMenu::separator {{
-            height: 1px;
-            background: {Colors.BORDER_SECONDARY};
-            margin: 4px 8px;
-        }}
-    """
-
-    # ══════════════════════════════════════════
-    # PROGRESS BAR
-    # ══════════════════════════════════════════
-
-    PROGRESS_BAR = f"""
-        QProgressBar {{
-            background-color: {Colors.BG_HOVER};
-            border: 1px solid {Colors.BORDER_PRIMARY};
-            border-radius: 4px;
-            color: {Colors.TEXT_MUTED};
+            border-bottom: 1px solid {C.BORDER_STRONG};
+            border-right: 1px solid {C.BORDER_SECONDARY};
+            padding: 7px 10px;
             font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
         }}
-        QProgressBar::chunk {{
-            background-color: {Colors.BTN_PRIMARY_HOVER};
-            border-radius: 3px;
+        QHeaderView::section:last {{ border-right: none; }}
+        QHeaderView::section:hover {{
+            background-color: {C.BG_ELEVATED};
+            color: {C.ACCENT2};
         }}
-    """
-
-    # ══════════════════════════════════════════
-    # SAYFA STİLLERİ (Personel Detay, Ekle vb.)
-    # ══════════════════════════════════════════
-
-    PAGE = f"""
-        QWidget {{
-            background-color: {Colors.BG_PRIMARY};
-        }}
-    """
-
-    HEADER_NAME = f"""
-        color: {Colors.TEXT_PRIMARY};
-        font-size: 18px;
-        font-weight: 600;
-        background: transparent;
-    """
-
-    SAVE_BTN = f"""
-        QPushButton {{
-            background-color: {Colors.BTN_SUCCESS_BG};
-            color: {Colors.BTN_SUCCESS_TEXT};
-            border: 1px solid {Colors.BTN_SUCCESS_BORDER};
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }}
-        QPushButton:hover {{
-            background-color: {Colors.BTN_SUCCESS_HOVER};
-            color: {Colors.TEXT_PRIMARY};
-        }}
-        QPushButton:pressed {{
-            background-color: {Colors.BG_SELECTED};
+        QTableView::item {{ padding: 5px 10px; min-height: 34px; }}
+        QTableView::item:hover {{ background-color: {C.BG_HOVER}; }}
+        QTableView::item:selected {{
+            background-color: {C.BG_SELECTED};
+            color: {C.ACCENT2};
         }}
     """
 
-    EDIT_BTN = f"""
-        QPushButton {{
-            background-color: {Colors.BTN_PRIMARY_BG};
-            color: {Colors.BTN_PRIMARY_TEXT};
-            border: 1px solid {Colors.BTN_PRIMARY_BORDER};
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }}
-        QPushButton:hover {{
-            background-color: {Colors.BTN_PRIMARY_HOVER};
-            color: {Colors.TEXT_PRIMARY};
-        }}
-        QPushButton:pressed {{
-            background-color: {Colors.BG_SELECTED};
-        }}
-    """
-
-    CANCEL_BTN = f"""
-        QPushButton {{
-            background-color: {Colors.BTN_SECONDARY_BG};
-            color: {Colors.BTN_SECONDARY_TEXT};
-            border: 1px solid {Colors.BTN_SECONDARY_BORDER};
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }}
-        QPushButton:hover {{
-            background-color: {Colors.BG_HOVER};
-            color: {Colors.TEXT_PRIMARY};
-        }}
-        QPushButton:pressed {{
-            background-color: {Colors.BG_SELECTED};
-        }}
-    """
-
-    DANGER_BTN = f"""
-        QPushButton {{
-            background-color: {Colors.BTN_DANGER_BG};
-            color: {Colors.BTN_DANGER_TEXT};
-            border: 1px solid {Colors.BTN_DANGER_BORDER};
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }}
-        QPushButton:hover {{
-            background-color: {Colors.BTN_DANGER_HOVER};
-            color: {Colors.TEXT_PRIMARY};
-        }}
-        QPushButton:pressed {{
-            background-color: {Colors.BG_SELECTED};
-        }}
-    """
-
-    TAB = f"""
-        QTabWidget {{
-            background-color: transparent;
-            border: none;
-        }}
-        QTabWidget::pane {{
-            border: none;
-            background-color: transparent;
-        }}
-        QTabBar {{
-            background-color: transparent;
-            border-bottom: 1px solid {Colors.BORDER_PRIMARY};
-        }}
-        QTabBar::tab {{
-            background-color: transparent;
-            color: {Colors.TEXT_SECONDARY};
-            padding: 8px 24px;
-            border-bottom: 2px solid transparent;
-            font-size: 12px;
-            font-weight: 600;
-        }}
-        QTabBar::tab:hover {{
-            color: {Colors.TEXT_PRIMARY};
-        }}
-        QTabBar::tab:selected {{
-            color: {Colors.TEXT_PRIMARY};
-            border-bottom: 2px solid {Colors.BTN_PRIMARY_HOVER};
-        }}
-    """
-
-    SCROLL = f"""
-        QScrollArea {{
-            background-color: transparent;
-            border: none;
-        }}
-        QScrollBar:vertical {{
-            background-color: transparent;
-            width: 8px;
-            border: none;
-        }}
-        QScrollBar::handle:vertical {{
-            background-color: {Colors.BORDER_SECONDARY};
-            border-radius: 4px;
-            min-height: 20px;
-        }}
-        QScrollBar::handle:vertical:hover {{
-            background-color: {Colors.BORDER_PRIMARY};
-        }}
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
-            border: none;
-            background: none;
-        }}
-    """
-
-    GROUP = f"""
+    # ── GroupBox ─────────────────────────────────────────────────
+    GROUP_BOX = f"""
         QGroupBox {{
-            color: {Colors.TEXT_SECONDARY};
-            border: 1px solid {Colors.BORDER_PRIMARY};
-            border-radius: 8px;
-            padding-top: 16px;
-            padding-left: 12px;
-            padding-right: 12px;
-            padding-bottom: 12px;
+            background-color: {C.BG_SECONDARY};
+            border: 1px solid {C.BORDER_PRIMARY};
+            border-radius: 10px;
+            margin-top: 14px;
+            padding-top: 10px;
             font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 16px;
+            font-weight: 700;
+            color: {C.TEXT_PRIMARY};
         }}
         QGroupBox::title {{
             subcontrol-origin: margin;
-            subcontrol-position: top left;
-            padding: 2px 6px;
-            color: {Colors.TEXT_PRIMARY};
-        }}
-    """
-
-    PHOTO_AREA = f"""
-        background-color: {Colors.BG_HOVER};
-        border: 2px dashed {Colors.BORDER_SECONDARY};
-        border-radius: 8px;
-        color: {Colors.TEXT_MUTED};
-        font-size: 12px;
-    """
-
-    PHOTO_BTN = f"""
-        QPushButton {{
-            background-color: {Colors.BTN_PRIMARY_BG};
-            color: {Colors.BTN_PRIMARY_TEXT};
-            border: 1px solid {Colors.BTN_PRIMARY_BORDER};
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-size: 12px;
+            left: 12px;
+            padding: 2px 10px;
+            background-color: {C.BG_SECONDARY};
+            border: 1px solid {C.BORDER_PRIMARY};
+            border-radius: 6px;
+            color: {C.TEXT_SECONDARY};
+            font-size: 11px;
             font-weight: 600;
-            margin-bottom: 6px;
-        }}
-        QPushButton:hover {{
-            background-color: {Colors.BTN_PRIMARY_HOVER};
-            color: {Colors.TEXT_PRIMARY};
-        }}
-        QPushButton:pressed {{
-            background-color: {Colors.BG_SELECTED};
+            letter-spacing: 0.05em;
         }}
     """
 
-    # ══════════════════════════════════════════
-    # FORM ELEMENTLERI
-    # ══════════════════════════════════════════
-
-    LABEL = f"""
-        color: {Colors.TEXT_SECONDARY};
-        font-size: 12px;
-        font-weight: 600;
-        background: transparent;
-        margin-bottom: 4px;
+    SCROLLBAR = f"""
+        QScrollBar:vertical {{
+            background: transparent; width: 7px; margin: 0;
+        }}
+        QScrollBar::handle:vertical {{
+            background: {C.BORDER_STRONG};
+            border-radius: 3px; min-height: 30px;
+        }}
+        QScrollBar::handle:vertical:hover {{ background: {C.TEXT_MUTED}; }}
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
+        QScrollBar:horizontal {{
+            background: transparent; height: 7px; margin: 0;
+        }}
+        QScrollBar::handle:horizontal {{
+            background: {C.BORDER_STRONG};
+            border-radius: 3px; min-width: 30px;
+        }}
+        QScrollBar::handle:horizontal:hover {{ background: {C.TEXT_MUTED}; }}
+        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0; }}
     """
 
-    VALUE = f"""
-        color: {Colors.TEXT_PRIMARY};
-        font-size: 13px;
-        background: transparent;
-    """
-
-    REQUIRED_LABEL = f"""
-        color: {Colors.TEXT_PRIMARY};
-        font-size: 12px;
-        font-weight: 600;
-        background: transparent;
-        margin-bottom: 4px;
-    """
-
-    INPUT = f"""
-        QLineEdit {{
-            background-color: {Colors.INPUT_BG};
-            border: 1px solid {Colors.INPUT_BORDER};
-            border-radius: 6px;
-            padding: 6px 8px;
-            font-size: 12px;
-            color: {Colors.TEXT_PRIMARY};
-            margin-bottom: 6px;
+    TAB = f"""
+        QTabWidget::pane {{
+            background-color: {C.BG_SECONDARY};
+            border: 1px solid {C.BORDER_PRIMARY};
+            border-radius: 10px;
+            top: -1px;
         }}
-        QLineEdit:focus {{
-            border: 1px solid {Colors.INPUT_BORDER_FOCUS};
-            background-color: {Colors.BG_HOVER};
-        }}
-        QLineEdit::placeholder {{
-            color: {Colors.TEXT_MUTED};
-        }}
-    """
-
-    DATE = f"""
-        QDateEdit {{
-            background-color: {Colors.INPUT_BG};
-            border: 1px solid {Colors.INPUT_BORDER};
-            border-radius: 6px;
-            padding: 6px 8px;
-            font-size: 12px;
-            color: {Colors.TEXT_PRIMARY};
-            margin-bottom: 6px;
-        }}
-        QDateEdit:focus {{
-            border: 1px solid {Colors.INPUT_BORDER_FOCUS};
-            background-color: {Colors.BG_HOVER};
-        }}
-        QDateEdit::down-arrow {{
-            image: none;
-            width: 0px;
-        }}
-    """
-
-    COMBO_FILTER = f"""
-        QComboBox {{
-            background-color: {Colors.INPUT_BG};
-            border: 1px solid {Colors.INPUT_BORDER};
-            border-radius: 6px;
-            padding: 6px 8px;
-            font-size: 12px;
-            color: {Colors.TEXT_SECONDARY};
-            margin-bottom: 6px;
-        }}
-        QComboBox:focus {{
-            border: 1px solid {Colors.INPUT_BORDER_FOCUS};
-            background-color: {Colors.BG_HOVER};
-        }}
-        QComboBox::drop-down {{
+        QTabBar::tab {{
+            background-color: transparent;
+            color: {C.TEXT_SECONDARY};
             border: none;
-            width: 20px;
-        }}
-        QComboBox QAbstractItemView {{
-            background-color: {Colors.INPUT_BG};
-            border: 1px solid {Colors.BORDER_PRIMARY};
-            color: {Colors.TEXT_SECONDARY};
-            selection-background-color: {Colors.BG_SELECTED};
-            selection-color: {Colors.TEXT_PRIMARY};
-        }}
-    """
-
-    FILE_BTN = f"""
-        QPushButton {{
-            background-color: {Colors.BTN_SECONDARY_BG};
-            color: {Colors.BTN_SECONDARY_TEXT};
-            border: 1px dashed {Colors.BTN_SECONDARY_BORDER};
-            border-radius: 4px;
+            border-bottom: 2px solid transparent;
             padding: 8px 16px;
             font-size: 12px;
             font-weight: 500;
-            margin-bottom: 6px;
+            margin-right: 2px;
         }}
-        QPushButton:hover {{
-            background-color: {Colors.BG_HOVER};
-            color: {Colors.TEXT_PRIMARY};
+        QTabBar::tab:hover {{
+            color: {C.TEXT_PRIMARY};
+            border-bottom-color: {C.BORDER_STRONG};
         }}
-        QPushButton:pressed {{
-            background-color: {Colors.BG_SELECTED};
-        }}
-    """
-
-    SEPARATOR = f"""
-        background-color: {Colors.BORDER_PRIMARY};
-    """
-
-    STAT_LABEL = f"""
-        color: {Colors.TEXT_MUTED};
-        font-size: 11px;
-        background: transparent;
-    """
-
-    STAT_VALUE = f"""
-        color: {Colors.TEXT_PRIMARY};
-        font-size: 14px;
-        font-weight: 600;
-        background: transparent;
-    """
-
-    STAT_HIGHLIGHT = f"""
-        color: {Colors.TEXT_PRIMARY};
-        font-size: 16px;
-        font-weight: 700;
-        background: rgba(29, 117, 254, 0.12);
-        padding: 7px 12px;
-        border-radius: 6px;
-    """
-
-    SPIN = f"""
-        QSpinBox, QDoubleSpinBox {{
-            background-color: rgba(255, 255, 255, 0.03);
-            border: 1px solid {Colors.INPUT_BORDER};
-            border-radius: 6px;
-            padding: 6px 8px;
-            color: {Colors.TEXT_PRIMARY};
-            margin-bottom: 6px;
-        }}
-        QSpinBox::up-button, QSpinBox::down-button {{
-            width: 18px;
-        }}
-    """
-
-    CALC_BTN = f"""
-        QPushButton {{
-            background-color: rgba(29, 117, 254, 0.3);
-            color: {Colors.TEXT_PRIMARY};
-            border: 1px solid rgba(29, 117, 254, 0.6);
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-size: 12px;
+        QTabBar::tab:selected {{
+            color: {C.ACCENT2};
+            border-bottom-color: {C.ACCENT};
             font-weight: 700;
-            margin-bottom: 6px;
-        }}
-        QPushButton:hover {{
-            background-color: rgba(29, 117, 254, 0.4);
         }}
     """
-
-    STAT_RED = f"""
-        color: #f87171;
-        font-size: 14px;
-        font-weight: 600;
-        background: transparent;
-    """
-
-    STAT_GREEN = f"""
-        color: #4ade80;
-        font-size: 14px;
-        font-weight: 600;
-        background: transparent;
-    """
-
-    SECTION_TITLE = f"""
-        color: {Colors.TEXT_PRIMARY};
-        font-size: 13px;
-        font-weight: 700;
-        background: transparent;
-    """
-
-    MAX_LABEL = f"""
-        color: {Colors.TEXT_SECONDARY};
-        font-size: 12px;
-        font-weight: 600;
-        background: transparent;
-        margin-bottom: 4px;
-    """
-    BACK_BTN = f"""
-        QPushButton {{
-            background-color: rgba(255, 255, 255, 0.05);
-            color: {Colors.TEXT_SECONDARY};
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }}
-        QPushButton:hover {{
-            background-color: rgba(255, 255, 255, 0.10);
-            color: {Colors.TEXT_PRIMARY};
-        }}
-        QPushButton:pressed {{
-            background-color: rgba(255, 255, 255, 0.15);
-        }}
-    """
-
-    SPLITTER = f"""
-        QSplitter::handle {{
-            background-color: rgba(255, 255, 255, 0.08);
-        }}
-        QSplitter::handle:hover {{
-            background-color: rgba(255, 255, 255, 0.12);
-        }}
-    """
-
-    DONEM_LABEL = f"""
-        color: {Colors.TEXT_PRIMARY};
-        font-size: 13px;
-        font-weight: 600;
-        background: transparent;
-    """
-
-    HEADER_DURUM_AKTIF = f"""
-        color: #4ade80;
-        font-size: 13px;
-        font-weight: 600;
-        background: rgba(74, 222, 128, 0.15);
-        padding: 2px 8px;
-        border-radius: 4px;
-    """
-
-    HEADER_DURUM_PASIF = f"""
-        color: #f87171;
-        font-size: 13px;
-        font-weight: 600;
-        background: rgba(248, 113, 113, 0.15);
-        padding: 2px 8px;
-        border-radius: 4px;
-    """
-
-    HEADER_DURUM_IZINLI = f"""
-        color: #facc15;
-        font-size: 13px;
-        font-weight: 600;
-        background: rgba(250, 204, 21, 0.15);
-        padding: 2px 8px;
-        border-radius: 4px;
-    """
-
-    REPORT_BTN = f"""
-        QPushButton {{
-            background-color: rgba(29, 117, 254, 0.25);
-            color: {Colors.TEXT_PRIMARY};
-            border: 1px solid rgba(29, 117, 254, 0.5);
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }}
-        QPushButton:hover {{
-            background-color: rgba(29, 117, 254, 0.35);
-            color: {Colors.TEXT_PRIMARY};
-        }}
-        QPushButton:pressed {{
-            background-color: rgba(29, 117, 254, 0.5);
-        }}
-    """
-
-    INFO_LABEL = f"""
-        color: {Colors.TEXT_MUTED};
-        font-size: 11px;
-        background: transparent;
-    """
-
-    PDF_BTN = f"""
-        QPushButton {{
-            background-color: rgba(239, 68, 68, 0.25);
-            color: #fca5a5;
-            border: 1px solid rgba(239, 68, 68, 0.5);
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }}
-        QPushButton:hover {{
-            background-color: rgba(239, 68, 68, 0.35);
-            color: #ffffff;
-        }}
-        QPushButton:pressed {{
-            background-color: rgba(239, 68, 68, 0.5);
-        }}
-    """
-
-    # ══════════════════════════════════════════
-    # DURUM HÜCRE RENKLERİ (QColor, değil QSS)
-    # ══════════════════════════════════════════
 
     @staticmethod
-    def get_status_color(status: str):
-        """
-        Durum adına göre renk döner (QColor tuple).
-        
-        Args:
-            status: "Aktif", "Pasif", "İzinli" vb.
-        
-        Returns:
-            (R, G, B, Alpha) tuple (QColor uyumlu)
-        """
-        status_colors = {
-            "Aktif": Colors.STATE_ACTIVE,      # Yeşil
-            "Pasif": Colors.STATE_PASSIVE,     # Kırmızı
-            "İzinli": Colors.STATE_LEAVE,      # Sarı
+    def get_status_color(status: str) -> tuple:
+        _MAP = {
+            "Aktif":              (16,  185, 129, 30),
+            "Pasif":              (239, 68,  68,  30),
+            "İzinli":             (245, 158, 11,  30),
+            "Arızalı":            (239, 68,  68,  30),
+            "Bakımda":            (245, 158, 11,  30),
+            "Kapalı (Çözüldü)":  (16,  185, 129, 30),
+            "Açık":               (239, 68,  68,  30),
+            "İşlemde":            (249, 115, 22,  30),
+            "Planlandı":          (245, 158, 11,  30),
+            "Tamamlandı":         (16,  185, 129, 30),
+            "Onaylandı":          (16,  185, 129, 30),
+            "Beklemede":          (245, 158, 11,  30),
+            "İptal":              (100, 116, 139, 25),
+            "Kalibrasyonda":      (168, 85,  247, 30),
+            "Parça Bekliyor":     (251, 191, 36,  30),
+            "Dış Serviste":       (168, 85,  247, 30),
         }
-        return status_colors.get(status, (100, 100, 100, 40))
+        return _MAP.get(status, (78, 104, 136, 25))
 
     @staticmethod
-    def get_status_text_color(status: str):
-        """
-        Durum adına göre metin rengi döner (hex string).
-        """
-        status_text_colors = {
-            "Aktif": "#4ade80",      # Yeşil
-            "Pasif": "#f87171",      # Kırmızı
-            "İzinli": "#facc15",     # Sarı
+    def get_status_text_color(status: str) -> str:
+        _MAP = {
+            "Aktif":              "#10b981",
+            "Pasif":              "#f87171",
+            "İzinli":             "#f59e0b",
+            "Arızalı":            "#f87171",
+            "Bakımda":            "#f59e0b",
+            "Kapalı (Çözüldü)":  "#10b981",
+            "Açık":               "#f87171",
+            "İşlemde":            "#fb923c",
+            "Planlandı":          "#f59e0b",
+            "Tamamlandı":         "#10b981",
+            "Onaylandı":          "#10b981",
+            "Beklemede":          "#f59e0b",
+            "İptal":              "#4e6888",
+            "Kalibrasyonda":      "#a855f7",
+            "Parça Bekliyor":     "#fbbf24",
+            "Dış Serviste":       "#a855f7",
         }
-        return status_text_colors.get(status, "#8b8fa3")
+        return _MAP.get(status, "#8aa8c8")
 
 
-# ════════════════════════════════════════════════════════════════
-# KOLAYLIK: Tüm stilleri dict olarak dönen helper
-# ════════════════════════════════════════════════════════════════
-
+# ThemeManager için STYLES dict
 STYLES = {
-    "page": ComponentStyles.PAGE,
-    "header_name": ComponentStyles.HEADER_NAME,
-    "save_btn": ComponentStyles.SAVE_BTN,
-    "edit_btn": ComponentStyles.EDIT_BTN,
-    "cancel_btn": ComponentStyles.CANCEL_BTN,
-    "danger_btn": ComponentStyles.DANGER_BTN,
-    "tab": ComponentStyles.TAB,
-    "scroll": ComponentStyles.SCROLL,
-    "group": ComponentStyles.GROUP,
-    "photo_area": ComponentStyles.PHOTO_AREA,
-    "photo_btn": ComponentStyles.PHOTO_BTN,
-    "label": ComponentStyles.LABEL,
-    "value": ComponentStyles.VALUE,
-    "required_label": ComponentStyles.REQUIRED_LABEL,
-    "input": ComponentStyles.INPUT,
-    "date": ComponentStyles.DATE,
-    "combo_filter": ComponentStyles.COMBO_FILTER,
-    "file_btn": ComponentStyles.FILE_BTN,
-    "separator": ComponentStyles.SEPARATOR,
-    "stat_label": ComponentStyles.STAT_LABEL,
-    "stat_value": ComponentStyles.STAT_VALUE,
-    "stat_highlight": ComponentStyles.STAT_HIGHLIGHT,
-    "spin": ComponentStyles.SPIN,
-    "calc_btn": ComponentStyles.CALC_BTN,
-    "stat_red": ComponentStyles.STAT_RED,
-    "stat_green": ComponentStyles.STAT_GREEN,
-    "section_title": ComponentStyles.SECTION_TITLE,
-    "max_label": ComponentStyles.MAX_LABEL,
-    "back_btn": ComponentStyles.BACK_BTN,
-    "splitter": ComponentStyles.SPLITTER,
-    "donem_label": ComponentStyles.DONEM_LABEL,
-    "header_durum_aktif": ComponentStyles.HEADER_DURUM_AKTIF,
-    "header_durum_pasif": ComponentStyles.HEADER_DURUM_PASIF,
-    "header_durum_izinli": ComponentStyles.HEADER_DURUM_IZINLI,
-    "report_btn": ComponentStyles.REPORT_BTN,
-    "info_label": ComponentStyles.INFO_LABEL,
-    "pdf_btn": ComponentStyles.PDF_BTN,
-    "filter_panel": ComponentStyles.FILTER_PANEL,
-    "filter_btn": ComponentStyles.BTN_FILTER,
-    "filter_btn_all": ComponentStyles.BTN_FILTER_ALL,
-    "action_btn": ComponentStyles.BTN_ACTION,
-    "refresh_btn": ComponentStyles.BTN_REFRESH,
-    "close_btn": ComponentStyles.BTN_CLOSE,
-    "excel_btn": ComponentStyles.BTN_EXCEL,
-    "search": ComponentStyles.INPUT_SEARCH,
-    "combo": ComponentStyles.INPUT_COMBO,
-    "table": ComponentStyles.TABLE,
-    "footer_label": ComponentStyles.LABEL_FOOTER,
-    "section_label": ComponentStyles.LABEL_SECTION,
-    "context_menu": ComponentStyles.CONTEXT_MENU,
-    "progress": ComponentStyles.PROGRESS_BAR,
+    "page":           ComponentStyles.PAGE,
+    "filter_panel":   ComponentStyles.FILTER_PANEL,
+    "btn_action":     ComponentStyles.BTN_ACTION,
+    "btn_refresh":    ComponentStyles.BTN_REFRESH,
+    "btn_filter":     ComponentStyles.BTN_FILTER,
+    "btn_filter_all": ComponentStyles.BTN_FILTER_ALL,
+    "btn_close":      ComponentStyles.BTN_CLOSE,
+    "btn_excel":      ComponentStyles.BTN_EXCEL,
+    "save_btn":       ComponentStyles.SAVE_BTN,
+    "cancel_btn":     ComponentStyles.CANCEL_BTN,
+    "edit_btn":       ComponentStyles.EDIT_BTN,
+    "danger_btn":     ComponentStyles.DANGER_BTN,
+    "report_btn":     ComponentStyles.REPORT_BTN,
+    "pdf_btn":        ComponentStyles.PDF_BTN,
+    "back_btn":       ComponentStyles.BACK_BTN,
+    "calc_btn":       ComponentStyles.CALC_BTN,
+    "input_search":   ComponentStyles.INPUT_SEARCH,
+    "input_combo":    ComponentStyles.INPUT_COMBO,
+    "input_field":    ComponentStyles.INPUT_FIELD,
+    "input_date":     ComponentStyles.INPUT_DATE,
+    "input_text":     ComponentStyles.INPUT_TEXT,
+    "label_form":     ComponentStyles.LABEL_FORM,
+    "label_title":    ComponentStyles.LABEL_TITLE,
+    "table":          ComponentStyles.TABLE,
+    "group_box":      ComponentStyles.GROUP_BOX,
+    "scrollbar":      ComponentStyles.SCROLLBAR,
+    "tab":            ComponentStyles.TAB,
+    # Geriye dönük uyumluluk takma adları
+    "refresh_btn":    ComponentStyles.BTN_REFRESH,
+    "close_btn":      ComponentStyles.BTN_CLOSE,
 }

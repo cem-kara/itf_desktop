@@ -6,7 +6,7 @@ from core.paths import BASE_DIR
 
 class AppConfig:
     APP_NAME = "Radyoloji Envanter ve Personel Yönetim Sistemi"
-    VERSION = "1.0.8"
+    VERSION = "2.0.0"
 
     AUTO_SYNC = True
     SYNC_INTERVAL_MIN = 15
@@ -39,12 +39,12 @@ class AppConfig:
     def resolve_app_mode(cls):
         """
         Çalışma modunu şu öncelik sırasıyla belirler:
-        1) ITF_APP_MODE environment variable
+        1) APP_MODE environment variable
         2) ayarlar.json içindeki app_mode alanı
         3) credentials.json yoksa offline fallback
         4) varsayılan online
         """
-        env_mode = cls._normalize_mode(os.getenv("ITF_APP_MODE"))
+        env_mode = cls._normalize_mode(os.getenv("APP_MODE"))
         if env_mode:
             cls.APP_MODE = env_mode
             cls.APP_MODE_SOURCE = "env"

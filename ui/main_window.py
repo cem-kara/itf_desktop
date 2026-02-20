@@ -41,7 +41,14 @@ class MainWindow(QMainWindow):
         central = QWidget()
         self.setCentralWidget(central)
 
-        main_layout = QHBoxLayout(central)
+        root_layout = QVBoxLayout(central)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(0)
+
+        # ── Ana alan (sidebar + içerik) ───────────────────────────
+        body = QWidget()
+        body.setStyleSheet(f"background: {DarkTheme.BG_PRIMARY};")
+        main_layout = QHBoxLayout(body)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
@@ -55,26 +62,12 @@ class MainWindow(QMainWindow):
         # İçerik alanı
         content = QWidget()
         content.setObjectName("content_area")
-        content.setStyleSheet("""
-            #content_area {
-                background-color: %s;
-            }
-        """ % DarkTheme.BG_PRIMARY)
+        content.setStyleSheet(f"background: {DarkTheme.BG_PRIMARY};")
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(0)
 
-        # Sayfa başlığı
-        self.page_title = QLabel("")
-        self.page_title.setStyleSheet("""
-            font-size: 20px; font-weight: bold;
-            color: %s; padding: 16px 24px 8px 24px;
-            background-color: transparent;
-        """ % DarkTheme.TEXT_PRIMARY)
-        self.page_title.setVisible(False)
-        content_layout.addWidget(self.page_title)
-
-        # Bildirim paneli (page_title ile stack arasında)
+        # Bildirim paneli
         from ui.components.bildirim_paneli import BildirimPaneli
         self.bildirim_paneli = BildirimPaneli()
         self.bildirim_paneli.sayfa_ac.connect(self._on_menu_clicked)
@@ -85,10 +78,15 @@ class MainWindow(QMainWindow):
         content_layout.addWidget(self.stack, 1)
 
         main_layout.addWidget(content, 1)
+        root_layout.addWidget(body, 1)
+
+        # Sayfa başlığı (geriye dönük uyumluluk için — parent verilerek gizli tutulur)
+        self.page_title = QLabel("", self)
+        self.page_title.setVisible(False)
 
         # Hoş geldin
         from ui.pages.placeholder import WelcomePage
-        self._welcome = WelcomePage()
+        self._welcome = WelcomePage(self.stack)
         self.stack.addWidget(self._welcome)
         self.stack.setCurrentWidget(self._welcome)
 
@@ -175,7 +173,7 @@ class MainWindow(QMainWindow):
             page.table.doubleClicked.connect(
                 lambda idx: self._open_personel_detay(page, idx)
             )
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Personel Listesi"))
+            #page.btn_kapat.clicked.connect(lambda: self._close_page("Personel Listesi"))
             page.btn_yeni.clicked.connect(lambda: self._on_menu_clicked("Personel", "Personel Ekle"))
             page.izin_requested.connect(lambda data: self.open_izin_giris(data))
             page.load_data()

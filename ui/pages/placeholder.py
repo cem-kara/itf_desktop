@@ -1,6 +1,7 @@
 import os
+from ui.styles.icons import Icons, IconColors
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QPixmap
 from core.config import AppConfig
 
@@ -18,15 +19,15 @@ class PlaceholderPage(QWidget):
 
         # Resim yolunu belirle (ui/styles/maintenance.png varsayımıyla)
         base_ui_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        img_path = os.path.join(base_ui_dir, "styles", "maintenance.png")
+        img_path = os.path.join(base_ui_dir, "styles/icons", "maintenance.png")
 
         if os.path.exists(img_path):
             pixmap = QPixmap(img_path)
             icon.setPixmap(pixmap.scaled(300, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation))
             icon.setStyleSheet("background: transparent;")
         else:
-            icon.setText("🚧")
-            icon.setStyleSheet("font-size: 48px; background: transparent;")
+            icon.setPixmap(Icons.pixmap("wrench", size=48, color="#5f6380"))
+            icon.setStyleSheet("background: transparent;")
 
         layout.addWidget(icon)
 
@@ -57,14 +58,14 @@ class WelcomePage(QWidget):
         icon.setAlignment(Qt.AlignCenter)
 
         base_ui_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        img_path = os.path.join(base_ui_dir, "styles", "main.png")
+        img_path = os.path.join(base_ui_dir, "styles/icons", "main.png")
 
         if os.path.exists(img_path):
             pixmap = QPixmap(img_path)
             icon.setPixmap(pixmap.scaled(800, 800, Qt.KeepAspectRatio, Qt.SmoothTransformation))
             icon.setStyleSheet("background: transparent;")
         else:
-            icon.setText("🏥")
+            icon.setPixmap(Icons.pixmap("hospital", size=48, color="#4f7ef8"))
             icon.setStyleSheet("font-size: 56px; background: transparent;")
 
         layout.addWidget(icon)

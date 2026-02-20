@@ -385,8 +385,8 @@ class PersonelListesiPage(QWidget):
             btn.setCheckable(True)
             btn.setCursor(QCursor(Qt.PointingHandCursor))
             btn.setFixedHeight(28)
-            # "Tümü" için filter_btn_all, diğerleri için filter_btn
-            style_key = "filter_btn_all" if lbl == "Tümü" else "filter_btn"
+            # "Tümü" için btn_filter_all, diğerleri için btn_filter
+            style_key = "btn_filter_all" if lbl == "Tümü" else "btn_filter"
             btn.setStyleSheet(STYLES[style_key])
             if lbl == self._active_filter:
                 btn.setChecked(True)

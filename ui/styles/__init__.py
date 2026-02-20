@@ -8,5 +8,16 @@
 
 from ui.styles.colors import Colors, DarkTheme
 from ui.styles.components import ComponentStyles
+from ui.styles.light_theme import LightTheme
+from ui.styles.theme_registry import ThemeRegistry, ThemeType, ThemeDefinition
 
-__all__ = ["Colors", "DarkTheme", "ComponentStyles"]
+__all__ = [
+    "Colors",
+    "DarkTheme",
+    "LightTheme",
+    "ComponentStyles",
+    "ThemeRegistry",
+    "ThemeType",
+    "ThemeDefinition",
+]
+

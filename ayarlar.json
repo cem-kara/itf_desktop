@@ -24,11 +24,6 @@
       {
         "baslik": "Puantaj Rapor",
         "implemented": true
-      },
-      {
-        "baslik": "Personel Verileri",
-        "implemented": false,
-        "note": "Dashboard - gelecek versiyon"
       }
     ],
     "CİHAZ": [
@@ -38,10 +33,6 @@
       },
       {
         "baslik": "Cihaz Ekle",
-        "implemented": true
-      },
-      {
-        "baslik": "Arıza Kayıt",
         "implemented": true
       },
       {
