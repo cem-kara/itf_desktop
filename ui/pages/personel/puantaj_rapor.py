@@ -22,8 +22,8 @@ from PySide6.QtGui import QColor, QCursor, QFont, QPainter, QBrush, QPen, QPaint
 
 from core.logger import logger
 from core.hesaplamalar import sua_hak_edis_hesapla, tr_upper
-from ui.theme_manager import ThemeManager
 from ui.styles import Colors, DarkTheme
+from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 
 
@@ -42,10 +42,6 @@ TABLO_KOLONLARI = [
 ]
 C_KIMLIK, C_AD, C_YIL, C_DONEM = 0, 1, 2, 3
 C_GUN, C_IZIN, C_SAAT, C_KUM, C_SUA = 4, 5, 6, 7, 8
-
-
-# ─── MERKEZİ STİL YÖNETIMI ───
-S = ThemeManager.get_all_component_styles()
 
 
 # ═══════════════════════════════════════════════

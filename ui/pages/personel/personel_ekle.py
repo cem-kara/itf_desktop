@@ -11,8 +11,8 @@ from PySide6.QtGui import QCursor, QPixmap
 from core.logger import logger
 from core.hata_yonetici import exc_logla
 from core.date_utils import parse_date
-from ui.theme_manager import ThemeManager
 from ui.styles import DarkTheme
+from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 
 
@@ -46,9 +46,6 @@ class DriveUploadWorker(QThread):
         except Exception as e:
             exc_logla("PersonelEkle.DosyaYukleyici", e)
             self.error.emit(self._alan_adi, str(e))
-
-# ─── W11 Dark Glass Stiller (MERKEZİ KAYNAKTAN) ───
-S = ThemeManager.get_all_component_styles()
 
 # DB alan → form widget eşlemesi
 FIELD_MAP = {

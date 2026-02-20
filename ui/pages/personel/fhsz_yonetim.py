@@ -29,8 +29,8 @@ from PySide6.QtGui import QColor, QCursor, QFont, QPainter, QBrush, QPen, QPaint
 from core.logger import logger
 from core.date_utils import parse_date as parse_any_date
 from core.hesaplamalar import sua_hak_edis_hesapla, is_gunu_hesapla, tr_upper
-from ui.theme_manager import ThemeManager
 from ui.styles import Colors, DarkTheme
+from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 
 def _parse_date(val):
@@ -63,10 +63,6 @@ TABLO_KOLONLARI = [
 # Kolon indeksleri
 C_KIMLIK, C_AD, C_BIRIM, C_KOSUL = 0, 1, 2, 3
 C_YIL, C_DONEM, C_GUN, C_IZIN, C_SAAT = 4, 5, 6, 7, 8
-
-
-# ─── MERKEZİ STİL YÖNETIMI ───
-S = ThemeManager.get_all_component_styles()
 
 
 # ═══════════════════════════════════════════════

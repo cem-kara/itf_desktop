@@ -16,8 +16,7 @@ from core.logger import logger
 from core.date_utils import parse_date as parse_any_date
 from ui.theme_manager import ThemeManager
 from ui.styles import Colors
-
-S = ThemeManager.get_all_component_styles()
+from ui.styles.components import STYLES as S
 
 # max_label stili merkezi temada yoksa diye fallback
 if "max_label" not in S:

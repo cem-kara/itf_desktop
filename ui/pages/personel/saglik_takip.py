@@ -13,11 +13,9 @@ from PySide6.QtWidgets import (
 
 from core.logger import logger
 from core.date_utils import parse_date, to_db_date, to_ui_date
-from ui.theme_manager import ThemeManager
 from ui.styles import DarkTheme
+from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
-
-S = ThemeManager.get_all_component_styles()
 STATUS_OPTIONS = ["Uygun", "Sartli Uygun", "Uygun Degil"]
 
 TABLE_COLUMNS = [

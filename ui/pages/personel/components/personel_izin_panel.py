@@ -5,11 +5,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QDate, QAbstractTableModel, QModelIndex
 from core.logger import logger
-from ui.theme_manager import ThemeManager
+from ui.styles.components import STYLES as S
 from datetime import datetime, timedelta, date
-
-# Stil tanımları
-S = ThemeManager.get_all_component_styles()
 
 # İzin Listesi Tablo sütunları
 IZIN_COLUMNS = [

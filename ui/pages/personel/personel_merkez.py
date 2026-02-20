@@ -13,9 +13,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QCursor, QPixmap
 
-from ui.theme_manager import ThemeManager
 from ui.styles import DarkTheme
-from ui.styles.components import ComponentStyles
+from ui.styles.components import ComponentStyles, STYLES
 from ui.styles.icons import IconRenderer
 from core.personel_ozet_servisi import personel_ozet_getir
 from core.logger import logger

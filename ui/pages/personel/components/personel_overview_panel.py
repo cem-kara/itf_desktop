@@ -9,11 +9,10 @@ from PySide6.QtGui import QCursor, QPixmap
 from core.logger import logger
 from ui.theme_manager import ThemeManager
 from ui.styles import Colors, DarkTheme
+from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 import os
 import tempfile
-
-S = ThemeManager.get_all_component_styles()
 
 class PersonelOverviewPanel(QWidget):
     """
