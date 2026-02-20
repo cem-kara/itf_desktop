@@ -39,9 +39,11 @@ class Colors:
     GRAY_100 = "#f3f4f6"
 
     # Durum
+    GREEN_600  = "#059669"
     GREEN_500  = "#10b981"
     GREEN_400  = "#34d399"
     GREEN_BG   = "rgba(16,185,129,0.10)"
+    RED_600    = "#dc2626"
     RED_500    = "#ef4444"
     RED_400    = "#f87171"
     RED_BG     = "rgba(239,68,68,0.10)"

@@ -21,12 +21,11 @@ from PySide6.QtGui import (
 
 from core.logger import logger
 from core.date_utils import parse_date, to_db_date
-from ui.theme_manager import ThemeManager
+from database.repository_registry import RepositoryRegistry
 from ui.styles import DarkTheme
-from ui.styles.components import ComponentStyles
+from ui.styles.components import ComponentStyles, STYLES
 
-C      = DarkTheme                                  # kısayol
-STYLES = ThemeManager.get_all_component_styles()    # merkezi stil dict
+C = DarkTheme  # kısayol
 
 # ─── Sütun tanımları ──────────────────────────────────────────
 COLUMNS = [
@@ -537,25 +536,24 @@ class PersonelListesiPage(QWidget):
             logger.warning("Personel listesi: DB yok")
             return
         try:
-            from core.di import get_registry
-            reg = get_registry(self._db)
-            self._all_data = reg.get("Personel").get_all()
+            registry = RepositoryRegistry(self._db)
+            self._all_data = registry.get("Personel").get_all()
             try:
-                bilgiler = reg.get("Izin_Bilgi").get_all()
+                bilgiler = registry.get("Izin_Bilgi").get_all()
                 self._izin_map = {
                     str(r.get("TCKimlik", "")).strip(): r for r in bilgiler
                 }
                 self._model.set_izin_map(self._izin_map)
             except Exception as e:
                 logger.warning(f"İzin bakiye yüklenemedi: {e}")
-            self._populate_combos(reg)
+            self._populate_combos(registry)
             self._apply_filters()
         except Exception as e:
             logger.error(f"Personel yükleme: {e}")
 
-    def _populate_combos(self, reg):
+    def _populate_combos(self, registry):
         try:
-            sabit = reg.get("Sabitler").get_all()
+            sabit = registry.get("Sabitler").get_all()
             gy = sorted({
                 str(r.get("MenuEleman", "")).strip()
                 for r in sabit
@@ -730,8 +728,8 @@ class PersonelListesiPage(QWidget):
         ) != QMessageBox.Yes:
             return
         try:
-            from core.di import get_registry
-            get_registry(self._db).get("Personel").update(tc, {"Durum": yeni})
+            registry = RepositoryRegistry(self._db)
+            registry.get("Personel").update(tc, {"Durum": yeni})
             logger.info(f"Durum: {tc} → {yeni}")
             self.load_data()
         except Exception as e:

@@ -1,5 +1,5 @@
 # ui/styles/components.py  ─  REPYS v3 · Medikal Dark-Blue
-from ui.styles.colors import DarkTheme as C
+from ui.styles.colors import DarkTheme as C, Colors
 
 
 class ComponentStyles:
@@ -527,10 +527,31 @@ class ComponentStyles:
         }}
     """
 
+    MAX_LABEL = f"""
+        QLabel {{
+            color: {Colors.YELLOW_400};
+            font-size: 11px;
+            font-style: italic;
+            background: transparent;
+        }}
+    """
+
+    DONEM_LABEL = f"""
+        QLabel {{
+            color: {C.ACCENT};
+            font-size: 13px;
+            font-weight: 600;
+            background: transparent;
+            padding: 4px 8px;
+        }}
+    """
+
     # ── Ek Stiller (Personel Modülü) ──────────────────────────────
     LABEL = LABEL_FORM  # Generic etiket
 
     INPUT = INPUT_FIELD  # Generic input
+
+    COMBO_FILTER = INPUT_COMBO  # Filtre combo box'ları
 
     SEPARATOR = f"""
         QFrame {{
@@ -603,6 +624,130 @@ class ComponentStyles:
 
     DATE = INPUT_DATE
 
+    SPIN = f"""
+        QSpinBox {{
+            background-color: {C.INPUT_BG};
+            border: 1.5px solid {C.INPUT_BORDER};
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 13px;
+            color: {C.TEXT_PRIMARY};
+        }}
+        QSpinBox:focus {{ border-color: {C.INPUT_BORDER_FOCUS}; }}
+        QSpinBox::up-button, QSpinBox::down-button {{
+            background: rgba(255,255,255,0.05);
+            border: none;
+            border-radius: 4px;
+            width: 18px;
+        }}
+        QSpinBox::up-button:hover, QSpinBox::down-button:hover {{
+            background: rgba(255,255,255,0.10);
+        }}
+    """
+
+    STAT_LABEL = f"""
+        QLabel {{
+            color: {C.TEXT_MUTED};
+            font-size: 12px;
+            font-weight: 500;
+            background: transparent;
+        }}
+    """
+
+    STAT_VALUE = f"""
+        QLabel {{
+            color: {C.TEXT_PRIMARY};
+            font-size: 16px;
+            font-weight: 600;
+            background: transparent;
+        }}
+    """
+
+    STAT_RED = f"""
+        QLabel {{
+            color: {Colors.RED_400};
+            font-size: 16px;
+            font-weight: 600;
+            background: transparent;
+        }}
+    """
+
+    STAT_GREEN = f"""
+        QLabel {{
+            color: {Colors.GREEN_400};
+            font-size: 16px;
+            font-weight: 600;
+            background: transparent;
+        }}
+    """
+
+    VALUE = f"""
+        QLabel {{
+            color: {C.TEXT_PRIMARY};
+            font-size: 13px;
+            font-weight: 500;
+            background: transparent;
+        }}
+    """
+
+    HEADER_DURUM_AKTIF = f"""
+        QLabel {{
+            background-color: rgba(16,185,129,0.15);
+            color: {Colors.GREEN_400};
+            border: 1px solid rgba(16,185,129,0.30);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }}
+    """
+
+    HEADER_DURUM_PASIF = f"""
+        QLabel {{
+            background-color: rgba(239,68,68,0.15);
+            color: {Colors.RED_400};
+            border: 1px solid rgba(239,68,68,0.30);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }}
+    """
+
+    HEADER_DURUM_IZINLI = f"""
+        QLabel {{
+            background-color: rgba(245,158,11,0.15);
+            color: {Colors.YELLOW_400};
+            border: 1px solid rgba(245,158,11,0.30);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }}
+    """
+
+    STAT_HIGHLIGHT = f"""
+        QLabel {{
+            color: {C.ACCENT};
+            font-size: 16px;
+            font-weight: 700;
+            background: transparent;
+        }}
+    """
+
+    SECTION_TITLE = f"""
+        QLabel {{
+            color: {C.TEXT_PRIMARY};
+            font-size: 14px;
+            font-weight: 700;
+            background: transparent;
+            padding: 6px 0;
+        }}
+    """
+
 
 # ThemeManager için STYLES dict
 STYLES = {
@@ -649,6 +794,20 @@ STYLES = {
     "required_label": ComponentStyles.REQUIRED_LABEL,
     "date":           ComponentStyles.DATE,
     "group":          ComponentStyles.GROUP_BOX,
+    "spin":           ComponentStyles.SPIN,
+    "stat_label":     ComponentStyles.STAT_LABEL,
+    "stat_value":     ComponentStyles.STAT_VALUE,
+    "stat_red":       ComponentStyles.STAT_RED,
+    "stat_green":     ComponentStyles.STAT_GREEN,
+    "stat_highlight": ComponentStyles.STAT_HIGHLIGHT,
+    "value":          ComponentStyles.VALUE,
+    "section_title":  ComponentStyles.SECTION_TITLE,
+    "max_label":      ComponentStyles.MAX_LABEL,
+    "combo_filter":   ComponentStyles.COMBO_FILTER,
+    "donem_label":    ComponentStyles.DONEM_LABEL,
+    "header_durum_aktif":  ComponentStyles.HEADER_DURUM_AKTIF,
+    "header_durum_pasif":  ComponentStyles.HEADER_DURUM_PASIF,
+    "header_durum_izinli": ComponentStyles.HEADER_DURUM_IZINLI,
     # Geriye dönük uyumluluk takma adları
     "refresh_btn":    ComponentStyles.BTN_REFRESH,
     "close_btn":      ComponentStyles.BTN_CLOSE,
@@ -656,4 +815,4 @@ STYLES = {
     "combo":          ComponentStyles.INPUT_COMBO,
     "excel_btn":      ComponentStyles.BTN_EXCEL,
     "search":         ComponentStyles.INPUT_SEARCH,
-    "scroll":         ComponentStyles.SCROLLBAR,
+    "scroll":         ComponentStyles.SCROLLBAR,}

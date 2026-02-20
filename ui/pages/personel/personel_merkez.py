@@ -16,7 +16,7 @@ from PySide6.QtGui import QCursor, QPixmap
 from ui.styles import DarkTheme
 from ui.styles.components import ComponentStyles, STYLES
 from ui.styles.icons import IconRenderer
-from core.personel_ozet_servisi import personel_ozet_getir
+from ui.pages.personel.components.personel_ozet_servisi import personel_ozet_getir
 from core.logger import logger
 from ui.pages.personel.components.personel_overview_panel import PersonelOverviewPanel
 from ui.pages.personel.components.personel_izin_panel import PersonelIzinPanel
@@ -24,8 +24,7 @@ from ui.pages.personel.components.personel_saglik_panel import PersonelSaglikPan
 from ui.pages.personel.components.hizli_izin_giris import HizliIzinGirisDialog
 from ui.pages.personel.components.hizli_saglik_giris import HizliSaglikGirisDialog
 
-C      = DarkTheme
-STYLES = ThemeManager.get_all_component_styles()
+C = DarkTheme
 
 # Sekme tanımları
 TABS = [

@@ -21,11 +21,8 @@ from core.logger import logger
 from core.hata_yonetici import exc_logla
 from ui.theme_manager import ThemeManager
 from ui.styles import Colors, DarkTheme
+from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
-
-
-# ─── MERKEZİ STİL YÖNETIMI ───
-S = ThemeManager.get_all_component_styles()
 
 
 # ═══════════════════════════════════════════════

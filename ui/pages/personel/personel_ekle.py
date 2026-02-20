@@ -11,9 +11,11 @@ from PySide6.QtGui import QCursor, QPixmap
 from core.logger import logger
 from core.hata_yonetici import exc_logla
 from core.date_utils import parse_date
+from database.repository_registry import RepositoryRegistry
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
+from ui.theme_manager import ThemeManager
 
 
 # ─── Drive Yükleme Worker (UI donmasın) ───
@@ -391,8 +393,7 @@ class PersonelEklePage(QWidget):
             return
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
+            registry = RepositoryRegistry(self._db)
 
             # ── Sabitler'den ──
             sabitler = registry.get("Sabitler")
@@ -684,8 +685,7 @@ class PersonelEklePage(QWidget):
         # Düzenleme değilse aynı TC kontrolü
         if not self._is_edit:
             try:
-                from core.di import get_registry
-                registry = get_registry(self._db)
+                registry = RepositoryRegistry(self._db)
                 repo = registry.get("Personel")
                 existing = repo.get_by_id(tc_no)
                 if existing:
@@ -717,8 +717,7 @@ class PersonelEklePage(QWidget):
                 data[db_col] = link
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
+            registry = RepositoryRegistry(self._db)
             repo = registry.get("Personel")
 
             if self._is_edit:
@@ -732,7 +731,7 @@ class PersonelEklePage(QWidget):
                 try:
                     repo_izin = registry.get("Izin_Bilgi")
                     izin_data = {
-                        "Personelid": data["KimlikNo"],
+                        "TCKimlik": data["KimlikNo"],
                         "AdSoyad": data["AdSoyad"]
                     }
                     repo_izin.insert(izin_data)

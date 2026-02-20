@@ -18,10 +18,6 @@ from ui.theme_manager import ThemeManager
 from ui.styles import Colors
 from ui.styles.components import STYLES as S
 
-# max_label stili merkezi temada yoksa diye fallback
-if "max_label" not in S:
-    S["max_label"] = f"color: {Colors.YELLOW_400}; font-size: 11px; font-style: italic; background: transparent;"
-
 def _parse_date(val):
     return parse_any_date(val)
 
