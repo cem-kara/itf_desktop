@@ -562,16 +562,12 @@ class MigrationManager:
             Notlar TEXT,
             DermatolojiMuayeneTarihi TEXT,
             DermatolojiDurum TEXT,
-            DermatolojiAciklama TEXT,
             DahiliyeMuayeneTarihi TEXT,
             DahiliyeDurum TEXT,
-            DahiliyeAciklama TEXT,
             GozMuayeneTarihi TEXT,
             GozDurum TEXT,
-            GozAciklama TEXT,
             GoruntulemeMuayeneTarihi TEXT,
             GoruntulemeDurum TEXT,
-            GoruntulemeAciklama TEXT,
             sync_status TEXT DEFAULT 'clean',
             updated_at TEXT
         )

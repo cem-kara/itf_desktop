@@ -6,7 +6,8 @@
                 "Personel",
                 "Izin_Giris",
                 "Izin_Bilgi",
-                "FHSZ_Puantaj"
+                "FHSZ_Puantaj",
+                "Personel_Saglik_Takip"
             ]
         },
         "cihaz": {

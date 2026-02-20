@@ -15,7 +15,7 @@ from PySide6.QtGui import QCursor, QPixmap
 
 from ui.styles import DarkTheme
 from ui.styles.components import ComponentStyles, STYLES
-from ui.styles.icons import IconRenderer
+from ui.styles.icons import IconRenderer, Icons
 from ui.pages.personel.components.personel_ozet_servisi import personel_ozet_getir
 from core.logger import logger
 from ui.pages.personel.components.personel_overview_panel import PersonelOverviewPanel
@@ -38,17 +38,18 @@ TABS = [
 class PersonelMerkezPage(QWidget):
     kapat_istegi = Signal()
 
-    def __init__(self, db, personel_id, parent=None):
+    def __init__(self, db, personel_id, sabitler_cache=None, parent=None):
         super().__init__(parent)
-        self.db           = db
-        self.personel_id  = str(personel_id)
-        self.ozet_data    = {}
-        self._modules     = {}       # code → widget (lazy cache)
-        self._nav_btns    = {}       # code → QPushButton
-        self._active_tab  = "GENEL"
-        self._form_widget = None
+        self.db              = db
+        self.personel_id     = str(personel_id)
+        self.sabitler_cache  = sabitler_cache  # MainWindow'dan gelen cache
+        self.ozet_data       = {}
+        self._modules        = {}       # code → widget (lazy cache)
+        self._nav_btns       = {}       # code → QPushButton
+        self._active_tab     = "GENEL"
+        self._form_widget    = None
         self._current_form_type = None
-        self._initial_load = False
+        self._initial_load   = False
 
         self._setup_ui()
         self._load_data()
@@ -96,9 +97,11 @@ class PersonelMerkezPage(QWidget):
         top_lay.setContentsMargins(16, 0, 16, 0)
         top_lay.setSpacing(10)
 
-        btn_back = QPushButton("← Listeye")
+        btn_back = QPushButton(" Listeye")
         btn_back.setCursor(QCursor(Qt.PointingHandCursor))
         btn_back.setStyleSheet(STYLES["back_btn"])
+        IconRenderer.set_button_icon(btn_back, "arrow_left", color=C.TEXT_SECONDARY, size=14)
+        btn_back.setIconSize(QSize(14, 14))
         btn_back.clicked.connect(self.kapat_istegi.emit)
         top_lay.addWidget(btn_back)
         top_lay.addWidget(self._sep())
@@ -134,15 +137,19 @@ class PersonelMerkezPage(QWidget):
         top_lay.addStretch()
 
         # İzin / Muayene header butonları
-        self.btn_izin_ekle = QPushButton("+ İzin Gir")
+        self.btn_izin_ekle = QPushButton(" İzin Gir")
         self.btn_izin_ekle.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_izin_ekle.setStyleSheet(STYLES["refresh_btn"])
+        IconRenderer.set_button_icon(self.btn_izin_ekle, "calendar", color=C.TEXT_SECONDARY, size=14)
+        self.btn_izin_ekle.setIconSize(QSize(14, 14))
         self.btn_izin_ekle.clicked.connect(lambda: self._toggle_form("IZIN"))
         top_lay.addWidget(self.btn_izin_ekle)
 
-        self.btn_muayene_ekle = QPushButton("+ Muayene")
+        self.btn_muayene_ekle = QPushButton(" Muayene")
         self.btn_muayene_ekle.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_muayene_ekle.setStyleSheet(STYLES["refresh_btn"])
+        IconRenderer.set_button_icon(self.btn_muayene_ekle, "activity", color=C.TEXT_SECONDARY, size=14)
+        self.btn_muayene_ekle.setIconSize(QSize(14, 14))
         self.btn_muayene_ekle.clicked.connect(lambda: self._toggle_form("SAGLIK"))
         top_lay.addWidget(self.btn_muayene_ekle)
 
@@ -182,9 +189,9 @@ class PersonelMerkezPage(QWidget):
         return outer
 
     def _build_right_panel(self) -> QFrame:
-        """300px sabit sağ panel."""
+        """360px sabit sağ panel."""
         panel = QFrame()
-        panel.setFixedWidth(300)
+        panel.setFixedWidth(400)
         panel.setStyleSheet(f"""
             QFrame {{
                 background-color: {C.BG_SECONDARY};
@@ -248,10 +255,10 @@ class PersonelMerkezPage(QWidget):
         # Hızlı işlemler
         info_lay.addWidget(self._section_lbl("HIZLI İŞLEMLER"))
         for label, icon, cb in [
-            ("İzin Gir",        "calendar",    lambda: self._toggle_form("IZIN")),
-            ("Muayene Ekle",    "stethoscope", lambda: self._toggle_form("SAGLIK")),
-            ("FHSZ Görüntüle",  "bar-chart",   None),
-            ("Durum Değiştir",  "refresh-cw",  None),
+            ("İzin Gir",        "calendar",     lambda: self._toggle_form("IZIN")),
+            ("Muayene Ekle",    "stethoscope",  lambda: self._toggle_form("SAGLIK")),
+            ("FHSZ Görüntüle",  "bar_chart",    None),
+            ("Durum Değiştir",  "refresh",      None),
         ]:
             info_lay.addWidget(self._action_btn(label, icon, cb))
 
@@ -316,22 +323,53 @@ class PersonelMerkezPage(QWidget):
 
             kritikler = self.ozet_data.get("kritikler", [])
             if not kritikler:
-                lbl = QLabel("✓ Kritik durum yok")
+                # İkon + metin widget'ı
+                container = QWidget()
+                h = QHBoxLayout(container)
+                h.setContentsMargins(0, 0, 0, 0)
+                h.setSpacing(6)
+                
+                icon_lbl = QLabel()
+                icon_lbl.setFixedSize(16, 16)
+                icon_lbl.setPixmap(Icons.pixmap("check_circle", size=16, 
+                                                color=ComponentStyles.get_status_text_color('Aktif')))
+                h.addWidget(icon_lbl)
+                
+                lbl = QLabel("Kritik durum yok")
                 lbl.setStyleSheet(
                     f"color:{ComponentStyles.get_status_text_color('Aktif')};"
                     "background:transparent; font-size:12px;"
                 )
-                self.alert_container.addWidget(lbl)
+                h.addWidget(lbl)
+                h.addStretch()
+                self.alert_container.addWidget(container)
             else:
                 for msg in kritikler:
-                    lbl = QLabel(f"⚠  {msg}")
+                    # İkon + metin widget'ı
+                    container = QWidget()
+                    h = QHBoxLayout(container)
+                    h.setContentsMargins(6, 6, 6, 6)
+                    h.setSpacing(8)
+                    container.setStyleSheet(
+                        f"background:{C.BG_TERTIARY};"
+                        f"border:1px solid {C.BORDER_PRIMARY};"
+                        "border-radius:5px;"
+                    )
+                    
+                    icon_lbl = QLabel()
+                    icon_lbl.setFixedSize(16, 16)
+                    icon_lbl.setPixmap(Icons.pixmap("alert_triangle", size=16,
+                                                    color=ComponentStyles.get_status_text_color('İzinli')))
+                    h.addWidget(icon_lbl)
+                    
+                    lbl = QLabel(msg)
                     lbl.setWordWrap(True)
                     lbl.setStyleSheet(
                         f"color:{ComponentStyles.get_status_text_color('İzinli')};"
-                        f"background:{C.BG_TERTIARY};"
-                        f"border:1px solid {C.BORDER_PRIMARY};"
-                        "border-radius:5px; padding:6px 10px; font-size:12px;"
+                        "background:transparent; font-size:12px;"
                     )
+                    h.addWidget(lbl, 1)
+                    self.alert_container.addWidget(container)
                     self.alert_container.addWidget(lbl)
 
             # Sekme
@@ -365,7 +403,7 @@ class PersonelMerkezPage(QWidget):
     def _create_module(self, code: str) -> QWidget:
         try:
             if code == "GENEL":
-                w = PersonelOverviewPanel(self.ozet_data, self.db)
+                w = PersonelOverviewPanel(self.ozet_data, self.db, sabitler_cache=self.sabitler_cache)
             elif code == "IZIN":
                 w = PersonelIzinPanel(self.db, self.personel_id)
             elif code == "SAGLIK":

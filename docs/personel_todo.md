@@ -14,7 +14,6 @@
 ui/pages/personel/
 ├── personel_listesi.py         ✅ 749 satır — Tüm personelleri tablo halinde göster
 ├── personel_ekle.py            ✅ 762 satır — Personel ekleme/düzenleme formu
-├── izin_giris.py               ✅ 624 satır — Yeni izin girişi (hızlı form + tablo)
 ├── izin_takip.py               ✅ 978 satır — İzin takibi (personel filtreli, ay/yıl filtreli)
 ├── saglik_takip.py             ✅ 784 satır — Sağlık muayene takip ve raporlaması
 ├── fhsz_yonetim.py             ✅ 942 satır — FHSZ (Şua) hesaplama ve düzenleme
@@ -32,6 +31,22 @@ ui/pages/personel/
 ```
 
 **Toplam Kod:** ~7000+ satır (yorum + işlevsellik)
+
+---
+
+## ✅ 21 Şubat 2026 — Son Güncellemeler (Oturum Notu)
+
+### Yapılanlar
+- Personel listesi aksiyon butonları (Detay/İzin) tıklama ve hover alanları düzeltildi; buton boyutları büyütüldü.
+- Personel detay açma akışı iyileştirildi (Detay butonu → PersonelMerkez; kapatma dönüşü düzgünleşti).
+- İzinli filtre düzeltildi (durum sütunu esas alındı).
+- Personel merkezde sabitler cache kullanımı eklendi (MainWindow → PersonelMerkez → PersonelOverviewPanel).
+- Personel overview: fotoğraf/diploma yükleme ve offline klasör eşlemesi güncellendi; offline_uploads hedefi netleştirildi.
+- Sağlık takip: form sağdan açılır drawer oldu, açıklama alanları kaldırıldı; rapor yükleme offline modda Drive’a gitmiyor.
+- İzin takip: form sağdan açılır drawer oldu, dinamik genişlik + grid hizalama düzenlendi; üst bardaki Kapat kaldırıldı.
+- Birleştirilmiş merkez (İzin/FHSZ/Puantaj): ikonlar icons.py ile güncellendi, merkez Kapat butonu eklendi, Geri kaldırıldı.
+- FHSZ yönetim: Çalışma Koşulu sütunu combo edit düzeltildi (QSS kaçış, edit trigger, tek tık açılma).
+- FHSZ ve Puantaj sayfalarındaki Kapat butonları kaldırıldı.
 
 ---
 
@@ -59,34 +74,17 @@ ui/pages/personel/
 
 ### 1. **Ölümcül Buglar**
 
-#### A. Export Fonksiyonları `get_cloud_adapter()` Eksik
-**Dosyalar:** `personel_ekle.py`, `puantaj_rapor.py`, `saglik_takip.py`
+#### A. `get_cloud_adapter()` ve DI altyapısı
+**Durum:** ✅ Düzeltildi — `core/di.py` ve `database/cloud_adapter.py` aktif
 
-```python
-# ❌ EXCEPTİON YARATIR
-from core.di import get_cloud_adapter
-cloud = get_cloud_adapter()
-cloud.upload_file(...)
-```
-
-**Problem:** `core/di.py` boştur, `_get_cloud_adapter()` tanımsız  
-**Çözüm:** `cloud_adapter.py` uygulanmalı
-
-#### B. Registry Getter `registry.get(table_name)` Eksik
-**Dosyalar:** `personel_listesi.py`, `izin_takip.py` vb
-
-```python
-# ❌ BUG
-repo = registry.get("Personel")  # AttributeError
-```
-
-**Çözüm:** `RepositoryRegistry.__getattr__()` veya `registry.personel` şekline dönüştür
+#### B. Registry Getter
+**Durum:** ✅ Düzeltildi — `RepositoryRegistry.get()` mevcut ve kullanılıyor
 
 #### C. `parse_date()`  Çiftleme
 ```python
 # parse_date() 3 yerde farklı şekilde tanımlanmış
-def _parse_date(val):         # izin_giris.py
 def _parse_date(val):         # izin_takip.py
+def _parse_date(val):         # saglik_takip.py
 # Vs parse_any_date()
 ```
 
@@ -121,21 +119,22 @@ def _parse_date(val):         # izin_takip.py
 4. Image preview widget
 
 #### C. **İzin Yönetimi**
-- ❌ **Takvim seçici eksik** — Tarih aralığı seçimi çakışan izinleri göstermiyor
-- ❌ **İzin çakışma uyarısı yoktur** — Aynı tarihte iki izin eklenebilir
-- ❌ **Bakiye hesabı manuel** — Sistem otomatik hesaplamıyor
-- ❌ **Bulk izin işlemleri yoktur** — Toplu izin girişi yok
+- ✅ **Takvim seçici** — Tarih aralığı ve görsel seçim mevcut
+- ✅ **İzin çakışma kontrolü** — izin_takip içinde eklendi
+- ✅ **Bakiye otomatik düşme** — izin_takip içinde eklendi
+- ✅ **Bulk izin işlemleri** — Toplu izin girişi mevcut
 
 **İyileştirmeler:**
-1. Calendar-based date range picker
-2. Conflict detection & alert
-3. Auto-calculation on save
-4. Bulk import template
+1. Calendar-based date range picker ✅
+2. Conflict detection & alert ✅
+3. Auto-calculation on save ✅
+4. Bulk import template ✅
 
 #### D. **FHSZ/Şua Modülü**
+- ✅ **Çalışma Koşulu sütunu** — Combo edit aktif
 - ❌ **Hesaplama tarihçesi yok** — Değişiklikleri kim yaptı belli değil
 - ❌ **Dönem seçimi karışık** — UI'dan dönem parametresi net değil
-- ❌ **Hata mesajları teknik** — Kullanıcı "Eşik 26.04.2022" ne demek bilmiyor
+- ✅ **Hata mesajları teknik** — Kullanıcı "Eşik 26.04.2022" yönetmelik yürürlük başlama tarihi
 
 **İyileştirmeler:**
 1. Audit log tablosu (kim, ne zaman, öncesi/sonrası)
@@ -143,9 +142,10 @@ def _parse_date(val):         # izin_takip.py
 3. Uyarı mesajlarını Türkçe/işletme odaklı yazma
 
 #### E. **Sağlık Takip**
+- ✅ **Drawer form** — Sağdan açılır panel kullanılıyor
 - ❌ **Muayene takvimi eksik** — Bir personelin muayene geçmişi gösterilmiyor
 - ❌ **İkinci muayene uyarısı yoktur** — Over-due muayeneler vurgulu değil
-- ❌ **Sağlık dosyası linki dynamic değil** — Cloud storage linklemesi yok
+- ⚠️ **Sağlık raporu upload** — Offline modda Drive’a gitmiyor, online/kapalı akış doğrulaması gerekli
 
 **İyileştirmeler:**
 1. Timeline widget (muayene tarihleri ve sonuçları)
@@ -201,9 +201,9 @@ link = cloud.upload_file(file_path)  # Senkron
 
 ### Tier 1: Kritik (Bu hafta)
 1. ✅ Export bugs düzeltme (`get_cloud_adapter()`)
-2. ✅ Form validasyon ekleme (TC format, email format)
+2. ❌ Form validasyon ekleme (TC format, email format)
 3. ✅ İzin çakışma uyarısı
-4. ✅ Performance: N+1 sorguları düzeltme
+4. ❌ Performance: N+1 sorguları düzeltme
 
 ### Tier 2: Önemli (2 hafta)
 1. Arama debounce + progress indicator
@@ -223,17 +223,17 @@ link = cloud.upload_file(file_path)  # Senkron
 ## 📋 CHECKLIST — Yapılması Gereken
 
 ### Hata Düzeltme
-- [ ] `core/di.py` uygun şekilde implement et
-- [ ] `RepositoryRegistry` getter metodları ekle
+- [x] `core/di.py` uygun şekilde implement et
+- [x] `RepositoryRegistry.get()` mevcut
 - [ ] `parse_date()` duplicity'sini kaldır
 - [ ] `personel_ekle.py` form validation ekle
-- [ ] File upload progress göster
+- [x] File upload progress göster (indeterminate)
 
 ### UX İyileştirmesi
 - [ ] Arama debounce ekle
-- [ ] Fotoğraf preview widget
-- [ ] İzin çakışma uyarısı
-- [ ] Takvim date picker
+- [x] Fotoğraf preview widget
+- [x] İzin çakışma uyarısı
+- [x] Takvim date picker
 - [ ] Satır detay paneli (personel_listesi)
 
 ### Performance
@@ -242,10 +242,26 @@ link = cloud.upload_file(file_path)  # Senkron
 - [ ] Pre-computed bakiyeler
 - [ ] Tablo lazy-loading
 
+---
+
+## 🧭 Yapılacaklar (Güncel Özet) — Öncelik 1–2–3
+
+### 1) Kritik
+- Personel ekle: offline/online dosya akışını netleştir ve UI geri bildirimini iyileştir.
+- Personel listesi: arama debounce + izin bakiye O(n²) performans düzeltmesi.
+
+### 2) Önemli
+- Sağlık takip: muayene geçmişi timeline + overdue uyarıları.
+- FHSZ: dönem seçimi UX ve hata mesajlarını sadeleştir.
+- Puantaj: rapor filtrelerini sadeleştir (dönem seçim tutarlılığı).
+
+### 3) İyileştirme
+- Personel merkez: hızlı işlem butonları için açıklayıcı tooltip ve durum banner.
+
 ### Dokumantasyon
 - [ ] Personel modülü API doc
 - [ ] FHSZ hesaplama rehberi
-- [ ] User guide (İzin giriş adımları)
+- [ ] User guide (İzin takip adımları)
 
 ---
 
@@ -275,11 +291,11 @@ link = cloud.upload_file(file_path)  # Senkron
 - ✅ Tüm form alanları (TC, Diploma vb)
 - ✅ DriveUploadWorker (async file upload)
 - ✅ Mezuniyet bilgisi (2 diploma)
+- ✅ Fotoğraf önizleme mevcut
 
 **Weaknesses:**
 - ❌ Form field validasyonu **çok zayıf** — TC format kontrolü yok
-- ❌ File upload progress gösterilmiyor
-- ❌ Fotoğraf preview yoktur
+- ⚠️ File upload progress indeterminate (yüzde yok)
 - ❌ Hata mesajları generic
 
 **Score:** 5/10
@@ -292,14 +308,14 @@ link = cloud.upload_file(file_path)  # Senkron
 - ✅ Personel + Ay/Yıl filtresi
 - ✅ İzin geçmişi tablosu
 - ✅ Yeni izin girişi + bakiye paneli
+- ✅ Takvim seçici + tarih aralığı
+- ✅ Çakışma kontrolü + otomatik bakiye
+- ✅ Toplu izin işlemleri
 
 **Weaknesses:**
-- ❌ Takvim seçici yok → Tarih aralığı manuel girmek zor
-- ❌ İzin çakışma kontrolü **tamamen eksik**
-- ❌ Bakiye manuel hesaplama → Sistem otomatik hesaplamıyor
-- ❌ Bulk operasyon yok (toplu izin girişi)
+- ✅ Kritik sorun yok
 
-**Score:** 6/10
+**Score:** 8/10
 
 ---
 

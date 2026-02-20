@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (
     QHeaderView, QMessageBox, QProgressBar, QStyledItemDelegate,
     QAbstractItemView, QStyle
 )
-from PySide6.QtCore import Qt, QRectF
+from PySide6.QtCore import Qt, QRectF, QTimer
 from PySide6.QtGui import QColor, QCursor, QFont, QPainter, QBrush, QPen, QPainterPath
 
 from core.logger import logger
@@ -82,27 +82,28 @@ class KosulDelegate(QStyledItemDelegate):
         editor = QComboBox(parent)
         editor.addItems(self.items)
         editor.setStyleSheet(f"""
-            QComboBox {
+            QComboBox {{
                 background-color: {DarkTheme.INPUT_BG}; color: {DarkTheme.TEXT_PRIMARY};
                 border: 2px solid {DarkTheme.INPUT_BORDER_FOCUS}; border-radius: 4px;
                 padding: 4px 8px; font-size: 12px; min-height: 24px;
-            },
-            QComboBox::drop-down { border: none; width: 26px; },
-            QComboBox::down-arrow {
+            }}
+            QComboBox::drop-down {{ border: none; width: 26px; }}
+            QComboBox::down-arrow {{
                 image: none;
                 border-left: 5px solid transparent;
                 border-right: 5px solid transparent;
                 border-top: 6px solid {DarkTheme.INPUT_BORDER_FOCUS};
                 margin-right: 8px;
-            },
-            QComboBox QAbstractItemView {
+            }}
+            QComboBox QAbstractItemView {{
                 background-color: {DarkTheme.INPUT_BG}; color: {DarkTheme.TEXT_SECONDARY};
                 selection-background-color: rgba(29,117,254,0.4);
                 selection-color: {Colors.WHITE}; border: 1px solid {DarkTheme.INPUT_BORDER_FOCUS};
-            },
-            QComboBox QAbstractItemView::item { min-height: 28px; padding: 4px; }
+            }}
+            QComboBox QAbstractItemView::item {{ min-height: 28px; padding: 4px; }}
         """)
-        editor.showPopup()
+        # Editor konumlandiktan sonra listeyi ac (tek tikta, flash olmadan)
+        QTimer.singleShot(0, editor.showPopup)
         return editor
 
     def setEditorData(self, editor, index):
@@ -256,15 +257,6 @@ class FHSZYonetimPage(QWidget):
         IconRenderer.set_button_icon(self.btn_hesapla, "bar_chart", color=DarkTheme.TEXT_PRIMARY, size=14)
         fp.addWidget(self.btn_hesapla)
 
-        self._add_sep(fp)
-
-        self.btn_kapat = QPushButton("Kapat")
-        self.btn_kapat.setToolTip("Kapat")
-        self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_kapat.setStyleSheet(S["close_btn"])
-        IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
-        fp.addWidget(self.btn_kapat)
-
         main.addWidget(filter_frame)
 
         # ── TABLO (QTableWidget — orijinaldeki gibi) ──
@@ -275,6 +267,7 @@ class FHSZYonetimPage(QWidget):
         self.tablo.setAlternatingRowColors(True)
         self.tablo.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tablo.setStyleSheet(S["table"])
+        self.tablo.setEditTriggers(QAbstractItemView.SelectedClicked | QAbstractItemView.DoubleClicked)
 
         h = self.tablo.horizontalHeader()
         h.setSectionResizeMode(QHeaderView.Stretch)
@@ -324,12 +317,6 @@ class FHSZYonetimPage(QWidget):
         """)
         bf.addWidget(self.progress)
 
-        btn_kapat2 = QPushButton("Kapat")
-        btn_kapat2.setStyleSheet(S["close_btn"])
-        btn_kapat2.setCursor(QCursor(Qt.PointingHandCursor))
-        btn_kapat2.clicked.connect(self.btn_kapat.click)
-        IconRenderer.set_button_icon(btn_kapat2, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
-        bf.addWidget(btn_kapat2)
 
         self.btn_kaydet = QPushButton("KAYDET / GUNCELLE")
         self.btn_kaydet.setStyleSheet(S["save_btn"])

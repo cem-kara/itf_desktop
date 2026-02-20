@@ -3,7 +3,7 @@ import os
 import uuid
 from datetime import date, datetime
 
-from PySide6.QtCore import Qt, QModelIndex, QAbstractTableModel, QDate
+from PySide6.QtCore import Qt, QModelIndex, QAbstractTableModel, QDate, QPropertyAnimation, QEasingCurve
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QFrame, QScrollArea,
@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 
 from core.logger import logger
 from core.date_utils import parse_date, to_db_date, to_ui_date
+from ui.theme_manager import ThemeManager
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
@@ -88,119 +89,23 @@ class SaglikTakipPage(QWidget):
         self._drive_folders = {}
         self._exam_keys = ["Dermatoloji", "Dahiliye", "Goz", "Goruntuleme"]
         self._exam_widgets = {}
+        self._drawer = None  # Sağdan açılan panel
+        self._drawer_width = 450  # Drawer genişliği
         self._setup_ui()
         self._connect_signals()
 
     def _setup_ui(self):
         root = QHBoxLayout(self)
         root.setContentsMargins(10, 10, 10, 10)
-        root.setSpacing(10)
+        root.setSpacing(0)
 
-        # Sol panel: RKE benzeri kart gruplari
-        left_container = QWidget()
-        left_lay = QVBoxLayout(left_container)
-        left_lay.setContentsMargins(0, 0, 0, 0)
-        left_lay.setSpacing(0)
+        # ── Ana İçerik: Filtre + Tablo (Sol) ──
+        main_container = QWidget()
+        main_lay = QVBoxLayout(main_container)
+        main_lay.setContentsMargins(0, 0, 0, 0)
+        main_lay.setSpacing(8)
 
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
-        scroll.setStyleSheet(S.get("scroll", ""))
-
-        form_content = QWidget()
-        form_content.setStyleSheet("background: transparent;")
-        form_lay = QVBoxLayout(form_content)
-        form_lay.setContentsMargins(0, 0, 8, 0)
-        form_lay.setSpacing(12)
-
-        grp_kimlik = QGroupBox("Kimlik ve Muayene")
-        grp_kimlik.setStyleSheet(S["group"])
-        g1 = QGridLayout(grp_kimlik)
-        g1.setContentsMargins(12, 12, 12, 12)
-        g1.setHorizontalSpacing(10)
-        g1.setVerticalSpacing(8)
-
-        g1.addWidget(QLabel("Personel"), 0, 0)
-        self.cmb_personel = QComboBox()
-        self.cmb_personel.setStyleSheet(S["combo"])
-        self.cmb_personel.setEditable(True)
-        self.cmb_personel.setInsertPolicy(QComboBox.NoInsert)
-        self.cmb_personel.lineEdit().setPlaceholderText("Personel seciniz...")
-        g1.addWidget(self.cmb_personel, 0, 1)
-
-        form_lay.addWidget(grp_kimlik)
-
-        grp_durum = QGroupBox("Durum Bilgileri")
-        grp_durum.setStyleSheet(S["group"])
-        g2 = QGridLayout(grp_durum)
-        g2.setContentsMargins(12, 12, 12, 12)
-        g2.setHorizontalSpacing(10)
-        g2.setVerticalSpacing(8)
-
-        self._add_exam_fields(g2, 0, "Dermatoloji", "Dermatoloji Muayenesi")
-        self._add_exam_fields(g2, 1, "Dahiliye", "Dahiliye Muayenesi")
-        self._add_exam_fields(g2, 2, "Goz", "Goz Muayenesi")
-        self._add_exam_fields(g2, 3, "Goruntuleme", "Goruntuleme Teknikleri (Varsa)")
-
-        form_lay.addWidget(grp_durum)
-
-        grp_ek = QGroupBox("Ek Bilgiler")
-        grp_ek.setStyleSheet(S["group"])
-        g3 = QGridLayout(grp_ek)
-        g3.setContentsMargins(12, 12, 12, 12)
-        g3.setHorizontalSpacing(10)
-        g3.setVerticalSpacing(8)
-
-        g3.addWidget(QLabel("Rapor"), 0, 0)
-        rapor_row = QHBoxLayout()
-        self.inp_rapor = QLineEdit()
-        self.inp_rapor.setStyleSheet(S["input"])
-        self.inp_rapor.setReadOnly(True)
-        rapor_row.addWidget(self.inp_rapor, 1)
-        self.btn_rapor = QPushButton("Sec")
-        self.btn_rapor.setStyleSheet(S["action_btn"])
-        self.btn_rapor.setCursor(QCursor(Qt.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_rapor, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
-        rapor_row.addWidget(self.btn_rapor)
-        g3.addLayout(rapor_row, 0, 1)
-
-        g3.addWidget(QLabel("Not"), 1, 0)
-        self.inp_not = QLineEdit()
-        self.inp_not.setStyleSheet(S["input"])
-        g3.addWidget(self.inp_not, 1, 1)
-        form_lay.addWidget(grp_ek)
-        form_lay.addStretch()
-
-        scroll.setWidget(form_content)
-        left_lay.addWidget(scroll, 1)
-
-        btn_row = QHBoxLayout()
-        btn_row.setSpacing(8)
-        self.btn_temizle = QPushButton("Temizle / Yeni")
-        self.btn_temizle.setStyleSheet(S["action_btn"])
-        self.btn_temizle.setCursor(QCursor(Qt.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_temizle, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
-        btn_row.addWidget(self.btn_temizle)
-        self.btn_kaydet = QPushButton("Kaydet")
-        self.btn_kaydet.setStyleSheet(S["save_btn"])
-        self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
-        btn_row.addWidget(self.btn_kaydet)
-        left_lay.addLayout(btn_row)
-
-        root.addWidget(left_container, 32)
-
-        sep = QFrame()
-        sep.setFrameShape(QFrame.VLine)
-        sep.setStyleSheet(f"background-color: {DarkTheme.BORDER_PRIMARY};")
-        root.addWidget(sep)
-
-        # Sag panel: RKE benzeri filtre + liste
-        right_container = QWidget()
-        right_lay = QVBoxLayout(right_container)
-        right_lay.setContentsMargins(0, 0, 0, 0)
-        right_lay.setSpacing(8)
-
+        # Filtre paneli
         filter_frame = QFrame()
         filter_frame.setStyleSheet(S["filter_panel"])
         fb = QHBoxLayout(filter_frame)
@@ -241,6 +146,13 @@ class SaglikTakipPage(QWidget):
         IconRenderer.set_button_icon(self.btn_toplu, "clipboard_list", color=DarkTheme.TEXT_PRIMARY, size=14)
         fb.addWidget(self.btn_toplu)
 
+        self.btn_yeni = QPushButton("Yeni Ekle")
+        self.btn_yeni.setStyleSheet(S["save_btn"])
+        self.btn_yeni.setFixedSize(110, 36)
+        self.btn_yeni.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_yeni, "plus", color=DarkTheme.TEXT_PRIMARY, size=14)
+        fb.addWidget(self.btn_yeni)
+
         self.btn_yenile = QPushButton("Yenile")
         self.btn_yenile.setStyleSheet(S["refresh_btn"])
         self.btn_yenile.setFixedSize(100, 36)
@@ -254,8 +166,9 @@ class SaglikTakipPage(QWidget):
         self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         fb.addWidget(self.btn_kapat)
-        right_lay.addWidget(filter_frame)
+        main_lay.addWidget(filter_frame)
 
+        # Tablo
         self.model = SaglikTakipTableModel()
         self.table = QTableView()
         self.table.setModel(self.model)
@@ -270,18 +183,153 @@ class SaglikTakipPage(QWidget):
         header.setSectionResizeMode(1, QHeaderView.Stretch)
         for i in range(2, len(TABLE_COLUMNS)):
             header.setSectionResizeMode(i, QHeaderView.ResizeToContents)
-        right_lay.addWidget(self.table, 1)
+        main_lay.addWidget(self.table, 1)
 
         self.lbl_info = QLabel("0 kayit")
         self.lbl_info.setStyleSheet(S["footer_label"])
-        right_lay.addWidget(self.lbl_info)
+        main_lay.addWidget(self.lbl_info)
 
-        root.addWidget(right_container, 68)
+        root.addWidget(main_container, 1)
+
+        # ── Sağdan Açılan Drawer (Form) ──
+        self._drawer = QFrame()
+        self._drawer.setStyleSheet(f"""
+            QFrame {{
+                background-color: {DarkTheme.BG_SECONDARY};
+                border-left: 1px solid {DarkTheme.BORDER_PRIMARY};
+            }}
+        """)
+        self._drawer.setFixedWidth(0)  # Başlangıçta gizli
+
+        drawer_lay = QVBoxLayout(self._drawer)
+        drawer_lay.setContentsMargins(0, 0, 0, 0)
+        drawer_lay.setSpacing(0)
+
+        # Drawer başlık
+        drawer_header = QFrame()
+        drawer_header.setStyleSheet(f"""
+            QFrame {{
+                background-color: {DarkTheme.BG_PRIMARY};
+                border-bottom: 1px solid {DarkTheme.BORDER_PRIMARY};
+                padding: 12px;
+            }}
+        """)
+        header_lay = QHBoxLayout(drawer_header)
+        header_lay.setContentsMargins(12, 12, 12, 12)
+        
+        lbl_drawer_title = QLabel("Sağlık Kontrolü Detay")
+        lbl_drawer_title.setStyleSheet(f"font-size: 14px; font-weight: 600; color: {DarkTheme.TEXT_PRIMARY};")
+        header_lay.addWidget(lbl_drawer_title)
+        header_lay.addStretch()
+
+        btn_drawer_close = QPushButton()
+        btn_drawer_close.setFixedSize(32, 32)
+        btn_drawer_close.setStyleSheet(S["close_btn"])
+        btn_drawer_close.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(btn_drawer_close, "x", color=DarkTheme.TEXT_PRIMARY, size=16)
+        btn_drawer_close.clicked.connect(self._close_drawer)
+        header_lay.addWidget(btn_drawer_close)
+        drawer_lay.addWidget(drawer_header)
+
+        # Drawer scroll içerik
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setStyleSheet(S.get("scroll", ""))
+
+        form_content = QWidget()
+        form_content.setStyleSheet("background: transparent;")
+        form_lay = QVBoxLayout(form_content)
+        form_lay.setContentsMargins(12, 12, 12, 12)
+        form_lay.setSpacing(12)
+
+        # Kimlik ve Muayene
+        grp_kimlik = QGroupBox("Kimlik ve Muayene")
+        grp_kimlik.setStyleSheet(S["group"])
+        g1 = QGridLayout(grp_kimlik)
+        g1.setContentsMargins(12, 12, 12, 12)
+        g1.setHorizontalSpacing(10)
+        g1.setVerticalSpacing(8)
+
+        g1.addWidget(QLabel("Personel"), 0, 0)
+        self.cmb_personel = QComboBox()
+        self.cmb_personel.setStyleSheet(S["combo"])
+        self.cmb_personel.setEditable(True)
+        self.cmb_personel.setInsertPolicy(QComboBox.NoInsert)
+        self.cmb_personel.lineEdit().setPlaceholderText("Personel seciniz...")
+        g1.addWidget(self.cmb_personel, 0, 1)
+
+        form_lay.addWidget(grp_kimlik)
+
+        # Muayene durumları
+        grp_durum = QGroupBox("Durum Bilgileri")
+        grp_durum.setStyleSheet(S["group"])
+        g2 = QGridLayout(grp_durum)
+        g2.setContentsMargins(12, 12, 12, 12)
+        g2.setHorizontalSpacing(10)
+        g2.setVerticalSpacing(8)
+
+        self._add_exam_fields(g2, 0, "Dermatoloji", "Dermatoloji Muayenesi")
+        self._add_exam_fields(g2, 1, "Dahiliye", "Dahiliye Muayenesi")
+        self._add_exam_fields(g2, 2, "Goz", "Goz Muayenesi")
+        self._add_exam_fields(g2, 3, "Goruntuleme", "Goruntuleme Teknikleri (Varsa)")
+
+        form_lay.addWidget(grp_durum)
+
+        # Ek Bilgiler
+        grp_ek = QGroupBox("Ek Bilgiler")
+        grp_ek.setStyleSheet(S["group"])
+        g3 = QGridLayout(grp_ek)
+        g3.setContentsMargins(12, 12, 12, 12)
+        g3.setHorizontalSpacing(10)
+        g3.setVerticalSpacing(8)
+
+        g3.addWidget(QLabel("Rapor"), 0, 0)
+        rapor_row = QHBoxLayout()
+        self.inp_rapor = QLineEdit()
+        self.inp_rapor.setStyleSheet(S["input"])
+        self.inp_rapor.setReadOnly(True)
+        rapor_row.addWidget(self.inp_rapor, 1)
+        self.btn_rapor = QPushButton("Sec")
+        self.btn_rapor.setStyleSheet(S["action_btn"])
+        self.btn_rapor.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_rapor, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
+        rapor_row.addWidget(self.btn_rapor)
+        g3.addLayout(rapor_row, 0, 1)
+
+        g3.addWidget(QLabel("Not"), 1, 0)
+        self.inp_not = QLineEdit()
+        self.inp_not.setStyleSheet(S["input"])
+        g3.addWidget(self.inp_not, 1, 1)
+        form_lay.addWidget(grp_ek)
+        form_lay.addStretch()
+
+        scroll.setWidget(form_content)
+        drawer_lay.addWidget(scroll, 1)
+
+        # Drawer butonları
+        btn_row = QHBoxLayout()
+        btn_row.setContentsMargins(12, 8, 12, 12)
+        btn_row.setSpacing(8)
+        self.btn_temizle = QPushButton("Temizle / Yeni")
+        self.btn_temizle.setStyleSheet(S["action_btn"])
+        self.btn_temizle.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_temizle, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
+        btn_row.addWidget(self.btn_temizle)
+        self.btn_kaydet = QPushButton("Kaydet")
+        self.btn_kaydet.setStyleSheet(S["save_btn"])
+        self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
+        btn_row.addWidget(self.btn_kaydet)
+        drawer_lay.addLayout(btn_row)
+
+        root.addWidget(self._drawer)
 
     def _connect_signals(self):
         self.btn_yenile.clicked.connect(self.load_data)
         self.btn_kaydet.clicked.connect(self._save_record)
         self.btn_temizle.clicked.connect(self._clear_form)
+        self.btn_yeni.clicked.connect(self._new_record)
         self.btn_rapor.clicked.connect(self._pick_report)
         self.btn_toplu.clicked.connect(self._bulk_plan_year)
         self.search.textChanged.connect(self._apply_filters)
@@ -443,29 +491,12 @@ class SaglikTakipPage(QWidget):
         cmb.setStyleSheet(S["combo"])
         gl.addWidget(cmb, 0, 3)
 
-        lbl_aciklama = QLabel("Aciklama")
-        lbl_aciklama.setStyleSheet(S.get("label", ""))
-        gl.addWidget(lbl_aciklama, 1, 0)
-
-        inp = QLineEdit()
-        inp.setPlaceholderText("Gerekiyorsa kisa aciklama...")
-        inp.setStyleSheet(S["input"])
-        inp.setEnabled(False)
-        gl.addWidget(inp, 1, 1, 1, 3)
-
         layout.addWidget(box, row_idx, 0, 1, 2)
-        self._exam_widgets[key] = {"tarih": de, "durum": cmb, "aciklama": inp}
+        self._exam_widgets[key] = {"tarih": de, "durum": cmb}
 
     def _on_exam_status_changed(self, key):
-        w = self._exam_widgets.get(key, {})
-        durum = str(w.get("durum").currentText()).strip()
-        aciklama = w.get("aciklama")
-        if not aciklama:
-            return
-        enabled = durum in ("Sartli Uygun", "Uygun Degil")
-        aciklama.setEnabled(enabled)
-        if not enabled:
-            aciklama.clear()
+        # Artık açıklama alanı yok, boş bırakıyoruz
+        pass
 
     def _safe_date_from_widget(self, widget):
         if not widget:
@@ -535,63 +566,56 @@ class SaglikTakipPage(QWidget):
         return ""
 
     def _upload_report_to_drive(self, tc_no, kayit_no):
-        """Secilen raporu Drive'a yukler ve link dondurur."""
+        """Seçilen raporu Drive'a yükler (veya offline modda yerel klasöre) ve link döndürür."""
         if not self._selected_report_path:
             return self.inp_rapor.text().strip()
         if not os.path.exists(self._selected_report_path):
             QMessageBox.warning(self, "Uyari", "Secilen rapor dosyasi bulunamadi.")
             return ""
 
-        folder_id = self._get_report_folder_id()
-        if not folder_id:
-            QMessageBox.warning(
-                self,
-                "Drive Ayari Eksik",
-                "Sabitler tablosunda Sistem_DriveID icin saglik rapor klasoru bulunamadi."
-            )
-            return ""
-
         try:
-            from database.google import GoogleDriveService
-            drive = GoogleDriveService()
+            from core.di import get_cloud_adapter
+            
+            cloud = get_cloud_adapter()
             ext = os.path.splitext(self._selected_report_path)[1]
             custom_name = f"{tc_no}_{kayit_no}_SaglikRapor{ext}"
-            link = drive.upload_file(
+            
+            # Offline modda folder_id gereksiz ama offline_folder_name gerekli
+            folder_id = None
+            if cloud.is_online:
+                folder_id = self._get_report_folder_id()
+                if not folder_id:
+                    QMessageBox.warning(
+                        self,
+                        "Drive Ayari Eksik",
+                        "Sabitler tablosunda Sistem_DriveID icin saglik rapor klasoru bulunamadi."
+                    )
+                    return ""
+            
+            link = cloud.upload_file(
                 self._selected_report_path,
                 parent_folder_id=folder_id,
-                custom_name=custom_name
+                custom_name=custom_name,
+                offline_folder_name="Saglik_Raporlari"
             )
+            
             if not link:
-                QMessageBox.warning(self, "Drive", "Rapor Drive'a yuklenemedi.")
+                if cloud.is_online:
+                    QMessageBox.warning(self, "Drive", "Rapor Drive'a yuklenemedi.")
                 return ""
-            logger.info(f"Saglik raporu Drive'a yuklendi: {custom_name}")
+            
+            mode_text = "Drive'a yuklendi" if cloud.is_online else "yerel klasore kaydedildi"
+            logger.info(f"Saglik raporu {mode_text}: {custom_name}")
             return str(link).strip()
         except Exception as exc:
-            logger.error(f"Saglik rapor Drive yukleme hatasi: {exc}")
-            QMessageBox.critical(self, "Drive Hata", f"Rapor yuklenemedi:\n{exc}")
+            logger.error(f"Saglik rapor yukleme hatasi: {exc}")
+            QMessageBox.critical(self, "Hata", f"Rapor yuklenemedi:\n{exc}")
             return ""
 
     def _save_record(self):
         if self.cmb_personel.currentIndex() < 0:
             QMessageBox.warning(self, "Eksik Bilgi", "Lutfen personel seciniz.")
             return
-
-        ad_map = {
-            "Dermatoloji": "Dermatoloji",
-            "Dahiliye": "Dahiliye",
-            "Goz": "Goz",
-            "Goruntuleme": "Goruntuleme Teknikleri"
-        }
-        for key in self._exam_keys:
-            durum = str(self._exam_widgets[key]["durum"].currentText()).strip()
-            aciklama = self._exam_widgets[key]["aciklama"].text().strip()
-            if durum in ("Sartli Uygun", "Uygun Degil") and not aciklama:
-                QMessageBox.warning(
-                    self,
-                    "Eksik Bilgi",
-                    f"{ad_map.get(key, key)} muayenesi icin secilen durumda aciklama zorunludur."
-                )
-                return
 
         personel_data = self.cmb_personel.currentData()
         muayene_db, sonraki_db, sonuc, durum = self._compute_summary()
@@ -615,16 +639,12 @@ class SaglikTakipPage(QWidget):
             "Durum": durum,
             "DermatolojiMuayeneTarihi": self._exam_date_if_set("Dermatoloji"),
             "DermatolojiDurum": str(self._exam_widgets["Dermatoloji"]["durum"].currentText()).strip(),
-            "DermatolojiAciklama": self._exam_widgets["Dermatoloji"]["aciklama"].text().strip(),
             "DahiliyeMuayeneTarihi": self._exam_date_if_set("Dahiliye"),
             "DahiliyeDurum": str(self._exam_widgets["Dahiliye"]["durum"].currentText()).strip(),
-            "DahiliyeAciklama": self._exam_widgets["Dahiliye"]["aciklama"].text().strip(),
             "GozMuayeneTarihi": self._exam_date_if_set("Goz"),
             "GozDurum": str(self._exam_widgets["Goz"]["durum"].currentText()).strip(),
-            "GozAciklama": self._exam_widgets["Goz"]["aciklama"].text().strip(),
             "GoruntulemeMuayeneTarihi": self._exam_date_if_set("Goruntuleme"),
             "GoruntulemeDurum": str(self._exam_widgets["Goruntuleme"]["durum"].currentText()).strip(),
-            "GoruntulemeAciklama": self._exam_widgets["Goruntuleme"]["aciklama"].text().strip(),
             "RaporDosya": rapor_link,
             "Notlar": self.inp_not.text().strip(),
         }
@@ -691,15 +711,14 @@ class SaglikTakipPage(QWidget):
         self.inp_not.setText(str(takip_row.get("Notlar", "")))
         self.inp_rapor.setText(str(takip_row.get("RaporDosya", "")))
         mapping = [
-            ("Dermatoloji", "DermatolojiMuayeneTarihi", "DermatolojiDurum", "DermatolojiAciklama"),
-            ("Dahiliye", "DahiliyeMuayeneTarihi", "DahiliyeDurum", "DahiliyeAciklama"),
-            ("Goz", "GozMuayeneTarihi", "GozDurum", "GozAciklama"),
-            ("Goruntuleme", "GoruntulemeMuayeneTarihi", "GoruntulemeDurum", "GoruntulemeAciklama"),
+            ("Dermatoloji", "DermatolojiMuayeneTarihi", "DermatolojiDurum"),
+            ("Dahiliye", "DahiliyeMuayeneTarihi", "DahiliyeDurum"),
+            ("Goz", "GozMuayeneTarihi", "GozDurum"),
+            ("Goruntuleme", "GoruntulemeMuayeneTarihi", "GoruntulemeDurum"),
         ]
         for key, col_t, col_d, col_a in mapping:
             w = self._exam_widgets[key]
             w["durum"].setCurrentText(str(takip_row.get(col_d, "")))
-            w["aciklama"].setText(str(takip_row.get(col_a, "")))
             d = parse_date(takip_row.get(col_t, ""))
             if d:
                 w["tarih"].setDate(QDate(d.year, d.month, d.day))
@@ -713,6 +732,21 @@ class SaglikTakipPage(QWidget):
                 self.cmb_personel.setCurrentIndex(i)
                 break
 
+        # Drawer'ı aç
+        self._open_drawer()
+
+    def _new_record(self):
+        """Yeni kayıt eklemek için formu temizle ve drawer'ı aç."""
+        self._editing_id = None
+        self._selected_report_path = ""
+        self.inp_rapor.clear()
+        self.inp_not.clear()
+        self.cmb_personel.setCurrentIndex(-1)
+        for key in self._exam_keys:
+            self._exam_widgets[key]["tarih"].setDate(QDate.currentDate())
+            self._exam_widgets[key]["durum"].setCurrentIndex(0)
+        self._open_drawer()
+
     def _clear_form(self):
         self._editing_id = None
         self._selected_report_path = ""
@@ -721,8 +755,8 @@ class SaglikTakipPage(QWidget):
         for key in self._exam_keys:
             self._exam_widgets[key]["tarih"].setDate(QDate.currentDate())
             self._exam_widgets[key]["durum"].setCurrentIndex(0)
-            self._exam_widgets[key]["aciklama"].clear()
-            self._exam_widgets[key]["aciklama"].setEnabled(False)
+        # Drawer'ı kapat
+        self._close_drawer()
 
     def _bulk_plan_year(self):
         target_year = self.cmb_yil.currentData()
@@ -757,16 +791,12 @@ class SaglikTakipPage(QWidget):
                     "Durum": "Planlandi",
                     "DermatolojiMuayeneTarihi": "",
                     "DermatolojiDurum": "",
-                    "DermatolojiAciklama": "",
                     "DahiliyeMuayeneTarihi": "",
                     "DahiliyeDurum": "",
-                    "DahiliyeAciklama": "",
                     "GozMuayeneTarihi": "",
                     "GozDurum": "",
-                    "GozAciklama": "",
                     "GoruntulemeMuayeneTarihi": "",
                     "GoruntulemeDurum": "",
-                    "GoruntulemeAciklama": "",
                     "RaporDosya": "",
                     "Notlar": "",
                 })
@@ -778,4 +808,30 @@ class SaglikTakipPage(QWidget):
             logger.error(f"Toplu plan hatasi: {exc}")
             QMessageBox.critical(self, "Hata", f"Toplu planlama sirasinda hata:\n{exc}")
 
+    def _open_drawer(self):
+        """Sağdan drawer'ı animasyonlu aç."""
+        if not self._drawer or self._drawer.width() == self._drawer_width:
+            return
+        
+        anim = QPropertyAnimation(self._drawer, b"maximumWidth", self)
+        anim.setDuration(250)
+        anim.setStartValue(0)
+        anim.setEndValue(self._drawer_width)
+        anim.setEasingCurve(QEasingCurve.OutCubic)
+        anim.start(QPropertyAnimation.DeleteWhenStopped)
+        
+        # Minimum genişliği de ayarla
+        self._drawer.setMinimumWidth(self._drawer_width)
 
+    def _close_drawer(self):
+        """Drawer'ı animasyonlu kapat."""
+        if not self._drawer or self._drawer.width() == 0:
+            return
+        
+        anim = QPropertyAnimation(self._drawer, b"maximumWidth", self)
+        anim.setDuration(200)
+        anim.setStartValue(self._drawer.width())
+        anim.setEndValue(0)
+        anim.setEasingCurve(QEasingCurve.InCubic)
+        anim.finished.connect(lambda: self._drawer.setMinimumWidth(0))
+        anim.start(QPropertyAnimation.DeleteWhenStopped)

@@ -67,6 +67,7 @@ def main():
         os.path.dirname(os.path.abspath(__file__)),
         "ui",
         "styles",
+        "icons",
         "radyoloji_icon.ico",
     )
     if os.path.exists(app_icon_path):

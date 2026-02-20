@@ -19,10 +19,11 @@ class PersonelOverviewPanel(QWidget):
     Personel Merkez ekranı için 'Genel Bakış' sekmesi içeriği.
     Özet metrikleri ve düzenlenebilir personel bilgilerini gösterir.
     """
-    def __init__(self, ozet_data, db=None, parent=None):
+    def __init__(self, ozet_data, db=None, sabitler_cache=None, parent=None):
         super().__init__(parent)
         self.data = ozet_data or {}
         self.db = db
+        self.sabitler_cache = sabitler_cache  # Cache'den gelen Sabitler listesi
         self.personel_data = self.data.get("personel", {})
         self._widgets = {}  # Alan adı -> QLineEdit
         self._upload_buttons = {}  # Alan adı -> QPushButton (diploma gibi)
@@ -31,6 +32,7 @@ class PersonelOverviewPanel(QWidget):
         self._file_paths = {}          # {'Resim': local_path, 'Diploma1': local_path, ...}
         self._drive_links = {}         # {'Resim': drive_link, 'Diploma1': link, ...}
         self._drive_folders = {}       # {'Personel_Resim': folder_id, ...}
+        self._all_sabit = []           # Sistem_DriveID ve diğer sabitler
         self._upload_workers = []
         self._pending_uploads = 0
         self._upload_errors = []
@@ -62,11 +64,12 @@ class PersonelOverviewPanel(QWidget):
 
         # ── 1. Kimlik Bilgileri (Header Kısmı - Düzenlenemez) ──
         header_frame = QFrame()
-        header_frame.setStyleSheet("""
-            QFrame {
-                background-color: rgba(30, 32, 44, 0.4);
+        header_frame.setStyleSheet(f"""
+            QFrame {{
+                background-color: {DarkTheme.BG_SECONDARY};
+                border: 1px solid {DarkTheme.BORDER_PRIMARY};
                 border-radius: 8px;
-            }
+            }}
         """)
         h_main_layout = QHBoxLayout(header_frame)
         h_main_layout.setContentsMargins(15, 15, 15, 15)
@@ -107,7 +110,7 @@ class PersonelOverviewPanel(QWidget):
         # Başlık
         lbl_baslik = QLabel("KİMLİK BİLGİLERİ")
         lbl_baslik.setStyleSheet(
-            f"color: {DarkTheme.BTN_PRIMARY_TEXT}; font-weight: bold; font-size: 12px; letter-spacing: 1px;"
+            f"color: {DarkTheme.ACCENT}; font-weight: bold; font-size: 12px; letter-spacing: 1px;"
         )
         h_layout.addWidget(lbl_baslik, 0, 0, 1, 2)
 
@@ -240,8 +243,13 @@ class PersonelOverviewPanel(QWidget):
         try:
             from database.repository_registry import RepositoryRegistry
             registry = RepositoryRegistry(self.db)
-            sabitler_repo = registry.get("Sabitler")
-            all_sabit = sabitler_repo.get_all()
+            
+            # Cache'den gelmişse DB'yi sorgulamıyoruz
+            if self.sabitler_cache:
+                all_sabit = self.sabitler_cache
+            else:
+                sabitler_repo = registry.get("Sabitler")
+                all_sabit = sabitler_repo.get_all()
 
             def get_sabit(kod):
                 return sorted([
@@ -287,6 +295,16 @@ class PersonelOverviewPanel(QWidget):
                         if combo.completer():
                             combo.completer().setModel(combo.model())
 
+            # Drive klasör ID'lerini yükle
+            self._all_sabit = all_sabit  # ← offline_folder_name için gerekli
+            self._drive_folders = {
+                str(r.get("MenuEleman", "")).strip(): str(r.get("Aciklama", "")).strip()
+                for r in all_sabit
+                if r.get("Kod") == "Sistem_DriveID" and r.get("Aciklama", "").strip()
+            }
+            if not self.sabitler_cache:  # Cache'den gelmediyse log bas
+                logger.info(f"Drive klasörleri yüklendi: {list(self._drive_folders.keys())}")
+
         except Exception as e:
             logger.error(f"PersonelOverviewPanel combo doldurma hatası: {e}")
 
@@ -294,8 +312,8 @@ class PersonelOverviewPanel(QWidget):
         grp = QGroupBox()
         grp.setStyleSheet(f"""
             QGroupBox {{
-                background-color: rgba(30, 32, 44, 0.6);
-                border: 1px solid rgba(255, 255, 255, 0.08);
+                background-color: {DarkTheme.BG_SECONDARY};
+                border: 1px solid {DarkTheme.BORDER_PRIMARY};
                 border-radius: 8px;
                 margin-top: 0px;
                 font-weight: bold;
@@ -313,7 +331,7 @@ class PersonelOverviewPanel(QWidget):
         
         lbl_title = QLabel(title)
         lbl_title.setStyleSheet(
-            f"color: {DarkTheme.BTN_PRIMARY_TEXT}; font-weight: bold; font-size: 13px;"
+            f"color: {DarkTheme.ACCENT}; font-weight: bold; font-size: 13px;"
         )
         header_row.addWidget(lbl_title)
         header_row.addStretch()
@@ -402,7 +420,8 @@ class PersonelOverviewPanel(QWidget):
         inp = QLineEdit(str(val) if val else "")
         inp.setReadOnly(True)
         inp.setStyleSheet(
-            f"background: transparent; border: none; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
+            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
+            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
         )
         l.addWidget(inp)
         
@@ -430,7 +449,8 @@ class PersonelOverviewPanel(QWidget):
         combo.setCurrentText(str(val) if val else "")
         combo.setEnabled(False)
         combo.setStyleSheet(
-            f"background: transparent; border: none; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px; font-weight: 500; padding: 4px;"
+            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
+            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
         )
         
         completer = QCompleter(self)
@@ -455,7 +475,8 @@ class PersonelOverviewPanel(QWidget):
         combo.setCurrentText(str(val) if val else "")
         combo.setEnabled(False)
         combo.setStyleSheet(
-            f"background: transparent; border: none; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px; padding: 4px;"
+            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
+            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px;"
         )
 
         completer = QCompleter(self)
@@ -474,7 +495,10 @@ class PersonelOverviewPanel(QWidget):
         inp = QLineEdit(str(val) if val else "")
         inp.setReadOnly(True)
         inp.setPlaceholderText("-")
-        inp.setStyleSheet(f"background: transparent; border: none; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px;")
+        inp.setStyleSheet(
+            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
+            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px;"
+        )
 
         # Container: input + upload button (diploma için)
         container = QWidget()
@@ -528,7 +552,8 @@ class PersonelOverviewPanel(QWidget):
 
         date_edit.setEnabled(False)
         date_edit.setStyleSheet(
-            f"background: transparent; border: none; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px; font-weight: 500; padding: 4px;"
+            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
+            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
         )
         
         ThemeManager.setup_calendar_popup(date_edit)
@@ -551,7 +576,8 @@ class PersonelOverviewPanel(QWidget):
 
         date_edit.setEnabled(False)
         date_edit.setStyleSheet(
-            f"background: transparent; border: none; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px; padding: 4px;"
+            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
+            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px;"
         )
 
         ThemeManager.setup_calendar_popup(date_edit)
@@ -682,6 +708,14 @@ class PersonelOverviewPanel(QWidget):
                         update_data['Diploma1'] = link
                     elif drive_key == 'Diploma2':
                         update_data['Diploma2'] = link
+                
+                # Lokal dosyalar da kaydet (Drive'a yüklenen dosyalar veya lokal kalanlar)
+                for file_key in ['Resim', 'Diploma1', 'Diploma2']:
+                    if file_key in self._file_paths:
+                        if file_key not in self._drive_links:  # Drive'a yüklenmedi
+                            local_path = self._save_file_locally(self._file_paths[file_key], tc, file_key)
+                            if local_path:
+                                update_data[file_key] = local_path
 
                 repo.update(tc, update_data)
                 self.personel_data.update(update_data)
@@ -724,11 +758,98 @@ class PersonelOverviewPanel(QWidget):
             # Önizlemeyi güncelle
             self._set_photo_preview(path)
             self.personel_data["Resim"] = path
+            
+            # Resmi otomatik olarak Drive'a yükle ve veritabanına kaydet
+            if self.db:
+                self._save_photo_to_db(path)
         except Exception as e:
             logger.warning(f"Fotoğraf yüklenemedi: {e}")
 
+    def _save_photo_to_db(self, photo_path):
+        """Resmi Drive'a yükleyip veritabanına kaydeder."""
+        try:
+            from database.repository_registry import RepositoryRegistry
+            registry = RepositoryRegistry(self.db)
+            repo = registry.get("Personel")
+            
+            tc = self.personel_data.get("KimlikNo")
+            if not tc:
+                raise ValueError("TC Kimlik No bulunamadı.")
+            
+            # Resmi Drive'a yükle
+            self._file_paths = {"Resim": photo_path}
+            self._drive_links = {}
+            
+            def _after_upload():
+                # Drive linki veritabanına kaydet
+                if "Resim" in self._drive_links:
+                    drive_link = self._drive_links["Resim"]
+                    repo.update(tc, {"Resim": drive_link})
+                    self.personel_data["Resim"] = drive_link
+                    logger.info(f"Fotoğraf veritabanına kaydedildi: {tc}")
+                    QMessageBox.information(self, "Başarılı", "Fotoğraf başarıyla güncellendi.")
+                else:
+                    # Drive yok, lokal dosyayı kaydet
+                    local_path = self._save_file_locally(photo_path, tc, "Resim")
+                    if local_path:
+                        repo.update(tc, {"Resim": local_path})
+                        self.personel_data["Resim"] = local_path
+                        logger.info(f"Fotoğraf lokal klasöre kaydedildi: {local_path}")
+                        QMessageBox.information(self, "Başarılı", "Fotoğraf güncellendi (lokal kayıt).")
+                    else:
+                        raise Exception("Dosya kaydedilemedi")
+            
+            self._upload_files_to_drive(tc, _after_upload)
+            
+        except Exception as e:
+            logger.error(f"Fotoğraf kaydetme hatası: {e}")
+            QMessageBox.critical(self, "Hata", f"Fotoğraf kaydedilemedi:\n{e}")
+
+    def _save_file_locally(self, source_file_path, tc_no, file_type):
+        """
+        Dosyayı lokal klasöre kaydeder.
+        Cloud adapter'ın  offline_folder_name yapısı ile uyumlu.
+        Example: data/offline_uploads/Personel_Resim/TC_Resim.jpg
+        """
+        try:
+            from core.paths import BASE_DIR
+            
+            # Dosya türüne göre klasör eşlemesi
+            file_class_map = {
+                "Resim": "Personel_Resim",
+                "Diploma1": "Personel_Diploma",
+                "Diploma2": "Personel_Diploma",
+            }
+            
+            folder_name = file_class_map.get(file_type, "")
+            if not folder_name:
+                logger.warning(f"Bilinmeyen dosya türü: {file_type}")
+                return None
+            
+            # Lokal klasör oluştur (offline_uploads direktinin altında, cloud adapter ile uyumlu)
+            local_base = os.path.join(BASE_DIR, "data", "offline_uploads", folder_name)
+            os.makedirs(local_base, exist_ok=True)
+            
+            # Hedef dosya adı: TC_Resim.ext veya TC_Diploma1.ext
+            ext = os.path.splitext(source_file_path)[1]
+            dest_filename = f"{tc_no}_{file_type}{ext}"
+            dest_path = os.path.join(local_base, dest_filename)
+            
+            # Dosyayı kopyala
+            import shutil
+            shutil.copy2(source_file_path, dest_path)
+            logger.info(f"Dosya lokal klasöre kaydedildi: {dest_path}")
+            
+            return dest_path
+            
+        except Exception as e:
+            logger.error(f"Lokal dosya kaydetme hatası: {e}")
+            return None
+
     def _upload_files_to_drive(self, tc_no, callback):
         """Seçili dosyaları Drive'a yükler, bitince callback çağırır."""
+        from database.google.utils import resolve_storage_target
+        
         # Dosya map: self._file_paths örn {'Resim': path, 'Diploma1': path}
         if not getattr(self, "_file_paths", None):
             callback()
@@ -748,7 +869,12 @@ class PersonelOverviewPanel(QWidget):
             if file_key not in upload_map:
                 continue
             folder_name, db_field = upload_map[file_key]
-            folder_id = self._drive_folders.get(folder_name, "")
+            
+            # resolve_storage_target kullanarak Drive klasör ID'sini ve offline_folder_name'i al
+            target = resolve_storage_target(self._all_sabit, folder_name)
+            folder_id = target.get("drive_folder_id", "")
+            offline_folder_name = target.get("offline_folder_name", "")
+            
             if not folder_id:
                 logger.warning(f"Drive klasör bulunamadı: {folder_name}")
                 continue
@@ -762,7 +888,8 @@ class PersonelOverviewPanel(QWidget):
                 from ui.pages.personel.personel_ekle import DriveUploadWorker
 
             self._pending_uploads += 1
-            worker = DriveUploadWorker(file_path, folder_id, custom_name, db_field)
+            # offline_folder_name parametresini geç!
+            worker = DriveUploadWorker(file_path, folder_id, custom_name, db_field, offline_folder_name)
             worker.finished.connect(self._on_upload_finished)
             worker.error.connect(self._on_upload_error)
             self._upload_workers.append(worker)

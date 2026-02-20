@@ -24,6 +24,7 @@ from core.date_utils import parse_date, to_db_date
 from database.repository_registry import RepositoryRegistry
 from ui.styles import DarkTheme
 from ui.styles.components import ComponentStyles, STYLES
+from ui.styles.icons import IconRenderer
 
 C = DarkTheme  # kısayol
 
@@ -135,7 +136,7 @@ class PersonelDelegate(QStyledItemDelegate):
     Özel hücre çizimi. Tüm renkler DarkTheme ve ComponentStyles'dan alınır.
     """
 
-    BTN_W, BTN_H, BTN_GAP = 36, 22, 4
+    BTN_W, BTN_H, BTN_GAP = 52, 26, 6
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -301,12 +302,16 @@ class PersonelDelegate(QStyledItemDelegate):
 
     def _draw_action_btns(self, p, rect, row):
         """Hover'da görünen "Detay" ve "İzin" butonları."""
-        x = rect.x() + 4
-        y = rect.center().y() - self.BTN_H // 2
+        x = 4  # Hücre içi lokal x
+        y = rect.height() // 2 - self.BTN_H // 2  # Hücre içi lokal y
         for i, lbl in enumerate(["Detay", "İzin"]):
             bx = x + i * (self.BTN_W + self.BTN_GAP)
-            br = QRect(bx, y, self.BTN_W, self.BTN_H)
-            self._btn_rects[(row, i)] = br
+            br_local = QRect(bx, y, self.BTN_W, self.BTN_H)
+            # Lokal koordinatlarda kaydet
+            self._btn_rects[(row, i)] = br_local
+            
+            # Çizim için global koordinata çevir
+            br_global = br_local.translated(rect.topLeft())
             
             bg = QColor(C.TEXT_PRIMARY)
             bg.setAlpha(15)
@@ -316,10 +321,10 @@ class PersonelDelegate(QStyledItemDelegate):
             pen.setAlpha(40)
             p.setPen(QPen(pen, 1))
             
-            p.drawRoundedRect(br, 4, 4)
-            p.setFont(QFont("", 8))
+            p.drawRoundedRect(br_global, 4, 4)
+            p.setFont(QFont("", 9))
             p.setPen(QColor(C.TEXT_SECONDARY))
-            p.drawText(br, Qt.AlignCenter, lbl)
+            p.drawText(br_global, Qt.AlignCenter, lbl)
 
     def get_action_at(self, row: int, pos: QPoint):
         for (r, i), rect in self._btn_rects.items():
@@ -378,15 +383,60 @@ class PersonelListesiPage(QWidget):
         lay.addWidget(title)
         lay.addWidget(self._sep())
 
-        # Durum filtre pill butonları — merkezi STYLES kullanır
+        # Durum filtre pill butonları — her durum için özel renk
+        filter_styles = {
+            "Aktif": {
+                "bg": ComponentStyles.get_status_color("Aktif"),
+                "text": ComponentStyles.get_status_text_color("Aktif")
+            },
+            "Pasif": {
+                "bg": ComponentStyles.get_status_color("Pasif"),
+                "text": ComponentStyles.get_status_text_color("Pasif")
+            },
+            "İzinli": {
+                "bg": ComponentStyles.get_status_color("İzinli"),
+                "text": ComponentStyles.get_status_text_color("İzinli")
+            },
+            "Tümü": {
+                "bg": (30, 180, 216, 35),  # Accent color
+                "text": C.ACCENT
+            }
+        }
+        
         for lbl in ("Aktif", "Pasif", "İzinli", "Tümü"):
             btn = QPushButton(lbl)
             btn.setCheckable(True)
             btn.setCursor(QCursor(Qt.PointingHandCursor))
             btn.setFixedHeight(28)
-            # "Tümü" için btn_filter_all, diğerleri için btn_filter
-            style_key = "btn_filter_all" if lbl == "Tümü" else "btn_filter"
-            btn.setStyleSheet(STYLES[style_key])
+            btn.setMinimumWidth(90)  # Sayıların sığması için sabit genişlik
+            
+            # Her buton için özel stil
+            style_info = filter_styles[lbl]
+            r, g, b, a = style_info["bg"]
+            text_color = style_info["text"]
+            
+            btn_style = f"""
+                QPushButton {{
+                    background: rgba({r}, {g}, {b}, {a});
+                    color: {text_color};
+                    border: 1px solid rgba({r}, {g}, {b}, {min(a + 80, 255)});
+                    border-radius: 4px;
+                    padding: 4px 12px;
+                    font-size: 11px;
+                    font-weight: 500;
+                }}
+                QPushButton:hover {{
+                    background: rgba({r}, {g}, {b}, {min(a + 30, 255)});
+                    border: 1px solid rgba({r}, {g}, {b}, {min(a + 100, 255)});
+                }}
+                QPushButton:checked {{
+                    background: rgba({r}, {g}, {b}, {min(a + 60, 255)});
+                    border: 1px solid {text_color};
+                    font-weight: 600;
+                }}
+            """
+            btn.setStyleSheet(btn_style)
+            
             if lbl == self._active_filter:
                 btn.setChecked(True)
             self._filter_btns[lbl] = btn
@@ -403,15 +453,19 @@ class PersonelListesiPage(QWidget):
 
         lay.addStretch()
 
-        self.btn_yenile = QPushButton("⟳")
+        self.btn_yenile = QPushButton()
         self.btn_yenile.setToolTip("Yenile")
         self.btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_yenile.setFixedSize(32, 28)
         self.btn_yenile.setStyleSheet(STYLES["refresh_btn"])
+        IconRenderer.set_button_icon(self.btn_yenile, "refresh", color=C.TEXT_SECONDARY, size=16)
         lay.addWidget(self.btn_yenile)
 
-        self.btn_yeni = QPushButton("+ Yeni Personel")
+        self.btn_yeni = QPushButton(" Yeni Personel")
         self.btn_yeni.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_yeni.setStyleSheet(STYLES["action_btn"])
+        IconRenderer.set_button_icon(self.btn_yeni, "user_add", color=C.BTN_PRIMARY_TEXT, size=16)
+        self.btn_yeni.setIconSize(QSize(16, 16))
         lay.addWidget(self.btn_yeni)
         return frame
 
@@ -446,9 +500,11 @@ class PersonelListesiPage(QWidget):
 
         lay.addStretch()
 
-        self.btn_excel = QPushButton("↓ Excel")
+        self.btn_excel = QPushButton(" Excel")
         self.btn_excel.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_excel.setStyleSheet(STYLES["excel_btn"])
+        IconRenderer.set_button_icon(self.btn_excel, "download", color=C.TEXT_SECONDARY, size=14)
+        self.btn_excel.setIconSize(QSize(14, 14))
         lay.addWidget(self.btn_excel)
         return frame
 
@@ -593,13 +649,10 @@ class PersonelListesiPage(QWidget):
     def _apply_filters(self):
         filtered = self._all_data
 
-        if self._active_filter == "İzinli":
-            izinli = self._get_izinli_personeller()
+        if self._active_filter != "Tümü":
+            # Durum filtresini uygula (sadece Durum sütununa bak)
             filtered = [r for r in filtered
-                        if str(r.get("KimlikNo", "")).strip() in izinli]
-        elif self._active_filter != "Tümü":
-            filtered = [r for r in filtered
-                        if str(r.get("Durum", "")).strip() == self._active_filter]
+                       if str(r.get("Durum", "")).strip() == self._active_filter]
 
         birim = self.cmb_gorev_yeri.currentText()
         if birim and birim != "Tüm Birimler":
@@ -649,14 +702,22 @@ class PersonelListesiPage(QWidget):
         )
 
     def _update_pill_counts(self):
-        aktif  = sum(1 for r in self._all_data if str(r.get("Durum", "")).strip() == "Aktif")
-        pasif  = sum(1 for r in self._all_data if str(r.get("Durum", "")).strip() == "Pasif")
-        izinli = sum(1 for r in self._all_data if str(r.get("Durum", "")).strip() == "İzinli")
+        """Buton sayaçlarını güncelle (Durum sütununa göre)"""
+        aktif = sum(1 for r in self._all_data 
+                   if str(r.get("Durum", "")).strip() == "Aktif")
+        pasif = sum(1 for r in self._all_data 
+                   if str(r.get("Durum", "")).strip() == "Pasif")
+        izinli = sum(1 for r in self._all_data
+                    if str(r.get("Durum", "")).strip() == "İzinli")
+        
         self.lbl_detail.setText(f"Aktif {aktif}  ·  Pasif {pasif}  ·  İzinli {izinli}")
-        counts = {"Aktif": aktif, "Pasif": pasif, "İzinli": izinli}
+        counts = {"Aktif": aktif, "Pasif": pasif, "İzinli": izinli, "Tümü": len(self._all_data)}
         for t, btn in self._filter_btns.items():
             c = counts.get(t, "")
-            btn.setText(f"{t}  {c}" if c != "" else t)
+            if c != "":
+                btn.setText(f"{t} ({c})")
+            else:
+                btn.setText(t)
 
     # ─── Mouse ───────────────────────────────────────────
 
@@ -673,12 +734,17 @@ class PersonelListesiPage(QWidget):
             src      = self._proxy.mapToSource(idx)
             row_data = self._model.get_row(src.row())
             if row_data and COLUMNS[idx.column()][0] == "_actions":
-                action = self._delegate.get_action_at(src.row(), event.pos())
+                # Hücre içindeki lokal pozisyonu hesapla
+                cell_rect = self.table.visualRect(idx)
+                local_pos = event.pos() - cell_rect.topLeft()
+                action = self._delegate.get_action_at(src.row(), local_pos)
                 if action == "detay":
                     self.detay_requested.emit(row_data)
+                    event.accept()
                     return
                 elif action == "izin":
                     self.izin_requested.emit(row_data)
+                    event.accept()
                     return
         QTableView.mousePressEvent(self.table, event)
 

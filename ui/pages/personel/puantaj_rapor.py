@@ -150,15 +150,6 @@ class PuantajRaporPage(QWidget):
         IconRenderer.set_button_icon(self.btn_getir, "clipboard_list", color=DarkTheme.TEXT_PRIMARY, size=14)
         fp.addWidget(self.btn_getir)
 
-        self._add_sep(fp)
-
-        self.btn_kapat = QPushButton("Kapat")
-        self.btn_kapat.setToolTip("Kapat")
-        self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_kapat.setStyleSheet(S["close_btn"])
-        IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
-        fp.addWidget(self.btn_kapat)
-
         main.addWidget(filter_frame)
 
         # ── BİLGİ LABEL ──
@@ -218,12 +209,6 @@ class PuantajRaporPage(QWidget):
         """)
         bf.addWidget(self.progress)
 
-        btn_kapat2 = QPushButton("Kapat")
-        btn_kapat2.setStyleSheet(S["close_btn"])
-        btn_kapat2.setCursor(QCursor(Qt.PointingHandCursor))
-        btn_kapat2.clicked.connect(self.btn_kapat.click)
-        IconRenderer.set_button_icon(btn_kapat2, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
-        bf.addWidget(btn_kapat2)
 
         self.btn_excel = QPushButton("Excel Indir")
         self.btn_excel.setStyleSheet(S["excel_btn"])

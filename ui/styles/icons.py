@@ -503,7 +503,7 @@ MENU_ICON_MAP: dict[str, str] = {
     "Personel Listesi":  "users",
     "Personel Ekle":     "user_add",
     "İzin Takip":        "calendar_check",
-    "FHSZ Yönetim":      "bar_chart",
+    "İzin Takip ve FHSZ Yönetim":      "bar_chart",
     "Puantaj Rapor":     "clipboard_list",
     "Sağlık Takip":      "activity",
     "Personel Verileri": "file_chart",

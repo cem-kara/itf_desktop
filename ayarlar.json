@@ -10,19 +10,11 @@
         "implemented": true
       },
       {
-        "baslik": "İzin Takip",
-        "implemented": true
-      },
-      {
         "baslik": "Sağlık Takip",
         "implemented": true
       },
       {
-        "baslik": "FHSZ Yönetim",
-        "implemented": true
-      },
-      {
-        "baslik": "Puantaj Rapor",
+        "baslik": "İzin Takip ve FHSZ Yönetim",
         "implemented": true
       }
     ],

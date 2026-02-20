@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QDateEdit, QSpinBox, QFrame, QGridLayout,
-    QAbstractSpinBox, QMessageBox
+    QAbstractSpinBox, QMessageBox, QDialog
 )
 from PySide6.QtGui import QCursor
 
@@ -21,7 +21,7 @@ from ui.styles.components import STYLES as S
 def _parse_date(val):
     return parse_any_date(val)
 
-class HizliIzinGirisDialog(QWidget):
+class HizliIzinGirisDialog(QDialog):
     """
     Personel Merkez ekranında sol panelde hızlı izin girişi widget'ı.
     """

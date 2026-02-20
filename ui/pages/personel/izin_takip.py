@@ -7,13 +7,14 @@
 import uuid
 from datetime import datetime, date, timedelta
 from PySide6.QtCore import (
-    Qt, QDate, QSortFilterProxyModel, QModelIndex, QAbstractTableModel
+    Qt, QDate, QSortFilterProxyModel, QModelIndex, QAbstractTableModel,
+    QPropertyAnimation, QEasingCurve
 )
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QDateEdit, QSpinBox, QFrame, QGroupBox,
-    QGridLayout, QTableView, QHeaderView,
-    QAbstractSpinBox, QMessageBox, QMenu
+    QGridLayout, QTableView, QHeaderView, QScrollArea,
+    QAbstractSpinBox, QMessageBox, QMenu, QSizePolicy
 )
 from PySide6.QtGui import QColor, QCursor
 
@@ -139,6 +140,11 @@ class IzinTakipPage(QWidget):
         self._tatiller = []
         self._izin_tipleri = []           # [tip_adi, ...]
         self._izin_max_gun = {}           # {"Yıllık İzin": 20, ...}
+        self._drawer = None
+        self._drawer_width = 900
+        self._drawer_ratio = 0.55
+        self._drawer_min_width = 720
+        self._drawer_max_width = 980
 
         self._setup_ui()
         self._connect_signals()
@@ -196,6 +202,13 @@ class IzinTakipPage(QWidget):
 
         fp.addStretch()
 
+        self.btn_yeni = QPushButton("Yeni Izin")
+        self.btn_yeni.setStyleSheet(S["save_btn"])
+        self.btn_yeni.setToolTip("Yeni İzin")
+        self.btn_yeni.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_yeni, "plus", color=DarkTheme.TEXT_PRIMARY, size=14)
+        fp.addWidget(self.btn_yeni)
+
         self.btn_yenile = QPushButton("Yenile")
         self.btn_yenile.setStyleSheet(S["refresh_btn"])
         self.btn_yenile.setToolTip("Yenile")
@@ -203,156 +216,13 @@ class IzinTakipPage(QWidget):
         IconRenderer.set_button_icon(self.btn_yenile, "sync", color=DarkTheme.TEXT_PRIMARY, size=14)
         fp.addWidget(self.btn_yenile)
 
-        self._add_sep(fp)
-
-        self.btn_kapat = QPushButton("Kapat")
-        self.btn_kapat.setToolTip("Kapat")
-        self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_kapat.setStyleSheet(S["close_btn"])
-        IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
-        fp.addWidget(self.btn_kapat)
-
         main.addWidget(filter_frame)
 
-        # ── SPLITTER ──
+        # ── CONTENT ──
         content = QHBoxLayout()
         content.setSpacing(12)
 
-        # ── SOL PANEL ──
-        left = QWidget()
-        left.setStyleSheet("background: transparent;")
-        left_l = QVBoxLayout(left)
-        left_l.setContentsMargins(0, 0, 0, 0)
-        left_l.setSpacing(12)
-
-        # ─ Personel Seçimi ─
-        grp_personel = QGroupBox("Personel Secimi")
-        grp_personel.setStyleSheet(S["group"])
-        pg = QGridLayout(grp_personel)
-        pg.setSpacing(8)
-        pg.setContentsMargins(12, 12, 12, 12)
-
-        lbl_sinif = QLabel("Hizmet Sınıfı")
-        lbl_sinif.setStyleSheet(S["label"])
-        pg.addWidget(lbl_sinif, 0, 0)
-        self.cmb_hizmet_sinifi = QComboBox()
-        self.cmb_hizmet_sinifi.setStyleSheet(S["combo"])
-        pg.addWidget(self.cmb_hizmet_sinifi, 0, 1)
-
-        lbl_p = QLabel("Personel")
-        lbl_p.setStyleSheet(S["label"])
-        pg.addWidget(lbl_p, 1, 0)
-        self.cmb_personel = QComboBox()
-        self.cmb_personel.setEditable(True)
-        self.cmb_personel.setStyleSheet(S["combo"])
-        self.cmb_personel.lineEdit().setPlaceholderText("İsim yazarak ara...")
-        self.cmb_personel.setInsertPolicy(QComboBox.NoInsert)
-        pg.addWidget(self.cmb_personel, 1, 1)
-
-        self.lbl_personel_info = QLabel("")
-        self.lbl_personel_info.setStyleSheet(f"color: {DarkTheme.TEXT_SECONDARY}; font-size: 11px; background: transparent;")
-        pg.addWidget(self.lbl_personel_info, 2, 0, 1, 2)
-
-        left_l.addWidget(grp_personel)
-
-        # ─ İzin Giriş Formu ─
-        grp_giris = QGroupBox("Yeni Izin Girisi")
-        grp_giris.setStyleSheet(S["group"])
-        fg = QGridLayout(grp_giris)
-        fg.setSpacing(10)
-        fg.setContentsMargins(12, 12, 12, 12)
-
-        lbl_tip = QLabel("İzin Tipi")
-        lbl_tip.setStyleSheet(S["label"])
-        fg.addWidget(lbl_tip, 0, 0)
-        self.cmb_izin_tipi = QComboBox()
-        self.cmb_izin_tipi.setStyleSheet(S["combo"])
-        fg.addWidget(self.cmb_izin_tipi, 0, 1)
-
-        # Max gün uyarı etiketi
-        self.lbl_max_gun = QLabel("")
-        self.lbl_max_gun.setStyleSheet(S["max_label"])
-        fg.addWidget(self.lbl_max_gun, 1, 0, 1, 2)
-
-        lbl_bas = QLabel("Başlama / Süre")
-        lbl_bas.setStyleSheet(S["label"])
-        fg.addWidget(lbl_bas, 2, 0)
-
-        h_tarih = QHBoxLayout()
-        h_tarih.setSpacing(8)
-        self.dt_baslama = QDateEdit(QDate.currentDate())
-        self.dt_baslama.setCalendarPopup(True)
-        self.dt_baslama.setDisplayFormat("dd.MM.yyyy")
-        self.dt_baslama.setStyleSheet(S["date"])
-        self._setup_calendar(self.dt_baslama)
-        h_tarih.addWidget(self.dt_baslama, 2)
-
-        lbl_gun = QLabel("Gün:")
-        lbl_gun.setStyleSheet(S["label"])
-        h_tarih.addWidget(lbl_gun)
-        self.spn_gun = QSpinBox()
-        self.spn_gun.setRange(1, 365)
-        self.spn_gun.setValue(1)
-        self.spn_gun.setStyleSheet(S["spin"])
-        self.spn_gun.setFixedWidth(70)
-        h_tarih.addWidget(self.spn_gun)
-        fg.addLayout(h_tarih, 2, 1)
-
-        lbl_bit = QLabel("Bitiş (İşe Dönüş)")
-        lbl_bit.setStyleSheet(S["label"])
-        fg.addWidget(lbl_bit, 3, 0)
-        self.dt_bitis = QDateEdit()
-        self.dt_bitis.setReadOnly(True)
-        self.dt_bitis.setDisplayFormat("dd.MM.yyyy")
-        self.dt_bitis.setButtonSymbols(QAbstractSpinBox.NoButtons)
-        self.dt_bitis.setStyleSheet(S["date"])
-        fg.addWidget(self.dt_bitis, 3, 1)
-
-        self.btn_kaydet = QPushButton("IZIN KAYDET")
-        self.btn_kaydet.setStyleSheet(S["save_btn"])
-        self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_kaydet.setEnabled(False)
-        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
-        fg.addWidget(self.btn_kaydet, 4, 0, 1, 2)
-
-        left_l.addWidget(grp_giris)
-
-        # ─ Bakiye Panosu ─
-        grp_bakiye = QGroupBox("Izin Bakiyesi")
-        grp_bakiye.setStyleSheet(S["group"])
-        bg = QGridLayout(grp_bakiye)
-        bg.setSpacing(4)
-        bg.setContentsMargins(12, 12, 12, 12)
-
-        lbl_y = QLabel("YILLIK İZİN")
-        lbl_y.setStyleSheet(S["section_title"])
-        bg.addWidget(lbl_y, 0, 0, 1, 2, Qt.AlignCenter)
-
-        self.lbl_y_devir = self._add_stat(bg, 1, "Devir", "stat_value")
-        self.lbl_y_hak = self._add_stat(bg, 2, "Hakediş", "stat_value")
-        self.lbl_y_kul = self._add_stat(bg, 3, "Kullanılan", "stat_red")
-        self.lbl_y_kal = self._add_stat(bg, 4, "KALAN", "stat_green")
-
-        sep3 = QFrame(); sep3.setFixedHeight(1); sep3.setStyleSheet(S["separator"])
-        bg.addWidget(sep3, 5, 0, 1, 2)
-
-        lbl_s = QLabel("ŞUA İZNİ")
-        lbl_s.setStyleSheet(S["section_title"])
-        bg.addWidget(lbl_s, 6, 0, 1, 2, Qt.AlignCenter)
-
-        self.lbl_s_hak = self._add_stat(bg, 7, "Hakediş", "stat_value")
-        self.lbl_s_kul = self._add_stat(bg, 8, "Kullanılan", "stat_red")
-        self.lbl_s_kal = self._add_stat(bg, 9, "KALAN", "stat_green")
-
-        sep4 = QFrame(); sep4.setFixedHeight(1); sep4.setStyleSheet(S["separator"])
-        bg.addWidget(sep4, 10, 0, 1, 2)
-
-        self.lbl_diger = self._add_stat(bg, 11, "Rapor / Mazeret", "stat_value")
-        bg.setRowStretch(12, 1)
-        left_l.addWidget(grp_bakiye)
-        left_l.addStretch()
-
-        # ── SAĞ PANEL: Tablo ──
+        # ── TABLO PANELİ ──
         right = QWidget()
         right.setStyleSheet("background: transparent;")
         right_l = QVBoxLayout(right)
@@ -400,15 +270,267 @@ class IzinTakipPage(QWidget):
         tl.addLayout(foot)
 
         right_l.addWidget(grp_tablo, 1)
-
-        # Splitter oranları
-        left.setFixedWidth(430)
-        content.addWidget(left)
         content.addWidget(right, 1)
+
+        # ── DRAWER: İzin Giriş Paneli ──
+        self._drawer = QFrame()
+        self._drawer.setStyleSheet(
+            f"background-color: {DarkTheme.BG_SECONDARY}; border-left: 1px solid {DarkTheme.BORDER_PRIMARY};"
+        )
+        self._drawer.setMaximumWidth(0)
+        self._drawer.setMinimumWidth(0)
+
+        drawer_lay = QVBoxLayout(self._drawer)
+        drawer_lay.setContentsMargins(0, 0, 0, 0)
+        drawer_lay.setSpacing(0)
+
+        drawer_header = QFrame()
+        drawer_header.setStyleSheet(
+            f"background-color: {DarkTheme.BG_PRIMARY}; border-bottom: 1px solid {DarkTheme.BORDER_PRIMARY};"
+        )
+        header_lay = QHBoxLayout(drawer_header)
+        header_lay.setContentsMargins(12, 12, 12, 12)
+
+        lbl_drawer = QLabel("Izin Girisi")
+        lbl_drawer.setStyleSheet(f"font-size: 14px; font-weight: 600; color: {DarkTheme.TEXT_PRIMARY};")
+        header_lay.addWidget(lbl_drawer)
+        header_lay.addStretch()
+
+        btn_drawer_close = QPushButton()
+        btn_drawer_close.setFixedSize(32, 32)
+        btn_drawer_close.setStyleSheet(S["close_btn"])
+        btn_drawer_close.setCursor(QCursor(Qt.PointingHandCursor))
+        IconRenderer.set_button_icon(btn_drawer_close, "x", color=DarkTheme.TEXT_PRIMARY, size=16)
+        btn_drawer_close.clicked.connect(self._close_drawer)
+        header_lay.addWidget(btn_drawer_close)
+        drawer_lay.addWidget(drawer_header)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setStyleSheet(S.get("scroll", ""))
+
+        left = QWidget()
+        left.setStyleSheet("background: transparent;")
+        left_l = QVBoxLayout(left)
+        left_l.setContentsMargins(12, 12, 12, 12)
+        left_l.setSpacing(12)
+
+        # ─ Personel Seçimi ─
+        grp_personel = QGroupBox("Personel Secimi")
+        grp_personel.setStyleSheet(S["group"])
+        grp_personel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        pg = QGridLayout(grp_personel)
+        pg.setSpacing(8)
+        pg.setContentsMargins(12, 12, 12, 12)
+        pg.setColumnStretch(0, 0)
+        pg.setColumnStretch(1, 1)
+
+        lbl_sinif = QLabel("Hizmet Sınıfı")
+        lbl_sinif.setStyleSheet(S["label"])
+        lbl_sinif.setFixedWidth(120)
+        pg.addWidget(lbl_sinif, 0, 0)
+        self.cmb_hizmet_sinifi = QComboBox()
+        self.cmb_hizmet_sinifi.setStyleSheet(S["combo"])
+        self.cmb_hizmet_sinifi.setMinimumWidth(200)
+        self.cmb_hizmet_sinifi.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        pg.addWidget(self.cmb_hizmet_sinifi, 0, 1)
+
+        lbl_p = QLabel("Personel")
+        lbl_p.setStyleSheet(S["label"])
+        lbl_p.setFixedWidth(120)
+        pg.addWidget(lbl_p, 1, 0)
+        self.cmb_personel = QComboBox()
+        self.cmb_personel.setEditable(True)
+        self.cmb_personel.setStyleSheet(S["combo"])
+        self.cmb_personel.lineEdit().setPlaceholderText("İsim yazarak ara...")
+        self.cmb_personel.setInsertPolicy(QComboBox.NoInsert)
+        self.cmb_personel.setMinimumWidth(200)
+        self.cmb_personel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        pg.addWidget(self.cmb_personel, 1, 1)
+
+        self.lbl_personel_info = QLabel("")
+        self.lbl_personel_info.setStyleSheet(
+            f"color: {DarkTheme.TEXT_SECONDARY}; font-size: 11px; background: transparent;"
+        )
+        pg.addWidget(self.lbl_personel_info, 2, 0, 1, 2)
+        left_l.addWidget(grp_personel)
+
+        # ─ İzin Giriş Formu ─
+        grp_giris = QGroupBox("Yeni Izin Girisi")
+        grp_giris.setStyleSheet(S["group"])
+        grp_giris.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        fg = QGridLayout(grp_giris)
+        fg.setSpacing(10)
+        fg.setContentsMargins(12, 12, 12, 12)
+        fg.setColumnStretch(0, 0)
+        fg.setColumnStretch(1, 1)
+
+        lbl_tip = QLabel("İzin Tipi")
+        lbl_tip.setStyleSheet(S["label"])
+        lbl_tip.setFixedWidth(120)
+        fg.addWidget(lbl_tip, 0, 0)
+        self.cmb_izin_tipi = QComboBox()
+        self.cmb_izin_tipi.setStyleSheet(S["combo"])
+        self.cmb_izin_tipi.setMinimumWidth(200)
+        self.cmb_izin_tipi.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        fg.addWidget(self.cmb_izin_tipi, 0, 1)
+
+        # Max gün uyarı etiketi
+        self.lbl_max_gun = QLabel("")
+        self.lbl_max_gun.setStyleSheet(S["max_label"])
+        fg.addWidget(self.lbl_max_gun, 1, 0, 1, 2)
+
+        lbl_bas = QLabel("Başlama / Süre")
+        lbl_bas.setStyleSheet(S["label"])
+        lbl_bas.setFixedWidth(120)
+        fg.addWidget(lbl_bas, 2, 0)
+
+        h_tarih = QHBoxLayout()
+        h_tarih.setSpacing(8)
+        self.dt_baslama = QDateEdit(QDate.currentDate())
+        self.dt_baslama.setCalendarPopup(True)
+        self.dt_baslama.setDisplayFormat("dd.MM.yyyy")
+        self.dt_baslama.setStyleSheet(S["date"])
+        self.dt_baslama.setMinimumWidth(160)
+        self.dt_baslama.setMaximumWidth(240)
+        self.dt_baslama.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self._setup_calendar(self.dt_baslama)
+        h_tarih.addWidget(self.dt_baslama, 2)
+
+        lbl_gun = QLabel("Gün:")
+        lbl_gun.setStyleSheet(S["label"])
+        h_tarih.addWidget(lbl_gun)
+        self.spn_gun = QSpinBox()
+        self.spn_gun.setRange(1, 365)
+        self.spn_gun.setValue(1)
+        self.spn_gun.setStyleSheet(S["spin"])
+        self.spn_gun.setFixedWidth(70)
+        h_tarih.addWidget(self.spn_gun)
+        h_tarih.addStretch()
+        fg.addLayout(h_tarih, 2, 1)
+
+        lbl_bit = QLabel("Bitiş (İşe Dönüş)")
+        lbl_bit.setStyleSheet(S["label"])
+        lbl_bit.setFixedWidth(120)
+        fg.addWidget(lbl_bit, 3, 0)
+        self.dt_bitis = QDateEdit()
+        self.dt_bitis.setReadOnly(True)
+        self.dt_bitis.setDisplayFormat("dd.MM.yyyy")
+        self.dt_bitis.setButtonSymbols(QAbstractSpinBox.NoButtons)
+        self.dt_bitis.setStyleSheet(S["date"])
+        self.dt_bitis.setMinimumWidth(160)
+        self.dt_bitis.setMaximumWidth(240)
+        self.dt_bitis.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        fg.addWidget(self.dt_bitis, 3, 1)
+
+        self.btn_kaydet = QPushButton("IZIN KAYDET")
+        self.btn_kaydet.setStyleSheet(S["save_btn"])
+        self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_kaydet.setEnabled(False)
+        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
+        fg.addWidget(self.btn_kaydet, 4, 0, 1, 2)
+        left_l.addWidget(grp_giris)
+
+        # ─ Bakiye Panosu ─
+        grp_bakiye = QGroupBox("Izin Bakiyesi")
+        grp_bakiye.setStyleSheet(S["group"])
+        grp_bakiye.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        bg = QGridLayout(grp_bakiye)
+        bg.setSpacing(4)
+        bg.setContentsMargins(12, 12, 12, 12)
+        bg.setColumnStretch(0, 0)
+        bg.setColumnStretch(1, 1)
+
+        lbl_y = QLabel("YILLIK İZİN")
+        lbl_y.setStyleSheet(S["section_title"])
+        bg.addWidget(lbl_y, 0, 0, 1, 2, Qt.AlignCenter)
+
+        self.lbl_y_devir = self._add_stat(bg, 1, "Devir", "stat_value")
+        self.lbl_y_hak = self._add_stat(bg, 2, "Hakediş", "stat_value")
+        self.lbl_y_kul = self._add_stat(bg, 3, "Kullanılan", "stat_red")
+        self.lbl_y_kal = self._add_stat(bg, 4, "KALAN", "stat_green")
+
+        sep3 = QFrame(); sep3.setFixedHeight(1); sep3.setStyleSheet(S["separator"])
+        bg.addWidget(sep3, 5, 0, 1, 2)
+
+        lbl_s = QLabel("ŞUA İZNİ")
+        lbl_s.setStyleSheet(S["section_title"])
+        bg.addWidget(lbl_s, 6, 0, 1, 2, Qt.AlignCenter)
+
+        self.lbl_s_hak = self._add_stat(bg, 7, "Hakediş", "stat_value")
+        self.lbl_s_kul = self._add_stat(bg, 8, "Kullanılan", "stat_red")
+        self.lbl_s_kal = self._add_stat(bg, 9, "KALAN", "stat_green")
+
+        sep4 = QFrame(); sep4.setFixedHeight(1); sep4.setStyleSheet(S["separator"])
+        bg.addWidget(sep4, 10, 0, 1, 2)
+
+        self.lbl_diger = self._add_stat(bg, 11, "Rapor / Mazeret", "stat_value")
+        bg.setRowStretch(12, 1)
+        left_l.addWidget(grp_bakiye)
+        left_l.addStretch()
+
+        scroll.setWidget(left)
+        drawer_lay.addWidget(scroll, 1)
+
+        content.addWidget(self._drawer)
         main.addLayout(content, 1)
 
         # İlk bitiş hesapla
         self._calculate_bitis()
+
+    def _calc_drawer_width(self) -> int:
+        base = int(self.width() * self._drawer_ratio)
+        return max(self._drawer_min_width, min(self._drawer_max_width, base))
+
+    def _update_drawer_width(self, animated=False):
+        self._drawer_width = self._calc_drawer_width()
+        if not self._drawer:
+            return
+        if self._drawer.maximumWidth() <= 0:
+            return
+        if animated:
+            anim = QPropertyAnimation(self._drawer, b"maximumWidth", self)
+            anim.setDuration(180)
+            anim.setStartValue(self._drawer.maximumWidth())
+            anim.setEndValue(self._drawer_width)
+            anim.setEasingCurve(QEasingCurve.OutCubic)
+            anim.start(QPropertyAnimation.DeleteWhenStopped)
+        else:
+            self._drawer.setMaximumWidth(self._drawer_width)
+
+    def _open_drawer(self):
+        if not self._drawer:
+            return
+        target_width = self._calc_drawer_width()
+        if self._drawer.maximumWidth() == target_width:
+            return
+        anim = QPropertyAnimation(self._drawer, b"maximumWidth", self)
+        anim.setDuration(240)
+        anim.setStartValue(0)
+        anim.setEndValue(target_width)
+        anim.setEasingCurve(QEasingCurve.OutCubic)
+        anim.start(QPropertyAnimation.DeleteWhenStopped)
+
+    def _close_drawer(self):
+        if not self._drawer or self._drawer.maximumWidth() == 0:
+            return
+        anim = QPropertyAnimation(self._drawer, b"maximumWidth", self)
+        anim.setDuration(200)
+        anim.setStartValue(self._drawer.maximumWidth())
+        anim.setEndValue(0)
+        anim.setEasingCurve(QEasingCurve.InCubic)
+        anim.start(QPropertyAnimation.DeleteWhenStopped)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._update_drawer_width(animated=False)
+
+    def _open_new_form(self):
+        self.spn_gun.setValue(1)
+        self.dt_baslama.setDate(QDate.currentDate())
+        self._calculate_bitis()
+        self._open_drawer()
 
     # ── Yardımcı UI ──
 
@@ -443,6 +565,7 @@ class IzinTakipPage(QWidget):
         self.dt_baslama.dateChanged.connect(self._calculate_bitis)
         self.spn_gun.valueChanged.connect(self._calculate_bitis)
         self.btn_kaydet.clicked.connect(self._on_save)
+        self.btn_yeni.clicked.connect(self._open_new_form)
         self.btn_yenile.clicked.connect(self.load_data)
         self.cmb_ay.currentIndexChanged.connect(self._apply_filters)
         self.cmb_yil.currentIndexChanged.connect(self._apply_filters)

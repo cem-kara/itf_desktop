@@ -32,10 +32,12 @@ class MainWindow(QMainWindow):
         self._sync_worker = None
         self._bildirim_worker = None
         self._db = SQLiteManager()
+        self._sabitler_cache = None  # Sabitler tablosu cache (performans için)
         self._build_ui()
         self._build_status_bar()
         self._setup_sync()
         self._setup_bildirim()
+        self._load_sabitler_cache()  # Uygulama başladığında bir kere yükle
 
     def _build_ui(self):
         central = QWidget()
@@ -80,9 +82,11 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(content, 1)
         root_layout.addWidget(body, 1)
 
-        # Sayfa başlığı (geriye dönük uyumluluk için — parent verilerek gizli tutulur)
-        self.page_title = QLabel("", self)
-        self.page_title.setVisible(False)
+        # Dummy page_title (geriye dönük uyumluluk - artık kullanılmıyor)
+        class DummyLabel:
+            def setText(self, *args): pass
+            def setVisible(self, *args): pass
+        self.page_title = DummyLabel()
 
         # Hoş geldin
         from ui.pages.placeholder import WelcomePage
@@ -173,6 +177,7 @@ class MainWindow(QMainWindow):
             page.table.doubleClicked.connect(
                 lambda idx: self._open_personel_detay(page, idx)
             )
+            page.detay_requested.connect(self._open_personel_merkez)
             #page.btn_kapat.clicked.connect(lambda: self._close_page("Personel Listesi"))
             page.btn_yeni.clicked.connect(lambda: self._on_menu_clicked("Personel", "Personel Ekle"))
             page.izin_requested.connect(lambda data: self.open_izin_giris(data))
@@ -187,17 +192,17 @@ class MainWindow(QMainWindow):
             )
             return page
 
-        if baslik in ("İzin Takip", "FHSZ Yönetim", "Puantaj Rapor"):
+        if baslik in ("İzin Takip ve FHSZ Yönetim"):
             # Üç sayfayı birleştirilmiş merkez olarak göster
             from ui.pages.personel.izin_fhsz_puantaj_merkez import IzinFHSZPuantajMerkezPage
             page = IzinFHSZPuantajMerkezPage(db=self._db)
-            page.kapat_istegi.connect(lambda: self._close_page("İzin Takip"))
+            page.kapat_istegi.connect(lambda: self._close_page("İzin Takip ve FHSZ Yönetim"))
             return page
 
-        if baslik == "Saglik Takip":
+        if baslik == "Sağlık Takip":
             from ui.pages.personel.saglik_takip import SaglikTakipPage
             page = SaglikTakipPage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Saglik Takip"))
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Sağlık Takip"))
             page.load_data()
             return page
 
@@ -315,7 +320,8 @@ class MainWindow(QMainWindow):
         from ui.pages.personel.personel_merkez import PersonelMerkezPage
         page = PersonelMerkezPage(
             db=self._db,
-            personel_id=tc
+            personel_id=tc,
+            sabitler_cache=self._sabitler_cache
         )
         
         # Kapatma sinyali listeye dönüşü tetikler
@@ -339,6 +345,36 @@ class MainWindow(QMainWindow):
             old = self._pages.pop(detay_key)
             self.stack.removeWidget(old)
             old.deleteLater()
+
+    def _open_personel_merkez(self, row_data):
+        """Personel detay butonuna tıklama → Personel Merkez (360) sayfası aç."""
+        if not row_data:
+            return
+
+        tc = row_data.get("KimlikNo", "")
+        ad = row_data.get("AdSoyad", "")
+        merkez_key = f"__merkez_{tc}"
+
+        # Eski sayfa varsa kaldır
+        if merkez_key in self._pages:
+            old = self._pages.pop(merkez_key)
+            self.stack.removeWidget(old)
+            old.deleteLater()
+
+        from ui.pages.personel.personel_merkez import PersonelMerkezPage
+        page = PersonelMerkezPage(
+            db=self._db,
+            personel_id=tc,
+            sabitler_cache=self._sabitler_cache
+        )
+        
+        # Kapatma sinyali listeye dönüşü tetikler
+        page.kapat_istegi.connect(lambda: self._back_to_personel_listesi(merkez_key))
+        
+        self._pages[merkez_key] = page
+        self.stack.addWidget(page)
+        self.stack.setCurrentWidget(page)
+        self.page_title.setText(f"Personel Kartı — {ad}")
 
     def open_isten_ayrilik(self, personel_data, from_key=None):
         """İşten ayrılık sayfasını aç."""
@@ -439,6 +475,17 @@ class MainWindow(QMainWindow):
     def _setup_bildirim(self):
         """Uygulama açılışından 5 sn sonra ilk bildirim kontrolünü başlatır."""
         QTimer.singleShot(5000, self._tetikle_bildirim)
+
+    def _load_sabitler_cache(self):
+        """Sabitler tablosunu cache'e yükler (performans için bir kere)."""
+        try:
+            from database.repository_registry import RepositoryRegistry
+            registry = RepositoryRegistry(self._db)
+            self._sabitler_cache = registry.get("Sabitler").get_all()
+            logger.info(f"Sabitler cache yüklendi: {len(self._sabitler_cache)} kayıt")
+        except Exception as e:
+            logger.error(f"Sabitler cache yükleme hatası: {e}")
+            self._sabitler_cache = []
 
     def _tetikle_bildirim(self):
         """BildirimWorker'ı başlatır; zaten çalışıyorsa atlar."""

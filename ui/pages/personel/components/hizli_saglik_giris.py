@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QDateEdit, QLineEdit, QFrame, QGridLayout,
-    QMessageBox, QGroupBox, QScrollArea, QTextEdit
+    QMessageBox, QGroupBox, QScrollArea, QTextEdit, QDialog
 )
 from PySide6.QtGui import QCursor
 
@@ -19,7 +19,7 @@ from ui.styles.components import STYLES as S
 
 STATUS_OPTIONS = ["", "Uygun", "Şartlı Uygun", "Uygun Değil"]
 
-class HizliSaglikGirisDialog(QWidget):
+class HizliSaglikGirisDialog(QDialog):
     """
     Personel Merkez ekranında sol panelde hızlı sağlık muayene girişi widget'ı.
     ui/pages/personel/saglik_takip.py referans alınarak tasarlanmıştır.
@@ -47,13 +47,12 @@ class HizliSaglikGirisDialog(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
-        scroll.setMaximumWidth(320)
         scroll.setStyleSheet(S.get("scroll", ""))
         
         form_content = QWidget()
         form_content.setStyleSheet("background: transparent;")
         form_lay = QVBoxLayout(form_content)
-        form_lay.setContentsMargins(0, 0, 8, 0)
+        form_lay.setContentsMargins(0, 0, 12, 0)
         form_lay.setSpacing(10)
 
         # Muayene Durumları
@@ -71,17 +70,14 @@ class HizliSaglikGirisDialog(QWidget):
         # Ek Bilgiler
         grp_ek = QGroupBox("Ek Bilgiler")
         grp_ek.setStyleSheet(S["group"])
-        grp_ek.setMaximumWidth(300)
-        g3 = QGridLayout(grp_ek)
+        g3 = QVBoxLayout(grp_ek)
         g3.setContentsMargins(12, 12, 12, 12)
-        g3.setHorizontalSpacing(10)
-        g3.setVerticalSpacing(8)
+        g3.setSpacing(8)
         
-        g3.addWidget(QLabel("Not"), 0, 0)
+        g3.addWidget(QLabel("Not", styleSheet=S.get("label", "")))
         self.inp_not = QLineEdit()
-        self.inp_not.setMaximumWidth(280)
         self.inp_not.setStyleSheet(S["input"])
-        g3.addWidget(self.inp_not, 0, 1)
+        g3.addWidget(self.inp_not)
         form_lay.addWidget(grp_ek)
         
         scroll.setWidget(form_content)
@@ -108,25 +104,23 @@ class HizliSaglikGirisDialog(QWidget):
         # Grid layout for inputs
         grid = QGridLayout()
         grid.setContentsMargins(0, 0, 0, 0)
-        grid.setHorizontalSpacing(20)
-        grid.setVerticalSpacing(4)
+        grid.setHorizontalSpacing(12)
+        grid.setVerticalSpacing(6)
         
         # Row 0: Labels
         lbl_tarih = QLabel("Tarih")
         lbl_tarih.setStyleSheet(S.get("label", ""))
-        lbl_tarih.setMaximumWidth(100)
         grid.addWidget(lbl_tarih, 0, 0)
         
         lbl_durum = QLabel("Durum")
         lbl_durum.setStyleSheet(S.get("label", ""))
-        lbl_durum.setMaximumWidth(150)
         grid.addWidget(lbl_durum, 0, 1)
         
         # Row 1: Inputs
         de = QDateEdit(QDate.currentDate())
         de.setDisplayFormat("dd.MM.yyyy")
         de.setCalendarPopup(True)
-        de.setMaximumWidth(100)
+        de.setMinimumWidth(140)
         de.setMinimumHeight(35)
         de.setStyleSheet(S["date"])
         ThemeManager.setup_calendar_popup(de)
@@ -134,25 +128,15 @@ class HizliSaglikGirisDialog(QWidget):
         
         cmb = QComboBox()
         cmb.addItems(STATUS_OPTIONS)
-        cmb.setMaximumWidth(150)
+        cmb.setMinimumWidth(180)
         cmb.setMinimumHeight(35)
         cmb.setStyleSheet(S["combo"])
         grid.addWidget(cmb, 1, 1)
         
+        grid.setColumnStretch(0, 1)
+        grid.setColumnStretch(1, 1)
+        
         layout.addLayout(grid)
-        
-        # Açıklama
-        lbl_aciklama = QLabel("Açıklama")
-        lbl_aciklama.setStyleSheet(S.get("label", ""))
-        layout.addWidget(lbl_aciklama)
-        
-        inp = QTextEdit()
-        inp.setPlaceholderText("Gerekiyorsa açıklama...")
-        inp.setMinimumHeight(35)
-        inp.setMaximumHeight(60)
-        inp.setStyleSheet(S["input"])
-        inp.setEnabled(False)
-        layout.addWidget(inp)
         
         # Separator
         sep = QFrame()
@@ -161,25 +145,10 @@ class HizliSaglikGirisDialog(QWidget):
         sep.setStyleSheet(S.get("separator", ""))
         layout.addWidget(sep)
         
-        self._exam_widgets[key] = {"tarih": de, "durum": cmb, "aciklama": inp}
+        self._exam_widgets[key] = {"tarih": de, "durum": cmb}
 
     def _connect_signals(self):
-        for key in self._exam_keys:
-            self._exam_widgets[key]["durum"].currentTextChanged.connect(
-                lambda _txt, k=key: self._on_exam_status_changed(k)
-            )
-
-    def _on_exam_status_changed(self, key):
-        """saglik_takip.py'den alınan yardımcı metod."""
-        w = self._exam_widgets.get(key, {})
-        durum = str(w.get("durum").currentText()).strip()
-        aciklama = w.get("aciklama")
-        if not aciklama:
-            return
-        enabled = durum in ("Şartlı Uygun", "Uygun Değil")
-        aciklama.setEnabled(enabled)
-        if not enabled:
-            aciklama.clear()
+        pass
 
     def _compute_summary(self):
         """saglik_takip.py'den alınan yardımcı metod."""
@@ -227,21 +196,6 @@ class HizliSaglikGirisDialog(QWidget):
         return to_db_date(w["tarih"].date().toString("yyyy-MM-dd"))
 
     def _on_save(self):
-        # Zorunlu alan kontrolü
-        ad_map = {
-            "Dermatoloji": "Dermatoloji", "Dahiliye": "Dahiliye",
-            "Goz": "Göz", "Goruntuleme": "Görüntüleme Teknikleri"
-        }
-        for key in self._exam_keys:
-            durum = str(self._exam_widgets[key]["durum"].currentText()).strip()
-            aciklama = self._exam_widgets[key]["aciklama"].text().strip()
-            if durum in ("Şartlı Uygun", "Uygun Değil") and not aciklama:
-                QMessageBox.warning(
-                    self, "Eksik Bilgi",
-                    f"{ad_map.get(key, key)} muayenesi için seçilen durumda açıklama zorunludur."
-                )
-                return
-
         personel_data = self._personel
         muayene_db, sonraki_db, sonuc, durum = self._compute_summary()
         
@@ -263,16 +217,12 @@ class HizliSaglikGirisDialog(QWidget):
             "Durum": durum,
             "DermatolojiMuayeneTarihi": self._exam_date_if_set("Dermatoloji"),
             "DermatolojiDurum": str(self._exam_widgets["Dermatoloji"]["durum"].currentText()).strip(),
-            "DermatolojiAciklama": self._exam_widgets["Dermatoloji"]["aciklama"].text().strip(),
             "DahiliyeMuayeneTarihi": self._exam_date_if_set("Dahiliye"),
             "DahiliyeDurum": str(self._exam_widgets["Dahiliye"]["durum"].currentText()).strip(),
-            "DahiliyeAciklama": self._exam_widgets["Dahiliye"]["aciklama"].text().strip(),
             "GozMuayeneTarihi": self._exam_date_if_set("Goz"),
             "GozDurum": str(self._exam_widgets["Goz"]["durum"].currentText()).strip(),
-            "GozAciklama": self._exam_widgets["Goz"]["aciklama"].text().strip(),
             "GoruntulemeMuayeneTarihi": self._exam_date_if_set("Goruntuleme"),
             "GoruntulemeDurum": str(self._exam_widgets["Goruntuleme"]["durum"].currentText()).strip(),
-            "GoruntulemeAciklama": self._exam_widgets["Goruntuleme"]["aciklama"].text().strip(),
             "RaporDosya": "", # Hızlı girişte dosya yükleme yok
             "Notlar": self.inp_not.text().strip(),
         }

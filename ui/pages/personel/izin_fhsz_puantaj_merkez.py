@@ -80,13 +80,6 @@ class IzinFHSZPuantajMerkezPage(QWidget):
         top_lay.setContentsMargins(16, 0, 16, 0)
         top_lay.setSpacing(10)
 
-        btn_back = QPushButton("← Geri")
-        btn_back.setCursor(QCursor(Qt.PointingHandCursor))
-        btn_back.setStyleSheet(STYLES["back_btn"])
-        btn_back.clicked.connect(self.kapat_istegi.emit)
-        top_lay.addWidget(btn_back)
-        top_lay.addWidget(self._sep())
-
         # Başlık
         lbl_title = QLabel("İzin & FHSZ & Puantaj")
         lbl_title.setStyleSheet(
@@ -97,17 +90,13 @@ class IzinFHSZPuantajMerkezPage(QWidget):
 
         top_lay.addStretch()
 
-        # Kapat (X)
-        btn_kapat = QPushButton()
-        btn_kapat.setFixedSize(28, 28)
+        # Kapat
+        btn_kapat = QPushButton("Kapat")
         btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
         btn_kapat.setToolTip("Kapat")
-        btn_kapat.setStyleSheet("background:transparent; border:none;")
+        btn_kapat.setStyleSheet(STYLES["close_btn"])
         btn_kapat.clicked.connect(self.kapat_istegi.emit)
-        try:
-            IconRenderer.set_button_icon(btn_kapat, "x", color=C.TEXT_MUTED, size=14)
-        except Exception:
-            btn_kapat.setText("✕")
+        IconRenderer.set_button_icon(btn_kapat, "x", color=C.TEXT_PRIMARY, size=14)
         top_lay.addWidget(btn_kapat)
 
         lay.addWidget(top)
