@@ -187,24 +187,11 @@ class MainWindow(QMainWindow):
             )
             return page
 
-        if baslik == "İzin Takip":
-            from ui.pages.personel.izin_takip import IzinTakipPage
-            page = IzinTakipPage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("İzin Takip"))
-            page.load_data()
-            return page
-
-        if baslik == "FHSZ Yönetim":
-            from ui.pages.personel.fhsz_yonetim import FHSZYonetimPage
-            page = FHSZYonetimPage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("FHSZ Yönetim"))
-            page.load_data()
-            return page
-
-        if baslik == "Puantaj Rapor":
-            from ui.pages.personel.puantaj_rapor import PuantajRaporPage
-            page = PuantajRaporPage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Puantaj Rapor"))
+        if baslik in ("İzin Takip", "FHSZ Yönetim", "Puantaj Rapor"):
+            # Üç sayfayı birleştirilmiş merkez olarak göster
+            from ui.pages.personel.izin_fhsz_puantaj_merkez import IzinFHSZPuantajMerkezPage
+            page = IzinFHSZPuantajMerkezPage(db=self._db)
+            page.kapat_istegi.connect(lambda: self._close_page("İzin Takip"))
             return page
 
         if baslik == "Saglik Takip":

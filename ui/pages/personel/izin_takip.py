@@ -32,7 +32,7 @@ def _format_date_display(val):
     return to_ui_date(val)
 
 
-AY_ISIMLARI = [
+AY_ISIMLERI = [
     "", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
     "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
 ]
@@ -420,7 +420,7 @@ class IzinTakipPage(QWidget):
         layout.addWidget(sep)
 
     def _setup_calendar(self, date_edit):
-        ThemeManager.setup_calendar_popup(date_edit)
+        pass
 
     def _add_stat(self, grid, row, text, style_key):
         lbl = QLabel(text)
