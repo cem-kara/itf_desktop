@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-FHSZ Merkez  —  ITF Desktop v3 · Medikal Dark-Blue Tema
+FHSZ Merkez  —  REPYS v3 · Medikal Dark-Blue Tema
 ════════════════════════════════════════════════════════
 Önceki iki ayrı form (fhsz_yonetim + puantaj_rapor) tek sayfada toplandı.
 

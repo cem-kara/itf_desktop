@@ -455,6 +455,154 @@ class ComponentStyles:
         }
         return _MAP.get(status, "#8aa8c8")
 
+    FOOTER_LABEL = f"""
+        QLabel {{
+            color: {C.TEXT_MUTED};
+            font-size: 10px;
+            font-weight: 400;
+            background: transparent;
+        }}
+    """
+
+    PROGRESS = f"""
+        QProgressBar {{
+            background-color: {C.BG_TERTIARY};
+            border: 1px solid {C.BORDER_SECONDARY};
+            border-radius: 2px;
+            height: 4px;
+            margin: 0px;
+            padding: 0px;
+            text-align: center;
+        }}
+        QProgressBar::chunk {{
+            background-color: {C.ACCENT};
+            border-radius: 2px;
+        }}
+    """
+
+    CONTEXT_MENU = f"""
+        QMenu {{
+            background-color: {C.BG_SECONDARY};
+            color: {C.TEXT_PRIMARY};
+            border: 1px solid {C.BORDER_PRIMARY};
+            border-radius: 8px;
+            padding: 4px 0;
+            spacing: 0;
+        }}
+        QMenu::item {{
+            padding: 6px 16px;
+            background: transparent;
+            border-radius: 0;
+        }}
+        QMenu::item:selected {{
+            background-color: {C.BG_HOVER};
+            color: {C.ACCENT2};
+        }}
+        QMenu::item:pressed {{
+            background-color: {C.BG_SELECTED};
+        }}
+        QMenu::separator {{
+            height: 1px;
+            background-color: {C.BORDER_SECONDARY};
+            margin: 4px 0;
+        }}
+    """
+
+    INFO_LABEL = f"""
+        QLabel {{
+            color: {C.TEXT_SECONDARY};
+            font-size: 12px;
+            font-weight: 500;
+            background: transparent;
+        }}
+    """
+
+    SECTION_LABEL = f"""
+        QLabel {{
+            color: {C.TEXT_PRIMARY};
+            font-size: 13px;
+            font-weight: 700;
+            background: transparent;
+            letter-spacing: 0.02em;
+        }}
+    """
+
+    # ── Ek Stiller (Personel Modülü) ──────────────────────────────
+    LABEL = LABEL_FORM  # Generic etiket
+
+    INPUT = INPUT_FIELD  # Generic input
+
+    SEPARATOR = f"""
+        QFrame {{
+            background-color: {C.BORDER_SECONDARY};
+            height: 1px;
+        }}
+    """
+
+    SPLITTER = f"""
+        QSplitter {{
+            background-color: transparent;
+        }}
+        QSplitter::handle {{
+            background-color: {C.BORDER_SECONDARY};
+        }}
+        QSplitter::handle:hover {{
+            background-color: {C.BORDER_STRONG};
+        }}
+    """
+
+    HEADER_NAME = f"""
+        QLabel {{
+            color: {C.TEXT_PRIMARY};
+            font-size: 14px;
+            font-weight: 700;
+            background: transparent;
+            letter-spacing: 0.01em;
+        }}
+    """
+
+    PHOTO_AREA = f"""
+        QLabel {{
+            background-color: {C.BG_TERTIARY};
+            border: 2px dashed {C.BORDER_STRONG};
+            border-radius: 8px;
+            color: {C.TEXT_MUTED};
+            font-size: 12px;
+        }}
+    """
+
+    PHOTO_BTN = f"""
+        QPushButton {{
+            background-color: {C.ACCENT};
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 14px;
+            font-size: 11px;
+            font-weight: 600;
+        }}
+        QPushButton:hover {{ background-color: #00a8d8; }}
+        QPushButton:pressed {{ background-color: #0090b0; }}
+    """
+
+    FILE_BTN = PHOTO_BTN
+
+    REQUIRED_LABEL = f"""
+        QLabel {{
+            color: {C.TEXT_SECONDARY};
+            font-size: 11px;
+            font-weight: 700;
+            background: transparent;
+            letter-spacing: 0.04em;
+        }}
+        QLabel::before {{
+            content: "* ";
+            color: #ef4444;
+        }}
+    """
+
+    DATE = INPUT_DATE
+
 
 # ThemeManager için STYLES dict
 STYLES = {
@@ -485,7 +633,27 @@ STYLES = {
     "group_box":      ComponentStyles.GROUP_BOX,
     "scrollbar":      ComponentStyles.SCROLLBAR,
     "tab":            ComponentStyles.TAB,
+    "footer_label":   ComponentStyles.FOOTER_LABEL,
+    "progress":       ComponentStyles.PROGRESS,
+    "context_menu":   ComponentStyles.CONTEXT_MENU,
+    "info_label":     ComponentStyles.INFO_LABEL,
+    "section_label":  ComponentStyles.SECTION_LABEL,
+    "label":          ComponentStyles.LABEL,
+    "input":          ComponentStyles.INPUT,
+    "separator":      ComponentStyles.SEPARATOR,
+    "splitter":       ComponentStyles.SPLITTER,
+    "header_name":    ComponentStyles.HEADER_NAME,
+    "photo_area":     ComponentStyles.PHOTO_AREA,
+    "photo_btn":      ComponentStyles.PHOTO_BTN,
+    "file_btn":       ComponentStyles.FILE_BTN,
+    "required_label": ComponentStyles.REQUIRED_LABEL,
+    "date":           ComponentStyles.DATE,
+    "group":          ComponentStyles.GROUP_BOX,
     # Geriye dönük uyumluluk takma adları
     "refresh_btn":    ComponentStyles.BTN_REFRESH,
     "close_btn":      ComponentStyles.BTN_CLOSE,
-}
+    "action_btn":     ComponentStyles.BTN_ACTION,
+    "combo":          ComponentStyles.INPUT_COMBO,
+    "excel_btn":      ComponentStyles.BTN_EXCEL,
+    "search":         ComponentStyles.INPUT_SEARCH,
+    "scroll":         ComponentStyles.SCROLLBAR,

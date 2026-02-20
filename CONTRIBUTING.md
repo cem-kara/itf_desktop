@@ -1,6 +1,6 @@
 # Katkıda Bulunma Rehberi
 
-ITF Desktop v3'ye katkı ile ilgilendiğiniz için teşekkürler! Bu belge, proje geliştirimine nasıl katılacağınızı açıklar.
+REPYS v3'ye katkı ile ilgilendiğiniz için teşekkürler! Bu belge, proje geliştirimine nasıl katılacağınızı açıklar.
 
 ## 📋 İçerik
 

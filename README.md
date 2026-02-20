@@ -1,4 +1,4 @@
-# ITF Desktop v3 — Medikal Veritabanı Yönetim Sistemi
+# REPYS V2 — Medikal Veritabanı Yönetim Sistemi
 
 Radyoloji Teknikeri Odası (RTO) için geliştirilmiş, modern ve kapsamlı bir masaüstü uygulaması. Personel yönetimi, cihaz takibi, RKE envanter ve muayene işlemlerini merkezi bir platformdan yönetin.
 
