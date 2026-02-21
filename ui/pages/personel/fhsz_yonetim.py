@@ -27,14 +27,15 @@ from PySide6.QtCore import Qt, QRectF, QTimer
 from PySide6.QtGui import QColor, QCursor, QFont, QPainter, QBrush, QPen, QPainterPath
 
 from core.logger import logger
-from core.date_utils import parse_date as parse_any_date
+from core.date_utils import parse_date
 from core.hesaplamalar import sua_hak_edis_hesapla, is_gunu_hesapla, tr_upper
 from ui.styles import Colors, DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 
-def _parse_date(val):
-    parsed = parse_any_date(val)
+def _parse_date_as_datetime(val):
+    """parse_date() sonucunu datetime'a dönüştür."""
+    parsed = parse_date(val)
     if not parsed:
         return None
     return datetime.combine(parsed, datetime.min.time())
@@ -223,35 +224,33 @@ class FHSZYonetimPage(QWidget):
 
         self._add_sep(fp)
 
-        # Yıl
-        fp.addWidget(self._make_label("Yıl:"))
+        # Dönem Seçimi: Ay · Yıl
+        fp.addWidget(self._make_label("Dönem:"))
+        self.cmb_ay = QComboBox()
+        self.cmb_ay.setStyleSheet(S["combo"])
+        self.cmb_ay.setFixedWidth(140)
+        self.cmb_ay.addItems(AY_ISIMLERI)
+        self.cmb_ay.setCurrentIndex(max(0, datetime.now().month - 1))
+        fp.addWidget(self.cmb_ay)
+        
         self.cmb_yil = QComboBox()
         self.cmb_yil.setStyleSheet(S["combo"])
-        self.cmb_yil.setFixedWidth(80)
+        self.cmb_yil.setFixedWidth(90)
         by = datetime.now().year
         for y in range(by - 5, by + 5):
             self.cmb_yil.addItem(str(y))
         self.cmb_yil.setCurrentText(str(by))
         fp.addWidget(self.cmb_yil)
 
-        # Ay
-        fp.addWidget(self._make_label("Ay:"))
-        self.cmb_ay = QComboBox()
-        self.cmb_ay.setStyleSheet(S["combo"])
-        self.cmb_ay.setFixedWidth(120)
-        self.cmb_ay.addItems(AY_ISIMLERI)
-        self.cmb_ay.setCurrentIndex(max(0, datetime.now().month - 1))
-        fp.addWidget(self.cmb_ay)
-
         self._add_sep(fp)
 
-        self.lbl_donem = QLabel("...")
-        self.lbl_donem.setStyleSheet(S["donem_label"])
+        self.lbl_donem = QLabel("Dönem aralığı: ...")
+        self.lbl_donem.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 11px; font-style: italic;")
         fp.addWidget(self.lbl_donem)
 
         fp.addStretch()
 
-        self.btn_hesapla = QPushButton("LISTELE VE HESAPLA")
+        self.btn_hesapla = QPushButton("HESAPLA")
         self.btn_hesapla.setStyleSheet(S["calc_btn"])
         self.btn_hesapla.setCursor(QCursor(Qt.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_hesapla, "bar_chart", color=DarkTheme.TEXT_PRIMARY, size=14)
@@ -401,7 +400,7 @@ class FHSZYonetimPage(QWidget):
                 tatiller = registry.get("Tatiller").get_all()
                 self._tatil_listesi_np = []
                 for r in tatiller:
-                    d = _parse_date(r.get("Tarih", ""))
+                    d = parse_date(r.get("Tarih", ""))
                     if d:
                         self._tatil_listesi_np.append(d.strftime("%Y-%m-%d"))
             except Exception:
@@ -501,8 +500,8 @@ class FHSZYonetimPage(QWidget):
             if str(iz.get("Durum", "")).strip() == "İptal":
                 continue
 
-            izin_bas = _parse_date(iz.get("BaslamaTarihi", ""))
-            izin_bit = _parse_date(iz.get("BitisTarihi", ""))
+            izin_bas = parse_date(iz.get("BaslamaTarihi", ""))
+            izin_bit = parse_date(iz.get("BitisTarihi", ""))
             if not izin_bas or not izin_bit:
                 continue
 
@@ -657,7 +656,7 @@ class FHSZYonetimPage(QWidget):
                 # Pasif personel kontrolü
                 kisi_bit = donem_bit
                 if durum == "Pasif":
-                    ayrilis = _parse_date(p.get("AyrilisTarihi", ""))
+                    ayrilis = parse_date(p.get("AyrilisTarihi", ""))
                     if ayrilis:
                         if ayrilis < hesap_bas:
                             continue
@@ -729,7 +728,7 @@ class FHSZYonetimPage(QWidget):
             durum = str(p.get("Durum", "Aktif")).strip()
             kisi_bit = donem_bit
             if durum == "Pasif":
-                ayrilis = _parse_date(p.get("AyrilisTarihi", ""))
+                ayrilis = parse_date(p.get("AyrilisTarihi", ""))
                 if ayrilis:
                     if ayrilis < hesap_bas:
                         continue

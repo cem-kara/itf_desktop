@@ -529,16 +529,16 @@ class PersonelMerkezPage(QWidget):
                 f"QPushButton{{"
                 f"background:transparent; border:none;"
                 f"border-bottom:2px solid {C.INPUT_BORDER_FOCUS};"
-                f"color:{C.BTN_PRIMARY_TEXT};"
-                f"font-size:12px; font-weight:600; padding:0 14px;"
+                f"color:{C.TEXT_PRIMARY};"
+                f"font-size:13px; font-weight:700; padding:0 14px;"
                 f"}}"
             )
         return (
             f"QPushButton{{"
             f"background:transparent; border:none;"
             f"border-bottom:2px solid transparent;"
-            f"color:{C.TEXT_MUTED};"
-            f"font-size:12px; padding:0 14px;"
+                f"color:{C.TEXT_SECONDARY};"
+                f"font-size:13px; font-weight:600; padding:0 14px;"
             f"}}"
-            f"QPushButton:hover{{color:{C.TEXT_SECONDARY};}}"
+            f"QPushButton:hover{{color:{C.TEXT_PRIMARY};}}"
         )

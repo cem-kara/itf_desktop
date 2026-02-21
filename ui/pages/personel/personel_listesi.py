@@ -7,20 +7,20 @@ Hardcoded renk yok.
 """
 from PySide6.QtCore import (
     Qt, QSortFilterProxyModel, QModelIndex, QAbstractTableModel,
-    Signal, QRect, QPoint, QSize,
+    Signal, QRect, QPoint, QSize, QTimer, QThread,
 )
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QFrame, QProgressBar, QPushButton, QHeaderView,
     QTableView, QComboBox, QLineEdit, QMenu, QMessageBox,
-    QStyledItemDelegate, QApplication, QStyle,
+    QStyledItemDelegate, QApplication, QStyle, QToolTip,
 )
 from PySide6.QtGui import (
-    QColor, QCursor, QPainter, QBrush, QPen, QFont, QFontMetrics,
+    QColor, QCursor, QPainter, QBrush, QPen, QFont, QFontMetrics, QPixmap,
 )
 
 from core.logger import logger
-from core.date_utils import parse_date, to_db_date
+from core.date_utils import parse_date, to_db_date, to_ui_date
 from database.repository_registry import RepositoryRegistry
 from ui.styles import DarkTheme
 from ui.styles.components import ComponentStyles, STYLES
@@ -40,6 +40,40 @@ COLUMNS = [
     ("_actions",    "",               190),
 ]
 COL_IDX = {c[0]: i for i, c in enumerate(COLUMNS)}
+
+
+# ─── Avatar Downloader Worker ──────────────────────────────
+class AvatarDownloaderWorker(QThread):
+    """Personel avatarlarını Drive'dan indir ve cache'le."""
+    avatar_ready = Signal(str, QPixmap)  # (tc, pixmap)
+
+    def __init__(self, image_url: str, tc: str, parent=None):
+        super().__init__(parent)
+        self._url = image_url
+        self._tc = tc
+
+    def run(self):
+        try:
+            if not self._url or self._url.strip().startswith("http") is False:
+                return
+            
+            # Basit: URL'den indir (timeout 5s)
+            import urllib.request
+            import urllib.error
+            try:
+                req = urllib.request.Request(
+                    self._url,
+                    headers={'User-Agent': 'Mozilla/5.0'}
+                )
+                with urllib.request.urlopen(req, timeout=5) as response:
+                    data = response.read()
+                    pixmap = QPixmap()
+                    if pixmap.loadFromData(data):
+                        self.avatar_ready.emit(self._tc, pixmap)
+            except (urllib.error.URLError, urllib.error.HTTPError, Exception) as e:
+                logger.debug(f"Avatar download hatası ({self._tc}): {e}")
+        except Exception as e:
+            logger.debug(f"Avatar worker hatası: {e}")
 
 
 # ═══════════════════════════════════════════════════════════
@@ -104,6 +138,7 @@ class PersonelTableModel(QAbstractTableModel):
         self.endResetModel()
 
     def set_izin_map(self, m: dict):
+        """Geriye dönük uyumluluk için tutuldu. Artık izin bilgileri row içinde."""
         self._izin_map = m or {}
         if self._data:
             col = COL_IDX["_izin_bar"]
@@ -113,18 +148,28 @@ class PersonelTableModel(QAbstractTableModel):
             )
 
     def _izin_pct(self, row: dict) -> float:
-        tc     = str(row.get("KimlikNo", "")).strip()
-        bilgi  = self._izin_map.get(tc, {})
-        toplam = float(bilgi.get("YillikToplamHak", 0) or 0)
-        kalan  = float(bilgi.get("YillikKalan",    0) or 0)
+        """İzin yüzdesi hesapla. Artık izin bilgileri doğrudan row içinde."""
+        # Eski yöntem: _izin_map'ten al
+        # tc = str(row.get("KimlikNo", "")).strip()
+        # bilgi = self._izin_map.get(tc, {})
+        
+        # Yeni yöntem: row içinden oku (JOIN ile geldi)
+        toplam = float(row.get("YillikToplamHak", 0) or 0)
+        kalan  = float(row.get("YillikKalan", 0) or 0)
         if toplam <= 0:
             return -1.0
         return max(0.0, min(1.0, kalan / toplam))
 
     def _izin_txt(self, row: dict) -> str:
-        tc    = str(row.get("KimlikNo", "")).strip()
-        bilgi = self._izin_map.get(tc, {})
-        return f"{bilgi.get('YillikKalan','—')} / {bilgi.get('YillikToplamHak','—')}"
+        """İzin metni. Artık izin bilgileri doğrudan row içinde."""
+        # Eski yöntem: _izin_map'ten al
+        # tc = str(row.get("KimlikNo", "")).strip()
+        # bilgi = self._izin_map.get(tc, {})
+        
+        # Yeni yöntem: row içinden oku (JOIN ile geldi)
+        kalan = row.get('YillikKalan', '—')
+        toplam = row.get('YillikToplamHak', '—')
+        return f"{kalan} / {toplam}"
 
 
 # ═══════════════════════════════════════════════════════════
@@ -134,6 +179,7 @@ class PersonelTableModel(QAbstractTableModel):
 class PersonelDelegate(QStyledItemDelegate):
     """
     Özel hücre çizimi. Tüm renkler DarkTheme ve ComponentStyles'dan alınır.
+    Avatar caching + fallback monogram destekli.
     """
 
     BTN_W, BTN_H, BTN_GAP = 52, 26, 6
@@ -142,9 +188,37 @@ class PersonelDelegate(QStyledItemDelegate):
         super().__init__(parent)
         self._hover_row  = -1
         self._btn_rects: dict[tuple, QRect] = {}
+        self._avatar_cache: dict[str, QPixmap] = {}  # TC -> QPixmap
+        self._avatar_loading: set[str] = set()       # Yüklenme sırasında olan TC'ler
 
     def set_hover_row(self, row: int):
         self._hover_row = row
+    
+    def set_avatar_pixmap(self, tc: str, pixmap: QPixmap):
+        """Dış kaynaktan avatar cache'e pixmap ekle — daire şeklinde crop."""
+        if pixmap and not pixmap.isNull():
+            from PySide6.QtGui import QPainterPath
+            
+            # Daire şeklinde kırp
+            size = 26
+            tm = QPixmap(size, size)
+            tm.fill(Qt.transparent)
+            
+            pp = QPainter(tm)
+            pp.setRenderHint(QPainter.Antialiasing)
+            
+            # Daire mask path'i oluştur
+            path = QPainterPath()
+            path.addEllipse(0, 0, size, size)
+            pp.setClipPath(path)
+            
+            # Pixmap'i scaled versiyonu daire içine çiz
+            scaled = pixmap.scaledToWidth(size, Qt.SmoothTransformation)
+            pp.drawPixmap(0, 0, scaled)
+            pp.end()
+            
+            self._avatar_cache[tc] = tm
+            self._avatar_loading.discard(tc)
 
     def sizeHint(self, option, index):
         return QSize(COLUMNS[index.column()][2], 40)
@@ -209,7 +283,20 @@ class PersonelDelegate(QStyledItemDelegate):
     # ── Çizim yardımcıları ───────────────────────────────
 
     def _draw_avatar(self, p, rect, row):
-        """Monogram dairesi — renk addan türetilir."""
+        """Avatar çizimi: Fotoğraf cache'den varsa göster, yoksa monogram."""
+        tc = str(row.get("KimlikNo", "")).strip()
+        
+        # Cache'te varsa fotoğraf göster
+        if tc and tc in self._avatar_cache:
+            pixmap = self._avatar_cache[tc]
+            if pixmap and not pixmap.isNull():
+                cx, cy = rect.center().x(), rect.center().y()
+                px = int(cx - pixmap.width() / 2)
+                py = int(cy - pixmap.height() / 2)
+                p.drawPixmap(px, py, pixmap)
+                return
+        
+        # Fallback: Monogram dairesi — renk addan türetilir
         ad = str(row.get("AdSoyad", "")).strip()
         initials = "".join(w[0].upper() for w in ad.split()[:2]) if ad else "?"
         cx, cy, r = rect.center().x(), rect.center().y(), 13
@@ -351,6 +438,26 @@ class PersonelListesiPage(QWidget):
         self._izin_map       = {}
         self._active_filter  = "Aktif"
         self._filter_btns    = {}
+        self._izinli_bugun   = {}
+        self._izinli_bugun_date = None
+        self._last_tooltip_tc = None
+        
+        # Arama debounce timer (300ms)
+        self._search_timer = QTimer()
+        self._search_timer.setInterval(300)
+        self._search_timer.setSingleShot(True)
+        self._search_timer.timeout.connect(self._execute_search)
+        self._last_search_text = ""
+        
+        # Avatar download workers
+        self._avatar_workers: list[AvatarDownloaderWorker] = []
+        
+        # Lazy-loading pagination state
+        self._page_size = 100  # Her sayfada kaç kayıt
+        self._current_page = 1  # Şu anki sayfa
+        self._total_count = 0  # Toplam kayıt sayısı
+        self._is_loading = False  # Yükleme durumu (spinner göstermek için)
+        
         self._setup_ui()
         self._connect_signals()
 
@@ -541,7 +648,7 @@ class PersonelListesiPage(QWidget):
 
     def _build_footer(self) -> QFrame:
         frame = QFrame()
-        frame.setFixedHeight(34)
+        frame.setFixedHeight(40)
         frame.setStyleSheet(f"""
             QFrame {{
                 background-color: {C.BG_SECONDARY};
@@ -568,6 +675,15 @@ class PersonelListesiPage(QWidget):
         self.progress.setTextVisible(False)
         self.progress.setStyleSheet(STYLES["progress"])
         lay.addWidget(self.progress)
+
+        # Lazy-loading: "Daha fazla yükle" butonu
+        self.btn_load_more = QPushButton("Daha Fazla Yükle")
+        self.btn_load_more.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_load_more.setFixedHeight(28)
+        self.btn_load_more.setStyleSheet(STYLES["action_btn"])
+        self.btn_load_more.setVisible(False)  # İlk başta gizle
+        lay.addWidget(self.btn_load_more)
+        
         return frame
 
     # ─── Sinyaller ───────────────────────────────────────
@@ -580,6 +696,7 @@ class PersonelListesiPage(QWidget):
         self.cmb_hizmet.currentTextChanged.connect(lambda _: self._apply_filters())
         self.btn_yenile.clicked.connect(self.load_data)
         self.btn_yeni.clicked.connect(self.yeni_requested.emit)
+        self.btn_load_more.clicked.connect(self._load_more_data)
         self.table.doubleClicked.connect(self._on_double_click)
         self.table.customContextMenuRequested.connect(self._show_context_menu)
         self.table.mouseMoveEvent  = self._tbl_mouse_move
@@ -588,24 +705,117 @@ class PersonelListesiPage(QWidget):
     # ─── Veri Yükleme ────────────────────────────────────
 
     def load_data(self):
+        """İlk kez veri yükle (Sayfa 1, Pagination ile)"""
         if not self._db:
             logger.warning("Personel listesi: DB yok")
             return
         try:
+            # Lazy-loading: Başlangıç state'i ayarla
+            self._current_page = 1
+            self._total_count = 0
+            self._all_data = []
+            
             registry = RepositoryRegistry(self._db)
-            self._all_data = registry.get("Personel").get_all()
-            try:
-                bilgiler = registry.get("Izin_Bilgi").get_all()
-                self._izin_map = {
-                    str(r.get("TCKimlik", "")).strip(): r for r in bilgiler
-                }
-                self._model.set_izin_map(self._izin_map)
-            except Exception as e:
-                logger.warning(f"İzin bakiye yüklenemedi: {e}")
+            personel_repo = registry.get("Personel")
+            
+            # ✅ LAZY-LOADING: İlk sayfayı yükle (sayfa boyutu: 100 kayıt)
+            page_data, total_count = personel_repo.get_paginated_with_bakiye(
+                page=self._current_page,
+                page_size=self._page_size
+            )
+            
+            self._all_data = page_data
+            self._total_count = total_count
+            self._izin_map = {}
+            
+            # Model'e veriyi set et
+            self._model.set_data(self._all_data)
+            self._model.set_izin_map({})
+            
             self._populate_combos(registry)
+            self._refresh_izinli_bugun()
             self._apply_filters()
+            
+            # Avatar download başlat (arka planda)
+            self._start_avatar_downloads()
+            
+            # "Daha fazla yükle" butonu kontrol et
+            self._update_load_more_button()
+            
         except Exception as e:
             logger.error(f"Personel yükleme: {e}")
+
+    def _load_more_data(self):
+        """Sonraki sayfayı yükle ve tabloya ekle"""
+        if self._is_loading or not self._db:
+            return
+        
+        try:
+            self._is_loading = True
+            self.btn_load_more.setEnabled(False)
+            self.progress.setVisible(True)
+            
+            registry = RepositoryRegistry(self._db)
+            personel_repo = registry.get("Personel")
+            
+            # Sonraki sayfa
+            self._current_page += 1
+            page_data, _ = personel_repo.get_paginated_with_bakiye(
+                page=self._current_page,
+                page_size=self._page_size
+            )
+            
+            if not page_data:
+                # Daha kayıt yok
+                self._current_page -= 1
+                logger.info("Tüm personel yüklendi")
+            else:
+                # Mevcut verilere ekle
+                self._all_data.extend(page_data)
+                self._model.set_data(self._all_data)
+                self._apply_filters()
+                self._start_avatar_downloads()
+                logger.debug(f"Sayfa {self._current_page} yüklendi ({len(page_data)} kayıt)")
+            
+            # Button kontrolü
+            self._update_load_more_button()
+            
+        except Exception as e:
+            logger.error(f"Daha fazla yükleme: {e}")
+        finally:
+            self._is_loading = False
+            self.btn_load_more.setEnabled(True)
+            self.progress.setVisible(False)
+
+    def _update_load_more_button(self):
+        """'Daha fazla yükle' butonunun görünürlüğünü ayarla"""
+        loaded_count = len(self._all_data)
+        has_more = loaded_count < self._total_count
+        self.btn_load_more.setVisible(has_more)
+        if has_more:
+            self.btn_load_more.setText(
+                f"Daha Fazla Yükle ({loaded_count}/{self._total_count})"
+            )
+    
+    def _start_avatar_downloads(self):
+        """Tüm personelin avatarlarını arka panda indir."""
+        for row in self._all_data:
+            tc = str(row.get("KimlikNo", "")).strip()
+            resim_url = str(row.get("Resim", "")).strip()
+            
+            # URL varsa ve http(s) ile başlıyorsa download başlat
+            if tc and resim_url and resim_url.startswith("http"):
+                worker = AvatarDownloaderWorker(resim_url, tc, self)
+                worker.avatar_ready.connect(self._on_avatar_ready)
+                self._avatar_workers.append(worker)
+                worker.start()
+    
+    def _on_avatar_ready(self, tc: str, pixmap: QPixmap):
+        """Avatar indirme tamamlandı — delegate'e pixmap ekle ve table redraw et."""
+        if self._delegate:
+            self._delegate.set_avatar_pixmap(tc, pixmap)
+            # Tüm satırları redraw et (avatar sütunu değişti)
+            self.table.viewport().update()
 
     def _populate_combos(self, registry):
         try:
@@ -643,16 +853,29 @@ class PersonelListesiPage(QWidget):
         self._apply_filters()
 
     def _on_search(self, text: str):
-        self._proxy.setFilterFixedString(text)
+        """Arama input'u değiştiğinde debounce timer'ını restart et."""
+        self._last_search_text = text
+        self._search_timer.stop()
+        self._search_timer.start()  # 300ms delay sonra _execute_search çağrılır
+
+    def _execute_search(self):
+        """Debounce timeout sonrası gerçek aramaları yap."""
+        self._proxy.setFilterFixedString(self._last_search_text)
         self._update_count()
 
     def _apply_filters(self):
         filtered = self._all_data
 
         if self._active_filter != "Tümü":
-            # Durum filtresini uygula (sadece Durum sütununa bak)
-            filtered = [r for r in filtered
-                       if str(r.get("Durum", "")).strip() == self._active_filter]
+            if self._active_filter == "İzinli":
+                self._refresh_izinli_bugun()
+                izinli_tc = set(self._izinli_bugun.keys())
+                filtered = [r for r in filtered
+                           if str(r.get("KimlikNo", "")).strip() in izinli_tc]
+            else:
+                # Durum filtresini uygula (sadece Durum sütununa bak)
+                filtered = [r for r in filtered
+                           if str(r.get("Durum", "")).strip() == self._active_filter]
 
         birim = self.cmb_gorev_yeri.currentText()
         if birim and birim != "Tüm Birimler":
@@ -696,6 +919,39 @@ class PersonelListesiPage(QWidget):
             logger.error(f"İzinli sorgu: {e}")
             return set()
 
+    def _refresh_izinli_bugun(self):
+        from datetime import date
+        today = date.today()
+        if self._izinli_bugun_date != today:
+            self._izinli_bugun = self._get_izinli_bugun_detay()
+            self._izinli_bugun_date = today
+
+    def _get_izinli_bugun_detay(self) -> dict:
+        if not self._db:
+            return {}
+        try:
+            from datetime import date
+            from core.di import get_registry
+
+            today = date.today()
+            reg = get_registry(self._db)
+            izinli: dict[str, list[tuple[str, str]]] = {}
+            for r in reg.get("Izin_Giris").get_all():
+                tc = str(r.get("Personelid", "")).strip()
+                bas = parse_date(r.get("BaslamaTarihi", ""))
+                bit = parse_date(r.get("BitisTarihi", "")) or bas
+                if not tc or not bas or not bit:
+                    continue
+                if bas <= today <= bit:
+                    izinli.setdefault(tc, []).append((to_ui_date(bas), to_ui_date(bit)))
+
+            for tc in izinli:
+                izinli[tc].sort(key=lambda d: d[0])
+            return izinli
+        except Exception as e:
+            logger.error(f"İzinli sorgu: {e}")
+            return {}
+
     def _update_count(self):
         self.lbl_info.setText(
             f"Gösterilen {self._proxy.rowCount()} / {len(self._all_data)}"
@@ -707,8 +963,10 @@ class PersonelListesiPage(QWidget):
                    if str(r.get("Durum", "")).strip() == "Aktif")
         pasif = sum(1 for r in self._all_data 
                    if str(r.get("Durum", "")).strip() == "Pasif")
+        self._refresh_izinli_bugun()
+        izinli_tc = set(self._izinli_bugun.keys())
         izinli = sum(1 for r in self._all_data
-                    if str(r.get("Durum", "")).strip() == "İzinli")
+                    if str(r.get("KimlikNo", "")).strip() in izinli_tc)
         
         self.lbl_detail.setText(f"Aktif {aktif}  ·  Pasif {pasif}  ·  İzinli {izinli}")
         counts = {"Aktif": aktif, "Pasif": pasif, "İzinli": izinli, "Tümü": len(self._all_data)}
@@ -726,7 +984,42 @@ class PersonelListesiPage(QWidget):
         src_row = self._proxy.mapToSource(idx).row() if idx.isValid() else -1
         self._delegate.set_hover_row(src_row)
         self.table.viewport().update()
+        self._show_izin_tooltip(idx, event.globalPos())
         QTableView.mouseMoveEvent(self.table, event)
+
+    def _show_izin_tooltip(self, idx, global_pos):
+        if not idx.isValid():
+            if self._last_tooltip_tc:
+                QToolTip.hideText()
+                self._last_tooltip_tc = None
+            return
+
+        src = self._proxy.mapToSource(idx)
+        row_data = self._model.get_row(src.row())
+        tc = str((row_data or {}).get("KimlikNo", "")).strip()
+        self._refresh_izinli_bugun()
+        if tc and tc in self._izinli_bugun:
+            if tc != self._last_tooltip_tc:
+                text = self._build_izin_tooltip(tc)
+                if text:
+                    QToolTip.showText(global_pos, text, self.table)
+                    self._last_tooltip_tc = tc
+        else:
+            if self._last_tooltip_tc:
+                QToolTip.hideText()
+                self._last_tooltip_tc = None
+
+    def _build_izin_tooltip(self, tc: str) -> str:
+        izinler = self._izinli_bugun.get(tc, [])
+        if not izinler:
+            return ""
+        lines = ["Bugun izinli:"]
+        for bas, bit in izinler:
+            if bas == bit:
+                lines.append(f"- {bas}")
+            else:
+                lines.append(f"- {bas} -> {bit}")
+        return "\n".join(lines)
 
     def _tbl_mouse_press(self, event):
         idx = self.table.indexAt(event.pos())

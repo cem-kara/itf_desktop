@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
-from PySide6.QtCore import Qt, QDate, QThread, Signal
+import re
+from PySide6.QtCore import Qt, QDate, QThread, Signal, QTimer
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QProgressBar, QFrame, QComboBox, QLineEdit,
@@ -18,10 +19,64 @@ from ui.styles.icons import IconRenderer
 from ui.theme_manager import ThemeManager
 
 
+# ─── TC Kimlik No Validatörü ───
+def validate_tc_kimlik_no(tc_str: str) -> bool:
+    """
+    TC Kimlik No algoritması uygulaması.
+    - 11 rakam olmalı
+    - İlk basamak 0 olamaz
+    - Kontrol hanesi kontrol edilir
+    
+    Algoritma:
+    1. Pozisyonlar 1,3,5,7,9 (indices 0,2,4,6,8) topla → S1
+    2. Pozisyonlar 2,4,6,8 (indices 1,3,5,7) topla → S2
+    3. 10.basamak = (S1 * 7 - S2) % 10
+    4. 11.basamak = (S1 + S2 + 10.basamak) % 10
+    """
+    if not tc_str or len(tc_str) != 11 or not tc_str.isdigit():
+        return False
+    if tc_str[0] == '0':
+        return False
+    
+    # Tek pozisyonlar (1, 3, 5, 7, 9) = indices (0, 2, 4, 6, 8)
+    sum_odd = sum(int(tc_str[i]) for i in range(0, 9, 2))
+    # Çift pozisyonlar (2, 4, 6, 8) = indices (1, 3, 5, 7) — NOT 9!
+    sum_even = sum(int(tc_str[i]) for i in range(1, 9, 2))
+    
+    # 10. basamak (index 9) hesaplama
+    expected_10th = (sum_odd * 7 - sum_even) % 10
+    # 11. basamak (index 10) hesaplama
+    expected_11th = (sum_odd + sum_even + expected_10th) % 10
+    
+    actual_10th = int(tc_str[9])
+    actual_11th = int(tc_str[10])
+    
+    is_valid = actual_10th == expected_10th and actual_11th == expected_11th
+    
+    # Debug log (sadece hata durumunda)
+    if not is_valid:
+        logger.debug(f"TC kontrol hatası: {tc_str}")
+        logger.debug(f"  Tek pozisyonlar (1,3,5,7,9): {sum_odd}")
+        logger.debug(f"  Çift pozisyonlar (2,4,6,8,10): {sum_even}")
+        logger.debug(f"  10. basamak: beklenen={expected_10th}, gerçek={actual_10th}")
+        logger.debug(f"  11. basamak: beklenen={expected_11th}, gerçek={actual_11th}")
+    
+    return is_valid
+
+
+def validate_email(email_str: str) -> bool:
+    """Basit email format doğrulaması."""
+    if not email_str:
+        return True  # Opsiyonel alan
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return bool(re.match(pattern, email_str))
+
+
 # ─── Drive Yükleme Worker (UI donmasın) ───
 class DriveUploadWorker(QThread):
     finished = Signal(str, str)   # (alan_adi, webViewLink)
     error = Signal(str, str)      # (alan_adi, hata_mesaji)
+    progress = Signal(int)        # Yüzde (0-100)
 
     def __init__(self, file_path, folder_id, custom_name, alan_adi, offline_folder_name=None):
         super().__init__()
@@ -94,6 +149,9 @@ class PersonelEklePage(QWidget):
         self._drive_folders = {}       # {"Personel_Resim": folder_id, ...}
         self._upload_workers = []
         self._all_sabit = []
+        self._pending_uploads = 0
+        self._completed_uploads = 0
+        self._upload_errors = []
 
         self._setup_ui()
         self._populate_combos()
@@ -154,12 +212,30 @@ class PersonelEklePage(QWidget):
         id_lay = QVBoxLayout(id_grp)
         id_lay.setSpacing(10)
 
-        row1 = QHBoxLayout()
-        self.ui["tc"] = self._make_input("TC Kimlik No *", row1, required=True)
+        # TC Kimlik No ile validation status
+        tc_container = QWidget()
+        tc_container.setStyleSheet("background: transparent;")
+        tc_lay = QVBoxLayout(tc_container)
+        tc_lay.setContentsMargins(0, 0, 0, 0)
+        tc_lay.setSpacing(4)
+        tc_lbl = QLabel("TC Kimlik No *")
+        tc_lbl.setStyleSheet(S["required_label"])
+        tc_lay.addWidget(tc_lbl)
+        tc_row = QHBoxLayout()
+        tc_row.setSpacing(4)
+        self.ui["tc"] = QLineEdit()
         self.ui["tc"].setMaxLength(11)
-        from PySide6.QtCore import QRegularExpression
-        from PySide6.QtGui import QRegularExpressionValidator
-        self.ui["tc"].setValidator(QRegularExpressionValidator(QRegularExpression(r"^\d{0,11}$")))
+        self.ui["tc"].setStyleSheet(S["input"])
+        self.ui["tc"].setPlaceholderText("11 haneli rakam")
+        self.ui["tc"].textChanged.connect(self._validate_tc_on_change)
+        tc_row.addWidget(self.ui["tc"])
+        self._tc_status = QLabel("")
+        self._tc_status.setFixedWidth(20)
+        tc_row.addWidget(self._tc_status)
+        tc_lay.addLayout(tc_row)
+        
+        row1 = QHBoxLayout()
+        row1.addWidget(tc_container)
         self.ui["ad_soyad"] = self._make_input("Ad Soyad *", row1, required=True)
         id_lay.addLayout(row1)
 
@@ -177,7 +253,29 @@ class PersonelEklePage(QWidget):
 
         row_c = QHBoxLayout()
         self.ui["cep_tel"] = self._make_input("Cep Telefonu", row_c, placeholder="05XX XXX XX XX")
-        self.ui["eposta"] = self._make_input("E-posta Adresi", row_c, placeholder="ornek@email.com")
+        
+        # Email ile validation status
+        email_container = QWidget()
+        email_container.setStyleSheet("background: transparent;")
+        email_lay = QVBoxLayout(email_container)
+        email_lay.setContentsMargins(0, 0, 0, 0)
+        email_lay.setSpacing(4)
+        email_lbl = QLabel("E-posta Adresi")
+        email_lbl.setStyleSheet(S["label"])
+        email_lay.addWidget(email_lbl)
+        email_row = QHBoxLayout()
+        email_row.setSpacing(4)
+        self.ui["eposta"] = QLineEdit()
+        self.ui["eposta"].setStyleSheet(S["input"])
+        self.ui["eposta"].setPlaceholderText("ornek@email.com")
+        self.ui["eposta"].textChanged.connect(self._validate_email_on_change)
+        email_row.addWidget(self.ui["eposta"])
+        self._email_status = QLabel("")
+        self._email_status.setFixedWidth(20)
+        email_row.addWidget(self._email_status)
+        email_lay.addLayout(email_row)
+        
+        row_c.addWidget(email_container)
         contact_lay.addLayout(row_c)
 
         left_l.addWidget(contact_grp)
@@ -577,6 +675,7 @@ class PersonelEklePage(QWidget):
         }
 
         self._pending_uploads = 0
+        self._completed_uploads = 0
         self._upload_errors = []
 
         for file_key, file_path in self._file_paths.items():
@@ -604,13 +703,18 @@ class PersonelEklePage(QWidget):
         else:
             self._upload_callback = callback
             self.progress.setVisible(True)
-            self.progress.setRange(0, 0)  # indeterminate
+            self.progress.setRange(0, 100)  # percentage
+            self.progress.setValue(0)
             self.btn_kaydet.setEnabled(False)
 
     def _on_upload_finished(self, alan_adi, link):
         """Tek dosya yükleme tamamlandı."""
         self._drive_links[alan_adi] = link
         logger.info(f"Drive yükleme OK: {alan_adi} → {link}")
+        self._completed_uploads += 1
+        # Progress bar'ı güncelle
+        percent = int((self._completed_uploads / self._pending_uploads) * 100)
+        self.progress.setValue(percent)
         self._pending_uploads -= 1
         if self._pending_uploads <= 0:
             self._finalize_uploads()
@@ -634,9 +738,40 @@ class PersonelEklePage(QWidget):
                 self, "Drive Yükleme Uyarısı",
                 "Bazı dosyalar yüklenemedi:\n" + "\n".join(self._upload_errors)
             )
-
         if hasattr(self, "_upload_callback"):
             self._upload_callback()
+
+    # ═══════════════════════════════════════════
+    #  REAL-TIME FORM VALIDASYON
+    # ═══════════════════════════════════════════
+
+    def _validate_tc_on_change(self):
+        """TC Kimlik No real-time validasyonu."""
+        tc_text = self.ui["tc"].text().strip()
+        if not tc_text:
+            self._tc_status.setText("⚠")
+            self._tc_status.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 16px;")
+        elif len(tc_text) == 11 and tc_text.isdigit():
+            # Format doğru, status göster
+            self._tc_status.setText("✓")
+            self._tc_status.setStyleSheet(f"color: {DarkTheme.STATUS_SUCCESS}; font-size: 16px;")
+        else:
+            # Format yanlış
+            self._tc_status.setText("✗")
+            self._tc_status.setStyleSheet(f"color: {DarkTheme.STATUS_ERROR}; font-size: 16px;")
+
+    def _validate_email_on_change(self):
+        """E-posta real-time validasyonu."""
+        email_text = self.ui["eposta"].text().strip()
+        if not email_text:
+            self._email_status.setText("⚠")
+            self._email_status.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 16px;")
+        elif validate_email(email_text):
+            self._email_status.setText("✓")
+            self._email_status.setStyleSheet(f"color: {DarkTheme.STATUS_SUCCESS}; font-size: 16px;")
+        else:
+            self._email_status.setText("✗")
+            self._email_status.setStyleSheet(f"color: {DarkTheme.STATUS_ERROR}; font-size: 16px;")
 
     # ═══════════════════════════════════════════
     #  KAYDET / İPTAL
@@ -650,9 +785,16 @@ class PersonelEklePage(QWidget):
             errors.append("TC Kimlik No boş olamaz")
         elif len(tc) != 11 or not tc.isdigit():
             errors.append("TC Kimlik No 11 haneli rakam olmalı")
+        elif not validate_tc_kimlik_no(tc):
+            errors.append("TC Kimlik No geçersiz (kontrol hanesi yanlış)")
 
         if not self._get_widget_value("ad_soyad"):
             errors.append("Ad Soyad boş olamaz")
+        
+        email = self._get_widget_value("eposta")
+        if email and not validate_email(email):
+            errors.append("E-posta adresi geçersiz")
+
         if not self._get_widget_value("hizmet_sinifi"):
             errors.append("Hizmet Sınıfı seçilmeli")
         if not self._get_widget_value("kadro_unvani"):

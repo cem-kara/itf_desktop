@@ -226,3 +226,139 @@ class PersonelRepository(BaseRepository):
         except Exception as e:
             logger.error(f"İstatistik hesaplanırken hata: {e}")
             return {}
+    # ── Performance Optimized Query ──────────────────────────────────────────
+
+    def get_all_with_bakiye(self) -> List[Dict[str, Any]]:
+        """
+        Tüm personel kayıtlarını izin bakiye bilgileriyle birlikte tek sorguda getirir.
+        N+1 query sorununu çözer: 2 ayrı sorgu yerine 1 JOIN sorgusu.
+        
+        Returns:
+            List[dict]: Personel ve izin bakiye bilgileri birleşmiş kayıtlar.
+                        Bakiye bilgisi yoksa ilgili alanlar None olur.
+        
+        Example:
+            >>> repo = registry.get("Personel")
+            >>> personel_listesi = repo.get_all_with_bakiye()
+            >>> for p in personel_listesi:
+            >>>     print(f"{p['AdSoyad']}: {p['YillikKalan']}/{p['YillikToplamHak']}")
+        """
+        try:
+            # Personel kolonları
+            p_cols = ", ".join([f"p.{col} AS p_{col}" for col in self.columns])
+            
+            # İzin_Bilgi kolonları (TCKimlik hariç, çünkü p.KimlikNo ile aynı)
+            izin_cols = [
+                "YillikDevir", "YillikHakedis", "YillikToplamHak",
+                "YillikKullanilan", "YillikKalan", "SuaKullanilabilirHak",
+                "SuaKullanilan", "SuaKalan", "SuaCariYilKazanim", "RaporMazeretTop"
+            ]
+            ib_cols = ", ".join([f"ib.{col} AS ib_{col}" for col in izin_cols])
+            
+            sql = f"""
+            SELECT {p_cols}, {ib_cols}
+            FROM Personel p
+            LEFT JOIN Izin_Bilgi ib ON p.KimlikNo = ib.TCKimlik
+            """
+            
+            cur = self.db.execute(sql)
+            rows = cur.fetchall()
+            
+            result = []
+            for row in rows:
+                row_dict = dict(row)
+                
+                # Personel verileri (p_ prefix'ini kaldır)
+                personel_data = {}
+                for col in self.columns:
+                    personel_data[col] = row_dict.get(f"p_{col}")
+                
+                # İzin bakiye verileri (ib_ prefix'ini kaldır, ana dict'e ekle)
+                for col in izin_cols:
+                    personel_data[col] = row_dict.get(f"ib_{col}")
+                
+                result.append(personel_data)
+            
+            logger.debug(f"get_all_with_bakiye: {len(result)} personel yüklendi (JOIN ile)")
+            return result
+            
+        except Exception as e:
+            logger.error(f"get_all_with_bakiye hatası: {e}")
+            # Fallback: Ayrı sorgular
+            logger.warning("Fallback: Ayrı sorgularla yükleniyor...")
+            return self.get_all()
+
+    def get_paginated_with_bakiye(self, page: int = 1, page_size: int = 100) -> tuple[List[Dict[str, Any]], int]:
+        """
+        Personel kayıtlarını sayfalara bölerek izin bakiye bilgileriyle birlikte getirir.
+        Lazy-loading desteği: tablonun scroll'unu takip ederek sayfa yükle.
+        
+        Args:
+            page: Sayfa numarası (1-based)
+            page_size: Her sayfada kaç kayıt (default: 100)
+            
+        Returns:
+            Tuple[List[dict], int]: (Personel listesi, Toplam kayıt sayısı)
+        
+        Example:
+            >>> page1, total = repo.get_paginated_with_bakiye(page=1, page_size=100)
+            >>> print(f"{len(page1)} personel, Toplam: {total}")
+            >>> # Daha fazla: page2, _ = repo.get_paginated_with_bakiye(page=2, page_size=100)
+        """
+        try:
+            if page < 1:
+                page = 1
+            
+            offset = (page - 1) * page_size
+            
+            # Personel kolonları
+            p_cols = ", ".join([f"p.{col} AS p_{col}" for col in self.columns])
+            
+            # İzin_Bilgi kolonları
+            izin_cols = [
+                "YillikDevir", "YillikHakedis", "YillikToplamHak",
+                "YillikKullanilan", "YillikKalan", "SuaKullanilabilirHak",
+                "SuaKullanilan", "SuaKalan", "SuaCariYilKazanim", "RaporMazeretTop"
+            ]
+            ib_cols = ", ".join([f"ib.{col} AS ib_{col}" for col in izin_cols])
+            
+            # Sayfalanmış sorgu
+            sql = f"""
+            SELECT {p_cols}, {ib_cols}
+            FROM Personel p
+            LEFT JOIN Izin_Bilgi ib ON p.KimlikNo = ib.TCKimlik
+            ORDER BY p.AdSoyad
+            LIMIT {page_size} OFFSET {offset}
+            """
+            
+            cur = self.db.execute(sql)
+            rows = cur.fetchall()
+            
+            # Toplam kayıt sayısı (for pagination info)
+            total_sql = "SELECT COUNT(*) as cnt FROM Personel"
+            total_result = self.db.execute(total_sql).fetchone()
+            total_count = total_result["cnt"] if total_result else 0
+            
+            result = []
+            for row in rows:
+                row_dict = dict(row)
+                
+                # Personel verileri (p_ prefix'ini kaldır)
+                personel_data = {}
+                for col in self.columns:
+                    personel_data[col] = row_dict.get(f"p_{col}")
+                
+                # İzin bakiye verileri (ib_ prefix'ini kaldır)
+                for col in izin_cols:
+                    personel_data[col] = row_dict.get(f"ib_{col}")
+                
+                result.append(personel_data)
+            
+            logger.debug(f"get_paginated_with_bakiye: Sayfa {page}, {len(result)} kayıt / Toplam {total_count}")
+            return result, total_count
+            
+        except Exception as e:
+            logger.error(f"get_paginated_with_bakiye hatası: {e}")
+            # Fallback: Pagination olmadan tümü
+            logger.warning("Fallback: Paginator olmadan tümü yükleniyor...")
+            return self.get_all_with_bakiye(), self.count_all()

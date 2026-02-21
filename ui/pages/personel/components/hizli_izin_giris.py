@@ -13,13 +13,10 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QCursor
 
 from core.logger import logger
-from core.date_utils import parse_date as parse_any_date
+from core.date_utils import parse_date
 from ui.theme_manager import ThemeManager
 from ui.styles import Colors
 from ui.styles.components import STYLES as S
-
-def _parse_date(val):
-    return parse_any_date(val)
 
 class HizliIzinGirisDialog(QDialog):
     """
@@ -118,8 +115,8 @@ class HizliIzinGirisDialog(QDialog):
             
             tatiller = registry.get("Tatiller").get_all()
             self._tatiller = [
-                _parse_date(r.get("Tarih", "")).isoformat()
-                for r in tatiller if _parse_date(r.get("Tarih", ""))
+                parse_date(r.get("Tarih", "")).isoformat()
+                for r in tatiller if parse_date(r.get("Tarih", ""))
             ]
         except Exception as e:
             logger.error(f"Hızlı izin sabitleri yükleme hatası: {e}")
@@ -148,6 +145,19 @@ class HizliIzinGirisDialog(QDialog):
             kalan -= 1
         self.ui["bitis"].setDate(QDate(current.year, current.month, current.day))
 
+    def _should_set_pasif(self, izin_tipi: str, gun: int) -> bool:
+        tip = str(izin_tipi or "").strip().lower()
+        return gun > 30 or "aylıksız" in tip or "ucretsiz" in tip or "ücretsiz" in tip
+
+    def _set_personel_pasif(self, registry, tc: str, izin_tipi: str, gun: int) -> None:
+        if not tc or not self._should_set_pasif(izin_tipi, gun):
+            return
+        try:
+            registry.get("Personel").update(tc, {"Durum": "Pasif"})
+            logger.info(f"Personel pasif yapıldı: {tc} — {izin_tipi} — {gun} gün")
+        except Exception as e:
+            logger.error(f"Personel durum güncelleme hatası: {e}")
+
     def _on_save(self):
         tc = self._personel.get("KimlikNo")
         ad = self._personel.get("AdSoyad")
@@ -163,13 +173,13 @@ class HizliIzinGirisDialog(QDialog):
             
             # Çakışma kontrolü
             all_izin = registry.get("Izin_Giris").get_all()
-            yeni_bas = _parse_date(baslama_str)
-            yeni_bit = _parse_date(bitis_str)
+            yeni_bas = parse_date(baslama_str)
+            yeni_bit = parse_date(bitis_str)
             for kayit in all_izin:
                 if str(kayit.get("Durum", "")) == "İptal": continue
                 if str(kayit.get("Personelid", "")) != tc: continue
-                vt_bas = _parse_date(kayit.get("BaslamaTarihi", ""))
-                vt_bit = _parse_date(kayit.get("BitisTarihi", ""))
+                vt_bas = parse_date(kayit.get("BaslamaTarihi", ""))
+                vt_bit = parse_date(kayit.get("BitisTarihi", ""))
                 if vt_bas and vt_bit and (yeni_bas <= vt_bit) and (yeni_bit >= vt_bas):
                     QMessageBox.warning(self, "Çakışma", "Bu tarihlerde zaten bir izin kaydı mevcut.")
                     return
@@ -194,6 +204,7 @@ class HizliIzinGirisDialog(QDialog):
             registry.get("Izin_Giris").insert(yeni_kayit)
             
             self._bakiye_dus(registry, tc, izin_tipi, gun)
+            self._set_personel_pasif(registry, tc, izin_tipi, gun)
 
             QMessageBox.information(self, "Başarılı", "İzin başarıyla kaydedildi.")
             self.izin_kaydedildi.emit()

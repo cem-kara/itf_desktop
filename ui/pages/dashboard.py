@@ -111,10 +111,7 @@ class DashboardWorker(QThread):
             logger.warning(f"Dashboard sayım hatası ({table_name}): {e}")
             return -1
 
-    def _parse_date(self, value):
-        if parse_date(value) is None:
-            return ""
-        return to_db_date(value)
+    # parse_date + to_db_date kullan (merkezi date_utils'tan)
 
     def _classify_leave_type(self, leave_type):
         leave_type = str(leave_type).strip().lower()
@@ -151,8 +148,8 @@ class DashboardWorker(QThread):
                 if status == "iptal":
                     continue
                 personel_id = str(row.get("Personelid", "")).strip()
-                start_date = self._parse_date(row.get("BaslamaTarihi", ""))
-                end_date = self._parse_date(row.get("BitisTarihi", "")) or start_date
+                start_date = parse_date(row.get("BaslamaTarihi", ""))
+                end_date = parse_date(row.get("BitisTarihi", "")) or start_date
                 if not personel_id or not start_date:
                     continue
                 if start_date < month_end and end_date >= month_start:

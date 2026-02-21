@@ -262,7 +262,7 @@ class PuantajRaporPage(QWidget):
 
     def _rapor_olustur(self):
         """
-        FHSZ_Puantaj tablosundan seçili yıl (+ opsiyonel dönem) verilerini çek.
+        FHSZ_Puantaj tablosundan seçili yıl + dönem aralığı verilerini çek.
         Her personel için kümülatif saat ve şua hak ediş hesapla.
         """
         if not self._db:
@@ -572,8 +572,9 @@ class PuantajRaporPage(QWidget):
             styles = getSampleStyleSheet()
 
             # Başlık
-            donem_text = self.cmb_donem.currentText()
-            title_text = f"FHSZ Puantaj Raporu — {yil} {donem_text}"
+            ay_start_text = self.cmb_ay.currentText()
+            ay_end_text = self.cmb_end_ay.currentText()
+            title_text = f"FHSZ Puantaj Raporu — {yil} ({ay_start_text} - {ay_end_text})"
             title_style = styles["Title"]
             title_style.fontName = font_bold
             title_style.fontSize = 14

@@ -19,18 +19,10 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QColor, QCursor
 
 from core.logger import logger
-from core.date_utils import parse_date as parse_any_date, to_ui_date
+from core.date_utils import parse_date, to_ui_date
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
-
-def _parse_date(val):
-    """Merkezi date_utils üzerinden tarih parse eder."""
-    return parse_any_date(val)
-
-def _format_date_display(val):
-    """Tarih string → dd.MM.yyyy gösterim."""
-    return to_ui_date(val)
 
 
 AY_ISIMLERI = [
@@ -86,7 +78,7 @@ class IzinTableModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             val = str(row.get(col_key, ""))
             if col_key in ("BaslamaTarihi", "BitisTarihi") and val:
-                return _format_date_display(val)
+                return to_ui_date(val)
             return val
 
         if role == Qt.BackgroundRole and col_key == "Durum":
@@ -103,7 +95,7 @@ class IzinTableModel(QAbstractTableModel):
         # Sıralama için ham ISO değer
         if role == Qt.UserRole:
             if col_key in ("BaslamaTarihi", "BitisTarihi"):
-                d = _parse_date(row.get(col_key, ""))
+                d = parse_date(row.get(col_key, ""))
                 return d.isoformat() if d else ""
             return str(row.get(col_key, ""))
 
@@ -647,7 +639,7 @@ class IzinTakipPage(QWidget):
                 self._tatiller = []
                 for r in tatiller:
                     t = str(r.get("Tarih", "")).strip()
-                    d = _parse_date(t)
+                    d = parse_date(t)
                     if d:
                         self._tatiller.append(d.isoformat())
             except Exception:
@@ -658,7 +650,7 @@ class IzinTakipPage(QWidget):
 
             # Yeniden eskiye sırala (çoklu tarih formatı)
             self._all_izin.sort(
-                key=lambda r: _parse_date(r.get("BaslamaTarihi", "")) or date.min,
+                key=lambda r: parse_date(r.get("BaslamaTarihi", "")) or date.min,
                 reverse=True
             )
 
@@ -795,7 +787,7 @@ class IzinTakipPage(QWidget):
         if ay or yil:
             result = []
             for r in filtered:
-                d = _parse_date(r.get("BaslamaTarihi", ""))
+                d = parse_date(r.get("BaslamaTarihi", ""))
                 if not d:
                     continue
                 if yil and d.year != yil:
@@ -812,7 +804,7 @@ class IzinTakipPage(QWidget):
 
         # Sıralama: yeniden eskiye
         filtered.sort(
-            key=lambda r: _parse_date(r.get("BaslamaTarihi", "")) or date.min,
+            key=lambda r: parse_date(r.get("BaslamaTarihi", "")) or date.min,
             reverse=True
         )
 
@@ -846,6 +838,19 @@ class IzinTakipPage(QWidget):
             kalan -= 1
 
         self.dt_bitis.setDate(QDate(current.year, current.month, current.day))
+
+    def _should_set_pasif(self, izin_tipi: str, gun: int) -> bool:
+        tip = str(izin_tipi or "").strip().lower()
+        return gun > 30 or "aylıksız" in tip or "ucretsiz" in tip or "ücretsiz" in tip
+
+    def _set_personel_pasif(self, registry, tc: str, izin_tipi: str, gun: int) -> None:
+        if not tc or not self._should_set_pasif(izin_tipi, gun):
+            return
+        try:
+            registry.get("Personel").update(tc, {"Durum": "Pasif"})
+            logger.info(f"Personel pasif yapıldı: {tc} — {izin_tipi} — {gun} gün")
+        except Exception as e:
+            logger.error(f"Personel durum güncelleme hatası: {e}")
 
     # ═══════════════════════════════════════════
     #  KAYDET
@@ -881,8 +886,8 @@ class IzinTakipPage(QWidget):
         # ═══════════════════════════════════════════════
         # 🔧 TARİH ÇAKIŞMA KONTROLÜ
         # ═══════════════════════════════════════════════
-        yeni_bas = _parse_date(baslama)
-        yeni_bit = _parse_date(bitis)
+        yeni_bas = parse_date(baslama)
+        yeni_bit = parse_date(bitis)
 
         if not yeni_bas or not yeni_bit:
             QMessageBox.critical(self, "Hata", "Tarih formatı hatalı.")
@@ -901,8 +906,8 @@ class IzinTakipPage(QWidget):
                 continue
 
             # Tarih çakışması kontrolü
-            vt_bas = _parse_date(kayit.get("BaslamaTarihi", ""))
-            vt_bit = _parse_date(kayit.get("BitisTarihi", ""))
+            vt_bas = parse_date(kayit.get("BaslamaTarihi", ""))
+            vt_bit = parse_date(kayit.get("BitisTarihi", ""))
 
             if vt_bas and vt_bit:
                 # Çakışma formülü: (yeni_bas <= vt_bit) AND (yeni_bit >= vt_bas)
@@ -984,6 +989,11 @@ class IzinTakipPage(QWidget):
             # 🔧 BAKİYE DÜŞME (Otomatik)
             # ═══════════════════════════════════════════════
             self._bakiye_dus(registry, tc, izin_tipi, gun)
+
+            # ═══════════════════════════════════════════════
+            # 🔧 UZUN / AYLIKSIZ İZİN → PERSONEL PASİF
+            # ═══════════════════════════════════════════════
+            self._set_personel_pasif(registry, tc, izin_tipi, gun)
 
             QMessageBox.information(
                 self, "Başarılı",

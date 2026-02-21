@@ -10,23 +10,34 @@ class RepositoryRegistry:
     def get(self, table_name):
         """
         İstenilen tablo için repository döner.
+        Özel repository sınıfları varsa onları kullanır (PersonelRepository, vb).
         Aynı repository bir kez oluşturulur (singleton-like).
         """
         if table_name not in self._repos:
-            cfg = TABLES[table_name]
+            # Özel repository sınıfları
+            if table_name == "Personel":
+                from database.repositories.personel_repository import PersonelRepository
+                self._repos[table_name] = PersonelRepository(self.db)
+            elif table_name == "Cihazlar":
+                from database.repositories.cihaz_repository import CihazRepository
+                self._repos[table_name] = CihazRepository(self.db)
+            elif table_name == "RKE_Envanter":
+                from database.repositories.rke_repository import RKERepository
+                self._repos[table_name] = RKERepository(self.db)
+            else:
+                # Generic BaseRepository
+                cfg = TABLES[table_name]
+                has_sync = cfg.get("sync", True) and cfg.get("pk") is not None
+                extra_cols = ["sync_status", "updated_at"] if has_sync else []
 
-            has_sync = cfg.get("sync", True) and cfg.get("pk") is not None
-
-            extra_cols = ["sync_status", "updated_at"] if has_sync else []
-
-            self._repos[table_name] = BaseRepository(
-                db=self.db,
-                table_name=table_name,
-                pk=cfg["pk"],
-                columns=cfg["columns"] + extra_cols,
-                has_sync=has_sync,
-                date_fields=cfg.get("date_fields")
-            )
+                self._repos[table_name] = BaseRepository(
+                    db=self.db,
+                    table_name=table_name,
+                    pk=cfg["pk"],
+                    columns=cfg["columns"] + extra_cols,
+                    has_sync=has_sync,
+                    date_fields=cfg.get("date_fields")
+                )
 
         return self._repos[table_name]
 

@@ -3,8 +3,8 @@ import os
 import uuid
 from datetime import date, datetime
 
-from PySide6.QtCore import Qt, QModelIndex, QAbstractTableModel, QDate, QPropertyAnimation, QEasingCurve
-from PySide6.QtGui import QCursor
+from PySide6.QtCore import Qt, QModelIndex, QAbstractTableModel, QDate, QPropertyAnimation, QEasingCurve, QRect, QSize
+from PySide6.QtGui import QCursor, QPainter, QColor, QBrush, QFont, QPen, QFontMetrics
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QFrame, QScrollArea,
     QLabel, QComboBox, QLineEdit, QPushButton, QTableView, QHeaderView,
@@ -27,6 +27,98 @@ TABLE_COLUMNS = [
     ("Sonuc", "Sonuc"),
     ("Durum", "Durum"),
 ]
+
+
+# ─── Muayene Timeline Widget ───────────────────────────────
+class MuayeneTimelineWidget(QWidget):
+    """
+    Personelin muayene geçmişini dikey timeline olarak gösteren widget.
+    - Tarih noktaları: Dikey çizgi üzerinde
+    - Renk kodu: Uygun (yeşil), Şartlı (sarı), Uygun Değil (kırmızı)
+    - Hover: Muayene detaylarını göster
+    """
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._exams: list[dict] = []  # [{"tarih": "2026-01-15", "sonuc": "Uygun", "notlar": "..."}, ...]
+        self.setMinimumHeight(300)
+        self.setStyleSheet("background: transparent;")
+    
+    def set_exams(self, exams: list[dict]):
+        """Muayene liste ekle ve timeline'ı redraw et."""
+        # Tarihe göre sırala (en eski → en yeni)
+        self._exams = sorted(exams, key=lambda x: x.get("MuayeneTarihi", ""))
+        self.update()
+    
+    def paintEvent(self, event):
+        if not self._exams:
+            p = QPainter(self)
+            p.setFont(QFont("", 9))
+            p.setPen(QColor(DarkTheme.TEXT_MUTED))
+            p.drawText(self.rect(), Qt.AlignCenter, "Muayene geçmişi boş")
+            return
+        
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        
+        # Padding ve layout
+        m = 20  # margin
+        cx = m + 20  # Timeline merkezine x
+        top_y = m
+        bot_y = self.height() - m
+        
+        if len(self._exams) > 1:
+            item_height = (bot_y - top_y) / (len(self._exams) - 1) if len(self._exams) > 1 else 40
+        else:
+            item_height = 40
+            top_y = self.height() // 2 - 20
+        
+        # Ana çizgi (timeline)
+        p.setPen(QPen(QColor(DarkTheme.BG_TERTIARY), 2))
+        p.drawLine(cx, top_y, cx, bot_y)
+        
+        # Her muayene noktası
+        for i, exam in enumerate(self._exams):
+            y = top_y + i * item_height
+            
+            # Status rengine göre renk seç
+            status_color = self._get_status_color(exam.get("Durum", "Uygun"))
+            
+            # Nokta çiz (daire)
+            p.setBrush(QBrush(status_color))
+            p.setPen(QPen(QColor(DarkTheme.BG_PRIMARY), 2))
+            radius = 6
+            p.drawEllipse(int(cx - radius), int(y - radius), radius * 2, radius * 2)
+            
+            # Tarih ve sonuç yazı (nodeun sağında)
+            text_x = cx + 16
+            tarih_str = to_ui_date(exam.get("MuayeneTarihi", ""), "—")
+            sonuc_str = exam.get("Sonuc", "")
+            
+            # Tarih
+            p.setFont(QFont("", 8, QFont.Bold))
+            p.setPen(QColor(DarkTheme.TEXT_PRIMARY))
+            p.drawText(int(text_x), int(y - 8), f"{tarih_str}")
+            
+            # Sonuç/Durum
+            p.setFont(QFont("", 7))
+            p.setPen(QColor(DarkTheme.TEXT_MUTED))
+            p.drawText(int(text_x), int(y + 6), f"{sonuc_str}")
+        
+        p.end()
+    
+    def _get_status_color(self, status: str) -> QColor:
+        """Status'a göre renk döndür."""
+        s = str(status).strip().lower()
+        if "uygun" in s and "değil" not in s and "şartlı" not in s:
+            # Uygun → yeşil
+            return QColor(34, 197, 94)  # green-500
+        elif "şartlı" in s:
+            # Şartlı Uygun → sarı
+            return QColor(234, 179, 8)  # yellow-500
+        else:
+            # Uygun Değil → kırmızı
+            return QColor(239, 68, 68)  # red-500
 
 
 class SaglikTakipTableModel(QAbstractTableModel):
@@ -91,6 +183,7 @@ class SaglikTakipPage(QWidget):
         self._exam_widgets = {}
         self._drawer = None  # Sağdan açılan panel
         self._drawer_width = 450  # Drawer genişliği
+        self._timeline_widget = None  # Muayene timeline
         self._setup_ui()
         self._connect_signals()
 
@@ -242,6 +335,15 @@ class SaglikTakipPage(QWidget):
         form_lay = QVBoxLayout(form_content)
         form_lay.setContentsMargins(12, 12, 12, 12)
         form_lay.setSpacing(12)
+
+        # Muayene Geçmişi Timeline
+        grp_timeline = QGroupBox("Muayene Geçmişi")
+        grp_timeline.setStyleSheet(S["group"])
+        timeline_lay = QVBoxLayout(grp_timeline)
+        timeline_lay.setContentsMargins(12, 12, 12, 12)
+        self._timeline_widget = MuayeneTimelineWidget()
+        timeline_lay.addWidget(self._timeline_widget)
+        form_lay.addWidget(grp_timeline)
 
         # Kimlik ve Muayene
         grp_kimlik = QGroupBox("Kimlik ve Muayene")
@@ -716,7 +818,7 @@ class SaglikTakipPage(QWidget):
             ("Goz", "GozMuayeneTarihi", "GozDurum"),
             ("Goruntuleme", "GoruntulemeMuayeneTarihi", "GoruntulemeDurum"),
         ]
-        for key, col_t, col_d, col_a in mapping:
+        for key, col_t, col_d in mapping:
             w = self._exam_widgets[key]
             w["durum"].setCurrentText(str(takip_row.get(col_d, "")))
             d = parse_date(takip_row.get(col_t, ""))
@@ -732,8 +834,22 @@ class SaglikTakipPage(QWidget):
                 self.cmb_personel.setCurrentIndex(i)
                 break
 
+        # Timeline güncelle
+        self._update_timeline_for_person(personelid)
+        
         # Drawer'ı aç
         self._open_drawer()
+    
+    def _update_timeline_for_person(self, personelid: str):
+        """Kişinin tüm muayene geçmişini timeline'a göster."""
+        if not self._timeline_widget:
+            return
+        
+        # Personel için tüm muayene kayıtlarını filtrele
+        person_exams = [r for r in self._all_rows if str(r.get("Personelid", "")).strip() == personelid]
+        
+        # Muayene geçmişini timeline'a geç
+        self._timeline_widget.set_exams(person_exams)
 
     def _new_record(self):
         """Yeni kayıt eklemek için formu temizle ve drawer'ı aç."""
