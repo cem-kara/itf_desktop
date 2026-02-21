@@ -71,6 +71,27 @@ TABLES = {
         ],
     },
 
+    "Cihaz_Teknik": {
+        "pk": "Cihazid",
+        "columns": [
+            "Cihazid",
+            "UrunTanimi","BirincilUrunNumarasi","Firma","Marka",
+            "UrunAdi","UrunKunye","TurkceEtiket","OrijinalEtiket",
+            "VersiyonModel","ReferansKatalogNo","UrunSayisi",
+            "UrunAciklamasi","IthalImalBilgisi","MenseiUlke",
+            "IthalEdilenUlke","YerliMaliBelgesiVarMi","MRGGuvenlikBilgisi",
+            "LateksIceriyorMu","FtalatDEHPIceriyorMu",
+            "IyonizeRadyasyonIcerirMi","NanomateryalIceriyorMu",
+            "ImplanteEdilebilirMi","TekKullanimlikMi",
+            "SinirliKullanimSayisiVarMi","TekHastaKullanimMi",
+            "EkstraBilgiLinki","RafOmruVarMi","KalibrasyonaTabiMi",
+            "KalibrasyonPeriyoduAy","BakimaTabiMi","BakimPeriyoduAy",
+            "SterilPaketlendiMi","KullanimOncesiSterilizasyonGerekliMi",
+            "Ek3KapsamindaMi","BilesenAksesuarMi","UrunBelgeleri",
+            "UrunGorselDosyasi"
+        ],
+    },
+
     "Cihaz_Ariza": {
         "pk": "Arizaid",
         "columns": [                          # ← "colums" → "columns"

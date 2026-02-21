@@ -704,7 +704,6 @@ class MainWindow(QMainWindow):
         from ui.pages.cihaz.cihaz_ekle import CihazEklePage
         page = CihazEklePage(
             db=self._db,
-            edit_data=data,
             on_saved=self._on_cihaz_saved
         )
         
@@ -712,9 +711,7 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(page)
         self.stack.setCurrentWidget(page)
         
-        marka = data.get("Marka", "")
-        model = data.get("Model", "")
-        self.page_title.setText(f"Cihaz Düzenle — {marka} {model}")
+        self.page_title.setText("Cihaz Ekle")
         self.page_title.setVisible(True)
 
     def _open_cihaz_merkez(self, data):
@@ -729,7 +726,7 @@ class MainWindow(QMainWindow):
             old.deleteLater()
 
         from ui.pages.cihaz.cihaz_merkez import CihazMerkezPage
-        page = CihazMerkezPage(db=self._db, cihaz_data=data)
+        page = CihazMerkezPage(db=self._db, cihaz_id=cihaz_id, sabitler_cache=self._sabitler_cache)
         page.kapat_istegi.connect(lambda: self._back_to_cihaz_listesi(merkez_key))
 
         self._pages[merkez_key] = page

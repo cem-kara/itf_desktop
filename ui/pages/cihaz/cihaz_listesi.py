@@ -25,14 +25,14 @@ C = DarkTheme
 
 # ─── Sütun tanımları ──────────────────────────────────────────
 COLUMNS = [
-    ("_cihaz",       "Cihaz",          140),
-    ("_marka_model", "Marka / Model",  180),
+    ("_cihaz",       "Cihaz",          250),
+    ("_marka_model", "Marka / Model",  130),
     ("_seri",        "Seri / NDK",     140),
-    ("Birim",        "Birim",          120),
-    ("Sorumlusu",    "Sorumlu",        120),
+    ("Birim",        "Birim",          160),
+    ("DemirbasNo",   "Demirbas No",    120),
     ("Durum",        "Durum",           90),
-    ("BakimDurum",   "Bakım",           90),
-    ("_actions",     "",               190),
+    #("BakimDurum",   "Bakım",           90),
+    ("_actions",     "",               200),
 ]
 COL_IDX = {c[0]: i for i, c in enumerate(COLUMNS)}
 
@@ -111,7 +111,7 @@ class CihazDelegate(QStyledItemDelegate):
         self._hover_row = row
 
     def sizeHint(self, option, index):
-        return QSize(COLUMNS[index.column()][2], 40)
+        return QSize(COLUMNS[index.column()][2], 46)
 
     def paint(self, painter: QPainter, option, index):
         painter.save()
@@ -153,13 +153,13 @@ class CihazDelegate(QStyledItemDelegate):
                            str(raw.get("NDKSeriNo", "") or "—"),
                            mono_top=True)
         elif key == "Birim":
-            self._draw_mono(painter, rect, str(raw.get("Birim", "") or "—"))
-        elif key == "Sorumlusu":
-            self._draw_mono(painter, rect, str(raw.get("Sorumlusu", "") or "—"))
+            self._draw_two(painter, rect,
+                           str(raw.get("AnaBilimDali", "") or "—"),
+                           str(raw.get("Birim", "") or "—"))
+        elif key == "DemirbasNo":
+            self._draw_mono(painter, rect, str(raw.get("DemirbasNo", "") or "—"))
         elif key == "Durum":
             self._draw_status_pill(painter, rect, str(raw.get("Durum", "") or "—"))
-        elif key == "BakimDurum":
-            self._draw_status_pill(painter, rect, str(raw.get("BakimDurum", "") or "—"))
         elif key == "_actions":
             if is_hover or is_sel:
                 self._draw_action_btns(painter, rect, row)
@@ -250,6 +250,7 @@ class CihazListesiPage(QWidget):
         self._all_data = []
         self._active_filter = "Tümü"
         self._filter_btns = {}
+        self._hover_row = -1
 
         # Arama debounce timer
         self._search_timer = QTimer()
@@ -419,7 +420,7 @@ class CihazListesiPage(QWidget):
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
         self.table.setMouseTracking(True)
-        self.table.verticalHeader().setDefaultSectionSize(40)
+        self.table.verticalHeader().setDefaultSectionSize(46)
 
         self._delegate = CihazDelegate(self.table)
         self.table.setItemDelegate(self._delegate)
@@ -485,6 +486,7 @@ class CihazListesiPage(QWidget):
         self.table.doubleClicked.connect(self._on_double_click)
         self.table.mouseMoveEvent = self._tbl_mouse_move
         self.table.mousePressEvent = self._tbl_mouse_press
+        self.table.leaveEvent = self._tbl_leave
 
     # ─── Veri Yükleme ────────────────────────────────────
 
@@ -641,20 +643,28 @@ class CihazListesiPage(QWidget):
 
     def _tbl_mouse_move(self, event):
         idx = self.table.indexAt(event.pos())
-        src_row = self._proxy.mapToSource(idx).row() if idx.isValid() else -1
-        self._delegate.set_hover_row(src_row)
+        proxy_row = idx.row() if idx.isValid() else -1
+        self._hover_row = proxy_row
+        self._delegate.set_hover_row(proxy_row)
         self.table.viewport().update()
         QTableView.mouseMoveEvent(self.table, event)
+
+    def _tbl_leave(self, event):
+        self._hover_row = -1
+        self._delegate.set_hover_row(-1)
+        self.table.viewport().update()
+        QTableView.leaveEvent(self.table, event)
 
     def _tbl_mouse_press(self, event):
         idx = self.table.indexAt(event.pos())
         if idx.isValid():
             src = self._proxy.mapToSource(idx)
+            proxy_row = idx.row()
             row_data = self._model.get_row(src.row())
             if row_data and COLUMNS[idx.column()][0] == "_actions":
                 cell_rect = self.table.visualRect(idx)
                 local_pos = event.pos() - cell_rect.topLeft()
-                action = self._delegate.get_action_at(src.row(), local_pos)
+                action = self._delegate.get_action_at(proxy_row, local_pos)
                 if action == "detay":
                     self.detay_requested.emit(row_data)
                     event.accept()

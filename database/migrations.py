@@ -19,7 +19,7 @@ class MigrationManager:
     """
     
     # Mevcut şema versiyonu
-    CURRENT_VERSION = 7
+    CURRENT_VERSION = 8
 
     def __init__(self, db_path):
         self.db_path = db_path
@@ -236,6 +236,66 @@ class MigrationManager:
         finally:
             conn.close()
 
+    def _migrate_to_v8(self):
+        """
+        v7 → v8: Cihaz_Teknik tablosunu ekle
+        """
+        conn = self.connect()
+        cur = conn.cursor()
+
+        try:
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS Cihaz_Teknik (
+                Cihazid TEXT PRIMARY KEY,
+                UrunTanimi TEXT,
+                BirincilUrunNumarasi TEXT,
+                Firma TEXT,
+                Marka TEXT,
+                UrunAdi TEXT,
+                UrunKunye TEXT,
+                TurkceEtiket TEXT,
+                OrijinalEtiket TEXT,
+                VersiyonModel TEXT,
+                ReferansKatalogNo TEXT,
+                UrunSayisi TEXT,
+                UrunAciklamasi TEXT,
+                IthalImalBilgisi TEXT,
+                MenseiUlke TEXT,
+                IthalEdilenUlke TEXT,
+                YerliMaliBelgesiVarMi TEXT,
+                MRGGuvenlikBilgisi TEXT,
+                LateksIceriyorMu TEXT,
+                FtalatDEHPIceriyorMu TEXT,
+                IyonizeRadyasyonIcerirMi TEXT,
+                NanomateryalIceriyorMu TEXT,
+                ImplanteEdilebilirMi TEXT,
+                TekKullanimlikMi TEXT,
+                SinirliKullanimSayisiVarMi TEXT,
+                TekHastaKullanimMi TEXT,
+                EkstraBilgiLinki TEXT,
+                RafOmruVarMi TEXT,
+                KalibrasyonaTabiMi TEXT,
+                KalibrasyonPeriyoduAy TEXT,
+                BakimaTabiMi TEXT,
+                BakimPeriyoduAy TEXT,
+                SterilPaketlendiMi TEXT,
+                KullanimOncesiSterilizasyonGerekliMi TEXT,
+                Ek3KapsamindaMi TEXT,
+                BilesenAksesuarMi TEXT,
+                UrunBelgeleri TEXT,
+                UrunGorselDosyasi TEXT,
+
+                sync_status TEXT DEFAULT 'clean',
+                updated_at TEXT
+            )
+            """)
+
+            conn.commit()
+            logger.info("v8: Cihaz_Teknik tablosu eklendi")
+
+        finally:
+            conn.close()
+
     # v3-v7: Şema değişikliği içermeyen versiyon adımları. Metod tanımlanmamıştır;
     # run_migrations döngüsü bunları otomatik "no-op" olarak geçer ve
     # schema_version tablosuna yine de kaydeder (gap bırakmaz).
@@ -382,6 +442,53 @@ class MigrationManager:
             Durum TEXT,
             Img TEXT,
             NDKLisansBelgesi TEXT,
+
+            sync_status TEXT DEFAULT 'clean',
+            updated_at TEXT
+        )
+        """)
+
+        # ---------------- CIHAZ TEKNIK ----------------
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Cihaz_Teknik (
+            Cihazid TEXT PRIMARY KEY,
+            UrunTanimi TEXT,
+            BirincilUrunNumarasi TEXT,
+            Firma TEXT,
+            Marka TEXT,
+            UrunAdi TEXT,
+            UrunKunye TEXT,
+            TurkceEtiket TEXT,
+            OrijinalEtiket TEXT,
+            VersiyonModel TEXT,
+            ReferansKatalogNo TEXT,
+            UrunSayisi TEXT,
+            UrunAciklamasi TEXT,
+            IthalImalBilgisi TEXT,
+            MenseiUlke TEXT,
+            IthalEdilenUlke TEXT,
+            YerliMaliBelgesiVarMi TEXT,
+            MRGGuvenlikBilgisi TEXT,
+            LateksIceriyorMu TEXT,
+            FtalatDEHPIceriyorMu TEXT,
+            IyonizeRadyasyonIcerirMi TEXT,
+            NanomateryalIceriyorMu TEXT,
+            ImplanteEdilebilirMi TEXT,
+            TekKullanimlikMi TEXT,
+            SinirliKullanimSayisiVarMi TEXT,
+            TekHastaKullanimMi TEXT,
+            EkstraBilgiLinki TEXT,
+            RafOmruVarMi TEXT,
+            KalibrasyonaTabiMi TEXT,
+            KalibrasyonPeriyoduAy TEXT,
+            BakimaTabiMi TEXT,
+            BakimPeriyoduAy TEXT,
+            SterilPaketlendiMi TEXT,
+            KullanimOncesiSterilizasyonGerekliMi TEXT,
+            Ek3KapsamindaMi TEXT,
+            BilesenAksesuarMi TEXT,
+            UrunBelgeleri TEXT,
+            UrunGorselDosyasi TEXT,
 
             sync_status TEXT DEFAULT 'clean',
             updated_at TEXT
@@ -596,7 +703,7 @@ class MigrationManager:
 
         tables = [
             "Personel", "Izin_Giris", "Izin_Bilgi", "FHSZ_Puantaj",
-            "Cihazlar", "Cihaz_Ariza", "Ariza_Islem", "Periyodik_Bakim",
+            "Cihazlar", "Cihaz_Teknik", "Cihaz_Ariza", "Ariza_Islem", "Periyodik_Bakim",
             "Kalibrasyon", "Sabitler", "Tatiller", "Loglar",
             "RKE_List", "RKE_Muayene", "Personel_Saglik_Takip", "schema_version"
         ]

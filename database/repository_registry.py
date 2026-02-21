@@ -21,6 +21,9 @@ class RepositoryRegistry:
             elif table_name == "Cihazlar":
                 from database.repositories.cihaz_repository import CihazRepository
                 self._repos[table_name] = CihazRepository(self.db)
+            elif table_name == "Cihaz_Teknik":
+                from database.repositories.cihaz_teknik_repository import CihazTeknikRepository
+                self._repos[table_name] = CihazTeknikRepository(self.db)
             elif table_name == "RKE_Envanter":
                 from database.repositories.rke_repository import RKERepository
                 self._repos[table_name] = RKERepository(self.db)
