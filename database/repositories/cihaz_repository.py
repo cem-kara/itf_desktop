@@ -122,6 +122,38 @@ class CihazRepository(BaseRepository):
         result = self.db.execute(sql, [cihaz_tipi]).fetchone()
         return result["cnt"] if result else 0
 
+    # ── Sayfalama (Lazy-loading) ──────────────────────────────
+
+    def get_paginated(self, page: int = 1, page_size: int = 100) -> tuple[List[Dict[str, Any]], int]:
+        """
+        Cihaz kayıtlarını sayfalı şekilde getirir.
+
+        Args:
+            page: Sayfa numarası (1-based)
+            page_size: Sayfa başına kayıt sayısı
+
+        Returns:
+            (cihaz_listesi, toplam_kayit)
+        """
+        try:
+            if page < 1:
+                page = 1
+            offset = (page - 1) * page_size
+
+            sql = f"""
+            SELECT * FROM {self.table}
+            ORDER BY Marka, Model
+            LIMIT {page_size} OFFSET {offset}
+            """
+            rows = self.db.execute(sql).fetchall()
+            cihazlar = [dict(row) for row in rows]
+
+            total = self.count_all()
+            return cihazlar, total
+        except Exception as e:
+            logger.warning(f"Cihaz sayfalama hatası: {e}")
+            return self.get_all(), self.count_all()
+
     # ── Arıza & Bakım İşlemleri ────────────────────────────────
 
     def get_arizali_cihazlar(self) -> List[Dict[str, Any]]:
