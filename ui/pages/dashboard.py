@@ -369,7 +369,8 @@ class DashboardPage(QWidget):
         title_lbl.setStyleSheet(
             f"font-size: 22px; font-weight: 800; color: {TXT}; background: transparent;"
         )
-        today_lbl = QLabel(datetime.now().strftime("%-d %B %Y, %A"))
+        _now = datetime.now()
+        today_lbl = QLabel(f"{_now.day} {_now.strftime('%B %Y, %A')}")
         today_lbl.setStyleSheet(
             f"font-size: 12px; color: {TXT_DIM}; background: transparent;"
         )
