@@ -70,6 +70,77 @@ _BTN_S = (
 )
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  ALAN FILTRELEME (Cihaz Kimligi.ini)
+# ══════════════════════════════════════════════════════════════════════════════
+
+_JSON_KEY_TO_DB_FIELD = {
+    "markaAdi": "Marka",
+    "versiyonModel": "Model",
+    "urunTanimi": "UrunTanimi",
+    "gmdnTerim.turkceAd": "GmdnTurkce",
+    "gmdnTerim.turkceAciklama": "GmdnAciklama",
+    "birincilUrunNumarasi": "UrunNo",
+    "durum": "UrunDurum",
+    "utsBaslangicTarihi": "UTSBaslangicTarihi",
+    "ithalImalBilgisi": "IthalImalBilgisi",
+    "menseiUlkeSet": "MenseiUlke",
+    "baskaCihazinBilesenAksesuarYedekParcasiMi": "BilesenAksesuarMi",
+    "iyonizeRadyasyonIcerir": "IyonizeRadyasyonIcerirMi",
+    "mrgUyumlu": "MRGGuvenlikBilgisi",
+    "vucudaImplanteEdilebilirMi": "ImplanteEdilebilirMi",
+    "tekKullanimlik": "TekKullanimlikMi",
+    "tekHastayaKullanilabilir": "TekHastaKullanimMi",
+    "kalibrasyonaTabiMi": "KalibrasyonaTabiMi",
+    "kalibrasyonPeriyodu": "KalibrasyonPeriyoduAy",
+    "bakimaTabiMi": "BakimaTabiMi",
+    "bakimPeriyodu": "BakimPeriyoduAy",
+    "kurum.unvan": "Firma",
+    "kurum.eposta": "FirmaEmail",
+    "belgeSet[0].turkceDokumanDosyaAdi": "UrunBelgeleri",
+    "belgeSet[0].guncellemeTarihi": "UrunBelgeleri",
+    "urunKunyesiDosyaAdi": "UrunKunye",
+}
+
+
+def _load_allowed_json_keys() -> set:
+    import os
+
+    ini_path = os.path.join(os.path.dirname(__file__), "🏷️ Cihaz Kimliği.ini")
+    keys = set()
+    try:
+        with open(ini_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                if "JSON Karşılığı" in line:
+                    continue
+                if "\t" not in line:
+                    continue
+                parts = [p.strip() for p in line.split("\t") if p.strip()]
+                if len(parts) < 2:
+                    continue
+                json_key = parts[-1]
+                if json_key:
+                    keys.add(json_key)
+    except Exception as e:
+        logger.warning(f"Cihaz Kimligi ini okunamadi: {e}")
+    return keys
+
+
+def _load_allowed_db_fields() -> set:
+    json_keys = _load_allowed_json_keys()
+    if not json_keys:
+        return set()
+    return {db_field for key, db_field in _JSON_KEY_TO_DB_FIELD.items() if key in json_keys}
+
+
+def _filter_allowed_fields(data: Dict[str, str], allowed: set) -> Dict[str, str]:
+    if not allowed:
+        return data
+    return {k: v for k, v in data.items() if k in allowed}
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  PLAYWRIGHT BROWSER SCRAPER
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -606,6 +677,10 @@ def _parse_uts_api_response(api_response: dict, urun_no: str) -> Dict[str, str]:
         if "turkceAd" in gmdn and gmdn["turkceAd"]:
             r["GmdnTurkce"] = gmdn["turkceAd"]
             logger.debug(f"✓ GmdnTurkce: {gmdn['turkceAd'][:60]}")
+
+        if "turkceAciklama" in gmdn and gmdn["turkceAciklama"]:
+            r["GmdnAciklama"] = gmdn["turkceAciklama"]
+            logger.debug(f"✓ GmdnAciklama: {gmdn['turkceAciklama'][:60]}")
         
         if "ingilizceAd" in gmdn and gmdn["ingilizceAd"]:
             r["GmdnIngilizce"] = gmdn["ingilizceAd"]
@@ -622,6 +697,8 @@ def _parse_uts_api_response(api_response: dict, urun_no: str) -> Dict[str, str]:
         "sterilPaketlendi": "SterilPaketlendiMi",
         "vucudaImplanteEdilebilirMi": "ImplanteEdilebilirMi",
         "tekKullanimlik": "TekKullanimlikMi",
+        "tekHastayaKullanilabilir": "TekHastaKullanimMi",
+        "baskaCihazinBilesenAksesuarYedekParcasiMi": "BilesenAksesuarMi",
         "sistemdeTekilUrunuVarMi": "TekilUrunVarMi",
         "saklamaKosuluGerektiriyorMu": "SaklamaKosuluVar",
     }
@@ -684,6 +761,14 @@ def _parse_uts_api_response(api_response: dict, urun_no: str) -> Dict[str, str]:
         if val and isinstance(val, str):
             r["IthalImalBilgisi"] = val
             logger.debug(f"✓ IthalImalBilgisi: {val}")
+
+    if "menseiUlkeSet" in item and item["menseiUlkeSet"]:
+        val = item["menseiUlkeSet"]
+        if isinstance(val, list):
+            val = ", ".join([str(v) for v in val if v])
+        if val:
+            r["MenseiUlke"] = str(val)
+            logger.debug(f"✓ MenseiUlke: {val}")
     
     if "durum" in item:
         val = item["durum"]
@@ -696,6 +781,25 @@ def _parse_uts_api_response(api_response: dict, urun_no: str) -> Dict[str, str]:
         if val:
             r["UrunNo"] = str(val)
             logger.debug(f"✓ UrunNo: {val}")
+
+    if "urunKunyesiDosyaAdi" in item and item["urunKunyesiDosyaAdi"]:
+        val = item["urunKunyesiDosyaAdi"]
+        r["UrunKunye"] = str(val)
+        logger.debug(f"✓ UrunKunye: {val}")
+
+    if "belgeSet" in item and isinstance(item["belgeSet"], list) and item["belgeSet"]:
+        doc = item["belgeSet"][0]
+        if isinstance(doc, dict):
+            doc_name = doc.get("turkceDokumanDosyaAdi")
+            doc_date = doc.get("guncellemeTarihi")
+            doc_val = ""
+            if doc_name:
+                doc_val = str(doc_name)
+            if doc_date:
+                doc_val = f"{doc_val} | Guncelleme: {doc_date}" if doc_val else f"Guncelleme: {doc_date}"
+            if doc_val:
+                r["UrunBelgeleri"] = doc_val
+                logger.debug(f"✓ UrunBelgeleri: {doc_val}")
     
     if "basvuruyaHazirMi" in item and item["basvuruyaHazirMi"] is not None:
         val = "Evet" if item["basvuruyaHazirMi"] else "Hayır"
@@ -1000,7 +1104,7 @@ def _parse_uts_html(soup: BeautifulSoup, urun_no: str) -> Dict[str, str]:
     
     # Dummy test: urun_no'yu set et
     if urun_no:
-        r["BirincilUrunNumarasi"] = urun_no
+        r["UrunNo"] = urun_no
     
     return r
 
@@ -1156,6 +1260,7 @@ class CihazTeknikUtsScraper(QWidget):
         super().__init__(parent)
         self.db       = db
         self.cihaz_id = str(cihaz_id) if cihaz_id else ""
+        self._allowed_fields = _load_allowed_db_fields()
         self._parsed: Dict[str, str]    = {}
         self._raw_json: str             = ""
         self._thread: Optional[QThread] = None
@@ -1270,6 +1375,7 @@ class CihazTeknikUtsScraper(QWidget):
         self._prog.hide()
         self._raw_json = data.pop("_raw_json", "")
         count = data.pop("_item_count", "?")
+        data = _filter_allowed_fields(data, self._allowed_fields)
         self._parsed = data
         
         # DEBUG: Parsed data içeriğini logla
