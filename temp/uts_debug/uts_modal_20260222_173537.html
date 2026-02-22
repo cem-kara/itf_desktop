@@ -1,0 +1,846 @@
+<!DOCTYPE html><html class="win chrome chrome1 webkit webkit5 k-webkit k-webkit145"><head><style type="text/css">[uib-typeahead-popup].dropdown-menu{display:block;}</style><style type="text/css">.uib-time input{width:50px;}</style><style type="text/css">[uib-tooltip-popup].tooltip.top-left > .tooltip-arrow,[uib-tooltip-popup].tooltip.top-right > .tooltip-arrow,[uib-tooltip-popup].tooltip.bottom-left > .tooltip-arrow,[uib-tooltip-popup].tooltip.bottom-right > .tooltip-arrow,[uib-tooltip-popup].tooltip.left-top > .tooltip-arrow,[uib-tooltip-popup].tooltip.left-bottom > .tooltip-arrow,[uib-tooltip-popup].tooltip.right-top > .tooltip-arrow,[uib-tooltip-popup].tooltip.right-bottom > .tooltip-arrow,[uib-tooltip-html-popup].tooltip.top-left > .tooltip-arrow,[uib-tooltip-html-popup].tooltip.top-right > .tooltip-arrow,[uib-tooltip-html-popup].tooltip.bottom-left > .tooltip-arrow,[uib-tooltip-html-popup].tooltip.bottom-right > .tooltip-arrow,[uib-tooltip-html-popup].tooltip.left-top > .tooltip-arrow,[uib-tooltip-html-popup].tooltip.left-bottom > .tooltip-arrow,[uib-tooltip-html-popup].tooltip.right-top > .tooltip-arrow,[uib-tooltip-html-popup].tooltip.right-bottom > .tooltip-arrow,[uib-tooltip-template-popup].tooltip.top-left > .tooltip-arrow,[uib-tooltip-template-popup].tooltip.top-right > .tooltip-arrow,[uib-tooltip-template-popup].tooltip.bottom-left > .tooltip-arrow,[uib-tooltip-template-popup].tooltip.bottom-right > .tooltip-arrow,[uib-tooltip-template-popup].tooltip.left-top > .tooltip-arrow,[uib-tooltip-template-popup].tooltip.left-bottom > .tooltip-arrow,[uib-tooltip-template-popup].tooltip.right-top > .tooltip-arrow,[uib-tooltip-template-popup].tooltip.right-bottom > .tooltip-arrow,[uib-popover-popup].popover.top-left > .arrow,[uib-popover-popup].popover.top-right > .arrow,[uib-popover-popup].popover.bottom-left > .arrow,[uib-popover-popup].popover.bottom-right > .arrow,[uib-popover-popup].popover.left-top > .arrow,[uib-popover-popup].popover.left-bottom > .arrow,[uib-popover-popup].popover.right-top > .arrow,[uib-popover-popup].popover.right-bottom > .arrow,[uib-popover-html-popup].popover.top-left > .arrow,[uib-popover-html-popup].popover.top-right > .arrow,[uib-popover-html-popup].popover.bottom-left > .arrow,[uib-popover-html-popup].popover.bottom-right > .arrow,[uib-popover-html-popup].popover.left-top > .arrow,[uib-popover-html-popup].popover.left-bottom > .arrow,[uib-popover-html-popup].popover.right-top > .arrow,[uib-popover-html-popup].popover.right-bottom > .arrow,[uib-popover-template-popup].popover.top-left > .arrow,[uib-popover-template-popup].popover.top-right > .arrow,[uib-popover-template-popup].popover.bottom-left > .arrow,[uib-popover-template-popup].popover.bottom-right > .arrow,[uib-popover-template-popup].popover.left-top > .arrow,[uib-popover-template-popup].popover.left-bottom > .arrow,[uib-popover-template-popup].popover.right-top > .arrow,[uib-popover-template-popup].popover.right-bottom > .arrow{top:auto;bottom:auto;left:auto;right:auto;margin:0;}[uib-popover-popup].popover,[uib-popover-html-popup].popover,[uib-popover-template-popup].popover{display:block !important;}</style><style type="text/css">.uib-datepicker-popup.dropdown-menu{display:block;float:none;margin:0;}.uib-button-bar{padding:10px 9px 2px;}</style><style type="text/css">.uib-position-measure{display:block !important;visibility:hidden !important;position:absolute !important;top:-9999px !important;left:-9999px !important;}.uib-position-scrollbar-measure{position:absolute !important;top:-9999px !important;width:50px !important;height:50px !important;overflow:scroll !important;}.uib-position-body-scrollbar-measure{overflow:scroll !important;}</style><style type="text/css">.uib-datepicker .uib-title{width:100%;}.uib-day button,.uib-month button,.uib-year button{min-width:100%;}.uib-left,.uib-right{width:100%}</style><style type="text/css">.ng-animate.item:not(.left):not(.right){-webkit-transition:0s ease-in-out left;transition:0s ease-in-out left}</style><style type="text/css">@charset "UTF-8";[ng\:cloak],[ng-cloak],[data-ng-cloak],[x-ng-cloak],.ng-cloak,.x-ng-cloak,.ng-hide:not(.ng-hide-animate){display:none !important;}ng\:form{display:block;}.ng-animate-shim{visibility:hidden;}.ng-anchor{position:absolute;}</style>
+	<title>Ürün Takip Sistemi</title>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="appProperties" content="eyJzaG93Q2xpZW50RXJyb3JzIjoiZmFsc2UiLCJlbnZpcm9ubWVudCI6IlByb2R1Y3Rpb24iLCJlU2lnbkVuYWJsZWQiOiJ0cnVlIiwiYXJrU2lnbmVyTGljZW5zZUtleSI6Ik9zaHM0cjJYN2xPU2xqcjI1K21CQkJ6WFdCSm1DalJPQmQyQW9TMjZCcXlCZWxOTEhsUmpmbHZSRzM2T1crTW5mcVZVMHBZdVBuVjk5QW9HdnVleHZDWjE3dGh1dUZSc1NxcmJEQnNma0FqcjZWelhMdGdVU3h6VXVydVJqTCtDcmlEMk11dUhoSlUwWEZsTUwvNHBwVFAySjhIUWF6YnE3K0JNQ3ZVVEwyRjJEZ3AybXpIMG9EQm1OM2NoUllwNk5IZFlBNkhIRkE5NzMzSDJrS0FGY1EzYi9aUERLUTZQN1VUcGZaZFduSlFWQ3JwbU9qUVBJaGFxWVlQeld2RXEyYzZGRDlmWEloOHhlcGZINnVqZ09XTUtaeFlhOFhOUnl5WFFpM25KNlRkeG15dm5sQlZrQjFkWFN5TFNQZk9MRUNQZFRvU3phNCtrNys4WkRkTW54dz09IiwiYXJrU2lnbmVyTWluU3VwcG9ydGVkVmVyc2lvbiI6IjMwIiwibGFuZ3VhZ2VTZWxlY3Rpb25FbmFibGVkIjoiZmFsc2UiLCJlbWFpbFZlcmlmaWNhdGlvbkVuYWJsZWQiOiJ0cnVlIiwidmVyc2lvbiI6IlVUUy12MTAuMzMuMSIsImFya1NpZ25lckRvd25sb2FkVXJsIjoiaHR0cHM6Ly91dHMuc2FnbGlrLmdvdi50ci8/cGFnZV9pZD0yMTY0IiwiZUdvdkVuYWJsZWQiOiJ0cnVlIiwibW9iaWxlU2lnbkVuYWJsZWQiOiJ0cnVlIn0=">
+
+	<link href="resources/css/bundle.css?v=UTS-v10_33_1" rel="stylesheet" type="text/css">
+
+	<link rel="shortcut icon" href="favicon.ico">
+
+	<script type="text/javascript" src="common/commonUtil.js?v=UTS-v10_33_1"></script>
+	<script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="main" src="main.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="build/vatandas.bundle" src="build/vatandas.bundle.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jquery" src="resources/js/jquery-1.12.4.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jreject" src="resources/js/jquery.reject.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="fileSaver" src="resources/js/FileSaver.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="X2JS" src="resources/js/xml2json.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="clientConfig" src="common/clientConfig.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="levenshtein" src="resources/js/levenshtein.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="angular" src="resources/js/angular/angular.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="toastr" src="resources/js/toastr.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="moment" src="resources/js/moment.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jszip" src="resources/js/jszip.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="inputMask" src="resources/js/jquery.inputmask.bundle.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="xls" src="resources/js/xls.core.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="qrcode" src="resources/js/jsqrcode-combined.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="asmcrypto" src="resources/js/asmcrypto.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="pwsignerErrorCodes" src="resources/js/pwsigner-error-codes.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="encodingIndexes" src="resources/js/encoding-indexes.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="bootstrap" src="resources/js/bootstrap.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="lodash" src="resources/js/lodash.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="kendo" src="resources/js/kendo/kendo.custom.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="ngRouter" src="resources/js/angular-ui-router.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="ngTouch" src="resources/js/angular/angular-touch.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="ngSanitize" src="resources/js/angular/angular-sanitize.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="ngMessages" src="resources/js/angular/angular-messages.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="ngIdle" src="resources/js/angular-idle.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="ngTranslate" src="resources/js/angular-translate.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="pwsigner" src="resources/js/ArkSignerJS-3.0.2.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="encoding" src="resources/js/encoding.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="ngBootstrap" src="resources/js/ui-bootstrap-tpls.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="postal" src="resources/js/postal.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="ngTranslateLoaderPartial" src="resources/js/angular-translate-loader-partial.min.js?v=UTS-v10_33_1"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="xlsx" src="resources/js/xlsx.min.js?v=UTS-v10_33_1"></script></head><body ng-controller="uts.common.misc.theme.bodyController" class="page-header-fixed page-footer-fixed  page-content-white page-container-bg-solid ng-scope"><p id="proccessCount" hidden="" class="ng-binding">0</p>
+
+
+
+
+<uts-loading-bar class="page-spinner-bar hide">
+	<div class="bounce1"></div>
+	<div class="bounce2"></div>
+	<div class="bounce3"></div>
+</uts-loading-bar>
+
+<!--aktarimBannerPlaceholder-->
+
+<!-- ngInclude: 'vatandas/index/vatandasHeader.html' --><div data-ng-include="'vatandas/index/vatandasHeader.html'" class="page-header navbar navbar-fixed-top ng-scope" style=""><div class="page-header-inner ng-scope" ng-controller="uts.vatandas.headerController">
+
+	<!-- LOGO -->
+	<div class="page-logo">
+		<img src="resources/image/uts-logo-vector.svg" alt="logo" class="logo-default" style="width: 150px;height: 35px;margin-top: 8px;">
+		<div class="menu-toggler sidebar-toggler">
+			<span></span>
+		</div>
+	</div>
+
+	<!-- RESPONSIVE MENU TOGGLER -->
+	<a href="javascript:;" class="menu-toggler responsive-toggler" data-toggle="collapse" data-target=".navbar-collapse">
+		<span></span>
+	</a>
+
+	<!-- TOP NAVIGATION MENU -->
+	<div class="top-menu">
+		<ul class="nav navbar-nav pull-right">
+
+			<!-- HELP DOCUMENTS LINK -->
+			<li class="dropdown dropdown-extended" yte-tooltip="yardım" style="width:50px;" data-role="tooltip">
+				<a id="helpLnk1" href="http://uts.saglik.gov.tr/?page_id=1019" class="dropdown-toggle" target="_blank">
+					<i class="icon-question"></i>
+				</a>
+			</li>
+
+			<!-- LOGIN LINK -->
+			<li class="dropdown dropdown-extended" yte-tooltip="ÜTS Giriş" style="width:50px;" data-role="tooltip">
+				<a id="loginLnk1" ng-click="anonymousUserLogout()" class="dropdown-toggle">
+					<i class="icon-home"></i>
+				</a>
+			</li>
+		</ul>
+	</div>
+</div></div>
+
+<div class="clearfix"></div>
+
+<div class="page-container">
+
+	<!-- SIDEBAR -->
+	<!-- ngInclude: 'common/misc/theme/template/sidebar.html' --><div data-ng-include="'common/misc/theme/template/sidebar.html'" ng-controller="uts.vatandas.menuController" class="page-sidebar-wrapper ng-scope"><div class="page-sidebar navbar-collapse collapse ng-scope">
+
+	<ul class="page-sidebar-menu ng-isolate-scope" data-auto-scroll="false" data-slide-speed="200" item-list="menuStructure" data-keep-expanded="false">
+
+	<!-- ngRepeat: menuitem in innerMenuStructure --><li ng-repeat="menuitem in innerMenuStructure" ng-class="{'start': $first}" class="nav-item linkstate-VAT_TIBBI_CIHAZ_LISTELE start active">
+		<a href="javascript:;" ng-click="openPage(menuitem)" ng-class="{'nav-link': menuitem.menus, 'nav-toggle': menuitem.menus}">
+			<i class="icon-speedometer"></i>
+			<span class="title ng-binding">Tıbbi Cihaz Listele</span>
+			<!-- ngIf: menuitem.menus -->
+		</a>
+		<!-- ngIf: menuitem.menus -->
+	</li><!-- end ngRepeat: menuitem in innerMenuStructure --><li ng-repeat="menuitem in innerMenuStructure" ng-class="{'start': $first}" class="nav-item linkstate-VAT_CIHAZ_DURUM_SORGULA">
+		<a href="javascript:;" ng-click="openPage(menuitem)" ng-class="{'nav-link': menuitem.menus, 'nav-toggle': menuitem.menus}">
+			<i class="icon-speedometer"></i>
+			<span class="title ng-binding">Tıbbi Cihaz Durumu Sorgula</span>
+			<!-- ngIf: menuitem.menus -->
+		</a>
+		<!-- ngIf: menuitem.menus -->
+	</li><!-- end ngRepeat: menuitem in innerMenuStructure --><li ng-repeat="menuitem in innerMenuStructure" ng-class="{'start': $first}" class="nav-item linkstate-VAT_BAYILIK_OZETI_LISTELE">
+		<a href="javascript:;" ng-click="openPage(menuitem)" ng-class="{'nav-link': menuitem.menus, 'nav-toggle': menuitem.menus}">
+			<i class="icon-link"></i>
+			<span class="title ng-binding">Tıbbi Cihaz Bayilik Listele</span>
+			<!-- ngIf: menuitem.menus -->
+		</a>
+		<!-- ngIf: menuitem.menus -->
+	</li><!-- end ngRepeat: menuitem in innerMenuStructure --><li ng-repeat="menuitem in innerMenuStructure" ng-class="{'start': $first}" class="nav-item linkstate-VAT_TIBBI_CIHAZ_FIRMA_OZETI_LISTELE">
+		<a href="javascript:;" ng-click="openPage(menuitem)" ng-class="{'nav-link': menuitem.menus, 'nav-toggle': menuitem.menus}">
+			<i class="icon-briefcase"></i>
+			<span class="title ng-binding">Tıbbi Cihaz Firması Listele</span>
+			<!-- ngIf: menuitem.menus -->
+		</a>
+		<!-- ngIf: menuitem.menus -->
+	</li><!-- end ngRepeat: menuitem in innerMenuStructure --><li ng-repeat="menuitem in innerMenuStructure" ng-class="{'start': $first}" class="nav-item linkstate-VAT_SAHA_GUVENLIK_BILDIRIM_DOKUMANI_LISTELE">
+		<a href="javascript:;" ng-click="openPage(menuitem)" ng-class="{'nav-link': menuitem.menus, 'nav-toggle': menuitem.menus}">
+			<i class="icon-speedometer"></i>
+			<span class="title ng-binding">Saha Güvenlik Bildirim Dokümanı Listele</span>
+			<!-- ngIf: menuitem.menus -->
+		</a>
+		<!-- ngIf: menuitem.menus -->
+	</li><!-- end ngRepeat: menuitem in innerMenuStructure --><li ng-repeat="menuitem in innerMenuStructure" ng-class="{'start': $first}" class="nav-item linkstate-VAT_KOZMETIK_LISTELE">
+		<a href="javascript:;" ng-click="openPage(menuitem)" ng-class="{'nav-link': menuitem.menus, 'nav-toggle': menuitem.menus}">
+			<i class="icon-chemistry"></i>
+			<span class="title ng-binding">Kozmetik Ürün Listele</span>
+			<!-- ngIf: menuitem.menus -->
+		</a>
+		<!-- ngIf: menuitem.menus -->
+	</li><!-- end ngRepeat: menuitem in innerMenuStructure --><li ng-repeat="menuitem in innerMenuStructure" ng-class="{'start': $first}" class="nav-item linkstate-VAT_IHALE_DOGRUDAN_TEMIN_LISTELE">
+		<a href="javascript:;" ng-click="openPage(menuitem)" ng-class="{'nav-link': menuitem.menus, 'nav-toggle': menuitem.menus}">
+			<i class="icon-wallet"></i>
+			<span class="title ng-binding">İhale - Doğrudan Temin Sonucu Listele</span>
+			<!-- ngIf: menuitem.menus -->
+		</a>
+		<!-- ngIf: menuitem.menus -->
+	</li><!-- end ngRepeat: menuitem in innerMenuStructure --><li ng-repeat="menuitem in innerMenuStructure" ng-class="{'start': $first}" class="nav-item linkstate-VAT_AYLIK_IHALE_SONUCLARI_LISTELE">
+		<a href="javascript:;" ng-click="openPage(menuitem)" ng-class="{'nav-link': menuitem.menus, 'nav-toggle': menuitem.menus}">
+			<i class="icon-wallet"></i>
+			<span class="title ng-binding">Aylık İhale Sonuçları</span>
+			<!-- ngIf: menuitem.menus -->
+		</a>
+		<!-- ngIf: menuitem.menus -->
+	</li><!-- end ngRepeat: menuitem in innerMenuStructure --><li ng-repeat="menuitem in innerMenuStructure" ng-class="{'start': $first}" class="nav-item linkstate-VAT_AKTIF_MADDE_LISTELE">
+		<a href="javascript:;" ng-click="openPage(menuitem)" ng-class="{'nav-link': menuitem.menus, 'nav-toggle': menuitem.menus}">
+			<i class="icon-magnifier"></i>
+			<span class="title ng-binding">Biyosidal Aktif Madde Listele</span>
+			<!-- ngIf: menuitem.menus -->
+		</a>
+		<!-- ngIf: menuitem.menus -->
+	</li><!-- end ngRepeat: menuitem in innerMenuStructure --><li ng-repeat="menuitem in innerMenuStructure" ng-class="{'start': $first}" class="nav-item linkstate-VAT_BIYOSIDAL_URUN_RUHSAT_LISTELE">
+		<a href="javascript:;" ng-click="openPage(menuitem)" ng-class="{'nav-link': menuitem.menus, 'nav-toggle': menuitem.menus}">
+			<i class="icon-magnifier"></i>
+			<span class="title ng-binding">Biyosidal Ürün Ruhsatlarını Listele</span>
+			<!-- ngIf: menuitem.menus -->
+		</a>
+		<!-- ngIf: menuitem.menus -->
+	</li><!-- end ngRepeat: menuitem in innerMenuStructure --><li ng-repeat="menuitem in innerMenuStructure" ng-class="{'start': $first}" class="nav-item linkstate-VAT_EMDN_LISTELE">
+		<a href="javascript:;" ng-click="openPage(menuitem)" ng-class="{'nav-link': menuitem.menus, 'nav-toggle': menuitem.menus}">
+			<i class="icon-magnifier"></i>
+			<span class="title ng-binding">EMDN Listele</span>
+			<!-- ngIf: menuitem.menus -->
+		</a>
+		<!-- ngIf: menuitem.menus -->
+	</li><!-- end ngRepeat: menuitem in innerMenuStructure --><li ng-repeat="menuitem in innerMenuStructure" ng-class="{'start': $first}" class="nav-item linkstate-VAT_OK_UDK_LISTELE">
+		<a href="javascript:;" ng-click="openPage(menuitem)" ng-class="{'nav-link': menuitem.menus, 'nav-toggle': menuitem.menus}">
+			<i class="icon-briefcase"></i>
+			<span class="title ng-binding">Onaylanmış Kuruluşları ve Uygunluk Değerlendirme Kuruluşları Listele</span>
+			<!-- ngIf: menuitem.menus -->
+		</a>
+		<!-- ngIf: menuitem.menus -->
+	</li><!-- end ngRepeat: menuitem in innerMenuStructure -->
+
+</ul>
+
+</div></div>
+
+	<!-- CONTENT -->
+	<div class="page-content-wrapper">
+		<!--testBannerPlaceholder-->
+		<div class="page-content" style="min-height:637px">
+			<!-- uiView: --><div ui-view="" class="fade-in-up ng-scope"><div class="partial-html ng-scope" ng-controller="uts.vat.tibbiCihaz.vatTibbiCihazListeleController"><div class="page-bar"><h4 class="ng-isolate-scope page-breadcrumb"><i class="fa fa-angle-double-right" id="favorilereEkleCikar" ng-click="toggleFavouritePage()" ng-class="{'fa-angle-double-right': !addShortcutEnabled(), 'fa-star': addShortcutEnabled() &amp;&amp; isFavouritePage(), 'fa-star-o': addShortcutEnabled() &amp;&amp; !isFavouritePage()}"></i>Tıbbi Cihaz Listele</h4></div>
+
+	
+
+	<div class="querying-panel ng-isolate-scope base-panel" application="vat" url="vatOrtakTibbiCihaz/tibbiCihazSorgula" initial-query="false" id="component6772"><div ng-transclude="">
+		<div class="note note-danger ng-scope">
+			<p>Sistemde Kayıtlı iken tekil ürün bildirimi yapılmış ürünlerin, ürün güvenliğini etki eden bir sebep olmaksızın ürün kaydı düşmesi halinde “Sistemde Tekil Ürünü Var” şeklinde görünmektedir.
+				Bu kapsamdaki ürünleri satın almanızda bir mahsur bulunmamaktadır.</p>
+		</div>
+		<form name="criteriaForm" class="querying-criteria-panel ng-valid ng-scope ng-valid-maxlength ng-valid-parse ng-pristine" novalidate=""><div class="criteria-form-simple" ng-transclude="">
+				<div class="row ng-scope">
+					<div span="4" class="ng-scope span4">
+						<context-parameter property="birincilUrunNumarasi" value="birincilUrunNumarasi" class="ng-scope ng-isolate-scope">
+							<div class="control-group row ng-isolate-scope form-horizontal" element-name="Birincil Ürün Numarası:"><div class="span4"><label class="control-label"><span>Birincil Ürün Numarası:</span></label></div><div class="controls span8">
+								<input name="birincilUrunNoIn" id="birincilUrunNumarasiIn" ng-model="birincilUrunNumarasi" yte-tooltip="Karekod işlemleri için mobil uygulamamızı kullanabilirsiniz." class="ng-valid ng-scope ng-not-empty ng-valid-parse ng-touched ng-pristine" data-role="tooltip" style="">
+							</div></div>
+						</context-parameter>
+					</div>
+					<div span="4" class="ng-scope span4">
+						<equality-criteria property="kurum.id" value="queryModel.firma" property-path="id" class="ng-scope ng-isolate-scope">
+							<div class="control-group row ng-isolate-scope form-horizontal" element-name="Firma:"><div class="span4"><label class="control-label"><span>Firma:</span></label></div><div class="controls span8">
+								<span title="" class="k-widget k-dropdown k-header ng-scope ng-isolate-scope ng-valid" unselectable="on" role="listbox" aria-haspopup="true" aria-expanded="false" tabindex="0" aria-owns="firmaDown_listbox" aria-disabled="false" aria-readonly="false" aria-busy="false" style="" aria-activedescendant="9168372d-8280-420a-883d-500d2d4b6567"><span unselectable="on" class="k-dropdown-wrap k-state-default"><span unselectable="on" class="k-input">Firma/Kurum Seçiniz</span><span unselectable="on" class="k-select"><span unselectable="on" class="k-icon k-i-arrow-s">select</span></span></span><input name="firmaDd" id="firmaDown" application="vat" url="vatKurum/tibbiCihazKurumSorgulaByName" first-label="Firma/Kurum Seçiniz" ng-model="queryModel.firma" text-field="gorunenAd" min-length="3" class="ng-scope ng-isolate-scope ng-empty ng-valid ng-pristine" data-role="dropdownlist" style="display: none;"></span>
+							</div></div>
+						</equality-criteria>
+					</div>
+					<div span="4" class="ng-scope span4">
+						<!-- ngIf: !isProdEnvironment -->
+					</div>
+				</div>
+			</div><div class="criteria-form-advanced" style="height: auto; display: none;" ng-class="{&quot;borderless&quot;: closable}"><div ng-transclude="">
+			<div class="criteria-form-simple-wrapper ng-scope"></div>
+			<div class="row ng-scope">
+				<div span="4" class="ng-scope span4">
+					<similarity-criteria property="markaAdi" value="queryModel.markaAdi" class="ng-scope ng-isolate-scope">
+						<!-- ngIf: binder.bayilerinUrunleriniGosterme --><div class="control-group row ng-scope ng-isolate-scope form-horizontal" element-name="Marka Adı:" ng-if="binder.bayilerinUrunleriniGosterme"><div class="span4"><label class="control-label"><span>Marka Adı:</span></label></div><div class="controls span8">
+							<input name="markaAdiIn" id="markaAdiIn" type="text" ng-model="queryModel.markaAdi" maxlength="100" class="ng-pristine ng-untouched ng-valid ng-scope ng-empty ng-valid-maxlength" style="">
+						</div></div><!-- end ngIf: binder.bayilerinUrunleriniGosterme -->
+					</similarity-criteria>
+				</div>
+				<div span="4" class="ng-scope span4">
+					<similarity-criteria property="etiketAdi" value="queryModel.etiketAdi" class="ng-scope ng-isolate-scope">
+						<!-- ngIf: binder.bayilerinUrunleriniGosterme --><div class="control-group row ng-scope ng-isolate-scope form-horizontal" element-name="Ürün Adı:" ng-if="binder.bayilerinUrunleriniGosterme"><div class="span4"><label class="control-label"><span>Ürün Adı:</span></label></div><div class="controls span8">
+							<input name="etiketAdiIn" id="etiketAdiIn" type="text" ng-model="queryModel.etiketAdi" maxlength="100" class="ng-pristine ng-untouched ng-valid ng-scope ng-empty ng-valid-maxlength" style="">
+						</div></div><!-- end ngIf: binder.bayilerinUrunleriniGosterme -->
+					</similarity-criteria>
+				</div>
+				<div span="4" class="ng-scope span4">
+					<similarity-criteria property="katalogNo" value="queryModel.katalogNo" class="ng-scope ng-isolate-scope">
+						<!-- ngIf: binder.bayilerinUrunleriniGosterme --><div class="control-group row ng-scope ng-isolate-scope form-horizontal" element-name="Katalog Numarası:" ng-if="binder.bayilerinUrunleriniGosterme"><div class="span4"><label class="control-label"><span>Katalog Numarası:</span></label></div><div class="controls span8">
+							<input name="katalogNoIn" id="katalogNoIn" type="text" ng-model="queryModel.katalogNo" maxlength="100" class="ng-pristine ng-untouched ng-valid ng-scope ng-empty ng-valid-maxlength" style="">
+						</div></div><!-- end ngIf: binder.bayilerinUrunleriniGosterme -->
+					</similarity-criteria>
+				</div>
+			</div>
+			<div class="row ng-scope">
+				<div span="4" class="ng-scope span4">
+					<similarity-criteria property="versiyonModel" value="queryModel.versiyonModel" class="ng-scope ng-isolate-scope">
+						<!-- ngIf: binder.bayilerinUrunleriniGosterme --><div class="control-group row ng-scope ng-isolate-scope form-horizontal" element-name="Versiyon/Model:" ng-if="binder.bayilerinUrunleriniGosterme"><div class="span4"><label class="control-label"><span>Versiyon/Model:</span></label></div><div class="controls span8">
+							<input name="versiyonModelIn" id="versiyonModelIn" type="text" ng-model="queryModel.versiyonModel" maxlength="100" class="ng-pristine ng-untouched ng-valid ng-scope ng-empty ng-valid-maxlength" style="">
+						</div></div><!-- end ngIf: binder.bayilerinUrunleriniGosterme -->
+					</similarity-criteria>
+				</div>
+				<div span="4" class="ng-scope span4">
+					<equality-criteria property="sinif" value="queryModel.sinif" class="ng-scope ng-isolate-scope">
+						<!-- ngIf: binder.bayilerinUrunleriniGosterme --><div class="control-group row ng-scope ng-isolate-scope form-horizontal" element-name="Sınıf:" ng-if="binder.bayilerinUrunleriniGosterme"><div class="span4"><label class="control-label"><span>Sınıf:</span></label></div><div class="controls span8">
+							<span title="" class="k-widget k-dropdown k-header ng-scope ng-isolate-scope ng-valid" unselectable="on" role="listbox" aria-haspopup="true" aria-expanded="false" tabindex="0" aria-owns="sinifDropDown_listbox" aria-disabled="false" aria-readonly="false" aria-busy="false" style=""><span unselectable="on" class="k-dropdown-wrap k-state-default"><span unselectable="on" class="k-input">Tümü</span><span unselectable="on" class="k-select"><span unselectable="on" class="k-icon k-i-arrow-s">select</span></span></span><input name="sinifDd" id="sinifDropDown" data="uts.enums.vat.VatUrunSinifi" ng-model="queryModel.sinif" first-label="Tümü" class="ng-scope ng-isolate-scope ng-empty ng-valid ng-pristine" data-role="dropdownlist" style="display: none;"></span>
+						</div></div><!-- end ngIf: binder.bayilerinUrunleriniGosterme -->
+					</equality-criteria>
+				</div>
+				<div span="4" class="ng-scope span4">
+					<equality-criteria property="urunTipi" value="queryModel.urunUrunTipi" class="ng-scope ng-isolate-scope">
+						<!-- ngIf: binder.bayilerinUrunleriniGosterme --><div class="control-group row ng-scope ng-isolate-scope form-horizontal" element-name="Ürün Tipi:" ng-if="binder.bayilerinUrunleriniGosterme"><div class="span4"><label class="control-label"><span>Ürün Tipi:</span></label></div><div class="controls span8">
+							<span title="" class="k-widget k-dropdown k-header ng-scope ng-isolate-scope ng-valid" unselectable="on" role="listbox" aria-haspopup="true" aria-expanded="false" tabindex="0" aria-owns="urunTipiDropDown_listbox" aria-disabled="false" aria-readonly="false" aria-busy="false" style=""><span unselectable="on" class="k-dropdown-wrap k-state-default"><span unselectable="on" class="k-input">Ürün Tipi Seçiniz</span><span unselectable="on" class="k-select"><span unselectable="on" class="k-icon k-i-arrow-s">select</span></span></span><input name="tipDd" id="urunTipiDropDown" data="uts.enums.vat.VatUrunTipi" ng-model="queryModel.urunUrunTipi" first-label="Ürün Tipi Seçiniz" class="ng-scope ng-isolate-scope ng-empty ng-valid ng-pristine" data-role="dropdownlist" style="display: none;"></span>
+						</div></div><!-- end ngIf: binder.bayilerinUrunleriniGosterme -->
+					</equality-criteria>
+				</div>
+			</div>
+			<div class="row ng-scope">
+				<div span="4" class="ng-scope span4">
+					<context-parameter property="imalatciFirmaAdi" value="queryModel.imalatciFirmaAdi" class="ng-scope ng-isolate-scope">
+						<!-- ngIf: binder.bayilerinUrunleriniGosterme --><div class="control-group row ng-scope ng-isolate-scope form-horizontal" element-name="İmalatçı Firma Adı:" ng-if="binder.bayilerinUrunleriniGosterme"><div class="span4"><label class="control-label"><span>İmalatçı Firma Adı:</span></label></div><div class="controls span8">
+							<input name="imalatciFirmaAdiIn" id="imalatciFirmaAdiIn" type="text" ng-model="queryModel.imalatciFirmaAdi" maxlength="100" class="ng-pristine ng-untouched ng-valid ng-scope ng-empty ng-valid-maxlength" style="">
+						</div></div><!-- end ngIf: binder.bayilerinUrunleriniGosterme -->
+					</context-parameter>
+				</div>
+				<div span="4" class="ng-scope span4">
+					<equality-criteria property="gmdnTerim.kod" value="queryModel.gmdnTerim" class="ng-scope ng-isolate-scope">
+						<!-- ngIf: binder.bayilerinUrunleriniGosterme --><div class="control-group row ng-scope ng-isolate-scope form-horizontal" element-name="GMDN Kodu:" ng-if="binder.bayilerinUrunleriniGosterme"><div class="span4"><label class="control-label"><span>GMDN Kodu:</span></label></div><div class="controls span8">
+							<input name="gmdnKoduIn" id="gmdnKoduIn" type="text" ng-model="queryModel.gmdnTerim" maxlength="20" class="ng-pristine ng-untouched ng-valid ng-scope ng-empty ng-valid-maxlength" style="">
+						</div></div><!-- end ngIf: binder.bayilerinUrunleriniGosterme -->
+					</equality-criteria>
+				</div>
+				<div span="4" class="ng-scope span4">
+					<context-parameter property="urunNumarasi" value="queryModel.urunNumarasi" class="ng-scope ng-isolate-scope">
+						<!-- ngIf: binder.bayilerinUrunleriniGosterme --><div class="control-group row ng-scope ng-isolate-scope form-horizontal" element-name="Ürün Numarası:" ng-if="binder.bayilerinUrunleriniGosterme"><div class="span4"><label class="control-label"><span>Ürün Numarası:</span><a class="field-help ng-scope" data-role="tooltip" style="position: absolute;"></a></label></div><div class="controls span8">
+							<input name="urunNoIn" id="urunNumarasiIn" ng-model="queryModel.urunNumarasi" yte-tooltip="Karekod işlemleri için mobil uygulamamızı kullanabilirsiniz." class="ng-pristine ng-untouched ng-valid ng-scope ng-empty" data-role="tooltip" style="">
+							
+						</div></div><!-- end ngIf: binder.bayilerinUrunleriniGosterme -->
+					</context-parameter>
+				</div>
+			</div>
+			<div class="row ng-scope">
+				<div span="4" class="ng-scope span4">
+					<!-- ngIf: binder.bayilerinUrunleriniGosterme --><div class="control-group row ng-scope ng-isolate-scope form-horizontal" element-name="Branş Türü:" ng-if="binder.bayilerinUrunleriniGosterme"><div class="span4"><label class="control-label"><span>Branş Türü:</span></label></div><div class="controls span8">
+						<equality-criteria property="bransKodu.id" value="queryModel.bransTuru" property-path="id" class="ng-scope ng-isolate-scope">
+							<span title="" class="k-widget k-dropdown k-header ng-isolate-scope ng-valid" unselectable="on" role="listbox" aria-haspopup="true" aria-expanded="false" tabindex="0" aria-owns="bransTuruDd_listbox" aria-disabled="false" aria-readonly="false" aria-busy="false" style="" aria-activedescendant="220763d2-6c87-4886-afbe-5b1f57076f76"><span unselectable="on" class="k-dropdown-wrap k-state-default"><span unselectable="on" class="k-input">Tümü</span><span unselectable="on" class="k-select"><span unselectable="on" class="k-icon k-i-arrow-s">select</span></span></span><input name="bransTuruDd" id="bransTuruDd" application="vat" url="vatBransKodu/vatTurSorgulaByKodVeAciklamaLike" ng-model="queryModel.bransTuru" template-function="concatenateBransKoduVeAd" min-length="2" ng-change="bransTuruDegisti()" class="ng-isolate-scope ng-empty ng-valid ng-pristine" data-role="dropdownlist" style="display: none;"></span>
+						</equality-criteria>
+					</div></div><!-- end ngIf: binder.bayilerinUrunleriniGosterme -->
+				</div>
+				<div span="4" class="ng-scope span4">
+					<context-parameter property="yerliMali" value="queryModel.yerliMali" class="ng-scope ng-isolate-scope">
+						<!-- ngIf: binder.bayilerinUrunleriniGosterme --><div class="control-group row ng-scope ng-isolate-scope form-horizontal" element-name="Kayıtlı Yerli Malı Belgesi Var mı?:" ng-if="binder.bayilerinUrunleriniGosterme"><div class="span4"><label class="control-label"><span>Kayıtlı Yerli Malı Belgesi Var mı?:</span></label></div><div class="controls span8">
+							<span title="" class="k-widget k-dropdown k-header ng-scope ng-isolate-scope ng-valid" unselectable="on" role="listbox" aria-haspopup="true" aria-expanded="false" tabindex="0" aria-owns="yerliMaliDd_listbox" aria-disabled="false" aria-readonly="false" aria-busy="false" style=""><span unselectable="on" class="k-dropdown-wrap k-state-default"><span unselectable="on" class="k-input">Tümü</span><span unselectable="on" class="k-select"><span unselectable="on" class="k-icon k-i-arrow-s">select</span></span></span><input name="yerliMaliDd" id="yerliMaliDd" data="uts.enums.vat.EvetHayir" ng-model="queryModel.yerliMali" first-label="Tümü" class="ng-scope ng-isolate-scope ng-empty ng-valid ng-pristine" data-role="dropdownlist" style="display: none;"></span>
+						</div></div><!-- end ngIf: binder.bayilerinUrunleriniGosterme -->
+					</context-parameter>
+				</div>
+				<div span="4" class="ng-scope span4">
+					<context-parameter property="sutKodu" value="queryModel.sutKodu" class="ng-scope ng-isolate-scope">
+						<!-- ngIf: binder.bayilerinUrunleriniGosterme --><div class="control-group row ng-scope ng-isolate-scope form-horizontal" element-name="SUT Kodu:" ng-if="binder.bayilerinUrunleriniGosterme"><div class="span4"><label class="control-label"><span>SUT Kodu:</span></label></div><div class="controls span8">
+							<input name="sutKoduIn" id="sutKoduIn" type="text" ng-model="queryModel.sutKodu" maxlength="4000" class="ng-pristine ng-untouched ng-valid ng-scope ng-empty ng-valid-maxlength" style="">
+						</div></div><!-- end ngIf: binder.bayilerinUrunleriniGosterme -->
+					</context-parameter>
+				</div>
+			</div>
+			<div class="row ng-scope">
+				<div span="4" class="ng-scope span4">
+					<context-parameter property="menseiUlke" value="queryModel.menseiUlke.ad" class="ng-scope ng-isolate-scope">
+						<!-- ngIf: binder.bayilerinUrunleriniGosterme --><div class="control-group row ng-scope ng-isolate-scope form-horizontal" element-name="Menşei Ülke:" ng-if="binder.bayilerinUrunleriniGosterme"><div class="span4"><label class="control-label"><span>Menşei Ülke:</span></label></div><div class="controls span8">
+							<span tabindex="-1" role="presentation" class="k-widget k-autocomplete k-header ng-scope ng-isolate-scope k-state-default ng-valid" style=""><input name="menseiUlkeAC" url="vatReferansAlan/ulkeSorgula" ng-model="queryModel.menseiUlke" placeholder="Menşei Ülke Seçiniz" application="vat" min-length="3" class="ng-scope ng-isolate-scope k-input ng-empty ng-valid ng-pristine" data-role="autocomplete" type="text" autocomplete="off" role="textbox" aria-haspopup="true" aria-disabled="false" aria-readonly="false" aria-autocomplete="list" aria-owns="" style="width: 100%;"><span class="k-icon k-loading" style="display:none"></span></span>
+						</div></div><!-- end ngIf: binder.bayilerinUrunleriniGosterme -->
+					</context-parameter>
+				</div>
+				<div span="4" class="ng-scope span4">
+					<context-parameter property="ithalEdildigiUlke" value="queryModel.ithalEdildigiUlke.ad" class="ng-scope ng-isolate-scope">
+						<!-- ngIf: binder.bayilerinUrunleriniGosterme --><div class="control-group row ng-scope ng-isolate-scope form-horizontal" element-name="İthal Edildiği Ülke:" ng-if="binder.bayilerinUrunleriniGosterme"><div class="span4"><label class="control-label"><span>İthal Edildiği Ülke:</span></label></div><div class="controls span8">
+							<span tabindex="-1" role="presentation" class="k-widget k-autocomplete k-header ng-scope ng-isolate-scope k-state-default ng-valid" style=""><input name="ithalEdildigiUlkeAC" url="vatReferansAlan/ulkeSorgula" ng-model="queryModel.ithalEdildigiUlke" placeholder="İthal Edildiği Ülke Seçiniz" application="vat" min-length="3" class="ng-scope ng-isolate-scope k-input ng-empty ng-valid ng-pristine" data-role="autocomplete" type="text" autocomplete="off" role="textbox" aria-haspopup="true" aria-disabled="false" aria-readonly="false" aria-autocomplete="list" aria-owns="" style="width: 100%;"><span class="k-icon k-loading" style="display:none"></span></span>
+						</div></div><!-- end ngIf: binder.bayilerinUrunleriniGosterme -->
+					</context-parameter>
+				</div>
+			</div>
+		</div></div><div class="criteria-form-actions"><div style="float:left;" ng-hide="shouldHideAdvancedPanel()"><a id="gelismisBtn" class="btn btn-link" ng-click="openPanel()" ng-show="isCollapsed"><span class="glyphicon glyphicon-chevron-down"></span>&nbsp;<span id="gelismisLbl" class="ng-binding">Daha fazla kriter</span></a><a id="basitBtn" class="btn btn-link ng-hide" ng-click="closePanel()" ng-hide="isCollapsed"><span class="glyphicon glyphicon-chevron-up"></span>&nbsp;<span id="basitLbl" class="ng-binding">Daha az kriter</span></a></div><div style="float:right;" ng-hide="hideFormActions()"><button class="btn btn-primary ng-isolate-scope btn-sm" ng-click="doAction($event)" id="sorgulaBtn" text="Sorgula" action="queryPanel" style="margin:0;" type="submit" yte-tooltip="" icon="">Sorgula<span style="margin-left: 5px;" class="glyphicon "></span></button><button class="btn btn-primary ng-isolate-scope btn-sm" ng-click="doAction($event)" id="temizleBtn" text="Temizle" action="clearPanel" style="margin:0 5px;" type="reset">Temizle</button></div><div class="criteria-form-splitter"></div></div></form>
+
+		<!-- ngIf: binder.bayilerinUrunleriniGosterme --><div class="yte-grid-wrapper ng-scope ng-isolate-scope" ng-model-options="{allowInvalid: true}" ng-if="binder.bayilerinUrunleriniGosterme" id="butunTibbiCihazlarListGrid" page-size="10">
+
+	<!-- ng-transclude needed for columns to render -->
+	<div ng-transclude="">
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+		</div>
+
+	<div class="yte-grid-body row">
+		<!-- grid will always render in a full width column -->
+		<div span="12" style="overflow-x: auto;" class="ng-scope span12">
+
+			<table class="yte-grid table table-striped table-bordered ng-scope" cellspacing="0">
+				<thead>
+				<tr role="row">
+
+					<!-- first column is 'select-all' checkbox in header if selection enabled -->
+					<!-- ngIf: selectEnabled === true -->
+
+					<!-- second column is empty for arrows in header if rowTemplate enabled -->
+					<!-- ngIf: hasRowTemplate === true -->
+
+					<!-- repeat column headers with sorting icons -->
+					<!-- ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><th ng-repeat="column in columnOptions" ng-click="sortByProperty(column)" ng-mouseover="showColumnResizing($event, column)" ng-mousedown="startColumnResizing($event, column)" ng-class="{'sortable-th': (sortEnabled === true &amp;&amp; column.sortable === true), 'hide-responsive': (column.hideMobil === true)}" ng-if="!column.hidden" ng-show="!column.hideFromUi" style="width: 12%" rowspan="1" colspan="1" class="ng-scope sortable-th">
+
+						<label ng-bind="column.title" class="ng-binding">Birincil Ürün Numarası</label>
+						<span ng-show="sortEnabled === true &amp;&amp; column.sortable === true &amp;&amp; sortProperty !== column.field" class="sorting-icon" style="opacity:0.2"></span>
+						<span ng-show="column.field &amp;&amp; sortProperty === column.field" class="sorting-icon ng-hide sorting-asc" ng-class="{'sorting-asc': sortDirection === false, 'sorting-desc': sortDirection === true}"></span>
+					</th><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><th ng-repeat="column in columnOptions" ng-click="sortByProperty(column)" ng-mouseover="showColumnResizing($event, column)" ng-mousedown="startColumnResizing($event, column)" ng-class="{'sortable-th': (sortEnabled === true &amp;&amp; column.sortable === true), 'hide-responsive': (column.hideMobil === true)}" ng-if="!column.hidden" ng-show="!column.hideFromUi" style="width: 12%" rowspan="1" colspan="1" class="ng-scope sortable-th">
+
+						<label ng-bind="column.title" class="ng-binding">İkincil Ürün Numarası</label>
+						<span ng-show="sortEnabled === true &amp;&amp; column.sortable === true &amp;&amp; sortProperty !== column.field" class="sorting-icon" style="opacity:0.2"></span>
+						<span ng-show="column.field &amp;&amp; sortProperty === column.field" class="sorting-icon ng-hide sorting-asc" ng-class="{'sorting-asc': sortDirection === false, 'sorting-desc': sortDirection === true}"></span>
+					</th><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><th ng-repeat="column in columnOptions" ng-click="sortByProperty(column)" ng-mouseover="showColumnResizing($event, column)" ng-mousedown="startColumnResizing($event, column)" ng-class="{'sortable-th': (sortEnabled === true &amp;&amp; column.sortable === true), 'hide-responsive': (column.hideMobil === true)}" ng-if="!column.hidden" ng-show="!column.hideFromUi" style="width: 20%" rowspan="1" colspan="1" class="ng-scope sortable-th">
+
+						<label ng-bind="column.title" class="ng-binding">Firma</label>
+						<span ng-show="sortEnabled === true &amp;&amp; column.sortable === true &amp;&amp; sortProperty !== column.field" class="sorting-icon" style="opacity:0.2"></span>
+						<span ng-show="column.field &amp;&amp; sortProperty === column.field" class="sorting-icon ng-hide sorting-asc" ng-class="{'sorting-asc': sortDirection === false, 'sorting-desc': sortDirection === true}"></span>
+					</th><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><th ng-repeat="column in columnOptions" ng-click="sortByProperty(column)" ng-mouseover="showColumnResizing($event, column)" ng-mousedown="startColumnResizing($event, column)" ng-class="{'sortable-th': (sortEnabled === true &amp;&amp; column.sortable === true), 'hide-responsive': (column.hideMobil === true)}" ng-if="!column.hidden" ng-show="!column.hideFromUi" style="width: " rowspan="1" colspan="1" class="ng-scope sortable-th">
+
+						<label ng-bind="column.title" class="ng-binding">Marka Adı</label>
+						<span ng-show="sortEnabled === true &amp;&amp; column.sortable === true &amp;&amp; sortProperty !== column.field" class="sorting-icon" style="opacity:0.2"></span>
+						<span ng-show="column.field &amp;&amp; sortProperty === column.field" class="sorting-icon ng-hide sorting-asc" ng-class="{'sorting-asc': sortDirection === false, 'sorting-desc': sortDirection === true}"></span>
+					</th><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><th ng-repeat="column in columnOptions" ng-click="sortByProperty(column)" ng-mouseover="showColumnResizing($event, column)" ng-mousedown="startColumnResizing($event, column)" ng-class="{'sortable-th': (sortEnabled === true &amp;&amp; column.sortable === true), 'hide-responsive': (column.hideMobil === true)}" ng-if="!column.hidden" ng-show="!column.hideFromUi" style="width: " rowspan="1" colspan="1" class="ng-scope sortable-th">
+
+						<label ng-bind="column.title" class="ng-binding">Versiyon/Model</label>
+						<span ng-show="sortEnabled === true &amp;&amp; column.sortable === true &amp;&amp; sortProperty !== column.field" class="sorting-icon" style="opacity:0.2"></span>
+						<span ng-show="column.field &amp;&amp; sortProperty === column.field" class="sorting-icon ng-hide sorting-asc" ng-class="{'sorting-asc': sortDirection === false, 'sorting-desc': sortDirection === true}"></span>
+					</th><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><th ng-repeat="column in columnOptions" ng-click="sortByProperty(column)" ng-mouseover="showColumnResizing($event, column)" ng-mousedown="startColumnResizing($event, column)" ng-class="{'sortable-th': (sortEnabled === true &amp;&amp; column.sortable === true), 'hide-responsive': (column.hideMobil === true)}" ng-if="!column.hidden" ng-show="!column.hideFromUi" style="width: " rowspan="1" colspan="1" class="ng-scope sortable-th">
+
+						<label ng-bind="column.title" class="ng-binding">Ürün Adı</label>
+						<span ng-show="sortEnabled === true &amp;&amp; column.sortable === true &amp;&amp; sortProperty !== column.field" class="sorting-icon ng-hide" style="opacity:0.2"></span>
+						<span ng-show="column.field &amp;&amp; sortProperty === column.field" class="sorting-icon sorting-asc" ng-class="{'sorting-asc': sortDirection === false, 'sorting-desc': sortDirection === true}"></span>
+					</th><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><th ng-repeat="column in columnOptions" ng-click="sortByProperty(column)" ng-mouseover="showColumnResizing($event, column)" ng-mousedown="startColumnResizing($event, column)" ng-class="{'sortable-th': (sortEnabled === true &amp;&amp; column.sortable === true), 'hide-responsive': (column.hideMobil === true)}" ng-if="!column.hidden" ng-show="!column.hideFromUi" style="width: " rowspan="1" colspan="1" class="ng-scope sortable-th">
+
+						<label ng-bind="column.title" class="ng-binding">Katalog No</label>
+						<span ng-show="sortEnabled === true &amp;&amp; column.sortable === true &amp;&amp; sortProperty !== column.field" class="sorting-icon" style="opacity:0.2"></span>
+						<span ng-show="column.field &amp;&amp; sortProperty === column.field" class="sorting-icon ng-hide sorting-asc" ng-class="{'sorting-asc': sortDirection === false, 'sorting-desc': sortDirection === true}"></span>
+					</th><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><th ng-repeat="column in columnOptions" ng-click="sortByProperty(column)" ng-mouseover="showColumnResizing($event, column)" ng-mousedown="startColumnResizing($event, column)" ng-class="{'sortable-th': (sortEnabled === true &amp;&amp; column.sortable === true), 'hide-responsive': (column.hideMobil === true)}" ng-if="!column.hidden" ng-show="!column.hideFromUi" style="width: " rowspan="1" colspan="1" class="ng-scope sortable-th">
+
+						<label ng-bind="column.title" class="ng-binding">Sınıf</label>
+						<span ng-show="sortEnabled === true &amp;&amp; column.sortable === true &amp;&amp; sortProperty !== column.field" class="sorting-icon" style="opacity:0.2"></span>
+						<span ng-show="column.field &amp;&amp; sortProperty === column.field" class="sorting-icon ng-hide sorting-asc" ng-class="{'sorting-asc': sortDirection === false, 'sorting-desc': sortDirection === true}"></span>
+					</th><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><th ng-repeat="column in columnOptions" ng-click="sortByProperty(column)" ng-mouseover="showColumnResizing($event, column)" ng-mousedown="startColumnResizing($event, column)" ng-class="{'sortable-th': (sortEnabled === true &amp;&amp; column.sortable === true), 'hide-responsive': (column.hideMobil === true)}" ng-if="!column.hidden" ng-show="!column.hideFromUi" style="width: " rowspan="1" colspan="1" class="ng-scope sortable-th">
+
+						<label ng-bind="column.title" class="ng-binding">GMDN</label>
+						<span ng-show="sortEnabled === true &amp;&amp; column.sortable === true &amp;&amp; sortProperty !== column.field" class="sorting-icon" style="opacity:0.2"></span>
+						<span ng-show="column.field &amp;&amp; sortProperty === column.field" class="sorting-icon ng-hide sorting-asc" ng-class="{'sorting-asc': sortDirection === false, 'sorting-desc': sortDirection === true}"></span>
+					</th><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><th ng-repeat="column in columnOptions" ng-click="sortByProperty(column)" ng-mouseover="showColumnResizing($event, column)" ng-mousedown="startColumnResizing($event, column)" ng-class="{'sortable-th': (sortEnabled === true &amp;&amp; column.sortable === true), 'hide-responsive': (column.hideMobil === true)}" ng-if="!column.hidden" ng-show="!column.hideFromUi" style="width: " rowspan="1" colspan="1" class="ng-scope">
+
+						<label ng-bind="column.title" class="ng-binding">SUT Kodu</label>
+						<span ng-show="sortEnabled === true &amp;&amp; column.sortable === true &amp;&amp; sortProperty !== column.field" class="sorting-icon ng-hide" style="opacity:0.2"></span>
+						<span ng-show="column.field &amp;&amp; sortProperty === column.field" class="sorting-icon ng-hide sorting-asc" ng-class="{'sorting-asc': sortDirection === false, 'sorting-desc': sortDirection === true}"></span>
+					</th><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><th ng-repeat="column in columnOptions" ng-click="sortByProperty(column)" ng-mouseover="showColumnResizing($event, column)" ng-mousedown="startColumnResizing($event, column)" ng-class="{'sortable-th': (sortEnabled === true &amp;&amp; column.sortable === true), 'hide-responsive': (column.hideMobil === true)}" ng-if="!column.hidden" ng-show="!column.hideFromUi" style="width: " rowspan="1" colspan="1" class="ng-scope">
+
+						<label ng-bind="column.title" class="ng-binding">Durum Tarihi</label>
+						<span ng-show="sortEnabled === true &amp;&amp; column.sortable === true &amp;&amp; sortProperty !== column.field" class="sorting-icon ng-hide" style="opacity:0.2"></span>
+						<span ng-show="column.field &amp;&amp; sortProperty === column.field" class="sorting-icon ng-hide sorting-asc" ng-class="{'sorting-asc': sortDirection === false, 'sorting-desc': sortDirection === true}"></span>
+					</th><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><th ng-repeat="column in columnOptions" ng-click="sortByProperty(column)" ng-mouseover="showColumnResizing($event, column)" ng-mousedown="startColumnResizing($event, column)" ng-class="{'sortable-th': (sortEnabled === true &amp;&amp; column.sortable === true), 'hide-responsive': (column.hideMobil === true)}" ng-if="!column.hidden" ng-show="!column.hideFromUi" style="width: " rowspan="1" colspan="1" class="ng-scope sortable-th">
+
+						<label ng-bind="column.title" class="ng-binding">Kayıt Durumu</label>
+						<span ng-show="sortEnabled === true &amp;&amp; column.sortable === true &amp;&amp; sortProperty !== column.field" class="sorting-icon" style="opacity:0.2"></span>
+						<span ng-show="column.field &amp;&amp; sortProperty === column.field" class="sorting-icon ng-hide sorting-asc" ng-class="{'sorting-asc': sortDirection === false, 'sorting-desc': sortDirection === true}"></span>
+					</th><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions -->
+				</tr>
+				</thead>
+				<tbody>
+
+				<!-- repeat rows for every record in data -->
+				<!-- ngRepeat: record in data | yteOrder:clientSortingEnabled:sortProperty:sortDirection:sortComparator | startFrom:isRemote:binder.currentPage*getPageSize() | limitTo:getPageSize() --><tr ng-repeat="record in data | yteOrder:clientSortingEnabled:sortProperty:sortDirection:sortComparator | startFrom:isRemote:binder.currentPage*getPageSize() | limitTo:getPageSize()" role="row" ng-class="{even: $even, odd: $odd, 'selected-row': isRowSelected(record), 'last-selection': isLastSelected(record)}" ng-style="rowStyleFunction(record)" ng-click="selectRowClickHandler($event, record);markRowAsSelected($event, record);" ng-init="index = $index" class="ng-scope even">
+
+					<!-- first column is select checkbox in rows if selection enabled -->
+					<!-- ngIf: selectEnabled === true -->
+
+					<!-- second column is arrow for detail in rows if rowTemplate enabled -->
+					<!-- ngIf: hasRowTemplate === true -->
+
+					<!-- ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><td ng-repeat="column in columnOptions" ng-if="!column.hidden" ng-show="!column.hideFromUi" ng-style="column.columnStyleFunction(record)" ng-class="{'hide-responsive': (column.hideMobil === true), 'align-right': (column.alignRight === true)}" class="ng-scope">
+
+						<!-- wrapped every cell with a div in rows enabling common display-function and tooltip -->
+						<!-- ngIf: column.displayConditionFunction(record) --><div ng-if="column.displayConditionFunction(record)" ng-switch="column.type" yte-tooltip="" class="ng-scope">
+
+							<!-- render suitable element according to the type of the column -->
+							<!-- ngSwitchWhen: link --><a ng-switch-when="link" id="birincilUrunNumarasi_link" ng-click="column.yteClick(record)" ng-bind-html="column.templateFunction(record)" class="ng-binding ng-scope">4987670002779</a><!-- end ngSwitchWhen: -->
+
+							<!-- ngSwitchWhen: button -->
+
+							<!-- ngSwitchWhen: text -->
+
+							<!-- ngSwitchWhen: number -->
+
+							<!-- ngSwitchWhen: check -->
+
+							<!-- ngSwitchWhen: radio -->
+
+							<!-- ngSwitchWhen: image -->
+
+							<!-- ngSwitchWhen: icon -->
+
+							<!-- ngSwitchDefault: -->
+						</div><!-- end ngIf: column.displayConditionFunction(record) -->
+
+						<!-- ngIf: !column.displayConditionFunction(record) -->
+					</td><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><td ng-repeat="column in columnOptions" ng-if="!column.hidden" ng-show="!column.hideFromUi" ng-style="column.columnStyleFunction(record)" ng-class="{'hide-responsive': (column.hideMobil === true), 'align-right': (column.alignRight === true)}" class="ng-scope">
+
+						<!-- wrapped every cell with a div in rows enabling common display-function and tooltip -->
+						<!-- ngIf: column.displayConditionFunction(record) --><div ng-if="column.displayConditionFunction(record)" ng-switch="column.type" yte-tooltip="" class="ng-scope">
+
+							<!-- render suitable element according to the type of the column -->
+							<!-- ngSwitchWhen: link -->
+
+							<!-- ngSwitchWhen: button -->
+
+							<!-- ngSwitchWhen: text -->
+
+							<!-- ngSwitchWhen: number -->
+
+							<!-- ngSwitchWhen: check -->
+
+							<!-- ngSwitchWhen: radio -->
+
+							<!-- ngSwitchWhen: image -->
+
+							<!-- ngSwitchWhen: icon -->
+
+							<!-- ngSwitchDefault: --><label ng-switch-default="" ng-bind-html="column.templateFunction(record)" class="ng-binding ng-scope"></label><!-- end ngSwitchWhen: -->
+						</div><!-- end ngIf: column.displayConditionFunction(record) -->
+
+						<!-- ngIf: !column.displayConditionFunction(record) -->
+					</td><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><td ng-repeat="column in columnOptions" ng-if="!column.hidden" ng-show="!column.hideFromUi" ng-style="column.columnStyleFunction(record)" ng-class="{'hide-responsive': (column.hideMobil === true), 'align-right': (column.alignRight === true)}" class="ng-scope">
+
+						<!-- wrapped every cell with a div in rows enabling common display-function and tooltip -->
+						<!-- ngIf: column.displayConditionFunction(record) --><div ng-if="column.displayConditionFunction(record)" ng-switch="column.type" yte-tooltip="" class="ng-scope">
+
+							<!-- render suitable element according to the type of the column -->
+							<!-- ngSwitchWhen: link -->
+
+							<!-- ngSwitchWhen: button -->
+
+							<!-- ngSwitchWhen: text -->
+
+							<!-- ngSwitchWhen: number -->
+
+							<!-- ngSwitchWhen: check -->
+
+							<!-- ngSwitchWhen: radio -->
+
+							<!-- ngSwitchWhen: image -->
+
+							<!-- ngSwitchWhen: icon -->
+
+							<!-- ngSwitchDefault: --><label ng-switch-default="" ng-bind-html="column.templateFunction(record)" class="ng-binding ng-scope">2667269017943 - CANON MEDİKAL SİSTEMLER TURKEY ANONİM ŞİRKETİ (Üretici/İthalatçı/Bayi/İhracatçı)</label><!-- end ngSwitchWhen: -->
+						</div><!-- end ngIf: column.displayConditionFunction(record) -->
+
+						<!-- ngIf: !column.displayConditionFunction(record) -->
+					</td><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><td ng-repeat="column in columnOptions" ng-if="!column.hidden" ng-show="!column.hideFromUi" ng-style="column.columnStyleFunction(record)" ng-class="{'hide-responsive': (column.hideMobil === true), 'align-right': (column.alignRight === true)}" class="ng-scope">
+
+						<!-- wrapped every cell with a div in rows enabling common display-function and tooltip -->
+						<!-- ngIf: column.displayConditionFunction(record) --><div ng-if="column.displayConditionFunction(record)" ng-switch="column.type" yte-tooltip="" class="ng-scope">
+
+							<!-- render suitable element according to the type of the column -->
+							<!-- ngSwitchWhen: link -->
+
+							<!-- ngSwitchWhen: button -->
+
+							<!-- ngSwitchWhen: text -->
+
+							<!-- ngSwitchWhen: number -->
+
+							<!-- ngSwitchWhen: check -->
+
+							<!-- ngSwitchWhen: radio -->
+
+							<!-- ngSwitchWhen: image -->
+
+							<!-- ngSwitchWhen: icon -->
+
+							<!-- ngSwitchDefault: --><label ng-switch-default="" ng-bind-html="column.templateFunction(record)" class="ng-binding ng-scope">TOSHIBA</label><!-- end ngSwitchWhen: -->
+						</div><!-- end ngIf: column.displayConditionFunction(record) -->
+
+						<!-- ngIf: !column.displayConditionFunction(record) -->
+					</td><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><td ng-repeat="column in columnOptions" ng-if="!column.hidden" ng-show="!column.hideFromUi" ng-style="column.columnStyleFunction(record)" ng-class="{'hide-responsive': (column.hideMobil === true), 'align-right': (column.alignRight === true)}" class="ng-scope">
+
+						<!-- wrapped every cell with a div in rows enabling common display-function and tooltip -->
+						<!-- ngIf: column.displayConditionFunction(record) --><div ng-if="column.displayConditionFunction(record)" ng-switch="column.type" yte-tooltip="" class="ng-scope">
+
+							<!-- render suitable element according to the type of the column -->
+							<!-- ngSwitchWhen: link -->
+
+							<!-- ngSwitchWhen: button -->
+
+							<!-- ngSwitchWhen: text -->
+
+							<!-- ngSwitchWhen: number -->
+
+							<!-- ngSwitchWhen: check -->
+
+							<!-- ngSwitchWhen: radio -->
+
+							<!-- ngSwitchWhen: image -->
+
+							<!-- ngSwitchWhen: icon -->
+
+							<!-- ngSwitchDefault: --><label ng-switch-default="" ng-bind-html="column.templateFunction(record)" class="ng-binding ng-scope">TSX-301A (AQUILION ONE)</label><!-- end ngSwitchWhen: -->
+						</div><!-- end ngIf: column.displayConditionFunction(record) -->
+
+						<!-- ngIf: !column.displayConditionFunction(record) -->
+					</td><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><td ng-repeat="column in columnOptions" ng-if="!column.hidden" ng-show="!column.hideFromUi" ng-style="column.columnStyleFunction(record)" ng-class="{'hide-responsive': (column.hideMobil === true), 'align-right': (column.alignRight === true)}" class="ng-scope">
+
+						<!-- wrapped every cell with a div in rows enabling common display-function and tooltip -->
+						<!-- ngIf: column.displayConditionFunction(record) --><div ng-if="column.displayConditionFunction(record)" ng-switch="column.type" yte-tooltip="" class="ng-scope">
+
+							<!-- render suitable element according to the type of the column -->
+							<!-- ngSwitchWhen: link -->
+
+							<!-- ngSwitchWhen: button -->
+
+							<!-- ngSwitchWhen: text -->
+
+							<!-- ngSwitchWhen: number -->
+
+							<!-- ngSwitchWhen: check -->
+
+							<!-- ngSwitchWhen: radio -->
+
+							<!-- ngSwitchWhen: image -->
+
+							<!-- ngSwitchWhen: icon -->
+
+							<!-- ngSwitchDefault: --><label ng-switch-default="" ng-bind-html="column.templateFunction(record)" class="ng-binding ng-scope">BİLGİSAYARLI TÜM VÜCUTTOMOGRAFİ TARAYICISI</label><!-- end ngSwitchWhen: -->
+						</div><!-- end ngIf: column.displayConditionFunction(record) -->
+
+						<!-- ngIf: !column.displayConditionFunction(record) -->
+					</td><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><td ng-repeat="column in columnOptions" ng-if="!column.hidden" ng-show="!column.hideFromUi" ng-style="column.columnStyleFunction(record)" ng-class="{'hide-responsive': (column.hideMobil === true), 'align-right': (column.alignRight === true)}" class="ng-scope">
+
+						<!-- wrapped every cell with a div in rows enabling common display-function and tooltip -->
+						<!-- ngIf: column.displayConditionFunction(record) --><div ng-if="column.displayConditionFunction(record)" ng-switch="column.type" yte-tooltip="" class="ng-scope">
+
+							<!-- render suitable element according to the type of the column -->
+							<!-- ngSwitchWhen: link -->
+
+							<!-- ngSwitchWhen: button -->
+
+							<!-- ngSwitchWhen: text -->
+
+							<!-- ngSwitchWhen: number -->
+
+							<!-- ngSwitchWhen: check -->
+
+							<!-- ngSwitchWhen: radio -->
+
+							<!-- ngSwitchWhen: image -->
+
+							<!-- ngSwitchWhen: icon -->
+
+							<!-- ngSwitchDefault: --><label ng-switch-default="" ng-bind-html="column.templateFunction(record)" class="ng-binding ng-scope"></label><!-- end ngSwitchWhen: -->
+						</div><!-- end ngIf: column.displayConditionFunction(record) -->
+
+						<!-- ngIf: !column.displayConditionFunction(record) -->
+					</td><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><td ng-repeat="column in columnOptions" ng-if="!column.hidden" ng-show="!column.hideFromUi" ng-style="column.columnStyleFunction(record)" ng-class="{'hide-responsive': (column.hideMobil === true), 'align-right': (column.alignRight === true)}" class="ng-scope">
+
+						<!-- wrapped every cell with a div in rows enabling common display-function and tooltip -->
+						<!-- ngIf: column.displayConditionFunction(record) --><div ng-if="column.displayConditionFunction(record)" ng-switch="column.type" yte-tooltip="" class="ng-scope">
+
+							<!-- render suitable element according to the type of the column -->
+							<!-- ngSwitchWhen: link -->
+
+							<!-- ngSwitchWhen: button -->
+
+							<!-- ngSwitchWhen: text -->
+
+							<!-- ngSwitchWhen: number -->
+
+							<!-- ngSwitchWhen: check -->
+
+							<!-- ngSwitchWhen: radio -->
+
+							<!-- ngSwitchWhen: image -->
+
+							<!-- ngSwitchWhen: icon -->
+
+							<!-- ngSwitchDefault: --><label ng-switch-default="" ng-bind-html="column.templateFunction(record)" class="ng-binding ng-scope">Sınıf-IIb</label><!-- end ngSwitchWhen: -->
+						</div><!-- end ngIf: column.displayConditionFunction(record) -->
+
+						<!-- ngIf: !column.displayConditionFunction(record) -->
+					</td><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><td ng-repeat="column in columnOptions" ng-if="!column.hidden" ng-show="!column.hideFromUi" ng-style="column.columnStyleFunction(record)" ng-class="{'hide-responsive': (column.hideMobil === true), 'align-right': (column.alignRight === true)}" class="ng-scope">
+
+						<!-- wrapped every cell with a div in rows enabling common display-function and tooltip -->
+						<!-- ngIf: column.displayConditionFunction(record) --><div ng-if="column.displayConditionFunction(record)" ng-switch="column.type" yte-tooltip="" class="ng-scope">
+
+							<!-- render suitable element according to the type of the column -->
+							<!-- ngSwitchWhen: link -->
+
+							<!-- ngSwitchWhen: button -->
+
+							<!-- ngSwitchWhen: text -->
+
+							<!-- ngSwitchWhen: number -->
+
+							<!-- ngSwitchWhen: check -->
+
+							<!-- ngSwitchWhen: radio -->
+
+							<!-- ngSwitchWhen: image -->
+
+							<!-- ngSwitchWhen: icon -->
+
+							<!-- ngSwitchDefault: --><label ng-switch-default="" ng-bind-html="column.templateFunction(record)" class="ng-binding ng-scope">37618 - Röntgen sistemi, diyagnostik, bilgisayarlı tomografi, tüm beden</label><!-- end ngSwitchWhen: -->
+						</div><!-- end ngIf: column.displayConditionFunction(record) -->
+
+						<!-- ngIf: !column.displayConditionFunction(record) -->
+					</td><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><td ng-repeat="column in columnOptions" ng-if="!column.hidden" ng-show="!column.hideFromUi" ng-style="column.columnStyleFunction(record)" ng-class="{'hide-responsive': (column.hideMobil === true), 'align-right': (column.alignRight === true)}" class="ng-scope">
+
+						<!-- wrapped every cell with a div in rows enabling common display-function and tooltip -->
+						<!-- ngIf: column.displayConditionFunction(record) --><div ng-if="column.displayConditionFunction(record)" ng-switch="column.type" yte-tooltip="" class="ng-scope">
+
+							<!-- render suitable element according to the type of the column -->
+							<!-- ngSwitchWhen: link -->
+
+							<!-- ngSwitchWhen: button -->
+
+							<!-- ngSwitchWhen: text -->
+
+							<!-- ngSwitchWhen: number -->
+
+							<!-- ngSwitchWhen: check -->
+
+							<!-- ngSwitchWhen: radio -->
+
+							<!-- ngSwitchWhen: image -->
+
+							<!-- ngSwitchWhen: icon -->
+
+							<!-- ngSwitchDefault: --><label ng-switch-default="" ng-bind-html="column.templateFunction(record)" class="ng-binding ng-scope"></label><!-- end ngSwitchWhen: -->
+						</div><!-- end ngIf: column.displayConditionFunction(record) -->
+
+						<!-- ngIf: !column.displayConditionFunction(record) -->
+					</td><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><td ng-repeat="column in columnOptions" ng-if="!column.hidden" ng-show="!column.hideFromUi" ng-style="column.columnStyleFunction(record)" ng-class="{'hide-responsive': (column.hideMobil === true), 'align-right': (column.alignRight === true)}" class="ng-scope">
+
+						<!-- wrapped every cell with a div in rows enabling common display-function and tooltip -->
+						<!-- ngIf: column.displayConditionFunction(record) --><div ng-if="column.displayConditionFunction(record)" ng-switch="column.type" yte-tooltip="" class="ng-scope">
+
+							<!-- render suitable element according to the type of the column -->
+							<!-- ngSwitchWhen: link -->
+
+							<!-- ngSwitchWhen: button -->
+
+							<!-- ngSwitchWhen: text -->
+
+							<!-- ngSwitchWhen: number -->
+
+							<!-- ngSwitchWhen: check -->
+
+							<!-- ngSwitchWhen: radio -->
+
+							<!-- ngSwitchWhen: image -->
+
+							<!-- ngSwitchWhen: icon -->
+
+							<!-- ngSwitchDefault: --><label ng-switch-default="" ng-bind-html="column.templateFunction(record)" class="ng-binding ng-scope">10/10/2021</label><!-- end ngSwitchWhen: -->
+						</div><!-- end ngIf: column.displayConditionFunction(record) -->
+
+						<!-- ngIf: !column.displayConditionFunction(record) -->
+					</td><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions --><!-- ngIf: !column.hidden --><td ng-repeat="column in columnOptions" ng-if="!column.hidden" ng-show="!column.hideFromUi" ng-style="column.columnStyleFunction(record)" ng-class="{'hide-responsive': (column.hideMobil === true), 'align-right': (column.alignRight === true)}" class="ng-scope" style="background-color: rgb(255, 103, 0);">
+
+						<!-- wrapped every cell with a div in rows enabling common display-function and tooltip -->
+						<!-- ngIf: column.displayConditionFunction(record) --><div ng-if="column.displayConditionFunction(record)" ng-switch="column.type" yte-tooltip="" class="ng-scope">
+
+							<!-- render suitable element according to the type of the column -->
+							<!-- ngSwitchWhen: link -->
+
+							<!-- ngSwitchWhen: button -->
+
+							<!-- ngSwitchWhen: text -->
+
+							<!-- ngSwitchWhen: number -->
+
+							<!-- ngSwitchWhen: check -->
+
+							<!-- ngSwitchWhen: radio -->
+
+							<!-- ngSwitchWhen: image -->
+
+							<!-- ngSwitchWhen: icon -->
+
+							<!-- ngSwitchDefault: --><label ng-switch-default="" ng-bind-html="column.templateFunction(record)" class="ng-binding ng-scope">Sistemde Tekil Ürünü Var</label><!-- end ngSwitchWhen: -->
+						</div><!-- end ngIf: column.displayConditionFunction(record) -->
+
+						<!-- ngIf: !column.displayConditionFunction(record) -->
+					</td><!-- end ngIf: !column.hidden --><!-- end ngRepeat: column in columnOptions -->
+				</tr><!-- end ngRepeat: record in data | yteOrder:clientSortingEnabled:sortProperty:sortDirection:sortComparator | startFrom:isRemote:binder.currentPage*getPageSize() | limitTo:getPageSize() -->
+
+				<!-- generate empty row message -->
+				<tr ng-show="getTemplateMessage()" style="height:50px" class="ng-hide">
+					<!-- ngIf: selectEnabled === true -->
+					<td colspan="12"><em class="ng-binding"></em></td>
+				</tr>
+				</tbody>
+			</table>
+
+		</div>
+	</div>
+
+	<!-- ngIf: pageEnabled === true || exportEnabled === true --><div class="yte-grid-footer row ng-scope" ng-if="pageEnabled === true || exportEnabled === true">
+		<div span="4" style="text-align:left" class="ng-scope span4">
+
+			<!-- Pagination navigation buttons -->
+			<!-- ngIf: pageEnabled === true --><ul class="yte-grid-pagination pagination pagination-sm ng-scope" ng-if="pageEnabled === true">
+				<li class="paginate_button disabled" ng-class="{disabled: binder.currentPage === 0}">
+					<a ng-click="goPrevPage()"><span class="glyphicon glyphicon-triangle-left"></span></a>
+				</li>
+				<li class="paginate_button ng-hide" ng-show="totalCountKnown &amp;&amp; binder.currentPage - 2 &gt; 0 &amp;&amp; 5 &lt; getPageCount()">
+					<a ng-click="goToPage(binder.currentPage - 3)">...</a>
+				</li>
+				<!-- ngRepeat: page in getPageList() | limitPaginationBar:binder.currentPage --><li ng-repeat="page in getPageList() | limitPaginationBar:binder.currentPage" ng-show="totalCountKnown" class="paginate_button ng-scope active" ng-class="{'active': (binder.currentPage === page)}">
+					<!-- ngIf: !customNavigationEnabled || page !== binder.currentPage -->
+					<!-- ngIf: customNavigationEnabled && page === binder.currentPage --><input minimum-value="1" type="number" class="active-page-input ng-scope ng-isolate-scope ng-not-empty ng-valid ng-valid-minimum-value" ng-click="onTextClick($event)" ng-if="customNavigationEnabled &amp;&amp; page === binder.currentPage" name="pageIndexx" ng-model="page" ng-keypress="goDirect($event, page)" style=""><!-- end ngIf: customNavigationEnabled && page === binder.currentPage -->
+				<ng-messages ng-show="form.$submitted" for="form.pageIndexx.$error" class="ng-scope ng-inactive ng-hide"><!-- ngMessage: --></ng-messages></li><!-- end ngRepeat: page in getPageList() | limitPaginationBar:binder.currentPage -->
+				<li ng-hide="totalCountKnown" class="paginate_button active ng-hide">
+					<!-- ngIf: !customNavigationEnabled -->
+					<!-- ngIf: customNavigationEnabled --><input minimum-value="1" type="number" class="active-page-input ng-scope ng-isolate-scope ng-not-empty ng-valid ng-valid-minimum-value" ng-click="onTextClick($event)" ng-if="customNavigationEnabled" name="pageIndex" ng-model="binder.currentPage" ng-keypress="goDirect($event, binder.currentPage)" style=""><!-- end ngIf: customNavigationEnabled -->
+				<ng-messages ng-show="form.$submitted" for="form.pageIndex.$error" class="ng-scope ng-inactive ng-hide"><!-- ngMessage: --></ng-messages></li>
+				<li class="paginate_button ng-hide" ng-show="totalCountKnown &amp;&amp; binder.currentPage + 3 &lt; getPageCount() &amp;&amp; 5 &lt; getPageCount()">
+					<a ng-click="goToPage(binder.currentPage + 3)">...</a>
+				</li>
+				<li class="paginate_button disabled" ng-class="{disabled: binder.currentPage + 1 &gt;= getPageCount()}">
+					<a ng-click="goNextPage()"><span class="glyphicon glyphicon-triangle-right"></span></a>
+				</li>
+			</ul><!-- end ngIf: pageEnabled === true -->
+			<!-- ngIf: pageEnabled === false -->
+		</div>
+
+		<div span="6" class="ng-scope span6">
+
+			<!-- Pagination info text -->
+			<!-- ngIf: pageEnabled === true --><div class="yte-grid-page-info ng-scope" ng-if="pageEnabled === true" style="float: left">
+				<span class="ng-binding">1 - 10</span>
+				<!-- ngIf: totalCountKnown === true && showCalculateButton === false -->
+				<!-- ngIf: totalCountKnown === true && showCalculateButton === true --><span ng-if="totalCountKnown === true &amp;&amp; showCalculateButton === true" class="ng-binding ng-scope"> / Toplam: 1 kayıt <a ng-click="calculateTotalCount()">(hesapla)</a></span><!-- end ngIf: totalCountKnown === true && showCalculateButton === true -->
+				<!-- ngIf: totalCountKnown === false && showCalculateButton === true -->
+				<!-- ngIf: pageSizerEnabled === true --><span ng-if="pageSizerEnabled === true" style="margin: 0 10px" class="ng-scope">|</span><!-- end ngIf: pageSizerEnabled === true -->
+			</div><!-- end ngIf: pageEnabled === true -->
+
+			<!-- Page size changer links -->
+			<!-- ngIf: pageEnabled === true && pageSizerEnabled === true --><div class="yte-grid-page-sizer ng-scope" ng-if="pageEnabled === true &amp;&amp; pageSizerEnabled === true" style="float: left">
+				Sayfa başına
+				<div class="dropup" style="display:inline;">
+					<a class="btn btn-link dropdown-toggle ng-binding" data-toggle="dropdown" style="padding:0px">10</a>
+					<ul class="dropdown-menu">
+						<li><a ng-click="setPageSize(5)">5</a></li>
+						<li><a ng-click="setPageSize(10)">10</a></li>
+						<li><a ng-click="setPageSize(50)">50</a></li>
+						<li><a ng-click="setPageSize(100)">100</a></li>
+						<li><a ng-click="setPageSize(250)">250</a></li>
+						<!-- ngIf: isTitckUser() -->
+					</ul>
+				</div>
+				kayıt
+			</div><!-- end ngIf: pageEnabled === true && pageSizerEnabled === true -->
+			<!-- ngIf: pageEnabled === false || pageSizerEnabled === false -->
+		</div>
+
+		<div span="2" style="text-align:right" class="ng-scope span2">
+
+			<!-- Grid actions -->
+			<!-- ngIf: exportEnabled === true || refreshable === true --><div class="yte-grid-actions ng-scope" ng-if="exportEnabled === true || refreshable === true">
+				<!-- ngIf: refreshable === true -->
+
+				<!-- ngIf: (isRemote === true && exportEnabled === true) || pageEnabled === false --><a ng-if="(isRemote === true &amp;&amp; exportEnabled === true) || pageEnabled === false" ng-click="exportGrid(true)" yte-tooltip="Excele aktar" class="btn btn-link ng-scope" style="padding:0 5px" data-role="tooltip"><span class="glyphicon glyphicon-save"></span></a><!-- end ngIf: (isRemote === true && exportEnabled === true) || pageEnabled === false -->
+
+				<!-- ngIf: (isRemote === false && exportEnabled === true) && pageEnabled === true -->
+			</div><!-- end ngIf: exportEnabled === true || refreshable === true -->
+			<!-- ngIf: exportEnabled === false && refreshable !== true -->
+		</div>
+	</div><!-- end ngIf: pageEnabled === true || exportEnabled === true -->
+</div><!-- end ngIf: binder.bayilerinUrunleriniGosterme -->
+
+		<!-- ngIf: !binder.bayilerinUrunleriniGosterme -->
+
+	</div></div>
+
+</div></div>
+		</div>
+	</div>
+	
+</div>
+
+<!-- ngInclude: 'common/misc/theme/template/footer.html' --><div data-ng-include="'common/misc/theme/template/footer.html'" class="ng-scope"><div ng-controller="uts.common.misc.theme.footerController" class="page-footer ng-scope" style="">
+	<button ng-show="showHataDetaylariLink()" ng-click="showHataDetaylari()" class="client-error-button ng-hide" title="İstemci Hata Logları">!</button>
+	<div id="versionContainer" class="page-footer-inner">UTS-v10.33.1</div>
+	<div class="page-footer-inner" style="float:right"> 2016 © TÜBİTAK / T.C. Sağlık Bakanlığı</div>
+
+	<div class="scroll-to-top"><i class="icon-arrow-up"></i></div>
+</div>
+</div>
+
+<script src="resources/js/require.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+	loadApplicationPropertiesFromMetaData();
+
+	require.config({baseUrl: "", urlArgs: "v=UTS-v10_33_1", waitSeconds: "60"});
+	require(["main", "build/vatandas.bundle"], function () {
+		require(["vatandas/app"], function () {
+			angular.bootstrap(document, ["uts-vatandas"], {strictDi: true});
+		});
+	});
+</script>
+
+
+<div class="k-list-container k-popup k-group k-reset" id="firmaDown-list" data-role="popup" style="position: absolute; height: auto; display: none;"><span class="k-list-filter"><input class="k-textbox" role="listbox" aria-haspopup="true" aria-expanded="false" aria-owns="firmaDown_listbox" tabindex="0" aria-disabled="false" aria-readonly="false" aria-activedescendant="9168372d-8280-420a-883d-500d2d4b6567" style=""><span unselectable="on" class="k-icon k-i-search">select</span></span><div class="k-group-header" style="display:none"></div><div unselectable="on" style="overflow: auto; position: relative; height: auto;"><ul unselectable="on" class="k-list k-reset" tabindex="-1" aria-hidden="true" id="firmaDown_listbox" aria-live="polite" data-role="staticlist" role="listbox"><li tabindex="-1" role="option" unselectable="on" class="k-item k-state-focused k-state-selected" data-offset-index="0" id="9168372d-8280-420a-883d-500d2d4b6567" aria-selected="true">Firma/Kurum Seçiniz</li></ul></div></div><div class="k-list-container k-popup k-group k-reset" id="sinifDropDown-list" data-role="popup" style="position: absolute; height: 200px; display: none;"><div class="k-list-optionlabel k-state-selected k-state-focused">Tümü</div><div class="k-group-header" style="display:none"></div><div unselectable="on" style="overflow: auto; position: relative; height: 176px;"><ul unselectable="on" class="k-list k-reset" tabindex="-1" aria-hidden="true" id="sinifDropDown_listbox" aria-live="off" data-role="staticlist" role="listbox"><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="0">Sınıf-I Diğer (steril ve ölçme fonksiyonu olmayan)</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="1">Sınıf-I R (Yeniden kullanılabilir cerrahi aletler)</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="2">Sınıf-I M (Ölçme fonksiyonu olan)</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="3">Sınıf-I S (Steril fonksiyonu olan)</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="4">Sınıf-IIa</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="5">Sınıf-IIb</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="6">Sınıf-III</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="7">Ek-2 Liste-A</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="8">Ek-2 Liste-B</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="9">Kişisel Test Cihazları</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="10">IVD Diğer</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="11">Sınıf A Steril</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="12">Sınıf A</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="13">Sınıf B</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="14">Sınıf C</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="15">Sınıf D</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="16">Kişisel Test Cihazı (Sınıf B)</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="17">Kişisel Test Cihazı (Sınıf C)</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="18">Kişisel Test Cihazı (Sınıf D)</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="19">Hastabaşı Test Cihazı (Sınıf B)</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="20">Hastabaşı Test Cihazı (Sınıf C)</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="21">Hastabaşı Test Cihazı (Sınıf D)</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="22">Destek Tanı Cihazı (Sınıf C)</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="23">Destek Tanı Cihazı (Sınıf D)</li></ul></div></div><div class="k-list-container k-popup k-group k-reset" id="urunTipiDropDown-list" data-role="popup" style="position: absolute; height: auto; display: none;"><div class="k-list-optionlabel k-state-selected k-state-focused">Ürün Tipi Seçiniz</div><div class="k-group-header" style="display:none"></div><div unselectable="on" style="overflow: auto; position: relative; height: auto;"><ul unselectable="on" class="k-list k-reset" tabindex="-1" aria-hidden="true" id="urunTipiDropDown_listbox" aria-live="off" data-role="staticlist" role="listbox"><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="0">Tıbbi Cihaz</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="1">Sistem/İşlem Paketi</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="2">Ismarlama Üretilen Tıbbi Cihaz</li></ul></div></div><div class="k-list-container k-popup k-group k-reset" id="bransTuruDd-list" data-role="popup" style="position: absolute; height: auto; display: none;"><span class="k-list-filter"><input class="k-textbox" role="listbox" aria-haspopup="true" aria-expanded="false" aria-owns="bransTuruDd_listbox" tabindex="0" aria-disabled="false" aria-readonly="false" aria-activedescendant="220763d2-6c87-4886-afbe-5b1f57076f76" style=""><span unselectable="on" class="k-icon k-i-search">select</span></span><div class="k-group-header" style="display:none"></div><div unselectable="on" style="overflow: auto; position: relative; height: auto;"><ul unselectable="on" class="k-list k-reset" tabindex="-1" aria-hidden="true" id="bransTuruDd_listbox" aria-live="polite" data-role="staticlist" role="listbox"><li tabindex="-1" role="option" unselectable="on" class="k-item k-state-focused k-state-selected" data-offset-index="0" id="220763d2-6c87-4886-afbe-5b1f57076f76" aria-selected="true">Tümü</li></ul></div></div><div class="k-list-container k-popup k-group k-reset" id="yerliMaliDd-list" data-role="popup" style="position: absolute; height: auto; display: none;"><div class="k-list-optionlabel k-state-selected k-state-focused">Tümü</div><div class="k-group-header" style="display:none"></div><div unselectable="on" style="overflow: auto; position: relative; height: auto;"><ul unselectable="on" class="k-list k-reset" tabindex="-1" aria-hidden="true" id="yerliMaliDd_listbox" aria-live="off" data-role="staticlist" role="listbox"><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="0">Evet</li><li tabindex="-1" role="option" unselectable="on" class="k-item" data-offset-index="1">Hayır</li></ul></div></div><div class="k-list-container k-popup k-group k-reset" data-role="popup" style="display: none; position: absolute;"><div class="k-group-header" style="display:none"></div><div unselectable="on" style="overflow: auto; position: relative;"><ul unselectable="on" class="k-list k-reset" tabindex="-1" aria-hidden="true" aria-live="polite" data-role="staticlist" role="listbox"></ul></div></div><div class="k-list-container k-popup k-group k-reset" data-role="popup" style="display: none; position: absolute;"><div class="k-group-header" style="display:none"></div><div unselectable="on" style="overflow: auto; position: relative;"><ul unselectable="on" class="k-list k-reset" tabindex="-1" aria-hidden="true" aria-live="polite" data-role="staticlist" role="listbox"></ul></div></div></body></html>

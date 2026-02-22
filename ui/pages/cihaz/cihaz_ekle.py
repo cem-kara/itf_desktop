@@ -7,7 +7,7 @@ from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QFrame, QGroupBox, QGridLayout, QLineEdit,
-    QComboBox, QDateEdit, QFileDialog, QMessageBox
+    QComboBox, QDateEdit, QFileDialog, QMessageBox, QTabWidget
 )
 
 from core.logger import logger
@@ -15,6 +15,7 @@ from database.repository_registry import RepositoryRegistry
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
+from ui.pages.cihaz.components.cihaz_teknik_uts_scraper import CihazTeknikUtsScraper
 
 C = DarkTheme
 
@@ -34,6 +35,8 @@ class CihazEklePage(QWidget):
             "Kaynak": {},
         }
         self._next_seq = 1
+        self._teknik_uts_panel = None
+        self._uts_mode = False  # Cihaz kaydedildi, ÜTS bekliyor mu?
 
         self.setStyleSheet(S["page"])
         self._setup_ui()
@@ -58,11 +61,21 @@ class CihazEklePage(QWidget):
         hl.addStretch()
         root.addWidget(header)
 
+        self._tabs = QTabWidget()
+        self._tabs.setStyleSheet(S.get("tabs", ""))
+        root.addWidget(self._tabs, 1)
+
+        # ── Tab 1: Cihaz bilgileri formu ──
+        tab_form = QWidget()
+        tab_form_lay = QVBoxLayout(tab_form)
+        tab_form_lay.setContentsMargins(0, 0, 0, 0)
+        tab_form_lay.setSpacing(0)
+
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
         scroll.setStyleSheet(S["scroll"])
-        root.addWidget(scroll, 1)
+        tab_form_lay.addWidget(scroll, 1)
 
         content = QWidget()
         scroll.setWidget(content)
@@ -160,6 +173,20 @@ class CihazEklePage(QWidget):
         IconRenderer.set_button_icon(self.btn_save, "save", color=C.BTN_PRIMARY_TEXT, size=16)
         self.btn_save.clicked.connect(self._save)
         fl.addWidget(self.btn_save)
+
+        self._tabs.addTab(tab_form, "Cihaz Bilgileri")
+
+        # ── Tab 2: ÜTS Sorgulama ──
+        tab_uts = QWidget()
+        tab_uts_lay = QVBoxLayout(tab_uts)
+        tab_uts_lay.setContentsMargins(0, 0, 0, 0)
+        tab_uts_lay.setSpacing(0)
+        self._teknik_uts_panel = CihazTeknikUtsScraper(cihaz_id="", db=self._db, parent=tab_uts)
+        self._teknik_uts_panel.data_ready.connect(self._populate_uts_data)
+        self._teknik_uts_panel.saved.connect(self._on_uts_completed)
+        self._teknik_uts_panel.canceled.connect(self._on_uts_completed)
+        tab_uts_lay.addWidget(self._teknik_uts_panel, 1)
+        self._tabs.addTab(tab_uts, "ÜTS Sorgulama")
 
         root.addWidget(footer)
 
@@ -311,10 +338,34 @@ class CihazEklePage(QWidget):
             repo = registry.get("Cihazlar")
 
             repo.insert(data)
+            
+            # Cihaz başarıyla kaydedildi - ÜTS paneline cihaz_id ver
+            if self._teknik_uts_panel is not None:
+                self._teknik_uts_panel.cihaz_id = str(cihaz_id)
+                logger.info(f"Cihaz kaydedildi: {cihaz_id}. ÜTS paneli aktif.")
+            
+            # Kaydet butonunu disable et (tekrar kaydetmesin)
+            self.btn_save.setEnabled(False)
+            self.btn_save.setText("✓ Kaydedildi")
+            
+            # ÜTS modunu aktif et (form kapanmasın)
+            self._uts_mode = True
+            
+            # ÜTS sekmesine geç
+            self._tabs.setCurrentIndex(1)
+            
+            # Kullanıcıya bilgi ver
+            QMessageBox.information(
+                self,
+                "Cihaz Kaydedildi",
+                f"Cihaz başarıyla kaydedildi: {cihaz_id}\n\n"
+                "Şimdi 'ÜTS Sorgulama' sekmesinden teknik bilgileri ekleyebilirsiniz.\n\n"
+                "Not: Form otomatik kapanmayacak. ÜTS bilgilerini ekledikten sonra "
+                "formu manuel olarak kapatabilirsiniz."
+            )
 
+            # Signal emit et ama callback çağırma (form kapanmasın)
             self.saved.emit(data)
-            if callable(self._on_saved):
-                self._on_saved()
         except Exception as e:
             logger.error(f"Cihaz kaydetme hatasi: {e}")
             QMessageBox.critical(self, "Hata", f"Kaydetme hatasi: {e}")
@@ -356,6 +407,63 @@ class CihazEklePage(QWidget):
         if isinstance(widget, QLineEdit):
             widget.setText(value)
 
+    def _populate_uts_data(self, data: dict):
+        """
+        ÜTS scraper'dan gelen veriyi form field'larına doldur.
+        
+        NOT: Form'da sadece temel cihaz bilgileri var (Marka, Model).
+        Detaylı teknik bilgiler (Sinif, GmdnKod, Firma, etc.) Cihaz_Teknik
+        tablosuna kaydedilir ve cihaz detay ekranında gösterilir.
+        """
+        logger.info(f"📥 ÜTS data populate başlıyor: {len(data)} alan")
+        logger.debug(f"📋 Gelen alanlar: {list(data.keys())}")
+        logger.debug(f"📝 Form field'ları: {list(self._fields.keys())}")
+        
+        # Form'da mevcut field'ları doldur
+        field_mapping = {
+            "Marka": "Marka",         # ÜTS → Form
+            "Model": "Model",         # ÜTS → Form (versiyonModel → Model)
+        }
+        
+        filled_count = 0
+        for uts_field, form_field in field_mapping.items():
+            if uts_field in data and data[uts_field]:
+                value = str(data[uts_field]).strip()
+                if value:
+                    try:
+                        # Combo'ysa özel işlem yap
+                        widget = self._fields.get(form_field)
+                        if isinstance(widget, QComboBox):
+                            # Combo'da değer varsa seç, yoksa addItem yapma (Sabitler'den gelir)
+                            index = widget.findText(value)
+                            if index >= 0:
+                                widget.setCurrentIndex(index)
+                                filled_count += 1
+                                logger.debug(f"  ✓ {form_field} (combo): {value}")
+                            else:
+                                logger.debug(f"  ⚠ {form_field} combo'da '{value}' bulunamadı")
+                        else:
+                            # LineEdit veya diğer
+                            self._set_text(form_field, value)
+                            filled_count += 1
+                            logger.debug(f"  ✓ {form_field}: {value}")
+                    except Exception as e:
+                        logger.warning(f"  ✗ {form_field} doldurulamadı: {e}")
+        
+        if filled_count > 0:
+            logger.info(f"✅ Form populate tamamlandı: {filled_count} alan dolduruldu")
+            QMessageBox.information(
+                self,
+                "ÜTS Verisi Yüklendi",
+                f"Temel bilgiler form'a aktarıldı ({filled_count} alan).\n\n"
+                "Detaylı teknik bilgiler (Sınıf, GMDN, Firma, vb.) "
+                "Cihaz_Teknik tablosuna kaydedildi.\n\n"
+                "Cihaz kaydedildikten sonra 'Cihaz Merkez' ekranında "
+                "'Teknik Bilgiler' sekmesinden görüntüleyebilirsiniz."
+            )
+        else:
+            logger.warning("⚠ Form'a hiçbir alan aktarılamadı")
+
     def _clear_form(self):
         for widget in self._fields.values():
             if isinstance(widget, QLineEdit):
@@ -367,3 +475,10 @@ class CihazEklePage(QWidget):
 
         self._next_seq = self._calc_next_sequence()
         self._update_cihaz_id()
+
+    def _on_uts_completed(self):
+        """ÜTS panelinden kaydet/iptal yapıldığında çalışır."""
+        if self._uts_mode and callable(self._on_saved):
+            # ÜTS işlemi tamamlandı, artık form'u kapatabiliriz
+            logger.info("ÜTS işlemi tamamlandı, form kapatılıyor.")
+            self._on_saved()

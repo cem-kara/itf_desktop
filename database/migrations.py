@@ -19,7 +19,7 @@ class MigrationManager:
     """
     
     # Mevcut şema versiyonu
-    CURRENT_VERSION = 8
+    CURRENT_VERSION = 9
 
     def __init__(self, db_path):
         self.db_path = db_path
@@ -296,6 +296,169 @@ class MigrationManager:
         finally:
             conn.close()
 
+    def _migrate_to_v9(self):
+        """
+        v8 → v9: Cihaz_Teknik tablosunu ÜTS API uyumlu yeni şema ile yeniden oluştur
+        
+        Yeni Eklenen Alanlar:
+        - UrunNo (birincilUrunNumarasi)
+        - Model (versiyonModel -> VersiyonModel yerine)
+        - UrunTipi
+        - Sinif (sınıflandırma)
+        - GmdnKod, GmdnTurkce, GmdnIngilizce, GmdnAciklama
+        - FirmaNo, FirmaTelefon, FirmaEmail, FirmaDurum, FirmaFaaliyetAlan
+        - KalibrasyonPeriyoduAy, BakimPeriyoduAy (Text olarak saklanacak)
+        - UTSBaslangicTarihi, DurumTarihi, KontrolTarihi
+        - OlusturmaTarihi, GuncellemeTarihi
+        - SaklamaKosuluVar, TekilUrunVarMi
+        - UrunDurum, BasvuruHazir, KayitTipi, RafOmruDegeri
+        
+        Değişen Alan Adları:
+        - VersiyonModel → Model (parser çıktısı ile uyum)
+        - BirincilUrunNumarasi → UrunNo (kısa form)
+        """
+        conn = self.connect()
+        cur = conn.cursor()
+
+        try:
+            logger.info("Migration v9: Mevcut Cihaz_Teknik verileri yedekleniyor...")
+            
+            # Mevcut verileri geçici tabloya kopyala
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS Cihaz_Teknik_backup_v8 AS 
+            SELECT * FROM Cihaz_Teknik
+            """)
+            
+            # Eski tabloyu sil
+            cur.execute("DROP TABLE IF EXISTS Cihaz_Teknik")
+            
+            # Yeni şema ile tabloyu oluştur
+            cur.execute("""
+            CREATE TABLE Cihaz_Teknik (
+                -- PRIMARY KEY
+                Cihazid TEXT PRIMARY KEY,
+                
+                -- 1. TEMEL ÜRÜN BİLGİLERİ (ÜTS API)
+                UrunNo TEXT,
+                Marka TEXT,
+                UrunAdi TEXT,
+                UrunTanimi TEXT,
+                Model TEXT,
+                UrunTipi TEXT,
+                
+                -- 2. FIRMA/KURUM BİLGİLERİ (ÜTS API)
+                Firma TEXT,
+                FirmaNo TEXT,
+                FirmaTelefon TEXT,
+                FirmaEmail TEXT,
+                FirmaDurum TEXT,
+                FirmaFaaliyetAlan TEXT,
+                
+                -- 3. SINIFLANDIRMA & GMDN (ÜTS API)
+                Sinif TEXT,
+                GmdnKod TEXT,
+                GmdnTurkce TEXT,
+                GmdnIngilizce TEXT,
+                GmdnAciklama TEXT,
+                
+                -- 4. ÜRÜN TİPİ DETAYLARI (ÜTS + PDF)
+                UrunKunye TEXT,
+                TurkceEtiket TEXT,
+                OrijinalEtiket TEXT,
+                ReferansKatalogNo TEXT,
+                UrunSayisi TEXT,
+                UrunAciklamasi TEXT,
+                
+                -- 5. İMAL/İTHAL BİLGİLERİ (ÜTS API)
+                IthalImalBilgisi TEXT,
+                MenseiUlke TEXT,
+                IthalEdilenUlke TEXT,
+                YerliMaliBelgesiVarMi TEXT,
+                
+                -- 6. TEKNİK ÖZELLİKLER - EVET/HAYIR (ÜTS API)
+                MRGGuvenlikBilgisi TEXT,
+                LateksIceriyorMu TEXT,
+                FtalatDEHPIceriyorMu TEXT,
+                IyonizeRadyasyonIcerirMi TEXT,
+                NanomateryalIceriyorMu TEXT,
+                ImplanteEdilebilirMi TEXT,
+                TekKullanimlikMi TEXT,
+                SinirliKullanimSayisiVarMi TEXT,
+                TekHastaKullanimMi TEXT,
+                RafOmruVarMi TEXT,
+                SaklamaKosuluVar TEXT,
+                TekilUrunVarMi TEXT,
+                SterilPaketlendiMi TEXT,
+                KullanimOncesiSterilizasyonGerekliMi TEXT,
+                Ek3KapsamindaMi TEXT,
+                BilesenAksesuarMi TEXT,
+                
+                -- 7. KALİBRASYON & BAKIM (ÜTS API)
+                KalibrasyonaTabiMi TEXT,
+                KalibrasyonPeriyoduAy TEXT,
+                BakimaTabiMi TEXT,
+                BakimPeriyoduAy TEXT,
+                
+                -- 8. TARİHLER (ÜTS API)
+                UTSBaslangicTarihi TEXT,
+                DurumTarihi TEXT,
+                KontrolTarihi TEXT,
+                OlusturmaTarihi TEXT,
+                GuncellemeTarihi TEXT,
+                
+                -- 9. BELGELER & GÖRSELLER
+                UrunBelgeleri TEXT,
+                UrunGorselDosyasi TEXT,
+                EkstraBilgiLinki TEXT,
+                
+                -- 10. DİĞER ALANLAR (ÜTS API)
+                UrunDurum TEXT,
+                BasvuruHazir TEXT,
+                KayitTipi TEXT,
+                RafOmruDegeri TEXT,
+                
+                -- SYNC METADATA
+                sync_status TEXT DEFAULT 'clean',
+                updated_at TEXT
+            )
+            """)
+            
+            # Verileri geri yükle (sadece Cihazid)
+            # Not: ÜTS API alanları ÜTS sorgulama panelinden gelir
+            cur.execute("""
+            INSERT OR IGNORE INTO Cihaz_Teknik (Cihazid)
+            SELECT Cihazid FROM Cihaz_Teknik_backup_v8
+            """)
+            
+            # İndeksleri oluştur
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_cihaz_teknik_urun_no ON Cihaz_Teknik(UrunNo)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_cihaz_teknik_marka ON Cihaz_Teknik(Marka)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_cihaz_teknik_firma ON Cihaz_Teknik(Firma)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_cihaz_teknik_sinif ON Cihaz_Teknik(Sinif)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_cihaz_teknik_gmdn ON Cihaz_Teknik(GmdnKod)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_cihaz_teknik_kalibrasyon ON Cihaz_Teknik(KalibrasyonaTabiMi)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_cihaz_teknik_bakim ON Cihaz_Teknik(BakimaTabiMi)")
+            
+            conn.commit()
+            
+            # Yedek tablo opsiyonel - silinmemeli (rollback için)
+            # cur.execute("DROP TABLE Cihaz_Teknik_backup_v8")
+            
+            logger.info("v9: Cihaz_Teknik tablosu yeni şema ile güncellendi")
+            logger.info("    - 25 yeni alan eklendi (ÜTS API uyumu)")
+            logger.info("    - VersiyonModel → Model (alan adı değişikliği)")
+            logger.info("    - BirincilUrunNumarasi → UrunNo (alan adı değişikliği)")
+            logger.info("    - 7 index oluşturuldu")
+            logger.info("    - Mevcut veriler korundu (backup: Cihaz_Teknik_backup_v8)")
+
+        except Exception as e:
+            logger.error(f"Migration v9 hatası: {e}")
+            conn.rollback()
+            raise
+
+        finally:
+            conn.close()
+
     # v3-v7: Şema değişikliği içermeyen versiyon adımları. Metod tanımlanmamıştır;
     # run_migrations döngüsü bunları otomatik "no-op" olarak geçer ve
     # schema_version tablosuna yine de kaydeder (gap bırakmaz).
@@ -451,23 +614,47 @@ class MigrationManager:
         # ---------------- CIHAZ TEKNIK ----------------
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Cihaz_Teknik (
+            -- PRIMARY KEY
             Cihazid TEXT PRIMARY KEY,
-            UrunTanimi TEXT,
-            BirincilUrunNumarasi TEXT,
-            Firma TEXT,
+            
+            -- 1. TEMEL ÜRÜN BİLGİLERİ (ÜTS API)
+            UrunNo TEXT,
             Marka TEXT,
             UrunAdi TEXT,
+            UrunTanimi TEXT,
+            Model TEXT,
+            UrunTipi TEXT,
+            
+            -- 2. FIRMA/KURUM BİLGİLERİ (ÜTS API)
+            Firma TEXT,
+            FirmaNo TEXT,
+            FirmaTelefon TEXT,
+            FirmaEmail TEXT,
+            FirmaDurum TEXT,
+            FirmaFaaliyetAlan TEXT,
+            
+            -- 3. SINIFLANDIRMA & GMDN (ÜTS API)
+            Sinif TEXT,
+            GmdnKod TEXT,
+            GmdnTurkce TEXT,
+            GmdnIngilizce TEXT,
+            GmdnAciklama TEXT,
+            
+            -- 4. ÜRÜN TİPİ DETAYLARI (ÜTS + PDF)
             UrunKunye TEXT,
             TurkceEtiket TEXT,
             OrijinalEtiket TEXT,
-            VersiyonModel TEXT,
             ReferansKatalogNo TEXT,
             UrunSayisi TEXT,
             UrunAciklamasi TEXT,
+            
+            -- 5. İMAL/İTHAL BİLGİLERİ (ÜTS API)
             IthalImalBilgisi TEXT,
             MenseiUlke TEXT,
             IthalEdilenUlke TEXT,
             YerliMaliBelgesiVarMi TEXT,
+            
+            -- 6. TEKNİK ÖZELLİKLER - EVET/HAYIR (ÜTS API)
             MRGGuvenlikBilgisi TEXT,
             LateksIceriyorMu TEXT,
             FtalatDEHPIceriyorMu TEXT,
@@ -477,19 +664,39 @@ class MigrationManager:
             TekKullanimlikMi TEXT,
             SinirliKullanimSayisiVarMi TEXT,
             TekHastaKullanimMi TEXT,
-            EkstraBilgiLinki TEXT,
             RafOmruVarMi TEXT,
-            KalibrasyonaTabiMi TEXT,
-            KalibrasyonPeriyoduAy TEXT,
-            BakimaTabiMi TEXT,
-            BakimPeriyoduAy TEXT,
+            SaklamaKosuluVar TEXT,
+            TekilUrunVarMi TEXT,
             SterilPaketlendiMi TEXT,
             KullanimOncesiSterilizasyonGerekliMi TEXT,
             Ek3KapsamindaMi TEXT,
             BilesenAksesuarMi TEXT,
+            
+            -- 7. KALİBRASYON & BAKIM (ÜTS API)
+            KalibrasyonaTabiMi TEXT,
+            KalibrasyonPeriyoduAy TEXT,
+            BakimaTabiMi TEXT,
+            BakimPeriyoduAy TEXT,
+            
+            -- 8. TARİHLER (ÜTS API)
+            UTSBaslangicTarihi TEXT,
+            DurumTarihi TEXT,
+            KontrolTarihi TEXT,
+            OlusturmaTarihi TEXT,
+            GuncellemeTarihi TEXT,
+            
+            -- 9. BELGELER & GÖRSELLER
             UrunBelgeleri TEXT,
             UrunGorselDosyasi TEXT,
-
+            EkstraBilgiLinki TEXT,
+            
+            -- 10. DİĞER ALANLAR (ÜTS API)
+            UrunDurum TEXT,
+            BasvuruHazir TEXT,
+            KayitTipi TEXT,
+            RafOmruDegeri TEXT,
+            
+            -- SYNC METADATA
             sync_status TEXT DEFAULT 'clean',
             updated_at TEXT
         )

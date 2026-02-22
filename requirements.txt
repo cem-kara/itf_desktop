@@ -5,6 +5,9 @@
 # ─── GUI Framework ──────────────────────────────────────────────
 PySide6==6.6.0         # Qt6 Python bindings
 
+# ─── Web Scraping ───────────────────────────────────────────────
+playwright==1.40.0     # Browser automation for ÜTS data extraction
+
 # ─── Veri İşleme ────────────────────────────────────────────────
 openpyxl==3.11.2       # Excel dosyaları (.xlsx)
 Jinja2==3.1.2          # Template rendering

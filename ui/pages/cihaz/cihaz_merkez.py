@@ -25,9 +25,9 @@ C = DarkTheme
 TABS = [
     ("GENEL",        "Genel Bakış"),
     ("TEKNIK",       "Teknik Bilgiler"),
+    ("ARIZA",        "Arıza Kayıtları"),
     ("BAKIM",        "Bakım İşlemleri"),
     ("KALIBRASYON",  "Kalibrasyon"),
-    ("ARIZA",        "Arıza Kayıtları"),
 ]
 
 
@@ -442,19 +442,16 @@ class CihazMerkezPage(QWidget):
                 w.saved.connect(self._load_data)
             elif code == "BAKIM":
                 # Bakım işlemleri paneli
-                w = QLabel("Bakım İşlemleri - Yakında")
-                w.setAlignment(Qt.AlignCenter)
-                w.setStyleSheet(STYLES.get("info_label", f"color:{C.TEXT_SECONDARY};"))
+                from ui.pages.cihaz.components.bakim_kayit import BakimKayitPenceresi
+                w = BakimKayitPenceresi(self.db, cihaz_id=self.cihaz_id)
             elif code == "KALIBRASYON":
                 # Kalibrasyon paneli
-                w = QLabel("Kalibrasyon - Yakında")
-                w.setAlignment(Qt.AlignCenter)
-                w.setStyleSheet(STYLES.get("info_label", f"color:{C.TEXT_SECONDARY};"))
+                from ui.pages.cihaz.components.kalibrasyon_kayit import KalibrasyonKayitPenceresi
+                w = KalibrasyonKayitPenceresi(self.db, cihaz_id=self.cihaz_id)
             elif code == "ARIZA":
                 # Arıza kayıtları paneli
-                w = QLabel("Arıza Kayıtları - Yakında")
-                w.setAlignment(Qt.AlignCenter)
-                w.setStyleSheet(STYLES.get("info_label", f"color:{C.TEXT_SECONDARY};"))
+                from ui.pages.cihaz.ariza_kayit import ArizaKayitPenceresi
+                w = ArizaKayitPenceresi(self.db, cihaz_id=self.cihaz_id)
             else:
                 raise ValueError(f"Bilinmeyen sekme: {code}")
 
@@ -495,19 +492,22 @@ class CihazMerkezPage(QWidget):
         try:
             if form_type == "BAKIM":
                 self.lbl_form_title.setText("BAKIM GİRİŞİ")
-                lbl = QLabel("Bakım formu yakında eklenecek")
-                lbl.setStyleSheet(STYLES.get("info_label", f"color:{C.TEXT_SECONDARY};"))
-                self.form_content_lay.addWidget(lbl)
+                from ui.pages.cihaz.bakim_kalibrasyon_form import BakimKayitForm
+                form = BakimKayitForm(self.db, cihaz_id=self.cihaz_id)
+                form.saved.connect(self._on_form_saved)
+                self.form_content_lay.addWidget(form)
             elif form_type == "ARIZA":
                 self.lbl_form_title.setText("ARIZA KAYIT")
-                lbl = QLabel("Arıza formu yakında eklenecek")
-                lbl.setStyleSheet(STYLES.get("info_label", f"color:{C.TEXT_SECONDARY};"))
-                self.form_content_lay.addWidget(lbl)
+                from ui.pages.cihaz.ariza_kayit import ArizaKayitForm
+                form = ArizaKayitForm(self.db, cihaz_id=self.cihaz_id)
+                form.saved.connect(self._on_form_saved)
+                self.form_content_lay.addWidget(form)
             elif form_type == "KALIBRASYON":
                 self.lbl_form_title.setText("KALİBRASYON KAYIT")
-                lbl = QLabel("Kalibrasyon formu yakında eklenecek")
-                lbl.setStyleSheet(STYLES.get("info_label", f"color:{C.TEXT_SECONDARY};"))
-                self.form_content_lay.addWidget(lbl)
+                from ui.pages.cihaz.bakim_kalibrasyon_form import KalibrasyonKayitForm
+                form = KalibrasyonKayitForm(self.db, cihaz_id=self.cihaz_id)
+                form.saved.connect(self._on_form_saved)
+                self.form_content_lay.addWidget(form)
             else:
                 return
 
@@ -530,6 +530,15 @@ class CihazMerkezPage(QWidget):
     def _on_form_saved(self):
         self._hide_form()
         self._load_data()
+        ariza = self._modules.get("ARIZA")
+        if ariza and hasattr(ariza, "load_data"):
+            ariza.load_data()
+        bakim = self._modules.get("BAKIM")
+        if bakim and hasattr(bakim, "load_data"):
+            bakim.load_data()
+        kalibrasyon = self._modules.get("KALIBRASYON")
+        if kalibrasyon and hasattr(kalibrasyon, "load_data"):
+            kalibrasyon.load_data()
 
     # ═══════════════════════════════════════════════════
     #  YARDIMCI OLUŞTURUCULAR
