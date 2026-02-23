@@ -304,7 +304,14 @@ class SyncService:
             log_sync_step(table_name, "pull_only_start")
 
             # ── 1. Google Sheets'i oku ──
-            ws = self.gsheet.get_worksheet(table_name)
+            try:
+                ws = self.gsheet.get_worksheet(table_name)
+            except ValueError as e:
+                # Google Sheets'te mapping yoksa (local-only table)
+                logger.warning(f"  {table_name} için Google Sheets mapping yok: {e}")
+                logger.warning(f"  {table_name} local tablo olarak çalışıyor (pull skip)")
+                log_sync_step(table_name, "pull_only_skip_no_mapping")
+                return
 
             if not ws:
                 logger.warning(f"  {table_name} worksheet bulunamadı, atlanıyor")

@@ -73,21 +73,60 @@ TABLES = {
 
     "Cihaz_Teknik": {
         "pk": "Cihazid",
+        "sync": False,  # Local-only table (Google Sheets'e eklenmedi)
         "columns": [
             "Cihazid",
-            "UrunNo", "Marka", "UrunAdi", "UrunTanimi", "Model", "UrunTipi",
-            "Firma", "FirmaNo", "FirmaTelefon", "FirmaEmail", "FirmaDurum", "FirmaFaaliyetAlan",
-            "Sinif", "GmdnKod", "GmdnTurkce", "GmdnIngilizce", "GmdnAciklama",
-            "UrunKunye", "TurkceEtiket", "OrijinalEtiket", "ReferansKatalogNo", "UrunSayisi", "UrunAciklamasi",
-            "IthalImalBilgisi", "MenseiUlke", "IthalEdilenUlke", "YerliMaliBelgesiVarMi",
-            "MRGGuvenlikBilgisi", "LateksIceriyorMu", "FtalatDEHPIceriyorMu", "IyonizeRadyasyonIcerirMi",
-            "NanomateryalIceriyorMu", "ImplanteEdilebilirMi", "TekKullanimlikMi", "SinirliKullanimSayisiVarMi",
-            "TekHastaKullanimMi", "RafOmruVarMi", "SaklamaKosuluVar", "TekilUrunVarMi",
-            "SterilPaketlendiMi", "KullanimOncesiSterilizasyonGerekliMi", "Ek3KapsamindaMi", "BilesenAksesuarMi",
-            "KalibrasyonaTabiMi", "KalibrasyonPeriyoduAy", "BakimaTabiMi", "BakimPeriyoduAy",
-            "UTSBaslangicTarihi", "DurumTarihi", "KontrolTarihi", "OlusturmaTarihi", "GuncellemeTarihi",
-            "UrunBelgeleri", "UrunGorselDosyasi", "EkstraBilgiLinki",
-            "UrunDurum", "BasvuruHazir", "KayitTipi", "RafOmruDegeri"
+            "BirincilUrunNumarasi",
+            "MarkaAdi",
+            "EtiketAdi",
+            "UrunTanimi",
+            "VersiyonModel",
+            "KatalogNo",
+            "TemelUdiDi",
+            "Aciklama",
+            "KurumUnvan",
+            "KurumGorunenAd",
+            "KurumNo",
+            "KurumTelefon",
+            "KurumEposta",
+            "Durum",
+            "UtsBaslangicTarihi",
+            "KontroleGonderildigiTarih",
+            "CihazKayitTipi",
+            "UrunTipi",
+            "Sinif",
+            "IthalImalBilgisi",
+            "GmdnTerimKod",
+            "GmdnTerimTurkceAd",
+            "GmdnTerimTurkceAciklama",
+            "KalibrasyonaTabiMi",
+            "KalibrasyonPeriyodu",
+            "BakimaTabiMi",
+            "BakimPeriyodu",
+            "IyonizeRadyasyonIcerir",
+            "SinirliKullanimSayisiVar",
+            "SinirliKullanimSayisi",
+            "TekHastayaKullanilabilir",
+            "MrgUyumlu",
+            "SutEslesmesiSet",
+            "BaskaImalatciyaUrettirildiMi",
+            "MenseiUlkeSet",
+            "IthalEdilenUlkeSet"
+        ],
+        "date_fields": [
+            "UtsBaslangicTarihi",
+            "KontroleGonderildigiTarih",
+        ],
+    },
+
+    "Cihaz_Teknik_Belge": {
+        "pk": ["Cihazid", "BelgeTuru", "Belge"],
+        "sync": False,  # Local-only table (Google Sheets'e eklenmedi)
+        "columns": [
+            "Cihazid",
+            "BelgeTuru",
+            "Belge",
+            "BelgeAciklama",
         ],
         "date_fields": [],
     },
@@ -135,6 +174,7 @@ TABLES = {
 
     "Sabitler": {
         "pk": "Rowid",
+        "sync_mode": "pull_only",  # Read-only table
         "columns": [
             "Rowid","Kod","MenuEleman","Aciklama"
         ],
@@ -142,6 +182,7 @@ TABLES = {
 
     "Tatiller": {
         "pk": "Tarih",
+        "sync_mode": "pull_only",  # Read-only table
         "columns": [
             "Tarih","ResmiTatil"
         ],

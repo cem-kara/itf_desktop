@@ -19,7 +19,7 @@ class MigrationManager:
     """
     
     # Mevcut şema versiyonu
-    CURRENT_VERSION = 9
+    CURRENT_VERSION = 13
 
     def __init__(self, db_path):
         self.db_path = db_path
@@ -27,7 +27,7 @@ class MigrationManager:
         self.backup_dir.mkdir(exist_ok=True)
 
     def connect(self):
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=30)
         conn.row_factory = sqlite3.Row
         return conn
 
@@ -459,6 +459,237 @@ class MigrationManager:
         finally:
             conn.close()
 
+    def _migrate_to_v10(self):
+        """
+        v9 → v10: Cihaz_Teknik tablosunu yeni sade şema ile yeniden oluştur,
+        Cihaz_Teknik_Belge tablosunu ekle.
+
+        Not: Talep üzerine mevcut Cihaz_Teknik verileri taşınmaz.
+        """
+        conn = self.connect()
+        cur = conn.cursor()
+
+        try:
+            logger.info("Migration v10: Cihaz_Teknik tablosu yeniden oluşturuluyor...")
+
+            # Eski tabloyu yedekle ve sıfırdan kur
+            cur.execute("DROP TABLE IF EXISTS Cihaz_Teknik")
+
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS Cihaz_Teknik (
+                Cihazid TEXT PRIMARY KEY,
+                BirincilUrunNumarasi TEXT,
+                MarkaAdi TEXT,
+                EtiketAdi TEXT,
+                UrunTanimi TEXT,
+                VersiyonModel TEXT,
+                KatalogNo TEXT,
+                TemelUdiDi TEXT,
+                Aciklama TEXT,
+                KurumUnvan TEXT,
+                KurumGorunenAd TEXT,
+                KurumNo TEXT,
+                KurumTelefon TEXT,
+                KurumEposta TEXT,
+                Durum TEXT,
+                UtsBaslangicTarihi TEXT,
+                KontroleGonderildigiTarih TEXT,
+                CihazKayitTipi TEXT,
+                UrunTipi TEXT,
+                Sinif TEXT,
+                IthalImalBilgisi TEXT,
+                GmdnTerimKod TEXT,
+                GmdnTerimTurkceAd TEXT,
+                GmdnTerimTurkceAciklama TEXT,
+                KalibrasyonaTabiMi TEXT,
+                KalibrasyonPeriyodu TEXT,
+                BakimaTabiMi TEXT,
+                BakimPeriyodu TEXT,
+                IyonizeRadyasyonIcerir TEXT,
+                SinirliKullanimSayisiVar TEXT,
+                SinirliKullanimSayisi TEXT,
+                TekHastayaKullanilabilir TEXT,
+                MrgUyumlu TEXT,
+                SutEslesmesiSet TEXT,
+                BaskaImalatciyaUrettirildiMi TEXT,
+                MenseiUlkeSet TEXT,
+                IthalEdilenUlkeSet TEXT,
+
+                sync_status TEXT DEFAULT 'clean',
+                updated_at TEXT
+            )
+            """)
+
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS Cihaz_Teknik_Belge (
+                Cihazid TEXT NOT NULL,
+                BelgeTuru TEXT NOT NULL,
+                Belge TEXT NOT NULL,
+                BelgeAciklama TEXT,
+
+                sync_status TEXT DEFAULT 'clean',
+                updated_at TEXT,
+
+                PRIMARY KEY (Cihazid, BelgeTuru, Belge)
+            )
+            """)
+
+            conn.commit()
+            logger.info("v10: Cihaz_Teknik ve Cihaz_Teknik_Belge tabloları oluşturuldu")
+
+        except Exception as e:
+            logger.error(f"Migration v10 hatası: {e}")
+            conn.rollback()
+            raise
+
+        finally:
+            conn.close()
+
+    def _migrate_to_v11(self):
+        """
+        v10 → v11: Personel tablosuna MuayeneTarihi sütununu ekle.
+        
+        Bu sütun Google Sheets'ten gelen verilerde var olduğundan,
+        eğer eksikse sync sırasında hata oluşur.
+        """
+        conn = self.connect()
+        cur = conn.cursor()
+
+        try:
+            logger.info("Migration v11: Personel tablosuna MuayeneTarihi sütunu ekleniyor...")
+
+            # Sütun zaten var mı kontrol et
+            cur.execute("PRAGMA table_info(Personel)")
+            columns = {row[1] for row in cur.fetchall()}
+
+            if "MuayeneTarihi" not in columns:
+                cur.execute("""
+                    ALTER TABLE Personel
+                    ADD COLUMN MuayeneTarihi TEXT
+                """)
+                logger.info("✓ Personel: MuayeneTarihi sütunu eklendi")
+            else:
+                logger.info("✓ Personel: MuayeneTarihi sütunu zaten var")
+
+            conn.commit()
+            logger.info("v11: Migration tamamlandı")
+
+        except Exception as e:
+            logger.error(f"Migration v11 hatası: {e}")
+            conn.rollback()
+            raise
+
+        finally:
+            conn.close()
+
+    def _migrate_to_v12(self):
+        """
+        v11 → v12: Personel tablosuna Sonuc sütununu ekle.
+        
+        Google Sheets'teki Personel tablosunde Sonuc sütunu var.
+        """
+        conn = self.connect()
+        cur = conn.cursor()
+
+        try:
+            logger.info("Migration v12: Personel tablosuna Sonuc sütunu ekleniyor...")
+
+            # Sütun zaten var mı kontrol et
+            cur.execute("PRAGMA table_info(Personel)")
+            columns = {row[1] for row in cur.fetchall()}
+
+            if "Sonuc" not in columns:
+                cur.execute("""
+                    ALTER TABLE Personel
+                    ADD COLUMN Sonuc TEXT
+                """)
+                logger.info("✓ Personel: Sonuc sütunu eklendi")
+            else:
+                logger.info("✓ Personel: Sonuc sütunu zaten var")
+
+            conn.commit()
+            logger.info("v12: Migration tamamlandı")
+
+        except Exception as e:
+            logger.error(f"Migration v12 hatası: {e}")
+            conn.rollback()
+            raise
+
+        finally:
+            conn.close()
+
+    def _migrate_to_v13(self):
+        """
+        v12 → v13: Sabitler ve Tatiller tablolarını doğru schema ile yeniden oluştur.
+        
+        Sabitler.Rowid: INTEGER → TEXT (Google Sheets'ten gelen string değerler için)
+        """
+        conn = self.connect()
+        cur = conn.cursor()
+
+        try:
+            logger.info("Migration v13: Sabitler ve Tatiller tablolarını düzeltiliyor...")
+
+            # Sabitler tablosunun schema'sını kontrol et
+            cur.execute("PRAGMA table_info(Sabitler)")
+            sabitler_cols = {row[1]: row[2] for row in cur.fetchall()}  # col_name -> type
+            
+            # Rowid sütununun tipi INTEGER ise düzelt
+            if sabitler_cols.get("Rowid", "").upper() == "INTEGER":
+                logger.info("  Sabitler: Rowid INTEGER → TEXT dönüştürülüyor...")
+                
+                # Dummy veriler düzelt (boşsa)
+                cur.execute("SELECT COUNT(*) FROM Sabitler")
+                rowid_count = cur.fetchone()[0]
+                
+                if rowid_count == 0:
+                    # Tablo boşsa, sadece yeniden oluştur
+                    cur.execute("DROP TABLE Sabitler")
+                    cur.execute("""
+                        CREATE TABLE Sabitler (
+                            Rowid TEXT PRIMARY KEY,
+                            Kod TEXT,
+                            MenuEleman TEXT,
+                            Aciklama TEXT,
+                            sync_status TEXT DEFAULT 'clean',
+                            updated_at TEXT
+                        )
+                    """)
+                    logger.info("✓ Sabitler tablosu yeniden oluşturuldu (empty)")
+                else:
+                    # Tablo dolu ise, veriyi taşı
+                    cur.execute("ALTER TABLE Sabitler RENAME TO Sabitler_old")
+                    cur.execute("""
+                        CREATE TABLE Sabitler (
+                            Rowid TEXT PRIMARY KEY,
+                            Kod TEXT,
+                            MenuEleman TEXT,
+                            Aciklama TEXT,
+                            sync_status TEXT DEFAULT 'clean',
+                            updated_at TEXT
+                        )
+                    """)
+                    cur.execute("""
+                        INSERT INTO Sabitler 
+                        SELECT CAST(Rowid AS TEXT), Kod, MenuEleman, Aciklama, sync_status, updated_at 
+                        FROM Sabitler_old
+                    """)
+                    cur.execute("DROP TABLE Sabitler_old")
+                    logger.info(f"✓ Sabitler tablosu {rowid_count} kayıtla güncellendi")
+            else:
+                logger.info("✓ Sabitler: Rowid zaten TEXT")
+
+            conn.commit()
+            logger.info("v13: Migration tamamlandı")
+
+        except Exception as e:
+            logger.error(f"Migration v13 hatası: {e}")
+            conn.rollback()
+            raise
+
+        finally:
+            conn.close()
+
     # v3-v7: Şema değişikliği içermeyen versiyon adımları. Metod tanımlanmamıştır;
     # run_migrations döngüsü bunları otomatik "no-op" olarak geçer ve
     # schema_version tablosuna yine de kaydeder (gap bırakmaz).
@@ -614,91 +845,61 @@ class MigrationManager:
         # ---------------- CIHAZ TEKNIK ----------------
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Cihaz_Teknik (
-            -- PRIMARY KEY
             Cihazid TEXT PRIMARY KEY,
-            
-            -- 1. TEMEL ÜRÜN BİLGİLERİ (ÜTS API)
-            UrunNo TEXT,
-            Marka TEXT,
-            UrunAdi TEXT,
+            BirincilUrunNumarasi TEXT,
+            MarkaAdi TEXT,
+            EtiketAdi TEXT,
             UrunTanimi TEXT,
-            Model TEXT,
+            VersiyonModel TEXT,
+            KatalogNo TEXT,
+            TemelUdiDi TEXT,
+            Aciklama TEXT,
+            KurumUnvan TEXT,
+            KurumGorunenAd TEXT,
+            KurumNo TEXT,
+            KurumTelefon TEXT,
+            KurumEposta TEXT,
+            Durum TEXT,
+            UtsBaslangicTarihi TEXT,
+            KontroleGonderildigiTarih TEXT,
+            CihazKayitTipi TEXT,
             UrunTipi TEXT,
-            
-            -- 2. FIRMA/KURUM BİLGİLERİ (ÜTS API)
-            Firma TEXT,
-            FirmaNo TEXT,
-            FirmaTelefon TEXT,
-            FirmaEmail TEXT,
-            FirmaDurum TEXT,
-            FirmaFaaliyetAlan TEXT,
-            
-            -- 3. SINIFLANDIRMA & GMDN (ÜTS API)
             Sinif TEXT,
-            GmdnKod TEXT,
-            GmdnTurkce TEXT,
-            GmdnIngilizce TEXT,
-            GmdnAciklama TEXT,
-            
-            -- 4. ÜRÜN TİPİ DETAYLARI (ÜTS + PDF)
-            UrunKunye TEXT,
-            TurkceEtiket TEXT,
-            OrijinalEtiket TEXT,
-            ReferansKatalogNo TEXT,
-            UrunSayisi TEXT,
-            UrunAciklamasi TEXT,
-            
-            -- 5. İMAL/İTHAL BİLGİLERİ (ÜTS API)
             IthalImalBilgisi TEXT,
-            MenseiUlke TEXT,
-            IthalEdilenUlke TEXT,
-            YerliMaliBelgesiVarMi TEXT,
-            
-            -- 6. TEKNİK ÖZELLİKLER - EVET/HAYIR (ÜTS API)
-            MRGGuvenlikBilgisi TEXT,
-            LateksIceriyorMu TEXT,
-            FtalatDEHPIceriyorMu TEXT,
-            IyonizeRadyasyonIcerirMi TEXT,
-            NanomateryalIceriyorMu TEXT,
-            ImplanteEdilebilirMi TEXT,
-            TekKullanimlikMi TEXT,
-            SinirliKullanimSayisiVarMi TEXT,
-            TekHastaKullanimMi TEXT,
-            RafOmruVarMi TEXT,
-            SaklamaKosuluVar TEXT,
-            TekilUrunVarMi TEXT,
-            SterilPaketlendiMi TEXT,
-            KullanimOncesiSterilizasyonGerekliMi TEXT,
-            Ek3KapsamindaMi TEXT,
-            BilesenAksesuarMi TEXT,
-            
-            -- 7. KALİBRASYON & BAKIM (ÜTS API)
+            GmdnTerimKod TEXT,
+            GmdnTerimTurkceAd TEXT,
+            GmdnTerimTurkceAciklama TEXT,
             KalibrasyonaTabiMi TEXT,
-            KalibrasyonPeriyoduAy TEXT,
+            KalibrasyonPeriyodu TEXT,
             BakimaTabiMi TEXT,
-            BakimPeriyoduAy TEXT,
-            
-            -- 8. TARİHLER (ÜTS API)
-            UTSBaslangicTarihi TEXT,
-            DurumTarihi TEXT,
-            KontrolTarihi TEXT,
-            OlusturmaTarihi TEXT,
-            GuncellemeTarihi TEXT,
-            
-            -- 9. BELGELER & GÖRSELLER
-            UrunBelgeleri TEXT,
-            UrunGorselDosyasi TEXT,
-            EkstraBilgiLinki TEXT,
-            
-            -- 10. DİĞER ALANLAR (ÜTS API)
-            UrunDurum TEXT,
-            BasvuruHazir TEXT,
-            KayitTipi TEXT,
-            RafOmruDegeri TEXT,
-            
-            -- SYNC METADATA
+            BakimPeriyodu TEXT,
+            IyonizeRadyasyonIcerir TEXT,
+            SinirliKullanimSayisiVar TEXT,
+            SinirliKullanimSayisi TEXT,
+            TekHastayaKullanilabilir TEXT,
+            MrgUyumlu TEXT,
+            SutEslesmesiSet TEXT,
+            BaskaImalatciyaUrettirildiMi TEXT,
+            MenseiUlkeSet TEXT,
+            IthalEdilenUlkeSet TEXT,
+
             sync_status TEXT DEFAULT 'clean',
             updated_at TEXT
+        )
+        """)
+
+        # ---------------- CIHAZ TEKNIK BELGE ----------------
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Cihaz_Teknik_Belge (
+            Cihazid TEXT NOT NULL,
+            BelgeTuru TEXT NOT NULL,
+            Belge TEXT NOT NULL,
+            BelgeAciklama TEXT,
+
+            sync_status TEXT DEFAULT 'clean',
+            updated_at TEXT,
+
+            PRIMARY KEY (Cihazid, BelgeTuru, Belge)
         )
         """)
 

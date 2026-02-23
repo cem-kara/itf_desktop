@@ -733,8 +733,8 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(page)
         self.stack.setCurrentWidget(page)
 
-        marka = data.get("Marka", "")
-        model = data.get("Model", "")
+        marka = data.get("MarkaAdi", "")
+        model = data.get("VersiyonModel", "")
         self.page_title.setText(f"Cihaz — {marka} {model}")
         self.page_title.setVisible(True)
 

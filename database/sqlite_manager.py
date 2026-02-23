@@ -7,7 +7,9 @@ class SQLiteManager:
     def __init__(self, db_path=None, check_same_thread=True):
         self.db_path = db_path or DB_PATH
         logger.info("SQLite bağlantısı açılıyor")
-        self.conn = sqlite3.connect(self.db_path, check_same_thread=check_same_thread)
+        self.conn = sqlite3.connect(self.db_path, check_same_thread=check_same_thread, timeout=30)
+        # WAL mode enable et (concurrent write access için)
+        self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.row_factory = sqlite3.Row
 
     def execute(self, query, params=()):

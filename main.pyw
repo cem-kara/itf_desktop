@@ -1,5 +1,6 @@
 import sys
 import os
+import shutil
 
 # Proje kök dizinini Python path'e ekle
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -11,7 +12,7 @@ from PySide6.QtGui import QIcon
 from core.logger import logger
 from core.config import AppConfig
 from core.log_manager import initialize_log_management
-from core.paths import DB_PATH
+from core.paths import DB_PATH, TEMP_DIR
 from database.migrations import MigrationManager
 from ui.theme_manager import ThemeManager
 
@@ -89,6 +90,23 @@ def main():
     window.showMaximized()
 
     logger.info("Uygulama başlatıldı")
+    def _cleanup_temp():
+        try:
+            if os.path.isdir(TEMP_DIR):
+                for name in os.listdir(TEMP_DIR):
+                    path = os.path.join(TEMP_DIR, name)
+                    try:
+                        if os.path.isdir(path):
+                            shutil.rmtree(path, ignore_errors=True)
+                        else:
+                            os.remove(path)
+                    except Exception as item_err:
+                        logger.warning(f"Temp temizlenemedi: {path} ({item_err})")
+            logger.info("Temp klasoru temizlendi")
+        except Exception as e:
+            logger.warning(f"Temp temizleme hatasi: {e}")
+
+    app.aboutToQuit.connect(_cleanup_temp)
     sys.exit(app.exec())
 
 

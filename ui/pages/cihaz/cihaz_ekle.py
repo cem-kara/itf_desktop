@@ -6,8 +6,8 @@ from typing import Any
 from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QFrame, QGroupBox, QGridLayout, QLineEdit,
-    QComboBox, QDateEdit, QFileDialog, QMessageBox, QTabWidget
+    QScrollArea, QFrame, QGridLayout, QLineEdit,
+    QComboBox, QDateEdit, QFileDialog, QMessageBox, QTabWidget, QGroupBox
 )
 
 from core.logger import logger
@@ -22,6 +22,7 @@ C = DarkTheme
 
 class CihazEklePage(QWidget):
     saved = Signal(dict)
+    canceled = Signal()
 
     def __init__(self, db=None, on_saved=None, parent=None):
         super().__init__(parent)
@@ -92,24 +93,20 @@ class CihazEklePage(QWidget):
         main.addLayout(form_grid)
 
         # 1. Medya ve Dosyalar grubu: Cihaz ID, Cihaz Tipi, Ana Bilim Dalı, Kaynak
-        box_media = self._group_box("Medya ve Dosyalar")
-        grid_media = QGridLayout()
-        grid_media.setHorizontalSpacing(12)
-        grid_media.setVerticalSpacing(10)
+        box_media, box_media_v = self._section_box("Medya ve Dosyalar")
+        grid_media = self._make_group_grid()
 
         self._add_line(grid_media, 0, 0, "Cihaz ID", "Cihazid", read_only=True)
         self._add_combo(grid_media, 0, 1, "Cihaz Tipi", "CihazTipi", "Cihaz_Tipi")
         self._add_combo(grid_media, 1, 0, "Ana Bilim Dali", "AnaBilimDali", "AnaBilimDali")
         self._add_combo(grid_media, 1, 1, "Kaynak", "Kaynak", "Kaynak")
 
-        box_media.setLayout(grid_media)
+        box_media_v.addLayout(grid_media)
         form_grid.addWidget(box_media, 0, 0)
 
         # 2. Kimlik Bilgileri grubu: Marka, Model, Seri No, Amaç, Birim, Bulunduğu Bina
-        box_kimlik = self._group_box("Kimlik Bilgileri")
-        grid_kimlik = QGridLayout()
-        grid_kimlik.setHorizontalSpacing(12)
-        grid_kimlik.setVerticalSpacing(10)
+        box_kimlik, box_kimlik_v = self._section_box("Kimlik Bilgileri")
+        grid_kimlik = self._make_group_grid()
 
         self._add_combo(grid_kimlik, 0, 0, "Marka", "Marka", "Marka")
         self._add_line(grid_kimlik, 0, 1, "Model", "Model")
@@ -118,14 +115,12 @@ class CihazEklePage(QWidget):
         self._add_combo(grid_kimlik, 2, 0, "Birim", "Birim", "Birim")
         self._add_line(grid_kimlik, 2, 1, "Bulundugu Bina", "BulunduguBina")
 
-        box_kimlik.setLayout(grid_kimlik)
+        box_kimlik_v.addLayout(grid_kimlik)
         form_grid.addWidget(box_kimlik, 0, 1)
 
         # 3. NDK Lisans Bilgileri grubu
-        box_lisans = self._group_box("NDK Lisans Bilgileri")
-        grid_lisans = QGridLayout()
-        grid_lisans.setHorizontalSpacing(12)
-        grid_lisans.setVerticalSpacing(10)
+        box_lisans, box_lisans_v = self._section_box("NDK Lisans Bilgileri")
+        grid_lisans = self._make_group_grid()
 
         self._add_line(grid_lisans, 0, 0, "Lisans No", "NDKLisansNo")
         self._add_line(grid_lisans, 0, 1, "NDK Seri No", "NDKSeriNo")
@@ -135,14 +130,12 @@ class CihazEklePage(QWidget):
         self._add_line(grid_lisans, 2, 1, "RKS", "RKS")
         self._add_file(grid_lisans, 3, 0, "Lisans Belgesi", "NDKLisansBelgesi", colspan=2)
 
-        box_lisans.setLayout(grid_lisans)
+        box_lisans_v.addLayout(grid_lisans)
         form_grid.addWidget(box_lisans, 1, 0)
 
         # 4. Teknik Hizmetler grubu
-        box_teknik = self._group_box("Teknik Hizmetler")
-        grid_teknik = QGridLayout()
-        grid_teknik.setHorizontalSpacing(12)
-        grid_teknik.setVerticalSpacing(10)
+        box_teknik, box_teknik_v = self._section_box("Teknik Hizmetler")
+        grid_teknik = self._make_group_grid()
 
         self._add_date(grid_teknik, 0, 0, "Hizmete Giris", "HizmeteGirisTarihi", colspan=2)
         self._add_combo(grid_teknik, 1, 0, "Garanti Durum", "GarantiDurumu", "Garanti_Durum")
@@ -150,30 +143,31 @@ class CihazEklePage(QWidget):
         self._add_combo(grid_teknik, 2, 0, "Periyodik Bakim", "BakimDurum", "Bakim_Durum")
         self._add_combo(grid_teknik, 2, 1, "Kalibrasyon", "KalibrasyonGereklimi", "Kalibrasyon_Durum")
 
-        box_teknik.setLayout(grid_teknik)
+        box_teknik_v.addLayout(grid_teknik)
         form_grid.addWidget(box_teknik, 1, 1)
 
         main.addStretch()
 
-        footer = QFrame()
-        footer.setFixedHeight(64)
-        footer.setStyleSheet(f"background:{C.BG_SECONDARY}; border-top:1px solid {C.BORDER_PRIMARY};")
-        fl = QHBoxLayout(footer)
-        fl.setContentsMargins(16, 0, 16, 0)
+        # Tab 1 Footer: Sadece "Kaydet & ÜTS Sorgula"
+        footer1 = QFrame()
+        footer1.setFixedHeight(64)
+        footer1.setStyleSheet(f"background:{C.BG_SECONDARY}; border-top:1px solid {C.BORDER_PRIMARY};")
+        fl1 = QHBoxLayout(footer1)
+        fl1.setContentsMargins(16, 0, 16, 0)
+        fl1.addStretch()
 
-        self.btn_clear = QPushButton("Temizle")
-        self.btn_clear.setStyleSheet(S["btn_refresh"])
-        self.btn_clear.clicked.connect(self._clear_form)
-        fl.addWidget(self.btn_clear)
-
-        fl.addStretch()
-
-        self.btn_save = QPushButton("Kaydet")
+        self.btn_save = QPushButton("Kaydet & ÜTS Sorgula")
         self.btn_save.setStyleSheet(S["action_btn"])
         IconRenderer.set_button_icon(self.btn_save, "save", color=C.BTN_PRIMARY_TEXT, size=16)
         self.btn_save.clicked.connect(self._save)
-        fl.addWidget(self.btn_save)
+        fl1.addWidget(self.btn_save)
 
+        btn_cancel1 = QPushButton("İptal")
+        btn_cancel1.setStyleSheet(S["btn_refresh"])
+        btn_cancel1.clicked.connect(self.canceled.emit)
+        fl1.addWidget(btn_cancel1)
+
+        tab_form_lay.addWidget(footer1)
         self._tabs.addTab(tab_form, "Cihaz Bilgileri")
 
         # ── Tab 2: ÜTS Sorgulama ──
@@ -181,23 +175,51 @@ class CihazEklePage(QWidget):
         tab_uts_lay = QVBoxLayout(tab_uts)
         tab_uts_lay.setContentsMargins(0, 0, 0, 0)
         tab_uts_lay.setSpacing(0)
+
         self._teknik_uts_panel = CihazTeknikUtsScraper(cihaz_id="", db=self._db, parent=tab_uts)
         self._teknik_uts_panel.data_ready.connect(self._populate_uts_data)
         self._teknik_uts_panel.saved.connect(self._on_uts_completed)
         self._teknik_uts_panel.canceled.connect(self._on_uts_completed)
         tab_uts_lay.addWidget(self._teknik_uts_panel, 1)
+
+        # Tab 2 Footer: Sadece "İptal"
+        footer2 = QFrame()
+        footer2.setFixedHeight(64)
+        footer2.setStyleSheet(f"background:{C.BG_SECONDARY}; border-top:1px solid {C.BORDER_PRIMARY};")
+        fl2 = QHBoxLayout(footer2)
+        fl2.setContentsMargins(16, 0, 16, 0)
+        fl2.addStretch()
+
+        btn_uts_cancel = QPushButton("İptal")
+        btn_uts_cancel.setStyleSheet(S["btn_refresh"])
+        btn_uts_cancel.clicked.connect(self._cancel_uts)
+        fl2.addWidget(btn_uts_cancel)
+
+        tab_uts_lay.addWidget(footer2)
         self._tabs.addTab(tab_uts, "ÜTS Sorgulama")
 
-        root.addWidget(footer)
+        root.addStretch()
 
-    def _group_box(self, title: str) -> QGroupBox:
+    def _section_box(self, title: str) -> tuple[QGroupBox, QVBoxLayout]:
+        """QGroupBox tabanlı grup başlığı (Personel modülü ile uyumlu)."""
         box = QGroupBox(title)
         box.setStyleSheet(S["group"])
-        return box
+        vbox = QVBoxLayout(box)
+        vbox.setContentsMargins(8, 12, 8, 8)
+        vbox.setSpacing(8)
+        return box, vbox
+
+    def _make_group_grid(self) -> QGridLayout:
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(12)
+        grid.setVerticalSpacing(10)
+        grid.setContentsMargins(0, 0, 0, 0)
+        return grid
 
     def _add_line(self, grid, row, col, label, key, read_only=False):
         lbl = QLabel(label)
         lbl.setStyleSheet(S["label_form"])
+        lbl.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         edit = QLineEdit()
         edit.setStyleSheet(S["input"])
         edit.setReadOnly(read_only)
@@ -208,6 +230,7 @@ class CihazEklePage(QWidget):
     def _add_combo(self, grid, row, col, label, key, db_kodu):
         lbl = QLabel(label)
         lbl.setStyleSheet(S["label_form"])
+        lbl.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         combo = QComboBox()
         combo.setStyleSheet(S["combo"])
         combo.setProperty("db_kodu", db_kodu)
@@ -218,6 +241,7 @@ class CihazEklePage(QWidget):
     def _add_date(self, grid, row, col, label, key, colspan=1):
         lbl = QLabel(label)
         lbl.setStyleSheet(S["label_form"])
+        lbl.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         date = QDateEdit()
         date.setStyleSheet(S["date"])
         date.setCalendarPopup(True)
@@ -230,6 +254,7 @@ class CihazEklePage(QWidget):
     def _add_file(self, grid, row, col, label, key, colspan=1):
         lbl = QLabel(label)
         lbl.setStyleSheet(S["label_form"])
+        lbl.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         wrap = QHBoxLayout()
         line = QLineEdit()
         line.setStyleSheet(S["input"])
@@ -482,3 +507,29 @@ class CihazEklePage(QWidget):
             # ÜTS işlemi tamamlandı, artık form'u kapatabiliriz
             logger.info("ÜTS işlemi tamamlandı, form kapatılıyor.")
             self._on_saved()
+
+    def _cancel_uts(self):
+        """ÜTS panelinde İptal butonuna basıldığında."""
+        reply = QMessageBox.question(
+            self,
+            "Operasyonu İptal Et",
+            "Emin misiniz? Kaydedilen cihaz verisi kalmayacak.\n"
+            "ÜTS sorgulması iptal edilecek.",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            # Tab 1'e dön
+            self._tabs.setCurrentIndex(0)
+            
+            # Formu temizle
+            self._clear_form()
+            
+            # Kaydet butonunu enable et
+            self.btn_save.setEnabled(True)
+            self.btn_save.setText("Kaydet & ÜTS Sorgula")
+            
+            # Mode'u kapat
+            self._uts_mode = False
+            
+            logger.info("ÜTS işlemi iptal edildi.")

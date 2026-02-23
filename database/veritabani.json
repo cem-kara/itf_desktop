@@ -17,7 +17,9 @@
                 "Cihaz_Ariza",
                 "Ariza_Islem",
                 "Periyodik_Bakim",
-                "Kalibrasyon"
+                "Kalibrasyon",
+                "Cihaz_Teknik",
+                "Cihaz_Teknik_Belge"
             ]
         },
         "rke": {

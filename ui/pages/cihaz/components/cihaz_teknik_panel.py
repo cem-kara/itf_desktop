@@ -98,14 +98,14 @@ class _TableSection(QWidget):
     Her mantiksal satir:
         [ sol-cift ] | dikey ayirici | [ sag-cift ]
 
-    Hizalama: 3 sutunlu QGridLayout (sol | sep | sag).
+    Hizalama: 4-sutunlu QGridLayout (Label1 | Value1 | Label2 | Value2).
     Zebra: cift/tek satir arkaplan.
     """
 
     def __init__(self, title: str, parent=None):
         super().__init__(parent)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-        self._logical_row = 0   # mevcut mantiksal satir (zebra icin)
+        self._physical_row = 0   # Fiziksel satir sayisi
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -137,50 +137,49 @@ class _TableSection(QWidget):
         sub.setStyleSheet(_SUBHDR_CSS)
         sub.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self._vbox.addWidget(sub)
-        self._logical_row = 0   # zebra sifirla
+        self._physical_row = 0   # Sifirla
 
     def add_row(self,
                 lbl1: str, val1: QLabel,
                 lbl2: str = "", val2: QLabel = None):
         """
-        Bir mantiksal satir ekler.
-        Sol: lbl1/val1   Sag: lbl2/val2 (opsiyonel).
+        4-sutunlu bir satir ekler: Label1 | Value1 | Label2 | Value2.
         Zebra arkaplan otomatik uygulanir.
         """
-        bg = _BG_ODD if (self._logical_row % 2 != 0) else _BG_EVEN
-        self._logical_row += 1
+        bg = _BG_ODD if (self._physical_row % 2 != 0) else _BG_EVEN
+        self._physical_row += 1
 
-        # Satir container
+        # Satir container ve grid layout
         row_w = QWidget()
         row_w.setStyleSheet(
             f"background: {bg}; border-bottom: {_BORDER_CSS};"
         )
         row_w.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
 
-        row_h = QHBoxLayout(row_w)
-        row_h.setContentsMargins(0, 0, 0, 0)
-        row_h.setSpacing(0)
+        grid = QGridLayout(row_w)
+        grid.setContentsMargins(8, 6, 8, 6)  # Iç padding
+        grid.setSpacing(12)  # Label-Value arası
+        grid.setColumnStretch(0, 0)  # Label1 — sabit
+        grid.setColumnStretch(1, 1)  # Value1 — genişlesin
+        grid.setColumnStretch(2, 0)  # Label2 — sabit
+        grid.setColumnStretch(3, 1)  # Value2 — genişlesin
 
-        # Sol cift
-        left_w = _make_pair_widget(lbl1, val1, bg)
-        row_h.addWidget(left_w, stretch=1)
+        # Birinci çift: Label1 | Value1
+        lbl1_w = QLabel(lbl1)
+        lbl1_w.setStyleSheet(_LBL_CSS)
+        lbl1_w.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        lbl1_w.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        grid.addWidget(lbl1_w, 0, 0, Qt.AlignRight | Qt.AlignVCenter)
+        grid.addWidget(val1, 0, 1, Qt.AlignLeft | Qt.AlignVCenter)
 
-        # Dikey ayirici
-        sep = QFrame()
-        sep.setFrameShape(QFrame.VLine)
-        sep.setFixedWidth(1)
-        sep.setStyleSheet(f"background: {_BORDER}; border: none;")
-        row_h.addWidget(sep)
-
-        # Sag cift
+        # İkinci çift: Label2 | Value2 (eğer varsa)
         if lbl2 and val2 is not None:
-            right_w = _make_pair_widget(lbl2, val2, bg)
-        else:
-            # Bos sag taraf — simetri icin
-            right_w = QWidget()
-            right_w.setStyleSheet(f"background: {bg};")
-            right_w.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-        row_h.addWidget(right_w, stretch=1)
+            lbl2_w = QLabel(lbl2)
+            lbl2_w.setStyleSheet(_LBL_CSS)
+            lbl2_w.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            lbl2_w.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+            grid.addWidget(lbl2_w, 0, 2, Qt.AlignRight | Qt.AlignVCenter)
+            grid.addWidget(val2, 0, 3, Qt.AlignLeft | Qt.AlignVCenter)
 
         self._vbox.addWidget(row_w)
 
@@ -225,66 +224,59 @@ class CihazTeknikPanel(QWidget):
         s1.add_row("Cihaz ID",            self._w("Cihazid"),
                    "Urun Tanimi",         self._w("UrunTanimi"))
         s1.add_row("Birincil Urun No",    self._w("BirincilUrunNumarasi"),
-                   "Firma",               self._w("Firma"))
-        s1.add_row("Marka",               self._w("Marka"),
-                   "Urun Adi",            self._w("UrunAdi"))
-        s1.add_row("Urun Kunyesi",        self._w("UrunKunye"),
-                   "Turkce Etiket",       self._w("TurkceEtiket"))
-        s1.add_row("Orijinal Etiket",     self._w("OrijinalEtiket"),
-                   "Versiyon/Model",      self._w("VersiyonModel"))
-        s1.add_row("Referans/Katalog No", self._w("ReferansKatalogNo"),
-                   "Urun Sayisi",         self._w("UrunSayisi"))
-        s1.add_row("Urun Aciklamasi",     self._w("UrunAciklamasi"))
+                   "Kurum Unvan",         self._w("KurumUnvan"))
+        s1.add_row("Marka",               self._w("MarkaAdi"),
+                   "Urun Tipi",           self._w("UrunTipi"))
+        s1.add_row("Temel UDI DI",        self._w("TemelUdiDi"),
+                   "Etiket",              self._w("EtiketAdi"))
+        s1.add_row("Versiyon/Model",      self._w("VersiyonModel"),
+                   "Katalog No",          self._w("KatalogNo"))
+        s1.add_row("Aciklama",            self._w("Aciklama"))
         root.addWidget(s1)
 
         # ── 2. Ithal/Imal Bilgileri ───────────────────────────────────────────
         s2 = _TableSection("Ithal/Imal Bilgileri")
         s2.add_row("Ithal/Imal Bilgisi",        self._w("IthalImalBilgisi"),
-                   "Mensei Ulke",               self._w("MenseiUlke"))
-        s2.add_row("Ithal Edilen Ulke",         self._w("IthalEdilenUlke"),
-                   "Yerli Mali Belgesi Var mi", self._w("YerliMaliBelgesiVarMi"))
+                   "Mensei Ulke",               self._w("MenseiUlkeSet"))
+        s2.add_row("Ithal Edilen Ulke",         self._w("IthalEdilenUlkeSet"),
+                   "Sinif",                     self._w("Sinif"))
         root.addWidget(s2)
 
-        # ── 3. Ozellikler ─────────────────────────────────────────────────────
-        s3 = _TableSection("Ozellikler")
+        # ── 3. Kurum Bilgileri ───────────────────────────────────────────────
+        s22 = _TableSection("Kurum/Firma Bilgileri")
+        s22.add_row("Kurum Gorunu Adi",   self._w("KurumGorunenAd"),
+                    "Kurum No",            self._w("KurumNo"))
+        s22.add_row("Kurum Telefon",      self._w("KurumTelefon"),
+                    "Kurum Eposta",        self._w("KurumEposta"))
+        root.addWidget(s22)
 
-        s3.add_subheader("Sterilite Bilgisi")
-        s3.add_row("Steril Paketlendi mi",
-                   self._w("SterilPaketlendiMi"),
-                   "Kullanim Oncesi Sterilizasyon Gerekli mi",
-                   self._w("KullanimOncesiSterilizasyonGerekliMi"))
+        # ── 4. Ozellikler ─────────────────────────────────────────────────────
+        s3 = _TableSection("Teknik Ozellikler")
 
-        s3.add_subheader("Kullanimlik Bilgisi")
-        s3.add_row("Tek Kullanimlik mi",             self._w("TekKullanimlikMi"),
-                   "Sinirli Kullanim Sayisi Var mi", self._w("SinirliKullanimSayisiVarMi"))
-        s3.add_row("Tek Hasta Kullanim mi",          self._w("TekHastaKullanimMi"))
-
-        s3.add_subheader("Raf Omru Bilgisi")
-        s3.add_row("Raf Omru Var mi", self._w("RafOmruVarMi"))
+        s3.add_subheader("Durum ve Kayit Bilgileri")
+        s3.add_row("Durum",                      self._w("Durum"),
+                   "Cihaz Kayit Tipi",          self._w("CihazKayitTipi"))
+        s3.add_row("UTS Baslangic Tarihi",      self._w("UtsBaslangicTarihi"),
+                   "Kontrol Gonderildigi Tarih", self._w("KontroleGonderildigiTarih"))
 
         s3.add_subheader("Kalibrasyon ve Bakim")
         s3.add_row("Kalibrasyona Tabi mi",      self._w("KalibrasyonaTabiMi"),
-                   "Kalibrasyon Periyodu (Ay)", self._w("KalibrasyonPeriyoduAy"))
+                   "Kalibrasyon Periyodu (Ay)", self._w("KalibrasyonPeriyodu"))
         s3.add_row("Bakima Tabi mi",            self._w("BakimaTabiMi"),
-                   "Bakim Periyodu (Ay)",       self._w("BakimPeriyoduAy"))
+                   "Bakim Periyodu (Ay)",       self._w("BakimPeriyodu"))
 
-        s3.add_subheader("Diger Urun Ozellikleri")
-        s3.add_row("MRG Guvenlik Bilgisi",         self._w("MRGGuvenlikBilgisi"),
-                   "Lateks Iceriyor mu",            self._w("LateksIceriyorMu"))
-        s3.add_row("Ftalat/DEHP Iceriyor mu",      self._w("FtalatDEHPIceriyorMu"),
-                   "Iyonize Radyasyon Icerir mi",   self._w("IyonizeRadyasyonIcerirMi"))
-        s3.add_row("Nanomateryal Iceriyor mu",      self._w("NanomateryalIceriyorMu"),
-                   "Vucuda Implante Edilebilir mi",  self._w("ImplanteEdilebilirMi"))
-        s3.add_row("Bilesen/Aksesuar mi",           self._w("BilesenAksesuarMi"),
-                   "Ek-3 Kapsaminda mi",            self._w("Ek3KapsamindaMi"))
-        s3.add_row("Ekstra Bilgi Linki",            self._w("EkstraBilgiLinki", is_link=True))
+        s3.add_subheader("Guvenlik ve Uyum")
+        s3.add_row("MRG Uyumlu",                       self._w("MrgUyumlu"),
+                   "Iyonize Radyasyon Icerir mi",     self._w("IyonizeRadyasyonIcerir"))
+        s3.add_row("Tek Hasta Kullanilabilir mi",     self._w("TekHastayaKullanilabilir"),
+                   "Sinirli Kullanim Sayisi Var",     self._w("SinirliKullanimSayisiVar"))
+        s3.add_row("Sinirli Kullanim Sayisi",         self._w("SinirliKullanimSayisi"),
+                   "Baska Imalatyici Yap Edildi",     self._w("BaskaImalatciyaUrettirildiMi"))
+        s3.add_row("GMDN Kodu",                        self._w("GmdnTerimKod"),
+                   "GMDN Tanimi",                      self._w("GmdnTerimTurkceAd"))
+        s3.add_row("GMDN Aciklama",                    self._w("GmdnTerimTurkceAciklama"),
+                   "Sut Eslesmesi",                    self._w("SutEslesmesiSet"))
         root.addWidget(s3)
-
-        # ── 4. Urun Belgeleri ve Gorseller ───────────────────────────────────
-        s4 = _TableSection("Urun Belgeleri ve Gorseller")
-        s4.add_row("Urun Belgeleri",      self._w("UrunBelgeleri",     is_link=True))
-        s4.add_row("Urun Gorsel Dosyasi", self._w("UrunGorselDosyasi", is_link=True))
-        root.addWidget(s4)
 
         root.addStretch()
         scroll.setWidget(content)
