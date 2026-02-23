@@ -6,12 +6,13 @@ Separated from UI to keep widget code smaller.
 from __future__ import annotations
 
 import json
-from typing import Dict
+from typing import Dict, Optional, Set
 
 from bs4 import BeautifulSoup
 
 from core.logger import logger
 from core.paths import TEMP_DIR
+from database.table_config import TABLES
 
 
 _UTS_URL = "https://utsuygulama.saglik.gov.tr/UTS/vatandas"
@@ -52,6 +53,22 @@ _JSON_KEY_TO_DB_FIELD = {
     "urunTipi": "UrunTipi",
     "ithalEdilenUlkeSet": "IthalEdilenUlkeSet",
 }
+
+
+def load_allowed_db_fields(table_name: str = "Cihaz_Teknik") -> Set[str]:
+    """Return allowed DB columns for a table from TABLES config."""
+    config = TABLES.get(table_name, {})
+    cols = config.get("columns", [])
+    return set(cols)
+
+
+def filter_allowed_fields(data: Dict[str, str], allowed_fields: Optional[Set[str]] = None) -> Dict[str, str]:
+    """Filter parsed data to only known DB columns."""
+    if not data:
+        return {}
+    if allowed_fields is None:
+        allowed_fields = load_allowed_db_fields()
+    return {k: v for k, v in data.items() if k in allowed_fields}
 
 
 def _yn(val) -> str:

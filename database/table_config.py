@@ -119,6 +119,21 @@ TABLES = {
         ],
     },
 
+    "Cihaz_Belgeler": {
+        "pk": ["Cihazid", "BelgeTuru", "Belge"],
+        "sync": False,  # Local-only table (Google Sheets'e eklenmedi)
+        "columns": [
+            "Cihazid",              # Cihaz ID
+            "BelgeTuru",            # Belge türü (Teknik, Arıza, Bakım, Kalibrasyon, vb)
+            "Belge",                # Dosya adı
+            "BelgeAciklama",        # Açıklama
+            "YuklenmeTarihi",       # Upload tarihi
+            "IliskiliBelgeID",      # Foreign Key (Arizaid, Planid, Kalid, vb)
+            "IliskiliBelgeTipi",    # "Ariza" / "Bakim" / "Kalibrasyon" / NULL
+        ],
+        "date_fields": ["YuklenmeTarihi"],
+    },
+
     "Cihaz_Teknik_Belge": {
         "pk": ["Cihazid", "BelgeTuru", "Belge"],
         "sync": False,  # Local-only table (Google Sheets'e eklenmedi)

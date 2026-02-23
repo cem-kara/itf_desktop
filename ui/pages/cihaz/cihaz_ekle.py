@@ -16,6 +16,7 @@ from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 from ui.pages.cihaz.components.cihaz_teknik_uts_scraper import CihazTeknikUtsScraper
+from ui.pages.cihaz.components.cihaz_dokuman_panel import CihazDokumanPanel
 
 C = DarkTheme
 
@@ -37,6 +38,7 @@ class CihazEklePage(QWidget):
         }
         self._next_seq = 1
         self._teknik_uts_panel = None
+        self._belgeler_panel = None
         self._uts_mode = False  # Cihaz kaydedildi, ÜTS bekliyor mu?
 
         self.setStyleSheet(S["page"])
@@ -197,6 +199,33 @@ class CihazEklePage(QWidget):
 
         tab_uts_lay.addWidget(footer2)
         self._tabs.addTab(tab_uts, "ÜTS Sorgulama")
+
+        # ── Tab 3: Belgeler (Yükleme) ──
+        tab_belgeler = QWidget()
+        tab_belgeler_lay = QVBoxLayout(tab_belgeler)
+        tab_belgeler_lay.setContentsMargins(0, 0, 0, 0)
+        tab_belgeler_lay.setSpacing(0)
+
+        self._belgeler_panel = CihazDokumanPanel(cihaz_id="", db=self._db, parent=tab_belgeler)
+        self._belgeler_panel.saved.connect(self._on_belgeler_saved)
+        tab_belgeler_lay.addWidget(self._belgeler_panel, 1)
+
+        footer3 = QFrame()
+        footer3.setFixedHeight(64)
+        footer3.setStyleSheet(f"background:{C.BG_SECONDARY}; border-top:1px solid {C.BORDER_PRIMARY};")
+        fl3 = QHBoxLayout(footer3)
+        fl3.setContentsMargins(16, 0, 16, 0)
+        fl3.addStretch()
+
+        btn_belgeler_done = QPushButton("✓ Tamamla")
+        btn_belgeler_done.setStyleSheet(S["save_btn"])
+        btn_belgeler_done.clicked.connect(self._finish_belgeler)
+        fl3.addWidget(btn_belgeler_done)
+
+        tab_belgeler_lay.addWidget(footer3)
+        self._tabs.addTab(tab_belgeler, "Belgeler")
+        # NOT: Tab'ı başta disabled yapmıyoruz, bunu kullanıcı tıklayabilsin
+        # Panel içinde cihaz_id check'i yapılacak
 
         root.addStretch()
 
@@ -369,6 +398,11 @@ class CihazEklePage(QWidget):
                 self._teknik_uts_panel.cihaz_id = str(cihaz_id)
                 logger.info(f"Cihaz kaydedildi: {cihaz_id}. ÜTS paneli aktif.")
             
+            # Belgeler panel'e de cihaz_id ver
+            if self._belgeler_panel is not None:
+                self._belgeler_panel.set_cihaz_id(str(cihaz_id))
+                logger.info(f"Belgeler paneli aktif: {cihaz_id}")
+            
             # Kaydet butonunu disable et (tekrar kaydetmesin)
             self.btn_save.setEnabled(False)
             self.btn_save.setText("✓ Kaydedildi")
@@ -385,8 +419,8 @@ class CihazEklePage(QWidget):
                 "Cihaz Kaydedildi",
                 f"Cihaz başarıyla kaydedildi: {cihaz_id}\n\n"
                 "Şimdi 'ÜTS Sorgulama' sekmesinden teknik bilgileri ekleyebilirsiniz.\n\n"
-                "Not: Form otomatik kapanmayacak. ÜTS bilgilerini ekledikten sonra "
-                "formu manuel olarak kapatabilirsiniz."
+                "'Belgeler' sekmesinden cihaz belgelerini yükleyebilirsiniz.\n\n"
+                "Not: Form otomatik kapanmayacak."
             )
 
             # Signal emit et ama callback çağırma (form kapanmasın)
@@ -525,6 +559,10 @@ class CihazEklePage(QWidget):
             # Formu temizle
             self._clear_form()
             
+            # Belgeler panelini sıfırla
+            if self._belgeler_panel is not None:
+                self._belgeler_panel.set_cihaz_id("")
+            
             # Kaydet butonunu enable et
             self.btn_save.setEnabled(True)
             self.btn_save.setText("Kaydet & ÜTS Sorgula")
@@ -533,3 +571,17 @@ class CihazEklePage(QWidget):
             self._uts_mode = False
             
             logger.info("ÜTS işlemi iptal edildi.")
+
+    def _on_belgeler_saved(self):
+        """Belgeler panel'den belge başarıyla yüklendiğinde."""
+        logger.info("Belge yüklenme işlemi tamamlandı.")
+
+    def _finish_belgeler(self):
+        """Belgeler tab'ında 'Tamamla' butonuna basıldığında."""
+        logger.info("Belgeler yükleme işlemi tamamlandı, form kapatılıyor.")
+        
+        # Form kapatma callback'ini çağır
+        if callable(self._on_saved):
+            self._on_saved()
+
+

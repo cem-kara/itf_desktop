@@ -19,7 +19,7 @@ class MigrationManager:
     """
     
     # Mevcut şema versiyonu
-    CURRENT_VERSION = 13
+    CURRENT_VERSION = 14
 
     def __init__(self, db_path):
         self.db_path = db_path
@@ -690,6 +690,85 @@ class MigrationManager:
         finally:
             conn.close()
 
+    def _migrate_to_v14(self):
+        """
+        v13 → v14: Cihaz_Belgeler tablosunu ekle (merkezi belgeler tablosu)
+                   Cihaz_Teknik_Belge'ye YuklenmeTarihi kolon ekle
+                   Sabitler'e belge türleri ekle
+        
+        Cihaz_Belgeler: Cihazlar, Arızalar, Bakımlar, Kalibrasyonlar için belgeler
+        """
+        conn = self.connect()
+        cur = conn.cursor()
+
+        try:
+            logger.info("Migration v14: Cihaz_Belgeler tablosunu oluşturuyor...")
+
+            # Cihaz_Belgeler tablosunu oluştur
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS Cihaz_Belgeler (
+                    Cihazid TEXT NOT NULL,
+                    BelgeTuru TEXT NOT NULL,
+                    Belge TEXT NOT NULL,
+                    BelgeAciklama TEXT,
+                    YuklenmeTarihi TEXT,
+                    IliskiliBelgeID TEXT,
+                    IliskiliBelgeTipi TEXT,
+                    sync_status TEXT DEFAULT 'clean',
+                    updated_at TEXT,
+                    PRIMARY KEY (Cihazid, BelgeTuru, Belge)
+                )
+            """)
+            logger.info("  ✓ Cihaz_Belgeler tablosu oluşturuldu")
+
+            # Cihaz_Teknik_Belge'ye YuklenmeTarihi sütunu ekle (varsa)
+            cur.execute("PRAGMA table_info(Cihaz_Teknik_Belge)")
+            cols = {row[1]: row[2] for row in cur.fetchall()}
+            
+            if "Cihaz_Teknik_Belge" in [row[0] for row in cur.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='Cihaz_Teknik_Belge'")]:
+                if "YuklenmeTarihi" not in cols:
+                    cur.execute("""
+                        ALTER TABLE Cihaz_Teknik_Belge 
+                        ADD COLUMN YuklenmeTarihi TEXT
+                    """)
+                    logger.info("  ✓ Cihaz_Teknik_Belge.YuklenmeTarihi kolon eklendi")
+            
+            # Sabitler tablosuna belge türleri ekle
+            belge_turleri = [
+                ("1", "Cihaz_Belge_Tur", "NDK Lisansı", "Cihazın NDK (Uygunluk Beyanı) Lisansı"),
+                ("2", "Cihaz_Belge_Tur", "RKS Belgesi", "Cihazın RKS (Radyasyon Koruma) Belgesi"),
+                ("3", "Cihaz_Belge_Tur", "Sorumlu Diploması", "Sorumlu kişinin diploması"),
+                ("4", "Cihaz_Belge_Tur", "Kullanım Klavuzu", "Cihaz kullanım kılavuzu"),
+                ("5", "Cihaz_Belge_Tur", "Cihaz Sertifikası", "Cihaz sertifikası/belgelendirmesi"),
+                ("6", "Cihaz_Belge_Tur", "Teknik Veri Sayfası", "Cihazın teknik özellikleri"),
+                ("7", "Cihaz_Belge_Tur", "Garantı Belgesi", "Cihaz garanti belgesi"),
+            ]
+            
+            for rowid, kod, menu_eleman, aciklama in belge_turleri:
+                # Kontrol et: zaten var mı?
+                cur.execute(
+                    "SELECT COUNT(*) FROM Sabitler WHERE Kod = ? AND MenuEleman = ?",
+                    (kod, menu_eleman)
+                )
+                if cur.fetchone()[0] == 0:
+                    cur.execute(
+                        "INSERT INTO Sabitler (Rowid, Kod, MenuEleman, Aciklama) VALUES (?, ?, ?, ?)",
+                        (rowid, kod, menu_eleman, aciklama)
+                    )
+                    logger.info(f"  ✓ Sabitler: '{menu_eleman}' türü eklendi")
+            
+            conn.commit()
+            logger.info("v14: Migration tamamlandı")
+
+        except Exception as e:
+            logger.error(f"Migration v14 hatası: {e}")
+            conn.rollback()
+            raise
+
+        finally:
+            conn.close()
+
     # v3-v7: Şema değişikliği içermeyen versiyon adımları. Metod tanımlanmamıştır;
     # run_migrations döngüsü bunları otomatik "no-op" olarak geçer ve
     # schema_version tablosuna yine de kaydeder (gap bırakmaz).
@@ -895,6 +974,25 @@ class MigrationManager:
             BelgeTuru TEXT NOT NULL,
             Belge TEXT NOT NULL,
             BelgeAciklama TEXT,
+            YuklenmeTarihi TEXT,
+
+            sync_status TEXT DEFAULT 'clean',
+            updated_at TEXT,
+
+            PRIMARY KEY (Cihazid, BelgeTuru, Belge)
+        )
+        """)
+
+        # ---------------- CIHAZ BELGELER (Merkezi Belgeler) ----------------
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Cihaz_Belgeler (
+            Cihazid TEXT NOT NULL,
+            BelgeTuru TEXT NOT NULL,
+            Belge TEXT NOT NULL,
+            BelgeAciklama TEXT,
+            YuklenmeTarihi TEXT,
+            IliskiliBelgeID TEXT,
+            IliskiliBelgeTipi TEXT,
 
             sync_status TEXT DEFAULT 'clean',
             updated_at TEXT,
@@ -1111,8 +1209,8 @@ class MigrationManager:
 
         tables = [
             "Personel", "Izin_Giris", "Izin_Bilgi", "FHSZ_Puantaj",
-            "Cihazlar", "Cihaz_Teknik", "Cihaz_Ariza", "Ariza_Islem", "Periyodik_Bakim",
-            "Kalibrasyon", "Sabitler", "Tatiller", "Loglar",
+            "Cihazlar", "Cihaz_Teknik", "Cihaz_Teknik_Belge", "Cihaz_Belgeler", "Cihaz_Ariza", 
+            "Ariza_Islem", "Periyodik_Bakim", "Kalibrasyon", "Sabitler", "Tatiller", "Loglar",
             "RKE_List", "RKE_Muayene", "Personel_Saglik_Takip", "schema_version"
         ]
 

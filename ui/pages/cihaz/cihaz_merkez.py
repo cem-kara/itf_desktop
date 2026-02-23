@@ -29,6 +29,7 @@ C = DarkTheme
 TABS = [
     ("GENEL",        "Genel Bakış"),
     ("TEKNIK",       "Teknik Bilgiler"),
+    ("BELGELER",     "Belgeler"),
     ("ARIZA",        "Arıza Kayıtları"),
     ("BAKIM",        "Bakım İşlemleri"),
     ("KALIBRASYON",  "Kalibrasyon"),
@@ -446,6 +447,11 @@ class CihazMerkezPage(QWidget):
                 w.saved.connect(self._load_data)
                 w.searched.connect(self._search_uts)  # UTS sorgulama bağlantısı
                 w.search_complete.connect(self._on_search_complete)  # Sonucun UI güncellemesi
+            elif code == "BELGELER":
+                # Belge yönetim paneli
+                from ui.pages.cihaz.components.cihaz_dokuman_panel import CihazDokumanPanel
+                w = CihazDokumanPanel(self.cihaz_id, self.db)
+                w.saved.connect(self._load_data)
             elif code == "BAKIM":
                 # Bakım işlemleri paneli
                 from ui.pages.cihaz.components.bakim_kayit import BakimKayitPenceresi

@@ -7,6 +7,7 @@ from database.repositories.personel_repository import PersonelRepository
 from database.repositories.cihaz_repository import CihazRepository
 from database.repositories.cihaz_teknik_repository import CihazTeknikRepository
 from database.repositories.cihaz_teknik_belge_repository import CihazTeknikBelgeRepository
+from database.repositories.cihaz_belgeler_repository import CihazBelgelerRepository
 from database.repositories.rke_repository import RKERepository
 
 __all__ = [
@@ -14,5 +15,6 @@ __all__ = [
     "CihazRepository",
     "CihazTeknikRepository",
     "CihazTeknikBelgeRepository",
+    "CihazBelgelerRepository",
     "RKERepository",
 ]

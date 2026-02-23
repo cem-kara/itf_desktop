@@ -9,7 +9,7 @@ from pathlib import Path
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
-    QScrollArea, QSizePolicy, QGridLayout, QLineEdit, QPushButton
+    QScrollArea, QSizePolicy, QGridLayout, QLineEdit, QPushButton, QMessageBox
 )
 from PySide6.QtCore import Qt, Signal
 
@@ -17,6 +17,7 @@ from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from core.logger import logger
 from database.repository_registry import RepositoryRegistry
+from database.table_config import TABLES
 
 C = DarkTheme
 
@@ -50,44 +51,46 @@ _SUBHDR_CSS = (
 _LBL_CSS = (
     f"color: {_TEXT_SEC};"
     " font-size: 11px; font-weight: 600;"
-    " padding: 7px 14px 2px 14px;"
+    " padding: 2px 10px;"
 )
 _VAL_CSS = (
     f"color: {_TEXT_PRI};"
     " font-size: 12px; font-weight: 400;"
-    " padding: 2px 14px 7px 14px;"
+    " padding: 2px 10px;"
 )
 _VAL_LINK_CSS = (
     f"color: {_ACCENT};"
     " font-size: 12px; font-weight: 400;"
-    " padding: 2px 14px 7px 14px;"
+    " padding: 2px 10px;"
 )
 
 
 def _make_pair_widget(lbl_text: str, val_widget: QLabel, bg: str) -> QWidget:
     """
-    Bir etiket-deger cifti icin dikey widget olusturur.
-    Ust: kucuk etiket | Alt: deger.
+    Bir etiket-deger cifti icin yatay widget olusturur.
+    Sol: kucuk etiket | Sag: deger.
     """
     w = QWidget()
     w.setStyleSheet(f"background: {bg};")
     w.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
 
-    vbox = QVBoxLayout(w)
-    vbox.setContentsMargins(0, 0, 0, 0)
-    vbox.setSpacing(0)
+    hbox = QHBoxLayout(w)
+    hbox.setContentsMargins(0, 0, 0, 0)
+    hbox.setSpacing(6)
 
     lbl = QLabel(lbl_text)
     lbl.setStyleSheet(_LBL_CSS + f" background: {bg};")
     lbl.setWordWrap(True)
-    lbl.setAlignment(Qt.AlignLeft | Qt.AlignBottom)
+    lbl.setMinimumWidth(160)
+    lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Minimum)
+    lbl.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
 
     val_widget.setStyleSheet(val_widget.styleSheet() + f" background: {bg};")
     val_widget.setWordWrap(True)
-    val_widget.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+    val_widget.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
 
-    vbox.addWidget(lbl)
-    vbox.addWidget(val_widget)
+    hbox.addWidget(lbl)
+    hbox.addWidget(val_widget, stretch=1)
     return w
 
 
@@ -143,13 +146,13 @@ class _TableSection(QWidget):
                 lbl1: str, val1: QLabel,
                 lbl2: str = "", val2: QLabel = None):
         """
-        4-sütünlü bir satır ekler: Label1 | Value1 | Label2 | Value2.
-        Zebra arkaplanı otomatik uygulanır.
+        Iki ciftli bir satir ekler: (Label1 | Value1) | (Label2 | Value2).
+        Zebra arkaplani otomatik uygulanir.
         """
         bg = _BG_ODD if (self._physical_row % 2 != 0) else _BG_EVEN
         self._physical_row += 1
 
-        # Satır container ve grid layout
+        # Satir container
         row_w = QWidget()
         row_w.setStyleSheet(
             f"background: {bg}; border-bottom: {_BORDER_CSS};"
@@ -157,47 +160,26 @@ class _TableSection(QWidget):
         row_w.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         hbox = QHBoxLayout(row_w)
-        hbox.setContentsMargins(12, 8, 12, 8)
-        hbox.setSpacing(20)
+        hbox.setContentsMargins(0, 0, 0, 0)
+        hbox.setSpacing(0)
 
-        # Birinci çift: Label1 | Value1
-        col1 = QWidget()
-        col1.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-        col1_lay = QVBoxLayout(col1)
-        col1_lay.setContentsMargins(0, 0, 0, 0)
-        col1_lay.setSpacing(2)
+        # Birinci cift
+        hbox.addWidget(_make_pair_widget(lbl1, val1, bg), 1)
 
-        lbl1_w = QLabel(lbl1)
-        lbl1_w.setStyleSheet(_LBL_CSS.replace("padding: 7px 14px 2px 14px;", "padding: 0;"))
-        lbl1_w.setAlignment(Qt.AlignLeft)
-        lbl1_w.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        col1_lay.addWidget(lbl1_w)
+        sep = QFrame()
+        sep.setFrameShape(QFrame.VLine)
+        sep.setFixedWidth(1)
+        sep.setStyleSheet(f"background: {_BORDER}; border: none;")
+        hbox.addWidget(sep)
 
-        val1.setStyleSheet(val1.styleSheet().replace("padding: 2px 14px 7px 14px;", "padding: 0;"))
-        val1.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-        col1_lay.addWidget(val1)
-        hbox.addWidget(col1, 1)
-
-        # İkinci çift: Label2 | Value2 (eğer varsa)
+        # Ikinci cift: Label2 | Value2 (eger varsa)
         if lbl2 and val2 is not None:
-            col2 = QWidget()
-            col2.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-            col2_lay = QVBoxLayout(col2)
-            col2_lay.setContentsMargins(0, 0, 0, 0)
-            col2_lay.setSpacing(2)
-
-            lbl2_w = QLabel(lbl2)
-            lbl2_w.setStyleSheet(_LBL_CSS.replace("padding: 7px 14px 2px 14px;", "padding: 0;"))
-            lbl2_w.setAlignment(Qt.AlignLeft)
-            lbl2_w.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-            col2_lay.addWidget(lbl2_w)
-
-            val2.setStyleSheet(val2.styleSheet().replace("padding: 2px 14px 7px 14px;", "padding: 0;"))
-            val2.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-            col2_lay.addWidget(val2)
-            hbox.addWidget(col2, 1)
+            hbox.addWidget(_make_pair_widget(lbl2, val2, bg), 1)
         else:
-            hbox.addStretch()
+            ph = QWidget()
+            ph.setStyleSheet(f"background: {bg};")
+            ph.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+            hbox.addWidget(ph, 1)
 
         self._vbox.addWidget(row_w)
 
@@ -254,18 +236,7 @@ class CihazTeknikPanel(QWidget):
         # TextBox
         self._search_box = QLineEdit()
         self._search_box.setPlaceholderText("UTS Ürün Numarası...")
-        self._search_box.setStyleSheet(
-            f"QLineEdit {{"
-            f" background: rgba(255,255,255,0.06);"
-            f" color: {_TEXT_PRI};"
-            f" border: 1px solid {_BORDER};"
-            f" border-radius: 4px;"
-            f" padding: 6px 10px;"
-            f" font-size: 11px;"
-            f"}} QLineEdit:focus {{"
-            f" border: 1px solid {_ACCENT};"
-            f"}}"
-        )
+        self._search_box.setStyleSheet(S.get("input_search", ""))
         self._search_box.setMinimumHeight(32)
         action_lay.addWidget(self._search_box, 1)
 
@@ -273,7 +244,7 @@ class CihazTeknikPanel(QWidget):
         btn_search = QPushButton("Sorgula")
         btn_search.setMinimumWidth(80)
         btn_search.setMinimumHeight(32)
-        btn_search.setStyleSheet(S.get("btn_primary", ""))
+        btn_search.setStyleSheet(S.get("btn_action", ""))
         btn_search.clicked.connect(self._on_search)
         action_lay.addWidget(btn_search)
 
@@ -281,7 +252,7 @@ class CihazTeknikPanel(QWidget):
         btn_clear = QPushButton("Temizle")
         btn_clear.setMinimumWidth(80)
         btn_clear.setMinimumHeight(32)
-        btn_clear.setStyleSheet(S.get("btn_secondary", ""))
+        btn_clear.setStyleSheet(S.get("btn_refresh", ""))
         btn_clear.clicked.connect(self._on_clear)
         action_lay.addWidget(btn_clear)
 
@@ -289,69 +260,68 @@ class CihazTeknikPanel(QWidget):
         btn_save = QPushButton("Kaydet")
         btn_save.setMinimumWidth(80)
         btn_save.setMinimumHeight(32)
-        btn_save.setStyleSheet(S.get("btn_primary", ""))
-        btn_save.clicked.connect(self.saved.emit)
+        btn_save.setStyleSheet(S.get("save_btn", ""))
+        btn_save.clicked.connect(self._on_save)
         action_lay.addWidget(btn_save)
 
         root.addWidget(action_bar)
 
         # ── 1. Tanimlayici Bilgiler ───────────────────────────────────────────
         s1 = _TableSection("Tanimlayici Bilgiler")
-        s1.add_row("Cihaz ID",            self._w("Cihazid"),
-                   "Urun Tanimi",         self._w("UrunTanimi"))
         s1.add_row("Birincil Urun No",    self._w("BirincilUrunNumarasi"),
-                   "Kurum Unvan",         self._w("KurumUnvan"))
+               "Kurum Unvan",         self._w("KurumUnvan"))
         s1.add_row("Marka",               self._w("MarkaAdi"),
-                   "Urun Tipi",           self._w("UrunTipi"))
-        s1.add_row("Temel UDI DI",        self._w("TemelUdiDi"),
-                   "Etiket",              self._w("EtiketAdi"))
+               "Etiket",              self._w("EtiketAdi"))
         s1.add_row("Versiyon/Model",      self._w("VersiyonModel"),
-                   "Katalog No",          self._w("KatalogNo"))
+               "Urun Tipi",           self._w("UrunTipi"))
+        s1.add_row("Sinif",               self._w("Sinif"),
+               "Katalog No",          self._w("KatalogNo"))
+        s1.add_row("GMDN Kodu",           self._w("GmdnTerimKod"),
+               "GMDN Tanimi",         self._w("GmdnTerimTurkceAd"))
+        s1.add_row("Temel UDI DI",        self._w("TemelUdiDi"),
+               "Urun Tanimi",         self._w("UrunTanimi"))
         s1.add_row("Aciklama",            self._w("Aciklama"))
         root.addWidget(s1)
+
+        # ── 1b. Kurum/Firma Bilgileri ─────────────────────────────────────────
+        s1b = _TableSection("Kurum/Firma Bilgileri")
+        s1b.add_row("Kurum Gorunen Ad",   self._w("KurumGorunenAd"),
+                "Kurum No",            self._w("KurumNo"))
+        s1b.add_row("Kurum Telefon",      self._w("KurumTelefon"),
+                "Kurum Eposta",        self._w("KurumEposta"))
+        root.addWidget(s1b)
 
         # ── 2. Ithal/Imal Bilgileri ───────────────────────────────────────────
         s2 = _TableSection("Ithal/Imal Bilgileri")
         s2.add_row("Ithal/Imal Bilgisi",        self._w("IthalImalBilgisi"),
-                   "Mensei Ulke",               self._w("MenseiUlkeSet"))
+               "Mensei Ulke",               self._w("MenseiUlkeSet"))
         s2.add_row("Ithal Edilen Ulke",         self._w("IthalEdilenUlkeSet"),
-                   "Sinif",                     self._w("Sinif"))
+               "SUT Eslesmesi",             self._w("SutEslesmesiSet"))
         root.addWidget(s2)
 
-        # ── 3. Kurum Bilgileri ───────────────────────────────────────────────
-        s22 = _TableSection("Kurum/Firma Bilgileri")
-        s22.add_row("Kurum Gorunu Adi",   self._w("KurumGorunenAd"),
-                    "Kurum No",            self._w("KurumNo"))
-        s22.add_row("Kurum Telefon",      self._w("KurumTelefon"),
-                    "Kurum Eposta",        self._w("KurumEposta"))
-        root.addWidget(s22)
-
-        # ── 4. Ozellikler ─────────────────────────────────────────────────────
+        # ── 3. Teknik Ozellikler ─────────────────────────────────────────────
         s3 = _TableSection("Teknik Ozellikler")
 
-        s3.add_subheader("Durum ve Kayit Bilgileri")
+        s3.add_subheader("Durum ve Kayit Bilgisi")
         s3.add_row("Durum",                      self._w("Durum"),
-                   "Cihaz Kayit Tipi",          self._w("CihazKayitTipi"))
+               "Cihaz Kayit Tipi",          self._w("CihazKayitTipi"))
         s3.add_row("UTS Baslangic Tarihi",      self._w("UtsBaslangicTarihi"),
-                   "Kontrol Gonderildigi Tarih", self._w("KontroleGonderildigiTarih"))
+               "Kontrol Gonderildigi Tarih", self._w("KontroleGonderildigiTarih"))
 
-        s3.add_subheader("Kalibrasyon ve Bakim")
+        s3.add_subheader("Kalibrasyon / Bakim")
         s3.add_row("Kalibrasyona Tabi mi",      self._w("KalibrasyonaTabiMi"),
-                   "Kalibrasyon Periyodu (Ay)", self._w("KalibrasyonPeriyodu"))
+               "Kalibrasyon Periyodu (ay)", self._w("KalibrasyonPeriyodu"))
         s3.add_row("Bakima Tabi mi",            self._w("BakimaTabiMi"),
-                   "Bakim Periyodu (Ay)",       self._w("BakimPeriyodu"))
+               "Bakim Periyodu (ay)",       self._w("BakimPeriyodu"))
 
-        s3.add_subheader("Guvenlik ve Uyum")
-        s3.add_row("MRG Uyumlu",                       self._w("MrgUyumlu"),
-                   "Iyonize Radyasyon Icerir mi",     self._w("IyonizeRadyasyonIcerir"))
-        s3.add_row("Tek Hasta Kullanilabilir mi",     self._w("TekHastayaKullanilabilir"),
-                   "Sinirli Kullanim Sayisi Var",     self._w("SinirliKullanimSayisiVar"))
-        s3.add_row("Sinirli Kullanim Sayisi",         self._w("SinirliKullanimSayisi"),
-                   "Baska Imalatyici Yap Edildi",     self._w("BaskaImalatciyaUrettirildiMi"))
-        s3.add_row("GMDN Kodu",                        self._w("GmdnTerimKod"),
-                   "GMDN Tanimi",                      self._w("GmdnTerimTurkceAd"))
-        s3.add_row("GMDN Aciklama",                    self._w("GmdnTerimTurkceAciklama"),
-                   "Sut Eslesmesi",                    self._w("SutEslesmesiSet"))
+        s3.add_subheader("Diger Ozellikler")
+        s3.add_row("MRG Uyumlu",                  self._w("MrgUyumlu"),
+               "Iyonize Radyasyon Icerir mi", self._w("IyonizeRadyasyonIcerir"))
+        s3.add_row("Tek Hasta Kullanilabilir mi", self._w("TekHastayaKullanilabilir"),
+               "Sinirli Kullanim Sayisi Var", self._w("SinirliKullanimSayisiVar"))
+        s3.add_row("Sinirli Kullanim Sayisi",     self._w("SinirliKullanimSayisi"),
+               "Baska Imalatciya Urettirildi mi", self._w("BaskaImalatciyaUrettirildiMi"))
+        s3.add_row("GMDN Aciklama",               self._w("GmdnTerimTurkceAciklama"))
         root.addWidget(s3)
 
         root.addStretch()
@@ -423,3 +393,30 @@ class CihazTeknikPanel(QWidget):
         if self._search_box:
             self._search_box.clear()
             self._search_box.setFocus()
+
+    def _on_save(self):
+        """Mevcut teknik veriyi veritabanina kaydet."""
+        if not self.db:
+            QMessageBox.warning(self, "Hata", "Veritabanı bağlantısı bulunamadı.")
+            return
+
+        data = dict(self.teknik_data or {})
+        if self.cihaz_id and not data.get("Cihazid"):
+            data["Cihazid"] = self.cihaz_id
+
+        allowed = set(TABLES.get("Cihaz_Teknik", {}).get("columns", []))
+        payload = {k: v for k, v in data.items() if k in allowed}
+
+        if not payload or not payload.get("Cihazid"):
+            QMessageBox.warning(self, "Hata", "Kaydedilecek teknik veri bulunamadı.")
+            return
+
+        try:
+            repo = RepositoryRegistry(self.db).get("Cihaz_Teknik")
+            repo.insert(payload)
+            self.teknik_data.update(payload)
+            QMessageBox.information(self, "Başarılı", "Teknik bilgiler kaydedildi.")
+            self.saved.emit()
+        except Exception as e:
+            logger.error(f"Teknik veri kaydetme hatasi: {e}")
+            QMessageBox.critical(self, "Hata", f"Kaydetme başarısız:\n{e}")
