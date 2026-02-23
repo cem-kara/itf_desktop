@@ -9,7 +9,7 @@ from pathlib import Path
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
-    QScrollArea, QSizePolicy, QGridLayout
+    QScrollArea, QSizePolicy, QGridLayout, QLineEdit, QPushButton
 )
 from PySide6.QtCore import Qt, Signal
 
@@ -143,43 +143,61 @@ class _TableSection(QWidget):
                 lbl1: str, val1: QLabel,
                 lbl2: str = "", val2: QLabel = None):
         """
-        4-sutunlu bir satir ekler: Label1 | Value1 | Label2 | Value2.
-        Zebra arkaplan otomatik uygulanir.
+        4-sütünlü bir satır ekler: Label1 | Value1 | Label2 | Value2.
+        Zebra arkaplanı otomatik uygulanır.
         """
         bg = _BG_ODD if (self._physical_row % 2 != 0) else _BG_EVEN
         self._physical_row += 1
 
-        # Satir container ve grid layout
+        # Satır container ve grid layout
         row_w = QWidget()
         row_w.setStyleSheet(
             f"background: {bg}; border-bottom: {_BORDER_CSS};"
         )
         row_w.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
 
-        grid = QGridLayout(row_w)
-        grid.setContentsMargins(8, 6, 8, 6)  # Iç padding
-        grid.setSpacing(12)  # Label-Value arası
-        grid.setColumnStretch(0, 0)  # Label1 — sabit
-        grid.setColumnStretch(1, 1)  # Value1 — genişlesin
-        grid.setColumnStretch(2, 0)  # Label2 — sabit
-        grid.setColumnStretch(3, 1)  # Value2 — genişlesin
+        hbox = QHBoxLayout(row_w)
+        hbox.setContentsMargins(12, 8, 12, 8)
+        hbox.setSpacing(20)
 
         # Birinci çift: Label1 | Value1
+        col1 = QWidget()
+        col1.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        col1_lay = QVBoxLayout(col1)
+        col1_lay.setContentsMargins(0, 0, 0, 0)
+        col1_lay.setSpacing(2)
+
         lbl1_w = QLabel(lbl1)
-        lbl1_w.setStyleSheet(_LBL_CSS)
-        lbl1_w.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        lbl1_w.setStyleSheet(_LBL_CSS.replace("padding: 7px 14px 2px 14px;", "padding: 0;"))
+        lbl1_w.setAlignment(Qt.AlignLeft)
         lbl1_w.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        grid.addWidget(lbl1_w, 0, 0, Qt.AlignRight | Qt.AlignVCenter)
-        grid.addWidget(val1, 0, 1, Qt.AlignLeft | Qt.AlignVCenter)
+        col1_lay.addWidget(lbl1_w)
+
+        val1.setStyleSheet(val1.styleSheet().replace("padding: 2px 14px 7px 14px;", "padding: 0;"))
+        val1.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        col1_lay.addWidget(val1)
+        hbox.addWidget(col1, 1)
 
         # İkinci çift: Label2 | Value2 (eğer varsa)
         if lbl2 and val2 is not None:
+            col2 = QWidget()
+            col2.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+            col2_lay = QVBoxLayout(col2)
+            col2_lay.setContentsMargins(0, 0, 0, 0)
+            col2_lay.setSpacing(2)
+
             lbl2_w = QLabel(lbl2)
-            lbl2_w.setStyleSheet(_LBL_CSS)
-            lbl2_w.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            lbl2_w.setStyleSheet(_LBL_CSS.replace("padding: 7px 14px 2px 14px;", "padding: 0;"))
+            lbl2_w.setAlignment(Qt.AlignLeft)
             lbl2_w.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-            grid.addWidget(lbl2_w, 0, 2, Qt.AlignRight | Qt.AlignVCenter)
-            grid.addWidget(val2, 0, 3, Qt.AlignLeft | Qt.AlignVCenter)
+            col2_lay.addWidget(lbl2_w)
+
+            val2.setStyleSheet(val2.styleSheet().replace("padding: 2px 14px 7px 14px;", "padding: 0;"))
+            val2.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+            col2_lay.addWidget(val2)
+            hbox.addWidget(col2, 1)
+        else:
+            hbox.addStretch()
 
         self._vbox.addWidget(row_w)
 
@@ -190,6 +208,8 @@ class CihazTeknikPanel(QWidget):
     """
     Cihaz Merkez ekranindaki 'Teknik Bilgiler' sekmesi icerigi.
     """
+    searched = Signal(str)  # Sorgula butonuna basilinca, ürün no ile emit
+    search_complete = Signal(dict, bool, str)  # data, success, message
     saved = Signal()
 
     def __init__(self, cihaz_id, db=None, parent=None):
@@ -199,6 +219,7 @@ class CihazTeknikPanel(QWidget):
         self.teknik_data  = {}
         self._widgets     = {}
         self._link_fields = set()
+        self._search_box  = None  # UTS sorgusu textbox'ı
 
         self._setup_ui()
         self._load_data()
@@ -218,6 +239,61 @@ class CihazTeknikPanel(QWidget):
         root = QVBoxLayout(content)
         root.setContentsMargins(20, 20, 20, 20)
         root.setSpacing(14)
+
+        # ── 0. UTS Sorgulama Action Bar ────────────────────────────────────────
+        action_bar = QWidget()
+        action_bar.setStyleSheet(
+            f"background: {_BG_SECT}; border-bottom: {_BORDER_CSS};"
+        )
+        action_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        action_lay = QHBoxLayout(action_bar)
+        action_lay.setContentsMargins(14, 10, 14, 10)
+        action_lay.setSpacing(10)
+
+        # TextBox
+        self._search_box = QLineEdit()
+        self._search_box.setPlaceholderText("UTS Ürün Numarası...")
+        self._search_box.setStyleSheet(
+            f"QLineEdit {{"
+            f" background: rgba(255,255,255,0.06);"
+            f" color: {_TEXT_PRI};"
+            f" border: 1px solid {_BORDER};"
+            f" border-radius: 4px;"
+            f" padding: 6px 10px;"
+            f" font-size: 11px;"
+            f"}} QLineEdit:focus {{"
+            f" border: 1px solid {_ACCENT};"
+            f"}}"
+        )
+        self._search_box.setMinimumHeight(32)
+        action_lay.addWidget(self._search_box, 1)
+
+        # Sorgula butonu
+        btn_search = QPushButton("Sorgula")
+        btn_search.setMinimumWidth(80)
+        btn_search.setMinimumHeight(32)
+        btn_search.setStyleSheet(S.get("btn_primary", ""))
+        btn_search.clicked.connect(self._on_search)
+        action_lay.addWidget(btn_search)
+
+        # Temizle butonu
+        btn_clear = QPushButton("Temizle")
+        btn_clear.setMinimumWidth(80)
+        btn_clear.setMinimumHeight(32)
+        btn_clear.setStyleSheet(S.get("btn_secondary", ""))
+        btn_clear.clicked.connect(self._on_clear)
+        action_lay.addWidget(btn_clear)
+
+        # Kaydet butonu
+        btn_save = QPushButton("Kaydet")
+        btn_save.setMinimumWidth(80)
+        btn_save.setMinimumHeight(32)
+        btn_save.setStyleSheet(S.get("btn_primary", ""))
+        btn_save.clicked.connect(self.saved.emit)
+        action_lay.addWidget(btn_save)
+
+        root.addWidget(action_bar)
 
         # ── 1. Tanimlayici Bilgiler ───────────────────────────────────────────
         s1 = _TableSection("Tanimlayici Bilgiler")
@@ -329,3 +405,21 @@ class CihazTeknikPanel(QWidget):
 
     def set_embedded_mode(self, embedded: bool):
         pass
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # UTS Action Bar Handlers
+    # ──────────────────────────────────────────────────────────────────────────
+    def _on_search(self):
+        """Sorgula butonuna basilinca."""
+        if self._search_box:
+            urun_no = self._search_box.text().strip()
+            if urun_no:
+                self.searched.emit(urun_no)
+            else:
+                logger.warning("UTS sorgulama: Boş ürün numarası")
+
+    def _on_clear(self):
+        """Temizle butonuna basilinca."""
+        if self._search_box:
+            self._search_box.clear()
+            self._search_box.setFocus()

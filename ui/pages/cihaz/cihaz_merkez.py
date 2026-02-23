@@ -6,6 +6,9 @@ Tüm renkler merkezi ThemeManager / DarkTheme / ComponentStyles üzerinden gelir
 Hardcoded renk yok.
 """
 import os
+import threading
+import asyncio
+from pathlib import Path
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QFrame, QStackedWidget, QScrollArea, QMessageBox,
@@ -18,6 +21,7 @@ from ui.styles.components import ComponentStyles, STYLES
 from ui.styles.icons import IconRenderer, Icons
 from core.logger import logger
 from database.repository_registry import RepositoryRegistry
+from ui.pages.cihaz.components.uts_parser import scrape_uts
 
 C = DarkTheme
 
@@ -440,6 +444,8 @@ class CihazMerkezPage(QWidget):
                 from ui.pages.cihaz.components.cihaz_teknik_panel import CihazTeknikPanel
                 w = CihazTeknikPanel(self.cihaz_id, self.db)
                 w.saved.connect(self._load_data)
+                w.searched.connect(self._search_uts)  # UTS sorgulama bağlantısı
+                w.search_complete.connect(self._on_search_complete)  # Sonucun UI güncellemesi
             elif code == "BAKIM":
                 # Bakım işlemleri paneli
                 from ui.pages.cihaz.components.bakim_kayit import BakimKayitPenceresi
@@ -539,6 +545,67 @@ class CihazMerkezPage(QWidget):
         kalibrasyon = self._modules.get("KALIBRASYON")
         if kalibrasyon and hasattr(kalibrasyon, "load_data"):
             kalibrasyon.load_data()
+
+    # ═══════════════════════════════════════════════════
+    #  UTS SORGULAMA
+    # ═══════════════════════════════════════════════════
+
+    def _search_uts(self, urun_no: str):
+        """\u00dcTS'den ürün verisi çek ve panele doldur."""
+        if not urun_no.strip():
+            QMessageBox.warning(self, "Hata", "Lütfen ürün numarası girin.")
+            return
+        
+        panel = self._modules.get("TEKNIK")
+        if not panel:
+            return
+        
+        # Threading ile async işem çalıştır
+        def run_search():
+            try:
+                # uts_parser verisiyle asyncio.run() çalıştır
+                data = asyncio.run(scrape_uts(urun_no.strip()))
+                
+                if data and isinstance(data, dict):
+                    panel.search_complete.emit(data, True, f"Ürün yüklendi: {urun_no}")
+                else:
+                    panel.search_complete.emit({}, False, f"Ürün bulunamadı: {urun_no}")
+                        
+            except Exception as e:
+                logger.error(f"ÜTS sorgu hatası: {e}")
+                panel.search_complete.emit({}, False, f"ÜTS sorgulama başarısız:\n{str(e)[:200]}")
+        
+        # Thread'de çalıştır
+        thread = threading.Thread(target=run_search, daemon=True)
+        thread.start()
+
+    def _on_search_complete(self, data: dict, success: bool, message: str):
+        """ÜTS sorgusunun tamamlandığını işle (main thread)."""
+        panel = self._modules.get("TEKNIK")
+        if not panel:
+            return
+        
+        if success:
+            # Panel'in teknik_data'sını güncelle
+            panel.teknik_data.update(data)
+            
+            # Tüm widget'ları güncelle
+            for key, widget in panel._widgets.items():
+                raw = panel.teknik_data.get(key, "")
+                if key in panel._link_fields and raw:
+                    try:
+                        uri = Path(raw).expanduser().as_uri()
+                        widget.setText(
+                            f'<a href="{uri}" style="color:#4d9de0;">{raw}</a>'
+                        )
+                    except Exception:
+                        widget.setText(str(raw))
+                else:
+                    widget.setText(str(raw) if raw else "—")
+            
+            QMessageBox.information(self, "Başarılı", message)
+        else:
+            QMessageBox.warning(self, "Hata", message)
 
     # ═══════════════════════════════════════════════════
     #  YARDIMCI OLUŞTURUCULAR
