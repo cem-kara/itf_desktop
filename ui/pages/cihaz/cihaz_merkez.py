@@ -255,6 +255,27 @@ class CihazMerkezPage(QWidget):
 
         self.content_stack.setCurrentWidget(self._modules[code])
 
+    def _switch_tab_and_open_form(self, code: str):
+        """Sekmeye geçip varsa formu otomatik aç."""
+        self._switch_tab(code)
+        widget = self._modules.get(code)
+        if widget is None:
+            return
+        # Formu otomatik açmak için ilgili metodu çağır
+        inner = None
+        if hasattr(widget, "ariza_form"):
+            inner = widget.ariza_form
+        elif hasattr(widget, "bakim_form"):
+            inner = widget.bakim_form
+        elif hasattr(widget, "kalibrasyon_form"):
+            inner = widget.kalibrasyon_form
+        # Her formun kendi "yeni kayıt aç" metod adını dene
+        for method in ("_open_ariza_form", "_open_bakim_form",
+                       "_open_kal_form", "_open_kalibrasyon_form"):
+            if inner and hasattr(inner, method):
+                getattr(inner, method)()
+                break
+
     def _create_module(self, code: str) -> QWidget:
         try:
             if code == "GENEL":

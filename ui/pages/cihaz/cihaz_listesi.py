@@ -176,11 +176,11 @@ class CihazDelegate(QStyledItemDelegate):
         pad = 8
         r1 = QRect(rect.x() + pad, rect.y() + 4, rect.width() - pad * 2, 17)
         r2 = QRect(rect.x() + pad, rect.y() + 21, rect.width() - pad * 2, 14)
-        p.setFont(QFont("Courier New", 8) if mono_top else QFont("", 9, QFont.Medium))
-        p.setPen(QColor(C.TEXT_SECONDARY))
+        p.setFont(QFont("Courier New", 10) if mono_top else QFont("Segoe UI", 11, QFont.Medium))
+        p.setPen(QColor(C.TEXT_PRIMARY))
         p.drawText(r1, Qt.AlignVCenter | Qt.AlignLeft,
                    p.fontMetrics().elidedText(top, Qt.ElideRight, r1.width()))
-        p.setFont(QFont("", 8))
+        p.setFont(QFont("Segoe UI", 9))
         p.setPen(QColor(C.TEXT_MUTED))
         p.drawText(r2, Qt.AlignVCenter | Qt.AlignLeft,
                    p.fontMetrics().elidedText(bottom, Qt.ElideRight, r2.width()))
@@ -188,7 +188,7 @@ class CihazDelegate(QStyledItemDelegate):
     def _draw_mono(self, p, rect, text):
         pad = 8
         r = QRect(rect.x() + pad, rect.y(), rect.width() - pad * 2, rect.height())
-        p.setFont(QFont("", 9))
+        p.setFont(QFont("Segoe UI", 11))
         p.setPen(QColor(C.TEXT_PRIMARY))
         p.drawText(r, Qt.AlignVCenter | Qt.AlignLeft,
                    p.fontMetrics().elidedText(text, Qt.ElideRight, r.width()))
@@ -203,7 +203,7 @@ class CihazDelegate(QStyledItemDelegate):
         p.setPen(Qt.NoPen)
         p.drawRoundedRect(r, 11, 11)
         p.setPen(QColor(fg))
-        p.setFont(QFont("", 8, QFont.Medium))
+        p.setFont(QFont("Segoe UI", 9, QFont.Medium))
         p.drawText(r, Qt.AlignCenter, text)
 
     def _draw_action_btns(self, p, rect, row):
@@ -220,7 +220,7 @@ class CihazDelegate(QStyledItemDelegate):
             p.setPen(QPen(QColor(C.BORDER_STRONG)))
             p.drawRoundedRect(btn_rect, 6, 6)
             p.setPen(QColor(fg))
-            p.setFont(QFont("", 8, QFont.Medium))
+            p.setFont(QFont("Segoe UI", 9, QFont.Medium))
             p.drawText(btn_rect, Qt.AlignCenter, label)
             self._btn_rects[(row, key)] = btn_rect
             x += self.BTN_W + self.BTN_GAP

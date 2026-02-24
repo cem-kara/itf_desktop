@@ -7,7 +7,8 @@ from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, Signal, QDate
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QTableView,
     QHeaderView, QLabel, QGridLayout, QTextEdit, QLineEdit,
-    QComboBox, QDateEdit, QPushButton, QMenu, QFileDialog, QMessageBox
+    QComboBox, QDateEdit, QPushButton, QMenu, QFileDialog, QMessageBox,
+    QFrame, QSizePolicy,
 )
 from PySide6.QtGui import QCursor
 
@@ -260,6 +261,13 @@ class ArizaIslemForm(QWidget):
         try:
             repo_islem = RepositoryRegistry(self._db).get("Ariza_Islem")
             repo_islem.insert(data)
+
+            # Ana arızanın durumunu güncelle
+            try:
+                repo_ariza = RepositoryRegistry(self._db).get("Cihaz_Ariza")
+                repo_ariza.update(self._ariza_id, {"Durum": yeni_durum})
+            except Exception as e:
+                logger.error(f"Arıza durumu güncellenemedi: {e}")
             
             # Rapor belgesi varsa Cihaz_Belgeler tablosuna kaydet
             if self._rapor_belge_path and self._cihaz_id:
@@ -332,10 +340,10 @@ class ArizaIslemPenceresi(QWidget):
     def _setup_ui(self):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(8)
+        root.setSpacing(0)
 
-        # Tablo grubu (kompakt)
-        grp_table = QGroupBox("Ariza İşlemleri")
+        # ── Tablo ───────────────────────────────────────
+        grp_table = QGroupBox("Arıza İşlemleri")
         grp_table.setStyleSheet(S["group"])
         tl = QVBoxLayout(grp_table)
         tl.setContentsMargins(10, 10, 10, 10)
@@ -363,23 +371,148 @@ class ArizaIslemPenceresi(QWidget):
             header.resizeSection(i, w)
 
         self.table.selectionModel().currentChanged.connect(self._on_row_selected)
-
         tl.addWidget(self.table)
 
         self.lbl_count = QLabel("0 kayit")
         self.lbl_count.setStyleSheet(S["footer_label"])
         tl.addWidget(self.lbl_count)
-
         root.addWidget(grp_table)
 
+        # ── İşlem Detay Paneli (seçince açılır) ────────
+        self._det_panel = self._build_detail_panel()
+        root.addWidget(self._det_panel)
+
+    def _build_detail_panel(self) -> QWidget:
+        """Seçili işlemin detaylarını gösteren panel."""
+        surface  = getattr(DarkTheme, "SURFACE",      "#13161d")
+        panel_bg = getattr(DarkTheme, "PANEL",        "#191d26")
+        border   = getattr(DarkTheme, "BORDER",       "#242938")
+        text_pr  = getattr(DarkTheme, "TEXT_PRIMARY", "#eef0f5")
+        muted    = getattr(DarkTheme, "TEXT_MUTED",   "#5a6278")
+
+        frame = QFrame()
+        frame.setVisible(False)
+        frame.setStyleSheet(
+            f"QFrame{{background:{panel_bg};"
+            f"border:1px solid {border};border-radius:6px;"
+            f"margin-top:6px;}}"
+        )
+        fl = QVBoxLayout(frame)
+        fl.setContentsMargins(12, 10, 12, 10)
+        fl.setSpacing(8)
+
+        # Başlık + kapat
+        hdr = QHBoxLayout()
+        lbl_title = QLabel("İŞLEM DETAYI")
+        lbl_title.setStyleSheet(
+            f"font-size:10px;font-weight:700;letter-spacing:0.08em;"
+            f"color:{muted};background:transparent;"
+        )
+        hdr.addWidget(lbl_title)
+        hdr.addStretch()
+        btn_kapat = QPushButton("✕")
+        btn_kapat.setFixedSize(18, 18)
+        btn_kapat.setStyleSheet(
+            f"QPushButton{{background:transparent;border:none;"
+            f"color:{muted};font-size:11px;}}"
+            f"QPushButton:hover{{color:{text_pr};}}"
+        )
+        btn_kapat.clicked.connect(lambda: frame.setVisible(False))
+        hdr.addWidget(btn_kapat)
+        fl.addLayout(hdr)
+
+        sep = QFrame()
+        sep.setFrameShape(QFrame.HLine)
+        sep.setFixedHeight(1)
+        sep.setStyleSheet(f"background:{border};")
+        fl.addWidget(sep)
+
+        # Meta satırı: Tarih · Saat · İşlem Yapan · İşlem Türü · Yeni Durum
+        meta = QHBoxLayout()
+        meta.setSpacing(16)
+        self._det_tarih   = self._det_chip("Tarih",        muted, text_pr)
+        self._det_saat    = self._det_chip("Saat",         muted, text_pr)
+        self._det_yapan   = self._det_chip("İşlem Yapan",  muted, text_pr)
+        self._det_turu    = self._det_chip("İşlem Türü",   muted, text_pr)
+        self._det_durum   = self._det_chip("Yeni Durum",   muted, text_pr)
+        for w in [self._det_tarih, self._det_saat,
+                  self._det_yapan, self._det_turu, self._det_durum]:
+            meta.addWidget(w)
+        meta.addStretch()
+        fl.addLayout(meta)
+
+        # Yapılan İşlem
+        lbl_yi = QLabel("Yapılan İşlem")
+        lbl_yi.setStyleSheet(
+            f"font-size:10px;font-weight:600;color:{muted};background:transparent;"
+        )
+        fl.addWidget(lbl_yi)
+        self._det_yapilan = QTextEdit()
+        self._det_yapilan.setReadOnly(True)
+        self._det_yapilan.setFixedHeight(64)
+        self._det_yapilan.setStyleSheet(S.get("input_text", ""))
+        fl.addWidget(self._det_yapilan)
+
+        # Rapor
+        lbl_r = QLabel("Rapor")
+        lbl_r.setStyleSheet(
+            f"font-size:10px;font-weight:600;color:{muted};background:transparent;"
+        )
+        fl.addWidget(lbl_r)
+        self._det_rapor = QTextEdit()
+        self._det_rapor.setReadOnly(True)
+        self._det_rapor.setFixedHeight(52)
+        self._det_rapor.setStyleSheet(S.get("input_text", ""))
+        fl.addWidget(self._det_rapor)
+
+        return frame
+
+    @staticmethod
+    def _det_chip(title: str, muted: str, text_pr: str) -> QWidget:
+        """Başlık + değer dikey çifti."""
+        w = QWidget()
+        w.setStyleSheet("background:transparent;")
+        vl = QVBoxLayout(w)
+        vl.setContentsMargins(0, 0, 0, 0)
+        vl.setSpacing(1)
+        t = QLabel(title.upper())
+        t.setStyleSheet(
+            f"font-size:8px;letter-spacing:0.06em;font-weight:600;"
+            f"color:{muted};background:transparent;"
+        )
+        v = QLabel("—")
+        v.setObjectName("val")
+        v.setStyleSheet(f"font-size:11px;color:{text_pr};background:transparent;")
+        v.setWordWrap(True)
+        vl.addWidget(t)
+        vl.addWidget(v)
+        return w
+
+    @staticmethod
+    def _set_chip(chip: QWidget, value: str):
+        lbl = chip.findChild(QLabel, "val")
+        if lbl:
+            lbl.setText(value or "—")
+
     def _on_row_selected(self, current: QModelIndex, previous: QModelIndex):
-        """Tablo satırı seçildiğinde detayları emit et."""
+        """Tablo satırı seçildiğinde detay panelini doldur ve göster."""
         if not current.isValid():
             return
-
         row_data = self._model.get_row(current.row())
-        if row_data:
-            self.islem_secildi.emit(row_data)
+        if not row_data:
+            return
+
+        from core.date_utils import to_ui_date
+        self._set_chip(self._det_tarih,  to_ui_date(row_data.get("Tarih",""), "—"))
+        self._set_chip(self._det_saat,   row_data.get("Saat",""))
+        self._set_chip(self._det_yapan,  row_data.get("IslemYapan",""))
+        self._set_chip(self._det_turu,   row_data.get("IslemTuru",""))
+        self._set_chip(self._det_durum,  row_data.get("YeniDurum",""))
+        self._det_yapilan.setText(row_data.get("YapilanIslem","") or "—")
+        self._det_rapor.setText(row_data.get("Rapor","") or "—")
+        self._det_panel.setVisible(True)
+
+        self.islem_secildi.emit(row_data)
 
     def load_data(self):
         """Seçili arızanın işlemlerini yükle."""

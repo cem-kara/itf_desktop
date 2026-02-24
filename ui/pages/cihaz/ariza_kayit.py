@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QTableView, QSplitter, QHeaderView, QTabWidget,
     QLabel, QLineEdit, QComboBox, QPushButton,
     QMenu, QMessageBox, QSizePolicy, QScrollArea, QGridLayout,
+    QGroupBox, QTextEdit, QDialog,
 )
 from PySide6.QtGui import QColor, QCursor, QPainter, QPen, QBrush
 
@@ -50,11 +51,26 @@ _DURUM_COLOR = {
     "Kapali":         _C["green"],
 }
 
+_DURUM_BG_COLOR = {
+    "Açık":           "rgba(247, 95, 95, 0.20)",      # Düşük opacity kırmızı
+    "Acik":           "rgba(247, 95, 95, 0.20)",
+    "Devam Ediyor":   "rgba(245, 166, 35, 0.20)",     # Düşük opacity sarı
+    "Kapalı":         "rgba(62, 207, 142, 0.20)",     # Düşük opacity yeşil
+    "Kapali":         "rgba(62, 207, 142, 0.20)",
+}
+
 _ONCELIK_COLOR = {
     "Kritik":  _C["red"],
     "Yüksek":  _C["amber"],
     "Orta":    _C["accent"],
     "Düşük":   _C["muted"],
+}
+
+_ONCELIK_BG_COLOR = {
+    "Kritik":  "rgba(247, 95, 95, 0.20)",          # Düşük opacity kırmızı
+    "Yüksek":  "rgba(245, 166, 35, 0.20)",         # Düşük opacity sarı
+    "Orta":    "rgba(79, 142, 247, 0.20)",         # Düşük opacity mavi
+    "Düşük":   "rgba(90, 98, 120, 0.15)",          # Düşük opacity gri
 }
 
 
@@ -103,7 +119,7 @@ class ArizaTableModel(QAbstractTableModel):
                 return Qt.AlignCenter
             return Qt.AlignVCenter | Qt.AlignLeft
 
-        # Renk kodlama
+        # Metin rengi kodlama
         if role == Qt.ForegroundRole:
             if key == "Durum":
                 c = _DURUM_COLOR.get(row.get("Durum", ""))
@@ -111,6 +127,15 @@ class ArizaTableModel(QAbstractTableModel):
             if key == "Oncelik":
                 c = _ONCELIK_COLOR.get(row.get("Oncelik", ""))
                 return QColor(c) if c else None
+
+        # Arka plan rengi kodlama
+        if role == Qt.BackgroundRole:
+            if key == "Durum":
+                bg = _DURUM_BG_COLOR.get(row.get("Durum", ""))
+                return QColor(bg) if bg else None
+            if key == "Oncelik":
+                bg = _ONCELIK_BG_COLOR.get(row.get("Oncelik", ""))
+                return QColor(bg) if bg else None
 
         return None
 
@@ -155,9 +180,12 @@ class ArizaKayitForm(QWidget):
         )
         self._docs_dir.mkdir(parents=True, exist_ok=True)
 
+        self._active_form: Optional[QWidget] = None
+
         self._setup_ui()
         self._load_filter_combos()
         self._load_data()
+        self._update_perf_tab_label()
 
     # ══════════════════════════════════════════════════════
     #  Dışarıdan erişim
@@ -169,6 +197,7 @@ class ArizaKayitForm(QWidget):
             self._docs_dir.mkdir(parents=True, exist_ok=True)
         self._load_filter_combos()
         self._load_data()
+        self._update_perf_tab_label()
 
     # ══════════════════════════════════════════════════════
     #  UI İnşaası
@@ -199,14 +228,17 @@ class ArizaKayitForm(QWidget):
         lt_layout = QVBoxLayout(list_tab)
         lt_layout.setContentsMargins(0, 0, 0, 0)
         lt_layout.setSpacing(0)
-        h_splitter = QSplitter(Qt.Horizontal)
-        h_splitter.setStyleSheet(S.get("splitter", ""))
-        h_splitter.addWidget(self._build_left_panel())
-        h_splitter.addWidget(self._build_right_panel())
-        h_splitter.setStretchFactor(0, 3)
-        h_splitter.setStretchFactor(1, 2)
-        h_splitter.setSizes([680, 380])
-        lt_layout.addWidget(h_splitter)
+        self._h_splitter = QSplitter(Qt.Horizontal)
+        self._h_splitter.setStyleSheet(S.get("splitter", ""))
+        self._h_splitter.addWidget(self._build_left_panel())
+        self._h_splitter.addWidget(self._build_form_panel())   # orta: gizli form
+        self._h_splitter.addWidget(self._build_right_panel())
+        self._h_splitter.setHandleWidth(0)          # handle görünmez
+        self._h_splitter.setChildrenCollapsible(False)
+        for i in range(3):
+            self._h_splitter.handle(i).setEnabled(False)   # sürükleme kapalı
+        self._h_splitter.setSizes([710, 0, 350])
+        lt_layout.addWidget(self._h_splitter)
         self._tabs.addTab(list_tab, "Arıza Listesi")
 
         # Tab 2 — Cihaz Performansı
@@ -216,9 +248,15 @@ class ArizaKayitForm(QWidget):
         root.addWidget(self._tabs, 1)
 
     def _on_tab_changed(self, idx: int):
-        """Performans tabına geçilince verileri yenile."""
+        """Performans/Geçmiş tabına geçilince verileri yenile."""
         if idx == 1:
             self._refresh_perf_tab()
+
+    def _update_perf_tab_label(self):
+        """cihaz_id varsa tab adını 'Arıza Geçmişi', yoksa 'Cihaz Performansı' yap."""
+        if hasattr(self, "_tabs"):
+            label = "Arıza Geçmişi" if self._cihaz_id else "Cihaz Performansı"
+            self._tabs.setTabText(1, label)
 
     # ── KPI Şeridi ──────────────────────────────────────
     def _build_kpi_bar(self) -> QWidget:
@@ -411,6 +449,64 @@ class ArizaKayitForm(QWidget):
         return panel
 
     # ── Sağ Panel (Detay + İşlem) ───────────────────────
+    def _build_form_panel(self) -> QWidget:
+        """
+        Tablo ile detay paneli arasında açılan form alanı.
+        Başlangıçta gizlidir; _open_ariza_form / _open_islem_form ile gösterilir.
+        """
+        surface = getattr(DarkTheme, "SURFACE", "#13161d")
+        panel_bg = getattr(DarkTheme, "PANEL",   "#191d26")
+        border   = getattr(DarkTheme, "BORDER",  "#242938")
+        text_pr  = getattr(DarkTheme, "TEXT_PRIMARY",   "#eef0f5")
+        text_sec = getattr(DarkTheme, "TEXT_SECONDARY", "#c8cdd8")
+
+        self._form_panel = QWidget()
+        self._form_panel.setVisible(False)
+        self._form_panel.setStyleSheet(
+            f"background:{surface};"
+            f"border-left:1px solid {border};"
+            f"border-right:1px solid {border};"
+        )
+        layout = QVBoxLayout(self._form_panel)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        # Kapatma butonu — sağ üstte tek X
+        hdr = QWidget()
+        hdr.setFixedHeight(30)
+        hdr.setStyleSheet(f"background:{surface};border-bottom:1px solid {border};")
+        hdr_l = QHBoxLayout(hdr)
+        hdr_l.setContentsMargins(0, 0, 6, 0)
+        hdr_l.setSpacing(0)
+        hdr_l.addStretch()
+
+        btn_kapat = QPushButton("✕")
+        btn_kapat.setFixedSize(22, 22)
+        btn_kapat.setStyleSheet(
+            f"QPushButton{{background:transparent;border:none;"
+            f"color:{text_sec};font-size:12px;border-radius:4px;}}"
+            f"QPushButton:hover{{background:{border};color:{text_pr};}}"
+        )
+        btn_kapat.clicked.connect(self._close_form)
+        hdr_l.addWidget(btn_kapat)
+        layout.addWidget(hdr)
+
+        # Scroll alanı — form widget'ı buraya eklenir
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet(S.get("scroll", f"background:{surface};border:none;"))
+
+        self._form_inner = QWidget()
+        self._form_inner.setStyleSheet(f"background:{surface};")
+        self._form_layout = QVBoxLayout(self._form_inner)
+        self._form_layout.setContentsMargins(10, 10, 10, 10)
+        self._form_layout.setSpacing(0)
+        self._form_layout.addStretch()
+        scroll.setWidget(self._form_inner)
+        layout.addWidget(scroll, 1)
+
+        return self._form_panel
+
     def _build_right_panel(self) -> QWidget:
         panel = QWidget()
         panel.setStyleSheet(
@@ -497,34 +593,9 @@ class ArizaKayitForm(QWidget):
 
         layout.addWidget(btn_bar)
 
-        # -- Alt splitter: İşlemler + Form alanı --
-        v_splitter = QSplitter(Qt.Vertical)
-        v_splitter.setStyleSheet(S.get("splitter", ""))
-
+        # -- İşlem penceresi (tam yükseklik, form artık ortada açılıyor) --
         self.islem_penceresi = ArizaIslemPenceresi(self._db)
-        v_splitter.addWidget(self.islem_penceresi)
-
-        # Form container (gizli başlar, form açılınca gösterilir)
-        self.form_container = QScrollArea()
-        self.form_container.setWidgetResizable(True)
-        self.form_container.setStyleSheet(S.get("scroll", ""))
-        self.form_container.setVisible(False)
-
-        self._form_inner = QWidget()
-        self._form_layout = QVBoxLayout(self._form_inner)
-        self._form_layout.setContentsMargins(8, 8, 8, 8)
-        self._form_layout.setSpacing(0)
-        self._form_layout.addStretch()
-        self.form_container.setWidget(self._form_inner)
-
-        self._active_form = None  # şu an açık form widget'ı
-
-        v_splitter.addWidget(self.form_container)
-        v_splitter.setStretchFactor(0, 1)
-        v_splitter.setStretchFactor(1, 0)
-        v_splitter.setSizes([400, 0])
-
-        layout.addWidget(v_splitter, 1)
+        layout.addWidget(self.islem_penceresi, 1)
         return panel
 
     # ── Küçük yardımcı widget üreticileri ───────────────
@@ -724,18 +795,23 @@ class ArizaKayitForm(QWidget):
         self._form_layout.addStretch()
 
     def _open_ariza_form(self):
-        """Yeni Arıza formunu açar."""
+        """Yeni Arıza formunu — tablo ile detay arasında — açar."""
         from ui.pages.cihaz.ariza_girisi_form import ArizaGirisForm
         self._clear_form_container()
-        form = ArizaGirisForm(self._db, parent=self)
+        # Cihaz ID: önce self._cihaz_id (cihaz detay modu), yoksa seçili satırdan al
+        cihaz_id = self._cihaz_id
+        if not cihaz_id and self._selected_ariza_id:
+            # seçili satırdan Cihazid'i bul
+            for r in self._all_rows:
+                if r.get("Arizaid") == self._selected_ariza_id:
+                    cihaz_id = str(r.get("Cihazid", ""))
+                    break
+        form = ArizaGirisForm(self._db, cihaz_id=cihaz_id, parent=self)
         form.saved.connect(self._on_ariza_saved)
         self._active_form = form
         self._form_layout.insertWidget(0, form)
-        self.form_container.setVisible(True)
-        # Splitter'ı aç
-        splitter = self.form_container.parent()
-        if isinstance(splitter, QSplitter):
-            splitter.setSizes([300, 280])
+        self._form_panel.setVisible(True)
+        self._h_splitter.setSizes([470, 360, 350])
 
     def _open_islem_form(self):
         """Seçili arıza için İşlem Giriş formunu açar."""
@@ -747,18 +823,14 @@ class ArizaKayitForm(QWidget):
         form.saved.connect(self._on_islem_saved)
         self._active_form = form
         self._form_layout.insertWidget(0, form)
-        self.form_container.setVisible(True)
-        splitter = self.form_container.parent()
-        if isinstance(splitter, QSplitter):
-            splitter.setSizes([300, 280])
+        self._form_panel.setVisible(True)
+        self._h_splitter.setSizes([470, 360, 350])
 
     def _close_form(self):
-        """Açık formu kapatır, container'ı gizler."""
+        """Açık formu kapatır, orta paneli daraltır."""
         self._clear_form_container()
-        self.form_container.setVisible(False)
-        splitter = self.form_container.parent()
-        if isinstance(splitter, QSplitter):
-            splitter.setSizes([400, 0])
+        self._form_panel.setVisible(False)
+        self._h_splitter.setSizes([710, 0, 350])
 
     # ══════════════════════════════════════════════════════
     #  Form kayıt geri çağrıları
@@ -786,20 +858,132 @@ class ArizaKayitForm(QWidget):
             return
 
         menu = QMenu(self)
-        act_islem = menu.addAction("Bu Arızaya İşlem Ekle")
-        act_ariza = menu.addAction("Yeni Arıza Gir")
+        act_detay = menu.addAction("👁 Detayı Görüntüle")
+        act_duzenle = menu.addAction("✏️ Düzenle")
+        menu.addSeparator()
+        act_islem = menu.addAction("➕ Bu Arızaya İşlem Ekle")
+        act_hatali = menu.addAction("⚠️ Hatalı Giriş Olarak İşaretle")
+        menu.addSeparator()
+        act_ariza = menu.addAction("📋 Yeni Arıza Gir")
+        
         result = menu.exec(self.table.mapToGlobal(pos))
 
-        if result == act_islem:
+        if result == act_detay:
+            self._view_ariza_detail(row)
+        elif result == act_duzenle:
+            self._selected_ariza_id = row.get("Arizaid")
+            self._edit_ariza(row)
+        elif result == act_islem:
             self._selected_ariza_id = row.get("Arizaid")
             self._open_islem_form()
+        elif result == act_hatali:
+            self._mark_as_invalid(row)
         elif result == act_ariza:
             self._open_ariza_form()
 
+    def _view_ariza_detail(self, row: Dict):
+        """Arıza detaylarını bir modal dialog'unda göster."""
+        dialog = QDialog(self)
+        dialog.setWindowTitle(f"Arıza Detayı — {row.get('Arizaid', '')}")
+        dialog.setMinimumWidth(500)
+        dialog.setMinimumHeight(400)
+        dialog.setStyleSheet(S["page"])
+        
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(12)
+        
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet(S.get("scroll", ""))
+        
+        content = QWidget()
+        content_lay = QVBoxLayout(content)
+        content_lay.setSpacing(10)
+        
+        fields = [
+            ("Arıza No", row.get("Arizaid", "—")),
+            ("Cihaz", row.get("Cihazid", "—")),
+            ("Başlık", row.get("Baslik", "—")),
+            ("Arıza Tipi", row.get("ArizaTipi", "—")),
+            ("Durum", row.get("Durum", "—")),
+            ("Öncelik", row.get("Oncelik", "—")),
+            ("Başlangıç Tarihi", to_ui_date(row.get("BaslangicTarihi", ""), "—")),
+            ("Saat", row.get("Saat", "—")),
+            ("Bildiren", row.get("Bildiren", "—")),
+            ("Açıklama", row.get("Aciklama", "—")),
+        ]
+        
+        for label, value in fields:
+            frm = QHBoxLayout()
+            frm.setSpacing(16)
+            
+            lbl = QLabel(label)
+            lbl.setStyleSheet(f"font-weight:600; color:{getattr(DarkTheme, 'TEXT_SECONDARY', '#8aa8c8')}; min-width:120px;")
+            
+            val = QLabel(str(value))
+            val.setStyleSheet(f"color:{getattr(DarkTheme, 'TEXT_PRIMARY', '#e2eaf4')}; word-wrap: true;")
+            val.setWordWrap(True)
+            
+            frm.addWidget(lbl)
+            frm.addWidget(val, 1)
+            content_lay.addLayout(frm)
+        
+        content_lay.addStretch()
+        scroll.setWidget(content)
+        layout.addWidget(scroll)
+        
+        btn_kapat = QPushButton("Kapat")
+        btn_kapat.setStyleSheet(S.get("cancel_btn", ""))
+        btn_kapat.setFixedWidth(100)
+        btn_kapat.clicked.connect(dialog.accept)
+        
+        btn_lay = QHBoxLayout()
+        btn_lay.addStretch()
+        btn_lay.addWidget(btn_kapat)
+        layout.addLayout(btn_lay)
+        
+        dialog.exec()
 
-# ══════════════════════════════════════════════════════
-#  CİHAZ PERFORMANSI TABI
-# ══════════════════════════════════════════════════════
+    def _edit_ariza(self, row: Dict):
+        """Seçili arızayı düzenleme formunu aç."""
+        self._clear_form_container()
+        
+        form = ArizaDuzenleForm(self._db, ariza_data=row, parent=self)
+        form.saved.connect(self._on_ariza_saved)
+        self._active_form = form
+        self._form_layout.insertWidget(0, form)
+        self._form_panel.setVisible(True)
+        self._h_splitter.setSizes([470, 360, 350])
+
+    def _mark_as_invalid(self, row: Dict):
+        """Arızayı 'Hatalı Giriş' olarak işaretle."""
+        ariza_id = row.get("Arizaid")
+        if not ariza_id or not self._db:
+            return
+        
+        reply = QMessageBox.warning(
+            self, 
+            "Hatalı Giriş Olarak İşaretle",
+            f"Arıza '{ariza_id}' hatalı giriş olarak işaretlenecek. Devam etmek istiyor musunuz?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply != QMessageBox.Yes:
+            return
+        
+        try:
+            repo = RepositoryRegistry(self._db).get("Cihaz_Ariza")
+            repo.update(ariza_id, {"Durum": "Hatalı Giriş"})
+            logger.info(f"Arıza hatalı giriş olarak işaretlendi: {ariza_id}")
+            self._load_data()
+            QMessageBox.information(self, "Başarılı", f"Arıza '{ariza_id}' hatalı giriş olarak işaretlendi.")
+        except Exception as e:
+            logger.error(f"Arıza güncellenemedi: {e}")
+            QMessageBox.critical(self, "Hata", f"İşaretleme başarısız: {e}")
+
+
 
     def _build_perf_tab(self) -> QWidget:
         """Performans tabının iskeletini oluşturur (içerik _refresh_perf_tab ile dolar)."""
@@ -831,8 +1015,7 @@ class ArizaKayitForm(QWidget):
         return lbl
 
     def _refresh_perf_tab(self):
-        """_all_rows verisini kullanarak performans tabını yeniden çizer."""
-        # Eski widget'ları temizle
+        """_all_rows verisini kullanarak performans/geçmiş tabını yeniden çizer."""
         while self._perf_layout.count():
             item = self._perf_layout.takeAt(0)
             w = item.widget()
@@ -850,25 +1033,100 @@ class ArizaKayitForm(QWidget):
             self._perf_layout.addStretch()
             return
 
-        # ── 1. Cihaz Bazlı Dağılım ──────────────────────
-        self._perf_layout.addWidget(
-            self._section_title("CİHAZ BAZLI ARIZA DAĞILIMI — SON 12 AY")
-        )
-        cihaz_data = self._compute_cihaz_stats(rows)
-        card_grid = self._build_cihaz_grid(cihaz_data)
-        self._perf_layout.addWidget(card_grid)
+        if self._cihaz_id:
+            # ── Tek Cihaz: Arıza Geçmişi görünümü ──────
+            self._perf_layout.addWidget(
+                self._section_title(f"{self._cihaz_id}  —  AYLIK ARIZA TRENDİ")
+            )
+            self._perf_layout.addWidget(self._build_trend_chart(rows))
 
-        # ── 2. Aylık Trend ──────────────────────────────
-        self._perf_layout.addWidget(self._section_title("AYLIK ARIZA TRENDİ"))
-        trend_w = self._build_trend_chart(rows)
-        self._perf_layout.addWidget(trend_w)
+            # Özet istatistik kartları
+            self._perf_layout.addWidget(
+                self._section_title("DURUM DAĞILIMI")
+            )
+            self._perf_layout.addWidget(self._build_single_cihaz_stats(rows))
 
-        # ── 3. Tekrarlayan Arızalar ─────────────────────
-        self._perf_layout.addWidget(self._section_title("TEKRARLAYAN ARIZALAR (SON 90 GÜN)"))
-        repeat_w = self._build_repeat_list(rows)
-        self._perf_layout.addWidget(repeat_w)
+            self._perf_layout.addWidget(
+                self._section_title("TEKRARLAYAN ARIZALAR (SON 90 GÜN)")
+            )
+            self._perf_layout.addWidget(self._build_repeat_list(rows))
+        else:
+            # ── Genel: Cihaz Performansı görünümü ──────
+            self._perf_layout.addWidget(
+                self._section_title("CİHAZ BAZLI ARIZA DAĞILIMI — SON 12 AY")
+            )
+            cihaz_data = self._compute_cihaz_stats(rows)
+            self._perf_layout.addWidget(self._build_cihaz_grid(cihaz_data))
+
+            self._perf_layout.addWidget(self._section_title("AYLIK ARIZA TRENDİ"))
+            self._perf_layout.addWidget(self._build_trend_chart(rows))
+
+            self._perf_layout.addWidget(self._section_title("TEKRARLAYAN ARIZALAR (SON 90 GÜN)"))
+            self._perf_layout.addWidget(self._build_repeat_list(rows))
 
         self._perf_layout.addStretch()
+
+    def _build_single_cihaz_stats(self, rows: List[Dict]) -> QWidget:
+        """Tek cihaz için durum dağılımı özet kartları."""
+        panel_bg = getattr(DarkTheme, "PANEL",   "#191d26")
+        border   = getattr(DarkTheme, "BORDER",  "#242938")
+        muted    = getattr(DarkTheme, "TEXT_MUTED", "#5a6278")
+
+        acik     = sum(1 for r in rows if r.get("Durum","") in ("Açık","Acik"))
+        devam    = sum(1 for r in rows if r.get("Durum","") == "Devam Ediyor")
+        kapali   = sum(1 for r in rows if r.get("Durum","") in ("Kapalı","Kapali"))
+        kritik   = sum(1 for r in rows if r.get("Oncelik","") == "Kritik")
+
+        # Ort. çözüm süresi
+        sure_list = []
+        now = datetime.now()
+        for r in rows:
+            if r.get("Durum","") in ("Kapalı","Kapali"):
+                t = r.get("BaslangicTarihi","")
+                if t and len(t) >= 10:
+                    try:
+                        dt = datetime.strptime(t[:10], "%Y-%m-%d")
+                        sure_list.append((now - dt).days)
+                    except ValueError:
+                        pass
+        ort_sure = round(sum(sure_list)/len(sure_list), 1) if sure_list else None
+
+        container = QWidget()
+        container.setStyleSheet("background:transparent;")
+        hl = QHBoxLayout(container)
+        hl.setContentsMargins(0, 0, 0, 0)
+        hl.setSpacing(8)
+
+        items = [
+            ("Toplam",       str(len(rows)),                          _C["accent"]),
+            ("Açık",         str(acik),                               _C["red"]),
+            ("Devam Ediyor", str(devam),                              _C["amber"]),
+            ("Kapandı",      str(kapali),                             _C["green"]),
+            ("Kritik",       str(kritik),                             _C["red"]),
+            ("Ort. Çözüm",   f"{ort_sure} gün" if ort_sure else "—", _C["amber"]),
+        ]
+        for title, value, color in items:
+            card = QWidget()
+            card.setStyleSheet(
+                f"background:{panel_bg};border:1px solid {border};border-radius:6px;"
+            )
+            cl = QVBoxLayout(card)
+            cl.setContentsMargins(10, 8, 10, 8)
+            cl.setSpacing(2)
+            t = QLabel(title.upper())
+            t.setStyleSheet(
+                f"font-size:9px;font-weight:600;letter-spacing:0.06em;"
+                f"color:{muted};background:transparent;"
+            )
+            v = QLabel(value)
+            v.setStyleSheet(
+                f"font-size:16px;font-weight:700;color:{color};background:transparent;"
+            )
+            cl.addWidget(t)
+            cl.addWidget(v)
+            hl.addWidget(card, 1)
+
+        return container
 
     # ── Veri hesaplama ──────────────────────────────────
     def _compute_cihaz_stats(self, rows: List[Dict]) -> List[Dict]:
@@ -1240,3 +1498,152 @@ class _SparklineWidget(QWidget):
             painter.fillRect(x, y, bar_w, bar_h, QBrush(color))
 
         painter.end()
+
+
+# ══════════════════════════════════════════════════════
+#  ARIZA DÜZENLEME FORMU
+# ══════════════════════════════════════════════════════
+
+class ArizaDuzenleForm(QWidget):
+    """Mevcut arızayı düzenleme formu."""
+    saved = Signal()
+
+    def __init__(self, db=None, ariza_data: Dict = None, parent=None):
+        super().__init__(parent)
+        self._db = db
+        self._ariza_data = ariza_data or {}
+        self._ariza_id = self._ariza_data.get("Arizaid", "")
+        self._setup_ui()
+        self._load_form()
+
+    def _setup_ui(self):
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(10)
+
+        form = QGroupBox("Arıza Düzenleme")
+        form.setStyleSheet(S["group"])
+        grid = QGridLayout(form)
+        grid.setContentsMargins(12, 12, 12, 12)
+        grid.setHorizontalSpacing(16)
+        grid.setVerticalSpacing(8)
+
+        row = 0
+
+        # Arıza ID — salt-okunur
+        grid.addWidget(self._lbl("Arıza ID"), row, 0)
+        self.lbl_arizaid = QLabel(self._ariza_id)
+        self.lbl_arizaid.setStyleSheet(S["label"] + "font-weight:600;")
+        grid.addWidget(self.lbl_arizaid, row, 1)
+        row += 1
+
+        # Arıza Tipi
+        grid.addWidget(self._lbl("Arıza Tipi *"), row, 0)
+        self.cmb_ariza_tipi = QComboBox()
+        self.cmb_ariza_tipi.setEditable(True)
+        self.cmb_ariza_tipi.setStyleSheet(S["combo"])
+        self.cmb_ariza_tipi.addItems([
+            "Elektrik Arızası", "Mekanik Arızası", "Yazılım Arızası",
+            "Kalibrasyonu Yapılması Gerek", "Diğer"
+        ])
+        grid.addWidget(self.cmb_ariza_tipi, row, 1)
+        row += 1
+
+        # Öncelik
+        grid.addWidget(self._lbl("Öncelik *"), row, 0)
+        self.cmb_oncelik = QComboBox()
+        self.cmb_oncelik.setStyleSheet(S["combo"])
+        self.cmb_oncelik.addItems(["Düşük", "Orta", "Yüksek", "Kritik"])
+        grid.addWidget(self.cmb_oncelik, row, 1)
+        row += 1
+
+        # Başlık
+        grid.addWidget(self._lbl("Başlık *"), row, 0)
+        self.txt_baslik = QLineEdit()
+        self.txt_baslik.setStyleSheet(S["input"])
+        grid.addWidget(self.txt_baslik, row, 1)
+        row += 1
+
+        # Açıklama
+        grid.addWidget(self._lbl("Açıklama"), row, 0)
+        self.txt_aciklama = QTextEdit()
+        self.txt_aciklama.setStyleSheet(S["input_text"])
+        self.txt_aciklama.setFixedHeight(100)
+        grid.addWidget(self.txt_aciklama, row, 1)
+        row += 1
+
+        # Durum (düzenleme sırasında da değiştirilebilir)
+        grid.addWidget(self._lbl("Durum"), row, 0)
+        self.cmb_durum = QComboBox()
+        self.cmb_durum.setStyleSheet(S["combo"])
+        self.cmb_durum.addItems(["Açık", "Devam Ediyor", "Kapalı", "Hatalı Giriş"])
+        grid.addWidget(self.cmb_durum, row, 1)
+
+        root.addWidget(form)
+
+        # Butonlar
+        btn_lay = QHBoxLayout()
+        btn_lay.setSpacing(8)
+
+        btn_kaydet = QPushButton("Kaydet")
+        btn_kaydet.setStyleSheet(S["success_btn"] if "success_btn" in S else S["refresh_btn"])
+        btn_kaydet.clicked.connect(self._save)
+        btn_lay.addWidget(btn_kaydet)
+
+        btn_iptal = QPushButton("İptal")
+        btn_iptal.setStyleSheet(S["cancel_btn"] if "cancel_btn" in S else "")
+        btn_iptal.clicked.connect(self._cancel)
+        btn_lay.addWidget(btn_iptal)
+
+        root.addLayout(btn_lay)
+
+    def _lbl(self, text: str) -> QLabel:
+        lbl = QLabel(text)
+        lbl.setStyleSheet(S["label"])
+        return lbl
+
+    def _load_form(self):
+        """Form alanlarını verilerle doldur."""
+        self.cmb_ariza_tipi.setCurrentText(self._ariza_data.get("ArizaTipi", "Diğer"))
+        self.cmb_oncelik.setCurrentText(self._ariza_data.get("Oncelik", "Orta"))
+        self.txt_baslik.setText(self._ariza_data.get("Baslik", ""))
+        self.txt_aciklama.setPlainText(self._ariza_data.get("Aciklama", ""))
+        self.cmb_durum.setCurrentText(self._ariza_data.get("Durum", "Açık"))
+
+    def _save(self):
+        """Değişiklikleri kaydet."""
+        if not self._ariza_id or not self._db:
+            return
+
+        ariza_tipi = self.cmb_ariza_tipi.currentText().strip()
+        oncelik = self.cmb_oncelik.currentText().strip()
+        baslik = self.txt_baslik.text().strip()
+        aciklama = self.txt_aciklama.toPlainText().strip()
+        durum = self.cmb_durum.currentText().strip()
+
+        if not baslik:
+            QMessageBox.warning(self, "Hata", "Lütfen başlık girin.")
+            return
+
+        data = {
+            "ArizaTipi": ariza_tipi,
+            "Oncelik": oncelik,
+            "Baslik": baslik,
+            "Aciklama": aciklama,
+            "Durum": durum,
+        }
+
+        try:
+            repo = RepositoryRegistry(self._db).get("Cihaz_Ariza")
+            repo.update(self._ariza_id, data)
+            logger.info(f"Arıza düzenlemesi kaydedildi: {self._ariza_id}")
+            self.saved.emit()
+        except Exception as e:
+            logger.error(f"Arıza düzenlemesi kaydedilemedi: {e}")
+            QMessageBox.critical(self, "Hata", f"Kayıt başarısız: {e}")
+
+    def _cancel(self):
+        """Formu iptal et."""
+        parent = self.parentWidget()
+        if parent and hasattr(parent, "_close_form"):
+            parent._close_form()
