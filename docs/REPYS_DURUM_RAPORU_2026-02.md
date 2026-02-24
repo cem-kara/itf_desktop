@@ -1,259 +1,250 @@
-# REPYS Teknik Durum ve Yol Haritası Raporu
+# REPYS — Birleşik Son Durum ve Uygulama Planı Raporu
 
 **Tarih:** 2026-02-24  
-**Kapsam:** Kod tabanı incelemesi, mevcut durum analizi, riskler ve iyileştirme önerileri
+**Sürüm Referansı:** REPYS v3.0.0  
+**Birleştirilen Kaynaklar:**
+- `docs/REPYS_DURUM_RAPORU_2026-02.md` (önceki teknik durum)
+- `docs/cihaz_todo.md` (cihaz modülü yapılacaklar)
+- `docs/PERSONEL_STATUS.md` (personel modülü validasyon/olgunluk notları)
+- `docs/tema_todo.md` (tema teknik borç ve yol haritası)
 
 ---
 
 ## 1) Yönetici Özeti
 
-REPYS; PySide6 tabanlı, masaüstü odaklı, **personel + cihaz + RKE** alanlarını aynı çatı altında birleştiren modüler bir uygulama. Mimari olarak `core` (iş kuralları), `database` (repository/senkron/migration), `ui` (sayfalar/bileşenler/tema) katmanlarına ayrılmış durumda. Kod tabanında fonksiyonel kapsam geniş, migration ve offline çalışma yaklaşımı olgun; ancak test otomasyonu, gözlemlenebilirlik (metrics), hata toparlama senaryoları ve sürdürülebilir UI standardizasyonu alanlarında belirgin geliştirme fırsatları mevcut.
+REPYS, mimari olarak doğru yönde (katmanlı yapı + migration + offline destek) ve fonksiyonel olarak güçlü bir masaüstü operasyon sistemidir. Personel ve cihaz alanları çalışır durumda; ancak sürdürülebilirlik için “özellik ekleme” yerine “güvence artırma” odağına geçilmelidir.
 
-Kısa vadede en yüksek etki sağlayacak adımlar:
-1. **Test katmanı inşası** (repository + servis birim testleri),
-2. **Offline/online davranışlarının net ürün sözleşmesi** (özellikle upload/sync hata akışları),
-3. **Dokümante edilmiş operasyon runbook’u** (backup/restore, migration rollback, sync troubleshooting),
-4. **UI teknik borçlarının azaltılması** (inline style ve büyük ekran sınıfları parçalama).
-
----
-
-## 2) Mimari Durum (Mevcut Yapı)
-
-### 2.1 Katmanlar
-
-- **Giriş & yaşam döngüsü:** `main.pyw`
-  - Uygulama başlarken log yönetimi başlatılıyor, DB migration kontrolü yapılıyor, tema uygulanıyor, ana pencere açılıyor.
-  - Kapanışta `temp` klasörü temizleniyor.
-- **Core katmanı:** konfigürasyon, yol yönetimi, logger, hesaplama, rapor ve özet servisleri.
-- **Database katmanı:**
-  - SQLite + WAL,
-  - `RepositoryRegistry` ile tablo bazlı repository çözümleme,
-  - `MigrationManager` ile sürüm kontrollü şema yönetimi,
-  - Google Sheets/Drive ile online sync (offline adapter fallback).
-- **UI katmanı:**
-  - Sidebar + stacked page yaklaşımı,
-  - Personel ve Cihaz modüllerinde detaylı sayfa ve component ayrımı,
-  - ThemeManager + QSS şablonlama altyapısı.
-
-### 2.2 Sayısal Envanter (kod organizasyonu)
-
-İnceleme sırasında elde edilen kaba envanter:
-- `core`: 13 Python dosyası
-- `database`: 25 Python dosyası
-- `ui`: 52 Python dosyası
-- `docs`: 6 doküman
-
-Bu dağılım, projenin ağırlık merkezinin UI ve domain ekranları olduğunu gösteriyor.
-
-### 2.3 Veri modeli & senkron
-
-- `table_config.py` içinde toplam **18 tablo** tanımı bulunuyor.
-- Bunların **14’ü sync edilebilir**, **4’ü local-only** olarak işaretli:
-  - `Cihaz_Teknik`, `Cihaz_Belgeler`, `Cihaz_Teknik_Belge`, `Loglar`.
-- Migration yöneticisinde güncel şema seviyesi **v14**.
-- Sync tarafında tablo bazlı hata toplama (`SyncBatchError`) ve “hata alsa da diğer tabloya devam et” stratejisi mevcut.
+Bu birleşik raporun sonucu:
+- **Personel modülü:** Yüksek olgunluk, kritik validasyon checklist’i tamamlanmalı.
+- **Cihaz modülü:** Ana akışlar hazır, düzenle/sil/dosya seçici gibi operasyonel eksikler var.
+- **Tema sistemi:** Temel temizlik yapılmış, runtime tema değiştirme entegrasyonu eksik.
+- **Genel platform:** Test otomasyonu ve operasyon runbook en yüksek öncelik.
 
 ---
 
-## 3) Güçlü Yönler
+## 2) Güncel Durum Fotoğrafı (As-Is)
 
-1. **Katmanlı mimari niyeti net**: UI-DB-Core ayrımı korunmuş.
-2. **Migration disiplini var**: otomatik backup + şema versiyonlama yaklaşımı operasyonel açıdan değerli.
-3. **Offline-first yaklaşımı mevcut**: cloud adapter katmanıyla online bağımlılık tek noktaya çekilmiş.
-4. **Repository modeli ölçeklenebilir**: özel repository + generic repository birlikte kullanılıyor.
-5. **Domain kapsamı geniş**: personel, cihaz, bakım, arıza, kalibrasyon, puantaj vb. ekranlar mevcut.
-6. **Tema standardizasyonu yönünde adım atılmış**: template/QSS mimarisine geçiş başlamış.
+### 2.1 Mimari ve Platform
+- Uygulama PySide6 tabanlı masaüstü yapıdadır.
+- Başlatma akışı: tema uygula → log yönetimi başlat → migration kontrolü → ana pencere aç.
+- Veritabanı: SQLite + WAL, migration manager ile versiyonlu şema güncelleme.
+- Senkron: online/offline modlu bulut adaptörü yaklaşımı mevcut.
 
----
+### 2.2 Modül Olgunluk Skoru
 
-## 4) Zayıf Yönler / Teknik Borç
-
-1. **Test boşluğu kritik seviyede**
-   - `pytest` çalıştırıldığında test keşfi var fakat test case yok (0 test).
-   - Veri erişim, migration, sync ve iş kuralı katmanları için güvence zayıf.
-
-2. **UI sınıflarında büyüme riski**
-   - Özellikle `main_window.py` ve bazı sayfa dosyalarında sorumluluklar kalınlaşıyor.
-   - Event yönetimi + data erişimi + hata mesajı + görünüm davranışı aynı sınıfta toplanabiliyor.
-
-3. **Hata yönetiminde kullanıcı deneyimi standardı tam değil**
-   - Bazı modüllerde iyi loglama var; ancak kullanıcıya gösterilen mesaj standardı tüm ekranlarda eşit değil.
-
-4. **Sync gözlemlenebilirliği sınırlı**
-   - Log var ama metrik dashboard, retry politikası, kalıcı dead-letter/queue yaklaşımı belirgin değil.
-
-5. **Dokümantasyon güncellik riski**
-   - README’de “v2” ifadesi, requirements’da “v3” ifadesi geçiyor; sürüm anlatısında tutarlılık ihtiyacı var.
+| Alan | Durum | Not |
+|---|---|---|
+| Personel | ✅ Yüksek | İşlevler geniş; kritik doğrulamalar tamamlanmalı |
+| Cihaz | 🟡 Orta-Yüksek | Arıza/Bakım/Kalibrasyon aktif; CRUD genişletmesi gerekli |
+| Tema/UI Altyapısı | 🟡 Orta | QSS template düzeni var; runtime tema geçişi eksik |
+| Test/QA | 🔴 Düşük | Otomasyon test kapsaması yetersiz |
+| Operasyon/SRE | 🟡 Orta | Migration/backup var, runbook ve metrik standardı eksik |
 
 ---
 
-## 5) Operasyonel Risk Analizi
+## 3) Kaynak Dokümanların Birleşik Bulguları
 
-### Yüksek Öncelik
-- **Regresyon riski (test yokluğu):** kritik iş kuralları değişimlerinde fark edilmeden bozulma olasılığı yüksek.
-- **Sync karmaşıklığı:** online/offline geçişlerinde veri tutarlılığı kenar senaryoları (çatışma, gecikmeli push, parse hataları) daha görünür test gerektiriyor.
+### 3.1 Personel modülünden gelen kritik bulgular
+1. Şema varlığı ve edge-case senaryoları (özellikle sağlık/fotoğraf ilişkili tablolar) teyit edilmeli.
+2. Pasif statü iş kuralı (30+ gün izin) uçtan uca doğrulanmalı.
+3. Drive kesintisinde upload davranışı (hata/queue/silent fail) standartlaştırılmalı.
 
-### Orta Öncelik
-- **Büyük UI dosyalarının bakım maliyeti:** yeni geliştirici onboarding süresi uzayabilir.
-- **Dokümantasyon sürüm sapması:** operasyon ekiplerinde yanlış beklentiye neden olabilir.
+### 3.2 Cihaz modülünden gelen kritik bulgular
+1. Mevcut: Arıza/Bakım/Kalibrasyon liste + detay + yeni kayıt akışları çalışıyor.
+2. Eksik: düzenleme/silme aksiyonları, dosya seçici, filtreleme/arama, dosya önizleme.
+3. Sınırlama: bazı dosya alanları halen sadece metin yol olarak kullanılıyor.
 
-### Düşük Öncelik
-- **Tema sistemi ikinci faz:** runtime tema değiştirme gibi işlevler ürün değerine göre ertelenebilir.
-
----
-
-## 6) Neler Yapılabilir? (Öneri Backlog’u)
-
-### 6.1 Kısa Vade (0–4 hafta)
-
-1. **Test temel hattı oluşturma**
-   - `database/base_repository.py` için CRUD + dirty/clean akış testleri,
-   - `database/migrations.py` için “boş db → v14” ve “mevcut db → migrate” senaryoları,
-   - `core/hesaplamalar.py` için iş kuralı testleri.
-
-2. **Sync servis güvence testleri**
-   - mock GSheet ile push/pull çatışma senaryoları,
-   - tarih alanı normalize davranış doğrulaması,
-   - kısmi tablo hata durumunda batch hata raporlama doğrulaması.
-
-3. **Runbook dokümantasyonu**
-   - “migration failure durumunda geri dönüş”,
-   - “offline modda dosya yükleme davranışı”,
-   - “sync hatası triage adımları”.
-
-4. **Sürüm ve doküman hizalaması**
-   - README/requirements/app version terminolojisini tekleştirme.
-
-### 6.2 Orta Vade (1–2 ay)
-
-1. **UI refactor dalgası**
-   - büyük sayfaları presenter/controller benzeri ara katmanla sadeleştirme,
-   - state yönetimini tek merkezde toplama (minimum: page-level state object).
-
-2. **Hata mesaj standardı**
-   - domain-hata kodu + kullanıcı dostu mesaj sözlüğü,
-   - tüm form/senkron ekranlarında ortak kullanım.
-
-3. **Gözlemlenebilirlik**
-   - sync süresi, başarısız tablo sayısı, retry sayısı gibi metriklerin ayrı log kanalına alınması.
-
-### 6.3 Uzun Vade (2+ ay)
-
-1. **Entegrasyon test pipeline’ı**
-   - örnek SQLite fixture verisiyle uçtan uca smoke testler.
-
-2. **Modüler paketleme**
-   - personel/cihaz/rke alt modüllerinin bağımsız paket sınırlarına yaklaştırılması.
-
-3. **Yetkilendirme & audit izi**
-   - “kim neyi ne zaman değiştirdi” yapısı (özellikle kurumsal kullanım için kritik).
+### 3.3 Tema dokümanından gelen kritik bulgular
+1. Renk ve stil tanımlarında tekilleştirme büyük oranda yapılmış.
+2. Takvim popup stilinin merkezileştirilmesi tamam.
+3. Runtime tema değişimi (light/dark) için hazırlık dosyaları var, entegrasyon tamamlanmamış.
 
 ---
 
-## 7) Modül Bazında Durum Notları
+## 4) Öncelikli Riskler (Neden Hemen Ele Alınmalı?)
+
+### R1 — Test güvencesi eksikliği (En kritik)
+- **Risk:** Regresyonlar geç fark edilir, bakım maliyeti katlanır.
+- **Etki:** Personel/Cihaz gibi kritik akışlarda sessiz kırılma.
+
+### R2 — Online/Offline davranış sözleşmesi net değil
+- **Risk:** Upload/sync hatalarında veri kaybı veya belirsiz kullanıcı deneyimi.
+- **Etki:** Operasyon ekiplerinde güven kaybı.
+
+### R3 — UI dosyalarında sorumluluk yoğunluğu
+- **Risk:** Yeni geliştirme ve hata düzeltme süresi uzar.
+- **Etki:** Değişiklik başına hata olasılığı artar.
+
+### R4 — Operasyon runbook ve metrik standardı eksik
+- **Risk:** Prod/kurum sahasında sorun çözüm süresi uzar.
+- **Etki:** MTTR artar, ekip bağımlılığı artar.
+
+---
+
+## 5) P1 → P4 Uygulama Planı (Yapılacak İş / Neden / Nasıl)
+
+> İstenen kapsam doğrultusunda P adımları “ne yapılacak, neden yapılacak, nasıl yapılacak” seviyesinde ayrıntılı hazırlanmıştır.
+
+## P1 — Test ve Validasyon Temel Hattı (0–2 hafta)
+
+### Ne yapılacak?
+1. `database` katmanında repository ve migration testleri yazılacak.
+2. Personel kritik akışları için validasyon test matrisi hazırlanacak.
+3. Cihaz kritik akışları için smoke senaryoları yazılacak.
+
+### Neden yapılacak?
+- P2/P3/P4 refactor ve genişletme işlerine güvenli zemin oluşturmak için.
+- Kırılmayı “yayına gitmeden” yakalamak için.
+
+### Nasıl yapılacak?
+- **Test altyapısı:** `tests/` altında katman bazlı dizin.
+- **Hedef test seti:**
+  - `test_base_repository.py`: insert/update/get_dirty/mark_clean
+  - `test_migrations.py`: boş DB’den güncel şemaya geçiş + mevcut DB upgrade
+  - `test_personel_rules.py`: 30+ gün izin => Pasif kuralı
+  - `test_upload_offline_behavior.py`: Drive yokken expected davranış
+- **Çıktı/Kabul kriteri:**
+  - En az 25–30 otomasyon testi,
+  - Kritik business-rule için %100 senaryo kapsaması,
+  - CI’da tek komutla çalıştırılabilir test seti.
+
+---
+
+## P2 — Veri Güvenliği, Sync Sözleşmesi ve Operasyon Runbook (2–4 hafta)
+
+### Ne yapılacak?
+1. Online/offline upload ve sync davranış sözleşmesi yazılacak.
+2. Sync hata sınıfları ve kullanıcı mesaj standardı oluşturulacak.
+3. Operasyon runbook (backup, rollback, recovery) tamamlanacak.
+
+### Neden yapılacak?
+- Kesinti anlarında ekiplerin ne yapacağı netleşsin.
+- Veri kaybı/silent fail riski azaltılsın.
+
+### Nasıl yapılacak?
+- **Sözleşme dokümanı:**
+  - “Cloud down” durumunda sistem davranışı (retry, local fallback, kullanıcı bildirimi)
+  - “Sync partial failure” durumunda tablo bazlı aksiyon kuralı
+- **Hata standardı:**
+  - Teknik hata → kullanıcı dostu kısa mesaj + detay log id
+- **Runbook bölümleri:**
+  - Migration fail rollback adımları
+  - Offline yüklenen dosyaların tekrar senkron prosedürü
+  - Schema doğrulama SQL komutları
+- **Çıktı/Kabul kriteri:**
+  - Doküman + örnek senaryo testleri
+  - En az 1 tatbikat (simülasyon) kaydı
+
+---
+
+## P3 — UI Sınıf Parçalama ve Teknik Borç Azaltımı (4–8 hafta)
+
+### Ne yapılacak?
+Aşağıdaki dosyalarda parçalama uygulanacak (önceki raporla uyumlu):
+
+**Dalga-1 (kritik):**
+- `ui/main_window.py`
+- `ui/pages/personel/personel_listesi.py`
+- `ui/pages/personel/izin_takip.py`
+- `ui/pages/cihaz/ariza_kayit.py`
+- `ui/pages/cihaz/bakim_kalibrasyon_form.py`
+- `ui/pages/personel/saglik_takip.py`
+
+**Dalga-2 (takip):**
+- `ui/pages/personel/fhsz_yonetim.py`
+- `ui/pages/personel/personel_ekle.py`
+- `ui/pages/dashboard.py`
+- `ui/pages/cihaz/cihaz_listesi.py`
+
+### Neden yapılacak?
+- Büyük sınıfların bakım maliyeti ve regress riski düşürülecek.
+- UI test edilebilirliği artırılacak.
+
+### Nasıl yapılacak?
+- Her dosyada standart ayrım:
+  1. `View` (yalnız widget/render/sinyal)
+  2. `Presenter/Controller` (event orchestration)
+  3. `Service` (iş kuralı/use-case)
+  4. `State/ViewModel` (sayfa state)
+- Örnek hedef sınıf ayrımları:
+  - `MainWindowShell` + `PageRouter` + `SyncController`
+  - `PersonelListView` + `PersonelListPresenter` + `PersonelListState`
+  - `ArizaPageCoordinator` + `ArizaCommandService`
+- **Çıktı/Kabul kriteri:**
+  - Hedef dosyalar < 500 satır bandına indirilecek,
+  - UI dosyalarında doğrudan DB erişimi minimuma inecek,
+  - Refactor sonrası smoke checklist eksiksiz geçecek.
+
+---
+
+## P4 — Tema Son Faz + Ürünleştirme Kalitesi (8–10 hafta)
+
+### Ne yapılacak?
+1. Runtime light/dark tema değiştirme özelliği entegre edilecek.
+2. Tema seçimi kullanıcı ayarlarına yazılacak.
+3. Kritik ekranlarda görsel tutarlılık ve erişilebilirlik gözden geçirilecek.
+
+### Neden yapılacak?
+- UI standardizasyonu tamamlanacak.
+- Kullanıcı deneyimi daha kurumsal ve tutarlı hale gelecek.
+
+### Nasıl yapılacak?
+- Mevcut hazırlık dosyalarının entegrasyonu:
+  - `ui/styles/light_theme.py`
+  - `ui/theme_light_template.qss`
+  - `ui/styles/theme_registry.py`
+- `ThemeManager` içine `set_theme()` + uygulama çapı refresh akışı eklenecek.
+- Ayar dosyasına `theme` anahtarı yazılacak/okunacak.
+- **Çıktı/Kabul kriteri:**
+  - Uygulama yeniden açıldığında tema tercihi korunur,
+  - Tüm ana sayfalarda görsel regresyon checklist’i geçer.
+
+---
+
+## 6) Modül Bazlı Net İş Listesi (Özet)
 
 ### Personel
-- Kapsam ve fonksiyon zenginliği yüksek; mevcut durum belgeleri “production ready” seviyesine yakın bir olgunluk işaret ediyor.
-- Öncelik: schema doğrulama ve edge-case validation testleri.
+- [ ] Şema doğrulama checklist’ini tamamla.
+- [ ] Pasif statü kuralını uçtan uca test et.
+- [ ] Drive offline upload davranışını standartlaştır.
 
 ### Cihaz
-- Arıza/bakım/kalibrasyon ekranlarının temel akışları mevcut.
-- Belgelerde geçen eksikler (dosya seçici, düzenle/sil, filtreleme) ürün verimliliğini artıracak net hedefler.
+- [ ] Arıza/Bakım/Kalibrasyon için düzenle-sil aksiyonlarını ekle.
+- [ ] Dosya seçici + dosya önizleme ekle.
+- [ ] Liste filtre/arama yeteneklerini geliştir.
 
-### Tema/UI
-- Şablon-temelli yaklaşım doğru yönde.
-- Runtime tema değiştirme ikinci faz olarak planlanabilir.
+### Tema
+- [ ] Runtime tema değiştirme entegrasyonu.
+- [ ] Ayarlara tema persist.
+- [ ] Stil sabitlerini tek kaynakta tutma denetimi.
 
 ---
 
-## 8) Önerilen Önceliklendirme (Efor / Etki)
+## 7) Sprint Sırası ve Bağımlılık Haritası
 
-1. **P1:** Test altyapısı + kritik servis testleri (Yüksek etki, orta efor)
-2. **P1:** Sync hata ve retry stratejisi netleştirme (Yüksek etki, orta efor)
-3. **P2:** UI sınıf parçalama (Orta etki, orta-yüksek efor)
-4. **P2:** Operasyon runbook + doküman hizalama (Orta etki, düşük efor)
-5. **P3:** Runtime tema ve ileri UX iyileştirmeleri (Düşük/orta etki, düşük/orta efor)
+1. **Sprint-1 (P1):** Test hattı + kritik validasyon
+2. **Sprint-2 (P2):** Sync sözleşmesi + runbook + hata standardı
+3. **Sprint-3/4 (P3):** UI parçalama dalga-1 ve dalga-2
+4. **Sprint-5 (P4):** Tema son faz + kalite kapanışları
+
+Bağımlılık kuralı:
+- P3 başlamadan P1 tamamlanmalı.
+- P4 başlamadan P3 dalga-1 tamamlanmalı.
+
+---
+
+## 8) Ölçülebilir Başarı Kriterleri (KPI)
+
+- Test sayısı: `0 → 30+`
+- Kritik akış regresyonu: manuel checklist + otomasyon
+- UI büyük dosya oranı: 900+ satır dosya sayısında belirgin azalma
+- Sync incident çözüm süresi: runbook sonrası düşüş
+- Kullanıcı hata mesajlarının standartlaşma oranı: kritik ekranlarda %100
 
 ---
 
 ## 9) Sonuç
 
-REPYS, fonksiyonel açıdan güçlü ve gerçek kullanım senaryolarına temas eden bir kurumsal masaüstü uygulama omurgasına sahip. En büyük kaldıraç alanı artık **“özellik eklemekten çok güvence ve sürdürülebilirlik artırımı”**: test, operasyonel netlik, senkron güvenilirliği ve UI bakım maliyeti kontrolü.
+REPYS için bir sonraki doğru adım, **özellik büyütme değil; güvence, sürdürülebilirlik ve operasyonel netlik artırımıdır**. Bu rapordaki P1→P4 planı aynı anda hem teknik borcu azaltır hem de yeni özellikler için güvenli geliştirme zemini kurar.
 
-Bu dört alana odaklanan bir iyileştirme sprinti ile proje, kurumsal ölçekte daha öngörülebilir ve daha düşük bakım riskiyle ilerleyebilir.
-
----
-
-## 10) P2 Derinleşme: UI Sınıf Parçalama İçin Dosya Bazlı Plan
-
-Aşağıdaki liste, özellikle bakım maliyeti ve sorumluluk yoğunluğu yüksek UI dosyalarını hedefler. Önceliklendirme; dosya büyüklüğü, domain karmaşıklığı ve “UI + iş kuralı + veri erişimi” karışımının derecesine göre yapılmıştır.
-
-### 10.1 İlk Dalga (Öncelikli Parçalanacak Dosyalar)
-
-| Öncelik | Dosya | Gözlenen Sorun | Önerilen Parçalama Yöntemi |
-|---|---|---|---|
-| P2-A | `ui/main_window.py` | Uygulama orkestrasyonu + sayfa yükleme + sync yönetimi aynı sınıfta | `MainWindowShell` (yalnız layout), `PageRouter`, `StatusBarController`, `SyncController` olarak 4 parçaya ayır |
-| P2-A | `ui/pages/personel/personel_listesi.py` | Liste çizimi, filtreleme, lazy-load, avatar/cache ve etkileşim bir arada | `PersonelListView`, `PersonelListPresenter`, `PersonelListStore`, `AvatarService` ayrımı |
-| P2-A | `ui/pages/personel/izin_takip.py` | Form akışları + business rule + tablo işlemleri tek dosyada | `IzinFormPanel`, `IzinTablePanel`, `IzinWorkflowService`, `IzinValidation` katmanları |
-| P2-A | `ui/pages/cihaz/ariza_kayit.py` | Arıza CRUD akışları ve panel koordinasyonu kalın sınıfta | `ArizaListPanel`, `ArizaDetailPanel`, `ArizaCommandService`, `ArizaPageCoordinator` |
-| P2-B | `ui/pages/cihaz/bakim_kalibrasyon_form.py` | Bakım ve kalibrasyon formlarında ortak davranış tekrarları | `BaseMaintenanceForm` + `BakimFormAdapter` + `KalibrasyonFormAdapter` |
-| P2-B | `ui/pages/personel/saglik_takip.py` | Timeline/UI state ve veri dönüşümleri aynı yerde | `SaglikTimelineWidget`, `SaglikRecordService`, `SaglikStateModel` |
-
-### 10.2 İkinci Dalga (Refactor Sonrası Optimize Edilecekler)
-
-| Öncelik | Dosya | Gözlenen Sorun | Önerilen Parçalama Yöntemi |
-|---|---|---|---|
-| P2-C | `ui/pages/personel/fhsz_yonetim.py` | Hesaplama parametreleri + ekran etkileşimi iç içe | `FhszInputPanel`, `FhszCalculationService`, `FhszResultPresenter` |
-| P2-C | `ui/pages/personel/personel_ekle.py` | Form doğrulama + upload + save işlemleri aynı katmanda | `PersonelFormView`, `PersonelValidator`, `PersonelSaveService`, `FileUploadService` |
-| P2-C | `ui/pages/dashboard.py` | Kart üretimi ve filtre yönlendirme kodu tek noktada | `DashboardCardsBuilder`, `DashboardFilterMapper`, `DashboardController` |
-| P2-C | `ui/pages/cihaz/cihaz_listesi.py` | Liste/filtre/satır eylemleri aynı sınıfta | `CihazListView`, `CihazFilterBar`, `CihazListPresenter` |
-
-### 10.3 Dosya Bazında Uygulama Şablonu (Standart Refactor Reçetesi)
-
-Her hedef dosyada aşağıdaki standart uygulanmalı:
-
-1. **View katmanı (Qt widget’ları)**
-   - Sadece çizim, sinyal bağlama, kullanıcı etkileşimi toplama.
-   - Veritabanı/repository çağrısı içermez.
-
-2. **Presenter/Controller katmanı**
-   - View’dan gelen event’leri yorumlar.
-   - Service çağırır, sonucu ViewModel’e dönüştürür.
-
-3. **Service katmanı (domain/use-case)**
-   - İş kurallarını barındırır.
-   - Test edilebilir saf fonksiyon veya küçük sınıf metotları hedeflenir.
-
-4. **State/ViewModel katmanı**
-   - Sayfaya özel state tek obje altında tutulur (`filters`, `pagination`, `selected_id`, `loading` vb).
-
-5. **Repository erişimi**
-   - Sayfa dosyası yerine service/presenter üzerinden dolaylı erişim.
-   - Böylece UI testlerinde mock’lama kolaylaşır.
-
-### 10.4 Önerilen Klasörleme
-
-- `ui/pages/<modul>/views/`
-- `ui/pages/<modul>/presenters/`
-- `ui/pages/<modul>/services/`
-- `ui/pages/<modul>/state/`
-
-Örnek:
-- `ui/pages/personel/views/personel_list_view.py`
-- `ui/pages/personel/presenters/personel_list_presenter.py`
-- `ui/pages/personel/services/personel_query_service.py`
-- `ui/pages/personel/state/personel_list_state.py`
-
-### 10.5 Adım Adım Geçiş Planı (Riski Düşük)
-
-1. Dosyayı bir kerede bölmek yerine önce **“extract service”** (iş kuralı ayrıştırması) yapılır.
-2. Sonra **“extract view state”** (state objesi) alınır.
-3. Son adımda **presenter/controller** eklendiğinde sayfa yalnız view olur.
-4. Her adım sonrası smoke test: sayfa açılışı, filtreleme, kayıt ekleme/güncelleme akışları.
-
-### 10.6 Başarı Kriterleri (P2 Tamamlandı Sayılması İçin)
-
-- Hedef dosyalarda tek dosya satır sayısı ideal olarak **< 500 satır** seviyesine iner.
-- UI sınıflarında doğrudan SQL/repository erişimi minimuma iner.
-- Her modülde en az 1 presenter + 1 service birimi için unit test yazılır.
-- Kritik ekranlarda (Personel Listesi, İzin Takip, Arıza Kayıt) regresyon checklist’i geçer.
+Bu plan onaylandığında önerilen başlangıç: **P1 test hattı + personel/cihaz kritik validasyon senaryolarının hemen yazımı**.
