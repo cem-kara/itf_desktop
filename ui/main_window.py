@@ -230,19 +230,6 @@ class MainWindow(QMainWindow):
             if hasattr(page, "btn_iptal"):
                 page.btn_iptal.clicked.connect(lambda: self._close_page("Arıza Kayıt"))
             return page
-        
-        # Eski menü adları → Teknik Hizmetler'e yönlendir
-        if baslik in ("Arıza Listesi", "Periyodik Bakım", "Kalibrasyon Takip"):
-            tab_map = {
-                "Arıza Listesi":     "ARIZA",
-                "Periyodik Bakım":   "BAKIM",
-                "Kalibrasyon Takip": "KALIBRASYON",
-            }
-            self._on_menu_clicked("CİHAZ", "Teknik Hizmetler")
-            page = self._pages.get("Teknik Hizmetler")
-            if page and hasattr(page, "open_tab"):
-                page.open_tab(tab_map[baslik])
-            return None
 
         if baslik == "Teknik Hizmetler":
             from ui.pages.cihaz.teknik_hizmetler import TeknikHizmetlerPage

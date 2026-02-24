@@ -9,15 +9,22 @@ from core.logger import logger
 class MigrationManager:
     """
     Versiyon tabanlı migration yöneticisi.
-    
+
     Özellikler:
     - Otomatik şema versiyonlama
     - Güvenli migration adımları
     - Otomatik yedekleme
     - Rollback desteği
     - Veri kaybı olmadan şema güncellemeleri
+
+    Squash Geçmişi:
+    - v1–v14 arası tüm ara migration'lar tek bir temiz kurulum adımına
+      (v1: create_tables + başlangıç verisi) indirgendi.
+    - Mevcut v14 veritabanları etkilenmez.
+    - Sıfırdan kurulumda v1 tüm tabloları doğrudan son hâliyle oluşturur;
+      v2–v14 otomatik olarak no-op geçilir.
     """
-    
+
     # Mevcut şema versiyonu
     CURRENT_VERSION = 14
 
@@ -25,6 +32,10 @@ class MigrationManager:
         self.db_path = db_path
         self.backup_dir = Path(db_path).parent / "backups"
         self.backup_dir.mkdir(exist_ok=True)
+
+    # ════════════════════════════════════════════════
+    # BAĞLANTI & VERSİYON
+    # ════════════════════════════════════════════════
 
     def connect(self):
         conn = sqlite3.connect(self.db_path, timeout=30)
@@ -35,33 +46,28 @@ class MigrationManager:
         """Mevcut şema versiyonunu döndürür."""
         conn = self.connect()
         cur = conn.cursor()
-        
+
         try:
-            # schema_version tablosu var mı kontrol et
             cur.execute("""
-                SELECT name FROM sqlite_master 
+                SELECT name FROM sqlite_master
                 WHERE type='table' AND name='schema_version'
             """)
-            
+
             if not cur.fetchone():
-                # Tablo yoksa oluştur
                 cur.execute("""
                     CREATE TABLE schema_version (
-                        version INTEGER PRIMARY KEY,
-                        applied_at TEXT NOT NULL,
+                        version     INTEGER PRIMARY KEY,
+                        applied_at  TEXT NOT NULL,
                         description TEXT
                     )
                 """)
                 conn.commit()
                 return 0
-            
-            # En son versiyonu getir
+
             cur.execute("SELECT MAX(version) FROM schema_version")
             result = cur.fetchone()
-            version = result[0] if result[0] is not None else 0
-            
-            return version
-            
+            return result[0] if result[0] is not None else 0
+
         finally:
             conn.close()
 
@@ -69,7 +75,7 @@ class MigrationManager:
         """Şema versiyonunu günceller."""
         conn = self.connect()
         cur = conn.cursor()
-        
+
         try:
             cur.execute("""
                 INSERT INTO schema_version (version, applied_at, description)
@@ -77,28 +83,29 @@ class MigrationManager:
             """, (version, datetime.now().isoformat(), description))
             conn.commit()
             logger.info(f"Şema versiyonu {version} olarak güncellendi: {description}")
-            
+
         finally:
             conn.close()
+
+    # ════════════════════════════════════════════════
+    # YEDEKLEME
+    # ════════════════════════════════════════════════
 
     def backup_database(self):
         """Veritabanını yedekler."""
         if not Path(self.db_path).exists():
             logger.info("Yedeklenecek veritabanı bulunamadı")
             return None
-            
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_path = self.backup_dir / f"db_backup_{timestamp}.db"
-        
+
         try:
             shutil.copy2(self.db_path, backup_path)
             logger.info(f"Veritabanı yedeklendi: {backup_path}")
-            
-            # Eski yedekleri temizle (son 10 yedek hariç)
             self._cleanup_old_backups()
-            
             return backup_path
-            
+
         except Exception as e:
             logger.error(f"Yedekleme hatası: {e}")
             return None
@@ -106,7 +113,7 @@ class MigrationManager:
     def _cleanup_old_backups(self, keep_count=10):
         """Eski yedekleri temizler."""
         backups = sorted(self.backup_dir.glob("db_backup_*.db"))
-        
+
         if len(backups) > keep_count:
             for old_backup in backups[:-keep_count]:
                 try:
@@ -115,49 +122,50 @@ class MigrationManager:
                 except Exception as e:
                     logger.warning(f"Yedek silinemedi {old_backup.name}: {e}")
 
+    # ════════════════════════════════════════════════
+    # MİGRATION ÇALIŞTIRICI
+    # ════════════════════════════════════════════════
+
     def run_migrations(self):
         """
         Tüm bekleyen migration'ları çalıştırır.
         Veri kaybı olmadan şemayı günceller.
         """
         current_version = self.get_schema_version()
-        
+
         if current_version == self.CURRENT_VERSION:
             logger.info(f"Şema güncel (v{current_version})")
             return True
-        
+
         if current_version > self.CURRENT_VERSION:
             logger.warning(
                 f"Şema versiyonu ({current_version}) koddan ({self.CURRENT_VERSION}) yüksek! "
                 "Uygulama güncellemesi gerekebilir."
             )
             return False
-        
-        # Yedekleme yap
+
         backup_path = self.backup_database()
         if not backup_path:
             logger.warning("Yedekleme yapılamadı ama migration devam ediyor")
-        
+
         logger.info(f"Migration başlıyor: v{current_version} → v{self.CURRENT_VERSION}")
-        
+
         try:
-            # Sırayla migration'ları çalıştır
             for version in range(current_version + 1, self.CURRENT_VERSION + 1):
                 migration_method = getattr(self, f"_migrate_to_v{version}", None)
-                
+
                 if migration_method:
                     logger.info(f"Migration v{version} uygulanıyor...")
                     migration_method()
                 else:
-                    # Metod yoksa bu sürüm geliştirme sürecinde atlandı demektir.
-                    # Yine de schema_version'a kayıt yaparak boşluk bırakmıyoruz.
-                    logger.info(f"Migration v{version} metodu yok — no-op olarak geçiliyor")
-                
+                    # Tanımlı metod yok → no-op; yine de versiyona kayıt yapılır.
+                    logger.info(f"Migration v{version} — no-op, atlanıyor")
+
                 self.set_schema_version(version, f"Migrated to v{version}")
-            
+
             logger.info("✓ Tüm migration'lar başarıyla tamamlandı")
             return True
-            
+
         except Exception as e:
             logger.error(f"Migration hatası: {e}")
             logger.error(f"Yedekten geri yükleme yapabilirsiniz: {backup_path}")
@@ -169,1049 +177,485 @@ class MigrationManager:
 
     def _migrate_to_v1(self):
         """
-        v0 → v1: İlk şema oluşturma
-        Tüm tabloları oluşturur.
+        v0 → v1: Temiz kurulum — tüm tabloları son şemalarıyla oluşturur
+                 ve başlangıç verilerini (Sabitler) ekler.
+
+        v2–v14: Squash sonrası no-op; run_migrations tarafından otomatik geçilir.
         """
         conn = self.connect()
         cur = conn.cursor()
-        
+
         try:
             self.create_tables(cur)
+            self._seed_initial_data(cur)
             conn.commit()
-            logger.info("v1: Tüm tablolar oluşturuldu")
-            
-        finally:
-            conn.close()
-
-    def _migrate_to_v2(self):
-        """
-        v1 → v2: sync_status ve updated_at kolonları ekleme
-        Mevcut tablolara eksik kolonları ekler.
-        """
-        conn = self.connect()
-        cur = conn.cursor()
-        
-        try:
-            tables_with_sync = [
-                "Personel", "Izin_Giris", "Izin_Bilgi", "FHSZ_Puantaj",
-                "Cihazlar", "Cihaz_Ariza", "Ariza_Islem", "Periyodik_Bakim",
-                "Kalibrasyon", "Sabitler", "Tatiller", "RKE_List", "RKE_Muayene",
-                "Personel_Saglik_Takip"
-            ]
-            
-            for table in tables_with_sync:
-                # Tablo var mı kontrol et
-                cur.execute(f"""
-                    SELECT name FROM sqlite_master 
-                    WHERE type='table' AND name='{table}'
-                """)
-                
-                if not cur.fetchone():
-                    logger.warning(f"Tablo bulunamadı: {table}, atlanıyor")
-                    continue
-                
-                # Mevcut kolonları kontrol et
-                cur.execute(f"PRAGMA table_info({table})")
-                existing_columns = {row[1] for row in cur.fetchall()}
-                
-                # sync_status ekle
-                if "sync_status" not in existing_columns:
-                    cur.execute(f"""
-                        ALTER TABLE {table} 
-                        ADD COLUMN sync_status TEXT DEFAULT 'clean'
-                    """)
-                    logger.info(f"  {table}.sync_status eklendi")
-                
-                # updated_at ekle
-                if "updated_at" not in existing_columns:
-                    cur.execute(f"""
-                        ALTER TABLE {table} 
-                        ADD COLUMN updated_at TEXT
-                    """)
-                    logger.info(f"  {table}.updated_at eklendi")
-            
-            conn.commit()
-            logger.info("v2: sync_status ve updated_at kolonları eklendi")
-            
-        finally:
-            conn.close()
-
-    def _migrate_to_v8(self):
-        """
-        v7 → v8: Cihaz_Teknik tablosunu ekle
-        """
-        conn = self.connect()
-        cur = conn.cursor()
-
-        try:
-            cur.execute("""
-            CREATE TABLE IF NOT EXISTS Cihaz_Teknik (
-                Cihazid TEXT PRIMARY KEY,
-                UrunTanimi TEXT,
-                BirincilUrunNumarasi TEXT,
-                Firma TEXT,
-                Marka TEXT,
-                UrunAdi TEXT,
-                UrunKunye TEXT,
-                TurkceEtiket TEXT,
-                OrijinalEtiket TEXT,
-                VersiyonModel TEXT,
-                ReferansKatalogNo TEXT,
-                UrunSayisi TEXT,
-                UrunAciklamasi TEXT,
-                IthalImalBilgisi TEXT,
-                MenseiUlke TEXT,
-                IthalEdilenUlke TEXT,
-                YerliMaliBelgesiVarMi TEXT,
-                MRGGuvenlikBilgisi TEXT,
-                LateksIceriyorMu TEXT,
-                FtalatDEHPIceriyorMu TEXT,
-                IyonizeRadyasyonIcerirMi TEXT,
-                NanomateryalIceriyorMu TEXT,
-                ImplanteEdilebilirMi TEXT,
-                TekKullanimlikMi TEXT,
-                SinirliKullanimSayisiVarMi TEXT,
-                TekHastaKullanimMi TEXT,
-                EkstraBilgiLinki TEXT,
-                RafOmruVarMi TEXT,
-                KalibrasyonaTabiMi TEXT,
-                KalibrasyonPeriyoduAy TEXT,
-                BakimaTabiMi TEXT,
-                BakimPeriyoduAy TEXT,
-                SterilPaketlendiMi TEXT,
-                KullanimOncesiSterilizasyonGerekliMi TEXT,
-                Ek3KapsamindaMi TEXT,
-                BilesenAksesuarMi TEXT,
-                UrunBelgeleri TEXT,
-                UrunGorselDosyasi TEXT,
-
-                sync_status TEXT DEFAULT 'clean',
-                updated_at TEXT
-            )
-            """)
-
-            conn.commit()
-            logger.info("v8: Cihaz_Teknik tablosu eklendi")
+            logger.info("v1: Tüm tablolar oluşturuldu ve başlangıç verileri eklendi")
 
         finally:
             conn.close()
-
-    def _migrate_to_v9(self):
-        """
-        v8 → v9: Cihaz_Teknik tablosunu ÜTS API uyumlu yeni şema ile yeniden oluştur
-        
-        Yeni Eklenen Alanlar:
-        - UrunNo (birincilUrunNumarasi)
-        - Model (versiyonModel -> VersiyonModel yerine)
-        - UrunTipi
-        - Sinif (sınıflandırma)
-        - GmdnKod, GmdnTurkce, GmdnIngilizce, GmdnAciklama
-        - FirmaNo, FirmaTelefon, FirmaEmail, FirmaDurum, FirmaFaaliyetAlan
-        - KalibrasyonPeriyoduAy, BakimPeriyoduAy (Text olarak saklanacak)
-        - UTSBaslangicTarihi, DurumTarihi, KontrolTarihi
-        - OlusturmaTarihi, GuncellemeTarihi
-        - SaklamaKosuluVar, TekilUrunVarMi
-        - UrunDurum, BasvuruHazir, KayitTipi, RafOmruDegeri
-        
-        Değişen Alan Adları:
-        - VersiyonModel → Model (parser çıktısı ile uyum)
-        - BirincilUrunNumarasi → UrunNo (kısa form)
-        """
-        conn = self.connect()
-        cur = conn.cursor()
-
-        try:
-            logger.info("Migration v9: Mevcut Cihaz_Teknik verileri yedekleniyor...")
-            
-            # Mevcut verileri geçici tabloya kopyala
-            cur.execute("""
-            CREATE TABLE IF NOT EXISTS Cihaz_Teknik_backup_v8 AS 
-            SELECT * FROM Cihaz_Teknik
-            """)
-            
-            # Eski tabloyu sil
-            cur.execute("DROP TABLE IF EXISTS Cihaz_Teknik")
-            
-            # Yeni şema ile tabloyu oluştur
-            cur.execute("""
-            CREATE TABLE Cihaz_Teknik (
-                -- PRIMARY KEY
-                Cihazid TEXT PRIMARY KEY,
-                
-                -- 1. TEMEL ÜRÜN BİLGİLERİ (ÜTS API)
-                UrunNo TEXT,
-                Marka TEXT,
-                UrunAdi TEXT,
-                UrunTanimi TEXT,
-                Model TEXT,
-                UrunTipi TEXT,
-                
-                -- 2. FIRMA/KURUM BİLGİLERİ (ÜTS API)
-                Firma TEXT,
-                FirmaNo TEXT,
-                FirmaTelefon TEXT,
-                FirmaEmail TEXT,
-                FirmaDurum TEXT,
-                FirmaFaaliyetAlan TEXT,
-                
-                -- 3. SINIFLANDIRMA & GMDN (ÜTS API)
-                Sinif TEXT,
-                GmdnKod TEXT,
-                GmdnTurkce TEXT,
-                GmdnIngilizce TEXT,
-                GmdnAciklama TEXT,
-                
-                -- 4. ÜRÜN TİPİ DETAYLARI (ÜTS + PDF)
-                UrunKunye TEXT,
-                TurkceEtiket TEXT,
-                OrijinalEtiket TEXT,
-                ReferansKatalogNo TEXT,
-                UrunSayisi TEXT,
-                UrunAciklamasi TEXT,
-                
-                -- 5. İMAL/İTHAL BİLGİLERİ (ÜTS API)
-                IthalImalBilgisi TEXT,
-                MenseiUlke TEXT,
-                IthalEdilenUlke TEXT,
-                YerliMaliBelgesiVarMi TEXT,
-                
-                -- 6. TEKNİK ÖZELLİKLER - EVET/HAYIR (ÜTS API)
-                MRGGuvenlikBilgisi TEXT,
-                LateksIceriyorMu TEXT,
-                FtalatDEHPIceriyorMu TEXT,
-                IyonizeRadyasyonIcerirMi TEXT,
-                NanomateryalIceriyorMu TEXT,
-                ImplanteEdilebilirMi TEXT,
-                TekKullanimlikMi TEXT,
-                SinirliKullanimSayisiVarMi TEXT,
-                TekHastaKullanimMi TEXT,
-                RafOmruVarMi TEXT,
-                SaklamaKosuluVar TEXT,
-                TekilUrunVarMi TEXT,
-                SterilPaketlendiMi TEXT,
-                KullanimOncesiSterilizasyonGerekliMi TEXT,
-                Ek3KapsamindaMi TEXT,
-                BilesenAksesuarMi TEXT,
-                
-                -- 7. KALİBRASYON & BAKIM (ÜTS API)
-                KalibrasyonaTabiMi TEXT,
-                KalibrasyonPeriyoduAy TEXT,
-                BakimaTabiMi TEXT,
-                BakimPeriyoduAy TEXT,
-                
-                -- 8. TARİHLER (ÜTS API)
-                UTSBaslangicTarihi TEXT,
-                DurumTarihi TEXT,
-                KontrolTarihi TEXT,
-                OlusturmaTarihi TEXT,
-                GuncellemeTarihi TEXT,
-                
-                -- 9. BELGELER & GÖRSELLER
-                UrunBelgeleri TEXT,
-                UrunGorselDosyasi TEXT,
-                EkstraBilgiLinki TEXT,
-                
-                -- 10. DİĞER ALANLAR (ÜTS API)
-                UrunDurum TEXT,
-                BasvuruHazir TEXT,
-                KayitTipi TEXT,
-                RafOmruDegeri TEXT,
-                
-                -- SYNC METADATA
-                sync_status TEXT DEFAULT 'clean',
-                updated_at TEXT
-            )
-            """)
-            
-            # Verileri geri yükle (sadece Cihazid)
-            # Not: ÜTS API alanları ÜTS sorgulama panelinden gelir
-            cur.execute("""
-            INSERT OR IGNORE INTO Cihaz_Teknik (Cihazid)
-            SELECT Cihazid FROM Cihaz_Teknik_backup_v8
-            """)
-            
-            # İndeksleri oluştur
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_cihaz_teknik_urun_no ON Cihaz_Teknik(UrunNo)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_cihaz_teknik_marka ON Cihaz_Teknik(Marka)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_cihaz_teknik_firma ON Cihaz_Teknik(Firma)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_cihaz_teknik_sinif ON Cihaz_Teknik(Sinif)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_cihaz_teknik_gmdn ON Cihaz_Teknik(GmdnKod)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_cihaz_teknik_kalibrasyon ON Cihaz_Teknik(KalibrasyonaTabiMi)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_cihaz_teknik_bakim ON Cihaz_Teknik(BakimaTabiMi)")
-            
-            conn.commit()
-            
-            # Yedek tablo opsiyonel - silinmemeli (rollback için)
-            # cur.execute("DROP TABLE Cihaz_Teknik_backup_v8")
-            
-            logger.info("v9: Cihaz_Teknik tablosu yeni şema ile güncellendi")
-            logger.info("    - 25 yeni alan eklendi (ÜTS API uyumu)")
-            logger.info("    - VersiyonModel → Model (alan adı değişikliği)")
-            logger.info("    - BirincilUrunNumarasi → UrunNo (alan adı değişikliği)")
-            logger.info("    - 7 index oluşturuldu")
-            logger.info("    - Mevcut veriler korundu (backup: Cihaz_Teknik_backup_v8)")
-
-        except Exception as e:
-            logger.error(f"Migration v9 hatası: {e}")
-            conn.rollback()
-            raise
-
-        finally:
-            conn.close()
-
-    def _migrate_to_v10(self):
-        """
-        v9 → v10: Cihaz_Teknik tablosunu yeni sade şema ile yeniden oluştur,
-        Cihaz_Teknik_Belge tablosunu ekle.
-
-        Not: Talep üzerine mevcut Cihaz_Teknik verileri taşınmaz.
-        """
-        conn = self.connect()
-        cur = conn.cursor()
-
-        try:
-            logger.info("Migration v10: Cihaz_Teknik tablosu yeniden oluşturuluyor...")
-
-            # Eski tabloyu yedekle ve sıfırdan kur
-            cur.execute("DROP TABLE IF EXISTS Cihaz_Teknik")
-
-            cur.execute("""
-            CREATE TABLE IF NOT EXISTS Cihaz_Teknik (
-                Cihazid TEXT PRIMARY KEY,
-                BirincilUrunNumarasi TEXT,
-                MarkaAdi TEXT,
-                EtiketAdi TEXT,
-                UrunTanimi TEXT,
-                VersiyonModel TEXT,
-                KatalogNo TEXT,
-                TemelUdiDi TEXT,
-                Aciklama TEXT,
-                KurumUnvan TEXT,
-                KurumGorunenAd TEXT,
-                KurumNo TEXT,
-                KurumTelefon TEXT,
-                KurumEposta TEXT,
-                Durum TEXT,
-                UtsBaslangicTarihi TEXT,
-                KontroleGonderildigiTarih TEXT,
-                CihazKayitTipi TEXT,
-                UrunTipi TEXT,
-                Sinif TEXT,
-                IthalImalBilgisi TEXT,
-                GmdnTerimKod TEXT,
-                GmdnTerimTurkceAd TEXT,
-                GmdnTerimTurkceAciklama TEXT,
-                KalibrasyonaTabiMi TEXT,
-                KalibrasyonPeriyodu TEXT,
-                BakimaTabiMi TEXT,
-                BakimPeriyodu TEXT,
-                IyonizeRadyasyonIcerir TEXT,
-                SinirliKullanimSayisiVar TEXT,
-                SinirliKullanimSayisi TEXT,
-                TekHastayaKullanilabilir TEXT,
-                MrgUyumlu TEXT,
-                SutEslesmesiSet TEXT,
-                BaskaImalatciyaUrettirildiMi TEXT,
-                MenseiUlkeSet TEXT,
-                IthalEdilenUlkeSet TEXT,
-
-                sync_status TEXT DEFAULT 'clean',
-                updated_at TEXT
-            )
-            """)
-
-            cur.execute("""
-            CREATE TABLE IF NOT EXISTS Cihaz_Teknik_Belge (
-                Cihazid TEXT NOT NULL,
-                BelgeTuru TEXT NOT NULL,
-                Belge TEXT NOT NULL,
-                BelgeAciklama TEXT,
-
-                sync_status TEXT DEFAULT 'clean',
-                updated_at TEXT,
-
-                PRIMARY KEY (Cihazid, BelgeTuru, Belge)
-            )
-            """)
-
-            conn.commit()
-            logger.info("v10: Cihaz_Teknik ve Cihaz_Teknik_Belge tabloları oluşturuldu")
-
-        except Exception as e:
-            logger.error(f"Migration v10 hatası: {e}")
-            conn.rollback()
-            raise
-
-        finally:
-            conn.close()
-
-    def _migrate_to_v11(self):
-        """
-        v10 → v11: Personel tablosuna MuayeneTarihi sütununu ekle.
-        
-        Bu sütun Google Sheets'ten gelen verilerde var olduğundan,
-        eğer eksikse sync sırasında hata oluşur.
-        """
-        conn = self.connect()
-        cur = conn.cursor()
-
-        try:
-            logger.info("Migration v11: Personel tablosuna MuayeneTarihi sütunu ekleniyor...")
-
-            # Sütun zaten var mı kontrol et
-            cur.execute("PRAGMA table_info(Personel)")
-            columns = {row[1] for row in cur.fetchall()}
-
-            if "MuayeneTarihi" not in columns:
-                cur.execute("""
-                    ALTER TABLE Personel
-                    ADD COLUMN MuayeneTarihi TEXT
-                """)
-                logger.info("✓ Personel: MuayeneTarihi sütunu eklendi")
-            else:
-                logger.info("✓ Personel: MuayeneTarihi sütunu zaten var")
-
-            conn.commit()
-            logger.info("v11: Migration tamamlandı")
-
-        except Exception as e:
-            logger.error(f"Migration v11 hatası: {e}")
-            conn.rollback()
-            raise
-
-        finally:
-            conn.close()
-
-    def _migrate_to_v12(self):
-        """
-        v11 → v12: Personel tablosuna Sonuc sütununu ekle.
-        
-        Google Sheets'teki Personel tablosunde Sonuc sütunu var.
-        """
-        conn = self.connect()
-        cur = conn.cursor()
-
-        try:
-            logger.info("Migration v12: Personel tablosuna Sonuc sütunu ekleniyor...")
-
-            # Sütun zaten var mı kontrol et
-            cur.execute("PRAGMA table_info(Personel)")
-            columns = {row[1] for row in cur.fetchall()}
-
-            if "Sonuc" not in columns:
-                cur.execute("""
-                    ALTER TABLE Personel
-                    ADD COLUMN Sonuc TEXT
-                """)
-                logger.info("✓ Personel: Sonuc sütunu eklendi")
-            else:
-                logger.info("✓ Personel: Sonuc sütunu zaten var")
-
-            conn.commit()
-            logger.info("v12: Migration tamamlandı")
-
-        except Exception as e:
-            logger.error(f"Migration v12 hatası: {e}")
-            conn.rollback()
-            raise
-
-        finally:
-            conn.close()
-
-    def _migrate_to_v13(self):
-        """
-        v12 → v13: Sabitler ve Tatiller tablolarını doğru schema ile yeniden oluştur.
-        
-        Sabitler.Rowid: INTEGER → TEXT (Google Sheets'ten gelen string değerler için)
-        """
-        conn = self.connect()
-        cur = conn.cursor()
-
-        try:
-            logger.info("Migration v13: Sabitler ve Tatiller tablolarını düzeltiliyor...")
-
-            # Sabitler tablosunun schema'sını kontrol et
-            cur.execute("PRAGMA table_info(Sabitler)")
-            sabitler_cols = {row[1]: row[2] for row in cur.fetchall()}  # col_name -> type
-            
-            # Rowid sütununun tipi INTEGER ise düzelt
-            if sabitler_cols.get("Rowid", "").upper() == "INTEGER":
-                logger.info("  Sabitler: Rowid INTEGER → TEXT dönüştürülüyor...")
-                
-                # Dummy veriler düzelt (boşsa)
-                cur.execute("SELECT COUNT(*) FROM Sabitler")
-                rowid_count = cur.fetchone()[0]
-                
-                if rowid_count == 0:
-                    # Tablo boşsa, sadece yeniden oluştur
-                    cur.execute("DROP TABLE Sabitler")
-                    cur.execute("""
-                        CREATE TABLE Sabitler (
-                            Rowid TEXT PRIMARY KEY,
-                            Kod TEXT,
-                            MenuEleman TEXT,
-                            Aciklama TEXT,
-                            sync_status TEXT DEFAULT 'clean',
-                            updated_at TEXT
-                        )
-                    """)
-                    logger.info("✓ Sabitler tablosu yeniden oluşturuldu (empty)")
-                else:
-                    # Tablo dolu ise, veriyi taşı
-                    cur.execute("ALTER TABLE Sabitler RENAME TO Sabitler_old")
-                    cur.execute("""
-                        CREATE TABLE Sabitler (
-                            Rowid TEXT PRIMARY KEY,
-                            Kod TEXT,
-                            MenuEleman TEXT,
-                            Aciklama TEXT,
-                            sync_status TEXT DEFAULT 'clean',
-                            updated_at TEXT
-                        )
-                    """)
-                    cur.execute("""
-                        INSERT INTO Sabitler 
-                        SELECT CAST(Rowid AS TEXT), Kod, MenuEleman, Aciklama, sync_status, updated_at 
-                        FROM Sabitler_old
-                    """)
-                    cur.execute("DROP TABLE Sabitler_old")
-                    logger.info(f"✓ Sabitler tablosu {rowid_count} kayıtla güncellendi")
-            else:
-                logger.info("✓ Sabitler: Rowid zaten TEXT")
-
-            conn.commit()
-            logger.info("v13: Migration tamamlandı")
-
-        except Exception as e:
-            logger.error(f"Migration v13 hatası: {e}")
-            conn.rollback()
-            raise
-
-        finally:
-            conn.close()
-
-    def _migrate_to_v14(self):
-        """
-        v13 → v14: Cihaz_Belgeler tablosunu ekle (merkezi belgeler tablosu)
-                   Cihaz_Teknik_Belge'ye YuklenmeTarihi kolon ekle
-                   Sabitler'e belge türleri ekle
-        
-        Cihaz_Belgeler: Cihazlar, Arızalar, Bakımlar, Kalibrasyonlar için belgeler
-        """
-        conn = self.connect()
-        cur = conn.cursor()
-
-        try:
-            logger.info("Migration v14: Cihaz_Belgeler tablosunu oluşturuyor...")
-
-            # Cihaz_Belgeler tablosunu oluştur
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS Cihaz_Belgeler (
-                    Cihazid TEXT NOT NULL,
-                    BelgeTuru TEXT NOT NULL,
-                    Belge TEXT NOT NULL,
-                    BelgeAciklama TEXT,
-                    YuklenmeTarihi TEXT,
-                    IliskiliBelgeID TEXT,
-                    IliskiliBelgeTipi TEXT,
-                    sync_status TEXT DEFAULT 'clean',
-                    updated_at TEXT,
-                    PRIMARY KEY (Cihazid, BelgeTuru, Belge)
-                )
-            """)
-            logger.info("  ✓ Cihaz_Belgeler tablosu oluşturuldu")
-
-            # Cihaz_Teknik_Belge'ye YuklenmeTarihi sütunu ekle (varsa)
-            cur.execute("PRAGMA table_info(Cihaz_Teknik_Belge)")
-            cols = {row[1]: row[2] for row in cur.fetchall()}
-            
-            if "Cihaz_Teknik_Belge" in [row[0] for row in cur.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='Cihaz_Teknik_Belge'")]:
-                if "YuklenmeTarihi" not in cols:
-                    cur.execute("""
-                        ALTER TABLE Cihaz_Teknik_Belge 
-                        ADD COLUMN YuklenmeTarihi TEXT
-                    """)
-                    logger.info("  ✓ Cihaz_Teknik_Belge.YuklenmeTarihi kolon eklendi")
-            
-            # Sabitler tablosuna belge türleri ekle
-            belge_turleri = [
-                ("1", "Cihaz_Belge_Tur", "NDK Lisansı", "Cihazın NDK (Uygunluk Beyanı) Lisansı"),
-                ("2", "Cihaz_Belge_Tur", "RKS Belgesi", "Cihazın RKS (Radyasyon Koruma) Belgesi"),
-                ("3", "Cihaz_Belge_Tur", "Sorumlu Diploması", "Sorumlu kişinin diploması"),
-                ("4", "Cihaz_Belge_Tur", "Kullanım Klavuzu", "Cihaz kullanım kılavuzu"),
-                ("5", "Cihaz_Belge_Tur", "Cihaz Sertifikası", "Cihaz sertifikası/belgelendirmesi"),
-                ("6", "Cihaz_Belge_Tur", "Teknik Veri Sayfası", "Cihazın teknik özellikleri"),
-                ("7", "Cihaz_Belge_Tur", "Garantı Belgesi", "Cihaz garanti belgesi"),
-            ]
-            
-            for rowid, kod, menu_eleman, aciklama in belge_turleri:
-                # Kontrol et: zaten var mı?
-                cur.execute(
-                    "SELECT COUNT(*) FROM Sabitler WHERE Kod = ? AND MenuEleman = ?",
-                    (kod, menu_eleman)
-                )
-                if cur.fetchone()[0] == 0:
-                    cur.execute(
-                        "INSERT INTO Sabitler (Rowid, Kod, MenuEleman, Aciklama) VALUES (?, ?, ?, ?)",
-                        (rowid, kod, menu_eleman, aciklama)
-                    )
-                    logger.info(f"  ✓ Sabitler: '{menu_eleman}' türü eklendi")
-            
-            conn.commit()
-            logger.info("v14: Migration tamamlandı")
-
-        except Exception as e:
-            logger.error(f"Migration v14 hatası: {e}")
-            conn.rollback()
-            raise
-
-        finally:
-            conn.close()
-
-    # v3-v7: Şema değişikliği içermeyen versiyon adımları. Metod tanımlanmamıştır;
-    # run_migrations döngüsü bunları otomatik "no-op" olarak geçer ve
-    # schema_version tablosuna yine de kaydeder (gap bırakmaz).
-    #
-    # Özet geçmiş:
-    #   v3 — Personel_Saglik_Takip create_tables'a eklendi (no-op)
-    #   v4-v6 — rezerve
-    #   v7 — Personel.MuayeneTarihi ve .Sonuc; zaten create_tables'ta mevcut,
-    #          local DB ve GSheets'e manuel eklendi — alter table gerekmez
 
     # ════════════════════════════════════════════════
-    # TABLO OLUŞTURMA (İLK KURULUM)
+    # TABLO OLUŞTURMA (İLK KURULUM / RESET)
     # ════════════════════════════════════════════════
 
     def create_tables(self, cur):
         """
-        İlk kurulum için tüm tabloları oluşturur.
-        Bu metod sadece v0 → v1 migration'ında çağrılır.
+        Tüm tabloları v14 (güncel) şemasıyla oluşturur.
+        Yalnızca _migrate_to_v1 ve reset_database tarafından çağrılır.
         """
 
-        # ---------------- PERSONEL ----------------
+        # ── PERSONEL ──────────────────────────────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Personel (
-            KimlikNo TEXT PRIMARY KEY,
-            AdSoyad TEXT,
-            DogumYeri TEXT,
-            DogumTarihi TEXT,
-            HizmetSinifi TEXT,
-            KadroUnvani TEXT,
-            GorevYeri TEXT,
-            KurumSicilNo TEXT,
-            MemuriyeteBaslamaTarihi TEXT,
-            CepTelefonu TEXT,
-            Eposta TEXT,
-            MezunOlunanOkul TEXT,
-            MezunOlunanFakulte TEXT,
-            MezuniyetTarihi TEXT,
-            DiplomaNo TEXT,
-            MezunOlunanOkul2 TEXT,
-            MezunOlunanFakulte2 TEXT,
-            MezuniyetTarihi2 TEXT,
-            DiplomaNo2 TEXT,
-            Resim TEXT,
-            Diploma1 TEXT,
-            Diploma2 TEXT,
-            OzlukDosyasi TEXT,
-            Durum TEXT,
-            AyrilisTarihi TEXT,
-            AyrilmaNedeni TEXT,
-            MuayeneTarihi TEXT,
-            Sonuc TEXT,
+            KimlikNo                    TEXT PRIMARY KEY,
+            AdSoyad                     TEXT,
+            DogumYeri                   TEXT,
+            DogumTarihi                 TEXT,
+            HizmetSinifi                TEXT,
+            KadroUnvani                 TEXT,
+            GorevYeri                   TEXT,
+            KurumSicilNo                TEXT,
+            MemuriyeteBaslamaTarihi     TEXT,
+            CepTelefonu                 TEXT,
+            Eposta                      TEXT,
+            MezunOlunanOkul             TEXT,
+            MezunOlunanFakulte          TEXT,
+            MezuniyetTarihi             TEXT,
+            DiplomaNo                   TEXT,
+            MezunOlunanOkul2            TEXT,
+            MezunOlunanFakulte2         TEXT,
+            MezuniyetTarihi2            TEXT,
+            DiplomaNo2                  TEXT,
+            Resim                       TEXT,
+            Diploma1                    TEXT,
+            Diploma2                    TEXT,
+            OzlukDosyasi                TEXT,
+            Durum                       TEXT,
+            AyrilisTarihi               TEXT,
+            AyrilmaNedeni               TEXT,
+            MuayeneTarihi               TEXT,
+            Sonuc                       TEXT,
 
-            sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT
+            sync_status                 TEXT DEFAULT 'clean',
+            updated_at                  TEXT
         )
         """)
 
-        # ---------------- IZIN GIRIS ----------------
+        # ── IZIN GIRIS ────────────────────────────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Izin_Giris (
-            Izinid TEXT PRIMARY KEY,
-            HizmetSinifi TEXT,
-            Personelid TEXT,
-            AdSoyad TEXT,
-            IzinTipi TEXT,
-            BaslamaTarihi TEXT,
-            Gun INTEGER,
-            BitisTarihi TEXT,
-            Durum TEXT,
+            Izinid          TEXT PRIMARY KEY,
+            HizmetSinifi    TEXT,
+            Personelid      TEXT,
+            AdSoyad         TEXT,
+            IzinTipi        TEXT,
+            BaslamaTarihi   TEXT,
+            Gun             INTEGER,
+            BitisTarihi     TEXT,
+            Durum           TEXT,
 
-            sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT
+            sync_status     TEXT DEFAULT 'clean',
+            updated_at      TEXT
         )
         """)
 
-        # ---------------- IZIN BILGI ----------------
+        # ── IZIN BILGI ────────────────────────────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Izin_Bilgi (
-            TCKimlik TEXT PRIMARY KEY,
-            AdSoyad TEXT,
-            YillikDevir REAL,
-            YillikHakedis REAL,
-            YillikToplamHak REAL,
-            YillikKullanilan REAL,
-            YillikKalan REAL,
-            SuaKullanilabilirHak REAL,
-            SuaKullanilan REAL,
-            SuaKalan REAL,
-            SuaCariYilKazanim REAL,
-            RaporMazeretTop REAL,
+            TCKimlik                TEXT PRIMARY KEY,
+            AdSoyad                 TEXT,
+            YillikDevir             REAL,
+            YillikHakedis           REAL,
+            YillikToplamHak         REAL,
+            YillikKullanilan        REAL,
+            YillikKalan             REAL,
+            SuaKullanilabilirHak    REAL,
+            SuaKullanilan           REAL,
+            SuaKalan                REAL,
+            SuaCariYilKazanim       REAL,
+            RaporMazeretTop         REAL,
 
-            sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT
+            sync_status             TEXT DEFAULT 'clean',
+            updated_at              TEXT
         )
         """)
 
-        # ---------------- FHSZ PUANTAJ ----------------
+        # ── FHSZ PUANTAJ ─────────────────────────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS FHSZ_Puantaj (
-            Personelid TEXT NOT NULL,
-            AdSoyad TEXT,
-            Birim TEXT,
-            CalismaKosulu TEXT,
-            AitYil INTEGER NOT NULL,
-            Donem TEXT NOT NULL,
-            AylikGun INTEGER,
-            KullanilanIzin INTEGER,
-            FiiliCalismaSaat REAL,
+            Personelid          TEXT NOT NULL,
+            AdSoyad             TEXT,
+            Birim               TEXT,
+            CalismaKosulu       TEXT,
+            AitYil              INTEGER NOT NULL,
+            Donem               TEXT NOT NULL,
+            AylikGun            INTEGER,
+            KullanilanIzin      INTEGER,
+            FiiliCalismaSaat    REAL,
 
-            sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT,
+            sync_status         TEXT DEFAULT 'clean',
+            updated_at          TEXT,
 
             PRIMARY KEY (Personelid, AitYil, Donem)
         )
         """)
 
-        # ---------------- CIHAZLAR ----------------
+        # ── CIHAZLAR ──────────────────────────────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Cihazlar (
-            Cihazid TEXT PRIMARY KEY,
-            CihazTipi TEXT,
-            Marka TEXT,
-            Model TEXT,
-            Amac TEXT,
-            Kaynak TEXT,
-            SeriNo TEXT,
-            NDKSeriNo TEXT,
-            HizmeteGirisTarihi TEXT,
-            RKS TEXT,
-            Sorumlusu TEXT,
-            Gorevi TEXT,
-            NDKLisansNo TEXT,
-            BaslamaTarihi TEXT,
-            BitisTarihi TEXT,
-            LisansDurum TEXT,
-            AnaBilimDali TEXT,
-            Birim TEXT,
-            BulunduguBina TEXT,
-            GarantiDurumu TEXT,
-            GarantiBitisTarihi TEXT,
-            DemirbasNo TEXT,
-            KalibrasyonGereklimi TEXT,
-            BakimDurum TEXT,
-            Durum TEXT,
-            Img TEXT,
-            NDKLisansBelgesi TEXT,
+            Cihazid                 TEXT PRIMARY KEY,
+            CihazTipi               TEXT,
+            Marka                   TEXT,
+            Model                   TEXT,
+            Amac                    TEXT,
+            Kaynak                  TEXT,
+            SeriNo                  TEXT,
+            NDKSeriNo               TEXT,
+            HizmeteGirisTarihi      TEXT,
+            RKS                     TEXT,
+            Sorumlusu               TEXT,
+            Gorevi                  TEXT,
+            NDKLisansNo             TEXT,
+            BaslamaTarihi           TEXT,
+            BitisTarihi             TEXT,
+            LisansDurum             TEXT,
+            AnaBilimDali            TEXT,
+            Birim                   TEXT,
+            BulunduguBina           TEXT,
+            GarantiDurumu           TEXT,
+            GarantiBitisTarihi      TEXT,
+            DemirbasNo              TEXT,
+            KalibrasyonGereklimi    TEXT,
+            BakimDurum              TEXT,
+            Durum                   TEXT,
+            Img                     TEXT,
+            NDKLisansBelgesi        TEXT,
 
-            sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT
+            sync_status             TEXT DEFAULT 'clean',
+            updated_at              TEXT
         )
         """)
 
-        # ---------------- CIHAZ TEKNIK ----------------
+        # ── CIHAZ TEKNIK ──────────────────────────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Cihaz_Teknik (
-            Cihazid TEXT PRIMARY KEY,
-            BirincilUrunNumarasi TEXT,
-            MarkaAdi TEXT,
-            EtiketAdi TEXT,
-            UrunTanimi TEXT,
-            VersiyonModel TEXT,
-            KatalogNo TEXT,
-            TemelUdiDi TEXT,
-            Aciklama TEXT,
-            KurumUnvan TEXT,
-            KurumGorunenAd TEXT,
-            KurumNo TEXT,
-            KurumTelefon TEXT,
-            KurumEposta TEXT,
-            Durum TEXT,
-            UtsBaslangicTarihi TEXT,
-            KontroleGonderildigiTarih TEXT,
-            CihazKayitTipi TEXT,
-            UrunTipi TEXT,
-            Sinif TEXT,
-            IthalImalBilgisi TEXT,
-            GmdnTerimKod TEXT,
-            GmdnTerimTurkceAd TEXT,
-            GmdnTerimTurkceAciklama TEXT,
-            KalibrasyonaTabiMi TEXT,
-            KalibrasyonPeriyodu TEXT,
-            BakimaTabiMi TEXT,
-            BakimPeriyodu TEXT,
-            IyonizeRadyasyonIcerir TEXT,
-            SinirliKullanimSayisiVar TEXT,
-            SinirliKullanimSayisi TEXT,
-            TekHastayaKullanilabilir TEXT,
-            MrgUyumlu TEXT,
-            SutEslesmesiSet TEXT,
-            BaskaImalatciyaUrettirildiMi TEXT,
-            MenseiUlkeSet TEXT,
-            IthalEdilenUlkeSet TEXT,
+            Cihazid                         TEXT PRIMARY KEY,
+            BirincilUrunNumarasi            TEXT,
+            MarkaAdi                        TEXT,
+            EtiketAdi                       TEXT,
+            UrunTanimi                      TEXT,
+            VersiyonModel                   TEXT,
+            KatalogNo                       TEXT,
+            TemelUdiDi                      TEXT,
+            Aciklama                        TEXT,
+            KurumUnvan                      TEXT,
+            KurumGorunenAd                  TEXT,
+            KurumNo                         TEXT,
+            KurumTelefon                    TEXT,
+            KurumEposta                     TEXT,
+            Durum                           TEXT,
+            UtsBaslangicTarihi              TEXT,
+            KontroleGonderildigiTarih       TEXT,
+            CihazKayitTipi                  TEXT,
+            UrunTipi                        TEXT,
+            Sinif                           TEXT,
+            IthalImalBilgisi                TEXT,
+            GmdnTerimKod                    TEXT,
+            GmdnTerimTurkceAd               TEXT,
+            GmdnTerimTurkceAciklama         TEXT,
+            KalibrasyonaTabiMi              TEXT,
+            KalibrasyonPeriyodu             TEXT,
+            BakimaTabiMi                    TEXT,
+            BakimPeriyodu                   TEXT,
+            IyonizeRadyasyonIcerir          TEXT,
+            SinirliKullanimSayisiVar        TEXT,
+            SinirliKullanimSayisi           TEXT,
+            TekHastayaKullanilabilir        TEXT,
+            MrgUyumlu                       TEXT,
+            SutEslesmesiSet                 TEXT,
+            BaskaImalatciyaUrettirildiMi    TEXT,
+            MenseiUlkeSet                   TEXT,
+            IthalEdilenUlkeSet              TEXT,
 
-            sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT
+            sync_status                     TEXT DEFAULT 'clean',
+            updated_at                      TEXT
         )
         """)
 
-        # ---------------- CIHAZ TEKNIK BELGE ----------------
+        # ── CIHAZ TEKNIK BELGE ────────────────────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Cihaz_Teknik_Belge (
-            Cihazid TEXT NOT NULL,
-            BelgeTuru TEXT NOT NULL,
-            Belge TEXT NOT NULL,
-            BelgeAciklama TEXT,
-            YuklenmeTarihi TEXT,
+            Cihazid         TEXT NOT NULL,
+            BelgeTuru       TEXT NOT NULL,
+            Belge           TEXT NOT NULL,
+            BelgeAciklama   TEXT,
+            YuklenmeTarihi  TEXT,
 
-            sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT,
+            sync_status     TEXT DEFAULT 'clean',
+            updated_at      TEXT,
 
             PRIMARY KEY (Cihazid, BelgeTuru, Belge)
         )
         """)
 
-        # ---------------- CIHAZ BELGELER (Merkezi Belgeler) ----------------
+        # ── CIHAZ BELGELER (Merkezi Belgeler) ─────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Cihaz_Belgeler (
-            Cihazid TEXT NOT NULL,
-            BelgeTuru TEXT NOT NULL,
-            Belge TEXT NOT NULL,
-            BelgeAciklama TEXT,
-            YuklenmeTarihi TEXT,
-            IliskiliBelgeID TEXT,
-            IliskiliBelgeTipi TEXT,
+            Cihazid             TEXT NOT NULL,
+            BelgeTuru           TEXT NOT NULL,
+            Belge               TEXT NOT NULL,
+            BelgeAciklama       TEXT,
+            YuklenmeTarihi      TEXT,
+            IliskiliBelgeID     TEXT,
+            IliskiliBelgeTipi   TEXT,
 
-            sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT,
+            sync_status         TEXT DEFAULT 'clean',
+            updated_at          TEXT,
 
             PRIMARY KEY (Cihazid, BelgeTuru, Belge)
         )
         """)
 
-        # ---------------- CIHAZ ARIZA ----------------
+        # ── CIHAZ ARIZA ───────────────────────────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Cihaz_Ariza (
-            Arizaid TEXT PRIMARY KEY,
-            Cihazid TEXT,
+            Arizaid         TEXT PRIMARY KEY,
+            Cihazid         TEXT,
             BaslangicTarihi TEXT,
-            Saat TEXT,
-            Bildiren TEXT,
-            ArizaTipi TEXT,
-            Oncelik TEXT,
-            Baslik TEXT,
-            ArizaAcikla TEXT,
-            Durum TEXT,
-            Rapor TEXT,
+            Saat            TEXT,
+            Bildiren        TEXT,
+            ArizaTipi       TEXT,
+            Oncelik         TEXT,
+            Baslik          TEXT,
+            ArizaAcikla     TEXT,
+            Durum           TEXT,
+            Rapor           TEXT,
 
-            sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT
+            sync_status     TEXT DEFAULT 'clean',
+            updated_at      TEXT
         )
         """)
 
-        # ---------------- ARIZA ISLEM ----------------
+        # ── ARIZA ISLEM ───────────────────────────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Ariza_Islem (
-            Islemid TEXT PRIMARY KEY,
-            Arizaid TEXT,
-            Tarih TEXT,
-            Saat TEXT,
-            IslemYapan TEXT,
-            IslemTuru TEXT,
-            YapilanIslem TEXT,
-            YeniDurum TEXT,
-            Rapor TEXT,
+            Islemid         TEXT PRIMARY KEY,
+            Arizaid         TEXT,
+            Tarih           TEXT,
+            Saat            TEXT,
+            IslemYapan      TEXT,
+            IslemTuru       TEXT,
+            YapilanIslem    TEXT,
+            YeniDurum       TEXT,
+            Rapor           TEXT,
 
-            sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT
+            sync_status     TEXT DEFAULT 'clean',
+            updated_at      TEXT
         )
         """)
 
-        # ---------------- PERIYODIK BAKIM ----------------
+        # ── PERIYODIK BAKIM ───────────────────────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Periyodik_Bakim (
-            Planid TEXT PRIMARY KEY,
-            Cihazid TEXT,
-            BakimPeriyodu TEXT,
-            BakimSirasi INTEGER,
-            PlanlananTarih TEXT,
-            Bakim TEXT,
-            Durum TEXT,
-            BakimTarihi TEXT,
-            BakimTipi TEXT,
-            YapilanIslemler TEXT,
-            Aciklama TEXT,
-            Teknisyen TEXT,
-            Rapor TEXT,
+            Planid              TEXT PRIMARY KEY,
+            Cihazid             TEXT,
+            BakimPeriyodu       TEXT,
+            BakimSirasi         INTEGER,
+            PlanlananTarih      TEXT,
+            Bakim               TEXT,
+            Durum               TEXT,
+            BakimTarihi         TEXT,
+            BakimTipi           TEXT,
+            YapilanIslemler     TEXT,
+            Aciklama            TEXT,
+            Teknisyen           TEXT,
+            Rapor               TEXT,
 
-            sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT
+            sync_status         TEXT DEFAULT 'clean',
+            updated_at          TEXT
         )
         """)
 
-        # ---------------- KALIBRASYON ----------------
+        # ── KALIBRASYON ───────────────────────────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Kalibrasyon (
-            Kalid TEXT PRIMARY KEY,
-            Cihazid TEXT,
-            Firma TEXT,
-            SertifikaNo TEXT,
-            YapilanTarih TEXT,
-            Gecerlilik TEXT,
-            BitisTarihi TEXT,
-            Durum TEXT,
-            Dosya TEXT,
-            Aciklama TEXT,
+            Kalid           TEXT PRIMARY KEY,
+            Cihazid         TEXT,
+            Firma           TEXT,
+            SertifikaNo     TEXT,
+            YapilanTarih    TEXT,
+            Gecerlilik      TEXT,
+            BitisTarihi     TEXT,
+            Durum           TEXT,
+            Dosya           TEXT,
+            Aciklama        TEXT,
 
-            sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT
+            sync_status     TEXT DEFAULT 'clean',
+            updated_at      TEXT
         )
         """)
 
-        # ---------------- SABITLER ----------------
+        # ── SABITLER ──────────────────────────────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Sabitler (
-            Rowid TEXT PRIMARY KEY,
-            Kod TEXT,
-            MenuEleman TEXT,
-            Aciklama TEXT,
-                    
+            Rowid       TEXT PRIMARY KEY,
+            Kod         TEXT,
+            MenuEleman  TEXT,
+            Aciklama    TEXT,
+
             sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT
+            updated_at  TEXT
         )
         """)
 
-        # ---------------- TATILLER ----------------
+        # ── TATILLER ──────────────────────────────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Tatiller (
-            Tarih TEXT PRIMARY KEY,
-            ResmiTatil TEXT,
-                    
+            Tarih       TEXT PRIMARY KEY,
+            ResmiTatil  TEXT,
+
             sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT
+            updated_at  TEXT
         )
         """)
 
-        # ---------------- LOGLAR ----------------
+        # ── LOGLAR ────────────────────────────────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Loglar (
-            Tarih TEXT,
-            Saat TEXT,
-            Kullanici TEXT,
-            Modul TEXT,
-            Islem TEXT,
-            Detay TEXT
+            Tarih       TEXT,
+            Saat        TEXT,
+            Kullanici   TEXT,
+            Modul       TEXT,
+            Islem       TEXT,
+            Detay       TEXT
         )
         """)
 
-        # ---------------- RKE LIST ----------------
+        # ── RKE LIST ──────────────────────────────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS RKE_List (
-            EkipmanNo TEXT PRIMARY KEY,
+            EkipmanNo       TEXT PRIMARY KEY,
             KoruyucuNumarasi TEXT,
-            AnaBilimDali TEXT,
-            Birim TEXT,
-            KoruyucuCinsi TEXT,
-            KursunEsdegeri TEXT,
-            HizmetYili INTEGER,
-            Bedeni TEXT,
-            KontrolTarihi TEXT,
-            Durum TEXT,
-            Aciklama TEXT,
+            AnaBilimDali    TEXT,
+            Birim           TEXT,
+            KoruyucuCinsi   TEXT,
+            KursunEsdegeri  TEXT,
+            HizmetYili      INTEGER,
+            Bedeni          TEXT,
+            KontrolTarihi   TEXT,
+            Durum           TEXT,
+            Aciklama        TEXT,
             VarsaDemirbasNo TEXT,
-            KayitTarih TEXT,
-            Barkod TEXT,
+            KayitTarih      TEXT,
+            Barkod          TEXT,
 
-            sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT
+            sync_status     TEXT DEFAULT 'clean',
+            updated_at      TEXT
         )
         """)
 
-        # ---------------- RKE MUAYENE ----------------
+        # ── RKE MUAYENE ───────────────────────────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS RKE_Muayene (
-            KayitNo TEXT PRIMARY KEY,
-            EkipmanNo TEXT,
-            FMuayeneTarihi TEXT,
-            FizikselDurum TEXT,
-            SMuayeneTarihi TEXT,
-            SkopiDurum TEXT,
-            Aciklamalar TEXT,
-            KontrolEdenUnvani TEXT,
-            BirimSorumlusuUnvani TEXT,
-            Notlar TEXT,
-            Rapor TEXT,
+            KayitNo                 TEXT PRIMARY KEY,
+            EkipmanNo               TEXT,
+            FMuayeneTarihi          TEXT,
+            FizikselDurum           TEXT,
+            SMuayeneTarihi          TEXT,
+            SkopiDurum              TEXT,
+            Aciklamalar             TEXT,
+            KontrolEdenUnvani       TEXT,
+            BirimSorumlusuUnvani    TEXT,
+            Notlar                  TEXT,
+            Rapor                   TEXT,
 
-            sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT
+            sync_status             TEXT DEFAULT 'clean',
+            updated_at              TEXT
         )
         """)
 
-        # ---------------- PERSONEL SAGLIK TAKIP ----------------
+        # ── PERSONEL SAGLIK TAKIP ─────────────────────────────────────────────
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Personel_Saglik_Takip (
-            KayitNo TEXT PRIMARY KEY,
-            Personelid TEXT,
-            AdSoyad TEXT,
-            Birim TEXT,
-            Yil INTEGER,
-            MuayeneTarihi TEXT,
-            SonrakiKontrolTarihi TEXT,
-            Sonuc TEXT,
-            Durum TEXT,
-            RaporDosya TEXT,
-            Notlar TEXT,
-            DermatolojiMuayeneTarihi TEXT,
-            DermatolojiDurum TEXT,
-            DahiliyeMuayeneTarihi TEXT,
-            DahiliyeDurum TEXT,
-            GozMuayeneTarihi TEXT,
-            GozDurum TEXT,
-            GoruntulemeMuayeneTarihi TEXT,
-            GoruntulemeDurum TEXT,
-            sync_status TEXT DEFAULT 'clean',
-            updated_at TEXT
+            KayitNo                     TEXT PRIMARY KEY,
+            Personelid                  TEXT,
+            AdSoyad                     TEXT,
+            Birim                       TEXT,
+            Yil                         INTEGER,
+            MuayeneTarihi               TEXT,
+            SonrakiKontrolTarihi        TEXT,
+            Sonuc                       TEXT,
+            Durum                       TEXT,
+            RaporDosya                  TEXT,
+            Notlar                      TEXT,
+            DermatolojiMuayeneTarihi    TEXT,
+            DermatolojiDurum            TEXT,
+            DahiliyeMuayeneTarihi       TEXT,
+            DahiliyeDurum               TEXT,
+            GozMuayeneTarihi            TEXT,
+            GozDurum                    TEXT,
+            GoruntulemeMuayeneTarihi    TEXT,
+            GoruntulemeDurum            TEXT,
+
+            sync_status                 TEXT DEFAULT 'clean',
+            updated_at                  TEXT
         )
         """)
 
+    def _seed_initial_data(self, cur):
+        """
+        Sabitler tablosuna başlangıç / sistem verilerini ekler.
+        Yalnızca yeni kurulumda çağrılır; mevcut kayıtların üzerine yazmaz.
+        """
+        belge_turleri = [
+            ("1", "Cihaz_Belge_Tur", "NDK Lisansı",         "Cihazın NDK (Uygunluk Beyanı) Lisansı"),
+            ("2", "Cihaz_Belge_Tur", "RKS Belgesi",          "Cihazın RKS (Radyasyon Koruma) Belgesi"),
+            ("3", "Cihaz_Belge_Tur", "Sorumlu Diploması",    "Sorumlu kişinin diploması"),
+            ("4", "Cihaz_Belge_Tur", "Kullanım Klavuzu",     "Cihaz kullanım kılavuzu"),
+            ("5", "Cihaz_Belge_Tur", "Cihaz Sertifikası",    "Cihaz sertifikası/belgelendirmesi"),
+            ("6", "Cihaz_Belge_Tur", "Teknik Veri Sayfası",  "Cihazın teknik özellikleri"),
+            ("7", "Cihaz_Belge_Tur", "Garantı Belgesi",      "Cihaz garanti belgesi"),
+        ]
+
+        for rowid, kod, menu_eleman, aciklama in belge_turleri:
+            cur.execute(
+                "SELECT COUNT(*) FROM Sabitler WHERE Kod = ? AND MenuEleman = ?",
+                (kod, menu_eleman)
+            )
+            if cur.fetchone()[0] == 0:
+                cur.execute(
+                    "INSERT INTO Sabitler (Rowid, Kod, MenuEleman, Aciklama) VALUES (?, ?, ?, ?)",
+                    (rowid, kod, menu_eleman, aciklama)
+                )
+                logger.info(f"  ✓ Sabitler: '{menu_eleman}' eklendi")
+
     # ════════════════════════════════════════════════
-    # ESKI RESET METODU (ACİL DURUMLARDA)
+    # ACİL RESET (yalnızca manuel çağrı)
     # ════════════════════════════════════════════════
 
     def reset_database(self):
         """
-        ⚠️  ACİL DURUM: Tüm tabloları sil ve yeniden oluştur
-        
-        Bu metod sadece ciddi veri bozulması durumunda manuel olarak çağrılmalıdır.
+        ⚠️  ACİL DURUM: Tüm tabloları sil ve yeniden oluştur.
+
+        Ciddi veri bozulması durumunda manuel olarak çağrılmalıdır.
         Normal kullanımda run_migrations() tercih edilmelidir.
         """
-        logger.warning("⚠️  VERİTABANI TAM RESET YAPILIYOR - TÜM VERİ SİLİNECEK!")
-        
-        # Yedek al
+        logger.warning("⚠️  VERİTABANI TAM RESET YAPILIYOR — TÜM VERİ SİLİNECEK!")
+
         backup_path = self.backup_database()
         if backup_path:
             logger.info(f"Son yedek: {backup_path}")
-        
+
         conn = self.connect()
         cur = conn.cursor()
 
         tables = [
             "Personel", "Izin_Giris", "Izin_Bilgi", "FHSZ_Puantaj",
-            "Cihazlar", "Cihaz_Teknik", "Cihaz_Teknik_Belge", "Cihaz_Belgeler", "Cihaz_Ariza", 
-            "Ariza_Islem", "Periyodik_Bakim", "Kalibrasyon", "Sabitler", "Tatiller", "Loglar",
-            "RKE_List", "RKE_Muayene", "Personel_Saglik_Takip", "schema_version"
+            "Cihazlar", "Cihaz_Teknik", "Cihaz_Teknik_Belge", "Cihaz_Belgeler",
+            "Cihaz_Ariza", "Ariza_Islem", "Periyodik_Bakim", "Kalibrasyon",
+            "Sabitler", "Tatiller", "Loglar",
+            "RKE_List", "RKE_Muayene", "Personel_Saglik_Takip",
+            "schema_version",
         ]
 
         for table in tables:
@@ -1219,12 +663,12 @@ class MigrationManager:
             logger.info(f"  {table} silindi")
 
         self.create_tables(cur)
-        
-        # Versiyon tablosunu oluştur ve güncel versiyonu kaydet
+        self._seed_initial_data(cur)
+
         cur.execute("""
             CREATE TABLE schema_version (
-                version INTEGER PRIMARY KEY,
-                applied_at TEXT NOT NULL,
+                version     INTEGER PRIMARY KEY,
+                applied_at  TEXT NOT NULL,
                 description TEXT
             )
         """)

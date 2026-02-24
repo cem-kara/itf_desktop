@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arıza Yönetimi — Tasarım Önerisi</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg:        #0d0f13;
+    --surface:   #13161d;
+    --panel:     #191d26;
+    --border:    #242938;
+    --border-hi: #2e3548;
+    --text:      #c8cdd8;
+    --text-dim:  #5a6278;
+    --text-hi:   #eef0f5;
+    --accent:    #4f8ef7;
+    --accent-lo: rgba(79,142,247,.10);
+    --red:       #f75f5f;
+    --red-lo:    rgba(247,95,95,.12);
+    --amber:     #f5a623;
+    --amber-lo:  rgba(245,166,35,.12);
+    --green:     #3ecf8e;
+    --green-lo:  rgba(62,207,142,.12);
+    --purple:    #a78bfa;
+    --mono:      'IBM Plex Mono', monospace;
+    --sans:      'IBM Plex Sans', sans-serif;
+    --r:         6px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.5; }
+
+  /* ─── GENEL ─────────────────────────────────────── */
+  .app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+  /* ─── ÜST BAR ───────────────────────────────────── */
+  .topbar {
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 20px; height: 48px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .topbar-title { font-family: var(--mono); font-size: 13px; color: var(--text-hi); letter-spacing: .04em; }
+  .topbar-title span { color: var(--accent); }
+  .topbar-sep { width: 1px; height: 20px; background: var(--border); }
+  .tab { padding: 4px 12px; border-radius: var(--r); font-size: 12px; color: var(--text-dim); cursor: pointer; transition: all .15s; }
+  .tab:hover { color: var(--text); background: var(--panel); }
+  .tab.active { background: var(--accent-lo); color: var(--accent); }
+  .topbar-right { margin-left: auto; display: flex; gap: 8px; }
+  .btn-sm {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: var(--r);
+    font-size: 12px; font-family: var(--sans);
+    cursor: pointer; border: none; transition: all .15s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; font-weight: 500; }
+  .btn-primary:hover { background: #6ba3ff; }
+  .btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--border-hi); color: var(--text); }
+
+  /* ─── KPI ŞERIDI ─────────────────────────────────── */
+  .kpi-bar {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 1px; background: var(--border);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .kpi {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 12px 18px;
+    background: var(--surface);
+    transition: background .15s;
+  }
+  .kpi:hover { background: var(--panel); }
+  .kpi-label { font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: .06em; text-transform: uppercase; }
+  .kpi-value { font-size: 22px; font-weight: 600; color: var(--text-hi); line-height: 1; }
+  .kpi-sub { font-size: 11px; color: var(--text-dim); }
+  .kpi-value.red    { color: var(--red); }
+  .kpi-value.amber  { color: var(--amber); }
+  .kpi-value.green  { color: var(--green); }
+  .kpi-value.accent { color: var(--accent); }
+
+  /* ─── GÖVDE ──────────────────────────────────────── */
+  .body { display: flex; flex: 1; overflow: hidden; }
+
+  /* ─── SOL PANEL (LİSTE) ──────────────────────────── */
+  .left-panel { display: flex; flex-direction: column; width: 620px; min-width: 400px; border-right: 1px solid var(--border); overflow: hidden; }
+
+  .panel-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .panel-title { font-family: var(--mono); font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; }
+  .badge { padding: 1px 7px; border-radius: 20px; font-size: 10px; font-family: var(--mono); font-weight: 600; }
+  .badge-accent { background: var(--accent-lo); color: var(--accent); }
+  .badge-red    { background: var(--red-lo);    color: var(--red); }
+  .ph-right { margin-left: auto; display: flex; gap: 6px; }
+
+  /* Filtre satırı */
+  .filter-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .input-sm {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 5px 10px;
+    font-family: var(--sans); font-size: 12px; color: var(--text);
+    outline: none; transition: border-color .15s;
+  }
+  .input-sm:focus { border-color: var(--accent); }
+  .input-sm::placeholder { color: var(--text-dim); }
+  .input-sm.search { flex: 1; }
+  select.input-sm { cursor: pointer; }
+  .filter-sep { width: 1px; height: 18px; background: var(--border); }
+
+  /* Arıza Tablosu */
+  .table-wrap { flex: 1; overflow-y: auto; }
+  .table-wrap::-webkit-scrollbar { width: 5px; }
+  .table-wrap::-webkit-scrollbar-track { background: transparent; }
+  .table-wrap::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    padding: 7px 12px; text-align: left;
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 2;
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; transition: background .1s; }
+  tbody tr:hover { background: var(--panel); }
+  tbody tr.selected { background: var(--accent-lo); }
+  tbody tr.selected td { color: var(--text-hi); }
+  td { padding: 8px 12px; vertical-align: middle; }
+  td.mono { font-family: var(--mono); font-size: 11px; }
+
+  /* Durum/Öncelik badge'leri */
+  .status, .priority {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 4px;
+    font-family: var(--mono); font-size: 10px; font-weight: 600; white-space: nowrap;
+  }
+  .dot { width: 5px; height: 5px; border-radius: 50%; }
+  .s-open    { background: var(--red-lo);    color: var(--red);    } .s-open .dot    { background: var(--red); }
+  .s-prog    { background: var(--amber-lo);  color: var(--amber);  } .s-prog .dot    { background: var(--amber); }
+  .s-closed  { background: var(--green-lo);  color: var(--green);  } .s-closed .dot  { background: var(--green); }
+  .p-crit    { background: var(--red-lo);    color: var(--red);    }
+  .p-high    { background: var(--amber-lo);  color: var(--amber);  }
+  .p-med     { background: var(--accent-lo); color: var(--accent); }
+  .p-low     { background: #1e2330;          color: var(--text-dim); }
+
+  .cihaz-chip {
+    display: inline-block; padding: 1px 6px; border-radius: 3px;
+    background: var(--panel); border: 1px solid var(--border);
+    font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+  }
+
+  .table-footer {
+    padding: 7px 16px; display: flex; align-items: center; gap: 8px;
+    border-top: 1px solid var(--border); background: var(--surface);
+    font-family: var(--mono); font-size: 10px; color: var(--text-dim); flex-shrink: 0;
+  }
+
+  /* ─── SAĞ PANEL ──────────────────────────────────── */
+  .right-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Arıza Detay */
+  .detail-header {
+    padding: 14px 20px 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .detail-title { font-size: 15px; font-weight: 600; color: var(--text-hi); margin-bottom: 6px; }
+  .detail-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .meta-item { display: flex; gap: 5px; align-items: center; font-size: 11px; color: var(--text-dim); }
+  .meta-item strong { color: var(--text); font-weight: 500; }
+
+  .detail-body { padding: 16px 20px; overflow-y: auto; flex-shrink: 0; max-height: 180px; }
+  .detail-body::-webkit-scrollbar { width: 4px; }
+  .detail-body::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 2px; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; }
+  .detail-field { display: flex; flex-direction: column; gap: 2px; }
+  .field-label { font-family: var(--mono); font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em; }
+  .field-value { font-size: 12px; color: var(--text); }
+  .field-value.desc { color: var(--text-dim); line-height: 1.6; font-size: 11px; grid-column: 1/-1; }
+
+  /* ─── İŞLEM TABLOSU ──────────────────────────────── */
+  .islem-panel { flex: 1; display: flex; flex-direction: column; border-top: 2px solid var(--border); overflow: hidden; }
+  .islem-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px;
+    background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .islem-table-wrap { flex: 1; overflow-y: auto; }
+  .islem-table-wrap::-webkit-scrollbar { width: 5px; }
+  .islem-table-wrap::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+
+  .islem-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    transition: background .1s;
+  }
+  .islem-row:hover { background: var(--panel); }
+  .islem-timeline {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding-top: 3px;
+  }
+  .timeline-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .timeline-dot.green { background: var(--green); }
+  .timeline-dot.amber { background: var(--amber); }
+  .timeline-line { width: 1px; flex: 1; background: var(--border); min-height: 24px; }
+  .islem-content { flex: 1; }
+  .islem-top { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+  .islem-tip { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: .05em; }
+  .islem-date { font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-left: auto; }
+  .islem-yapan { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+  .islem-text { font-size: 12px; color: var(--text); line-height: 1.55; }
+  .islem-durum { display: inline-block; margin-top: 5px; }
+
+  /* ─── PERFORMANS PANEL (ALTERNATİF SEKME) ────────── */
+  .perf-panel { flex: 1; overflow-y: auto; padding: 20px; display: none; }
+  .perf-panel.active { display: block; }
+  .section-title { font-family: var(--mono); font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
+  .perf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 24px; }
+  .perf-card {
+    padding: 14px; border-radius: var(--r);
+    background: var(--surface); border: 1px solid var(--border);
+    transition: border-color .15s;
+  }
+  .perf-card:hover { border-color: var(--border-hi); }
+  .perf-card-name { font-size: 12px; font-weight: 500; color: var(--text-hi); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .perf-card-id { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+  .perf-bars { display: flex; flex-direction: column; gap: 5px; }
+  .perf-bar-row { display: flex; align-items: center; gap: 8px; }
+  .perf-bar-label { font-family: var(--mono); font-size: 10px; color: var(--text-dim); width: 40px; text-align: right; }
+  .perf-bar-bg { flex: 1; height: 5px; background: var(--panel); border-radius: 3px; overflow: hidden; }
+  .perf-bar-fill { height: 100%; border-radius: 3px; transition: width .4s ease; }
+  .perf-bar-count { font-family: var(--mono); font-size: 10px; color: var(--text-dim); width: 20px; }
+
+  /* Orta trend çizgisi */
+  .sparkline-row { display: flex; gap: 2px; align-items: flex-end; height: 28px; }
+  .spark-bar { flex: 1; border-radius: 2px 2px 0 0; min-width: 6px; }
+
+  /* ─── BOŞ DURUM ──────────────────────────────────── */
+  .empty-state {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; color: var(--text-dim);
+  }
+  .empty-icon { font-size: 28px; opacity: .3; }
+  .empty-text { font-family: var(--mono); font-size: 11px; }
+
+  /* Tooltip ipucu kutuları */
+  .tip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border);
+    font-size: 11px; color: var(--text-dim); background: var(--panel);
+  }
+  .tip-icon { font-size: 12px; }
+
+  /* Animasyonlar */
+  @keyframes fadeIn { from { opacity:0; transform: translateY(4px) } to { opacity:1; transform: none } }
+  tbody tr { animation: fadeIn .18s ease both; }
+  tbody tr:nth-child(2) { animation-delay: .03s; }
+  tbody tr:nth-child(3) { animation-delay: .06s; }
+  tbody tr:nth-child(4) { animation-delay: .09s; }
+  tbody tr:nth-child(5) { animation-delay: .12s; }
+  tbody tr:nth-child(6) { animation-delay: .15s; }
+  tbody tr:nth-child(7) { animation-delay: .18s; }
+
+  /* Sekme geçişi */
+  .view-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .view-main { flex:1; display: flex; flex-direction: column; overflow: hidden; }
+  .view-perf { flex:1; overflow-y: auto; padding: 20px; display: none; }
+  .view-perf.active { display: block; }
+
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ÜST BAR -->
+  <div class="topbar">
+    <span class="topbar-title">CİHAZ /<span> ARIZA YÖNETİMİ</span></span>
+    <div class="topbar-sep"></div>
+    <div class="tab active" onclick="switchView('main')">Arıza Listesi</div>
+    <div class="tab" onclick="switchView('perf')">Cihaz Performansı</div>
+    <div class="topbar-right">
+      <button class="btn-sm btn-ghost">↑ Dışa Aktar</button>
+      <button class="btn-sm btn-primary" onclick="alert('Yeni Arıza Giriş formu açılır')">+ Yeni Arıza</button>
+    </div>
+  </div>
+
+  <!-- KPI ŞERIDI -->
+  <div class="kpi-bar">
+    <div class="kpi">
+      <div class="kpi-label">Toplam Arıza</div>
+      <div class="kpi-value accent">47</div>
+      <div class="kpi-sub">son 12 ay</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Açık / Devam Eden</div>
+      <div class="kpi-value red">8</div>
+      <div class="kpi-sub">5 kritik öncelikli</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Ort. Çözüm Süresi</div>
+      <div class="kpi-value amber">4.2 gün</div>
+      <div class="kpi-sub">geçen ay 5.8 gün</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Bu Ay Kapandı</div>
+      <div class="kpi-value green">6</div>
+      <div class="kpi-sub">hedef: 8</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Yinelenen Arıza</div>
+      <div class="kpi-value red">3</div>
+      <div class="kpi-sub">2 cihazda tekrar</div>
+    </div>
+  </div>
+
+  <!-- GÖVDE -->
+  <div class="body">
+
+    <!-- SOL: ARIZA LİSTESİ -->
+    <div class="left-panel">
+      <div class="panel-header">
+        <span class="panel-title">Arızalar</span>
+        <span class="badge badge-accent">47</span>
+        <span class="badge badge-red">8 Açık</span>
+        <div class="ph-right">
+          <span class="tip"><span class="tip-icon">↕</span> Sıralama: Tarih</span>
+        </div>
+      </div>
+      <div class="filter-row">
+        <input class="input-sm search" placeholder="🔍 Arıza No, Cihaz ID, Başlık..." type="text">
+        <div class="filter-sep"></div>
+        <select class="input-sm">
+          <option>Tüm Durumlar</option>
+          <option>Açık</option>
+          <option>Devam Ediyor</option>
+          <option>Kapalı</option>
+        </select>
+        <select class="input-sm">
+          <option>Tüm Öncelikler</option>
+          <option>Kritik</option>
+          <option>Yüksek</option>
+          <option>Orta</option>
+        </select>
+        <select class="input-sm">
+          <option>Tüm Cihazlar</option>
+          <option>BT-001</option>
+          <option>MR-002</option>
+          <option>USG-003</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Cihaz</th>
+              <th>Tarih</th>
+              <th>Başlık</th>
+              <th>Öncelik</th>
+              <th>Durum</th>
+            </tr>
+          </thead>
+          <tbody id="ariza-tbody">
+            <!-- JS ile doldurulacak -->
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span>47 kayıt</span>
+        <span style="margin-left:auto">sıra: tarih ↓</span>
+      </div>
+    </div>
+
+    <!-- SAĞ: DETAY + İŞLEMLER -->
+    <div class="right-panel" id="right-panel">
+
+      <div class="view-main" id="view-main">
+        <!-- ARIZA DETAY -->
+        <div class="detail-header">
+          <div class="detail-title" id="det-title">BT-001 — Görüntü donması ve çözünürlük kaybı</div>
+          <div class="detail-meta">
+            <div class="meta-item">
+              <span>Arıza No</span>
+              <strong id="det-id" style="font-family:var(--mono); font-size:11px">BT001-20250312143022</strong>
+            </div>
+            <div class="meta-item">📅 <strong id="det-tarih">12.03.2025</strong></div>
+            <div class="meta-item">🏷 <strong id="det-tip">Donanım</strong></div>
+            <div class="meta-item" id="det-oncelik-wrap">
+              <span class="priority p-crit" id="det-oncelik">● KRİTİK</span>
+            </div>
+            <div class="meta-item" id="det-durum-wrap">
+              <span class="status s-open" id="det-durum"><span class="dot"></span>AÇIK</span>
+            </div>
+          </div>
+        </div>
+        <div class="detail-body">
+          <div class="detail-grid">
+            <div class="detail-field">
+              <div class="field-label">Bildiren</div>
+              <div class="field-value" id="det-bildiren">Dr. A. Yılmaz</div>
+            </div>
+            <div class="detail-field">
+              <div class="field-label">Saat</div>
+              <div class="field-value" id="det-saat">14:30</div>
+            </div>
+            <div class="detail-field" style="grid-column:1/-1">
+              <div class="field-label">Açıklama</div>
+              <div class="field-value desc" id="det-aciklama">Cihaz çalışma esnasında ekranda donmalar oluşmakta ve görüntü kalitesi düşmektedir. Sistem yeniden başlatıldığında sorun geçici olarak çözülmekte, ancak kısa süre sonra tekrarlamaktadır.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- İŞLEM TABLOSU -->
+        <div class="islem-panel">
+          <div class="islem-header">
+            <span class="panel-title">İşlem Geçmişi</span>
+            <span class="badge badge-accent" id="islem-count">3 işlem</span>
+            <div style="margin-left:auto; display:flex; gap:6px;">
+              <button class="btn-sm btn-ghost" style="font-size:11px" onclick="alert('Seçili arızaya yeni işlem eklenir')">+ İşlem Ekle</button>
+            </div>
+          </div>
+          <div class="islem-table-wrap" id="islem-list">
+            <!-- JS ile doldurulacak -->
+          </div>
+        </div>
+      </div>
+
+      <!-- PERFORMANS GÖRÜNÜMÜ -->
+      <div class="view-perf" id="view-perf">
+        <div class="section-title">Cihaz Bazlı Arıza Dağılımı — Son 12 Ay</div>
+        <div class="perf-grid" id="perf-grid">
+          <!-- JS ile doldurulacak -->
+        </div>
+        <div class="section-title">Aylık Arıza Trendi</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:20px;">
+          <div style="display:flex;gap:3px;align-items:flex-end;height:60px;" id="trend-bars"></div>
+          <div style="display:flex;gap:3px;margin-top:6px;" id="trend-labels"></div>
+        </div>
+        <div class="section-title">Tekrarlayan Arızalar (Son 90 Gün)</div>
+        <div id="repeat-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ──── VERİ ──────────────────────────────────────── */
+const arizalar = [
+  { id:"BT001-20250312", cihaz:"BT-001", cihazAd:"BT Cihazı", tarih:"2025-03-12", baslik:"Görüntü donması ve çözünürlük kaybı", tip:"Donanım", oncelik:"Kritik", durum:"Açık", bildiren:"Dr. A. Yılmaz", saat:"14:30", aciklama:"Cihaz çalışma esnasında ekranda donmalar oluşmakta ve görüntü kalitesi düşmektedir." },
+  { id:"MR002-20250310", cihaz:"MR-002", cihazAd:"MR Cihazı", tarih:"2025-03-10", baslik:"Manyetik alan sapması — kalibrasyon hatası", tip:"Kalibrasyon", oncelik:"Kritik", durum:"Devam Ediyor", bildiren:"Tekniker B. Kaya", saat:"09:15", aciklama:"Manyetik alan ölçümlerinde ±2.4 gauss sapma tespit edildi." },
+  { id:"USG003-20250308", cihaz:"USG-003", cihazAd:"Ultrason", tarih:"2025-03-08", baslik:"Prob bağlantı kesintisi", tip:"Donanım", oncelik:"Yüksek", durum:"Açık", bildiren:"Dr. C. Demir", saat:"11:00", aciklama:"P4-2 prob konnektörü intermitant kesinti veriyor." },
+  { id:"EKG004-20250305", cihaz:"EKG-004", cihazAd:"EKG Cihazı", tarih:"2025-03-05", baslik:"Yazıcı kağıt sıkışması — tekrarlayan", tip:"Mekanik", oncelik:"Orta", durum:"Kapalı", bildiren:"Hemşire D. Şahin", saat:"16:45", aciklama:"Yazıcı ünitesi sürekli kağıt sıkıştırıyor." },
+  { id:"BT001-20250228", cihaz:"BT-001", cihazAd:"BT Cihazı", tarih:"2025-02-28", baslik:"Soğutma sistemi alarm — overtemp", tip:"Mekanik", oncelik:"Kritik", durum:"Kapalı", bildiren:"Tekniker B. Kaya", saat:"08:20", aciklama:"Soğutma sıvı seviyesi kritik altına düştü, sistem alarm verdi." },
+  { id:"RKE005-20250225", cihaz:"RKE-005", cihazAd:"RKE Ekipmanı", tarih:"2025-02-25", baslik:"Kurşun önlük hasar tespiti", tip:"Fiziksel", oncelik:"Düşük", durum:"Kapalı", bildiren:"Dr. E. Yıldız", saat:"13:10", aciklama:"Yıllık kontrol sırasında önlükte laminasyon hasarı bulundu." },
+  { id:"MR002-20250220", cihaz:"MR-002", cihazAd:"MR Cihazı", tarih:"2025-02-20", baslik:"Helium basınç düşüklüğü uyarısı", tip:"Kritik Altyapı", oncelik:"Kritik", durum:"Kapalı", bildiren:"Tekniker B. Kaya", saat:"07:00", aciklama:"Süperiletken mıknatıs helium seviyesi %82'ye geriledi." },
+  { id:"USG003-20250215", cihaz:"USG-003", cihazAd:"Ultrason", tarih:"2025-02-15", baslik:"Ekran titreşmesi — güç kaynaklı", tip:"Elektrik", oncelik:"Yüksek", durum:"Devam Ediyor", bildiren:"Dr. C. Demir", saat:"10:30", aciklama:"Monitörde yatay çizgiler ve titreşim — muhtemelen PSU kaynaklı." },
+];
+
+const islemler = {
+  "BT001-20250312": [
+    { tarih:"2025-03-14", saat:"09:00", yapan:"Tekniker B. Kaya", tip:"Tanı", metin:"GPU soğutma fanı bloke durumda tespit edildi. Parça siparişi verildi.", durum:"Devam Ediyor" },
+    { tarih:"2025-03-12", saat:"16:00", yapan:"Dr. A. Yılmaz", tip:"Bildirim", metin:"Arıza ilk kez raporlandı. Cihaz hizmet dışı bırakıldı.", durum:"Açık" },
+    { tarih:"2025-03-12", saat:"14:30", yapan:"Sistem", tip:"Kayıt", metin:"Arıza otomatik olarak sisteme kaydedildi.", durum:"Açık" },
+  ],
+  "MR002-20250310": [
+    { tarih:"2025-03-13", saat:"11:00", yapan:"OEM Tekniker", tip:"Kalibrasyon", metin:"Shim coil ayarı yapıldı. Test ölçümleri alınıyor.", durum:"Devam Ediyor" },
+    { tarih:"2025-03-11", saat:"08:30", yapan:"Tekniker B. Kaya", tip:"Tanı", metin:"Arıza yerinde değerlendirildi. OEM servis çağrıldı.", durum:"Devam Ediyor" },
+  ],
+};
+
+const performans = [
+  { cihaz:"BT-001", ad:"BT Cihazı", toplam:14, acik:2, kritik:4, ort:3.8, trend:[2,1,3,2,4,1,3,2,1,2,3,2] },
+  { cihaz:"MR-002", ad:"MR Cihazı", toplam:11, acik:3, kritik:5, ort:6.2, trend:[1,2,1,3,1,2,2,1,3,1,2,3] },
+  { cihaz:"USG-003", ad:"Ultrason", toplam:9, acik:2, kritik:2, ort:2.1, trend:[0,1,2,1,0,1,2,1,1,0,1,2] },
+  { cihaz:"EKG-004", ad:"EKG Cihazı", toplam:7, acik:0, kritik:1, ort:1.5, trend:[1,0,1,0,1,1,0,1,2,0,1,0] },
+  { cihaz:"RKE-005", ad:"RKE Ekipmanı", toplam:6, acik:1, kritik:0, ort:2.0, trend:[0,1,0,1,0,2,1,0,1,0,0,1] },
+];
+
+const trendAylar = ["Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara","Oca","Şub","Mar"];
+const trendVeriler = [3,4,5,3,6,4,5,3,4,5,4,6];
+
+/* ──── YARDIMCI ───────────────────────────────────── */
+const oncelikCls = { "Kritik":"p-crit","Yüksek":"p-high","Orta":"p-med","Düşük":"p-low" };
+const durumCls   = { "Açık":"s-open","Devam Ediyor":"s-prog","Kapalı":"s-closed" };
+
+function fmtDate(d) { const p=d.split("-"); return `${p[2]}.${p[1]}.${p[0]}`; }
+
+/* ──── TABLO RENDER ───────────────────────────────── */
+function renderTable() {
+  const tbody = document.getElementById("ariza-tbody");
+  tbody.innerHTML = arizalar.map((r, i) => `
+    <tr class="${i===0?'selected':''}" onclick="selectRow(${i})">
+      <td class="mono" style="color:var(--text-dim);font-size:11px">${r.id.slice(-6)}</td>
+      <td><span class="cihaz-chip">${r.cihaz}</span></td>
+      <td class="mono" style="font-size:11px">${fmtDate(r.tarih)}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.baslik}</td>
+      <td><span class="priority ${oncelikCls[r.oncelik] || 'p-med'}">${r.oncelik.toUpperCase()}</span></td>
+      <td><span class="status ${durumCls[r.durum] || 's-prog'}"><span class="dot"></span>${r.durum.toUpperCase()}</span></td>
+    </tr>
+  `).join("");
+}
+
+/* ──── DETAY RENDER ───────────────────────────────── */
+function selectRow(i) {
+  document.querySelectorAll("#ariza-tbody tr").forEach((tr,j) => tr.classList.toggle("selected",i===j));
+  const r = arizalar[i];
+  document.getElementById("det-title").textContent = `${r.cihaz} — ${r.baslik}`;
+  document.getElementById("det-id").textContent = r.id;
+  document.getElementById("det-tarih").textContent = fmtDate(r.tarih);
+  document.getElementById("det-tip").textContent = r.tip;
+  document.getElementById("det-oncelik").className = `priority ${oncelikCls[r.oncelik]||"p-med"}`;
+  document.getElementById("det-oncelik").textContent = r.oncelik.toUpperCase();
+  document.getElementById("det-durum").className = `status ${durumCls[r.durum]||"s-prog"}`;
+  document.getElementById("det-durum").innerHTML = `<span class="dot"></span>${r.durum.toUpperCase()}`;
+  document.getElementById("det-bildiren").textContent = r.bildiren;
+  document.getElementById("det-saat").textContent = r.saat;
+  document.getElementById("det-aciklama").textContent = r.aciklama;
+  renderIslemler(r.id);
+}
+
+/* ──── İŞLEM LİSTESİ ─────────────────────────────── */
+function renderIslemler(arizaId) {
+  const list = islemler[arizaId] || [];
+  document.getElementById("islem-count").textContent = `${list.length} işlem`;
+  const tipRenk = { "Tanı":"var(--accent)", "Bildirim":"var(--amber)", "Kayıt":"var(--text-dim)", "Kalibrasyon":"var(--green)" };
+  document.getElementById("islem-list").innerHTML = list.length === 0
+    ? `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Henüz işlem kaydı yok</div></div>`
+    : list.map((is, i) => `
+      <div class="islem-row">
+        <div class="islem-timeline">
+          <div class="timeline-dot" style="background:${tipRenk[is.tip]||"var(--accent)"}"></div>
+          ${i < list.length-1 ? '<div class="timeline-line"></div>' : ''}
+        </div>
+        <div class="islem-content">
+          <div class="islem-top">
+            <span class="islem-tip" style="color:${tipRenk[is.tip]||"var(--accent)"}">${is.tip}</span>
+            <span class="islem-yapan">${is.yapan}</span>
+            <span class="islem-date">${fmtDate(is.tarih)} ${is.saat}</span>
+          </div>
+          <div class="islem-text">${is.metin}</div>
+          <div class="islem-durum"><span class="status ${durumCls[is.durum]||"s-prog"}" style="font-size:9px;padding:1px 6px"><span class="dot"></span>${is.durum}</span></div>
+        </div>
+      </div>
+    `).join("");
+}
+
+/* ──── PERFORMANS PANEL ───────────────────────────── */
+function renderPerf() {
+  const maxTop = Math.max(...performans.map(p=>p.toplam));
+  document.getElementById("perf-grid").innerHTML = performans.map(p => {
+    const barW = v => Math.round((v/p.toplam)*100);
+    return `
+      <div class="perf-card">
+        <div class="perf-card-name">
+          ${p.ad}
+          <span class="perf-card-id">${p.cihaz}</span>
+        </div>
+        <div class="perf-bars">
+          <div class="perf-bar-row">
+            <div class="perf-bar-label">Toplam</div>
+            <div class="perf-bar-bg"><div class="perf-bar-fill" style="width:${Math.round((p.toplam/maxTop)*100)}%;background:var(--accent)"></div></div>
+            <div class="perf-bar-count">${p.toplam}</div>
+          </div>
+          <div class="perf-bar-row">
+            <div class="perf-bar-label">Kritik</div>
+            <div class="perf-bar-bg"><div class="perf-bar-fill" style="width:${barW(p.kritik)}%;background:var(--red)"></div></div>
+            <div class="perf-bar-count" style="color:var(--red)">${p.kritik}</div>
+          </div>
+          <div class="perf-bar-row">
+            <div class="perf-bar-label">Açık</div>
+            <div class="perf-bar-bg"><div class="perf-bar-fill" style="width:${barW(p.acik)}%;background:var(--amber)"></div></div>
+            <div class="perf-bar-count" style="color:var(--amber)">${p.acik}</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;">
+          <div class="perf-bar-label" style="margin-bottom:4px">Ort. Çözüm</div>
+          <div style="font-family:var(--mono);font-size:13px;font-weight:600;color:${p.ort>5?'var(--red)':p.ort>3?'var(--amber)':'var(--green)'}">
+            ${p.ort} gün
+          </div>
+        </div>
+        <div class="sparkline-row" style="margin-top:10px">
+          ${p.trend.map(v => `<div class="spark-bar" style="height:${Math.max(10, (v/6)*100)}%;background:${v>3?'var(--red)':v>1?'var(--amber)':'var(--accent)'};opacity:0.7"></div>`).join("")}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // Trend
+  const maxTrend = Math.max(...trendVeriler);
+  document.getElementById("trend-bars").innerHTML = trendVeriler.map((v,i) => `
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">${v}</div>
+      <div style="flex:1;width:100%;border-radius:3px 3px 0 0;background:${v>5?'var(--red)':v>3?'var(--amber)':'var(--accent)'};opacity:0.75;min-height:4px;height:${Math.round((v/maxTrend)*50)}px"></div>
+    </div>
+  `).join("");
+  document.getElementById("trend-labels").innerHTML = trendAylar.map(a => `
+    <div style="flex:1;text-align:center;font-family:var(--mono);font-size:9px;color:var(--text-dim)">${a}</div>
+  `).join("");
+
+  // Tekrarlayan
+  document.getElementById("repeat-list").innerHTML = [
+    { cihaz:"BT-001", baslik:"Görüntü donması", sayi:3, aralık:"21 gün" },
+    { cihaz:"USG-003", baslik:"Prob bağlantı kesintisi", sayi:2, aralık:"48 gün" },
+    { cihaz:"EKG-004", baslik:"Yazıcı kağıt sıkışması", sayi:4, aralık:"12 gün" },
+  ].map(r => `
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);">
+      <span class="cihaz-chip">${r.cihaz}</span>
+      <span style="flex:1;font-size:12px;color:var(--text)">${r.baslik}</span>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--red)">${r.sayi}× tekrar</span>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim)">~${r.aralık}</span>
+    </div>
+  `).join("");
+}
+
+/* ──── SEKME GEÇİŞİ ──────────────────────────────── */
+function switchView(v) {
+  document.querySelectorAll(".tab").forEach((t,i) => t.classList.toggle("active", (i===0&&v==="main")||(i===1&&v==="perf")));
+  document.getElementById("view-main").style.display = v==="main" ? "flex" : "none";
+  document.getElementById("view-perf").classList.toggle("active", v==="perf");
+}
+
+/* ──── INIT ───────────────────────────────────────── */
+renderTable();
+selectRow(0);
+renderPerf();
+switchView("main");
+</script>
+</body>
+</html>
