@@ -180,14 +180,17 @@ class KalibrasyonKayitForm(QWidget):
         sep.setStyleSheet(f"background:{_C['border']};")
         root.addWidget(sep)
 
-        h_splitter = QSplitter(Qt.Horizontal)
-        h_splitter.setStyleSheet(S.get("splitter", ""))
-        h_splitter.addWidget(self._build_left_panel())
-        h_splitter.addWidget(self._build_right_panel())
-        h_splitter.setStretchFactor(0, 3)
-        h_splitter.setStretchFactor(1, 2)
-        h_splitter.setSizes([680, 380])
-        root.addWidget(h_splitter, 1)
+        self._h_splitter = QSplitter(Qt.Horizontal)
+        self._h_splitter.setStyleSheet(S.get("splitter", ""))
+        self._h_splitter.addWidget(self._build_left_panel())
+        self._h_splitter.addWidget(self._build_form_panel())   # orta: gizli form
+        self._h_splitter.addWidget(self._build_right_panel())
+        self._h_splitter.setHandleWidth(0)          # handle görünmez
+        self._h_splitter.setChildrenCollapsible(False)
+        for i in range(3):
+            self._h_splitter.handle(i).setEnabled(False)   # sürükleme kapalı
+        self._h_splitter.setSizes([710, 0, 350])
+        root.addWidget(self._h_splitter, 1)
 
     # ── KPI Şeridi ──────────────────────────────────────
     def _build_kpi_bar(self) -> QWidget:
@@ -343,7 +346,66 @@ class KalibrasyonKayitForm(QWidget):
         layout.addWidget(self.lbl_count)
         return panel
 
-    # ── Sağ Panel ───────────────────────────────────────
+    # ── Form Panel (Orta - Gizli) ──────────────────────
+    def _build_form_panel(self) -> QWidget:
+        """
+        Tablo ile detay paneli arasında açılan form alanı.
+        Başlangıçta gizlidir; _open_kal_form ile gösterilir.
+        """
+        surface = getattr(DarkTheme, "SURFACE", "#13161d")
+        panel_bg = getattr(DarkTheme, "PANEL",   "#191d26")
+        border   = getattr(DarkTheme, "BORDER",  "#242938")
+        text_pr  = getattr(DarkTheme, "TEXT_PRIMARY",   "#eef0f5")
+        text_sec = getattr(DarkTheme, "TEXT_SECONDARY", "#c8cdd8")
+
+        self._form_panel = QWidget()
+        self._form_panel.setVisible(False)
+        self._form_panel.setStyleSheet(
+            f"background:{surface};"
+            f"border-left:1px solid {border};"
+            f"border-right:1px solid {border};"
+        )
+        layout = QVBoxLayout(self._form_panel)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        # Kapatma butonu — sağ üstte tek X
+        hdr = QWidget()
+        hdr.setFixedHeight(30)
+        hdr.setStyleSheet(f"background:{surface};border-bottom:1px solid {border};")
+        hdr_l = QHBoxLayout(hdr)
+        hdr_l.setContentsMargins(0, 0, 6, 0)
+        hdr_l.setSpacing(0)
+        hdr_l.addStretch()
+
+        btn_kapat = QPushButton("✕")
+        btn_kapat.setFixedSize(22, 22)
+        btn_kapat.setStyleSheet(
+            f"QPushButton{{background:transparent;border:none;"
+            f"color:{text_sec};font-size:12px;border-radius:4px;}}"
+            f"QPushButton:hover{{background:{border};color:{text_pr};}}"
+        )
+        btn_kapat.clicked.connect(self._close_form)
+        hdr_l.addWidget(btn_kapat)
+        layout.addWidget(hdr)
+
+        # Scroll alanı — form widget'ı buraya eklenir
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet(S.get("scroll", f"background:{surface};border:none;"))
+
+        self._form_inner = QWidget()
+        self._form_inner.setStyleSheet(f"background:{surface};")
+        self._form_layout = QVBoxLayout(self._form_inner)
+        self._form_layout.setContentsMargins(10, 10, 10, 10)
+        self._form_layout.setSpacing(0)
+        self._form_layout.addStretch()
+        scroll.setWidget(self._form_inner)
+        layout.addWidget(scroll, 1)
+
+        return self._form_panel
+
+    # ── Sağ Panel (Detay Başlığı + Buton Bar) ──────────
     def _build_right_panel(self) -> QWidget:
         panel = QWidget()
         panel.setStyleSheet(
@@ -418,31 +480,8 @@ class KalibrasyonKayitForm(QWidget):
         self.btn_kayit_ekle.clicked.connect(self._open_kal_form)
         bb_l.addWidget(self.btn_kayit_ekle)
         layout.addWidget(btn_bar)
-
-        # Form container (VSplitter içinde)
-        self._v_splitter = QSplitter(Qt.Vertical)
-        self._v_splitter.setStyleSheet(S.get("splitter", ""))
-
-        placeholder = QWidget()
-        placeholder.setStyleSheet(f"background:{_C['surface']};")
-        self._v_splitter.addWidget(placeholder)
-
-        self.form_container = QScrollArea()
-        self.form_container.setWidgetResizable(True)
-        self.form_container.setStyleSheet(S.get("scroll", ""))
-        self.form_container.setVisible(False)
-        self._form_inner = QWidget()
-        self._form_layout = QVBoxLayout(self._form_inner)
-        self._form_layout.setContentsMargins(8, 8, 8, 8)
-        self._form_layout.setSpacing(0)
-        self._form_layout.addStretch()
-        self.form_container.setWidget(self._form_inner)
-        self._v_splitter.addWidget(self.form_container)
-
-        self._v_splitter.setStretchFactor(0, 1)
-        self._v_splitter.setStretchFactor(1, 0)
-        self._v_splitter.setSizes([400, 0])
-        layout.addWidget(self._v_splitter, 1)
+        layout.addStretch()
+        
         return panel
 
     # ── Yardımcı widget üreticileri ─────────────────────
@@ -596,7 +635,7 @@ class KalibrasyonKayitForm(QWidget):
     #  Form Açma / Kapama
     # ══════════════════════════════════════════════════════
     def _clear_form_container(self):
-        while self._form_layout.count() > 0:
+        while self._form_layout.count() > 1:
             item = self._form_layout.takeAt(0)
             w = item.widget()
             if w:
@@ -604,7 +643,6 @@ class KalibrasyonKayitForm(QWidget):
         if self._active_form is not None:
             self._active_form.setParent(None)
             self._active_form = None
-        self._form_layout.addStretch()
 
     def _open_kal_form(self):
         self._clear_form_container()
@@ -612,13 +650,13 @@ class KalibrasyonKayitForm(QWidget):
         form.saved.connect(self._on_kal_saved)
         self._active_form = form
         self._form_layout.insertWidget(0, form)
-        self.form_container.setVisible(True)
-        self._v_splitter.setSizes([200, 300])
+        self._form_panel.setVisible(True)
+        self._h_splitter.setSizes([470, 360, 350])
 
     def _close_form(self):
         self._clear_form_container()
-        self.form_container.setVisible(False)
-        self._v_splitter.setSizes([400, 0])
+        self._form_panel.setVisible(False)
+        self._h_splitter.setSizes([710, 0, 350])
 
     # ══════════════════════════════════════════════════════
     #  Geri çağrılar

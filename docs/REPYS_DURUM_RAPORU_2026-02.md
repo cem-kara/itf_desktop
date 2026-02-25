@@ -248,3 +248,14 @@ Bağımlılık kuralı:
 REPYS için bir sonraki doğru adım, **özellik büyütme değil; güvence, sürdürülebilirlik ve operasyonel netlik artırımıdır**. Bu rapordaki P1→P4 planı aynı anda hem teknik borcu azaltır hem de yeni özellikler için güvenli geliştirme zemini kurar.
 
 Bu plan onaylandığında önerilen başlangıç: **P1 test hattı + personel/cihaz kritik validasyon senaryolarının hemen yazımı**.
+
+---
+
+## 10) Login + RBAC (logi_todo)
+
+Referans: `docs/logi_todo.md`
+Kapsam: Kullanici girisi + rol/yetki (RBAC) + menu ve sayfa guard.
+Oncelik: P0 veri modeli + auth servisleri + login akisi.
+Uygulama: Is paketleri IP-01..IP-08 ile dosya bazli gorev listesi.
+Baslangic: v15 migration + core/auth servisleri.
+Hazirlanan iskeletler (2026-02-25): core/auth/* ve ui/auth/* altinda yeni dosyalar.

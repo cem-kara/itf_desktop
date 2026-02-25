@@ -1,0 +1,88 @@
+{
+  "menu_yapilandirma": {
+    "PERSONEL": [
+      {
+        "baslik": "Personel Listesi",
+        "implemented": true,
+        "permission": "personel.read"
+      },
+      {
+        "baslik": "Personel Ekle",
+        "implemented": true,
+        "permission": "personel.write"
+      },
+      {
+        "baslik": "Sağlık Takip",
+        "implemented": true,
+        "permission": "personel.read"
+      },
+      {
+        "baslik": "İzin Takip ve FHSZ Yönetim",
+        "implemented": true,
+        "permission": "personel.read"
+      }
+    ],
+    "CİHAZ": [
+      {
+        "baslik": "Cihaz Listesi",
+        "implemented": true,
+        "permission": "cihaz.read"
+      },
+      {
+        "baslik": "Cihaz Ekle",
+        "implemented": true,
+        "permission": "cihaz.write"
+      },
+      {
+        "baslik": "Teknik Hizmetler",
+        "implemented": true,
+        "permission": "cihaz.write"
+      }
+    ],
+    "RKE": [
+      {
+        "baslik": "RKE Envanter",
+        "implemented": true,
+        "note": "Geliştirme aşamasında"
+      },
+      {
+        "baslik": "RKE Muayene",
+        "implemented": true
+      },
+      {
+        "baslik": "RKE Raporlama",
+        "implemented": true
+      }
+    ],
+    "YÖNETİCİ İŞLEMLERİ": [
+      {
+        "baslik": "Admin Panel",
+        "implemented": false,
+        "permission": "admin.panel"
+      },
+      {
+        "baslik": "Yıl Sonu İzin",
+        "implemented": false,
+        "note": "Yıl sonu izin devir işlemleri",
+        "permission": "admin.panel"
+      },
+      {
+        "baslik": "Log Görüntüleyici",
+        "implemented": true,
+        "note": "Uygulama log dosyalarını incele",
+        "permission": "admin.logs.view"
+      },
+      {
+        "baslik": "Yedek Yönetimi",
+        "implemented": true,
+        "note": "Veritabanı yedeklerini listele, al ve geri yükle",
+        "permission": "admin.backup"
+      },
+      {
+        "baslik": "Ayarlar",
+        "implemented": false,
+        "permission": "admin.settings"
+      }
+    ]
+  }
+}
