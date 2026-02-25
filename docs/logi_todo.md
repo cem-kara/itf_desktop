@@ -90,6 +90,29 @@ Eklenen: tests/test_auth_service.py
 Eklenen: tests/test_authorization_service.py
 Eklenen: tests/test_login_dialog.py
 
+## 4.1) RBAC Taslaklari (docs/rbac_drafts) (2026-02-25)
+Not: Asil dosyalara dokunulmadan, tam guncellenmis taslak kopyalar olusturuldu.
+Taslak: docs/rbac_drafts/main.pyw
+Taslak: docs/rbac_drafts/database/migrations.py
+Taslak: docs/rbac_drafts/database/sqlite_manager.py
+Taslak: docs/rbac_drafts/ui/main_window.py
+Taslak: docs/rbac_drafts/ui/sidebar.py
+Taslak: docs/rbac_drafts/ui/auth/login_dialog.py
+Taslak: docs/rbac_drafts/core/di.py
+Taslak: docs/rbac_drafts/ayarlar.json
+Taslak: docs/rbac_drafts/core/auth/password_hasher.py
+Taslak: docs/rbac_drafts/ui/admin/admin_panel.py
+Taslak: docs/rbac_drafts/ui/admin/__init__.py
+Taslak: docs/rbac_drafts/ui/auth/__init__.py
+Taslak: docs/rbac_drafts/permissions_standard.md
+Taslak: docs/rbac_drafts/page_permission_matrix.md
+Taslak: docs/rbac_drafts/role_matrix.md
+Taslak: docs/rbac_drafts/login_flow.md
+Taslak: docs/rbac_drafts/guard_flow.md
+Taslak: docs/rbac_drafts/seed_strategy.md
+Taslak: docs/rbac_drafts/test_plan.md
+Taslak: docs/rbac_drafts/risk_rollback.md
+
 ## 5) Dosya Bazli Teknik Gorev Listesi (Bu dokumana eklenecek)
 
 ### database/migrations.py
