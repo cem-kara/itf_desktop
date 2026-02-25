@@ -244,6 +244,69 @@ Aşağıdaki liste gerçek dosya büyüklüğü + sorumluluk karışımı (UI + 
 3. Her parçalanan dosya için en az 1 smoke + 1 unit test eklendi.
 4. Kritik akışlar (Personel Liste, İzin Takip, Arıza Kayıt) regresyonsuz geçti.
 
+### 4.3.5 Ek Gözden Geçirme: `bakim_form.py` ve `kalibrasyon_form.py`
+
+Bu revizyonda özellikle atlanan iki dosya ayrıca incelendi:
+- `ui/pages/cihaz/bakim_form.py` (~750 satır)
+- `ui/pages/cihaz/kalibrasyon_form.py` (~767 satır)
+
+#### Neden bu dosyalar da P3 kapsamına alınmalı?
+1. Her iki dosyada da benzer yapı bulunuyor: KPI bar + filtre paneli + tablo modeli + detay/form yönetimi.
+2. Renk sabitleri, tablo modeli ve filtre/aksiyon akışlarında tekrar eden kalıplar var.
+3. `bakim_kalibrasyon_form.py` ile birlikte ele alınmadığında bakım maliyeti parçalı kalıyor.
+
+#### Bu dosyalar için önerilen parçalama
+
+**A) Ortak çekirdek oluştur (cihaz/forms/common):**
+- `base_record_table_model.py` (ortak QAbstractTableModel davranışları)
+- `kpi_bar_widget.py` (kart üretimi + güncelleme)
+- `filter_panel_widget.py` (cihaz/durum/arama filtreleri)
+- `record_detail_container.py` (sağ panel detay + form alanı)
+
+**B) Bakım özel modülü (cihaz/forms/bakim):**
+- `bakim_view.py`
+- `bakim_presenter.py`
+- `bakim_service.py`
+- `bakim_state.py`
+
+**C) Kalibrasyon özel modülü (cihaz/forms/kalibrasyon):**
+- `kalibrasyon_view.py`
+- `kalibrasyon_presenter.py`
+- `kalibrasyon_service.py`
+- `kalibrasyon_state.py`
+
+#### Klasör yapısı önerisi (güncellenmiş)
+
+```text
+ui/pages/cihaz/
+  forms/
+    common/
+      base_record_table_model.py
+      kpi_bar_widget.py
+      filter_panel_widget.py
+      record_detail_container.py
+    bakim/
+      bakim_view.py
+      bakim_presenter.py
+      bakim_service.py
+      bakim_state.py
+    kalibrasyon/
+      kalibrasyon_view.py
+      kalibrasyon_presenter.py
+      kalibrasyon_service.py
+      kalibrasyon_state.py
+```
+
+#### Geçiş sırası (öneri)
+1. Önce `bakim_form.py` ve `kalibrasyon_form.py` içindeki **ortak widget/model** parçalarını `forms/common` altına çıkar.
+2. Sonra her dosyada presenter + service + state ayrımını yap.
+3. Son adımda `bakim_kalibrasyon_form.py` ile çakışan mantıkları tek noktada birleştir.
+
+#### Bu ek bölümün kabul kriteri
+- `bakim_form.py` ve `kalibrasyon_form.py` içinde tekrar eden kod blokları belirgin biçimde azalır.
+- Ortak bileşenler `forms/common` altında yeniden kullanılabilir hale gelir.
+- Bakım/Kalibrasyon formlarındaki regress kontrol listesi (listeleme, filtreleme, kayıt ekleme, detay gösterimi) sorunsuz geçer.
+
 ---
 
 ## P4 — Tema Son Faz ve Ürün Kalitesi (8–10 hafta)
