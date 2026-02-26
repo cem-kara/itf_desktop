@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RKE — Radyasyon Koruyucu Ekipman Sistemi</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg0:      #070a0e;
+    --bg1:      #0d1117;
+    --bg2:      #121820;
+    --bg3:      #1a2030;
+    --border:   #1e2d3d;
+    --border2:  #253545;
+    --text0:    #e8edf5;
+    --text1:    #8fa3b8;
+    --text2:    #4d6070;
+    --red:      #e85555;
+    --amber:    #e8a030;
+    --green:    #2ec98e;
+    --blue:     #3d8ef5;
+    --purple:   #a060e8;
+    --cyan:     #20c0d8;
+    --mono:     'JetBrains Mono', monospace;
+    --sans:     'Syne', sans-serif;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg0);
+    color: var(--text0);
+    font-family: var(--sans);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── ARKAPLAN DOKU ─────────────────── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 80% 20%, rgba(61,142,245,.04) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 60% at 10% 80%, rgba(46,201,142,.03) 0%, transparent 60%),
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(30,45,61,.25) 39px, rgba(30,45,61,.25) 40px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Radyasyon sembolü watermark */
+  body::after {
+    content: '☢';
+    position: fixed;
+    right: -60px;
+    bottom: -60px;
+    font-size: 340px;
+    color: rgba(232,160,48,.025);
+    pointer-events: none;
+    z-index: 0;
+    line-height: 1;
+  }
+
+  /* ── TOPBAR ─────────────────────────── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    height: 46px;
+    background: var(--bg1);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+
+  .topbar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 20px;
+    border-right: 1px solid var(--border);
+    height: 100%;
+  }
+
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, var(--amber) 0%, #c07020 100%);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #0a0c10;
+    font-weight: 700;
+  }
+
+  .logo-text {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    color: var(--text0);
+  }
+
+  .logo-sub {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text2);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    line-height: 1;
+    margin-top: 2px;
+  }
+
+  /* ── MOD SEKME ÇUBUĞU ──────────────── */
+  .mod-tabs {
+    display: flex;
+    gap: 0;
+    height: 100%;
+    padding: 0 8px;
+  }
+
+  .mod-tab {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .06em;
+    color: var(--text2);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all .18s;
+    text-transform: uppercase;
+    position: relative;
+  }
+
+  .mod-tab:hover { color: var(--text1); }
+
+  .mod-tab.active {
+    color: var(--text0);
+    border-bottom-color: var(--amber);
+  }
+
+  .mod-tab .tab-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text2);
+    transition: background .18s;
+    flex-shrink: 0;
+  }
+
+  .mod-tab.active .tab-dot { background: var(--amber); }
+
+  .topbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px;
+  }
+
+  .status-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text2);
+    letter-spacing: .04em;
+  }
+
+  .status-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .4; }
+  }
+
+  .user-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text1);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 9px;
+    letter-spacing: .04em;
+  }
+
+  /* ── KPI ŞERIDI ─────────────────────── */
+  .kpi-bar {
+    display: flex;
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 9;
+  }
+
+  .kpi-card {
+    flex: 1;
+    background: var(--bg1);
+    padding: 10px 16px 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+    transition: background .18s;
+  }
+
+  .kpi-card:hover { background: var(--bg2); }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--kpi-color, var(--blue));
+    opacity: .6;
+  }
+
+  .kpi-glow {
+    position: absolute;
+    right: -10px; top: -10px;
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: var(--kpi-color, var(--blue));
+    opacity: .04;
+    filter: blur(20px);
+  }
+
+  .kpi-label {
+    font-family: var(--mono);
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: .12em;
+    color: var(--text2);
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .kpi-val {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--kpi-color, var(--blue));
+    line-height: 1;
+    letter-spacing: -.02em;
+  }
+
+  .kpi-sub {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text2);
+    letter-spacing: .04em;
+    margin-top: 3px;
+  }
+
+  /* ── ANA GÖVDE ─────────────────────── */
+  .body-wrap {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── SOL FORM PANELİ ───────────────── */
+  .form-panel {
+    width: 380px;
+    flex-shrink: 0;
+    background: var(--bg1);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .panel-title {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    color: var(--text2);
+    text-transform: uppercase;
+  }
+
+  .panel-mode {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--amber);
+    letter-spacing: .06em;
+    background: rgba(232,160,48,.08);
+    border: 1px solid rgba(232,160,48,.2);
+    border-radius: 3px;
+    padding: 2px 7px;
+  }
+
+  .form-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+  }
+
+  /* ── KART GRUPLAR ──────────────────── */
+  .fgroup {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .fgroup-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,.015);
+  }
+
+  .fgroup-indicator {
+    width: 3px; height: 14px;
+    border-radius: 2px;
+    background: var(--group-color, var(--blue));
+    flex-shrink: 0;
+  }
+
+  .fgroup-title {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--group-color, var(--blue));
+  }
+
+  .fgroup-body {
+    padding: 10px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .frow { display: flex; gap: 8px; }
+  .fcol { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+
+  .flabel {
+    font-family: var(--mono);
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: .1em;
+    color: var(--text2);
+    text-transform: uppercase;
+  }
+
+  .finput {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 0 9px;
+    height: 28px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text0);
+    display: flex;
+    align-items: center;
+    position: relative;
+    transition: border-color .15s;
+    cursor: text;
+  }
+
+  .finput:hover { border-color: rgba(61,142,245,.4); }
+
+  .finput.active {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 2px rgba(61,142,245,.1);
+  }
+
+  .finput.readonly {
+    color: var(--text2);
+    cursor: default;
+    font-style: italic;
+  }
+
+  .finput.combo::after {
+    content: '⌄';
+    position: absolute;
+    right: 8px;
+    color: var(--text2);
+    font-size: 10px;
+  }
+
+  .finput .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(61,142,245,.12);
+    border: 1px solid rgba(61,142,245,.25);
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 9px;
+    color: var(--blue);
+    margin-right: 4px;
+  }
+
+  .finput-ta {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 7px 9px;
+    height: 60px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text2);
+    resize: none;
+    line-height: 1.5;
+  }
+
+  /* ── MİNİ TABLO (Geçmiş) ───────────── */
+  .mini-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .mini-table th {
+    text-align: left;
+    padding: 5px 8px;
+    font-size: 8px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--text2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mini-table td {
+    padding: 5px 8px;
+    color: var(--text1);
+    border-bottom: 1px solid rgba(30,45,61,.5);
+  }
+
+  .mini-table tr:last-child td { border-bottom: none; }
+  .mini-table tr:hover td { background: rgba(255,255,255,.02); }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .04em;
+  }
+
+  .badge-green { background: rgba(46,201,142,.12); color: var(--green); }
+  .badge-red   { background: rgba(232,85,85,.12);  color: var(--red);   }
+  .badge-amber { background: rgba(232,160,48,.12); color: var(--amber); }
+  .badge-blue  { background: rgba(61,142,245,.12); color: var(--blue);  }
+
+  /* ── FORM ALT BÖLGESİ ──────────────── */
+  .form-footer {
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .pbar-wrap { display: flex; flex-direction: column; gap: 3px; }
+
+  .pbar-label {
+    font-family: var(--mono);
+    font-size: 8px;
+    color: var(--text2);
+    letter-spacing: .06em;
+  }
+
+  .pbar {
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+
+  .pbar-fill {
+    height: 100%;
+    border-radius: 1px;
+    background: linear-gradient(90deg, var(--blue), var(--cyan));
+    width: 0%;
+    transition: width 1.2s cubic-bezier(.4,0,.2,1);
+  }
+
+  .btn-row { display: flex; gap: 8px; }
+
+  .btn {
+    flex: 1;
+    height: 34px;
+    border: none;
+    border-radius: 5px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0);
+    transition: background .15s;
+  }
+
+  .btn:hover::after { background: rgba(255,255,255,.06); }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+  }
+
+  .btn-primary {
+    background: var(--green);
+    color: #051a10;
+    font-weight: 800;
+    box-shadow: 0 2px 12px rgba(46,201,142,.2);
+  }
+
+  .btn-danger {
+    background: var(--red);
+    color: #fff;
+    font-weight: 800;
+    box-shadow: 0 2px 12px rgba(232,85,85,.2);
+  }
+
+  .btn-amber {
+    background: var(--amber);
+    color: #1a0f00;
+    font-weight: 800;
+    box-shadow: 0 2px 12px rgba(232,160,48,.2);
+  }
+
+  /* ── SAĞ LİSTE PANELİ ──────────────── */
+  .list-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .list-topbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--bg1);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .filter-combo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0 10px;
+    height: 28px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text1);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .filter-combo span { color: var(--text2); font-size: 9px; }
+
+  .filter-search {
+    flex: 1;
+    height: 28px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text1);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .filter-search .search-icon { color: var(--text2); font-size: 11px; }
+
+  .filter-search .search-text {
+    color: var(--text2);
+    font-size: 10px;
+    font-style: italic;
+  }
+
+  .btn-icon {
+    width: 28px; height: 28px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text2);
+    transition: all .15s;
+    flex-shrink: 0;
+  }
+
+  .btn-icon:hover { color: var(--text0); border-color: var(--border2); }
+
+  /* ── ANA TABLO ─────────────────────── */
+  .table-wrap {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .data-table thead tr {
+    background: var(--bg1);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+
+  .data-table th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 8px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--text2);
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .data-table th:hover { color: var(--text1); }
+  .data-table th.sorted { color: var(--blue); }
+
+  .data-table td {
+    padding: 7px 12px;
+    color: var(--text1);
+    border-bottom: 1px solid rgba(30,45,61,.5);
+    white-space: nowrap;
+  }
+
+  .data-table tbody tr {
+    cursor: pointer;
+    transition: background .12s;
+  }
+
+  .data-table tbody tr:hover td { background: rgba(255,255,255,.025); }
+  .data-table tbody tr.selected td { background: rgba(61,142,245,.06); }
+  .data-table tbody tr:nth-child(even) td { background: rgba(0,0,0,.15); }
+  .data-table tbody tr:nth-child(even):hover td { background: rgba(255,255,255,.02); }
+
+  .td-mono { font-family: var(--mono); letter-spacing: .02em; }
+  .td-muted { color: var(--text2); }
+
+  /* ── TABLO FOOTER ──────────────────── */
+  .table-footer {
+    display: flex;
+    align-items: center;
+    padding: 6px 14px;
+    background: var(--bg1);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .footer-count {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text2);
+    letter-spacing: .06em;
+    margin-left: auto;
+  }
+
+  .footer-action {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--amber);
+    background: rgba(232,160,48,.06);
+    border: 1px solid rgba(232,160,48,.2);
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    letter-spacing: .06em;
+    font-weight: 700;
+    transition: all .15s;
+  }
+
+  .footer-action:hover { background: rgba(232,160,48,.12); }
+
+  /* ── RAPOR PANELI ÖZEL ─────────────── */
+  .rapor-control {
+    background: var(--bg1);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+    flex-shrink: 0;
+  }
+
+  .rapor-section-label {
+    font-family: var(--mono);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    color: var(--text2);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .radio-group { display: flex; flex-direction: column; gap: 5px; }
+
+  .radio-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text1);
+    transition: color .15s;
+  }
+
+  .radio-item:hover { color: var(--text0); }
+
+  .radio-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--border2);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color .15s;
+    flex-shrink: 0;
+  }
+
+  .radio-dot.checked {
+    border-color: var(--purple);
+    background: rgba(160,96,232,.12);
+  }
+
+  .radio-dot.checked::after {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--purple);
+  }
+
+  .vdivider {
+    width: 1px;
+    background: var(--border);
+    align-self: stretch;
+    flex-shrink: 0;
+  }
+
+  .filter-combos-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  .filter-col { display: flex; flex-direction: column; gap: 5px; }
+
+  .rapor-btns {
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+    justify-content: flex-end;
+  }
+
+  /* ── TAB GEÇİŞ ANİMASYON ───────────── */
+  .tab-content {
+    display: none;
+    flex: 1;
+    overflow: hidden;
+    animation: fadeUp .2s ease;
+  }
+
+  .tab-content.active {
+    display: flex;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0);   }
+  }
+
+  /* ── SCROLLBAR ─────────────────────── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── SELECTED ROW ──────────────────── */
+  .data-table tbody tr.selected td { background: rgba(61,142,245,.08) !important; }
+
+  /* ── MUAYENe RAPOR PANELİ ─────────── */
+  .muayene-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── RAPOR VIEW ─────────────────────── */
+  .rapor-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── GEÇMIŞ TABLO WRAPPER ─────────── */
+  .gecmis-wrap {
+    max-height: 110px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="logo-icon">☢</div>
+    <div>
+      <div class="logo-text">RKE SİSTEMİ</div>
+      <div class="logo-sub">Radyasyon Koruyucu Ekipman</div>
+    </div>
+  </div>
+
+  <div class="mod-tabs">
+    <div class="mod-tab active" onclick="switchTab('yonetim', this)">
+      <span class="tab-dot"></span>ENVANTER YÖNETİMİ
+    </div>
+    <div class="mod-tab" onclick="switchTab('muayene', this)">
+      <span class="tab-dot"></span>MUAYENE GİRİŞİ
+    </div>
+    <div class="mod-tab" onclick="switchTab('rapor', this)">
+      <span class="tab-dot"></span>RAPORLAMA MERKEZİ
+    </div>
+  </div>
+
+  <div class="topbar-right">
+    <div class="status-chip"><span class="status-dot"></span>CANLI</div>
+    <div class="user-badge">DR.MEHMET YILMAZ</div>
+  </div>
+</div>
+
+<!-- KPI ŞERIDI — YÖNETİM -->
+<div id="kpi-yonetim" class="kpi-bar">
+  <div class="kpi-card" style="--kpi-color:var(--blue)">
+    <div class="kpi-glow"></div>
+    <div>
+      <div class="kpi-label">TOPLAM EKİPMAN</div>
+      <div class="kpi-val" id="kv-toplam">248</div>
+      <div class="kpi-sub">envanter kaydı</div>
+    </div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:var(--green)">
+    <div class="kpi-glow"></div>
+    <div>
+      <div class="kpi-label">KULLANIMA UYGUN</div>
+      <div class="kpi-val" id="kv-uygun">201</div>
+      <div class="kpi-sub">81.0% aktif</div>
+    </div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:var(--red)">
+    <div class="kpi-glow"></div>
+    <div>
+      <div class="kpi-label">UYGUN DEĞİL</div>
+      <div class="kpi-val" id="kv-uygun-d">29</div>
+      <div class="kpi-sub">11.7% sorunlu</div>
+    </div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:var(--amber)">
+    <div class="kpi-glow"></div>
+    <div>
+      <div class="kpi-label">HURDA</div>
+      <div class="kpi-val" id="kv-hurda">12</div>
+      <div class="kpi-sub">imha bekliyor</div>
+    </div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:var(--text2)">
+    <div class="kpi-glow"></div>
+    <div>
+      <div class="kpi-label">TAMİRDE</div>
+      <div class="kpi-val" id="kv-tamirde">6</div>
+      <div class="kpi-sub">bakımda</div>
+    </div>
+  </div>
+</div>
+
+<!-- KPI ŞERIDI — MUAYENE -->
+<div id="kpi-muayene" class="kpi-bar" style="display:none">
+  <div class="kpi-card" style="--kpi-color:var(--blue)">
+    <div class="kpi-glow"></div>
+    <div>
+      <div class="kpi-label">TOPLAM EKİPMAN</div>
+      <div class="kpi-val">248</div>
+      <div class="kpi-sub">listede</div>
+    </div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:var(--green)">
+    <div class="kpi-glow"></div>
+    <div>
+      <div class="kpi-label">KULLANIMA UYGUN</div>
+      <div class="kpi-val">201</div>
+      <div class="kpi-sub">son muayenede</div>
+    </div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:var(--red)">
+    <div class="kpi-glow"></div>
+    <div>
+      <div class="kpi-label">UYGUN DEĞİL</div>
+      <div class="kpi-val">29</div>
+      <div class="kpi-sub">muayene sonucu</div>
+    </div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:var(--amber)">
+    <div class="kpi-glow"></div>
+    <div>
+      <div class="kpi-label">KONTROL BEKLEYEN</div>
+      <div class="kpi-val">47</div>
+      <div class="kpi-sub">tarihi geçmiş</div>
+    </div>
+  </div>
+</div>
+
+<!-- KPI ŞERIDI — RAPOR -->
+<div id="kpi-rapor" class="kpi-bar" style="display:none">
+  <div class="kpi-card" style="--kpi-color:var(--blue)">
+    <div class="kpi-glow"></div>
+    <div>
+      <div class="kpi-label">TOPLAM KAYIT</div>
+      <div class="kpi-val">1,204</div>
+      <div class="kpi-sub">muayene kaydı</div>
+    </div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:var(--green)">
+    <div class="kpi-glow"></div>
+    <div>
+      <div class="kpi-label">KULLANIMA UYGUN</div>
+      <div class="kpi-val">981</div>
+      <div class="kpi-sub">81.4%</div>
+    </div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:var(--red)">
+    <div class="kpi-glow"></div>
+    <div>
+      <div class="kpi-label">UYGUN DEĞİL</div>
+      <div class="kpi-val">223</div>
+      <div class="kpi-sub">18.6%</div>
+    </div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:var(--amber)">
+    <div class="kpi-glow"></div>
+    <div>
+      <div class="kpi-label">HURDA ADAYI</div>
+      <div class="kpi-val">41</div>
+      <div class="kpi-sub">imha önerisi</div>
+    </div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:var(--cyan)">
+    <div class="kpi-glow"></div>
+    <div>
+      <div class="kpi-label">FARKLI EKİPMAN</div>
+      <div class="kpi-val">248</div>
+      <div class="kpi-sub">benzersiz</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB 1 — YÖNETİM
+══════════════════════════════════════ -->
+<div class="tab-content active" id="tab-yonetim">
+  <!-- FORM PANELİ -->
+  <div class="form-panel">
+    <div class="panel-header">
+      <div class="panel-title">EKİPMAN FORMU</div>
+      <div class="panel-mode">YENİ KAYIT</div>
+    </div>
+
+    <div class="form-scroll">
+
+      <!-- Kimlik Bilgileri -->
+      <div class="fgroup">
+        <div class="fgroup-header" style="--group-color:var(--amber)">
+          <div class="fgroup-indicator"></div>
+          <div class="fgroup-title">KİMLİK BİLGİLERİ</div>
+        </div>
+        <div class="fgroup-body">
+          <div class="frow">
+            <div class="fcol">
+              <div class="flabel">KAYIT NO</div>
+              <div class="finput readonly">Otomatik</div>
+            </div>
+            <div class="fcol">
+              <div class="flabel">BARKOD</div>
+              <div class="finput">RKE-2024-0041</div>
+            </div>
+          </div>
+          <div class="fcol">
+            <div class="flabel">EKİPMAN NO (OTOMATİK)</div>
+            <div class="finput readonly">RKE-ONL-41</div>
+          </div>
+          <div class="fcol">
+            <div class="flabel">KORUYUCU NO (TAM KOD)</div>
+            <div class="finput readonly">RAD-RAD-ONL-41</div>
+          </div>
+          <div class="fcol">
+            <div class="flabel">DEMİRBAŞ NO</div>
+            <div class="finput active">DM-2024-00891</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Özellikler -->
+      <div class="fgroup">
+        <div class="fgroup-header" style="--group-color:var(--green)">
+          <div class="fgroup-indicator"></div>
+          <div class="fgroup-title">EKİPMAN ÖZELLİKLERİ</div>
+        </div>
+        <div class="fgroup-body">
+          <div class="fcol">
+            <div class="flabel">ANA BİLİM DALI</div>
+            <div class="finput combo">Radyoloji</div>
+          </div>
+          <div class="fcol">
+            <div class="flabel">BİRİM</div>
+            <div class="finput combo">BT Ünitesi</div>
+          </div>
+          <div class="fcol">
+            <div class="flabel">KORUYUCU CİNSİ</div>
+            <div class="finput combo">Önlük</div>
+          </div>
+          <div class="frow">
+            <div class="fcol">
+              <div class="flabel">KURŞUN EŞDEĞERİ</div>
+              <div class="finput combo">0.35 mmPb</div>
+            </div>
+            <div class="fcol">
+              <div class="flabel">BEDEN</div>
+              <div class="finput combo">Orta</div>
+            </div>
+          </div>
+          <div class="fcol">
+            <div class="flabel">HİZMET YILI</div>
+            <div class="finput">2021</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Durum -->
+      <div class="fgroup">
+        <div class="fgroup-header" style="--group-color:var(--red)">
+          <div class="fgroup-indicator"></div>
+          <div class="fgroup-title">DURUM VE GEÇMİŞ</div>
+        </div>
+        <div class="fgroup-body">
+          <div class="frow">
+            <div class="fcol">
+              <div class="flabel">KAYIT TARİHİ</div>
+              <div class="finput">2021-03-15</div>
+            </div>
+            <div class="fcol">
+              <div class="flabel">SON KONTROL</div>
+              <div class="finput">2024-11-20</div>
+            </div>
+          </div>
+          <div class="fcol">
+            <div class="flabel">GÜNCEL DURUM</div>
+            <div class="finput combo">Kullanıma Uygun</div>
+          </div>
+          <div class="fcol">
+            <div class="flabel">AÇIKLAMA</div>
+            <div class="finput-ta">Sol omuz dikişi hafif yıpranmış, kullanım uygunluğu etkilenmiyor.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Muayene Geçmişi -->
+      <div class="fgroup">
+        <div class="fgroup-header" style="--group-color:var(--purple)">
+          <div class="fgroup-indicator"></div>
+          <div class="fgroup-title">MUAYENE GEÇMİŞİ</div>
+        </div>
+        <div class="fgroup-body" style="padding: 0;">
+          <div class="gecmis-wrap">
+            <table class="mini-table">
+              <thead>
+                <tr>
+                  <th>TARİH</th>
+                  <th>SONUÇ</th>
+                  <th>AÇIKLAMA</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>2024-11-20</td>
+                  <td><span class="badge badge-green">UYGUN</span></td>
+                  <td>Kurşun bütünlüğü tam</td>
+                </tr>
+                <tr>
+                  <td>2023-11-08</td>
+                  <td><span class="badge badge-green">UYGUN</span></td>
+                  <td>Yırtık yok, askılar sağlam</td>
+                </tr>
+                <tr>
+                  <td>2022-10-14</td>
+                  <td><span class="badge badge-amber">KISMİ</span></td>
+                  <td>Sol taraf yıpranma takip</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /form-scroll -->
+
+    <div class="form-footer">
+      <div class="pbar-wrap" id="pbar-yonetim" style="display:none">
+        <div class="pbar-label">KAYDEDİLİYOR...</div>
+        <div class="pbar"><div class="pbar-fill" style="width:60%"></div></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary">↺&nbsp;&nbsp;TEMİZLE</button>
+        <button class="btn btn-primary" onclick="simSave('yonetim')">✓&nbsp;&nbsp;KAYDET</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LİSTE PANELİ -->
+  <div class="list-panel">
+    <div class="list-topbar">
+      <div class="filter-combo">Tüm ABD <span>⌄</span></div>
+      <div class="filter-combo">Tüm Durumlar <span>⌄</span></div>
+      <div class="filter-search">
+        <span class="search-icon">⌕</span>
+        <span class="search-text">Ekipman no, barkod, birim ara...</span>
+      </div>
+      <div class="btn-icon">⟳</div>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="sorted">EKİPMAN NO ↕</th>
+            <th>KORUYUCU NO</th>
+            <th>ABD</th>
+            <th>BİRİM</th>
+            <th>CİNS</th>
+            <th>Pb</th>
+            <th>YILI</th>
+            <th>BEDEN</th>
+            <th>KONTROL T.</th>
+            <th>DURUM</th>
+          </tr>
+        </thead>
+        <tbody id="yonetim-tbody"></tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      <div class="footer-count" id="yonetim-count">15 kayıt listeleniyor</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB 2 — MUAYENE
+══════════════════════════════════════ -->
+<div class="tab-content" id="tab-muayene">
+  <!-- FORM PANELİ -->
+  <div class="form-panel">
+    <div class="panel-header">
+      <div class="panel-title">MUAYENE GİRİŞ FORMU</div>
+      <div class="panel-mode" style="color:var(--cyan);background:rgba(32,192,216,.08);border-color:rgba(32,192,216,.25)">YENİ KAYIT</div>
+    </div>
+
+    <div class="form-scroll">
+
+      <!-- Ekipman Seçimi -->
+      <div class="fgroup">
+        <div class="fgroup-header" style="--group-color:var(--purple)">
+          <div class="fgroup-indicator"></div>
+          <div class="fgroup-title">EKİPMAN SEÇİMİ</div>
+        </div>
+        <div class="fgroup-body">
+          <div class="fcol">
+            <div class="flabel">EKİPMAN NO</div>
+            <div class="finput active combo">
+              <span class="chip">RKE-ONL-41</span> Önlük
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fiziksel Muayene -->
+      <div class="fgroup">
+        <div class="fgroup-header" style="--group-color:var(--cyan)">
+          <div class="fgroup-indicator"></div>
+          <div class="fgroup-title">FİZİKSEL MUAYENE</div>
+        </div>
+        <div class="fgroup-body">
+          <div class="frow">
+            <div class="fcol">
+              <div class="flabel">MUAYENE TARİHİ</div>
+              <div class="finput">2024-12-18</div>
+            </div>
+            <div class="fcol">
+              <div class="flabel">DURUM</div>
+              <div class="finput combo">Kullanıma Uygun</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skopi Muayene -->
+      <div class="fgroup">
+        <div class="fgroup-header" style="--group-color:var(--blue)">
+          <div class="fgroup-indicator"></div>
+          <div class="fgroup-title">SKOPİ MUAYENE</div>
+        </div>
+        <div class="fgroup-body">
+          <div class="frow">
+            <div class="fcol">
+              <div class="flabel">MUAYENE TARİHİ</div>
+              <div class="finput">2024-12-18</div>
+            </div>
+            <div class="fcol">
+              <div class="flabel">DURUM</div>
+              <div class="finput combo">Kullanıma Uygun</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sonuç -->
+      <div class="fgroup">
+        <div class="fgroup-header" style="--group-color:var(--amber)">
+          <div class="fgroup-indicator"></div>
+          <div class="fgroup-title">SONUÇ VE RAPORLAMA</div>
+        </div>
+        <div class="fgroup-body">
+          <div class="frow">
+            <div class="fcol">
+              <div class="flabel">KONTROL EDEN</div>
+              <div class="finput active combo">Dr. M. Yılmaz</div>
+            </div>
+            <div class="fcol">
+              <div class="flabel">BİRİM SORUMLUSU</div>
+              <div class="finput combo">Dr. A. Demir</div>
+            </div>
+          </div>
+          <div class="fcol">
+            <div class="flabel">TEKNİK AÇIKLAMA (ÇOKLU SEÇİM)</div>
+            <div class="finput combo">
+              <span class="chip">Yırtık Yok</span>
+              <span class="chip">Kurşun Bütünlüğü Tam</span>
+            </div>
+          </div>
+          <div class="fcol">
+            <div class="flabel">RAPOR DOSYASI</div>
+            <div class="finput" style="justify-content:space-between">
+              <span style="color:var(--text2);font-style:italic;font-size:10px">Rapor seçilmedi</span>
+              <span style="color:var(--blue);font-size:10px;cursor:pointer">📂 Yükle</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Geçmiş -->
+      <div class="fgroup">
+        <div class="fgroup-header" style="--group-color:var(--text2)">
+          <div class="fgroup-indicator"></div>
+          <div class="fgroup-title">SEÇİLİ EKİPMANIN GEÇMİŞİ</div>
+        </div>
+        <div class="fgroup-body" style="padding:0">
+          <div class="gecmis-wrap">
+            <table class="mini-table">
+              <thead>
+                <tr>
+                  <th>FİZ. TARİH</th>
+                  <th>SKOPİ TARİH</th>
+                  <th>AÇIKLAMA</th>
+                  <th>RAPOR</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>2023-11-08</td>
+                  <td>2023-11-08</td>
+                  <td>Yırtık Yok, Askılar Sağlam</td>
+                  <td style="color:var(--blue);cursor:pointer">Link</td>
+                </tr>
+                <tr>
+                  <td>2022-10-14</td>
+                  <td>—</td>
+                  <td>Kurşun Bütünlüğü Tam</td>
+                  <td style="color:var(--text2)">—</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="form-footer">
+      <div class="btn-row">
+        <button class="btn btn-secondary">↺&nbsp;&nbsp;TEMİZLE</button>
+        <button class="btn btn-primary" onclick="simSave('muayene')">✓&nbsp;&nbsp;KAYDET</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LİSTE PANELİ -->
+  <div class="list-panel">
+    <div class="list-topbar">
+      <div class="filter-combo">Tüm ABD <span>⌄</span></div>
+      <div class="filter-search">
+        <span class="search-icon">⌕</span>
+        <span class="search-text">Ekipman ara, seçmek için tıkla...</span>
+      </div>
+      <div class="btn-icon">⟳</div>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="sorted">EKİPMAN NO ↕</th>
+            <th>ABD</th>
+            <th>BİRİM</th>
+            <th>CİNSİ</th>
+            <th>KONTROL T.</th>
+            <th>DURUM</th>
+          </tr>
+        </thead>
+        <tbody id="muayene-tbody"></tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      <div class="footer-action" onclick="topluDialog()">⚡ Seçili Ekipmanlara Toplu Muayene</div>
+      <div class="footer-count" id="muayene-count">15 ekipman</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB 3 — RAPOR
+══════════════════════════════════════ -->
+<div class="tab-content" id="tab-rapor">
+  <div class="rapor-body">
+
+    <!-- Kontrol Paneli -->
+    <div class="rapor-control">
+
+      <!-- Rapor Türü -->
+      <div>
+        <div class="rapor-section-label">RAPOR TÜRÜ</div>
+        <div class="radio-group">
+          <div class="radio-item">
+            <div class="radio-dot checked"></div>
+            A. Kontrol Raporu (Genel)
+          </div>
+          <div class="radio-item">
+            <div class="radio-dot"></div>
+            B. Hurda (HEK) Raporu
+          </div>
+          <div class="radio-item">
+            <div class="radio-dot"></div>
+            C. Personel Bazlı Raporlar
+          </div>
+        </div>
+      </div>
+
+      <div class="vdivider"></div>
+
+      <!-- Filtreler -->
+      <div style="flex:1">
+        <div class="rapor-section-label">FİLTRELER</div>
+        <div class="filter-combos-row">
+          <div class="filter-col">
+            <div class="flabel">ANA BİLİM DALI</div>
+            <div class="finput combo" style="min-width:160px">Tüm Bölümler</div>
+          </div>
+          <div class="filter-col">
+            <div class="flabel">BİRİM</div>
+            <div class="finput combo" style="min-width:150px">Tüm Birimler</div>
+          </div>
+          <div class="filter-col">
+            <div class="flabel">İŞLEM TARİHİ</div>
+            <div class="finput combo" style="min-width:150px">Tüm Tarihler</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="vdivider"></div>
+
+      <!-- Butonlar -->
+      <div class="rapor-btns">
+        <div class="rapor-section-label">İŞLEMLER</div>
+        <button class="btn btn-secondary" style="width:170px;height:30px;font-size:9px">⟳&nbsp;&nbsp;VERİLERİ YENİLE</button>
+        <button class="btn btn-danger" style="width:170px;height:30px;font-size:9px" onclick="simSave('rapor')">📄&nbsp;&nbsp;PDF RAPOR OLUŞTUR</button>
+      </div>
+
+    </div>
+
+    <!-- Rapor Tablosu -->
+    <div class="table-wrap" style="flex:1">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="sorted">EKİPMAN NO ↕</th>
+            <th>CİNS</th>
+            <th>Pb</th>
+            <th>BİRİM</th>
+            <th>TARİH</th>
+            <th>SONUÇ</th>
+            <th>AÇIKLAMA</th>
+          </tr>
+        </thead>
+        <tbody id="rapor-tbody"></tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      <div class="footer-count" id="rapor-count">15 kayıt gösteriliyor</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── VERİ ──────────────────────────────────────────────────────
+const ABD_LIST  = ['Radyoloji','Acil','Kardiyoloji','Nöroloji','Pediyatri'];
+const BIRIM_LIST= ['BT Ünitesi','Anjiyografi','Konvansiyonel Rad.','Floroskopi','Radyoloji Depo'];
+const CINS_LIST = ['Önlük','Tiroit Koruyucu','Gonad Koruyucu','Gözlük','Eldiven'];
+const PB_LIST   = ['0.25 mmPb','0.35 mmPb','0.50 mmPb','1.0 mmPb'];
+const BEDEN_LIST= ['XS','S','M','L','XL'];
+const DURUM_LIST= ['Kullanıma Uygun','Kullanıma Uygun Değil','Hurda','Tamirde'];
+const KONT_LIST = ['2024-01-15','2024-03-22','2024-06-10','2024-09-05','2024-11-20','2025-01-08'];
+const SONUC_LIST= ['Kullanıma Uygun','Kullanıma Uygun','Kullanıma Uygun','Kullanıma Uygun Değil'];
+const ACIK_LIST = [
+  'Yırtık Yok, Kurşun Bütünlüğü Tam',
+  'Askılar Sağlam, Temiz',
+  'Sol taraf minimal yıpranma',
+  'Kurşun boşluğu tespit edildi',
+  'Yüzey çatlağı, kullanım dışı',
+  '',
+];
+
+const rnd = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+function mkEkipmanNo(i) {
+  const prefixes = ['RKE-ONL','RKE-TIR','RKE-GON','RKE-GOZ','RKE-ELD'];
+  return `${rnd(prefixes)}-${String(i+1).padStart(3,'0')}`;
+}
+
+const ROWS = Array.from({length: 20}, (_, i) => ({
+  ekipman: mkEkipmanNo(i),
+  kor_no:  `RAD-${rnd(ABD_LIST).substring(0,3).toUpperCase()}-${rnd(CINS_LIST).substring(0,3).toUpperCase()}-${i+1}`,
+  abd:     rnd(ABD_LIST),
+  birim:   rnd(BIRIM_LIST),
+  cins:    rnd(CINS_LIST),
+  pb:      rnd(PB_LIST),
+  yil:     String(2016 + Math.floor(Math.random()*9)),
+  beden:   rnd(BEDEN_LIST),
+  kontrol: rnd(KONT_LIST),
+  durum:   rnd(DURUM_LIST),
+  sonuc:   rnd(SONUC_LIST),
+  aciklama:rnd(ACIK_LIST),
+}));
+
+// ── TABLOLAR ────────────────────────────────────────────────────
+function durumBadge(d) {
+  if (d === 'Kullanıma Uygun')       return `<span class="badge badge-green">UYGUN</span>`;
+  if (d === 'Kullanıma Uygun Değil') return `<span class="badge badge-red">UYGUN DEĞİL</span>`;
+  if (d === 'Hurda')                 return `<span class="badge badge-amber">HURDA</span>`;
+  return `<span class="badge" style="background:rgba(77,96,112,.15);color:var(--text2)">TAMİRDE</span>`;
+}
+
+function buildYonetim() {
+  const tbody = document.getElementById('yonetim-tbody');
+  tbody.innerHTML = ROWS.slice(0,15).map((r, i) => `
+    <tr class="${i===2?'selected':''}" onclick="selectRow(this)">
+      <td class="td-mono">${r.ekipman}</td>
+      <td class="td-mono td-muted" style="font-size:10px">${r.kor_no}</td>
+      <td>${r.abd}</td>
+      <td>${r.birim}</td>
+      <td>${r.cins}</td>
+      <td class="td-mono" style="text-align:center">${r.pb}</td>
+      <td class="td-mono td-muted" style="text-align:center">${r.yil}</td>
+      <td style="text-align:center">${r.beden}</td>
+      <td class="td-mono td-muted" style="text-align:center">${r.kontrol}</td>
+      <td>${durumBadge(r.durum)}</td>
+    </tr>
+  `).join('');
+}
+
+function buildMuayene() {
+  const tbody = document.getElementById('muayene-tbody');
+  tbody.innerHTML = ROWS.slice(0,15).map((r, i) => `
+    <tr class="${i===0?'selected':''}" onclick="selectRow(this)">
+      <td class="td-mono">${r.ekipman}</td>
+      <td>${r.abd}</td>
+      <td>${r.birim}</td>
+      <td>${r.cins}</td>
+      <td class="td-mono td-muted" style="text-align:center">${r.kontrol}</td>
+      <td>${durumBadge(r.durum)}</td>
+    </tr>
+  `).join('');
+}
+
+function buildRapor() {
+  const tbody = document.getElementById('rapor-tbody');
+  tbody.innerHTML = ROWS.slice(0,15).map((r, i) => `
+    <tr onclick="selectRow(this)">
+      <td class="td-mono">${r.ekipman}</td>
+      <td>${r.cins}</td>
+      <td class="td-mono" style="text-align:center">${r.pb}</td>
+      <td>${r.birim}</td>
+      <td class="td-mono td-muted" style="text-align:center">${r.kontrol}</td>
+      <td>${durumBadge(r.sonuc)}</td>
+      <td class="td-muted" style="font-size:10px;max-width:180px;overflow:hidden;text-overflow:ellipsis">${r.aciklama}</td>
+    </tr>
+  `).join('');
+}
+
+function selectRow(el) {
+  const table = el.closest('table');
+  table.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// ── TAB GEÇİŞİ ─────────────────────────────────────────────────
+function switchTab(id, el) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.mod-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  el.classList.add('active');
+
+  document.getElementById('kpi-yonetim').style.display  = (id === 'yonetim')  ? 'flex' : 'none';
+  document.getElementById('kpi-muayene').style.display  = (id === 'muayene')  ? 'flex' : 'none';
+  document.getElementById('kpi-rapor').style.display    = (id === 'rapor')    ? 'flex' : 'none';
+}
+
+// ── SİMÜLE KAYDET ──────────────────────────────────────────────
+function simSave(ctx) {
+  if (ctx === 'rapor') {
+    const btn = document.querySelector('#tab-rapor .btn-danger');
+    btn.textContent = 'İşleniyor...';
+    btn.disabled = true;
+    setTimeout(() => { btn.textContent = '📄  PDF Rapor Oluştur'; btn.disabled = false; }, 2000);
+    return;
+  }
+
+  const pbar = document.getElementById(`pbar-${ctx}`);
+  const fill = pbar?.querySelector('.pbar-fill');
+  const btn  = document.querySelector(`#tab-${ctx} .btn-primary`);
+
+  if (pbar) {
+    pbar.style.display = 'flex';
+    btn.disabled = true;
+    btn.textContent = 'Kaydediliyor...';
+    let w = 0;
+    const iv = setInterval(() => {
+      w += Math.random() * 30 + 10;
+      if (fill) fill.style.width = Math.min(w, 95) + '%';
+      if (w >= 95) {
+        clearInterval(iv);
+        setTimeout(() => {
+          if (fill) fill.style.width = '100%';
+          setTimeout(() => {
+            pbar.style.display = 'none';
+            if (fill) fill.style.width = '0%';
+            btn.disabled = false;
+            btn.textContent = ctx === 'yonetim' ? '✓  KAYDET' : '✓  KAYDET';
+          }, 400);
+        }, 300);
+      }
+    }, 200);
+  }
+}
+
+function topluDialog() {
+  alert('Toplu Muayene Dialog — 3 ekipman seçili');
+}
+
+// ── BAŞLAT ─────────────────────────────────────────────────────
+buildYonetim();
+buildMuayene();
+buildRapor();
+
+// KPI counter animasyon
+function animCount(id, target) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  let cur = 0;
+  const step = Math.ceil(target / 30);
+  const iv = setInterval(() => {
+    cur = Math.min(cur + step, target);
+    el.textContent = cur.toLocaleString('tr-TR');
+    if (cur >= target) clearInterval(iv);
+  }, 30);
+}
+
+setTimeout(() => {
+  animCount('kv-toplam', 248);
+  animCount('kv-uygun',  201);
+  animCount('kv-uygun-d', 29);
+  animCount('kv-hurda',   12);
+  animCount('kv-tamirde',  6);
+}, 100);
+</script>
+</body>
+</html>

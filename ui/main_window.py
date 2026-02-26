@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
     QStackedWidget, QLabel, QStatusBar
 )
 from PySide6.QtCore import Qt, QTimer, Slot
+from PySide6.QtGui import QCloseEvent
 
 from core.config import AppConfig
 from core.logger import logger, log_ui_error
@@ -237,23 +238,25 @@ class MainWindow(QMainWindow):
             return page
         
         if baslik == "RKE Envanter":
-            from ui.pages.rke.rke_yonetim import RKEYonetimPage
-            page = RKEYonetimPage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Envanter"))
+            from ui.pages.rke.rke_yonetim import RKEYonetimPenceresi
+            page = RKEYonetimPenceresi(db=self._db)
+           # page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Envanter"))
             page.load_data()
             return page
 
         if baslik == "RKE Muayene":
             from ui.pages.rke.rke_muayene import RKEMuayenePage
             page = RKEMuayenePage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Muayene"))
+            if hasattr(page, "btn_kapat") and page.btn_kapat is not None:
+                page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Muayene"))
             page.load_data()
             return page
 
         if baslik == "RKE Raporlama":
-            from ui.pages.rke.rke_rapor import RKERaporPage
-            page = RKERaporPage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Raporlama"))
+            from ui.pages.rke.rke_rapor import RKERaporPenceresi
+            page = RKERaporPenceresi(db=self._db)
+            if hasattr(page, "btn_kapat"):
+                page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Raporlama"))
             page.load_data()
             return page
 
@@ -452,6 +455,9 @@ class MainWindow(QMainWindow):
         if baslik in self._pages:
             old = self._pages.pop(baslik)
             self.stack.removeWidget(old)
+            # closeEvent'i çağırarak threads'i temizleyelim
+            if hasattr(old, 'closeEvent'):
+                old.closeEvent(QCloseEvent())
             old.deleteLater()
         self.stack.setCurrentWidget(self._welcome)
         self.page_title.setVisible(False)

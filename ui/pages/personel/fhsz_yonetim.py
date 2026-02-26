@@ -500,8 +500,8 @@ class FHSZYonetimPage(QWidget):
             if str(iz.get("Durum", "")).strip() == "İptal":
                 continue
 
-            izin_bas = parse_date(iz.get("BaslamaTarihi", ""))
-            izin_bit = parse_date(iz.get("BitisTarihi", ""))
+            izin_bas = _parse_date_as_datetime(iz.get("BaslamaTarihi", ""))
+            izin_bit = _parse_date_as_datetime(iz.get("BitisTarihi", ""))
             if not izin_bas or not izin_bit:
                 continue
 
@@ -656,7 +656,7 @@ class FHSZYonetimPage(QWidget):
                 # Pasif personel kontrolü
                 kisi_bit = donem_bit
                 if durum == "Pasif":
-                    ayrilis = parse_date(p.get("AyrilisTarihi", ""))
+                    ayrilis = _parse_date_as_datetime(p.get("AyrilisTarihi", ""))
                     if ayrilis:
                         if ayrilis < hesap_bas:
                             continue
@@ -728,7 +728,7 @@ class FHSZYonetimPage(QWidget):
             durum = str(p.get("Durum", "Aktif")).strip()
             kisi_bit = donem_bit
             if durum == "Pasif":
-                ayrilis = parse_date(p.get("AyrilisTarihi", ""))
+                ayrilis = _parse_date_as_datetime(p.get("AyrilisTarihi", ""))
                 if ayrilis:
                     if ayrilis < hesap_bas:
                         continue

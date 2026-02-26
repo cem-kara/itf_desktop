@@ -1,4 +1,4 @@
-# ui/theme_manager.py  ─  REPYS v3 · Medikal Dark-Blue Tema
+# ui/theme_manager.py  ─  REPYS v3 · Merkezi Tema Yöneticisi
 from __future__ import annotations
 from pathlib import Path
 
@@ -12,7 +12,12 @@ from ui.styles.components import STYLES
 
 
 class ThemeManager(QObject):
-    """Merkezi Tema Yöneticisi — Medikal Dark-Blue (v3)."""
+    """
+    Merkezi Tema Yöneticisi — Singleton.
+
+    Kullanım:
+        ThemeManager.instance().apply_app_theme(app)
+    """
 
     _instance: "ThemeManager | None" = None
 
@@ -28,45 +33,49 @@ class ThemeManager(QObject):
         return cls._instance
 
     def _get_color_map(self) -> dict[str, str]:
-        """Tema placeholder'larını gerçek renklerle eşleştirir."""
+        """
+        QSS şablonundaki {PLACEHOLDER} değişkenlerini DarkTheme
+        token'larıyla eşleştirir.
+
+        ⚠  theme_template.qss'e yeni placeholder eklenirse
+           bu haritaya da eklenmesi gerekir.
+        """
         return {
+            # Zemin katmanları
             "BG_PRIMARY":     DarkTheme.BG_PRIMARY,
             "BG_SECONDARY":   DarkTheme.BG_SECONDARY,
             "BG_TERTIARY":    DarkTheme.BG_TERTIARY,
             "BG_ELEVATED":    DarkTheme.BG_ELEVATED,
-            "BG_DARK":        Colors.NAVY_950,
+            "BG_DARK":        Colors.NAVY_950,         # StatusBar, MessageBox buton metni
+            # Kenarlıklar
             "BORDER_PRIMARY": DarkTheme.BORDER_PRIMARY,
+            # Metin
             "TEXT_PRIMARY":   DarkTheme.TEXT_PRIMARY,
             "TEXT_SECONDARY": DarkTheme.TEXT_SECONDARY,
             "TEXT_MUTED":     DarkTheme.TEXT_MUTED,
             "TEXT_DISABLED":  DarkTheme.TEXT_DISABLED,
+            # Vurgu
             "ACCENT":         DarkTheme.ACCENT,
             "ACCENT2":        DarkTheme.ACCENT2,
         }
 
     def load_stylesheet(self) -> str:
         """
-        Şablon dosyasını yükler ve renklerle dinamik olarak doldurur.
-        
-        Şablon syntax: {PLACEHOLDER_NAME}
-        Örnek: color: {TEXT_PRIMARY};
+        Şablon QSS dosyasını yükler ve renk haritasıyla doldurur.
+        Sonuç önbelleğe alınır; uygulama ömrünce bir kez yüklenir.
         """
         if self._stylesheet_cache is not None:
             return self._stylesheet_cache
 
         try:
-            template_content = self._theme_template_path.read_text(encoding="utf-8")
+            template = self._theme_template_path.read_text(encoding="utf-8")
         except FileNotFoundError:
             logger.warning("Tema şablonu bulunamadı: %s", self._theme_template_path)
             self._stylesheet_cache = ""
             return self._stylesheet_cache
 
-        # Renk haritasını al
-        color_map = self._get_color_map()
-
-        # Placeholder'ları değiştir
-        stylesheet = template_content
-        for placeholder, color in color_map.items():
+        stylesheet = template
+        for placeholder, color in self._get_color_map().items():
             stylesheet = stylesheet.replace(f"{{{placeholder}}}", color)
 
         self._stylesheet_cache = stylesheet
@@ -96,10 +105,13 @@ class ThemeManager(QObject):
         app.setPalette(p)
 
         app.setStyleSheet(self.load_stylesheet())
+        logger.debug("Tema uygulandı: Dark Blue (v3)")
 
-    # ── Yardımcı metodlar (mevcut API korundu) ──────────────────
+    # ── Statik yardımcılar (mevcut API korundu) ──────────────────
+
     @staticmethod
     def get_component_styles(component_name: str) -> str:
+        """STYLES dict'ten bileşen stili döndürür."""
         return STYLES.get(component_name, "")
 
     @staticmethod
@@ -108,10 +120,12 @@ class ThemeManager(QObject):
 
     @staticmethod
     def get_color(color_name: str) -> str:
+        """Colors sınıfından renk döndürür."""
         return getattr(Colors, color_name, "#ffffff")
 
     @staticmethod
     def get_dark_theme_color(color_name: str) -> str:
+        """DarkTheme sınıfından token değeri döndürür."""
         return getattr(DarkTheme, color_name, "#ffffff")
 
     @staticmethod
@@ -125,15 +139,16 @@ class ThemeManager(QObject):
 
     @staticmethod
     def set_variant(widget: QWidget, variant: str) -> None:
+        """QSS property-based variant uygular (polish/unpolish)."""
         widget.setProperty("variant", variant)
         widget.style().unpolish(widget)
         widget.style().polish(widget)
 
     @staticmethod
     def setup_calendar_popup(date_edit: QDateEdit) -> None:
+        """QDateEdit popup takvimini tema renkleriyle stillendirir."""
         cal = date_edit.calendarWidget()
         cal.setMinimumWidth(300)
         cal.setMinimumHeight(200)
-        from ui.styles.components import ComponentStyles
         cal.setStyleSheet(ComponentStyles.CALENDAR)
         cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)

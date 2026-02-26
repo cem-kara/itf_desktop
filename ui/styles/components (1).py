@@ -687,12 +687,12 @@ class ComponentStyles:
             "Tamamlandı":        Colors.GREEN_500,
             "Onaylandı":         Colors.GREEN_500,
             "Beklemede":         Colors.YELLOW_500,
-            "İptal":             C.TEXT_MUTED,
+            "İptal":             DarkTheme.TEXT_MUTED,
             "Kalibrasyonda":     Colors.PURPLE_500,
             "Parça Bekliyor":    Colors.YELLOW_400,
             "Dış Serviste":      Colors.PURPLE_500,
         }
-        return _MAP.get(status, C.TEXT_SECONDARY)
+        return _MAP.get(status, DarkTheme.TEXT_SECONDARY)
 
 
 # ═══════════════════════════════════════════════════════════════
