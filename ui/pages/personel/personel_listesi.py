@@ -430,10 +430,11 @@ class PersonelListesiPage(QWidget):
     izin_requested  = Signal(dict)
     yeni_requested  = Signal()
 
-    def __init__(self, db=None, parent=None):
+    def __init__(self, db=None, action_guard=None, parent=None):
         super().__init__(parent)
         self.setStyleSheet(STYLES["page"])
         self._db             = db
+        self._action_guard   = action_guard
         self._all_data       = []
         self._izin_map       = {}
         self._active_filter  = "Aktif"
@@ -573,6 +574,11 @@ class PersonelListesiPage(QWidget):
         self.btn_yeni.setStyleSheet(STYLES["action_btn"])
         IconRenderer.set_button_icon(self.btn_yeni, "user_add", color=C.BTN_PRIMARY_TEXT, size=16)
         self.btn_yeni.setIconSize(QSize(16, 16))
+        
+        # IP-06: Aksiyon bazlı yetki kontrolü
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(self.btn_yeni, "personel.write")
+        
         lay.addWidget(self.btn_yeni)
         return frame
 

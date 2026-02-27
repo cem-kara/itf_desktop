@@ -1,26 +1,156 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QLabel, QTabWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QPushButton,
+    QLabel, QFrame
+)
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
+
+from ui.admin.audit_view import AuditView
+from ui.admin.permissions_view import PermissionsView
+from ui.admin.users_view import UsersView
+from ui.admin.roles_view import RolesView
+from ui.styles.colors import DarkTheme
 
 
 class AdminPanel(QWidget):
-    def __init__(self, parent=None) -> None:
+    def __init__(self, db, action_guard=None, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Admin Panel")
-
+        self._db = db
+        self._action_guard = action_guard
+        self._build_ui()
+    
+    def _build_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        
+        # Header
+        header = self._build_header()
+        layout.addWidget(header)
+        
+        # Tabs
         self._tabs = QTabWidget()
-        self._tabs.addTab(self._placeholder("Users"), "Users")
-        self._tabs.addTab(self._placeholder("Roles"), "Roles")
-        self._tabs.addTab(self._placeholder("Permissions"), "Permissions")
-        self._tabs.addTab(self._placeholder("Audit"), "Audit")
-
-        layout = QVBoxLayout()
+        self._tabs.setStyleSheet(f"""
+            QTabWidget::pane {{
+                border: 1px solid {DarkTheme.BORDER_PRIMARY};
+                background: {DarkTheme.BG_PRIMARY};
+            }}
+            QTabBar::tab {{
+                background: {DarkTheme.BG_SECONDARY};
+                color: {DarkTheme.TEXT_SECONDARY};
+                padding: 8px 20px;
+                border: 1px solid {DarkTheme.BORDER_PRIMARY};
+                border-bottom: none;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+                margin-right: 2px;
+            }}
+            QTabBar::tab:selected {{
+                background: {DarkTheme.BG_PRIMARY};
+                color: {DarkTheme.TEXT_PRIMARY};
+                border-bottom: 1px solid {DarkTheme.BG_PRIMARY};
+            }}
+            QTabBar::tab:hover {{
+                background: {DarkTheme.BG_HOVER};
+            }}
+        """)
+        
+        # Kullanıcılar sekmesi
+        self.users_view = UsersView(self._db, action_guard=self._action_guard)
+        self._tabs.addTab(self.users_view, "👤 Kullanıcılar")
+        
+        # Roller sekmesi
+        self.roles_view = RolesView(self._db, action_guard=self._action_guard)
+        self._tabs.addTab(self.roles_view, "🛡️ Roller")
+        
+        # Yetkiler sekmesi
+        self.permissions_view = PermissionsView(self._db, action_guard=self._action_guard)
+        self._tabs.addTab(self.permissions_view, "🔑 Yetkiler")
+        
+        # Audit log sekmesi
+        self.audit_view = AuditView(self._db, action_guard=self._action_guard)
+        self._tabs.addTab(self.audit_view, "📋 Audit Log")
+        
         layout.addWidget(self._tabs)
-        self.setLayout(layout)
-
+    
+    def _build_header(self):
+        """Sayfa başlığı"""
+        header = QFrame()
+        header.setStyleSheet(f"""
+            QFrame {{
+                background: {DarkTheme.BG_SECONDARY};
+                border-bottom: 2px solid {DarkTheme.BORDER_PRIMARY};
+                padding: 16px;
+            }}
+        """)
+        
+        header_layout = QHBoxLayout(header)
+        header_layout.setContentsMargins(24, 16, 24, 16)
+        
+        # Başlık
+        title_layout = QVBoxLayout()
+        
+        title = QLabel("Admin Panel")
+        font = QFont()
+        font.setPointSize(18)
+        font.setBold(True)
+        title.setFont(font)
+        title.setStyleSheet(f"color: {DarkTheme.TEXT_PRIMARY};")
+        
+        subtitle = QLabel("Kullanıcı ve rol yönetimi")
+        subtitle.setStyleSheet(f"color: {DarkTheme.TEXT_SECONDARY}; font-size: 13px;")
+        
+        title_layout.addWidget(title)
+        title_layout.addWidget(subtitle)
+        
+        header_layout.addLayout(title_layout)
+        header_layout.addStretch()
+        
+        # Kapatma butonu
+        self.btn_kapat = QPushButton("✕ Kapat")
+        self.btn_kapat.setFixedHeight(36)
+        self.btn_kapat.setStyleSheet(f"""
+            QPushButton {{
+                background: {DarkTheme.BG_TERTIARY};
+                color: {DarkTheme.TEXT_SECONDARY};
+                border: 1px solid {DarkTheme.BORDER_PRIMARY};
+                border-radius: 6px;
+                padding: 0 16px;
+                font-weight: 500;
+            }}
+            QPushButton:hover {{
+                background: {DarkTheme.BG_HOVER};
+                color: {DarkTheme.TEXT_PRIMARY};
+                border-color: {DarkTheme.BORDER_STRONG};
+            }}
+        """)
+        header_layout.addWidget(self.btn_kapat)
+        
+        return header
+    
     def _placeholder(self, name: str) -> QWidget:
+        """Placeholder widget"""
         widget = QWidget()
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel(f"{name} screen placeholder"))
-        widget.setLayout(layout)
+        layout = QVBoxLayout(widget)
+        layout.setAlignment(Qt.AlignCenter)
+        
+        label = QLabel(f"🚧 {name}")
+        label.setStyleSheet(f"""
+            QLabel {{
+                color: {DarkTheme.TEXT_DISABLED};
+                font-size: 16px;
+                padding: 40px;
+            }}
+        """)
+        label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(label)
+        
+        info = QLabel("Bu özellik yakında eklenecek...")
+        info.setStyleSheet(f"color: {DarkTheme.TEXT_DISABLED}; font-size: 12px;")
+        info.setAlignment(Qt.AlignCenter)
+        layout.addWidget(info)
+        
         return widget
+

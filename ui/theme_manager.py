@@ -48,7 +48,11 @@ class ThemeManager(QObject):
             "BG_ELEVATED":    DarkTheme.BG_ELEVATED,
             "BG_DARK":        Colors.NAVY_950,         # StatusBar, MessageBox buton metni
             # Kenarlıklar
-            "BORDER_PRIMARY": DarkTheme.BORDER_PRIMARY,
+            "BORDER_PRIMARY":   DarkTheme.BORDER_PRIMARY,
+            "BORDER_SECONDARY": DarkTheme.BORDER_SECONDARY,
+            "BORDER_STRONG":    DarkTheme.BORDER_STRONG,
+            # Input
+            "INPUT_BG":           DarkTheme.INPUT_BG,
             # Metin
             "TEXT_PRIMARY":   DarkTheme.TEXT_PRIMARY,
             "TEXT_SECONDARY": DarkTheme.TEXT_SECONDARY,

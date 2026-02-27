@@ -10,7 +10,8 @@ from PySide6.QtGui import QCloseEvent
 from core.config import AppConfig
 from core.logger import logger, log_ui_error
 from core.paths import DB_PATH
-from ui.sidebar import Sidebar 
+from ui.sidebar import Sidebar
+from ui.guards import ActionGuard, PageGuard
 from ui.pages.placeholder import WelcomePage, PlaceholderPage 
 from ui.styles.colors import DarkTheme
 from database.sync_worker import SyncWorker
@@ -22,7 +23,7 @@ class MainWindow(QMainWindow):
     STATUS_SYNCING_COLOR = DarkTheme.STATUS_WARNING
     STATUS_ERROR_COLOR = DarkTheme.STATUS_ERROR
 
-    def __init__(self):
+    def __init__(self, db=None, authorization_service=None, session_context=None):
         super().__init__()
 
         self.setWindowTitle(f"{AppConfig.APP_NAME} v{AppConfig.VERSION}")
@@ -32,7 +33,9 @@ class MainWindow(QMainWindow):
         self._pages = {}
         self._sync_worker = None
         self._bildirim_worker = None
-        self._db = SQLiteManager()
+        self._db = db or SQLiteManager()
+        self._authorization_service = authorization_service
+        self._session_context = session_context
         self._sabitler_cache = None  # Sabitler tablosu cache (performans için)
         self._build_ui()
         self._build_status_bar()
@@ -55,8 +58,13 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # Sidebar
-        self.sidebar = Sidebar()
+        # Sidebar (permission filter)
+        self._page_guard = None
+        self._action_guard = None
+        if self._authorization_service and self._session_context:
+            self._page_guard = PageGuard(self._authorization_service, self._session_context)
+            self._action_guard = ActionGuard(self._authorization_service, self._session_context)
+        self.sidebar = Sidebar(page_guard=self._page_guard)
         self.sidebar.menu_clicked.connect(self._on_menu_clicked)
         self.sidebar.dashboard_clicked.connect(self._open_dashboard)
         self.sidebar.sync_btn.clicked.connect(self._start_sync)
@@ -133,6 +141,21 @@ class MainWindow(QMainWindow):
         filters = args[0] if args else {}
         logger.info(f"Menü seçildi: {group} → {baslik} (Filtreler: {filters})")
 
+        # Yetki kontrolü (IP-05: Sayfa Guard)
+        if self._page_guard:
+            from ui.permissions.page_permissions import PAGE_PERMISSIONS
+            perm_key = PAGE_PERMISSIONS.get(baslik)
+            if perm_key and not self._page_guard.can_open(perm_key):
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.warning(
+                    self,
+                    "Yetki Hatası",
+                    f"'{baslik}' sayfasına erişim yetkiniz bulunmamaktadır.\n\n"
+                    f"Gerekli yetki: {perm_key}"
+                )
+                logger.warning(f"Yetkisiz sayfa erişim denemesi: {baslik} (yetki: {perm_key})")
+                return
+
         try:
             if baslik in self._pages:
                 page = self._pages[baslik]
@@ -174,7 +197,7 @@ class MainWindow(QMainWindow):
 
         if baslik == "Personel Listesi":
             from ui.pages.personel.personel_listesi import PersonelListesiPage
-            page = PersonelListesiPage(db=self._db)
+            page = PersonelListesiPage(db=self._db, action_guard=self._action_guard)
             page.table.doubleClicked.connect(
                 lambda idx: self._open_personel_detay(page, idx)
             )
@@ -189,7 +212,8 @@ class MainWindow(QMainWindow):
             from ui.pages.personel.personel_ekle import PersonelEklePage
             page = PersonelEklePage(
                 db=self._db,
-                on_saved=self._on_personel_saved
+                on_saved=self._on_personel_saved,
+                action_guard=self._action_guard
             )
             return page
 
@@ -211,13 +235,14 @@ class MainWindow(QMainWindow):
             from ui.pages.cihaz.cihaz_ekle import CihazEklePage
             page = CihazEklePage(
                 db=self._db,
-                on_saved=self._on_cihaz_saved
+                on_saved=self._on_cihaz_saved,
+                action_guard=self._action_guard
             )
             return page
 
         if baslik == "Cihaz Listesi":
             from ui.pages.cihaz.cihaz_listesi import CihazListesiPage
-            page = CihazListesiPage(db=self._db)
+            page = CihazListesiPage(db=self._db, action_guard=self._action_guard)
             page.add_requested.connect(lambda: self._on_menu_clicked("Cihaz", "Cihaz Ekle"))
             page.detay_requested.connect(self._open_cihaz_merkez)
             page.edit_requested.connect(self._open_cihaz_merkez)
@@ -234,19 +259,19 @@ class MainWindow(QMainWindow):
 
         if baslik == "Teknik Hizmetler":
             from ui.pages.cihaz.teknik_hizmetler import TeknikHizmetlerPage
-            page = TeknikHizmetlerPage(db=self._db)
+            page = TeknikHizmetlerPage(db=self._db, action_guard=self._action_guard)
             return page
         
         if baslik == "RKE Envanter":
             from ui.pages.rke.rke_yonetim import RKEYonetimPenceresi
-            page = RKEYonetimPenceresi(db=self._db)
+            page = RKEYonetimPenceresi(db=self._db, action_guard=self._action_guard)
            # page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Envanter"))
             page.load_data()
             return page
 
         if baslik == "RKE Muayene":
             from ui.pages.rke.rke_muayene import RKEMuayenePage
-            page = RKEMuayenePage(db=self._db)
+            page = RKEMuayenePage(db=self._db, action_guard=self._action_guard)
             if hasattr(page, "btn_kapat") and page.btn_kapat is not None:
                 page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Muayene"))
             page.load_data()
@@ -254,10 +279,16 @@ class MainWindow(QMainWindow):
 
         if baslik == "RKE Raporlama":
             from ui.pages.rke.rke_rapor import RKERaporPenceresi
-            page = RKERaporPenceresi(db=self._db)
+            page = RKERaporPenceresi(db=self._db, action_guard=self._action_guard)
             if hasattr(page, "btn_kapat"):
                 page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Raporlama"))
             page.load_data()
+            return page
+
+        if baslik == "Admin Panel":
+            from ui.admin.admin_panel import AdminPanel
+            page = AdminPanel(db=self._db, action_guard=self._action_guard)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Admin Panel"))
             return page
 
         if baslik == "Yıl Sonu İzin":

@@ -49,6 +49,11 @@
     ],
     "YÖNETİCİ İŞLEMLERİ": [
       {
+        "baslik": "Admin Panel",
+        "implemented": true,
+        "note": "Kullanıcı ve rol yönetimi"
+      },
+      {
         "baslik": "Yıl Sonu İzin",
         "implemented": false,
         "note": "Yıl sonu izin devir işlemleri"

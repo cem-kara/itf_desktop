@@ -10,16 +10,21 @@ from ui.pages.cihaz.kalibrasyon_form import KalibrasyonKayitForm
 class KalibrasyonDetailPanel(QWidget):
     """Cihaz merkez icin KalibrasyonKayitForm sarmalayici."""
 
-    def __init__(self, db, cihaz_id: Optional[str] = None, parent=None):
+    def __init__(self, db, cihaz_id: Optional[str] = None, action_guard=None, parent=None):
         super().__init__(parent)
         self._db = db
         self._cihaz_id = cihaz_id
+        self._action_guard = action_guard
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        self.kalibrasyon_form = KalibrasyonKayitForm(db=self._db, cihaz_id=self._cihaz_id)
+        self.kalibrasyon_form = KalibrasyonKayitForm(
+            db=self._db,
+            cihaz_id=self._cihaz_id,
+            action_guard=self._action_guard
+        )
         layout.addWidget(self.kalibrasyon_form)
 
     def set_cihaz_id(self, cihaz_id: Optional[str]):

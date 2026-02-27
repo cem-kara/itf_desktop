@@ -150,10 +150,11 @@ def _bitis_rengi(bitis_raw: str) -> str:
 # ─────────────────────────────────────────────────────────────
 class KalibrasyonKayitForm(QWidget):
 
-    def __init__(self, db=None, cihaz_id: Optional[str] = None, parent=None):
+    def __init__(self, db=None, cihaz_id: Optional[str] = None, action_guard=None, parent=None):
         super().__init__(parent)
         self._db                             = db
         self._cihaz_id                       = cihaz_id
+        self._action_guard                   = action_guard
         self._all_rows: List[Dict]           = []
         self._rows: List[Dict]               = []
         self._selected_row: Optional[Dict]   = None
@@ -473,6 +474,8 @@ class KalibrasyonKayitForm(QWidget):
         )
         self.btn_kayit_ekle.setEnabled(False)
         self.btn_kayit_ekle.clicked.connect(self._open_kal_form)
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(self.btn_kayit_ekle, "cihaz.write")
         bb_l.addWidget(self.btn_kayit_ekle)
         dp_l.addWidget(btn_bar)
 
@@ -669,11 +672,15 @@ class KalibrasyonKayitForm(QWidget):
             self._active_form = None
 
     def _open_kal_form(self, *_):
+        if self._action_guard and not self._action_guard.check_and_warn(
+            self, "cihaz.write", "Kalibrasyon Formu Acma"
+        ):
+            return
         self._clear_form_container()
         cihaz_id = self._cihaz_id
         if not cihaz_id and self._selected_row:
             cihaz_id = self._selected_row.get("Cihazid")
-        form = _KalibrasyonGirisForm(self._db, cihaz_id, parent=self)
+        form = _KalibrasyonGirisForm(self._db, cihaz_id, action_guard=self._action_guard, parent=self)
         form.saved.connect(self._on_kal_saved)
         self._active_form = form
         self._exec_form_layout.insertWidget(0, form)
@@ -1231,10 +1238,11 @@ class _KalSparkline(QWidget):
 class _KalibrasyonGirisForm(QWidget):
     saved = Signal()
 
-    def __init__(self, db=None, cihaz_id: Optional[str] = None, parent=None):
+    def __init__(self, db=None, cihaz_id: Optional[str] = None, action_guard=None, parent=None):
         super().__init__(parent)
         self._db       = db
         self._cihaz_id = cihaz_id
+        self._action_guard = action_guard
         self._setup_ui()
 
     def _setup_ui(self):
@@ -1335,6 +1343,8 @@ class _KalibrasyonGirisForm(QWidget):
         except Exception:
             pass
         btn_kaydet.clicked.connect(self._save)
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(btn_kaydet, "cihaz.write")
         btns.addWidget(btn_kaydet)
         root.addLayout(btns)
 
@@ -1353,6 +1363,10 @@ class _KalibrasyonGirisForm(QWidget):
             parent = parent.parentWidget()
 
     def _save(self):
+        if self._action_guard and not self._action_guard.check_and_warn(
+            self, "cihaz.write", "Kalibrasyon Kaydetme"
+        ):
+            return
         if not self._db:
             QMessageBox.warning(self, "Uyarı", "Veritabanı bağlantısı yok.")
             return

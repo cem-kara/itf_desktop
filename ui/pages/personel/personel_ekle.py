@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import re
+from datetime import datetime
 from PySide6.QtCore import Qt, QDate, QThread, Signal, QTimer
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
@@ -12,7 +13,9 @@ from PySide6.QtGui import QCursor, QPixmap
 from core.logger import logger
 from core.hata_yonetici import exc_logla
 from core.date_utils import parse_date
+from core.auth.password_hasher import PasswordHasher
 from database.repository_registry import RepositoryRegistry
+from database.auth_repository import AuthRepository
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
@@ -70,6 +73,35 @@ def validate_email(email_str: str) -> bool:
         return True  # Opsiyonel alan
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return bool(re.match(pattern, email_str))
+
+
+def generate_username_from_name(ad_soyad: str) -> str:
+    """
+    Adından kullanıcı adı oluştur.
+    Örnek: "Cem Kara" → "CKara", "Ahmet Cem Kara" → "ACKara"
+    
+    Kural:
+    - Soyadı (son kelime) tamamen yaz
+    - Diğer kelimelerin ilk harfini yaz
+    - Büyük harf yap
+    """
+    if not ad_soyad or not ad_soyad.strip():
+        return ""
+    
+    parts = ad_soyad.strip().split()
+    if len(parts) == 0:
+        return ""
+    
+    # Son kelime soyadı (tamamen)
+    surname = parts[-1]
+    
+    # Diğer kelimelerin ilk harfleri
+    initials = "".join([p[0] for p in parts[:-1]])
+    
+    # Birleştir ve büyük harf yap
+    username = (initials + surname).upper()
+    return username
+
 
 
 # ─── Drive Yükleme Worker (UI donmasın) ───
@@ -136,12 +168,13 @@ class PersonelEklePage(QWidget):
     on_saved: callback → kayıt sonrası çağrılır
     """
 
-    def __init__(self, db=None, edit_data=None, on_saved=None, parent=None):
+    def __init__(self, db=None, edit_data=None, on_saved=None, action_guard=None, parent=None):
         super().__init__(parent)
         self.setStyleSheet(S["page"])
         self._db = db
         self._edit_data = edit_data
         self._on_saved = on_saved
+        self._action_guard = action_guard
         self._is_edit = edit_data is not None
         self.ui = {}
         self._file_paths = {}          # {"Resim": path, "Diploma1": path, ...}
@@ -152,6 +185,8 @@ class PersonelEklePage(QWidget):
         self._pending_uploads = 0
         self._completed_uploads = 0
         self._upload_errors = []
+        self._upload_meta = {}
+        self._upload_meta = {}         # alan_adi -> metadata
 
         self._setup_ui()
         self._populate_combos()
@@ -397,6 +432,8 @@ class PersonelEklePage(QWidget):
         self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_kaydet.clicked.connect(self._on_save)
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(self.btn_kaydet, "personel.write")
         footer.addWidget(self.btn_kaydet)
 
         main.addLayout(footer)
@@ -691,6 +728,13 @@ class PersonelEklePage(QWidget):
             ext = os.path.splitext(file_path)[1]
             custom_name = f"{tc_no}_{db_field}{ext}"
 
+            self._upload_meta[db_field] = {
+                "tc_no": tc_no,
+                "file_path": file_path,
+                "custom_name": custom_name,
+                "folder_name": folder_name,
+                "belge_turu": db_field,
+            }
             self._pending_uploads += 1
             worker = DriveUploadWorker(file_path, folder_id, custom_name, db_field, offline_folder_name)
             worker.finished.connect(self._on_upload_finished)
@@ -712,6 +756,7 @@ class PersonelEklePage(QWidget):
         self._drive_links[alan_adi] = link
         logger.info(f"Drive yükleme OK: {alan_adi} → {link}")
         self._completed_uploads += 1
+        self._insert_dokuman_kaydi(alan_adi, link)
         # Progress bar'ı güncelle
         percent = int((self._completed_uploads / self._pending_uploads) * 100)
         self.progress.setValue(percent)
@@ -740,6 +785,43 @@ class PersonelEklePage(QWidget):
             )
         if hasattr(self, "_upload_callback"):
             self._upload_callback()
+
+    def _insert_dokuman_kaydi(self, alan_adi: str, link: str):
+        """Dokumanlar tablosuna kayıt ekler (personel için)."""
+        try:
+            # Sadece diploma dosyaları ortak tabloya yazılır
+            if alan_adi not in ("Diploma1", "Diploma2"):
+                return
+            meta = self._upload_meta.get(alan_adi, {})
+            tc_no = meta.get("tc_no")
+            if not tc_no:
+                return
+
+            file_path = meta.get("file_path", "")
+            custom_name = meta.get("custom_name", "")
+            folder_name = meta.get("folder_name", "")
+            belge_turu = meta.get("belge_turu", alan_adi)
+
+            drive_path = link if str(link).startswith("http") else ""
+            local_path = "" if drive_path else str(link or "")
+
+            repo = RepositoryRegistry(self._db).get("Dokumanlar")
+            repo.insert({
+                "EntityType": "personel",
+                "EntityId": str(tc_no),
+                "BelgeTuru": str(belge_turu),
+                "Belge": str(custom_name or os.path.basename(file_path) or link),
+                "DocType": str(folder_name),
+                "DisplayName": os.path.basename(file_path) if file_path else str(custom_name),
+                "LocalPath": local_path,
+                "DrivePath": drive_path,
+                "BelgeAciklama": "",
+                "YuklenmeTarihi": datetime.now().isoformat(),
+                "IliskiliBelgeID": None,
+                "IliskiliBelgeTipi": None,
+            })
+        except Exception as e:
+            logger.warning(f"Dokumanlar kaydı eklenemedi ({alan_adi}): {e}")
 
     # ═══════════════════════════════════════════
     #  REAL-TIME FORM VALIDASYON
@@ -804,6 +886,10 @@ class PersonelEklePage(QWidget):
 
     def _on_save(self):
         """Kaydet: validasyon → Drive yükleme → DB kayıt."""
+        if self._action_guard and not self._action_guard.check_and_warn(
+            self, "personel.write", "Personel Kaydetme"
+        ):
+            return
         errors = self._validate()
         if errors:
             QMessageBox.warning(
@@ -880,6 +966,33 @@ class PersonelEklePage(QWidget):
                     logger.info(f"Izin_Bilgi kaydı oluşturuldu: {data['KimlikNo']}")
                 except Exception as e_izin:
                     logger.error(f"Izin_Bilgi oluşturma hatası: {e_izin}")
+                
+                # Yeni personel için kullanıcı hesabı oluştur
+                try:
+                    ad_soyad = data.get("AdSoyad", "")
+                    username = generate_username_from_name(ad_soyad)
+                    
+                    if username:
+                        # Şifre: kullanıcı adı + "123" (örn: "CKara123")
+                        password = f"{username}123"
+                        
+                        # Şifreyi hash'le
+                        hasher = PasswordHasher()
+                        password_hash = hasher.hash(password)
+                        
+                        # Kullanıcı oluştur (must_change_password=True → ilk girişte değiştirmesi istenir)
+                        auth_repo = AuthRepository(self._db)
+                        user_id = auth_repo.create_user(
+                            username=username,
+                            password_hash=password_hash,
+                            is_active=True,
+                            must_change_password=True
+                        )
+                        logger.info(f"Kullanıcı hesabı oluşturuldu: {username} (ID: {user_id})")
+                    else:
+                        logger.warning(f"Personel adından kullanıcı adı oluşturulamadı: {ad_soyad}")
+                except Exception as e_user:
+                    logger.error(f"Kullanıcı hesabı oluşturma hatası: {e_user}")
 
             QMessageBox.information(
                 self, "Başarılı",

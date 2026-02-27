@@ -30,6 +30,14 @@ class LoginDialog(QDialog):
     def _on_accept(self) -> None:
         username = self._username.text().strip()
         password = self._password.text()
+        if not username:
+            QMessageBox.warning(self, "Login", "Username is required.")
+            self._username.setFocus()
+            return
+        if not password:
+            QMessageBox.warning(self, "Login", "Password is required.")
+            self._password.setFocus()
+            return
         user = self._auth.authenticate(username, password)
         if user:
             self.accept()

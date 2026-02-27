@@ -25,10 +25,11 @@ class CihazEklePage(QWidget):
     saved = Signal(dict)
     canceled = Signal()
 
-    def __init__(self, db=None, on_saved=None, parent=None):
+    def __init__(self, db=None, on_saved=None, action_guard=None, parent=None):
         super().__init__(parent)
         self._db = db
         self._on_saved = on_saved
+        self._action_guard = action_guard
 
         self._fields: dict[str, Any] = {}
         self._abbr_maps = {
@@ -162,6 +163,8 @@ class CihazEklePage(QWidget):
         self.btn_save.setStyleSheet(S["action_btn"])
         IconRenderer.set_button_icon(self.btn_save, "save", color=C.BTN_PRIMARY_TEXT, size=16)
         self.btn_save.clicked.connect(self._save)
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(self.btn_save, "cihaz.write")
         fl1.addWidget(self.btn_save)
 
         btn_cancel1 = QPushButton("İptal")
@@ -377,6 +380,10 @@ class CihazEklePage(QWidget):
     # ─── Save ──────────────────────────────────────────
 
     def _save(self):
+        if self._action_guard and not self._action_guard.check_and_warn(
+            self, "cihaz.write", "Cihaz Kaydetme"
+        ):
+            return
         cihaz_id = self._get_text("Cihazid")
         marka = self._get_text("Marka")
         birim = self._get_text("Birim")

@@ -134,6 +134,26 @@ TABLES = {
         "date_fields": ["YuklenmeTarihi"],
     },
 
+    "Dokumanlar": {
+        "pk": ["EntityType", "EntityId", "BelgeTuru", "Belge"],
+        "sync": False,  # Local-only table (Google Sheets'e eklenmedi)
+        "columns": [
+            "EntityType",
+            "EntityId",
+            "BelgeTuru",
+            "Belge",
+            "DocType",
+            "DisplayName",
+            "LocalPath",
+            "BelgeAciklama",
+            "YuklenmeTarihi",
+            "DrivePath",
+            "IliskiliBelgeID",
+            "IliskiliBelgeTipi",
+        ],
+        "date_fields": ["YuklenmeTarihi"],
+    },
+
     "Cihaz_Teknik_Belge": {
         "pk": ["Cihazid", "BelgeTuru", "Belge"],
         "sync": False,  # Local-only table (Google Sheets'e eklenmedi)

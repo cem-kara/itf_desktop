@@ -256,11 +256,12 @@ class BakimKayitForm(QWidget):
     """Periyodik Bakım listesi, detay paneli ve kayıt formu."""
 
     def __init__(self, db=None, cihaz_id: Optional[str] = None, 
-                 kullanici_adi: Optional[str] = None, parent=None):
+                 kullanici_adi: Optional[str] = None, action_guard=None, parent=None):
         super().__init__(parent)
         self._db                             = db
         self._cihaz_id                       = cihaz_id
         self._kullanici_adi                  = kullanici_adi
+        self._action_guard                   = action_guard
         self._all_rows: List[Dict]           = []
         self._rows: List[Dict]               = []
         self._selected_row: Optional[Dict]   = None
@@ -623,6 +624,8 @@ class BakimKayitForm(QWidget):
         self.btn_kayit_ekle.setStyleSheet(S.get("btn_secondary", S.get("btn_primary", "")))
         self.btn_kayit_ekle.setEnabled(False)
         self.btn_kayit_ekle.clicked.connect(self._open_bakim_form_execution_from_btn)
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(self.btn_kayit_ekle, "cihaz.write")
         bb_layout.addWidget(self.btn_kayit_ekle)
 
         detail_layout.addWidget(btn_bar)
@@ -1002,12 +1005,17 @@ class BakimKayitForm(QWidget):
 
     def _open_bakim_form(self):
         """PLAN_CREATION: sağ stack'i tam form sayfasına geçir."""
+        if self._action_guard and not self._action_guard.check_and_warn(
+            self, "cihaz.write", "Bakim Formu Acma"
+        ):
+            return
         self._clear_form_container()
         form = _BakimGirisForm(
             self._db,
             self._cihaz_id,
             kullanici_adi=self._kullanici_adi,
             mode=FormMode.PLAN_CREATION,
+            action_guard=self._action_guard,
             parent=self
         )
         form.saved.connect(self._on_bakim_saved)
@@ -1029,6 +1037,10 @@ class BakimKayitForm(QWidget):
 
     def _open_bakim_form_execution_with_row(self, row: Dict):
         """EXECUTION_INFO formunu detay header'ın altına açar."""
+        if self._action_guard and not self._action_guard.check_and_warn(
+            self, "cihaz.write", "Bakim Kaydi Giris"
+        ):
+            return
         self._clear_form_container()
         form = _BakimGirisForm(
             self._db,
@@ -1036,6 +1048,7 @@ class BakimKayitForm(QWidget):
             kullanici_adi=self._kullanici_adi,
             mode=FormMode.EXECUTION_INFO,
             plan_data=row,
+            action_guard=self._action_guard,
             parent=self
         )
         form.saved.connect(self._on_bakim_saved)
@@ -1961,6 +1974,7 @@ class _BakimGirisForm(QWidget):
                  kullanici_adi: Optional[str] = None, 
                  mode: str = FormMode.PLAN_CREATION,
                  plan_data: Optional[Dict] = None,
+                 action_guard=None,
                  parent=None):
         super().__init__(parent)
         self._db              = db
@@ -1968,6 +1982,7 @@ class _BakimGirisForm(QWidget):
         self._kullanici_adi   = kullanici_adi
         self._mode            = mode
         self._plan_data       = plan_data or {}
+        self._action_guard    = action_guard
         self._secilen_dosya   = None
         self._mevcut_link     = None
         self._drive_folder_id = None
@@ -2196,6 +2211,8 @@ class _BakimGirisForm(QWidget):
         except Exception:
             pass
         btn_kaydet.clicked.connect(self._save)
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(btn_kaydet, "cihaz.write")
         btns.addWidget(btn_kaydet)
         
         root.addWidget(btn_container)
@@ -2367,6 +2384,10 @@ class _BakimGirisForm(QWidget):
             QDesktopServices.openUrl(QUrl(self._mevcut_link))
 
     def _save(self):
+        if self._action_guard and not self._action_guard.check_and_warn(
+            self, "cihaz.write", "Bakim Kaydetme"
+        ):
+            return
         if not self._db:
             QMessageBox.warning(self, "Uyarı", "Veritabanı bağlantısı yok.")
             return

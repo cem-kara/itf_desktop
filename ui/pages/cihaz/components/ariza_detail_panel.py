@@ -10,16 +10,21 @@ from ui.pages.cihaz.ariza_kayit import ArizaKayitForm
 class CihazArizaPanel(QWidget):
     """Cihaz bazlı arıza kayıt paneli (ArizaKayitForm wrapper)."""
 
-    def __init__(self, db, cihaz_id: Optional[str] = None, parent=None):
+    def __init__(self, db, cihaz_id: Optional[str] = None, action_guard=None, parent=None):
         super().__init__(parent)
         self._db = db
         self._cihaz_id = cihaz_id
+        self._action_guard = action_guard
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        self.ariza_form = ArizaKayitForm(db=self._db, cihaz_id=self._cihaz_id)
+        self.ariza_form = ArizaKayitForm(
+            db=self._db,
+            cihaz_id=self._cihaz_id,
+            action_guard=self._action_guard
+        )
         layout.addWidget(self.ariza_form)
 
         # CihazMerkez uyumlulugu: islem_penceresi'ni disariya ac

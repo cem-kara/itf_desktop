@@ -165,10 +165,11 @@ class ArizaTableModel(QAbstractTableModel):
 class ArizaKayitForm(QWidget):
     """Arıza listesi, detay paneli ve işlem geçmişi."""
 
-    def __init__(self, db=None, cihaz_id: Optional[str] = None, parent=None):
+    def __init__(self, db=None, cihaz_id: Optional[str] = None, action_guard=None, parent=None):
         super().__init__(parent)
         self._db               = db
         self._cihaz_id         = cihaz_id
+        self._action_guard     = action_guard
         self._rows: List[Dict] = []
         self._all_rows: List[Dict] = []        # filtresiz tüm veriler (KPI için)
         self._selected_ariza_id: Optional[str] = None
@@ -412,6 +413,8 @@ class ArizaKayitForm(QWidget):
         self.btn_yeni_ariza = QPushButton("+ Yeni Arıza")
         self.btn_yeni_ariza.setStyleSheet(S.get("btn_primary", ""))
         self.btn_yeni_ariza.clicked.connect(self._open_ariza_form)
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(self.btn_yeni_ariza, "cihaz.write")
         fb_layout.addWidget(self.btn_yeni_ariza)
 
         layout.addWidget(filter_bar)
@@ -589,6 +592,8 @@ class ArizaKayitForm(QWidget):
         self.btn_islem_ekle.setStyleSheet(S.get("btn_secondary", S.get("btn_primary", "")))
         self.btn_islem_ekle.setEnabled(False)
         self.btn_islem_ekle.clicked.connect(self._open_islem_form)
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(self.btn_islem_ekle, "cihaz.write")
         bb_layout.addWidget(self.btn_islem_ekle)
 
         layout.addWidget(btn_bar)
@@ -735,6 +740,8 @@ class ArizaKayitForm(QWidget):
         if ariza_id:
             self.islem_penceresi.set_ariza_id(ariza_id)
         self.btn_islem_ekle.setEnabled(bool(ariza_id))
+        if self._action_guard and not self._action_guard.can_perform("cihaz.write"):
+            self.btn_islem_ekle.setEnabled(False)
 
     def _update_detail(self, row: Dict):
         """Sağ paneldeki detay alanlarını seçili arıza ile doldurur."""
@@ -796,6 +803,10 @@ class ArizaKayitForm(QWidget):
 
     def _open_ariza_form(self):
         """Yeni Arıza formunu — tablo ile detay arasında — açar."""
+        if self._action_guard and not self._action_guard.check_and_warn(
+            self, "cihaz.write", "Ariza Kaydi Acma"
+        ):
+            return
         from ui.pages.cihaz.ariza_girisi_form import ArizaGirisForm
         self._clear_form_container()
         # Cihaz ID: önce self._cihaz_id (cihaz detay modu), yoksa seçili satırdan al
@@ -806,7 +817,7 @@ class ArizaKayitForm(QWidget):
                 if r.get("Arizaid") == self._selected_ariza_id:
                     cihaz_id = str(r.get("Cihazid", ""))
                     break
-        form = ArizaGirisForm(self._db, cihaz_id=cihaz_id, parent=self)
+        form = ArizaGirisForm(self._db, cihaz_id=cihaz_id, action_guard=self._action_guard, parent=self)
         form.saved.connect(self._on_ariza_saved)
         self._active_form = form
         self._form_layout.insertWidget(0, form)
@@ -815,11 +826,15 @@ class ArizaKayitForm(QWidget):
 
     def _open_islem_form(self):
         """Seçili arıza için İşlem Giriş formunu açar."""
+        if self._action_guard and not self._action_guard.check_and_warn(
+            self, "cihaz.write", "Ariza Islem Girisi"
+        ):
+            return
         if not self._selected_ariza_id:
             QMessageBox.warning(self, "Uyarı", "Lütfen önce bir arıza seçin.")
             return
         self._clear_form_container()
-        form = ArizaIslemForm(self._db, ariza_id=self._selected_ariza_id, parent=self)
+        form = ArizaIslemForm(self._db, ariza_id=self._selected_ariza_id, action_guard=self._action_guard, parent=self)
         form.saved.connect(self._on_islem_saved)
         self._active_form = form
         self._form_layout.insertWidget(0, form)

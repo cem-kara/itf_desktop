@@ -1,3 +1,4 @@
+from .action_guard import ActionGuard
 from .page_guard import PageGuard
 
-__all__ = ["PageGuard"]
+__all__ = ["ActionGuard", "PageGuard"]

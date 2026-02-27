@@ -18,10 +18,11 @@ class ArizaGirisForm(QWidget):
     """Yeni arıza girişi formu."""
     saved = Signal()
 
-    def __init__(self, db=None, cihaz_id: str = None, parent=None):
+    def __init__(self, db=None, cihaz_id: str = None, action_guard=None, parent=None):
         super().__init__(parent)
         self._db       = db
         self._cihaz_id = cihaz_id or ""
+        self._action_guard = action_guard
         self._setup_ui()
 
     def _setup_ui(self):
@@ -122,6 +123,8 @@ class ArizaGirisForm(QWidget):
         btn_kaydet = QPushButton("Kaydet")
         btn_kaydet.setStyleSheet(S.get("success_btn", S["refresh_btn"]))
         btn_kaydet.clicked.connect(self._save)
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(btn_kaydet, "cihaz.write")
         btn_layout.addWidget(btn_kaydet)
         btn_temizle = QPushButton("Temizle")
         btn_temizle.setStyleSheet(S.get("cancel_btn", ""))
@@ -141,6 +144,10 @@ class ArizaGirisForm(QWidget):
         self.lbl_cihazid.setText(self._cihaz_id or "—")
 
     def _save(self):
+        if self._action_guard and not self._action_guard.check_and_warn(
+            self, "cihaz.write", "Ariza Kaydetme"
+        ):
+            return
         cihaz_id = self._cihaz_id.strip()
         if not cihaz_id:
             QMessageBox.warning(self, "Hata", "Cihaz ID boş!")

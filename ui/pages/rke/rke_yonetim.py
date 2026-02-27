@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """RKE Envanter Yönetimi — merkezi temaya göre tasarım."""
 import sys
 import time
@@ -40,7 +40,7 @@ class FieldGroup(QWidget):
         super().__init__(parent)
         self.setAttribute(Qt.WA_StyledBackground, True)
         self.setStyleSheet(
-            f"FieldGroup{{background:{DarkTheme.RKE_BG2};border:1px solid {DarkTheme.RKE_BD};border-radius:6px;}}"
+            f"FieldGroup{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:6px;}}"
         )
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -51,7 +51,7 @@ class FieldGroup(QWidget):
         hdr.setFixedHeight(30)
         hdr.setAttribute(Qt.WA_StyledBackground, True)
         hdr.setStyleSheet(
-            f"QWidget{{background:rgba(255,255,255,12);border-bottom:1px solid {DarkTheme.RKE_BD};"
+            f"QWidget{{background:rgba(255,255,255,12);border-bottom:1px solid {DarkTheme.BORDER_PRIMARY};"
             f"border-top-left-radius:6px;border-top-right-radius:6px;}}"
         )
         hh = QHBoxLayout(hdr)
@@ -159,9 +159,9 @@ class RKETableModel(QAbstractTableModel):
         if role == Qt.DisplayRole: return str(row.get(key,""))
         if role == Qt.ForegroundRole and key == "Durum":
             v = row.get(key,"")
-            if "Değil" in v or "Hurda" in v: return QColor(DarkTheme.RKE_RED)
-            if "Uygun"  in v:                return QColor(DarkTheme.RKE_GREEN)
-            if "Tamirde" in v:               return QColor(DarkTheme.RKE_AMBER)
+            if "Değil" in v or "Hurda" in v: return QColor(DarkTheme.STATUS_ERROR)
+            if "Uygun"  in v:                return QColor(DarkTheme.STATUS_SUCCESS)
+            if "Tamirde" in v:               return QColor(DarkTheme.STATUS_WARNING)
         if role == Qt.TextAlignmentRole:
             return (Qt.AlignCenter if key in ("KontrolTarihi","HizmetYili","Durum","KursunEsdegeri","Bedeni")
                     else Qt.AlignVCenter | Qt.AlignLeft)
@@ -195,8 +195,8 @@ class _GecmisModel(QAbstractTableModel):
         if role == Qt.DisplayRole: return str(row.get(self._K[index.column()],""))
         if role == Qt.ForegroundRole and index.column() == 1:
             v = row.get("Sonuç","")
-            if "Değil" in v: return QColor(DarkTheme.RKE_RED)
-            if "Uygun"  in v: return QColor(DarkTheme.RKE_GREEN)
+            if "Değil" in v: return QColor(DarkTheme.STATUS_ERROR)
+            if "Uygun"  in v: return QColor(DarkTheme.STATUS_SUCCESS)
         return None
 
     def headerData(self, s, o, role=Qt.DisplayRole):
@@ -210,9 +210,10 @@ class _GecmisModel(QAbstractTableModel):
 #  ANA PENCERE
 # ══════════════════════════════════════════════════════════════════
 class RKEYonetimPenceresi(QWidget):
-    def __init__(self, db=None, parent=None):
+    def __init__(self, db=None, action_guard=None, parent=None):
         super().__init__(parent)
         self._db = db
+        self._action_guard = action_guard
         self.setWindowTitle("RKE Envanter Yönetimi")
         self.resize(1280, 840)
         self.setStyleSheet(_S_PAGE)
@@ -256,17 +257,17 @@ class RKEYonetimPenceresi(QWidget):
     def _mk_kpi_bar(self) -> QWidget:
         bar = QWidget()
         bar.setFixedHeight(68)
-        bar.setStyleSheet(f"background:{DarkTheme.RKE_BG1};border-bottom:1px solid {DarkTheme.RKE_BD};")
+        bar.setStyleSheet(f"background:{DarkTheme.BG_PRIMARY};border-bottom:1px solid {DarkTheme.BORDER_PRIMARY};")
         hl = QHBoxLayout(bar)
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setSpacing(1)
 
         specs = [
-            ("toplam",  "TOPLAM EKİPMAN", "0", DarkTheme.RKE_BLUE),
-            ("uygun",   "KULLANIMA UYGUN","0", DarkTheme.RKE_GREEN),
-            ("uygun_d", "UYGUN DEĞİL",    "0", DarkTheme.RKE_RED),
-            ("hurda",   "HURDA",          "0", DarkTheme.RKE_AMBER),
-            ("tamirde", "TAMİRDE",        "0", DarkTheme.RKE_TX2),
+            ("toplam",  "TOPLAM EKİPMAN", "0", DarkTheme.ACCENT),
+            ("uygun",   "KULLANIMA UYGUN","0", DarkTheme.STATUS_SUCCESS),
+            ("uygun_d", "UYGUN DEĞİL",    "0", DarkTheme.STATUS_ERROR),
+            ("hurda",   "HURDA",          "0", DarkTheme.STATUS_WARNING),
+            ("tamirde", "TAMİRDE",        "0", DarkTheme.TEXT_MUTED),
         ]
         for key, title, val, color in specs:
             hl.addWidget(self._mk_kpi_card(key, title, val, color), 1)
@@ -274,7 +275,7 @@ class RKEYonetimPenceresi(QWidget):
 
     def _mk_kpi_card(self, key, title, val, color) -> QWidget:
         w = QWidget()
-        w.setStyleSheet(f"background:{DarkTheme.RKE_BG1};")
+        w.setStyleSheet(f"background:{DarkTheme.BG_PRIMARY};")
         hl = QHBoxLayout(w)
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setSpacing(0)
@@ -285,14 +286,14 @@ class RKEYonetimPenceresi(QWidget):
         hl.addWidget(accent)
 
         content = QWidget()
-        content.setStyleSheet(f"background:{DarkTheme.RKE_BG1};")
+        content.setStyleSheet(f"background:{DarkTheme.BG_PRIMARY};")
         vl = QVBoxLayout(content)
         vl.setContentsMargins(14, 8, 14, 8)
         vl.setSpacing(2)
 
         lt = QLabel(title)
         lt.setStyleSheet(
-            f"color:{DarkTheme.RKE_TX2};background:transparent;font-family:{DarkTheme.MONOSPACE};"
+            f"color:{DarkTheme.TEXT_MUTED};background:transparent;font-family:{DarkTheme.MONOSPACE};"
             f"font-size:8px;font-weight:700;letter-spacing:2px;"
         )
         lv = QLabel(val)
@@ -310,11 +311,11 @@ class RKEYonetimPenceresi(QWidget):
     #  GÖVDE (liste | form)
     # ─────────────────────────────────────────────────────────────
     def _mk_body(self) -> QWidget:
-        w = QWidget(); w.setStyleSheet(f"background:{DarkTheme.RKE_BG0};")
+        w = QWidget(); w.setStyleSheet(f"background:{DarkTheme.BG_PRIMARY};")
         hl = QHBoxLayout(w); hl.setContentsMargins(0,0,0,0); hl.setSpacing(0)
         hl.addWidget(self._mk_list_panel(), 1)
         sep = QFrame(); sep.setFixedWidth(1)
-        sep.setStyleSheet(f"background:{DarkTheme.RKE_BD};")
+        sep.setStyleSheet(f"background:{DarkTheme.BORDER_PRIMARY};")
         hl.addWidget(sep)
         self._form_panel = self._mk_form_panel()
         self._form_panel.setFixedWidth(390)
@@ -326,18 +327,18 @@ class RKEYonetimPenceresi(QWidget):
     # ─────────────────────────────────────────────────────────────
     def _mk_form_panel(self) -> QWidget:
         panel = QWidget()
-        panel.setStyleSheet(f"background:{DarkTheme.RKE_BG1};")
+        panel.setStyleSheet(f"background:{DarkTheme.BG_PRIMARY};")
         vl = QVBoxLayout(panel); vl.setContentsMargins(0,0,0,0); vl.setSpacing(0)
 
         # Panel başlık çubuğu
         hdr = QWidget(); hdr.setFixedHeight(36)
-        hdr.setStyleSheet(f"background:{DarkTheme.RKE_BG1};border-bottom:1px solid {DarkTheme.RKE_BD};")
+        hdr.setStyleSheet(f"background:{DarkTheme.BG_PRIMARY};border-bottom:1px solid {DarkTheme.BORDER_PRIMARY};")
         hh = QHBoxLayout(hdr); hh.setContentsMargins(14,0,14,0)
         t1 = QLabel("EKİPMAN FORMU")
-        t1.setStyleSheet(f"color:{DarkTheme.RKE_TX2};font-family:{DarkTheme.MONOSPACE};font-size:9px;font-weight:700;letter-spacing:2px;")
+        t1.setStyleSheet(f"color:{DarkTheme.TEXT_MUTED};font-family:{DarkTheme.MONOSPACE};font-size:9px;font-weight:700;letter-spacing:2px;")
         self._lbl_mode = QLabel("YENİ KAYIT")
         self._lbl_mode.setStyleSheet(
-            f"color:{DarkTheme.RKE_AMBER};background:rgba(232,160,48,.08);border:1px solid rgba(232,160,48,.25);"
+            f"color:{DarkTheme.STATUS_WARNING};background:rgba(232,160,48,.08);border:1px solid rgba(232,160,48,.25);"
             f"border-radius:3px;padding:2px 8px;font-family:{DarkTheme.MONOSPACE};font-size:9px;font-weight:700;"
         )
         hh.addWidget(t1); hh.addStretch(); hh.addWidget(self._lbl_mode)
@@ -355,7 +356,7 @@ class RKEYonetimPenceresi(QWidget):
         il.setSpacing(10)
 
         # ── Kimlik Bilgileri ─────────────────────────────────────
-        grp_id = FieldGroup("Kimlik Bilgileri", DarkTheme.RKE_AMBER)
+        grp_id = FieldGroup("Kimlik Bilgileri", DarkTheme.STATUS_WARNING)
         g = QGridLayout(); g.setContentsMargins(0,0,0,0)
         g.setHorizontalSpacing(10); g.setVerticalSpacing(6)
         
@@ -370,7 +371,7 @@ class RKEYonetimPenceresi(QWidget):
         grp_id.add_layout(g); il.addWidget(grp_id)
 
         # ── Ekipman Özellikleri ──────────────────────────────────
-        grp_oz = FieldGroup("Ekipman Özellikleri", DarkTheme.RKE_GREEN)
+        grp_oz = FieldGroup("Ekipman Özellikleri", DarkTheme.STATUS_SUCCESS)
         g2 = QGridLayout(); g2.setContentsMargins(0,0,0,0)
         g2.setHorizontalSpacing(10); g2.setVerticalSpacing(6)
         self._add_combo_row(g2, 0, "ANA BİLİM DALI", "AnaBilimDali")
@@ -397,7 +398,7 @@ class RKEYonetimPenceresi(QWidget):
         grp_oz.add_layout(g2); il.addWidget(grp_oz)
 
         # ── Durum ve Geçmiş ──────────────────────────────────────
-        grp_dur = FieldGroup("Durum ve Geçmiş", DarkTheme.RKE_RED)
+        grp_dur = FieldGroup("Durum ve Geçmiş", DarkTheme.STATUS_ERROR)
         g3 = QGridLayout(); g3.setContentsMargins(0,0,0,0)
         g3.setHorizontalSpacing(10); g3.setVerticalSpacing(6)
         
@@ -426,8 +427,8 @@ class RKEYonetimPenceresi(QWidget):
         lbl_aciklama.setWordWrap(True)
         lbl_aciklama.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         lbl_aciklama.setStyleSheet(
-            f"QLabel{{background:{DarkTheme.RKE_BG3};color:{DarkTheme.RKE_TX0};"
-            f"border:1px solid {DarkTheme.RKE_BD};border-radius:6px;"
+            f"QLabel{{background:{DarkTheme.BG_ELEVATED};color:{DarkTheme.TEXT_PRIMARY};"
+            f"border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:6px;"
             f"padding:8px;font-size:11px;line-height:1.4;}}"
         )
         g3.addWidget(lbl_aciklama, 5, 0, 1, 2)
@@ -465,6 +466,8 @@ class RKEYonetimPenceresi(QWidget):
         self.btn_temizle.clicked.connect(self.temizle)
         self.btn_kaydet  = self._btn("✓  KAYDET", "primary")
         self.btn_kaydet.clicked.connect(self.kaydet)
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(self.btn_kaydet, "cihaz.write")
         br.addWidget(self.btn_temizle); br.addWidget(self.btn_kaydet)
         vl.addLayout(br)
         return panel
@@ -473,12 +476,12 @@ class RKEYonetimPenceresi(QWidget):
     #  LİSTE PANELİ
     # ─────────────────────────────────────────────────────────────
     def _mk_list_panel(self) -> QWidget:
-        panel = QWidget(); panel.setStyleSheet(f"background:{DarkTheme.RKE_BG0};")
+        panel = QWidget(); panel.setStyleSheet(f"background:{DarkTheme.BG_PRIMARY};")
         vl = QVBoxLayout(panel); vl.setContentsMargins(0,0,0,0); vl.setSpacing(0)
 
         # Filtre çubuğu
         fbar = QWidget(); fbar.setFixedHeight(46)
-        fbar.setStyleSheet(f"background:{DarkTheme.RKE_BG1};border-bottom:1px solid {DarkTheme.RKE_BD};")
+        fbar.setStyleSheet(f"background:{DarkTheme.BG_PRIMARY};border-bottom:1px solid {DarkTheme.BORDER_PRIMARY};")
         fl = QHBoxLayout(fbar); fl.setContentsMargins(12,0,12,0); fl.setSpacing(8)
 
         self.cmb_filtre_abd = self._combo(width=170)
@@ -496,8 +499,8 @@ class RKEYonetimPenceresi(QWidget):
         btn_yenile = QPushButton("⟳")
         btn_yenile.setFixedSize(28,28)
         btn_yenile.setStyleSheet(
-            f"QPushButton{{background:{DarkTheme.RKE_BG2};border:1px solid {DarkTheme.RKE_BD};border-radius:4px;"
-            f"color:{DarkTheme.RKE_TX1};}}QPushButton:hover{{color:{DarkTheme.RKE_TX0};}}"
+            f"QPushButton{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;"
+            f"color:{DarkTheme.TEXT_SECONDARY};}}QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};}}"
         )
         btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
         btn_yenile.clicked.connect(self.load_data)
@@ -527,10 +530,10 @@ class RKEYonetimPenceresi(QWidget):
 
         # Footer
         foot = QWidget(); foot.setFixedHeight(30)
-        foot.setStyleSheet(f"background:{DarkTheme.RKE_BG1};border-top:1px solid {DarkTheme.RKE_BD};")
+        foot.setStyleSheet(f"background:{DarkTheme.BG_PRIMARY};border-top:1px solid {DarkTheme.BORDER_PRIMARY};")
         fl2 = QHBoxLayout(foot); fl2.setContentsMargins(12,0,12,0)
         self.lbl_sayi = QLabel("0 kayıt")
-        self.lbl_sayi.setStyleSheet(f"color:{DarkTheme.RKE_TX2};font-family:{DarkTheme.MONOSPACE};font-size:9px;")
+        self.lbl_sayi.setStyleSheet(f"color:{DarkTheme.TEXT_MUTED};font-family:{DarkTheme.MONOSPACE};font-size:9px;")
         fl2.addStretch(); fl2.addWidget(self.lbl_sayi)
         vl.addWidget(foot)
         return panel
@@ -540,7 +543,7 @@ class RKEYonetimPenceresi(QWidget):
     # ─────────────────────────────────────────────────────────────
     def _lbl(self, text) -> QLabel:
         l = QLabel(text)
-        l.setStyleSheet(f"color:{DarkTheme.RKE_TX2};font-family:{DarkTheme.MONOSPACE};font-size:8px;font-weight:700;letter-spacing:1px;")
+        l.setStyleSheet(f"color:{DarkTheme.TEXT_MUTED};font-family:{DarkTheme.MONOSPACE};font-size:8px;font-weight:700;letter-spacing:1px;")
         return l
 
     def _value_label(self, text="—") -> QLabel:
@@ -548,8 +551,8 @@ class RKEYonetimPenceresi(QWidget):
         l = QLabel(text)
         l.setFixedHeight(28)
         l.setStyleSheet(
-            f"QLabel{{background:{DarkTheme.RKE_BG3};color:{DarkTheme.RKE_TX0};"
-            f"border:1px solid {DarkTheme.RKE_BD};border-radius:6px;"
+            f"QLabel{{background:{DarkTheme.BG_ELEVATED};color:{DarkTheme.TEXT_PRIMARY};"
+            f"border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:6px;"
             f"padding:0 10px;font-size:11px;}}"
         )
         return l
@@ -575,18 +578,18 @@ class RKEYonetimPenceresi(QWidget):
         b.setCursor(QCursor(Qt.PointingHandCursor))
         if style == "primary":
             b.setStyleSheet(
-                f"QPushButton{{background:{DarkTheme.RKE_GREEN};border:none;border-radius:5px;"
+                f"QPushButton{{background:{DarkTheme.STATUS_SUCCESS};border:none;border-radius:5px;"
                 f"color:#051a10;font-family:{DarkTheme.MONOSPACE};font-size:10px;font-weight:800;"
                 f"letter-spacing:1px;}}"
                 f"QPushButton:hover{{background:#38e0a0;}}"
-                f"QPushButton:disabled{{background:{DarkTheme.RKE_BD};color:{DarkTheme.RKE_TX2};}}"
+                f"QPushButton:disabled{{background:{DarkTheme.BORDER_PRIMARY};color:{DarkTheme.TEXT_MUTED};}}"
             )
         else:
             b.setStyleSheet(
-                f"QPushButton{{background:transparent;border:1px solid {DarkTheme.RKE_BD2};"
-                f"border-radius:5px;color:{DarkTheme.RKE_TX2};font-family:{DarkTheme.MONOSPACE};"
+                f"QPushButton{{background:transparent;border:1px solid {DarkTheme.BORDER_PRIMARY};"
+                f"border-radius:5px;color:{DarkTheme.TEXT_MUTED};font-family:{DarkTheme.MONOSPACE};"
                 f"font-size:10px;letter-spacing:1px;}}"
-                f"QPushButton:hover{{color:{DarkTheme.RKE_TX0};border-color:{DarkTheme.RKE_TX1};}}"
+                f"QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};border-color:{DarkTheme.TEXT_SECONDARY};}}"
             )
         return b
 
@@ -740,7 +743,7 @@ class RKEYonetimPenceresi(QWidget):
         # Durum ve KontrolTarihi artık label, setEnabled gereksiz
         self.btn_kaydet.setText("↑  GÜNCELLE")
         self.btn_kaydet.setStyleSheet(
-            f"QPushButton{{background:{DarkTheme.RKE_AMBER};border:none;border-radius:5px;"
+            f"QPushButton{{background:{DarkTheme.STATUS_WARNING};border:none;border-radius:5px;"
             f"color:#1a0f00;font-family:{DarkTheme.MONOSPACE};font-size:10px;font-weight:800;"
             f"letter-spacing:1px;}}"
         )
@@ -808,7 +811,7 @@ class RKEYonetimPenceresi(QWidget):
         self._gecmis_model.set_rows([])
         self.btn_kaydet.setText("✓  KAYDET")
         self.btn_kaydet.setStyleSheet(
-            f"QPushButton{{background:{DarkTheme.RKE_GREEN};border:none;border-radius:5px;"
+            f"QPushButton{{background:{DarkTheme.STATUS_SUCCESS};border:none;border-radius:5px;"
             f"color:#051a10;font-family:{DarkTheme.MONOSPACE};font-size:10px;font-weight:800;"
             f"letter-spacing:1px;}}"
         )
@@ -816,6 +819,10 @@ class RKEYonetimPenceresi(QWidget):
 
     def kaydet(self):
         """RKE kaydını veritabanına kaydet (insert veya update)."""
+        if self._action_guard and not self._action_guard.check_and_warn(
+            self, "cihaz.write", "RKE Kaydetme"
+        ):
+            return
         if not self._rke_repo:
             QMessageBox.warning(self, "Bağlantı Yok", "Repository bağlantısı kurulamadı.")
             return

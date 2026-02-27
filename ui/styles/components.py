@@ -200,7 +200,8 @@ class ComponentStyles:
             background-color: {C.INPUT_BG};
             border: 1px solid {C.BORDER_SECONDARY};
             border-radius: 4px;
-            padding: 6px 10px 6px 30px;
+            padding: 5px 10px 5px 32px;
+            min-height: 22px;
             color: {C.TEXT_PRIMARY};
             font-family: {C.MONOSPACE};
         }}
@@ -213,7 +214,8 @@ class ComponentStyles:
             background-color: {C.INPUT_BG};
             border: 1px solid {C.BORDER_SECONDARY};
             border-radius: 4px;
-            padding: 0 9px;
+            padding: 5px 9px;
+            min-height: 22px;
             color: {C.TEXT_PRIMARY};
             font-family: {C.MONOSPACE};
         }}
@@ -230,7 +232,8 @@ class ComponentStyles:
             background-color: {C.INPUT_BG};
             border: 1px solid {C.BORDER_SECONDARY};
             border-radius: 4px;
-            padding: 0 9px;
+            padding: 5px 9px;
+            min-height: 22px;
             color: {C.TEXT_PRIMARY};
             font-family: {C.MONOSPACE};
         }}
@@ -251,7 +254,8 @@ class ComponentStyles:
             background-color: {C.INPUT_BG};
             border: 1px solid {C.BORDER_SECONDARY};
             border-radius: 4px;
-            padding: 0 9px;
+            padding: 5px 9px;
+            min-height: 22px;
             color: {C.TEXT_PRIMARY};
             font-family: {C.MONOSPACE};
         }}
@@ -264,28 +268,81 @@ class ComponentStyles:
             background-color: {C.INPUT_BG};
             border: 1px solid {C.BORDER_SECONDARY};
             border-radius: 4px;
-            padding: 6px;
-            color: {C.TEXT_SECONDARY};
+            padding: 5px 9px;
+            color: {C.TEXT_PRIMARY};
             font-family: {C.MONOSPACE};
         }}
         QTextEdit:focus {{ border-color: {C.INPUT_BORDER_FOCUS}; }}
     """
 
     SPIN = f"""
-        QSpinBox {{
+        QSpinBox, QDoubleSpinBox {{
             background-color: {C.INPUT_BG};
             border: 1px solid {C.BORDER_SECONDARY};
             border-radius: 4px;
-            padding: 0 9px;
+            padding: 5px 9px;
+            min-height: 22px;
             color: {C.TEXT_PRIMARY};
             font-family: {C.MONOSPACE};
         }}
-        QSpinBox:focus {{ border-color: {C.INPUT_BORDER_FOCUS}; }}
-        QSpinBox::up-button, QSpinBox::down-button {{
+        QSpinBox:focus, QDoubleSpinBox:focus {{ border-color: {C.INPUT_BORDER_FOCUS}; }}
+        QSpinBox::up-button, QSpinBox::down-button,
+        QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {{
             background: transparent;
             border: none;
             width: 18px;
         }}
+    """
+
+    # ── Onay kutusu & Radyo butonu ────────────────────────────────
+    #    Global QSS'te de tanımlı — bu stil setStyleSheet() ile
+    #    uygulandığında global'i ezer ve tutarlı görünüm sağlar.
+    CHECKBOX = f"""
+        QCheckBox {{
+            color: {C.TEXT_SECONDARY};
+            spacing: 7px;
+            font-size: 13px;
+            background: transparent;
+        }}
+        QCheckBox::indicator {{
+            width: 16px;
+            height: 16px;
+            border: 1px solid {C.BORDER_STRONG};
+            border-radius: 3px;
+            background-color: {C.INPUT_BG};
+        }}
+        QCheckBox::indicator:hover    {{ border-color: {C.ACCENT}; }}
+        QCheckBox::indicator:checked  {{
+            background-color: {C.ACCENT};
+            border-color: {C.ACCENT};
+        }}
+        QCheckBox::indicator:disabled {{
+            background-color: {C.BG_SECONDARY};
+            border-color: {C.BORDER_PRIMARY};
+        }}
+        QCheckBox:disabled {{ color: {C.TEXT_DISABLED}; }}
+    """
+
+    RADIOBUTTON = f"""
+        QRadioButton {{
+            color: {C.TEXT_SECONDARY};
+            spacing: 7px;
+            font-size: 13px;
+            background: transparent;
+        }}
+        QRadioButton::indicator {{
+            width: 16px;
+            height: 16px;
+            border: 1px solid {C.BORDER_STRONG};
+            border-radius: 8px;
+            background-color: {C.INPUT_BG};
+        }}
+        QRadioButton::indicator:hover   {{ border-color: {C.ACCENT}; }}
+        QRadioButton::indicator:checked {{
+            background-color: {C.ACCENT};
+            border-color: {C.ACCENT};
+        }}
+        QRadioButton:disabled {{ color: {C.TEXT_DISABLED}; }}
     """
 
     CALENDAR = f"""
@@ -680,7 +737,7 @@ class ComponentStyles:
             "İzinli":            Colors.YELLOW_500,
             "Arızalı":           Colors.RED_400,
             "Bakımda":           Colors.YELLOW_500,
-            "Kapalı (Çözüldü)": Colors.GREEN_500,
+            "Kapalı (Çözüldü)":  Colors.GREEN_500,
             "Açık":              Colors.RED_400,
             "İşlemde":           Colors.ORANGE_400,
             "Planlandı":         Colors.YELLOW_500,
@@ -732,6 +789,9 @@ STYLES: dict[str, str] = {
     "input_date":     ComponentStyles.INPUT_DATE,
     "input_text":     ComponentStyles.INPUT_TEXT,
     "spin":           ComponentStyles.SPIN,
+    "double_spin":    ComponentStyles.SPIN,
+    "checkbox":       ComponentStyles.CHECKBOX,
+    "radiobutton":    ComponentStyles.RADIOBUTTON,
     "calendar":       ComponentStyles.CALENDAR,
 
     # ── Tablo, GroupBox, Tab (canonical) ─────────────────────────

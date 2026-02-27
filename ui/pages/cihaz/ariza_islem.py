@@ -82,10 +82,11 @@ class ArizaIslemTableModel(QAbstractTableModel):
 class ArizaIslemForm(QWidget):
     saved = Signal()
 
-    def __init__(self, db=None, ariza_id: Optional[str] = None, parent=None):
+    def __init__(self, db=None, ariza_id: Optional[str] = None, action_guard=None, parent=None):
         super().__init__(parent)
         self._db = db
         self._ariza_id = ariza_id
+        self._action_guard = action_guard
         self._rapor_belge_path = None  # Seçilen belge yolu
         
         # Belgeler için dizin (cihaz_dokuman_panel ile aynı yapı)
@@ -194,6 +195,8 @@ class ArizaIslemForm(QWidget):
         btn_kaydet = QPushButton("Kaydet")
         btn_kaydet.setStyleSheet(S["success_btn"] if "success_btn" in S else S["refresh_btn"])
         btn_kaydet.clicked.connect(self._save)
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(btn_kaydet, "cihaz.write")
         btn_lay.addWidget(btn_kaydet)
 
         btn_temizle = QPushButton("Temizle")
@@ -229,6 +232,10 @@ class ArizaIslemForm(QWidget):
         self.lbl_rapor_belge.setStyleSheet(S.get("info_label", f"color: {DarkTheme.TEXT_MUTED}; font-size: 11px;"))
 
     def _save(self):
+        if self._action_guard and not self._action_guard.check_and_warn(
+            self, "cihaz.write", "Ariza Islem Kaydetme"
+        ):
+            return
         if not self._db or not self._ariza_id:
             return
 

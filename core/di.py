@@ -1,6 +1,11 @@
 from database.repository_registry import RepositoryRegistry
 from database.cloud_adapter import get_cloud_adapter as _get_cloud_adapter
 
+from core.auth.auth_service import AuthService
+from core.auth.authorization_service import AuthorizationService
+from core.auth.password_hasher import PasswordHasher
+from core.auth.session_context import SessionContext
+
 
 _fallback_registry_cache = {}
 
@@ -31,6 +36,17 @@ def get_registry(db):
 
 def get_cloud_adapter(mode=None):
     """
-    Uygulama çalışma moduna göre cloud adapter döndürür.
+    Uygulama calisma moduna gore cloud adapter dondurur.
     """
     return _get_cloud_adapter(mode=mode)
+
+
+def get_auth_services(db):
+    """
+    Auth servislerini ortak sekilde kurar.
+    """
+    session_context = SessionContext()
+    hasher = PasswordHasher()
+    auth_service = AuthService(db=db, hasher=hasher, session=session_context)
+    authorization_service = AuthorizationService(db)
+    return auth_service, authorization_service, session_context

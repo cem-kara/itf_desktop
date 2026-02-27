@@ -1,6 +1,6 @@
 # RKE Modulleri - Mevcut Durum ve Iyilestirme Onerileri
 
-Tarih: 2026-02-26
+Tarih: 2026-02-27
 
 ## Mevcut Yapi (Ozet)
 - RKE modulleri SQLite + Repository pattern ile calisiyor.
@@ -14,6 +14,8 @@ Tarih: 2026-02-26
 - Veritabani erisimi: RepositoryRegistry
 - Veriler: get_all() ile cekiliyor, insert/update/delete metodlari kullaniliyor.
 - Arayuz temasi: `ui/styles/colors.py` (DarkTheme) ve `ui/styles/components.py` (ComponentStyles)
+- RKE muayene rapor dosyalari hibrit yukleme ile kaydediliyor (Drive varsa Drive, yoksa local).
+- RKE rapor linkleri artik `Dokumanlar` tablosunda tutuluyor (EntityType=rke).
 
 ## Mevcut Moduller
 - RKE Envanter: cihaz listesi, filtreleme, kaydet/guncelle
@@ -21,30 +23,34 @@ Tarih: 2026-02-26
 - RKE Raporlama: rapor sablonlari ve PDF olusturma altyapisi
 
 ## Iyilestirme Onerileri (Oncelik Sirasi)
-1) PDF Raporlama
+1) Dokumanlar / Dosya Yonetimi
+   - RKE raporlarini Dokumanlar tablosu uzerinden listeleme paneli
+   - Rapor linki gorunumunu local/drive ayrimina gore guncelleme
+
+2) PDF Raporlama
    - Rapor sablonlarini finalize etme
    - Envanter ve muayene raporlari icin kullanici tarafli export
 
-2) Veri Dogrulama
+3) Veri Dogrulama
    - Zorunlu alan kontrolleri
    - Tarih dogrulama (muayene tarihleri, kalibrasyon araliklari)
    - Seri no, model kodu format kontrolleri
 
-3) Gelismis Arama ve Filtreleme
+4) Gelismis Arama ve Filtreleme
    - Birden fazla alanda arama (cihaz no, seri no, marka, birim)
    - Tarih araligi filtreleme
    - Durum bazli filtreleme (aktif/arizali/bakimda)
 
-4) Excel Export
+5) Excel Export
    - Tablo verisini Excel formatinda disari aktarma
    - Filtrelenmis veriyi export etme
 
-5) Dashboard / Istatistikler
+6) Dashboard / Istatistikler
    - Durum bazli cihaz sayilari
    - Gecikmis kalibrasyonlar
    - Yaklasan muayeneler
 
-6) Denetim Izi (Audit Log)
+7) Denetim Izi (Audit Log)
    - Kim neyi degistirdi
    - Raporlama ve geriye izleme icin loglama
 

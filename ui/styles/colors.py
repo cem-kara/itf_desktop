@@ -163,3 +163,5 @@ class DarkTheme:
     STATE_ACTIVE  = (16,  185, 129, 35)   # Yeşil — aktif
     STATE_PASSIVE = (239, 68,  68,  35)   # Kırmızı — pasif / arıza
     STATE_LEAVE   = (245, 158, 11,  35)   # Sarı — izinli
+
+    RKE_PURP= "#a855f7"

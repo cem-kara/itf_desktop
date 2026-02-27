@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
     QGroupBox, QScrollArea, QLineEdit, QPushButton, QMessageBox, QComboBox,
     QCompleter, QDateEdit, QFileDialog
 )
-from PySide6.QtCore import Qt, QDate
+from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtGui import QCursor, QPixmap
 from core.logger import logger
 from ui.theme_manager import ThemeManager
@@ -19,6 +19,7 @@ class PersonelOverviewPanel(QWidget):
     Personel Merkez ekranı için 'Genel Bakış' sekmesi içeriği.
     Özet metrikleri ve düzenlenebilir personel bilgilerini gösterir.
     """
+    open_documents = Signal()
     def __init__(self, ozet_data, db=None, sabitler_cache=None, parent=None):
         super().__init__(parent)
         self.data = ozet_data or {}
@@ -36,6 +37,7 @@ class PersonelOverviewPanel(QWidget):
         self._upload_workers = []
         self._pending_uploads = 0
         self._upload_errors = []
+        self._upload_meta = {}  # alan_adi -> metadata
         self._view_buttons = {}     # db_key -> QPushButton
         self._setup_ui()
         self._populate_combos()
@@ -162,25 +164,42 @@ class PersonelOverviewPanel(QWidget):
         egitim_content_widget = self._groups["egitim"]["widget"]
         g4 = QGridLayout(egitim_content_widget)
         g4.setSpacing(15)
+
+        # Belgeler sekmesine yönlendirme
+        hint_row = QHBoxLayout()
+        hint = QLabel("Diploma ve ek belgeler için Belgeler sekmesini kullanın.")
+        hint.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 11px;")
+        btn_docs = QPushButton("Belgeler")
+        btn_docs.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_docs.setStyleSheet(S.get("btn_action", S.get("refresh_btn", "")))
+        try:
+            IconRenderer.set_button_icon(btn_docs, "upload", color=DarkTheme.TEXT_SECONDARY, size=14)
+        except Exception:
+            pass
+        btn_docs.clicked.connect(self.open_documents.emit)
+        hint_row.addWidget(hint)
+        hint_row.addStretch()
+        hint_row.addWidget(btn_docs)
+        g4.addLayout(hint_row, 0, 0, 1, 4)
         
         # Başlıklar
         headers = ["Okul Adı", "Bölüm / Fakülte", "Mezuniyet Tarihi", "Diploma No"]
         for i, h in enumerate(headers):
             lbl = QLabel(h)
             lbl.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 11px; font-weight: bold;")
-            g4.addWidget(lbl, 0, i)
+            g4.addWidget(lbl, 1, i)
 
         # 1. Okul
-        self._add_editable_combo_only(g4, 1, 0, "MezunOlunanOkul", "egitim")
-        self._add_editable_combo_only(g4, 1, 1, "MezunOlunanFakulte", "egitim")
-        self._add_editable_date_only(g4, 1, 2, "MezuniyetTarihi", "egitim")
-        self._add_editable_field_only(g4, 1, 3, "DiplomaNo", "egitim")
+        self._add_editable_combo_only(g4, 2, 0, "MezunOlunanOkul", "egitim")
+        self._add_editable_combo_only(g4, 2, 1, "MezunOlunanFakulte", "egitim")
+        self._add_editable_date_only(g4, 2, 2, "MezuniyetTarihi", "egitim")
+        self._add_editable_field_only(g4, 2, 3, "DiplomaNo", "egitim")
 
         # 2. Okul
-        self._add_editable_combo_only(g4, 2, 0, "MezunOlunanOkul2", "egitim")
-        self._add_editable_combo_only(g4, 2, 1, "MezunOlunanFakulte2", "egitim")
-        self._add_editable_date_only(g4, 2, 2, "MezuniyetTarihi2", "egitim")
-        self._add_editable_field_only(g4, 2, 3, "DiplomaNo2", "egitim")
+        self._add_editable_combo_only(g4, 3, 0, "MezunOlunanOkul2", "egitim")
+        self._add_editable_combo_only(g4, 3, 1, "MezunOlunanFakulte2", "egitim")
+        self._add_editable_date_only(g4, 3, 2, "MezuniyetTarihi2", "egitim")
+        self._add_editable_field_only(g4, 3, 3, "DiplomaNo2", "egitim")
         
         layout.addWidget(grp_egitim)
 
@@ -864,6 +883,7 @@ class PersonelOverviewPanel(QWidget):
         self._pending_uploads = 0
         self._upload_errors = []
         self._drive_links = {}
+        self._upload_meta = {}
 
         for file_key, file_path in list(self._file_paths.items()):
             if file_key not in upload_map:
@@ -887,6 +907,13 @@ class PersonelOverviewPanel(QWidget):
             except Exception:
                 from ui.pages.personel.personel_ekle import DriveUploadWorker
 
+            self._upload_meta[db_field] = {
+                "tc_no": tc_no,
+                "file_path": file_path,
+                "custom_name": custom_name,
+                "folder_name": folder_name,
+                "belge_turu": db_field,
+            }
             self._pending_uploads += 1
             # offline_folder_name parametresini geç!
             worker = DriveUploadWorker(file_path, folder_id, custom_name, db_field, offline_folder_name)
@@ -906,6 +933,7 @@ class PersonelOverviewPanel(QWidget):
         self._drive_links[alan_adi] = link
         logger.info(f"Drive yükleme OK: {alan_adi} → {link}")
         self._pending_uploads -= 1
+        self._insert_dokuman_kaydi(alan_adi, link)
         # UI'ı güncelle: personel_data'ya ekle ve label'ı set et
         try:
             if alan_adi == 'Diploma1':
@@ -991,6 +1019,44 @@ class PersonelOverviewPanel(QWidget):
                 self._upload_callback()
             except Exception as e:
                 logger.error(f"Upload callback hatası: {e}")
+
+    def _insert_dokuman_kaydi(self, alan_adi: str, link: str):
+        """Dokumanlar tablosuna kayıt ekler (personel için)."""
+        try:
+            # Sadece diploma dosyaları ortak tabloya yazılır
+            if alan_adi not in ("Diploma1", "Diploma2"):
+                return
+            meta = self._upload_meta.get(alan_adi, {})
+            tc_no = meta.get("tc_no") or self.personel_data.get("KimlikNo")
+            if not tc_no:
+                return
+
+            file_path = meta.get("file_path", "")
+            custom_name = meta.get("custom_name", "")
+            folder_name = meta.get("folder_name", "")
+            belge_turu = meta.get("belge_turu", alan_adi)
+
+            drive_path = link if str(link).startswith("http") else ""
+            local_path = "" if drive_path else str(link or "")
+
+            from database.repository_registry import RepositoryRegistry
+            repo = RepositoryRegistry(self.db).get("Dokumanlar")
+            repo.insert({
+                "EntityType": "personel",
+                "EntityId": str(tc_no),
+                "BelgeTuru": str(belge_turu),
+                "Belge": str(custom_name or os.path.basename(file_path) or link),
+                "DocType": str(folder_name),
+                "DisplayName": os.path.basename(file_path) if file_path else str(custom_name),
+                "LocalPath": local_path,
+                "DrivePath": drive_path,
+                "BelgeAciklama": "",
+                "YuklenmeTarihi": QDate.currentDate().toString("yyyy-MM-dd"),
+                "IliskiliBelgeID": None,
+                "IliskiliBelgeTipi": None,
+            })
+        except Exception as e:
+            logger.warning(f"Dokumanlar kaydı eklenemedi ({alan_adi}): {e}")
 
     def _fmt_date(self, val):
         if not val: return "-"

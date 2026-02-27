@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from .auth_service import SessionUser
+from .models import SessionUser
 
 
 class SessionContext:

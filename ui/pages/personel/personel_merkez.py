@@ -19,6 +19,7 @@ from ui.styles.icons import IconRenderer, Icons
 from ui.pages.personel.components.personel_ozet_servisi import personel_ozet_getir
 from core.logger import logger
 from ui.pages.personel.components.personel_overview_panel import PersonelOverviewPanel
+from ui.pages.personel.components.personel_dokuman_panel import PersonelDokumanPanel
 from ui.pages.personel.components.personel_izin_panel import PersonelIzinPanel
 from ui.pages.personel.components.personel_saglik_panel import PersonelSaglikPanel
 from ui.pages.personel.components.hizli_izin_giris import HizliIzinGirisDialog
@@ -31,6 +32,7 @@ TABS = [
     ("GENEL",   "Genel Bakış"),
     ("IZIN",    "İzinler"),
     ("SAGLIK",  "Sağlık"),
+    ("DOKUMAN", "Belgeler"),
     ("AYRILIS", "İşten Ayrılış"),
 ]
 
@@ -404,10 +406,14 @@ class PersonelMerkezPage(QWidget):
         try:
             if code == "GENEL":
                 w = PersonelOverviewPanel(self.ozet_data, self.db, sabitler_cache=self.sabitler_cache)
+                if hasattr(w, "open_documents"):
+                    w.open_documents.connect(lambda: self._switch_tab("DOKUMAN"))
             elif code == "IZIN":
                 w = PersonelIzinPanel(self.db, self.personel_id)
             elif code == "SAGLIK":
                 w = PersonelSaglikPanel(self.db, self.personel_id)
+            elif code == "DOKUMAN":
+                w = PersonelDokumanPanel(self.personel_id, self.db, sabitler_cache=self.sabitler_cache)
             elif code == "AYRILIS":
                 from ui.pages.personel.isten_ayrilik import IstenAyrilikPage
                 w = IstenAyrilikPage(self.db, personel_data=self.ozet_data.get("personel", {}))

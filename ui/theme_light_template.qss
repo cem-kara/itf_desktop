@@ -128,9 +128,9 @@ QCheckBox, QRadioButton {{
 }}
 QCheckBox::indicator, QRadioButton::indicator {{
     width: 16px; height: 16px;
-    border: 1.5px solid rgba(15,23,42,0.15);
+    border: 1px solid {BORDER_STRONG};
     border-radius: 4px;
-    background-color: #ffffff;
+    background-color: {INPUT_BG};
 }}
 QCheckBox::indicator:hover    {{ border-color: {ACCENT}; }}
 QCheckBox::indicator:checked  {{
@@ -143,17 +143,19 @@ QRadioButton::indicator:checked {{
     border-color: {ACCENT};
 }}
 
-/* ── QSpinBox ────────────────────────────────────────────────── */
-QSpinBox {{
-    background-color: #ffffff;
-    border: 1.5px solid rgba(15,23,42,0.08);
-    border-radius: 8px;
-    padding: 5px 8px;
+/* ── QSpinBox / QDoubleSpinBox ───────────────────────────────── */
+QSpinBox, QDoubleSpinBox {{
+    background-color: {INPUT_BG};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 4px;
+    padding: 5px 9px;
+    min-height: 22px;
     font-size: 13px;
     color: {TEXT_PRIMARY};
 }}
-QSpinBox:focus {{ border-color: {ACCENT}; }}
-QSpinBox::up-button, QSpinBox::down-button {{
+QSpinBox:focus, QDoubleSpinBox:focus {{ border-color: {ACCENT}; }}
+QSpinBox::up-button, QSpinBox::down-button,
+QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {{
     width: 20px;
     background: transparent;
     border: none;

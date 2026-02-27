@@ -243,10 +243,11 @@ class CihazListesiPage(QWidget):
     periodic_maintenance_requested = Signal(dict)
     add_requested = Signal()
 
-    def __init__(self, db=None, parent=None):
+    def __init__(self, db=None, action_guard=None, parent=None):
         super().__init__(parent)
         self.setStyleSheet(STYLES["page"])
         self._db = db
+        self._action_guard = action_guard
         self._all_data = []
         self._active_filter = "Tümü"
         self._filter_btns = {}
@@ -358,6 +359,11 @@ class CihazListesiPage(QWidget):
         self.btn_yeni.setStyleSheet(STYLES["action_btn"])
         IconRenderer.set_button_icon(self.btn_yeni, "plus", color=C.BTN_PRIMARY_TEXT, size=16)
         self.btn_yeni.setIconSize(QSize(16, 16))
+        
+        # IP-06: Aksiyon bazlı yetki kontrolü
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(self.btn_yeni, "cihaz.write")
+        
         lay.addWidget(self.btn_yeni)
 
         return frame

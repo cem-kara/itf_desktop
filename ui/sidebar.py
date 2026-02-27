@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
 from core.config import AppConfig
 from core.paths import BASE_DIR
 from ui.styles.colors import DarkTheme as T
+from ui.permissions.page_permissions import PAGE_PERMISSIONS
 from ui.styles.icons import GROUP_ICON_MAP, MENU_ICON_MAP, IconColors, Icons
 
 # ── Renk sabitleri ──────────────────────────────────────────────
@@ -135,7 +136,7 @@ class Sidebar(QWidget):
     menu_clicked      = Signal(str, str)
     dashboard_clicked = Signal()
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, page_guard=None):
         super().__init__(parent)
         self.setFixedWidth(230)
         self.setAutoFillBackground(True)
@@ -151,6 +152,7 @@ class Sidebar(QWidget):
         self._groups        = {}
         self._all_buttons   = {}
         self._active_baslik = None
+        self._page_guard = page_guard
         self._build_ui()
 
     def _build_ui(self):
@@ -332,13 +334,20 @@ class Sidebar(QWidget):
 
         for group_name, items in menu_cfg.items():
             section = FlatSection(group_name)
+            added_any = False
             for item in items:
-                baslik   = item.get("baslik", "?")
+                baslik = item.get("baslik", "?")
+                perm_key = PAGE_PERMISSIONS.get(baslik)
+                if self._page_guard and perm_key:
+                    if not self._page_guard.can_open(perm_key):
+                        continue
                 icon_key = item.get("icon")
                 btn = section.add_item(baslik, self._on_click, icon_key=icon_key)
                 self._all_buttons[baslik] = (section, btn)
-            self._groups[group_name] = section
-            self._menu_layout.addWidget(section)
+                added_any = True
+            if added_any:
+                self._groups[group_name] = section
+                self._menu_layout.addWidget(section)
 
     def _on_click(self, group: str, baslik: str):
         if self._active_baslik and self._active_baslik in self._all_buttons:
