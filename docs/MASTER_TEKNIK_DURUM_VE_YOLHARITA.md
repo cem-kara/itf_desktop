@@ -59,16 +59,21 @@ REPYS işlevsel kapsam olarak **güçlü** durumda; personel ve cihaz modülleri
 
 | Görev | Dosya | Sonuç |
 |-------|-------|-------|
-| TC Algoritması Düzeltme | `personel_ekle.py` | ✅ Fixed + Enabled |
+| TC Algoritması Düzeltme | `personel_ekle_new.py` | ✅ Fixed + Enabled |
 | N+1 Query Optimization | `personel_repository.py` | ✅ 7.6x hız (36ms→4ms) |
 | Parse_date() Merkezi İşleme | 4 dosya | ✅ `core/date_utils.py` |
 | Lazy-Loading Implementasyonu | `personel_listesi.py` | ✅ 100 kayıt/batch + "Daha Fazla Yükle" |
-| Form Validasyonu | `personel_ekle.py` | ✅ TC + Email + Real-time |
+| Form Validasyonu | `personel_ekle_new.py` | ✅ TC + Email + Real-time |
 | Arama Debounce | `personel_listesi.py` | ✅ 300ms QTimer |
 | Avatar Caching | `personel_listesi.py` | ✅ Async + cache |
 | İzinli Filtre | `personel_listesi.py` | ✅ Real-time Lookup |
 | Pasif Business Rule | `izin_takip.py` | ✅ Auto-set 30+ gün |
 | Sağlık Timeline | `saglik_takip.py` | ✅ Muayene history görsel |
+| UTS Parser Refactor | `uts_parser.py` | ✅ 5 dosyaya ayrıldı |
+| Personel Listesi Refactor | `personel_listesi.py` | ✅ `personel_listesi_new.py` + servisler |
+| Personel Profil Refactor | `personel_overview_panel.py` | ✅ `personel_overview_panel_new.py` + file manager |
+| İzin Takip Refactor | `izin_takip.py` | ✅ `izin_takip_new.py` + `izin_calculator.py` |
+| Personel Ekle Refactor | `personel_ekle_new.py` | ✅ validators/upload service ayrildi |
 
 #### ❌ Acil Kritik Sorunlar (Validation Lazım)
 
@@ -285,7 +290,7 @@ def execute(self, query, params=None):
 
 Yeni personel eklendiğinde otomatik olarak sistem kullanıcısı oluşturulur.
 
-**Implementasyon - ui/pages/personel/personel_ekle.py:**
+**Implementasyon - ui/pages/personel/personel_ekle_new.py:**
 
 **Helper Fonksiyonu: `generate_username_from_name()`**
 ```python
@@ -474,7 +479,7 @@ Sağlık takip ve fotoğraf yükleme çalışmıyor olabilir.
 | 🟠 5 | `personel_listesi.py` | 994 | Sprint 2 | 4-5h |
 | 🟠 6 | `personel_overview_panel.py` | 971 | Sprint 2 | 4-5h |
 | 🟠 7 | `izin_takip.py` | 929 | Sprint 3 | 4-5h |
-| 🟠 8 | `personel_ekle.py` | 891 | Sprint 3 | 4-5h |
+| 🟠 8 | `personel_ekle_new.py` | 891 | Sprint 3 | 4-5h |
 
 **Her dosya 3-5 ayrı dosyaya bölünecek → 30+ yeni dosya + test'ler**
 
@@ -554,7 +559,7 @@ Bu **en kritik ve uzun** fasız. 9 dosya, 9 farklı sorumluluk yığılmasından
 | P3-A2 | `bakim_kalibrasyon_form.py` | 1082 | Ortak davranış tekrarları |
 | P3-A2 | `saglik_takip.py` | 953 | Timeline + dönüşüm + state |
 | P3-A2 | `fhsz_yonetim.py` | 923 | Hesaplama + UI etkileşimi |
-| P3-B1 | `personel_ekle.py` | 899 | Form validasyon + save + upload |
+| P3-B1 | `personel_ekle_new.py` | 899 | Form validasyon + save + upload |
 | P3-B1 | `main_window.py` | 757 | Shell + routing + sync + status |
 | P3-B2 | `cihaz_listesi.py` | 697 | Listeleme + filtre + aksiyonlar |
 
@@ -663,7 +668,7 @@ ui/pages/cihaz/forms/
 
 **Neden:** Hesaplama kuralları UI'dan bağımsız testlenebilir olmalı.
 
-##### 7) `personel_ekle.py` (899 satır) → 5 dosya
+##### 7) `personel_ekle_new.py` (899 satır) → 3 dosya
 
 **Yapılacak:**
 - `PersonelEkleView`
@@ -698,7 +703,7 @@ ui/pages/cihaz/forms/
 
 - **Sprint P3-1:** `ariza_kayit.py`, `izin_takip.py`
 - **Sprint P3-2:** `personel_listesi.py`, `bakim_kalibrasyon_form.py`
-- **Sprint P3-3:** `saglik_takip.py`, `personel_ekle.py`, `main_window.py`
+- **Sprint P3-3:** `saglik_takip.py`, `personel_ekle_new.py`, `main_window.py`
 - **Sprint P3-4:** `fhsz_yonetim.py`, `cihaz_listesi.py`, ardından `uts_parser.py` teknik ayrıştırma
 
 #### P3 Kabul Kriteri
@@ -915,7 +920,7 @@ Bu bütünleşik belge, **mevcut durumu**, **yapılacakları** ve **yol haritas�
 | `bakim_kalibrasyon_form.py` | 1082 | Ortak form davranışı | 🟠 Yüksek |
 | `saglik_takip.py` | 953 | Timeline + veri dönüşümü | 🟠 Yüksek |
 | `fhsz_yonetim.py` | 923 | Hesaplama + UI | 🟠 Yüksek |
-| `personel_ekle.py` | 899 | Form + save + upload | 🟠 Yüksek |
+| `personel_ekle_new.py` | 899 | Form + save + upload | 🟠 Yüksek |
 | `main_window.py` | 757 | Shell + routing + sync | 🟠 Yüksek |
 | `cihaz_listesi.py` | 697 | Listeleme + filtre | 🟡 Orta |
 

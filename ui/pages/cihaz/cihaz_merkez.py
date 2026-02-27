@@ -24,8 +24,11 @@ from ui.styles.icons import IconRenderer
 from core.logger import logger
 from database.repository_registry import RepositoryRegistry
 from ui.pages.cihaz.components.uts_parser import scrape_uts
-from ui.pages.cihaz.components.ariza_detail_panel import CihazArizaPanel
-from ui.pages.cihaz.components.kalibrasyon_detail_panel import KalibrasyonDetailPanel
+from ui.pages.cihaz.components.detail_panels import (
+    CihazArizaPanel,
+    BakimDetailPanel,
+    KalibrasyonDetailPanel,
+)
 
 C = DarkTheme
 
@@ -297,7 +300,6 @@ class CihazMerkezPage(QWidget):
                 w.saved.connect(self._load_data)
             elif code == "BAKIM":
                 # Bakım işlemleri paneli
-                from ui.pages.cihaz.components.bakim_detail_panel import BakimDetailPanel
                 w = BakimDetailPanel(self.db, cihaz_id=self.cihaz_id)
             elif code == "KALIBRASYON":
                 # Kalibrasyon paneli

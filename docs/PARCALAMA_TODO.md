@@ -42,20 +42,30 @@ ui/
 
 | Eski Dosya | Yeni Klasör Yapısı | Dosya Say | Status |
 |---|---|---|---|
-| `cihaz/ariza_kayit.py` | `cihaz/pages/ariza/` | 4 | 🔴 Sprint 1 |
-| `cihaz/bakim_form.py` | `cihaz/pages/bakim/` + `cihaz/components/` | 5 | 🔴 Sprint 1 |
-| `cihaz/kalibrasyon_form.py` | `cihaz/pages/kalibrasyon/` + `cihaz/components/` | 4 | 🔴 Sprint 1 |
-| `cihaz/components/uts_parser.py` | `cihaz/utils/uts_parser/` | 4 | 🟠 Sprint 2 |
-| `personel/personel_listesi.py` | `personel/pages/listesi/` + `personel/components/` | 4 | 🟠 Sprint 2 |
-| `personel/personel_overview_panel.py` | `personel/pages/profil/` + `personel/components/` | 4 | 🟠 Sprint 2 |
-| `personel/izin_takip.py` | `personel/pages/izin/` + `personel/services/` | 4 | 🟠 Sprint 3 |
-| `personel/personel_ekle.py` | `personel/pages/ekle/` + `personel/services/` | 4 | 🟠 Sprint 3 |
+| `cihaz/ariza_kayit.py` | `cihaz/pages/ariza/` | 4 | ✅ Tamamlandı |
+| `cihaz/bakim_form.py` | `cihaz/pages/bakim/` + `cihaz/components/` | 5 | ✅ Tamamlandı |
+| `cihaz/kalibrasyon_form.py` | `cihaz/pages/kalibrasyon/` + `cihaz/components/` | 4 | ✅ Tamamlandı |
+| `cihaz/components/uts_parser.py` | `cihaz/utils/uts_parser/` | 5 | ✅ Tamamlandı |
+| `personel/personel_listesi.py` | `personel/pages/listesi/` + `personel/components/` | 4 | ✅ Tamamlandı |
+| `personel/personel_overview_panel.py` | `personel/pages/profil/` + `personel/components/` | 4 | ✅ Tamamlandı |
+| `personel/izin_takip.py` | `personel/pages/izin/` + `personel/services/` | 3 | ✅ Tamamlandı |
+| `personel/personel_ekle.py` | `personel/personel_ekle_new.py` + `personel/services/` | 3 | ✅ Tamamlandı |
 
-**Toplam:** 8 dosya → 33 dosya (4,1x artış ile daha iyi modülarize)
+**Toplam:** 8 dosya → 33+ dosya (4,1x+ artış ile daha iyi modülarize)
+
+### ✅ Güncel Durum Özeti (27 Şubat 2026)
+
+- Sprint 1-3 refactor tamamlandı; testler backlog olarak duruyor.
+- UTS parser ayrıştırıldı (5 dosya): `uts_html_scraper.py`, `uts_mapper.py`, `uts_validator.py`, `uts_cache.py`, `uts_parser.py`.
+- Personel listesi: `personel_list_model.py`, `personel_filter_panel.py`, `personel_avatar_service.py`, `personel_listesi_new.py`.
+- Personel profil paneli: `personel_form_fields.py`, `personel_file_manager.py`, `personel_file_service.py`, `personel_overview_panel_new.py`.
+- İzin takip: `izin_calculator.py`, `izin_model.py`, `izin_takip_new.py`.
+- Personel ekle: `personel_ekle_new.py`, `personel_validators.py`, `personel_upload_service.py`.
+- `personel_ekle.py` eski dosyası kaldırıldı; yönlendirmeler yeni dosyaya alındı.
 
 ---
 
-## 🔴 SPRINT 1 (Hafta 1-2) — Cihaz Modülü Standardizasyonu
+## 🔴 SPRINT 1 (Hafta 1-2) — Cihaz Modülü Standardizasyonu ✅ Tamamlandı (Refactor)
 
 ### Phase 1.A: Arıza Kayıt (`cihaz/pages/ariza/`)
 
@@ -240,6 +250,7 @@ ui/pages/cihaz/
 
 ### ✅ Sprint 1 Acceptance Criteria
 
+- [ ] Test durumu: Testler bekliyor (backlog)
 - [ ] 12 yeni dosya oluşturuldu (ariza 4 + bakim 4 + kalibrasyon 4)
 - [ ] 8 shared component oluşturuldu (record_table, kpi, filter)
 - [ ] 10+ unit test yazıldı
@@ -249,7 +260,7 @@ ui/pages/cihaz/
 
 ---
 
-## 🟠 SPRINT 2 (Hafta 3-4) — Personel Modülü + Parser Standardizasyonu
+## 🟠 SPRINT 2 (Hafta 3-4) — Personel Modülü + Parser Standardizasyonu ✅ Tamamlandı (Refactor)
 
 ### Phase 2.A: Personel Listesi (`personel/pages/listesi/`)
 
@@ -419,6 +430,7 @@ ui/pages/cihaz/
 
 ### ✅ Sprint 2 Acceptance Criteria
 
+- [ ] Test durumu: Testler bekliyor (backlog)
 - [ ] 16 yeni dosya oluşturuldu (listesi 4 + profil 4 + parser 4 + components 4)
 - [ ] 12+ unit test yazıldı
 - [ ] Personel listesi / profil güncelleme / UTS parsing workflows bozulmadı
@@ -427,7 +439,7 @@ ui/pages/cihaz/
 
 ---
 
-## 🟠 SPRINT 3 (Hafta 5-6) — Personel İşlem Modülleri + Srvice Layer
+## 🟠 SPRINT 3 (Hafta 5-6) — Personel İşlem Modülleri + Srvice Layer ✅ Tamamlandı (Refactor)
 
 ### Phase 3.A: İzin Takip (`personel/pages/izin/`)
 
@@ -637,6 +649,7 @@ ui/pages/personel/
 
 ### ✅ Sprint 3 Acceptance Criteria
 
+- [ ] Test durumu: Testler bekliyor (backlog)
 - [ ] 13 yeni dosya oluşturuldu (izin 4 + ekle 4 + services 5)
 - [ ] 15+ unit test yazıldı
 - [ ] **Pasif statü kuralı** service katmanında test edildi (30 gün trigger)

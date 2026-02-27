@@ -14,13 +14,22 @@
 | 🔴 1 | `bakim_form.py` | 2259 | 4-5 | 6-8h | Sprint 1 |
 | 🔴 2 | `ariza_kayit.py` | 1444 | 3-4 | 5-6h | Sprint 1 |
 | 🔴 3 | `kalibrasyon_form.py` | 1268 | 3-4 | 5-6h | Sprint 1 |
-| 🟠 4 | `uts_parser.py` | 1037 | 3-4 | 4-5h | Sprint 2 |
-| 🟠 5 | `personel_listesi.py` | 994 | 3-4 | 4-5h | Sprint 2 |
-| 🟠 6 | `personel_overview_panel.py` | 971 | 3-4 | 4-5h | Sprint 2 |
-| 🟠 7 | `izin_takip.py` | 929 | 3-4 | 4-5h | Sprint 3 |
-| 🟠 8 | `personel_ekle.py` | 891 | 3-4 | 4-5h | Sprint 3 |
+| 🟠 4 | `uts_parser.py` | 1037 | 5 | 4-5h | Sprint 2 |
+| 🟠 5 | `personel_listesi.py` | 994 | 4 | 4-5h | Sprint 2 |
+| 🟠 6 | `personel_overview_panel.py` | 971 | 4 | 4-5h | Sprint 2 |
+| 🟠 7 | `izin_takip.py` | 929 | 3 | 4-5h | Sprint 3 |
+| 🟠 8 | `personel_ekle.py` | 891 | 3 | 4-5h | Sprint 3 |
 
 **Toplam Tahmini Süre:** 36-44 saat (4-5 hafta, 2-3 geliştirici)
+
+### ✅ Güncel Durum (27 Şubat 2026)
+
+- Sprint 1-3 refactor tamamlandı; testler backlog olarak bekliyor.
+- UTS parser 5 dosyaya ayrıldı: `uts_html_scraper.py`, `uts_mapper.py`, `uts_validator.py`, `uts_cache.py`, `uts_parser.py`.
+- Personel listesi refactor edildi: `personel_list_model.py`, `personel_filter_panel.py`, `personel_avatar_service.py`, `personel_listesi_new.py`.
+- Personel profil paneli refactor edildi: `personel_form_fields.py`, `personel_file_manager.py`, `personel_file_service.py`, `personel_overview_panel_new.py`.
+- İzin takip refactor edildi: `izin_calculator.py`, `izin_model.py`, `izin_takip_new.py`.
+- Personel ekle refactor edildi: `personel_ekle_new.py`, `personel_validators.py`, `personel_upload_service.py`.
 
 ---
 

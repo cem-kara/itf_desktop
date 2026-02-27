@@ -209,7 +209,7 @@ class MainWindow(QMainWindow):
             return page
 
         if baslik == "Personel Ekle":
-            from ui.pages.personel.personel_ekle import PersonelEklePage
+            from ui.pages.personel.personel_ekle_new import PersonelEklePage
             page = PersonelEklePage(
                 db=self._db,
                 on_saved=self._on_personel_saved,
@@ -232,8 +232,8 @@ class MainWindow(QMainWindow):
             return page
 
         if baslik == "Cihaz Ekle":
-            from ui.pages.cihaz.cihaz_ekle import CihazEklePage
-            page = CihazEklePage(
+            from ui.pages.cihaz.pages.ekle import CihazEkleView
+            page = CihazEkleView(
                 db=self._db,
                 on_saved=self._on_cihaz_saved,
                 action_guard=self._action_guard
@@ -241,7 +241,7 @@ class MainWindow(QMainWindow):
             return page
 
         if baslik == "Cihaz Listesi":
-            from ui.pages.cihaz.cihaz_listesi import CihazListesiPage
+            from ui.pages.cihaz.pages.listesi import CihazListesiPage
             page = CihazListesiPage(db=self._db, action_guard=self._action_guard)
             page.add_requested.connect(lambda: self._on_menu_clicked("Cihaz", "Cihaz Ekle"))
             page.detay_requested.connect(self._open_cihaz_merkez)
@@ -251,8 +251,8 @@ class MainWindow(QMainWindow):
             return page
 
         if baslik == "Arıza Kayıt":
-            from ui.pages.cihaz.ariza_kayit import ArizaKayitPenceresi
-            page = ArizaKayitPenceresi(db=self._db)
+            from ui.pages.cihaz.ariza_form_new import ArizaKayitForm
+            page = ArizaKayitForm(db=self._db)
             if hasattr(page, "btn_iptal"):
                 page.btn_iptal.clicked.connect(lambda: self._close_page("Arıza Kayıt"))
             return page
@@ -263,14 +263,14 @@ class MainWindow(QMainWindow):
             return page
         
         if baslik == "RKE Envanter":
-            from ui.pages.rke.rke_yonetim import RKEYonetimPenceresi
-            page = RKEYonetimPenceresi(db=self._db, action_guard=self._action_guard)
+            from ui.pages.rke.rke_yonetim_new import RKEYonetimPage
+            page = RKEYonetimPage(db=self._db, action_guard=self._action_guard)
            # page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Envanter"))
             page.load_data()
             return page
 
         if baslik == "RKE Muayene":
-            from ui.pages.rke.rke_muayene import RKEMuayenePage
+            from ui.pages.rke.rke_muayene_new import RKEMuayenePage
             page = RKEMuayenePage(db=self._db, action_guard=self._action_guard)
             if hasattr(page, "btn_kapat") and page.btn_kapat is not None:
                 page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Muayene"))
@@ -278,8 +278,8 @@ class MainWindow(QMainWindow):
             return page
 
         if baslik == "RKE Raporlama":
-            from ui.pages.rke.rke_rapor import RKERaporPenceresi
-            page = RKERaporPenceresi(db=self._db, action_guard=self._action_guard)
+            from ui.pages.rke.rke_rapor_new import RKERaporPage
+            page = RKERaporPage(db=self._db, action_guard=self._action_guard)
             if hasattr(page, "btn_kapat"):
                 page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Raporlama"))
             page.load_data()
@@ -725,8 +725,8 @@ class MainWindow(QMainWindow):
             self.stack.removeWidget(old)
             old.deleteLater()
             
-        from ui.pages.cihaz.cihaz_ekle import CihazEklePage
-        page = CihazEklePage(
+        from ui.pages.cihaz.pages.ekle import CihazEkleView
+        page = CihazEkleView(
             db=self._db,
             on_saved=self._on_cihaz_saved
         )
@@ -749,8 +749,8 @@ class MainWindow(QMainWindow):
             self.stack.removeWidget(old)
             old.deleteLater()
 
-        from ui.pages.cihaz.cihaz_merkez import CihazMerkezPage
-        page = CihazMerkezPage(db=self._db, cihaz_id=cihaz_id, sabitler_cache=self._sabitler_cache)
+        from ui.pages.cihaz.pages.merkez import CihazMerkezView
+        page = CihazMerkezView(db=self._db, cihaz_id=cihaz_id, sabitler_cache=self._sabitler_cache)
         page.kapat_istegi.connect(lambda: self._back_to_cihaz_listesi(merkez_key))
 
         self._pages[merkez_key] = page
