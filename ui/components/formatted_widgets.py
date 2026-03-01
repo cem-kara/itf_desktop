@@ -43,15 +43,9 @@ def apply_title_case_formatting(line_edit: QLineEdit):
             line_edit.setText(formatted_text)
             line_edit.blockSignals(False)
             
-            # Cursor pozisyonunu hesapla
-            # Eğer boşluk eklendiyse cursor'u ilerlet
-            new_cursor_pos = cursor_pos
-            if len(formatted_text) > len(current_text):
-                new_cursor_pos = cursor_pos + (len(formatted_text) - len(current_text))
-            elif len(formatted_text) < len(current_text):
-                new_cursor_pos = cursor_pos - (len(current_text) - len(formatted_text))
-            
-            line_edit.setCursorPosition(min(new_cursor_pos, len(formatted_text)))
+            # Cursor'u metnin sonuna koy (metin trim edildikten sonra)
+            # Bu, kullanıcı yazarken en doğal davranış
+            line_edit.setCursorPosition(len(formatted_text))
     
     line_edit.textChanged.connect(on_text_changed)
 

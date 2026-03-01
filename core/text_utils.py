@@ -9,6 +9,7 @@ def turkish_title_case(text: str) -> str:
     """
     Türkçe karakterleri destekleyen Title Case formatter.
     Her kelimenin ilk harfini büyük, geri kalanını küçük yapar.
+    Baştaki ve sondaki boşlukları kaldırır, ortadaki boşlukları normalize eder.
     
     Args:
         text: Formatlanacak metin
@@ -19,11 +20,17 @@ def turkish_title_case(text: str) -> str:
     Examples:
         >>> turkish_title_case("ahmet cem KARA")
         "Ahmet Cem Kara"
+        >>> turkish_title_case("  ahmet  cem  ")
+        "Ahmet Cem"
         >>> turkish_title_case("istanbul üniversitesi")
         "İstanbul Üniversitesi"
-        >>> turkish_title_case("şükrü özer")
-        "Şükrü Özer"
     """
+    if not text:
+        return text
+    
+    # Baştaki ve sondaki boşlukları kaldır
+    text = text.strip()
+    
     if not text:
         return text
     
@@ -51,19 +58,17 @@ def turkish_title_case(text: str) -> str:
             return word
         return upper_first(word[0]) + ''.join(lower_char(c) for c in word[1:])
     
-    # Regex ile kelimeleri ve boşlukları ayır
+    # Kelimeleri ayır (boşlukları normalize et)
     import re
-    # Kelime veya boşluk gruplarını yakala
-    parts = re.findall(r'\S+|\s+', text)
+    words = re.split(r'\s+', text)
+    # Boş stringler varsa kaldır
+    words = [w for w in words if w]
     
-    result = []
-    for part in parts:
-        if part.strip():  # Kelime ise formatla
-            result.append(format_word(part))
-        else:  # Boşluk ise olduğu gibi ekle
-            result.append(part)
+    # Her kelimeyi formatla
+    formatted_words = [format_word(word) for word in words]
     
-    return ''.join(result)
+    # Tek boşluk ile birleştir
+    return ' '.join(formatted_words)
 
 
 def turkish_upper(text: str) -> str:
