@@ -12,6 +12,8 @@ from core.logger import logger
 from database.auth_repository import AuthRepository
 from database.permission_repository import PermissionRepository
 from core.auth.password_hasher import PasswordHasher
+from ui.styles.colors import DarkTheme as C
+from ui.styles.components import STYLES
 from ui.styles.icons import Icons, IconRenderer
 
 
@@ -32,12 +34,14 @@ class UserDialog(QDialog):
         form = QFormLayout()
         
         self.username_edit = QLineEdit()
-        self.username_edit.setPlaceholderText("Kullanıcı adı")
+        self.username_edit.setStyleSheet(STYLES["input_field"])
+        self.username_edit.setPlaceholderText("İnsan kullanıcı adı")
         if self._is_edit:
             self.username_edit.setText(user_data.username)
-            self.username_edit.setEnabled(False)  # Username değiştirilemez
+            self.username_edit.setEnabled(False)  # Username değiştirilmez
         
         self.password_edit = QLineEdit()
+        self.password_edit.setStyleSheet(STYLES["input_field"])
         self.password_edit.setEchoMode(QLineEdit.Password)
         self.password_edit.setPlaceholderText("Şifre" if not self._is_edit else "Boş bırakılırsa değişmez")
         

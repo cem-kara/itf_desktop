@@ -25,6 +25,8 @@ from PySide6.QtCore import Qt, QThread, Signal
 
 from core.logger import logger
 from database.repository_registry import RepositoryRegistry
+from ui.styles.colors import DarkTheme as C
+from ui.styles.components import STYLES
 from ui.styles.icons import Icons, IconRenderer
 
 
@@ -212,11 +214,11 @@ class YilSonuDevirPage(QWidget):
             "<i style='color: #f7b731;'>Lütfen işlemden önce veritabanı yedeği alınız!</i>"
         )
         lbl_bilgi.setWordWrap(True)
-        lbl_bilgi.setStyleSheet("color: #cccccc; font-weight: normal; font-size: 13px; padding: 8px;")
+        lbl_bilgi.setStyleSheet(f"color: {C.TEXT_SECONDARY}; font-weight: normal; font-size: 13px; padding: 8px;")
         v_uyari.addWidget(lbl_bilgi)
         
         self.chk_onay = QCheckBox("Riskleri anladım, işlemi onaylıyorum.")
-        self.chk_onay.setStyleSheet("color: #e81123; font-weight: bold; font-size: 13px;")
+        self.chk_onay.setStyleSheet(f"color: {C.STATUS_ERROR}; font-weight: bold; font-size: 13px;")
         self.chk_onay.stateChanged.connect(self._onay_degisti)
         v_uyari.addWidget(self.chk_onay)
         
@@ -226,16 +228,16 @@ class YilSonuDevirPage(QWidget):
         layout.addWidget(QLabel("İşlem Logları:"))
         self.txt_log = QTextEdit()
         self.txt_log.setReadOnly(True)
-        self.txt_log.setStyleSheet("""
-            QTextEdit {
-                background-color: #1e1e1e;
-                color: #00ff00;
+        self.txt_log.setStyleSheet(f"""
+            QTextEdit {{
+                background-color: {C.BG_SECONDARY};
+                color: {C.STATUS_SUCCESS};
                 font-family: 'Consolas', 'Courier New', monospace;
                 font-size: 12px;
-                border: 1px solid #444;
+                border: 1px solid {C.INPUT_BORDER};
                 border-radius: 4px;
                 padding: 8px;
-            }
+            }}
         """)
         layout.addWidget(self.txt_log)
         
@@ -243,17 +245,17 @@ class YilSonuDevirPage(QWidget):
         self.pbar = QProgressBar()
         self.pbar.setValue(0)
         self.pbar.setVisible(False)
-        self.pbar.setStyleSheet("""
-            QProgressBar {
-                border: 1px solid #444;
+        self.pbar.setStyleSheet(f"""
+            QProgressBar {{
+                border: 1px solid {C.INPUT_BORDER};
                 border-radius: 4px;
                 text-align: center;
                 height: 24px;
-            }
-            QProgressBar::chunk {
-                background-color: #e81123;
+            }}
+            QProgressBar::chunk {{
+                background-color: {C.STATUS_ERROR};
                 border-radius: 3px;
-            }
+            }}
         """)
         layout.addWidget(self.pbar)
         
@@ -261,15 +263,15 @@ class YilSonuDevirPage(QWidget):
         self.btn_baslat = QPushButton("🚀 DEVİR İŞLEMİNİ BAŞLAT")
         self.btn_baslat.setFixedHeight(50)
         self.btn_baslat.setEnabled(False)
-        self.btn_baslat.setStyleSheet("""
-            QPushButton {
-                background-color: #333;
-                color: #aaa;
+        self.btn_baslat.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {C.BG_TERTIARY};
+                color: {C.TEXT_DISABLED};
                 font-weight: bold;
                 font-size: 14px;
-                border: 1px solid #444;
+                border: 1px solid {C.INPUT_BORDER};
                 border-radius: 6px;
-            }
+            }}
         """)
         self.btn_baslat.clicked.connect(self._islemi_baslat)
         layout.addWidget(self.btn_baslat)
@@ -278,30 +280,30 @@ class YilSonuDevirPage(QWidget):
         """Onay checkbox değiştiğinde buton durumunu ayarla"""
         if self.chk_onay.isChecked():
             self.btn_baslat.setEnabled(True)
-            self.btn_baslat.setStyleSheet("""
-                QPushButton {
-                    background-color: #e81123;
-                    color: white;
+            self.btn_baslat.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {C.STATUS_ERROR};
+                    color: {C.TEXT_PRIMARY};
                     font-weight: bold;
                     font-size: 14px;
                     border: none;
                     border-radius: 6px;
-                }
-                QPushButton:hover {
-                    background-color: #c70e1a;
-                }
+                }}
+                QPushButton:hover {{
+                    background-color: {C.BTN_DANGER_HOVER};
+                }}
             """)
         else:
             self.btn_baslat.setEnabled(False)
-            self.btn_baslat.setStyleSheet("""
-                QPushButton {
-                    background-color: #333;
-                    color: #aaa;
+            self.btn_baslat.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {C.BG_TERTIARY};
+                    color: {C.TEXT_DISABLED};
                     font-weight: bold;
                     font-size: 14px;
-                    border: 1px solid #444;
+                    border: 1px solid {C.INPUT_BORDER};
                     border-radius: 6px;
-                }
+                }}
             """)
 
     def _islemi_baslat(self):

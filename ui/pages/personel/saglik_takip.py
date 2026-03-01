@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 
 from core.logger import logger
 from core.date_utils import parse_date, to_db_date, to_ui_date
+from core.services.dokuman_service import DokumanService
 from ui.components.base_table_model import BaseTableModel
 from ui.theme_manager import ThemeManager
 from ui.styles import DarkTheme
@@ -150,7 +151,6 @@ class SaglikTakipPage(QWidget):
         self._personel_rows = []
         self._editing_id = None
         self._selected_report_path = ""
-        self._drive_folders = {}
         self._exam_keys = ["Dermatoloji", "Dahiliye", "Goz", "Goruntuleme"]
         self._exam_widgets = {}
         self._drawer = None  # Sağdan açılan panel
@@ -299,7 +299,7 @@ class SaglikTakipPage(QWidget):
         # Drawer scroll içerik
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setStyleSheet(S.get("scroll", ""))
 
         form_content = QWidget()
@@ -424,7 +424,6 @@ class SaglikTakipPage(QWidget):
             registry = get_registry(self._db)
             personel_repo = registry.get("Personel")
             takip_repo = registry.get("Personel_Saglik_Takip")
-            sabit_repo = registry.get("Sabitler")
 
             all_personel = personel_repo.get_all()
             self._personel_rows = [
@@ -441,11 +440,6 @@ class SaglikTakipPage(QWidget):
                 self.cmb_personel.addItem(label, {"KimlikNo": kimlik, "AdSoyad": ad, "Birim": birim})
 
             self._takip_rows = takip_repo.get_all()
-            self._drive_folders = {
-                str(r.get("MenuEleman", "")).strip(): str(r.get("Aciklama", "")).strip()
-                for r in sabit_repo.get_all()
-                if r.get("Kod") == "Sistem_DriveID" and r.get("Aciklama", "").strip()
-            }
             self._all_rows = self._build_personel_list_rows(all_personel)
             self._fill_filter_combos()
             self._apply_filters()
@@ -628,19 +622,8 @@ class SaglikTakipPage(QWidget):
             self._selected_report_path = path
             self.inp_rapor.setText(path)
 
-    def _get_report_folder_id(self):
-        """Sabitler/Sistem_DriveID kayitlarindan saglik rapor klasorunu bulur."""
-        keys = [
-            "Saglik_Raporlari",
-                ]
-        for key in keys:
-            folder_id = str(self._drive_folders.get(key, "")).strip()
-            if folder_id:
-                return folder_id
-        return ""
-
-    def _upload_report_to_drive(self, tc_no, kayit_no):
-        """Seçilen raporu Drive'a yükler (veya offline modda yerel klasöre) ve link döndürür."""
+    def _upload_report(self, tc_no, kayit_no):
+        """Seçilen raporu DokumanService ile yükler ve erişim yolunu döndürür."""
         if not self._selected_report_path:
             return self.inp_rapor.text().strip()
         if not os.path.exists(self._selected_report_path):
@@ -648,39 +631,32 @@ class SaglikTakipPage(QWidget):
             return ""
 
         try:
-            from core.di import get_cloud_adapter
-            
-            cloud = get_cloud_adapter()
             ext = os.path.splitext(self._selected_report_path)[1]
             custom_name = f"{tc_no}_{kayit_no}_SaglikRapor{ext}"
-            
-            # Offline modda folder_id gereksiz ama offline_folder_name gerekli
-            folder_id = None
-            if cloud.is_online:
-                folder_id = self._get_report_folder_id()
-                if not folder_id:
-                    QMessageBox.warning(
-                        self,
-                        "Drive Ayari Eksik",
-                        "Sabitler tablosunda Sistem_DriveID icin saglik rapor klasoru bulunamadi."
-                    )
-                    return ""
-            
-            link = cloud.upload_file(
-                self._selected_report_path,
-                parent_folder_id=folder_id,
+            svc = DokumanService(self._db)
+            sonuc = svc.upload_and_save(
+                file_path=self._selected_report_path,
+                entity_type="personel",
+                entity_id=str(tc_no),
+                belge_turu="SaglikRapor",
+                folder_name="Saglik_Raporlari",
+                doc_type="Personel_Belge",
                 custom_name=custom_name,
-                offline_folder_name="Saglik_Raporlari"
+                iliskili_id=str(kayit_no),
+                iliskili_tip="Personel_Saglik_Takip",
             )
-            
-            if not link:
-                if cloud.is_online:
-                    QMessageBox.warning(self, "Drive", "Rapor Drive'a yuklenemedi.")
+
+            if not sonuc.get("ok"):
+                err = str(sonuc.get("error", "Bilinmeyen yükleme hatası"))
+                QMessageBox.warning(self, "Yukleme Hatasi", f"Rapor yüklenemedi:\n{err}")
                 return ""
-            
-            mode_text = "Drive'a yuklendi" if cloud.is_online else "yerel klasore kaydedildi"
-            logger.info(f"Saglik raporu {mode_text}: {custom_name}")
-            return str(link).strip()
+
+            rapor_ref = str(sonuc.get("drive_link") or sonuc.get("local_path") or "").strip()
+            logger.info(
+                f"Saglik raporu yuklendi [{sonuc.get('mode', 'none')}]: "
+                f"{custom_name}"
+            )
+            return rapor_ref
         except Exception as exc:
             logger.error(f"Saglik rapor yukleme hatasi: {exc}")
             QMessageBox.critical(self, "Hata", f"Rapor yuklenemedi:\n{exc}")
@@ -694,7 +670,7 @@ class SaglikTakipPage(QWidget):
         personel_data = self.cmb_personel.currentData()
         muayene_db, sonraki_db, sonuc, durum = self._compute_summary()
         kayit_no = self._editing_id or uuid.uuid4().hex[:12].upper()
-        rapor_link = self._upload_report_to_drive(
+        rapor_link = self._upload_report(
             personel_data.get("KimlikNo", ""),
             kayit_no
         )

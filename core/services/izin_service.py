@@ -5,9 +5,12 @@ Sorumluluklar:
 - İzin türleri listesi
 - Pasif personel kuralı (30+ gün veya ücretsiz/aylıksız izin)
 - İzin kaydı (INSERT/UPDATE/DELETE)
+- Bugünkü izinli personel listesi
 """
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
+from datetime import date
 from core.logger import logger
+from core.date_utils import parse_date, to_ui_date
 from database.repository_registry import RepositoryRegistry
 
 
@@ -128,6 +131,50 @@ class IzinService:
         except Exception as e:
             logger.error(f"Personel listesi yükleme hatası: {e}")
             return []
+    
+    def get_izinli_personeller_bugun(self) -> Dict[str, List[Tuple[str, str]]]:
+        """
+        Bugün izinli olan personellerin detaylı listesini getir.
+        
+        Returns:
+            Dict[TC, List[(başlangıç_str, bitiş_str)]]
+            Örnek: {"12345678901": [("01.03.2026", "05.03.2026")]}
+        """
+        try:
+            today = date.today()
+            izin_kayitlari = self._r.get("Izin_Giris").get_all() or []
+            
+            izinli_map: Dict[str, List[Tuple[str, str]]] = {}
+            
+            for kayit in izin_kayitlari:
+                tc = str(kayit.get("Personelid", "")).strip()
+                bas_tarih = parse_date(kayit.get("BaslamaTarihi", ""))
+                bit_tarih = parse_date(kayit.get("BitisTarihi", ""))
+                
+                if not tc or not bas_tarih:
+                    continue
+                
+                # Bitiş tarihi yoksa başlangıç tarihiyle aynı kabul et
+                if not bit_tarih:
+                    bit_tarih = bas_tarih
+                
+                # Bugün izin aralığında mı?
+                if bas_tarih <= today <= bit_tarih:
+                    bas_str = to_ui_date(kayit.get("BaslamaTarihi", ""), "")
+                    bit_str = to_ui_date(kayit.get("BitisTarihi", ""), bas_str)
+                    
+                    if tc not in izinli_map:
+                        izinli_map[tc] = []
+                    izinli_map[tc].append((bas_str, bit_str))
+            
+            # Her TC için tarihleri sırala
+            for tc in izinli_map:
+                izinli_map[tc].sort(key=lambda x: x[0])
+            
+            return izinli_map
+        except Exception as e:
+            logger.error(f"İzinli personel sorgusu hatası: {e}")
+            return {}
     
     # ───────────────────────────────────────────────────────────
     #  CRUD İşlemleri

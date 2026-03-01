@@ -121,7 +121,7 @@ class DarkTheme:
     TEXT_SECONDARY = "#8fa3b8"   # İkincil metin — mavi-gri
     TEXT_MUTED     = "#4d6070"   # Açıklama, yardımcı metin
     TEXT_DISABLED  = "#263850"   # Devre dışı bileşen metni
-
+    TEXT_TABLE_HEADER = "#c7dcf1"   # Tablo başlık metni — koyu mavi
     # ── Input alanları ───────────────────────────────────────────
     INPUT_BG           = "#1a2030"   # = BG_ELEVATED
     INPUT_BORDER       = "#1e2d3d"   # = BORDER_PRIMARY

@@ -128,14 +128,19 @@ QCheckBox, QRadioButton {{
 }}
 QCheckBox::indicator, QRadioButton::indicator {{
     width: 16px; height: 16px;
-    border: 1px solid {BORDER_STRONG};
+    border: 2px solid {TEXT_SECONDARY};
     border-radius: 4px;
     background-color: {INPUT_BG};
 }}
-QCheckBox::indicator:hover    {{ border-color: {ACCENT}; }}
+QCheckBox::indicator:hover    {{ border-color: {ACCENT}; background-color: {BG_TERTIARY}; }}
 QCheckBox::indicator:checked  {{
     background-color: {ACCENT};
     border-color: {ACCENT};
+    image: url(:checked);
+}}
+QCheckBox::indicator:disabled {{
+    border-color: {TEXT_DISABLED};
+    background-color: {BG_SECONDARY};
 }}
 QRadioButton::indicator       {{ border-radius: 8px; }}
 QRadioButton::indicator:checked {{

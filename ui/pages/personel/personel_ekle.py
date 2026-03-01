@@ -2,7 +2,7 @@
 import os
 import re
 from datetime import datetime
-from PySide6.QtCore import Qt, QDate, QTimer
+from PySide6.QtCore import Qt, QDate, QTimer, QThread, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QProgressBar, QFrame, QComboBox, QLineEdit,
@@ -12,14 +12,52 @@ from PySide6.QtGui import QCursor, QPixmap
 
 from core.logger import logger
 from core.date_utils import parse_date
+from core.paths import DB_PATH
 from core.auth.password_hasher import PasswordHasher
+from core.di import get_registry
+from core.services.dokuman_service import DokumanService
 from core.services.personel_service import PersonelService
 from database.auth_repository import AuthRepository
-from ui.components.drive_upload_worker import DriveUploadWorker
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 from ui.theme_manager import ThemeManager
+
+
+class DokumanUploadWorker(QThread):
+    """Tek bir dosya için DokumanService upload worker'ı."""
+    upload_finished = Signal(str, dict)
+    upload_error = Signal(str, str)
+
+    def __init__(self, db_path: str, job: dict, parent=None):
+        super().__init__(parent)
+        self._db_path = db_path
+        self._job = job
+
+    def run(self):
+        try:
+            # Her thread kendi DB connection'ını oluşturur (SQLite thread güvenliği için)
+            from database.sqlite_manager import SQLiteManager
+            db = SQLiteManager(self._db_path, check_same_thread=False)
+            svc = DokumanService(db)
+            sonuc = svc.upload_and_save(
+                file_path=self._job["file_path"],
+                entity_type="personel",
+                entity_id=str(self._job["tc_no"]),
+                belge_turu=self._job["belge_turu"],
+                folder_name=self._job["folder_name"],
+                doc_type=self._job["doc_type"],
+                custom_name=self._job["custom_name"],
+            )
+            if sonuc.get("ok"):
+                self.upload_finished.emit(self._job["db_field"], sonuc)
+            else:
+                self.upload_error.emit(
+                    self._job["db_field"],
+                    sonuc.get("error", "Bilinmeyen yükleme hatası")
+                )
+        except Exception as e:
+            self.upload_error.emit(self._job.get("db_field", ""), str(e))
 
 
 # ─── TC Kimlik No Validatörü ───
@@ -133,6 +171,8 @@ class PersonelEklePage(QWidget):
     edit_data: dict → düzenleme modunda mevcut veri
     on_saved: callback → kayıt sonrası çağrılır
     """
+    # Sinyal: form kapanması istendiğinde emitir (kaydet veya iptal)
+    form_closed = Signal()
 
     def __init__(self, db=None, edit_data=None, on_saved=None, action_guard=None, parent=None):
         super().__init__(parent)
@@ -151,14 +191,14 @@ class PersonelEklePage(QWidget):
         self._pending_uploads = 0
         self._completed_uploads = 0
         self._upload_errors = []
-        self._upload_meta = {}
         self._upload_meta = {}         # alan_adi -> metadata
         
         # Service layer
         if db:
-            from database.repository_registry import RepositoryRegistry
-            self._svc = PersonelService(RepositoryRegistry(db))
+            self._registry = get_registry(db)
+            self._svc = PersonelService(self._registry)
         else:
+            self._registry = None
             self._svc = None
 
         self._setup_ui()
@@ -179,7 +219,7 @@ class PersonelEklePage(QWidget):
         # Scroll
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setStyleSheet(S["scroll"])
 
         content = QWidget()
@@ -308,8 +348,8 @@ class PersonelEklePage(QWidget):
         corp_lay.addLayout(row_k1)
 
         row_k2 = QHBoxLayout()
-        self.ui["gorev_yeri"] = self._make_combo("Görev Yeri", row_k2)
-        self.ui["sicil_no"] = self._make_input("Kurum Sicil No", row_k2)
+        self.ui["gorev_yeri"] = self._make_combo("Görev Yeri", row_k2, stretch=1)
+        self.ui["sicil_no"] = self._make_input("Kurum Sicil No", row_k2, stretch=1)
         corp_lay.addLayout(row_k2)
 
         row_k3 = QHBoxLayout()
@@ -415,7 +455,7 @@ class PersonelEklePage(QWidget):
     #  YARDIMCI WIDGET FABRİKALARI
     # ═══════════════════════════════════════════
 
-    def _make_input(self, label, parent_layout, required=False, placeholder=""):
+    def _make_input(self, label, parent_layout, required=False, placeholder="", stretch=0):
         container = QWidget()
         container.setStyleSheet("background: transparent;")
         lay = QVBoxLayout(container)
@@ -429,10 +469,10 @@ class PersonelEklePage(QWidget):
         if placeholder:
             inp.setPlaceholderText(placeholder)
         lay.addWidget(inp)
-        parent_layout.addWidget(container)
+        parent_layout.addWidget(container, stretch)
         return inp
 
-    def _make_combo(self, label, parent_layout, required=False, editable=False):
+    def _make_combo(self, label, parent_layout, required=False, editable=False, stretch=0):
         container = QWidget()
         container.setStyleSheet("background: transparent;")
         lay = QVBoxLayout(container)
@@ -445,7 +485,7 @@ class PersonelEklePage(QWidget):
         cmb.setStyleSheet(S["combo"])
         cmb.setEditable(editable)
         lay.addWidget(cmb)
-        parent_layout.addWidget(container)
+        parent_layout.addWidget(container, stretch)
         return cmb
 
     def _make_date(self, label, parent_layout, required=False):
@@ -497,11 +537,11 @@ class PersonelEklePage(QWidget):
 
     def _populate_combos(self):
         """Combobox'ları Sabitler + Personel tablosundan doldurur."""
-        if not self._db:
+        if not self._registry:
             return
 
         try:
-            registry = RepositoryRegistry(self._db)
+            registry = self._registry
 
             # ── Sabitler'den ──
             sabitler = registry.get("Sabitler")
@@ -648,7 +688,7 @@ class PersonelEklePage(QWidget):
             pixmap = QPixmap(path)
             if not pixmap.isNull():
                 self.lbl_resim.setPixmap(
-                    pixmap.scaled(160, 200, Qt.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                    pixmap.scaled(160, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
                 )
             self.lbl_resim.setToolTip(os.path.basename(path))
             logger.info(f"Fotoğraf seçildi: {path}")
@@ -671,17 +711,31 @@ class PersonelEklePage(QWidget):
         return self._drive_folders.get(folder_name, "")
 
     def _upload_files_to_drive(self, tc_no, callback):
-        """Seçili dosyaları Drive'a yükler, bitince callback çağırır."""
-        from database.google.utils import resolve_storage_target
+        """Seçili dosyaları DokumanService ile yükler, bitince callback çağırır."""
         # Yüklenecek dosya yoksa direkt callback
         if not self._file_paths:
             callback()
             return
 
         upload_map = {
-            "Resim":    ("Personel_Resim",   "Resim"),
-            "Diploma1": ("Personel_Diploma",  "Diploma1"),
-            "Diploma2": ("Personel_Diploma",  "Diploma2"),
+            "Resim": {
+                "folder_name": "Personel_Resim",
+                "doc_type": "Personel_Resim",
+                "db_field": "Resim",
+                "belge_turu": "Resim",
+            },
+            "Diploma1": {
+                "folder_name": "Personel_Diploma",
+                "doc_type": "Personel_Diploma",
+                "db_field": "Diploma1",
+                "belge_turu": "Diploma1",
+            },
+            "Diploma2": {
+                "folder_name": "Personel_Diploma",
+                "doc_type": "Personel_Diploma",
+                "db_field": "Diploma2",
+                "belge_turu": "Diploma2",
+            },
         }
 
         self._pending_uploads = 0
@@ -691,27 +745,41 @@ class PersonelEklePage(QWidget):
         for file_key, file_path in self._file_paths.items():
             if file_key not in upload_map:
                 continue
-            folder_name, db_field = upload_map[file_key]
-            
-            target = resolve_storage_target(self._all_sabit, folder_name)
-            folder_id = target.get("drive_folder_id")
-            offline_folder_name = target.get("offline_folder_name")
-
-            # Dosya adı: TC_alan.uzantı
+            map_info = upload_map[file_key]
             ext = os.path.splitext(file_path)[1]
-            custom_name = f"{tc_no}_{db_field}{ext}"
 
-            self._upload_meta[db_field] = {
+            # Diploma dosya adı formatı: TCKimlik_Diploma_Tarih
+            # Örn: 12345678901_Diploma_20260301.pdf
+            if file_key in ("Diploma1", "Diploma2"):
+                tarih = datetime.now().strftime("%Y%m%d")
+                custom_name = f"{tc_no}_Diploma_{tarih}{ext}"
+                if file_key == "Diploma2":
+                    custom_name = f"{tc_no}_Diploma_{tarih}_2{ext}"
+            else:
+                custom_name = f"{tc_no}_{map_info['db_field']}{ext}"
+
+            self._upload_meta[map_info["db_field"]] = {
                 "tc_no": tc_no,
                 "file_path": file_path,
                 "custom_name": custom_name,
-                "folder_name": folder_name,
-                "belge_turu": db_field,
+                "folder_name": map_info["folder_name"],
+                "belge_turu": map_info["belge_turu"],
+                "doc_type": map_info["doc_type"],
+            }
+
+            job = {
+                "tc_no": tc_no,
+                "file_path": file_path,
+                "custom_name": custom_name,
+                "folder_name": map_info["folder_name"],
+                "doc_type": map_info["doc_type"],
+                "db_field": map_info["db_field"],
+                "belge_turu": map_info["belge_turu"],
             }
             self._pending_uploads += 1
-            worker = DriveUploadWorker(file_path, folder_id, custom_name, db_field, offline_folder_name)
-            worker.finished.connect(self._on_upload_finished)
-            worker.error.connect(self._on_upload_error)
+            worker = DokumanUploadWorker(DB_PATH, job)
+            worker.upload_finished.connect(self._on_upload_finished)
+            worker.upload_error.connect(self._on_upload_error)
             self._upload_workers.append(worker)
             worker.start()
 
@@ -724,12 +792,12 @@ class PersonelEklePage(QWidget):
             self.progress.setValue(0)
             self.btn_kaydet.setEnabled(False)
 
-    def _on_upload_finished(self, alan_adi, link):
+    def _on_upload_finished(self, alan_adi, sonuc):
         """Tek dosya yükleme tamamlandı."""
-        self._drive_links[alan_adi] = link
-        logger.info(f"Drive yükleme OK: {alan_adi} → {link}")
+        kayit_linki = sonuc.get("drive_link") or sonuc.get("local_path") or ""
+        self._drive_links[alan_adi] = kayit_linki
+        logger.info(f"Dosya yükleme OK: {alan_adi} → {kayit_linki}")
         self._completed_uploads += 1
-        self._insert_dokuman_kaydi(alan_adi, link)
         # Progress bar'ı güncelle
         percent = int((self._completed_uploads / self._pending_uploads) * 100)
         self.progress.setValue(percent)
@@ -758,43 +826,6 @@ class PersonelEklePage(QWidget):
             )
         if hasattr(self, "_upload_callback"):
             self._upload_callback()
-
-    def _insert_dokuman_kaydi(self, alan_adi: str, link: str):
-        """Dokumanlar tablosuna kayıt ekler (personel için)."""
-        try:
-            # Sadece diploma dosyaları ortak tabloya yazılır
-            if alan_adi not in ("Diploma1", "Diploma2"):
-                return
-            meta = self._upload_meta.get(alan_adi, {})
-            tc_no = meta.get("tc_no")
-            if not tc_no:
-                return
-
-            file_path = meta.get("file_path", "")
-            custom_name = meta.get("custom_name", "")
-            folder_name = meta.get("folder_name", "")
-            belge_turu = meta.get("belge_turu", alan_adi)
-
-            drive_path = link if str(link).startswith("http") else ""
-            local_path = "" if drive_path else str(link or "")
-
-            repo = RepositoryRegistry(self._db).get("Dokumanlar")
-            repo.insert({
-                "EntityType": "personel",
-                "EntityId": str(tc_no),
-                "BelgeTuru": str(belge_turu),
-                "Belge": str(custom_name or os.path.basename(file_path) or link),
-                "DocType": str(folder_name),
-                "DisplayName": os.path.basename(file_path) if file_path else str(custom_name),
-                "LocalPath": local_path,
-                "DrivePath": drive_path,
-                "BelgeAciklama": "",
-                "YuklenmeTarihi": datetime.now().isoformat(),
-                "IliskiliBelgeID": None,
-                "IliskiliBelgeTipi": None,
-            })
-        except Exception as e:
-            logger.warning(f"Dokumanlar kaydı eklenemedi ({alan_adi}): {e}")
 
     # ═══════════════════════════════════════════
     #  REAL-TIME FORM VALIDASYON
@@ -886,8 +917,9 @@ class PersonelEklePage(QWidget):
         # Düzenleme değilse aynı TC kontrolü
         if not self._is_edit:
             try:
-                registry = RepositoryRegistry(self._db)
-                repo = registry.get("Personel")
+                if not self._registry:
+                    return
+                repo = self._registry.get("Personel")
                 existing = repo.get_by_id(tc_no)
                 if existing:
                     QMessageBox.warning(
@@ -918,7 +950,10 @@ class PersonelEklePage(QWidget):
                 data[db_col] = link
 
         try:
-            registry = RepositoryRegistry(self._db)
+            if not self._registry:
+                QMessageBox.critical(self, "Hata", "Veritabanı bağlantısı bulunamadı.")
+                return
+            registry = self._registry
             repo = registry.get("Personel")
 
             if self._is_edit:
@@ -944,15 +979,15 @@ class PersonelEklePage(QWidget):
                 try:
                     ad_soyad = data.get("AdSoyad", "")
                     username = generate_username_from_name(ad_soyad)
-                    
+
                     if username:
                         # Şifre: kullanıcı adı + "123" (örn: "CKara123")
                         password = f"{username}123"
-                        
+
                         # Şifreyi hash'le
                         hasher = PasswordHasher()
                         password_hash = hasher.hash(password)
-                        
+
                         # Kullanıcı oluştur (must_change_password=True → ilk girişte değiştirmesi istenir)
                         auth_repo = AuthRepository(self._db)
                         user_id = auth_repo.create_user(
@@ -961,6 +996,22 @@ class PersonelEklePage(QWidget):
                             is_active=True,
                             must_change_password=True
                         )
+
+                        # Varsayılan rol: operator
+                        try:
+                            roles = auth_repo.get_roles() or []
+                            operator_role = next(
+                                (r for r in roles if str(r.get("name", "")).strip().lower() == "operator"),
+                                None,
+                            )
+                            if operator_role and operator_role.get("id"):
+                                auth_repo.assign_role(user_id=user_id, role_id=int(operator_role["id"]))
+                                logger.info(f"Kullanıcıya operator rolü atandı: {username} (ID: {user_id})")
+                            else:
+                                logger.warning("'operator' rolü bulunamadı, kullanıcı rol ataması yapılmadı")
+                        except Exception as e_role:
+                            logger.error(f"Operator rol atama hatası: {e_role}")
+
                         logger.info(f"Kullanıcı hesabı oluşturuldu: {username} (ID: {user_id})")
                     else:
                         logger.warning(f"Personel adından kullanıcı adı oluşturulamadı: {ad_soyad}")
@@ -980,6 +1031,5 @@ class PersonelEklePage(QWidget):
             QMessageBox.critical(self, "Hata", f"Kaydetme sırasında hata:\n{e}")
 
     def _on_cancel(self):
-        """İptal — listeye geri dön."""
-        if self._on_saved:
-            self._on_saved()
+        """İptal — form kapanış sinyali emitir."""
+        self.form_closed.emit()

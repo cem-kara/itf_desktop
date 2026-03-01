@@ -20,10 +20,9 @@ from PySide6.QtGui import (
 )
 
 from core.logger import logger
-from core.date_utils import parse_date, to_db_date, to_ui_date
 from core.services.personel_service import PersonelService
+from core.services.izin_service import IzinService
 from core.di import get_registry
-from database.repository_registry import RepositoryRegistry
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
 from ui.styles.components import ComponentStyles, STYLES
@@ -40,7 +39,6 @@ COLUMNS = [
     ("CepTelefonu", "Telefon",       120),
     ("_izin_bar",   "İzin Bakiye",   160),
     ("Durum",       "Durum",          100),
-    ("_actions",    "",               190),
 ]
 COL_IDX = {c[0]: i for i, c in enumerate(COLUMNS)}
 
@@ -180,13 +178,12 @@ class PersonelDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._hover_row  = -1
-        self._btn_rects: dict[tuple, QRect] = {}
         self._avatar_cache: dict[str, QPixmap] = {}  # TC -> QPixmap
         self._avatar_loading: set[str] = set()       # Yüklenme sırasında olan TC'ler
 
     def set_hover_row(self, row: int):
         self._hover_row = row
-    
+
     def set_avatar_pixmap(self, tc: str, pixmap: QPixmap):
         """Dış kaynaktan avatar cache'e pixmap ekle — daire şeklinde crop."""
         if pixmap and not pixmap.isNull():
@@ -263,13 +260,6 @@ class PersonelDelegate(QStyledItemDelegate):
             self._draw_izin_bar(painter, rect, pct, txt)
         elif key == "Durum":
             self._draw_status_pill(painter, rect, str(raw.get("Durum", "")))
-        elif key == "_actions":
-            if is_hover or is_sel:
-                self._draw_action_btns(painter, rect, row)
-            else:
-                for k in list(self._btn_rects):
-                    if k[0] == row:
-                        del self._btn_rects[k]
 
         painter.restore()
 
@@ -380,38 +370,6 @@ class PersonelDelegate(QStyledItemDelegate):
         p.setPen(QColor(fg_hex))
         p.drawText(QRect(px, py, pw, ph), Qt.AlignmentFlag.AlignCenter, durum)
 
-    def _draw_action_btns(self, p, rect, row):
-        """Hover'da görünen "Detay" ve "İzin" butonları."""
-        x = 4  # Hücre içi lokal x
-        y = rect.height() // 2 - self.BTN_H // 2  # Hücre içi lokal y
-        for i, lbl in enumerate(["Detay", "İzin"]):
-            bx = x + i * (self.BTN_W + self.BTN_GAP)
-            br_local = QRect(bx, y, self.BTN_W, self.BTN_H)
-            # Lokal koordinatlarda kaydet
-            self._btn_rects[(row, i)] = br_local
-            
-            # Çizim için global koordinata çevir
-            br_global = br_local.translated(rect.topLeft())
-            
-            bg = QColor(C.TEXT_PRIMARY)
-            bg.setAlpha(15)
-            p.setBrush(QBrush(bg))
-            
-            pen = QColor(C.TEXT_PRIMARY)
-            pen.setAlpha(40)
-            p.setPen(QPen(pen, 1))
-            
-            p.drawRoundedRect(br_global, 4, 4)
-            p.setFont(QFont("", 9))
-            p.setPen(QColor(C.TEXT_SECONDARY))
-            p.drawText(br_global, Qt.AlignmentFlag.AlignCenter, lbl)
-
-    def get_action_at(self, row: int, pos: QPoint):
-        for (r, i), rect in self._btn_rects.items():
-            if r == row and rect.contains(pos):
-                return ["detay", "izin"][i]
-        return None
-
 
 # ═══════════════════════════════════════════════════════════
 #  PERSONEL LİSTESİ SAYFASI
@@ -422,12 +380,15 @@ class PersonelListesiPage(QWidget):
     detay_requested = Signal(dict)
     izin_requested  = Signal(dict)
     yeni_requested  = Signal()
+    close_requested = Signal()
 
     def __init__(self, db=None, action_guard=None, parent=None):
         super().__init__(parent)
         self.setStyleSheet(STYLES["page"])
         self._db             = db
-        self._svc            = PersonelService(get_registry(db))
+        self._registry       = get_registry(db) if db else None
+        self._svc            = PersonelService(self._registry) if self._registry else None
+        self._izin_svc       = IzinService(self._registry) if self._registry else None
         self._action_guard   = action_guard
         self._all_data       = []
         self._izin_map       = {}
@@ -436,6 +397,7 @@ class PersonelListesiPage(QWidget):
         self._izinli_bugun   = {}
         self._izinli_bugun_date = None
         self._last_tooltip_tc = None
+        self._filtered_data   = []  # Son filtrelenmiş veri (Excel export için)
         
         # Arama debounce timer (300ms)
         self._search_timer = QTimer()
@@ -574,6 +536,27 @@ class PersonelListesiPage(QWidget):
             self._action_guard.disable_if_unauthorized(self.btn_yeni, "personel.write")
         
         lay.addWidget(self.btn_yeni)
+        
+        # Kapat butonu (en sağ köşe)
+        self.btn_close = QPushButton("✕")
+        self.btn_close.setFixedSize(28, 28)
+        self.btn_close.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_close.setStyleSheet(f"""
+            QPushButton {{
+                background-color: transparent;
+                color: {C.TEXT_MUTED};
+                border: none;
+                border-radius: 4px;
+                font-size: 16px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background-color: {C.STATUS_ERROR};
+                color: {C.TEXT_PRIMARY};
+            }}
+        """)
+        self.btn_close.setToolTip("Kapat")
+        lay.addWidget(self.btn_close)
         return frame
 
     def _build_subtoolbar(self) -> QFrame:
@@ -595,13 +578,13 @@ class PersonelListesiPage(QWidget):
 
         self.cmb_gorev_yeri = QComboBox()
         self.cmb_gorev_yeri.addItem("Tüm Birimler")
-        self.cmb_gorev_yeri.setFixedWidth(160)
+        self.cmb_gorev_yeri.setFixedWidth(180)
         self.cmb_gorev_yeri.setStyleSheet(STYLES["combo"])
         lay.addWidget(self.cmb_gorev_yeri)
 
         self.cmb_hizmet = QComboBox()
         self.cmb_hizmet.addItem("Tüm Sınıflar")
-        self.cmb_hizmet.setFixedWidth(140)
+        self.cmb_hizmet.setFixedWidth(200)
         self.cmb_hizmet.setStyleSheet(STYLES["combo"])
         lay.addWidget(self.cmb_hizmet)
 
@@ -610,8 +593,8 @@ class PersonelListesiPage(QWidget):
         self.btn_excel = QPushButton(" Excel")
         self.btn_excel.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_excel.setStyleSheet(STYLES["excel_btn"])
-        IconRenderer.set_button_icon(self.btn_excel, "download", color=C.TEXT_SECONDARY, size=14)
-        self.btn_excel.setIconSize(QSize(14, 14))
+        IconRenderer.set_button_icon(self.btn_excel, "download", color=C.TEXT_SECONDARY, size=16)
+        self.btn_excel.setIconSize(QSize(16, 16))
         lay.addWidget(self.btn_excel)
         return frame
 
@@ -694,9 +677,11 @@ class PersonelListesiPage(QWidget):
         self.search_input.textChanged.connect(self._on_search)
         self.cmb_gorev_yeri.currentTextChanged.connect(lambda _: self._apply_filters())
         self.cmb_hizmet.currentTextChanged.connect(lambda _: self._apply_filters())
+        self.btn_close.clicked.connect(self.close_requested.emit)
         self.btn_yenile.clicked.connect(self.load_data)
         self.btn_yeni.clicked.connect(self.yeni_requested.emit)
         self.btn_load_more.clicked.connect(self._load_more_data)
+        self.btn_excel.clicked.connect(self._export_excel)
         self.table.doubleClicked.connect(self._on_double_click)
         self.table.customContextMenuRequested.connect(self._show_context_menu)
         self.table.mouseMoveEvent  = self._tbl_mouse_move
@@ -706,7 +691,7 @@ class PersonelListesiPage(QWidget):
 
     def load_data(self):
         """İlk kez veri yükle (Sayfa 1, Pagination ile)"""
-        if not self._db:
+        if not self._db or not self._registry:
             logger.warning("Personel listesi: DB yok")
             return
         try:
@@ -715,8 +700,7 @@ class PersonelListesiPage(QWidget):
             self._total_count = 0
             self._all_data = []
             
-            registry = RepositoryRegistry(self._db)
-            personel_repo = registry.get("Personel")
+            personel_repo = self._registry.get("Personel")
             
             # ✅ LAZY-LOADING: İlk sayfayı yükle (sayfa boyutu: 100 kayıt)
             page_data, total_count = personel_repo.get_paginated_with_bakiye(
@@ -732,7 +716,7 @@ class PersonelListesiPage(QWidget):
             self._model.set_data(self._all_data)
             self._model.set_izin_map({})
             
-            self._populate_combos(registry)
+            self._populate_combos()
             self._refresh_izinli_bugun()
             self._apply_filters()
             
@@ -747,7 +731,7 @@ class PersonelListesiPage(QWidget):
 
     def _load_more_data(self):
         """Sonraki sayfayı yükle ve tabloya ekle"""
-        if self._is_loading or not self._db:
+        if self._is_loading or not self._db or not self._registry:
             return
         
         try:
@@ -755,8 +739,7 @@ class PersonelListesiPage(QWidget):
             self.btn_load_more.setEnabled(False)
             self.progress.setVisible(True)
             
-            registry = RepositoryRegistry(self._db)
-            personel_repo = registry.get("Personel")
+            personel_repo = self._registry.get("Personel")
             
             # Sonraki sayfa
             self._current_page += 1
@@ -817,32 +800,28 @@ class PersonelListesiPage(QWidget):
             # Tüm satırları redraw et (avatar sütunu değişti)
             self.table.viewport().update()
 
-    def _populate_combos(self, registry):
+    def _populate_combos(self):
+        """Filtreleme combo box'larını doldur."""
+        if not self._svc:
+            return
         try:
-            sabit = registry.get("Sabitler").get_all()
-            gy = sorted({
-                str(r.get("MenuEleman", "")).strip()
-                for r in sabit
-                if r.get("Kod") == "Gorev_Yeri" and r.get("MenuEleman", "").strip()
-            })
+            # Görev yerleri
+            gorev_yerleri = self._svc.get_gorev_yerleri()
             self.cmb_gorev_yeri.blockSignals(True)
             self.cmb_gorev_yeri.clear()
             self.cmb_gorev_yeri.addItem("Tüm Birimler")
-            self.cmb_gorev_yeri.addItems(gy)
+            self.cmb_gorev_yeri.addItems(gorev_yerleri)
             self.cmb_gorev_yeri.blockSignals(False)
 
-            hs = sorted({
-                str(r.get("MenuEleman", "")).strip()
-                for r in sabit
-                if r.get("Kod") == "Hizmet_Sinifi" and r.get("MenuEleman", "").strip()
-            })
+            # Hizmet sınıfları
+            hizmet_siniflari = self._svc.get_hizmet_siniflari()
             self.cmb_hizmet.blockSignals(True)
             self.cmb_hizmet.clear()
             self.cmb_hizmet.addItem("Tüm Sınıflar")
-            self.cmb_hizmet.addItems(hs)
+            self.cmb_hizmet.addItems(hizmet_siniflari)
             self.cmb_hizmet.blockSignals(False)
         except Exception as e:
-            logger.error(f"Sabitler yükleme: {e}")
+            logger.error(f"Combo doldurma hatası: {e}")
 
     # ─── Filtreleme ──────────────────────────────────────
 
@@ -890,35 +869,7 @@ class PersonelListesiPage(QWidget):
         self._model.set_data(filtered)
         self._update_count()
         self._update_pill_counts()
-
-    def _get_izinli_personeller(self) -> set:
-        if not self._db:
-            return set()
-        try:
-            from datetime import date
-            from core.di import get_registry
-            b      = date.today()
-            ay_bas = date(b.year, b.month, 1).isoformat()
-            ay_son = (date(b.year + 1, 1, 1)
-                      if b.month == 12
-                      else date(b.year, b.month + 1, 1)).isoformat()
-            reg = get_registry(self._db)
-            izinli: set = set()
-            for r in reg.get("Izin_Giris").get_all():
-                bas = to_db_date(r.get("BaslamaTarihi", ""))
-                bit = to_db_date(r.get("BitisTarihi",   ""))
-                tc  = str(r.get("Personelid", "")).strip()
-                if not bas or not tc:
-                    continue
-                if not bit:
-                    bit = bas
-                if bas < ay_son and bit >= ay_bas:
-                    izinli.add(tc)
-            return izinli
-        except Exception as e:
-            logger.error(f"İzinli sorgu: {e}")
-            return set()
-
+        self._filtered_data = filtered  # Excel export için sakla
     def _refresh_izinli_bugun(self):
         from datetime import date
         today = date.today()
@@ -927,27 +878,11 @@ class PersonelListesiPage(QWidget):
             self._izinli_bugun_date = today
 
     def _get_izinli_bugun_detay(self) -> dict:
-        if not self._db:
+        """Bugün izinli olan personellerin detaylı bilgisini getir."""
+        if not self._izin_svc:
             return {}
         try:
-            from datetime import date
-            from core.di import get_registry
-
-            today = date.today()
-            reg = get_registry(self._db)
-            izinli: dict[str, list[tuple[str, str]]] = {}
-            for r in reg.get("Izin_Giris").get_all():
-                tc = str(r.get("Personelid", "")).strip()
-                bas = parse_date(r.get("BaslamaTarihi", ""))
-                bit = parse_date(r.get("BitisTarihi", "")) or bas
-                if not tc or not bas or not bit:
-                    continue
-                if bas <= today <= bit:
-                    izinli.setdefault(tc, []).append((to_ui_date(bas), to_ui_date(bit)))
-
-            for tc in izinli:
-                izinli[tc].sort(key=lambda d: d[0])
-            return izinli
+            return self._izin_svc.get_izinli_personeller_bugun()
         except Exception as e:
             logger.error(f"İzinli sorgu: {e}")
             return {}
@@ -978,7 +913,6 @@ class PersonelListesiPage(QWidget):
                 btn.setText(t)
 
     # ─── Mouse ───────────────────────────────────────────
-
     def _tbl_mouse_move(self, event):
         idx = self.table.indexAt(event.pos())
         src_row = self._proxy.mapToSource(idx).row() if idx.isValid() else -1
@@ -1020,25 +954,12 @@ class PersonelListesiPage(QWidget):
             else:
                 lines.append(f"- {bas} -> {bit}")
         return "\n".join(lines)
-
     def _tbl_mouse_press(self, event):
         idx = self.table.indexAt(event.pos())
         if idx.isValid():
             src      = self._proxy.mapToSource(idx)
             row_data = self._model.get_row(src.row())
-            if row_data and COLUMNS[idx.column()][0] == "_actions":
-                # Hücre içindeki lokal pozisyonu hesapla
-                cell_rect = self.table.visualRect(idx)
-                local_pos = event.pos() - cell_rect.topLeft()
-                action = self._delegate.get_action_at(src.row(), local_pos)
-                if action == "detay":
-                    self.detay_requested.emit(row_data)
-                    event.accept()
-                    return
-                elif action == "izin":
-                    self.izin_requested.emit(row_data)
-                    event.accept()
-                    return
+            # Butonlar sadece double click'te gösterilsin, mouse press'e alet yapma
         QTableView.mousePressEvent(self.table, event)
 
     def _on_double_click(self, index):
@@ -1080,6 +1001,9 @@ class PersonelListesiPage(QWidget):
         menu.exec(self.table.viewport().mapToGlobal(pos))
 
     def _change_durum(self, tc, ad, yeni):
+        if not self._svc:
+            QMessageBox.critical(self, "Hata", "Servis bağlantısı yok")
+            return
         if QMessageBox.question(
             self, "Durum Değiştir",
             f'"{ad}" personelinin durumu "{yeni}" olarak değiştirilsin mi?',
@@ -1097,6 +1021,200 @@ class PersonelListesiPage(QWidget):
         except Exception as e:
             logger.error(f"Durum değiştirme: {e}")
             QMessageBox.critical(self, "Hata", f"İşlem başarısız:\n{e}")
+
+    # ─── Excel Export ────────────────────────────────────
+
+    def _get_all_filtered_data(self):
+        """Pagination olmadan TÜM personel verilerini çek ve filtrele (Excel export için)."""
+        if not self._db or not self._registry:
+            return []
+        
+        try:
+            # TÜM personel verilerini çek (pagination olmadan)
+            personel_repo = self._registry.get("Personel")
+            all_data = personel_repo.get_all_with_bakiye() or []
+            
+            # Mevcut filtreleri uygula
+            filtered = all_data
+            
+            # Durum filtresi
+            if self._active_filter != "Tümü":
+                if self._active_filter == "İzinli":
+                    self._refresh_izinli_bugun()
+                    izinli_tc = set(self._izinli_bugun.keys())
+                    filtered = [r for r in filtered
+                               if str(r.get("KimlikNo", "")).strip() in izinli_tc]
+                else:
+                    filtered = [r for r in filtered
+                               if str(r.get("Durum", "")).strip() == self._active_filter]
+            
+            # Birim filtresi
+            birim = self.cmb_gorev_yeri.currentText()
+            if birim and birim != "Tüm Birimler":
+                filtered = [r for r in filtered
+                            if str(r.get("GorevYeri", "")).strip() == birim]
+            
+            # Sınıf filtresi
+            sinif = self.cmb_hizmet.currentText()
+            if sinif and sinif != "Tüm Sınıflar":
+                filtered = [r for r in filtered
+                            if str(r.get("HizmetSinifi", "")).strip() == sinif]
+            
+            # Arama filtresi
+            if self._last_search_text:
+                search_lower = self._last_search_text.lower()
+                filtered = [r for r in filtered
+                           if search_lower in str(r.get("AdSoyad", "")).lower()
+                           or search_lower in str(r.get("KimlikNo", "")).lower()
+                           or search_lower in str(r.get("GorevYeri", "")).lower()
+                           or search_lower in str(r.get("KadroUnvani", "")).lower()]
+            
+            return filtered
+        except Exception as e:
+            logger.error(f"Tüm veri yükleme hatası: {e}")
+            return []
+
+    def _export_excel(self):
+        """Filtrelenmiş personel listesini Excel dosyasına dışa aktar."""
+        # TÜM filtrelenmiş verileri çek (pagination olmadan)
+        export_data = self._get_all_filtered_data()
+        
+        if not export_data:
+            QMessageBox.warning(self, "Uyarı", "Dışa aktarılacak veri yok")
+            return
+        
+        try:
+            from PySide6.QtWidgets import QFileDialog
+            from datetime import datetime
+            import openpyxl
+            from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+            
+            # Sheet adını filtrelere göre oluştur
+            sheet_name = self._build_export_sheet_name()
+            
+            # Kaydetme dialogu
+            file_path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Excel Dosyasını Kaydet",
+                f"Personel_Listesi_{sheet_name}_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                "Excel Files (*.xlsx)"
+            )
+            
+            if not file_path:
+                return
+            
+            # Excel workbook oluştur
+            wb = openpyxl.Workbook()
+            # Varsayılan sheet'i kaldır ve yeni sheet oluştur
+            if len(wb.sheetnames) > 0:
+                default_sheet = wb.active
+                if default_sheet:
+                    wb.remove(default_sheet)
+            ws = wb.create_sheet(sheet_name[:31])
+            
+            # Header'ları yazma
+            headers = ["Ad Soyad", "TC Kimlik No", "Sicil No", "Birim", "Ünvan", 
+                      "Telefon", "İzin Bakiye", "Durum"]
+            
+            # Header styling
+            header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+            header_font = Font(bold=True, color="FFFFFF", size=11)
+            header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+            thin_border = Border(
+                left=Side(style='thin'),
+                right=Side(style='thin'),
+                top=Side(style='thin'),
+                bottom=Side(style='thin')
+            )
+            
+            # Header satırını yaz
+            for col_idx, header in enumerate(headers, start=1):
+                cell = ws.cell(row=1, column=col_idx)
+                cell.value = header
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = header_alignment
+                cell.border = thin_border
+            
+            # Veri satırlarını yaz
+            data_font = Font(size=10)
+            data_alignment = Alignment(horizontal="left", vertical="center")
+            
+            for row_idx, row_data in enumerate(export_data, start=2):
+                values = [
+                    str(row_data.get("AdSoyad", "")),
+                    str(row_data.get("KimlikNo", "")),
+                    str(row_data.get("KurumSicilNo", "") or ""),
+                    str(row_data.get("GorevYeri", "") or ""),
+                    str(row_data.get("KadroUnvani", "") or ""),
+                    str(row_data.get("CepTelefonu", "") or ""),
+                    f"{row_data.get('YillikKalan', '—')} / {row_data.get('YillikToplamHak', '—')}",
+                    str(row_data.get("Durum", "")),
+                ]
+                
+                for col_idx, value in enumerate(values, start=1):
+                    cell = ws.cell(row=row_idx, column=col_idx)
+                    cell.value = value
+                    cell.font = data_font
+                    cell.alignment = data_alignment
+                    cell.border = thin_border
+            
+            # Sütun genişlikleri
+            ws.column_dimensions['A'].width = 20  # Ad Soyad
+            ws.column_dimensions['B'].width = 15  # TC
+            ws.column_dimensions['C'].width = 15  # Sicil
+            ws.column_dimensions['D'].width = 18  # Birim
+            ws.column_dimensions['E'].width = 20  # Ünvan
+            ws.column_dimensions['F'].width = 15  # Telefon
+            ws.column_dimensions['G'].width = 15  # İzin Bakiye
+            ws.column_dimensions['H'].width = 12  # Durum
+            
+            # İlk satırı dondur
+            ws.freeze_panes = "A2"
+            
+            # Dosyayı kaydet
+            wb.save(file_path)
+            
+            QMessageBox.information(
+                self,
+                "Başarılı",
+                f"Excel dosyası başarıyla kaydedildi:\n{file_path}\n\nToplam: {len(export_data)} kayıt"
+            )
+            logger.info(f"Excel export: {file_path} ({len(export_data)} kayıt)")
+            
+        except Exception as e:
+            logger.error(f"Excel export hatası: {e}")
+            QMessageBox.critical(self, "Hata", f"Excel dosyası oluşturulamadı:\n{e}")
+    
+    def _build_export_sheet_name(self) -> str:
+        """Filter durumuna göre sheet adı oluştur."""
+        parts = []
+        
+        # Durum filtresi
+        if self._active_filter != "Tümü":
+            parts.append(self._active_filter)
+        
+        # Birim filtresi
+        birim = self.cmb_gorev_yeri.currentText()
+        if birim and birim != "Tüm Birimler":
+            parts.append(birim[:15])  # Uzunluğu sınırla
+        
+        # Sınıf filtresi
+        sinif = self.cmb_hizmet.currentText()
+        if sinif and sinif != "Tüm Sınıflar":
+            parts.append(sinif[:15])  # Uzunluğu sınırla
+        
+        # Arama filtresi
+        if self._last_search_text:
+            parts.append("Arama")
+        
+        # Default
+        if not parts:
+            return "Personel_Listesi"
+        
+        sheet_name = "_".join(parts)
+        # Sheet adı max 31 karakter olmalı
+        return sheet_name[:31]
 
     # ─── Yardımcılar ─────────────────────────────────────
 

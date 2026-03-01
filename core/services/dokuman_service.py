@@ -119,7 +119,7 @@ class DokumanService:
         result["belge_adi"] = custom_name
 
         # 2 — Hibrit yükleme
-        upload = self._upload(file_path, folder_name, custom_name)
+        upload = self._upload(file_path, folder_name, custom_name, entity_type, entity_id)
 
         if upload["mode"] == "none":
             result["error"] = upload.get("error", "Yükleme başarısız")
@@ -196,7 +196,14 @@ class DokumanService:
     #  İç metodlar
     # ──────────────────────────────────────────────────────────
 
-    def _upload(self, file_path: str, folder_name: str, custom_name: str) -> dict:
+    def _upload(
+        self,
+        file_path: str,
+        folder_name: str,
+        custom_name: str,
+        entity_type: str,
+        entity_id: str,
+    ) -> dict:
         """
         Online modda Drive'a, offline modda local'e yükler.
 
@@ -225,7 +232,7 @@ class DokumanService:
                 logger.warning(f"Drive yükleme başarısız, local'e düşülüyor: {e}")
 
         # Offline veya Drive başarısız → local'e kaydet
-        local_path = self._save_local(file_path, folder_name, custom_name)
+        local_path = self._save_local(file_path, folder_name, custom_name, entity_type, entity_id)
         if local_path:
             result.update({"mode": "local", "local_path": local_path})
         else:
@@ -260,11 +267,22 @@ class DokumanService:
         file_path: str,
         folder_name: str,
         custom_name: str,
+        entity_type: str,
+        entity_id: str,
     ) -> Optional[str]:
         """Dosyayı local offline_uploads klasörüne kopyalar."""
         import shutil
         try:
-            target_dir = os.path.join(DATA_DIR, "offline_uploads", folder_name)
+            entity_type = str(entity_type or "").strip().lower()
+            entity_id = str(entity_id or "").strip()
+
+            if entity_type == "personel" and entity_id:
+                # Personel dosyaları tek klasörde toplanır:
+                # data/offline_uploads/personel/<TCKimlikNo>/
+                target_dir = os.path.join(DATA_DIR, "offline_uploads", "personel", entity_id)
+            else:
+                target_dir = os.path.join(DATA_DIR, "offline_uploads", folder_name)
+
             os.makedirs(target_dir, exist_ok=True)
             dest = os.path.join(target_dir, custom_name)
 

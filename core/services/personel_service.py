@@ -89,7 +89,7 @@ class PersonelService:
             Personel kayıtları
         """
         try:
-            rows = self._r.get("Personeller").get_all() or []
+            rows = self._r.get("Personel").get_all() or []
             
             if aktif_only:
                 rows = [
@@ -113,7 +113,7 @@ class PersonelService:
             Personel kaydı veya None
         """
         try:
-            return self._r.get("Personeller").get_by_pk(tc)
+            return self._r.get("Personel").get_by_pk(tc)
         except Exception as e:
             logger.error(f"Personel '{tc}' yükleme hatası: {e}")
             return None
@@ -137,6 +137,46 @@ class PersonelService:
             logger.error(f"Bölüm listesi yükleme hatası: {e}")
             return []
     
+    def get_gorev_yerleri(self) -> List[str]:
+        """
+        Görev yeri listesini getir.
+        
+        Returns:
+            Görev yeri adları
+        """
+        try:
+            sabitler = self._r.get("Sabitler").get_all() or []
+            gorev_yerleri = [
+                str(s.get("MenuEleman", "")).strip()
+                for s in sabitler
+                if str(s.get("Kod", "")).strip() == "Gorev_Yeri"
+                and str(s.get("MenuEleman", "")).strip()
+            ]
+            return sorted(list(set(gorev_yerleri)))
+        except Exception as e:
+            logger.error(f"Görev yeri listesi yükleme hatası: {e}")
+            return []
+    
+    def get_hizmet_siniflari(self) -> List[str]:
+        """
+        Hizmet sınıfı listesini getir.
+        
+        Returns:
+            Hizmet sınıfı adları
+        """
+        try:
+            sabitler = self._r.get("Sabitler").get_all() or []
+            siniflar = [
+                str(s.get("MenuEleman", "")).strip()
+                for s in sabitler
+                if str(s.get("Kod", "")).strip() == "Hizmet_Sinifi"
+                and str(s.get("MenuEleman", "")).strip()
+            ]
+            return sorted(list(set(siniflar)))
+        except Exception as e:
+            logger.error(f"Hizmet sınıfı listesi yükleme hatası: {e}")
+            return []
+    
     # ───────────────────────────────────────────────────────────
     #  CRUD İşlemleri
     # ───────────────────────────────────────────────────────────
@@ -158,7 +198,7 @@ class PersonelService:
                 logger.error(f"Geçersiz TC Kimlik No: {tc}")
                 return False
             
-            self._r.get("Personeller").insert(veri)
+            self._r.get("Personel").insert(veri)
             logger.info(f"Personel {tc} eklendi")
             return True
         except Exception as e:
@@ -177,7 +217,7 @@ class PersonelService:
             Başarılı ise True
         """
         try:
-            self._r.get("Personeller").update(tc, veri)
+            self._r.get("Personel").update(tc, veri)
             logger.info(f"Personel {tc} güncellendi")
             return True
         except Exception as e:
@@ -195,7 +235,7 @@ class PersonelService:
             Başarılı ise True
         """
         try:
-            self._r.get("Personeller").delete(tc)
+            self._r.get("Personel").delete(tc)
             logger.info(f"Personel {tc} silindi")
             return True
         except Exception as e:

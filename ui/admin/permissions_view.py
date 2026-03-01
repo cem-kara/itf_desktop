@@ -19,6 +19,8 @@ from PySide6.QtGui import QFont
 
 from core.logger import logger
 from database.permission_repository import PermissionRepository
+from ui.styles.colors import DarkTheme as C
+from ui.styles.components import STYLES
 from ui.styles.icons import Icons, IconRenderer
 
 
@@ -29,7 +31,9 @@ class PermissionDialog(QDialog):
         self.setMinimumWidth(360)
 
         self._key = QLineEdit()
+        self._key.setStyleSheet(STYLES["input_field"])
         self._desc = QLineEdit()
+        self._desc.setStyleSheet(STYLES["input_field"])
 
         form = QFormLayout()
         form.addRow("Permission Key:", self._key)

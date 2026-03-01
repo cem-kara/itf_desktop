@@ -93,7 +93,7 @@ def main():
     login_dialog = LoginDialog(auth_service)
     if os.path.exists(app_icon_path):
         login_dialog.setWindowIcon(QIcon(app_icon_path))
-    if login_dialog.exec() != QDialog.Accepted:
+    if login_dialog.exec() != QDialog.DialogCode.Accepted:
         db.close()
         logger.info("Login iptal edildi - uygulama kapatiliyor")
         sys.exit(0)
@@ -102,7 +102,7 @@ def main():
     session_user = session_context.get_user()
     if session_user and session_user.must_change_password:
         pwd_dialog = ChangePasswordDialog(auth_service, session_user, parent=None)
-        if pwd_dialog.exec() != QDialog.Accepted:
+        if pwd_dialog.exec() != QDialog.DialogCode.Accepted:
             auth_service.logout()
             db.close()
             logger.info("Sifre degistirme iptal edildi - uygulama kapatiliyor")

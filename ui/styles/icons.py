@@ -491,6 +491,9 @@ _SVG_PATHS: dict[str, str] = {
         <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
         <line x1="12" y1="22.08" x2="12" y2="12"/>
     """,
+
+    "chevron_up":   "<polyline points='6,15 12,9 18,15' .../>",
+    "chevron_left": "<polyline points='15,18 9,12 15,6' .../>",
 }
 
 
@@ -638,6 +641,8 @@ class Icons:
             return cls.get(key, size=size, color="#6bd3ff")
         return None
 
+    
+
     @classmethod
     def available(cls) -> list[str]:
         """Kaytl tm ikon isimlerini dndrr."""
@@ -648,7 +653,7 @@ class Icons:
         """Render nbelleini temizler."""
         cls._cache.clear()
 
-
+    
 # ================================================================
 # YARDIMCI  IconRenderer (widget entegrasyonu)
 # ================================================================

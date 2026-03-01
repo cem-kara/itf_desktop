@@ -21,6 +21,8 @@ from PySide6.QtGui import QFont
 
 from core.logger import logger
 from database.permission_repository import PermissionRepository
+from ui.styles.colors import DarkTheme as C
+from ui.styles.components import STYLES
 from ui.styles.icons import Icons, IconRenderer
 
 
@@ -31,6 +33,7 @@ class RoleDialog(QDialog):
         self.setMinimumWidth(360)
 
         self._name = QLineEdit()
+        self._name.setStyleSheet(STYLES["input_field"])
         self._name.setText(name)
 
         form = QFormLayout()

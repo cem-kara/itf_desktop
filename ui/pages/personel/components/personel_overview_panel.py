@@ -4,15 +4,54 @@ from PySide6.QtWidgets import (
     QGroupBox, QScrollArea, QLineEdit, QPushButton, QMessageBox, QComboBox,
     QCompleter, QDateEdit, QFileDialog
 )
-from PySide6.QtCore import Qt, QDate, Signal
+from PySide6.QtCore import Qt, QDate, Signal, QThread
 from PySide6.QtGui import QCursor, QPixmap
+from core.di import get_registry
 from core.logger import logger
+from core.paths import DB_PATH
+from core.services.dokuman_service import DokumanService
 from ui.theme_manager import ThemeManager
 from ui.styles import Colors, DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 import os
 import tempfile
+
+
+class DokumanUploadWorker(QThread):
+    """Tek bir dosya için DokumanService upload worker'ı."""
+    upload_finished = Signal(str, dict)
+    upload_error = Signal(str, str)
+
+    def __init__(self, db_path: str, job: dict, parent=None):
+        super().__init__(parent)
+        self._db_path = db_path
+        self._job = job
+
+    def run(self):
+        try:
+            # Her thread kendi DB connection'ını oluşturur (SQLite thread güvenliği için)
+            from database.sqlite_manager import SQLiteManager
+            db = SQLiteManager(self._db_path, check_same_thread=False)
+            svc = DokumanService(db)
+            sonuc = svc.upload_and_save(
+                file_path=self._job["file_path"],
+                entity_type="personel",
+                entity_id=str(self._job["tc_no"]),
+                belge_turu=self._job["belge_turu"],
+                folder_name=self._job["folder_name"],
+                doc_type=self._job["doc_type"],
+                custom_name=self._job["custom_name"],
+            )
+            if sonuc.get("ok"):
+                self.upload_finished.emit(self._job["db_field"], sonuc)
+            else:
+                self.upload_error.emit(
+                    self._job["db_field"],
+                    sonuc.get("error", "Bilinmeyen yükleme hatası")
+                )
+        except Exception as e:
+            self.upload_error.emit(self._job.get("db_field", ""), str(e))
 
 class PersonelOverviewPanel(QWidget):
     """
@@ -24,6 +63,7 @@ class PersonelOverviewPanel(QWidget):
         super().__init__(parent)
         self.data = ozet_data or {}
         self.db = db
+        self._registry = get_registry(db) if db else None
         self.sabitler_cache = sabitler_cache  # Cache'den gelen Sabitler listesi
         self.personel_data = self.data.get("personel", {})
         self._widgets = {}  # Alan adı -> QLineEdit
@@ -49,7 +89,7 @@ class PersonelOverviewPanel(QWidget):
         # Scroll Area (İçerik uzayabileceği için)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
 
         content = QWidget()
@@ -223,7 +263,11 @@ class PersonelOverviewPanel(QWidget):
             if not pixmap.isNull():
                 self.lbl_resim.setText("")
                 self.lbl_resim.setPixmap(
-                    pixmap.scaled(self.lbl_resim.size(), Qt.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                    pixmap.scaled(
+                        self.lbl_resim.size(),
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation,
+                    )
                 )
                 self.lbl_resim.setToolTip(os.path.basename(photo_ref))
                 return
@@ -246,7 +290,11 @@ class PersonelOverviewPanel(QWidget):
                         if not pixmap.isNull():
                             self.lbl_resim.setText("")
                             self.lbl_resim.setPixmap(
-                                pixmap.scaled(self.lbl_resim.size(), Qt.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                                pixmap.scaled(
+                                    self.lbl_resim.size(),
+                                    Qt.AspectRatioMode.KeepAspectRatio,
+                                    Qt.TransformationMode.SmoothTransformation,
+                                )
                             )
                             self.lbl_resim.setToolTip("Drive fotoğrafı")
                             return
@@ -257,11 +305,10 @@ class PersonelOverviewPanel(QWidget):
         self.lbl_resim.setToolTip(photo_ref[:200])
 
     def _populate_combos(self):
-        if not self.db:
+        if not self._registry:
             return
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self.db)
+            registry = self._registry
             
             # Cache'den gelmişse DB'yi sorgulamıyoruz
             if self.sabitler_cache:
@@ -669,7 +716,7 @@ class PersonelOverviewPanel(QWidget):
                     pass
 
     def _save_group(self, group_id):
-        if not self.db:
+        if not self._registry:
             QMessageBox.warning(self, "Hata", "Veritabanı bağlantısı yok.")
             return
 
@@ -689,9 +736,7 @@ class PersonelOverviewPanel(QWidget):
             update_data[key] = val
             
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self.db)
-            repo = registry.get("Personel")
+            repo = self._registry.get("Personel")
 
             tc = self.personel_data.get("KimlikNo")
             if not tc:
@@ -787,9 +832,9 @@ class PersonelOverviewPanel(QWidget):
     def _save_photo_to_db(self, photo_path):
         """Resmi Drive'a yükleyip veritabanına kaydeder."""
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self.db)
-            repo = registry.get("Personel")
+            if not self._registry:
+                return
+            repo = self._registry.get("Personel")
             
             tc = self.personel_data.get("KimlikNo")
             if not tc:
@@ -866,8 +911,7 @@ class PersonelOverviewPanel(QWidget):
             return None
 
     def _upload_files_to_drive(self, tc_no, callback):
-        """Seçili dosyaları Drive'a yükler, bitince callback çağırır."""
-        from database.google.utils import resolve_storage_target
+        """Seçili dosyaları DokumanService ile yükler, bitince callback çağırır."""
         
         # Dosya map: self._file_paths örn {'Resim': path, 'Diploma1': path}
         if not getattr(self, "_file_paths", None):
@@ -875,9 +919,24 @@ class PersonelOverviewPanel(QWidget):
             return
 
         upload_map = {
-            "Resim": ("Personel_Resim", "Resim"),
-            "Diploma1": ("Personel_Diploma", "Diploma1"),
-            "Diploma2": ("Personel_Diploma", "Diploma2"),
+            "Resim": {
+                "folder_name": "Personel_Resim",
+                "doc_type": "Personel_Resim",
+                "db_field": "Resim",
+                "belge_turu": "Resim",
+            },
+            "Diploma1": {
+                "folder_name": "Personel_Diploma",
+                "doc_type": "Personel_Diploma",
+                "db_field": "Diploma1",
+                "belge_turu": "Diploma1",
+            },
+            "Diploma2": {
+                "folder_name": "Personel_Diploma",
+                "doc_type": "Personel_Diploma",
+                "db_field": "Diploma2",
+                "belge_turu": "Diploma2",
+            },
         }
 
         self._pending_uploads = 0
@@ -888,37 +947,41 @@ class PersonelOverviewPanel(QWidget):
         for file_key, file_path in list(self._file_paths.items()):
             if file_key not in upload_map:
                 continue
-            folder_name, db_field = upload_map[file_key]
-            
-            # resolve_storage_target kullanarak Drive klasör ID'sini ve offline_folder_name'i al
-            target = resolve_storage_target(self._all_sabit, folder_name)
-            folder_id = target.get("drive_folder_id", "")
-            offline_folder_name = target.get("offline_folder_name", "")
-            
-            if not folder_id:
-                logger.warning(f"Drive klasör bulunamadı: {folder_name}")
-                continue
+            map_info = upload_map[file_key]
 
             ext = os.path.splitext(file_path)[1]
-            custom_name = f"{tc_no}_{db_field}{ext}"
+            # Diploma dosya adı formatı: TCKimlik_Diploma_Tarih
+            # Örn: 12345678901_Diploma_20260301.pdf
+            if file_key in ("Diploma1", "Diploma2"):
+                tarih = QDate.currentDate().toString("yyyyMMdd")
+                custom_name = f"{tc_no}_Diploma_{tarih}{ext}"
+                if file_key == "Diploma2":
+                    custom_name = f"{tc_no}_Diploma_{tarih}_2{ext}"
+            else:
+                custom_name = f"{tc_no}_{map_info['db_field']}{ext}"
 
-            try:
-                from ui.pages.personel.personel_ekle import DriveUploadWorker
-            except Exception:
-                from ui.pages.personel.personel_ekle import DriveUploadWorker
-
-            self._upload_meta[db_field] = {
+            self._upload_meta[map_info["db_field"]] = {
                 "tc_no": tc_no,
                 "file_path": file_path,
                 "custom_name": custom_name,
-                "folder_name": folder_name,
-                "belge_turu": db_field,
+                "folder_name": map_info["folder_name"],
+                "belge_turu": map_info["belge_turu"],
+                "doc_type": map_info["doc_type"],
+            }
+
+            job = {
+                "tc_no": tc_no,
+                "file_path": file_path,
+                "custom_name": custom_name,
+                "folder_name": map_info["folder_name"],
+                "doc_type": map_info["doc_type"],
+                "db_field": map_info["db_field"],
+                "belge_turu": map_info["belge_turu"],
             }
             self._pending_uploads += 1
-            # offline_folder_name parametresini geç!
-            worker = DriveUploadWorker(file_path, folder_id, custom_name, db_field, offline_folder_name)
-            worker.finished.connect(self._on_upload_finished)
-            worker.error.connect(self._on_upload_error)
+            worker = DokumanUploadWorker(DB_PATH, job)
+            worker.upload_finished.connect(self._on_upload_finished)
+            worker.upload_error.connect(self._on_upload_error)
             self._upload_workers.append(worker)
             worker.start()
 
@@ -927,21 +990,21 @@ class PersonelOverviewPanel(QWidget):
         else:
             self._upload_callback = callback
 
-    def _on_upload_finished(self, alan_adi, link):
+    def _on_upload_finished(self, alan_adi, sonuc):
         """Tek dosya yükleme tamamlandı."""
         # alan_adi: db field like 'Resim' or 'Diploma1'
-        self._drive_links[alan_adi] = link
-        logger.info(f"Drive yükleme OK: {alan_adi} → {link}")
+        kayit_linki = sonuc.get("drive_link") or sonuc.get("local_path") or ""
+        self._drive_links[alan_adi] = kayit_linki
+        logger.info(f"Dosya yükleme OK: {alan_adi} → {kayit_linki}")
         self._pending_uploads -= 1
-        self._insert_dokuman_kaydi(alan_adi, link)
         # UI'ı güncelle: personel_data'ya ekle ve label'ı set et
         try:
             if alan_adi == 'Diploma1':
-                self.personel_data['Diploma1'] = link
+                self.personel_data['Diploma1'] = kayit_linki
             elif alan_adi == 'Diploma2':
-                self.personel_data['Diploma2'] = link
+                self.personel_data['Diploma2'] = kayit_linki
             elif alan_adi == 'Resim':
-                self.personel_data['Resim'] = link
+                self.personel_data['Resim'] = kayit_linki
             # refresh display for diploma keys
             if alan_adi in ('Diploma1', 'Diploma2'):
                 key = 'DiplomaNo' if alan_adi == 'Diploma1' else 'DiplomaNo2'
@@ -1019,44 +1082,6 @@ class PersonelOverviewPanel(QWidget):
                 self._upload_callback()
             except Exception as e:
                 logger.error(f"Upload callback hatası: {e}")
-
-    def _insert_dokuman_kaydi(self, alan_adi: str, link: str):
-        """Dokumanlar tablosuna kayıt ekler (personel için)."""
-        try:
-            # Sadece diploma dosyaları ortak tabloya yazılır
-            if alan_adi not in ("Diploma1", "Diploma2"):
-                return
-            meta = self._upload_meta.get(alan_adi, {})
-            tc_no = meta.get("tc_no") or self.personel_data.get("KimlikNo")
-            if not tc_no:
-                return
-
-            file_path = meta.get("file_path", "")
-            custom_name = meta.get("custom_name", "")
-            folder_name = meta.get("folder_name", "")
-            belge_turu = meta.get("belge_turu", alan_adi)
-
-            drive_path = link if str(link).startswith("http") else ""
-            local_path = "" if drive_path else str(link or "")
-
-            from database.repository_registry import RepositoryRegistry
-            repo = RepositoryRegistry(self.db).get("Dokumanlar")
-            repo.insert({
-                "EntityType": "personel",
-                "EntityId": str(tc_no),
-                "BelgeTuru": str(belge_turu),
-                "Belge": str(custom_name or os.path.basename(file_path) or link),
-                "DocType": str(folder_name),
-                "DisplayName": os.path.basename(file_path) if file_path else str(custom_name),
-                "LocalPath": local_path,
-                "DrivePath": drive_path,
-                "BelgeAciklama": "",
-                "YuklenmeTarihi": QDate.currentDate().toString("yyyy-MM-dd"),
-                "IliskiliBelgeID": None,
-                "IliskiliBelgeTipi": None,
-            })
-        except Exception as e:
-            logger.warning(f"Dokumanlar kaydı eklenemedi ({alan_adi}): {e}")
 
     def _fmt_date(self, val):
         if not val: return "-"

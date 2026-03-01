@@ -5,3 +5,47 @@ pip freeze > requirements.txt
 
 pip install --upgrade pdfplumber pdfminer.six
 pip freeze > requirements.txt
+
+"input_combo": f"""
+    QComboBox {{
+        background:    {C.INPUT_BG};
+        color:         {C.TEXT_PRIMARY};
+        border:        1px solid {C.INPUT_BORDER};
+        border-radius: 4px;
+        padding:       6px 32px 6px 10px;   /* sağ: ok için yer */
+        font-family:   {C.MONOSPACE};
+        font-size:     12px;
+    }}
+    QComboBox:focus {{
+        border-color:  {C.BORDER_FOCUS};
+    }}
+    QComboBox::drop-down {{
+        subcontrol-origin:   padding;
+        subcontrol-position: right center;
+        width:               28px;
+        border-left:         1px solid {C.BORDER_PRIMARY};
+        border-radius:       0 4px 4px 0;
+        background:          {C.BG_ELEVATED};
+    }}
+    QComboBox::down-arrow {{
+        image: none;               /* varsa custom ikon */
+        width:  0;
+        height: 0;
+        border-left:   4px solid transparent;
+        border-right:  4px solid transparent;
+        border-top:    5px solid {C.TEXT_SECONDARY};
+    }}
+    QComboBox:on::down-arrow {{
+        border-top:    none;
+        border-bottom: 5px solid {C.TEXT_SECONDARY};
+    }}
+    QComboBox QAbstractItemView {{
+        background:    {C.BG_ELEVATED};
+        color:         {C.TEXT_PRIMARY};
+        border:        1px solid {C.BORDER_SECONDARY};
+        selection-background-color: {C.ACCENT_BG};
+        selection-color: {C.TEXT_PRIMARY};
+        padding:       4px;
+        outline:       none;
+    }}
+""",

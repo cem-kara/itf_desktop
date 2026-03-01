@@ -16,6 +16,8 @@ from PySide6.QtWidgets import (
 
 from core.logger import logger
 from database.auth_repository import AuthRepository
+from ui.styles.colors import DarkTheme as C
+from ui.styles.components import STYLES
 
 
 class AuditView(QWidget):
@@ -38,15 +40,18 @@ class AuditView(QWidget):
 
         self._filter_username = QLineEdit()
         self._filter_username.setPlaceholderText("Username filter")
+        self._filter_username.setStyleSheet(STYLES["input_field"])
         header.addWidget(self._filter_username)
 
         self._filter_success = QComboBox()
         self._filter_success.addItem("All", None)
         self._filter_success.addItem("Success", 1)
         self._filter_success.addItem("Failure", 0)
+        self._filter_success.setStyleSheet(STYLES["input_combo"])
         header.addWidget(self._filter_success)
 
         self._limit = QSpinBox()
+        self._limit.setStyleSheet(STYLES["spin"])
         self._limit.setRange(10, 5000)
         self._limit.setValue(200)
         self._limit.setSingleStep(50)

@@ -105,10 +105,12 @@ class XxxService:
 
 ---
 
-### 1.3 UI sayfası şablonu (service bağlantısı ile)
+### 1.3 UI sayfası şablonu (service bağlantısı + tema ile)
 
 ```python
 from core.services.xxx_service import XxxService
+from ui.styles.colors import DarkTheme as C
+from ui.styles.components import STYLES
 
 class XxxPage(QWidget):
     def __init__(self, db=None, parent=None):
@@ -124,6 +126,18 @@ class XxxPage(QWidget):
 
         self._setup_ui()
         self._load_data()
+
+    def _setup_ui(self):
+        """UI bileşenlerini oluştur"""
+        # Kontrol elemanlarına STYLES dictionary'yi uygula
+        self._input = QLineEdit()
+        self._input.setStyleSheet(STYLES["input_field"])
+        
+        self._combo = QComboBox()
+        self._combo.setStyleSheet(STYLES["input_combo"])
+        
+        # Renkler için DarkTheme token'larını kullan
+        self._label = QLabel(f"color: {C.TEXT_PRIMARY};")
 
     def _load_data(self):
         if not self._svc:
@@ -386,7 +400,9 @@ Geçmişte yapılan hatalar — bunları tekrarlama:
 | PK adını kafadan yaz (`"ArizaId"`) | `table_config.py`'den kopyala (`"Arizaid"`) |
 | UI'dan direkt `RepositoryRegistry().get()` çağır | Service method'u çağır |
 | Yeni `QAbstractTableModel` sıfırdan yaz | `BaseTableModel`'i extend et |
-| Her dosyaya `_C = {"red": ...}` kopyala | `from ui.styles.colors import C as _C` |
+| Hardcoded hex renkler (#f0f0f0, #333, #e81123) | DarkTheme token'larını kullan (C.TEXT_PRIMARY, C.BG_SECONDARY, C.STATUS_ERROR) |
+| Her dosyaya `_C = {"red": ...}` kopyala | `from ui.styles.colors import DarkTheme as C` |
+| QLineEdit/QComboBox/QSpinBox'a manuel stylesheet | `setStyleSheet(STYLES["input_field"])` veya `STYLES["input_combo"]` |
 | Service yazmadan önce UI'a gömülü iş mantığını test et | Önce service yaz, test yaz, sonra UI'a bağla |
 | 20 dosyayı aynı anda refactor et | Sadece girdiğin dosyayı düzelt |
 | Test dosyası olmadan service'i canlıya al | Önce test yaz, testler geçsin, sonra bağla |
@@ -422,9 +438,152 @@ o seferlik servise bağla. Toplu yapmaya çalışma.
 
 ---
 
-## 6. DOSYA YÖNETİMİ — Belge Yükleme ve Drive Entegrasyonu
+## 5a. TEMA SİSTEMİ — DarkTheme + STYLES
 
-### 6.1 Mimari Özet
+### 5a.1 Mimari Özet
+
+UI widget'larının tema renkleri iki katmandan oluşur:
+
+```
+DarkTheme Semantic Token'ları (ui/styles/colors.py)
+  └── C.TEXT_PRIMARY, C.BG_SECONDARY, C.STATUS_ERROR, C.BTN_PRIMARY_BG vb.
+      (50+ sabit, canlı tema değişikliği yapılamaz ama okuyamayacak kadar net)
+
+STYLES Pre-built Component Stylesheets (ui/styles/components.py)
+  └── STYLES["input_field"], STYLES["input_combo"], STYLES["spin"] vb.
+      (DarkTheme token'ları f-string'lerle birleştirmiş QSS, callable değil)
+```
+
+**Mimarinin avantajları:**
+- **Merkezi tema:** Tüm renkler `DarkTheme` sınıfında
+- **Birleştirilebilirlik:** İnput alanları, butonlar, başlıklar gibi tüm kontrol elemanları pre-built STYLES ile üstünlük kazanır
+- **Dark/Light geçişi:** Gelecekte `LightTheme` sınıfı eklenince tüm UI otomatik uyum sağlar
+
+### 5a.2 DarkTheme Token'ları Kullanımı
+
+```python
+from ui.styles.colors import DarkTheme as C
+
+# Yazı renkleri
+C.TEXT_PRIMARY       # Birinci kat metin (#e8edf5 — beyaz)
+C.TEXT_SECONDARY     # İkinci kat metin (#8fa3b8 — gri)
+C.TEXT_MUTED         # Devre dışı metin (#4d6070)
+C.TEXT_DISABLED      # Pasif metin (#263850 — çok koyu)
+
+# Arka plan katmanları
+C.BG_PRIMARY         # Ana arka plan (#0d1117 — en koyu)
+C.BG_SECONDARY       # İkinci katman (#121820)
+C.BG_TERTIARY        # Üçüncü katman
+
+# Component renkleri
+C.BTN_PRIMARY_BG     # Mavi buton (#365a9f)
+C.BTN_PRIMARY_HOVER  # Mavi buton hover (#4a74c6)
+C.BTN_DANGER_BG      # Kırmızı buton (#e81123)
+C.BTN_DANGER_HOVER   # Kırmızı buton hover
+C.STATUS_SUCCESS     # Yeşil durum (#3ecf8e)
+C.STATUS_ERROR       # Kırmızı durum (#f75f5f)
+C.STATUS_WARNING     # Sarı durum (#facc15)
+C.ACCENT             # Vurgu rengi (Mavi tonu)
+C.ACCENT2            # Başka vurgu (Yeşil tonu)
+
+# Input kontrol elemanları
+C.INPUT_BG           # Input arka plan
+C.INPUT_BORDER       # Input kenar rengi
+C.INPUT_BORDER_FOCUS # Input focus durumu
+```
+
+**Kullanım örneği — QLabel'a renk ekle:**
+```python
+lbl = QLabel("Başlık")
+lbl.setStyleSheet(f"color: {C.TEXT_PRIMARY}; font-weight: bold;")
+```
+
+### 5a.3 STYLES Dictionary — Pre-built Stylesheets
+
+```python
+from ui.styles.components import STYLES
+
+# Input alanları
+STYLES["input_field"]    # QLineEdit — focus, read-only state'ler dahil
+STYLES["input_combo"]    # QComboBox — dropdown rengi, selection dahil
+STYLES["spin"]           # QSpinBox/QDoubleSpinBox — up/down butonları stilize
+STYLES["input_date"]     # QDateEdit — takvim popup rengi
+
+# Label'lar
+STYLES["label_form"]     # QLabel — form sayfasında küçük label
+STYLES["label_title"]    # QLabel — sayfa başlığı (14pt, bold)
+STYLES["section_label"]  # QLabel — bölüm başlığı
+
+# Butonlar (zaten iki renk tema'da tanımlıymış halinde)
+STYLES["btn_action"]     # Mavi aksiyon butonu
+STYLES["btn_primary"]    # Birinci aksiyon butonu
+STYLES["btn_secondary"]  # Şeffaf buton
+STYLES["btn_danger"]     # Kırmızı sil/iptal butonu
+```
+
+**Kullanım örneği:**
+```python
+from ui.styles.components import STYLES
+
+# QLineEdit'e STYLES uygula
+input_field = QLineEdit()
+input_field.setStyleSheet(STYLES["input_field"])
+
+# QComboBox'a STYLES uygula
+combo = QComboBox()
+combo.setStyleSheet(STYLES["input_combo"])
+
+# QSpinBox'a STYLES uygula
+spin = QSpinBox()
+spin.setStyleSheet(STYLES["spin"])
+```
+
+### 5a.4 Admin Dosyaları — Tema Durum Tablosu
+
+| Dosya | Durum | STYLES uygulanan elemanlar |
+|-------|-------|----------------------------|
+| `admin_panel.py` | ✅ Merkezi tema | DarkTheme token'ları kullanıyor |
+| `audit_view.py` | ✅ Tamamlandı | QLineEdit (input_field), QComboBox (input_combo), QSpinBox (spin) |
+| `backup_page.py` | ✅ Tamamlandı | QSpinBox (spin), başlık rengi (TEXT_PRIMARY) |
+| `log_viewer_page.py` | ✅ Tamamlandı | QComboBox (input_combo), QSpinBox (spin), QLineEdit (input_field) |
+| `permissions_view.py` | ✅ Tamamlandı | QLineEdit (input_field) |
+| `roles_view.py` | ✅ Tamamlandı | QLineEdit (input_field) |
+| `settings_page.py` | ✅ Tamamlandı | QLineEdit (input_field), yeni hardcoded renk yok |
+| `users_view.py` | ✅ Tamamlandı | QLineEdit (input_field) |
+| `yil_sonu_devir_page.py` | ✅ Tamamlandı | QTextEdit, QPushButton (token'lar), QCheckBox |
+
+### 5a.5 Fırsatçı Temizlik — Hâlâ Hardcoded Renk Kullanan Dosyalar
+
+Aşağıdaki dosyaları açarken, bulduğunuz `#f0f0f0`, `#333`, `#e81123` gibi hex renkleri
+DarkTheme token'larıyla değiştir:
+
+```python
+# ❌ YAPMA — hardcoded hex
+self.label.setStyleSheet("color: #f0f0f0;")
+self.btn.setStyleSheet("background-color: #333;")
+
+# ✅ YAP — DarkTheme token'ları
+from ui.styles.colors import DarkTheme as C
+self.label.setStyleSheet(f"color: {C.TEXT_PRIMARY};")
+self.btn.setStyleSheet(f"background-color: {C.BG_SECONDARY};")
+```
+
+**Renk eşlemesi:**
+- `#f0f0f0` (açık gri) → `C.TEXT_PRIMARY` veya `C.INPUT_BG`
+- `#333` (koyu gri) → `C.BG_TERTIARY` veya `C.BG_SECONDARY`
+- `#e81123` (kırmızı) → `C.STATUS_ERROR` veya `C.BTN_DANGER_BG`
+- `#00ff00` (yeşil terminal) → `C.STATUS_SUCCESS`
+- `#444` (kenar rengi) → `C.INPUT_BORDER`
+
+---
+
+## 6. KALAN DİREKT DB ÇAĞRILARI (Fırsatçı Temizlenecek)
+
+Eski bölüm numarası 5 — şimdi 6 oldu.
+
+## 7. DOSYA YÖNETİMİ — Belge Yükleme ve Drive Entegrasyonu
+
+### 7.1 Mimari Özet
 
 Hibrit dosyalama sistemi üç katmandan oluşur:
 
@@ -444,7 +603,7 @@ Drive Katmanı
 
 ---
 
-### 6.2 Yeni Belge Paneli Açarken
+### 7.2 Yeni Belge Paneli Açarken
 
 **Doğru yol — BaseDokumanPanel extend et:**
 
@@ -478,7 +637,7 @@ hepsi `BaseDokumanPanel`'de. Eklenecek tek şey `folder_name`.
 
 ---
 
-### 6.3 Panel Dışında Dosya Yüklerken — DokumanService
+### 7.3 Panel Dışında Dosya Yüklerken — DokumanService
 
 Panel dışında (worker thread, kayıt sırasında otomatik yükleme vb.) belge yüklenmesi
 gerekiyorsa **DokumanService** kullan:
@@ -511,7 +670,81 @@ yükler. Dokumanlar tablosuna her iki durumda da kaydeder.
 
 ---
 
-### 6.4 Drive Klasör Yapısı
+### 7.3.1 QThread ile DokumanService — SQLite Thread Safety
+
+**ÖNEMLİ:** SQLite connection'ları oluşturuldukları thread'de kullanılmalıdır.  
+QThread içinde `DokumanService` kullanırken **db instance'ı değil, db_path gönderin**:
+
+```python
+from PySide6.QtCore import QThread, Signal
+from database.sqlite_manager import SQLiteManager
+from core.services.dokuman_service import DokumanService
+from core.paths import DB_PATH
+
+class DokumanUploadWorker(QThread):
+    """Tek bir dosya için DokumanService upload worker'ı."""
+    upload_finished = Signal(str, dict)
+    upload_error = Signal(str, str)
+
+    def __init__(self, db_path: str, job: dict, parent=None):
+        super().__init__(parent)
+        self._db_path = db_path  # ← db instance DEĞİL, db_path!
+        self._job = job
+
+    def run(self):
+        try:
+            # Her thread kendi DB connection'ını oluşturur (SQLite thread güvenliği için)
+            db = SQLiteManager(self._db_path, check_same_thread=False)
+            svc = DokumanService(db)
+            sonuc = svc.upload_and_save(
+                file_path=self._job["file_path"],
+                entity_type=self._job["entity_type"],
+                entity_id=self._job["entity_id"],
+                belge_turu=self._job["belge_turu"],
+                folder_name=self._job["folder_name"],
+                doc_type=self._job["doc_type"],
+                custom_name=self._job.get("custom_name"),
+            )
+            if sonuc.get("ok"):
+                self.upload_finished.emit(self._job["db_field"], sonuc)
+            else:
+                self.upload_error.emit(
+                    self._job["db_field"],
+                    sonuc.get("error", "Bilinmeyen yükleme hatası")
+                )
+        except Exception as e:
+            self.upload_error.emit(self._job.get("db_field", ""), str(e))
+
+# UI panelinden kullanım:
+worker = DokumanUploadWorker(DB_PATH, job)  # ← self._db.db_path DEĞİL, DB_PATH!
+worker.upload_finished.connect(self._on_upload_success)
+worker.upload_error.connect(self._on_upload_error)
+worker.start()
+```
+
+**Checklist:**
+```
+[ ] QThread worker'a db instance yerine db_path gönderiyorum
+[ ] Worker'ın run() metodunda yeni SQLiteManager(db_path, check_same_thread=False) oluşturuyorum
+[ ] DB_PATH'i core.paths'ten import ettim
+[ ] Main thread'de oluşturulan db connection'ını thread'ler arası paylaşmıyorum
+```
+
+**YAPMA:**
+```python
+# ❌ Main thread'in db instance'ını worker'a gönderme
+worker = DokumanUploadWorker(self._db, job)
+
+# ❌ Thread içinde main thread connection'ını kullanma
+svc = DokumanService(self._db)  # SQLite hatası: "objects created in a thread can only be used in that same thread"
+
+# ✅ YAP — db_path gönder, thread içinde yeni connection oluştur
+worker = DokumanUploadWorker(DB_PATH, job)
+```
+
+---
+
+### 7.5 Drive Klasör Yapısı
 
 Drive klasörleri **ilk upload anında otomatik oluşturulur**. Manuel oluşturma gerekmez,
 Sabitler tablosuna ID girme gerekmez.
@@ -542,7 +775,7 @@ Sabitler: Kod='Sistem_DriveID', MenuEleman='Cihaz_Belgeler', Aciklama='1AbCdEf..
 
 ---
 
-### 6.5 Offline → Online Dosya Senkronizasyonu
+### 7.6 Offline → Online Dosya Senkronizasyonu
 
 Offline modda yüklenen dosyalar `data/offline_uploads/<folder_name>/` klasörüne kaydedilir.
 Online moda geçildiğinde `SyncWorker` çalışır ve **DB sync başlamadan önce** bu dosyaları
@@ -575,7 +808,7 @@ Drive'a çıkamaz.
 
 ---
 
-### 6.6 Dokumanlar Tablosu Senkronizasyonu
+### 7.7 Dokumanlar Tablosu Senkronizasyonu
 
 `Dokumanlar` tablosu artık `sync=True` — makineler arası senkronize edilir.
 Google Sheets'te `itf_ortak_vt` spreadsheet'inde `Dokumanlar` sayfası gereklidir.
@@ -597,42 +830,43 @@ açar, `LocalPath` sadece o dosyanın oluşturulduğu makinede çalışır.
 
 ---
 
-### 6.7 Eski Upload Pattern'leri — Taşınacak Dosyalar
+### 7.8 Eski Upload Pattern'leri — Taşınacak Dosyalar
 
 Aşağıdaki dosyalar hâlâ eski yöntemi kullanıyor. **Fırsatçı** olarak girildiğinde
 `DokumanService` ile değiştir:
 
-| Dosya | Eski yöntem | Yapılacak |
-|-------|------------|-----------|
-| `personel/saglik_takip.py` | `cloud.upload_file()` direkt + Dokumanlar kaydı YOK | `DokumanService.upload_and_save()` |
-| `rke/rke_muayene.py` | `StorageService` + direkt Dokumanlar insert | `DokumanService.upload_and_save()` |
-| `personel/personel_ekle.py` | `DriveUploadWorker` + direkt Dokumanlar insert | `DokumanService` + `QThread` |
-| `personel/components/personel_overview_panel.py` | `DriveUploadWorker` + direkt Dokumanlar insert | `DokumanService` + `QThread` |
+| Dosya | Eski yöntem | Yapılacak | Durum |
+|-------|------------|-----------|-------|
+| `personel/saglik_takip.py` | `cloud.upload_file()` direkt + Dokumanlar kaydı YOK | `DokumanService.upload_and_save()` | ✅ Tamamlandı |
+| `rke/rke_muayene.py` | `StorageService` + direkt Dokumanlar insert | `DokumanService.upload_and_save()` | ⏳ Bekliyor |
+| `personel/personel_ekle.py` | `DriveUploadWorker` + direkt Dokumanlar insert | `DokumanService` + `QThread` | ✅ Tamamlandı |
+| `personel/components/personel_overview_panel.py` | `DriveUploadWorker` + direkt Dokumanlar insert | `DokumanService` + `QThread` | ✅ Tamamlandı |
 
 **saglik_takip.py için dikkat:** Şu an Dokumanlar tablosuna kayıt yapmıyor.
 Taşıyınca `iliskili_id=kayit_no`, `iliskili_tip="Personel_Saglik_Takip"` parametrelerini ver.
 
 ---
 
-### 6.8 Yapma Listesi — Dosyalama
+### 7.9 Yapma Listesi — Dosyalama
 
 | ❌ Yapma | ✅ Yap |
 |---------|--------|
 | Sabitler'e Drive klasör ID'si gir | `DokumanService` otomatik oluşturur |
 | `StorageService.upload()` direkt çağır | `DokumanService.upload_and_save()` kullan |
 | `RepositoryRegistry.get("Dokumanlar").insert()` direkt yaz | `DokumanService.upload_and_save()` kullan |
-| `DriveUploadWorker` ile yeni upload kodu yaz | `DokumanService` + basit `QThread` |
+| `DriveUploadWorker` ile yeni upload kodu yaz | `DokumanService` + basit `QThread` (7.3.1'e bak) |
 | `cloud.upload_file()` direkt çağır | `DokumanService` kullan |
 | Yeni `_dokuman_panel.py` sıfırdan yaz | `BaseDokumanPanel` extend et |
 | Drive'da klasörü elle oluştur | İlk upload'da otomatik oluşur |
 | Yeni DocType ekleyip `DOCTYPE_FOLDER_MAP`'i güncelleme | `file_sync_service.py`'deki map'i güncelle |
+| QThread worker'a db instance gönder | db_path gönder, thread içinde yeni connection oluştur (7.3.1) |
 
 
 ---
 
-## 7. İKON SİSTEMİ — Emoji Yerine `icons.py`
+## 8. İKON SİSTEMİ — Emoji Yerine `icons.py`
 
-### 7.1 Neden
+### 8.1 Neden
 
 Emoji'ler platform bağımlıdır — Windows, macOS ve Linux'ta farklı render edilir,
 bazı fontlarda hiç görünmez. `icons.py` SVG tabanlı, renk/boyut kontrol edilebilir,
@@ -653,7 +887,7 @@ IconRenderer.set_button_icon(btn, "upload", color=IconColors.PRIMARY, size=16)
 
 ---
 
-### 7.2 Import
+### 8.2 Import
 
 ```python
 from ui.styles.icons import Icons, IconRenderer, IconColors
@@ -661,7 +895,7 @@ from ui.styles.icons import Icons, IconRenderer, IconColors
 
 ---
 
-### 7.3 Kullanım Şekilleri
+### 8.3 Kullanım Şekilleri
 
 **QPushButton'a ikon:**
 ```python
@@ -699,7 +933,7 @@ icon = IconRenderer.status_icon("İzinli")  # sarı
 
 ---
 
-### 7.4 Renk Sabitleri — `IconColors`
+### 8.4 Renk Sabitleri — `IconColors`
 
 | Sabit | Renk | Kullanım |
 |-------|------|----------|
@@ -716,7 +950,7 @@ icon = IconRenderer.status_icon("İzinli")  # sarı
 
 ---
 
-### 7.5 Mevcut İkon Listesi (75 ikon)
+### 8.5 Mevcut İkon Listesi (75 ikon)
 
 ```
 # Genel aksiyon
@@ -751,7 +985,7 @@ print(Icons.available())
 
 ---
 
-### 7.6 Yeni İkon Eklemek
+### 8.6 Yeni İkon Eklemek
 
 `ui/styles/icons.py` → `_SVG_PATHS` dict'ine ekle.
 SVG path'ler `viewBox="0 0 24 24"`, `stroke-width="1.75"` formatında olmalı.
@@ -768,7 +1002,7 @@ SVG'den **kaldır**, render motoru dynamik atar.
 
 ---
 
-### 7.7 Emoji → İkon Dönüşüm Tablosu
+### 8.7 Emoji → İkon Dönüşüm Tablosu
 
 | Emoji | İkon adı | Renk sabiti |
 |-------|----------|-------------|
@@ -789,7 +1023,7 @@ SVG'den **kaldır**, render motoru dynamik atar.
 
 ---
 
-### 7.8 Fırsatçı Temizlik — Hâlâ Emoji Kullanan Dosyalar
+### 8.8 Fırsatçı Temizlik — Hâlâ Emoji Kullanan Dosyalar
 
 ```
 [ ] base_dokuman_panel.py  — "📄 Belge Yükle", "📁 Dosya Seç", "⚠ Uyarı"
@@ -803,7 +1037,7 @@ UI'da değil.
 
 ---
 
-## 8. HIZLI KONTROL KOMUTU
+## 9. HIZLI KONTROL KOMUTU
 
 Bir dosyayı açmadan önce kaç direkt DB çağrısı olduğunu görmek için:
 

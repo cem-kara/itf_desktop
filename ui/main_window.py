@@ -66,7 +66,7 @@ class MainWindow(QMainWindow):
             self._action_guard = ActionGuard(self._authorization_service, self._session_context)
         self.sidebar = Sidebar(page_guard=self._page_guard)
         self.sidebar.menu_clicked.connect(self._on_menu_clicked)
-        self.sidebar.dashboard_clicked.connect(self._open_dashboard)
+        # self.sidebar.dashboard_clicked.connect(self._open_dashboard)  # TODO: Dashboard sayfası geliştirilirken aktif olacak
         self.sidebar.sync_btn.clicked.connect(self._start_sync)
         main_layout.addWidget(self.sidebar)
 
@@ -129,9 +129,9 @@ class MainWindow(QMainWindow):
 
     # ── SAYFA YÖNETİMİ ──
 
-    @Slot()
-    def _open_dashboard(self):
-        self._on_menu_clicked("YÖNETİCİ İŞLEMLERİ", "Genel Bakış")
+    # @Slot()
+    # def _open_dashboard(self):
+    #     self._on_menu_clicked("YÖNETİCİ İŞLEMLERİ", "Genel Bakış")
 
     def _on_menu_clicked(self, group, baslik, *args):
         """
@@ -175,7 +175,7 @@ class MainWindow(QMainWindow):
 
             if filters and hasattr(page, "apply_filters"):
                 logger.info(f"'{baslik}' sayfasına filtreler uygulanıyor: {filters}")
-                page.apply_filters(filters)
+                page.apply_filters(filters)  # type: ignore[attr-defined]
         except Exception as e:
             log_ui_error("menu_click", e, group=group, page=baslik)
             from PySide6.QtWidgets import QMessageBox
@@ -187,13 +187,13 @@ class MainWindow(QMainWindow):
             )
 
     def _create_page(self, group, baslik):
-        if baslik == "Genel Bakış":
-            from ui.pages.dashboard import DashboardPage
-            page = DashboardPage(db=self._db)
-            page.open_page_requested.connect(self._on_menu_clicked)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Genel Bakış"))
-            page.load_data()
-            return page
+        # if baslik == "Genel Bakış":
+        #     from ui.pages.dashboard import DashboardPage
+        #     page = DashboardPage(db=self._db)
+        #     page.open_page_requested.connect(self._on_menu_clicked)
+        #     page.btn_kapat.clicked.connect(lambda: self._close_page("Genel Bakış"))
+        #     page.load_data()
+        #     return page
 
         if baslik == "Personel Listesi":
             from ui.pages.personel.personel_listesi import PersonelListesiPage
@@ -202,9 +202,10 @@ class MainWindow(QMainWindow):
                 lambda idx: self._open_personel_detay(page, idx)
             )
             page.detay_requested.connect(self._open_personel_merkez)
-            #page.btn_kapat.clicked.connect(lambda: self._close_page("Personel Listesi"))
-            page.btn_yeni.clicked.connect(lambda: self._on_menu_clicked("Personel", "Personel Ekle"))
             page.izin_requested.connect(lambda data: self.open_izin_giris(data))
+            page.btn_yeni.clicked.connect(lambda: self._on_menu_clicked("Personel", "Personel Ekle"))
+            # Kapat butonu signal'ini bağla
+            page.close_requested.connect(lambda: self._close_page("Personel Listesi"))
             page.load_data()
             return page
 
@@ -215,6 +216,8 @@ class MainWindow(QMainWindow):
                 on_saved=self._on_personel_saved,
                 action_guard=self._action_guard
             )
+            # Form kapandığında (iptal/kaydet) personel listesine dön
+            page.form_closed.connect(self._on_personel_saved)
             return page
 
         if baslik in ("İzin Takip ve FHSZ Yönetim"):
@@ -250,12 +253,12 @@ class MainWindow(QMainWindow):
             page.load_data()
             return page
 
-        if baslik == "Arıza Kayıt":
-            from ui.pages.cihaz.ariza_kayit import ArizaKayitPenceresi
-            page = ArizaKayitPenceresi(db=self._db)
-            if hasattr(page, "btn_iptal"):
-                page.btn_iptal.clicked.connect(lambda: self._close_page("Arıza Kayıt"))
-            return page
+        # if baslik == "Arıza Kayıt":
+        #     from ui.pages.cihaz.ariza_kayit import ArizaKayitPenceresi
+        #     page = ArizaKayitPenceresi(db=self._db)
+        #     if hasattr(page, "btn_iptal"):
+        #         page.btn_iptal.clicked.connect(lambda: self._close_page("Arıza Kayıt"))
+        #     return page
 
         if baslik == "Teknik Hizmetler":
             from ui.pages.cihaz.teknik_hizmetler import TeknikHizmetlerPage
@@ -273,7 +276,7 @@ class MainWindow(QMainWindow):
             from ui.pages.rke.rke_muayene import RKEMuayenePage
             page = RKEMuayenePage(db=self._db, action_guard=self._action_guard)
             if hasattr(page, "btn_kapat") and page.btn_kapat is not None:
-                page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Muayene"))
+                page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Muayene"))  # type: ignore[attr-defined]
             page.load_data()
             return page
 
@@ -281,7 +284,7 @@ class MainWindow(QMainWindow):
             from ui.pages.rke.rke_rapor import RKERaporPenceresi
             page = RKERaporPenceresi(db=self._db, action_guard=self._action_guard)
             if hasattr(page, "btn_kapat"):
-                page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Raporlama"))
+                page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Raporlama"))  # type: ignore[attr-defined]
             page.load_data()
             return page
 
@@ -290,32 +293,7 @@ class MainWindow(QMainWindow):
             page = AdminPanel(db=self._db, action_guard=self._action_guard)
             page.btn_kapat.clicked.connect(lambda: self._close_page("Admin Panel"))
             return page
-
-        if baslik == "Yıl Sonu İzin":
-            from ui.pages.admin.yil_sonu_islemleri import YilSonuIslemleriPage
-            page = YilSonuIslemleriPage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Yıl Sonu İzin"))
-            page.load_data()
-            return page
-
-        if baslik == "Log Görüntüleyici":
-            from ui.pages.admin.log_goruntuleme import LogGoruntuleme
-            page = LogGoruntuleme(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Log Görüntüleyici"))
-            return page
-
-        if baslik == "Yedek Yönetimi":
-            from ui.pages.admin.yedek_yonetimi import YedekYonetimiPage
-            page = YedekYonetimiPage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Yedek Yönetimi"))
-            return page
-        
-        if baslik == "Ayarlar":
-            from ui.pages.admin.yonetim_ayarlar import AyarlarPenceresi
-            page = AyarlarPenceresi(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Ayarlar"))
-            return page
-                    
+               
         return PlaceholderPage(
             title=baslik,
             subtitle=f"{group} modülü — geliştirme aşamasında"
@@ -446,7 +424,7 @@ class MainWindow(QMainWindow):
             self.stack.removeWidget(old)
             old.deleteLater()
 
-        from ui.pages.personel.izin_giris import IzinGirisPage
+        from ui.pages.personel.izin_giris import IzinGirisPage  # type: ignore[import-untyped]
         page = IzinGirisPage(
             db=self._db,
             personel_data=personel_data,
@@ -566,11 +544,11 @@ class MainWindow(QMainWindow):
         self.last_sync_label.setText(f"Son sync: {now}")
         self._refresh_active_page()
         # Dashboard açıksa onu da yenile
-        if "Genel Bakış" in self._pages:
-            dashboard_page = self._pages["Genel Bakış"]
-            if hasattr(dashboard_page, "load_data"):
-                logger.info("Dashboard yenileniyor...")
-                dashboard_page.load_data()
+        # if "Genel Bakış" in self._pages:
+        #     dashboard_page = self._pages["Genel Bakış"]
+        #     if hasattr(dashboard_page, "load_data"):
+        #         logger.info("Dashboard yenileniyor...")
+        #         dashboard_page.load_data()
         # Sync sonrası bildirimleri de güncelle
         self._tetikle_bildirim()
 
@@ -675,7 +653,7 @@ class MainWindow(QMainWindow):
         current = self.stack.currentWidget()
         if hasattr(current, "load_data"):
             try:
-                current.load_data()
+                current.load_data()  # type: ignore[attr-defined]
             except Exception as e:
                 logger.error(f"Sayfa yenileme hatası: {e}")
 
@@ -789,6 +767,6 @@ class MainWindow(QMainWindow):
         self._on_menu_clicked("CİHAZ", "Teknik Hizmetler")
         page = self._pages.get("Teknik Hizmetler")
         if page and hasattr(page, "open_tab"):
-            cihaz_id = data.get("Cihazid", "") if isinstance(data, dict) else ""
-            page.open_tab("BAKIM", cihaz_id=cihaz_id)
-        # İleride: page.filter_by_device(device_data['Cihazid']) eklenebilir
+            cihaz_id = device_data.get("Cihazid", "") if isinstance(device_data, dict) else ""
+            if cihaz_id:
+                page.open_tab("BAKIM", cihaz_id=cihaz_id)

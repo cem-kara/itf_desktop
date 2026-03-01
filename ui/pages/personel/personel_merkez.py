@@ -239,7 +239,7 @@ class PersonelMerkezPage(QWidget):
         # ── Scroll: uyarılar + aksiyonlar ──
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setStyleSheet(STYLES["scroll"])
 
         info_widget = QWidget()
@@ -295,7 +295,7 @@ class PersonelMerkezPage(QWidget):
                     px = QPixmap(resim_path)
                     if not px.isNull():
                         self.lbl_avatar.setPixmap(
-                            px.scaled(34, 34, Qt.KeepAspectRatioByExpanding,
+                            px.scaled(34, 34, Qt.AspectRatioMode.KeepAspectRatioByExpanding,
                                       Qt.TransformationMode.SmoothTransformation)
                         )
                         self.lbl_avatar.setText("")
@@ -320,8 +320,9 @@ class PersonelMerkezPage(QWidget):
             # Uyarılar
             while self.alert_container.count():
                 item = self.alert_container.takeAt(0)
-                if item.widget():
-                    item.widget().deleteLater()
+                widget = item.widget() if item else None
+                if widget:
+                    widget.deleteLater()
 
             kritikler = self.ozet_data.get("kritikler", [])
             if not kritikler:
@@ -372,13 +373,13 @@ class PersonelMerkezPage(QWidget):
                     )
                     h.addWidget(lbl, 1)
                     self.alert_container.addWidget(container)
-                    self.alert_container.addWidget(lbl)
 
             # Sekme
             if self._initial_load:
                 cur = self.content_stack.currentWidget()
-                if cur and hasattr(cur, "load_data"):
-                    cur.load_data()
+                load_data = getattr(cur, "load_data", None) if cur else None
+                if callable(load_data):
+                    load_data()
             else:
                 self._switch_tab("GENEL")
                 self._initial_load = True
@@ -420,8 +421,9 @@ class PersonelMerkezPage(QWidget):
             else:
                 raise ValueError(f"Bilinmeyen sekme: {code}")
 
-            if hasattr(w, "set_embedded_mode"):
-                w.set_embedded_mode(True)
+            set_embedded_mode = getattr(w, "set_embedded_mode", None)
+            if callable(set_embedded_mode):
+                set_embedded_mode(True)
             return w
 
         except Exception as e:
@@ -450,8 +452,9 @@ class PersonelMerkezPage(QWidget):
         # Önceki formu temizle
         while self.form_content_lay.count():
             item = self.form_content_lay.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            widget = item.widget() if item else None
+            if widget:
+                widget.deleteLater()
         self._form_widget = None
 
         try:
@@ -482,8 +485,9 @@ class PersonelMerkezPage(QWidget):
         self.form_container.setVisible(False)
         while self.form_content_lay.count():
             item = self.form_content_lay.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            widget = item.widget() if item else None
+            if widget:
+                widget.deleteLater()
         self._form_widget       = None
         self._current_form_type = None
 

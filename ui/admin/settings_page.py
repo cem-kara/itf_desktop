@@ -30,6 +30,8 @@ from PySide6.QtCore import Qt, QDate
 
 from core.logger import logger
 from core.services.settings_service import SettingsService
+from ui.styles.colors import DarkTheme as C
+from ui.styles.components import STYLES
 from ui.styles.icons import Icons, IconRenderer
 
 
@@ -47,6 +49,7 @@ class SabitEditDialog(QDialog):
         # Kod
         layout.addWidget(QLabel("Kod:"))
         self._txt_kod = QLineEdit()
+        self._txt_kod.setStyleSheet(STYLES["input_field"])
         self._txt_kod.setText(kod)
         self._txt_kod.setPlaceholderText("Örn: PARAM_001")
         layout.addWidget(self._txt_kod)
@@ -54,6 +57,7 @@ class SabitEditDialog(QDialog):
         # Menü Elemanı
         layout.addWidget(QLabel("Menü Elemanı (Seçenek):"))
         self._txt_menu_eleman = QLineEdit()
+        self._txt_menu_eleman.setStyleSheet(STYLES["input_field"])
         self._txt_menu_eleman.setText(menu_eleman)
         self._txt_menu_eleman.setPlaceholderText("Örn: Tıp, Mühendislik, Fen Bilgisi")
         layout.addWidget(self._txt_menu_eleman)
@@ -61,6 +65,7 @@ class SabitEditDialog(QDialog):
         # Açıklama
         layout.addWidget(QLabel("Açıklama:"))
         self._txt_aciklama = QLineEdit()
+        self._txt_aciklama.setStyleSheet(STYLES["input_field"])
         self._txt_aciklama.setText(aciklama)
         self._txt_aciklama.setPlaceholderText("Seçeneğin açıklaması (opsiyonel)")
         layout.addWidget(self._txt_aciklama)
@@ -108,6 +113,7 @@ class TatilEditDialog(QDialog):
         # Tatil Adı
         layout.addWidget(QLabel("Tatil Adı:"))
         self._txt_resmi_tatil = QLineEdit()
+        self._txt_resmi_tatil.setStyleSheet(STYLES["input_field"])
         self._txt_resmi_tatil.setText(resmi_tatil)
         self._txt_resmi_tatil.setPlaceholderText("Örn: Yeni Yıl")
         layout.addWidget(self._txt_resmi_tatil)
@@ -402,7 +408,7 @@ class SettingsPage(QWidget):
         dialog = SabitEditDialog(kod=kod, parent=self)
         # Kod alanını devre dışı bırak (zaten seçili)
         dialog._txt_kod.setReadOnly(True)
-        dialog._txt_kod.setStyleSheet("background-color: #f0f0f0;")
+        dialog._txt_kod.setStyleSheet(f"background-color: {C.INPUT_BG};")
         
         if dialog.exec() == QDialog.DialogCode.Accepted:
             _, menu_eleman, aciklama = dialog.get_data()
@@ -433,7 +439,7 @@ class SettingsPage(QWidget):
         dialog = SabitEditDialog(kod, menu_eleman, aciklama, parent=self)
         # Kod alanını devre dışı bırak
         dialog._txt_kod.setReadOnly(True)
-        dialog._txt_kod.setStyleSheet("background-color: #f0f0f0;")
+        dialog._txt_kod.setStyleSheet(f"background-color: {C.INPUT_BG};")
         
         if dialog.exec() == QDialog.DialogCode.Accepted:
             _, menu_eleman, aciklama = dialog.get_data()

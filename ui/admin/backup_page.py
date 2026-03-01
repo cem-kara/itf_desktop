@@ -36,6 +36,8 @@ from core.logger import logger
 from core.services.backup_service import BackupService
 from core.paths import DATA_DIR, LOG_DIR
 from ui.components.base_table_model import BaseTableModel
+from ui.styles.colors import DarkTheme as C
+from ui.styles.components import STYLES
 from ui.styles.icons import Icons, IconRenderer
 
 
@@ -87,7 +89,7 @@ class BackupPage(QWidget):
         # Başlık
         title_layout = QHBoxLayout()
         title_label = QLabel("Veritabanı Yedekleme")
-        title_label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        title_label.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {C.TEXT_PRIMARY};")
         title_icon = QLabel()
         title_icon.setPixmap(Icons.pixmap("database", size=24))
         title_layout.addWidget(title_icon)
@@ -121,18 +123,18 @@ class BackupPage(QWidget):
         self._btn_create_backup = QPushButton("Yedek Oluştur")
         IconRenderer.set_button_icon(self._btn_create_backup, "save", size=14)
         self._btn_create_backup.clicked.connect(self._create_backup)
-        self._btn_create_backup.setStyleSheet("""
-            QPushButton {
-                background-color: #0078d4;
-                color: white;
+        self._btn_create_backup.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {C.BTN_PRIMARY_BG};
+                color: {C.BTN_PRIMARY_TEXT};
                 font-weight: bold;
                 padding: 8px 16px;
                 border-radius: 4px;
                 border: none;
-            }
-            QPushButton:hover {
-                background-color: #106ebe;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {C.BTN_PRIMARY_HOVER};
+            }}
         """)
         create_layout.addWidget(self._btn_create_backup)
         create_layout.addStretch()
@@ -165,18 +167,18 @@ class BackupPage(QWidget):
         self._btn_create_full_backup = QPushButton("Tam Yedek Oluştur")
         IconRenderer.set_button_icon(self._btn_create_full_backup, "package", size=14)
         self._btn_create_full_backup.clicked.connect(self._create_full_backup)
-        self._btn_create_full_backup.setStyleSheet("""
-            QPushButton {
-                background-color: #107c10;
-                color: white;
+        self._btn_create_full_backup.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {C.STATUS_SUCCESS};
+                color: {C.BTN_PRIMARY_TEXT};
                 font-weight: bold;
                 padding: 8px 16px;
                 border-radius: 4px;
                 border: none;
-            }
-            QPushButton:hover {
-                background-color: #0d6e07;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {C.ACCENT2};
+            }}
         """)
         full_backup_layout.addWidget(self._btn_create_full_backup)
         
@@ -204,18 +206,18 @@ class BackupPage(QWidget):
         IconRenderer.set_button_icon(self._btn_delete, "trash", size=14)
         self._btn_delete.clicked.connect(self._delete_backup)
         self._btn_delete.setEnabled(False)
-        self._btn_delete.setStyleSheet("""
-            QPushButton {
-                background-color: #d13438;
-                color: white;
-            }
-            QPushButton:hover {
-                background-color: #a82a2d;
-            }
-            QPushButton:disabled {
-                background-color: #555;
-                color: #888;
-            }
+        self._btn_delete.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {C.BTN_DANGER_BG};
+                color: {C.BTN_DANGER_TEXT};
+            }}
+            QPushButton:hover {{
+                background-color: {C.BTN_DANGER_HOVER};
+            }}
+            QPushButton:disabled {{
+                background-color: {C.BG_SECONDARY};
+                color: {C.TEXT_DISABLED};
+            }}
         """)
         btn_layout.addWidget(self._btn_delete)
         
@@ -224,6 +226,7 @@ class BackupPage(QWidget):
         # Temizleme
         btn_layout.addWidget(QLabel("Sadece son"))
         self._spin_keep_count = QSpinBox()
+        self._spin_keep_count.setStyleSheet(STYLES["spin"])
         self._spin_keep_count.setRange(1, 100)
         self._spin_keep_count.setValue(10)
         self._spin_keep_count.setSuffix(" yedek tut")

@@ -237,7 +237,7 @@ class IstenAyrilikPage(QWidget):
         # ── SCROLL ──
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setStyleSheet(S["scroll"])
 
         content = QWidget()

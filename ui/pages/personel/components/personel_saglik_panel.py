@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QDate, QAbstractTableModel, QModelIndex
 
+from core.di import get_registry
 from core.logger import logger
 from ui.styles import Colors, DarkTheme
 from ui.styles.components import STYLES as S
@@ -147,8 +148,7 @@ class PersonelSaglikPanel(QWidget):
     def load_data(self):
         if not self.db or not self.personel_id: return
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self.db)
+            registry = get_registry(self.db)
             repo = registry.get("Personel_Saglik_Takip")
             all_records = repo.get_all()
             

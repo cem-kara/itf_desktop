@@ -14,7 +14,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QCursor
 
 from ui.styles import DarkTheme
-from ui.styles.components import ComponentStyles, STYLES
+from ui.styles.components import STYLES
 from ui.styles.icons import IconRenderer
 from core.logger import logger
 
@@ -207,9 +207,10 @@ class IzinFHSZPuantajMerkezPage(QWidget):
         self.content_stack.setCurrentWidget(w)
 
         # load_data() çağır (varsa)
-        if hasattr(w, "load_data"):
+        load_data = getattr(w, "load_data", None)
+        if callable(load_data):
             try:
-                w.load_data()
+                load_data()
             except Exception as e:
                 import traceback
                 logger.error(f"Sekme {code} load_data hatası: {e}\n{traceback.format_exc()}")

@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (
     QGroupBox, QScrollArea, QTableView, QHeaderView
 )
 from PySide6.QtCore import Qt, QDate, QAbstractTableModel, QModelIndex
+from core.di import get_registry
 from core.logger import logger
 from ui.styles.components import STYLES as S
 from datetime import datetime, timedelta, date
@@ -198,8 +199,7 @@ class PersonelIzinPanel(QWidget):
             return
 
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self.db)
+            registry = get_registry(self.db)
 
             # İzin Bilgisi
             izin_repo = registry.get("Izin_Bilgi")

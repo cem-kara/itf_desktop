@@ -33,6 +33,8 @@ from PySide6.QtGui import QColor
 from core.logger import logger
 from core.services.log_service import LogService
 from ui.components.base_table_model import BaseTableModel
+from ui.styles.colors import DarkTheme as C
+from ui.styles.components import STYLES
 from ui.styles.icons import Icons, IconRenderer
 
 
@@ -99,7 +101,7 @@ class LogViewerPage(QWidget):
         # Başlık
         title_layout = QHBoxLayout()
         title_label = QLabel("Log Görüntüleyici")
-        title_label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        title_label.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {C.TEXT_PRIMARY};")
         title_icon = QLabel()
         title_icon.setPixmap(Icons.pixmap("file_text", size=24))
         title_layout.addWidget(title_icon)
@@ -118,11 +120,13 @@ class LogViewerPage(QWidget):
         row1.addWidget(QLabel("Log Dosyası:"))
         self._combo_file = QComboBox()
         self._combo_file.setMinimumWidth(200)
+        self._combo_file.setStyleSheet(STYLES["input_combo"])
         self._combo_file.currentIndexChanged.connect(self._on_file_changed)
         row1.addWidget(self._combo_file)
         
         row1.addWidget(QLabel("Seviye:"))
         self._combo_level = QComboBox()
+        self._combo_level.setStyleSheet(STYLES["input_combo"])
         self._combo_level.addItem("Tümü", None)
         self._combo_level.addItem("DEBUG", "DEBUG")
         self._combo_level.addItem("INFO", "INFO")
@@ -134,6 +138,7 @@ class LogViewerPage(QWidget):
         
         row1.addWidget(QLabel("Max Satır:"))
         self._spin_max_lines = QSpinBox()
+        self._spin_max_lines.setStyleSheet(STYLES["spin"])
         self._spin_max_lines.setRange(100, 10000)
         self._spin_max_lines.setValue(1000)
         self._spin_max_lines.setSingleStep(100)
@@ -164,6 +169,7 @@ class LogViewerPage(QWidget):
         
         row2.addWidget(QLabel("Ara:"))
         self._txt_search = QLineEdit()
+        self._txt_search.setStyleSheet(STYLES["input_field"])
         self._txt_search.setPlaceholderText("Mesajda ara...")
         self._txt_search.setMinimumWidth(200)
         self._txt_search.returnPressed.connect(self._load_logs)
