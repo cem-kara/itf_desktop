@@ -167,23 +167,23 @@ class TopluBakimPlanPanel(QWidget):
             if secili_marka and c_marka != secili_marka:
                 continue
             item = QListWidgetItem(f"{c_id} - {c_marka}")
-            item.setData(Qt.UserRole, c_id)
-            item.setCheckState(Qt.Unchecked)
+            item.setData(Qt.ItemDataRole.UserRole, c_id)
+            item.setCheckState(Qt.CheckState.Unchecked)
             self.list_cihazlar.addItem(item)
 
     def _select_all_visible(self):
         for i in range(self.list_cihazlar.count()):
-            self.list_cihazlar.item(i).setCheckState(Qt.Checked)
+            self.list_cihazlar.item(i).setCheckState(Qt.CheckState.Checked)
 
     def _clear_selection(self):
         for i in range(self.list_cihazlar.count()):
-            self.list_cihazlar.item(i).setCheckState(Qt.Unchecked)
+            self.list_cihazlar.item(i).setCheckState(Qt.CheckState.Unchecked)
 
     def _olustur_planlar(self):
         secili_cihazlar = [
-            self.list_cihazlar.item(i).data(Qt.UserRole)
+            self.list_cihazlar.item(i).data(Qt.ItemDataRole.UserRole)
             for i in range(self.list_cihazlar.count())
-            if self.list_cihazlar.item(i).checkState() == Qt.Checked
+            if self.list_cihazlar.item(i).checkState() == Qt.CheckState.Checked
         ]
 
         if not secili_cihazlar:

@@ -312,11 +312,11 @@ class YilSonuDevirPage(QWidget):
             "Son Onay",
             "Yıl sonu devir işlemini başlatmak istediğinizden emin misiniz?\n\n"
             "Bu işlem GERİ ALINAMAZ!",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
         )
         
-        if reply != QMessageBox.Yes:
+        if reply != QMessageBox.StandardButton.Yes:
             return
         
         # UI'yı kilitle

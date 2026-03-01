@@ -56,11 +56,11 @@ class MuayeneTimelineWidget(QWidget):
             p = QPainter(self)
             p.setFont(QFont("", 9))
             p.setPen(QColor(DarkTheme.TEXT_MUTED))
-            p.drawText(self.rect(), Qt.AlignCenter, "Muayene geçmişi boş")
+            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Muayene geçmişi boş")
             return
         
         p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         
         # Padding ve layout
         m = 20  # margin
@@ -97,7 +97,7 @@ class MuayeneTimelineWidget(QWidget):
             sonuc_str = exam.get("Sonuc", "")
             
             # Tarih
-            p.setFont(QFont("", 8, QFont.Bold))
+            p.setFont(QFont("", 8, QFont.Weight.Bold))
             p.setPen(QColor(DarkTheme.TEXT_PRIMARY))
             p.drawText(int(text_x), int(y - 8), f"{tarih_str}")
             
@@ -134,8 +134,8 @@ class SaglikTakipTableModel(BaseTableModel):
 
     def _align(self, key):
         if key in ("MuayeneTarihi", "SonrakiKontrolTarihi", "Sonuc", "Durum"):
-            return Qt.AlignCenter
-        return Qt.AlignVCenter | Qt.AlignLeft
+            return Qt.AlignmentFlag.AlignCenter
+        return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
     def set_rows(self, rows):
         self.set_data(rows)
@@ -207,28 +207,28 @@ class SaglikTakipPage(QWidget):
 
         self.btn_toplu = QPushButton("Toplu Yillik Plan")
         self.btn_toplu.setStyleSheet(S["action_btn"])
-        self.btn_toplu.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_toplu.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_toplu, "clipboard_list", color=DarkTheme.TEXT_PRIMARY, size=14)
         fb.addWidget(self.btn_toplu)
 
         self.btn_yeni = QPushButton("Yeni Ekle")
         self.btn_yeni.setStyleSheet(S["save_btn"])
         self.btn_yeni.setFixedSize(110, 36)
-        self.btn_yeni.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_yeni.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_yeni, "plus", color=DarkTheme.TEXT_PRIMARY, size=14)
         fb.addWidget(self.btn_yeni)
 
         self.btn_yenile = QPushButton("Yenile")
         self.btn_yenile.setStyleSheet(S["refresh_btn"])
         self.btn_yenile.setFixedSize(100, 36)
-        self.btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_yenile, "sync", color=DarkTheme.TEXT_PRIMARY, size=14)
         fb.addWidget(self.btn_yenile)
 
         self.btn_kapat = QPushButton("Kapat")
         self.btn_kapat.setStyleSheet(S["close_btn"])
         self.btn_kapat.setFixedSize(100, 36)
-        self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         fb.addWidget(self.btn_kapat)
         main_lay.addWidget(filter_frame)
@@ -238,16 +238,16 @@ class SaglikTakipPage(QWidget):
         self.table = QTableView()
         self.table.setModel(self.model)
         self.table.setStyleSheet(S["table"])
-        self.table.setSelectionBehavior(QTableView.SelectRows)
-        self.table.setSelectionMode(QTableView.SingleSelection)
+        self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self.table.setAlternatingRowColors(True)
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
         header = self.table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.Stretch)
-        header.setSectionResizeMode(1, QHeaderView.Stretch)
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         for i in range(2, len(TABLE_COLUMNS)):
-            header.setSectionResizeMode(i, QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
         main_lay.addWidget(self.table, 1)
 
         self.lbl_info = QLabel("0 kayit")
@@ -290,7 +290,7 @@ class SaglikTakipPage(QWidget):
         btn_drawer_close = QPushButton()
         btn_drawer_close.setFixedSize(32, 32)
         btn_drawer_close.setStyleSheet(S["close_btn"])
-        btn_drawer_close.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_drawer_close.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(btn_drawer_close, "x", color=DarkTheme.TEXT_PRIMARY, size=16)
         btn_drawer_close.clicked.connect(self._close_drawer)
         header_lay.addWidget(btn_drawer_close)
@@ -366,7 +366,7 @@ class SaglikTakipPage(QWidget):
         rapor_row.addWidget(self.inp_rapor, 1)
         self.btn_rapor = QPushButton("Sec")
         self.btn_rapor.setStyleSheet(S["action_btn"])
-        self.btn_rapor.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_rapor.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_rapor, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
         rapor_row.addWidget(self.btn_rapor)
         g3.addLayout(rapor_row, 0, 1)
@@ -387,12 +387,12 @@ class SaglikTakipPage(QWidget):
         btn_row.setSpacing(8)
         self.btn_temizle = QPushButton("Temizle / Yeni")
         self.btn_temizle.setStyleSheet(S["action_btn"])
-        self.btn_temizle.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_temizle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_temizle, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         btn_row.addWidget(self.btn_temizle)
         self.btn_kaydet = QPushButton("Kaydet")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
-        self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         btn_row.addWidget(self.btn_kaydet)
         drawer_lay.addLayout(btn_row)

@@ -86,10 +86,10 @@ class HizliSaglikGirisDialog(QDialog):
         # Butonlar
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
-        btn_iptal = QPushButton("İptal", styleSheet=S["cancel_btn"], cursor=QCursor(Qt.PointingHandCursor))
+        btn_iptal = QPushButton("İptal", styleSheet=S["cancel_btn"], cursor=QCursor(Qt.CursorShape.PointingHandCursor))
         btn_iptal.clicked.connect(self.cancelled.emit)
         btn_layout.addWidget(btn_iptal)
-        btn_kaydet = QPushButton("Kaydet", styleSheet=S["save_btn"], cursor=QCursor(Qt.PointingHandCursor))
+        btn_kaydet = QPushButton("Kaydet", styleSheet=S["save_btn"], cursor=QCursor(Qt.CursorShape.PointingHandCursor))
         btn_kaydet.clicked.connect(self._on_save)
         btn_layout.addWidget(btn_kaydet)
         main.addLayout(btn_layout)
@@ -140,8 +140,8 @@ class HizliSaglikGirisDialog(QDialog):
         
         # Separator
         sep = QFrame()
-        sep.setFrameShape(QFrame.HLine)
-        sep.setFrameShadow(QFrame.Sunken)
+        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setFrameShadow(QFrame.Shadow.Sunken)
         sep.setStyleSheet(S.get("separator", ""))
         layout.addWidget(sep)
         

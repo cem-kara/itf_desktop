@@ -198,7 +198,7 @@ class CihazOverviewPanel(QWidget):
         """İkon butonu oluştur."""
         btn = QPushButton("")
         btn.setToolTip(tooltip)
-        btn.setCursor(QCursor(Qt.PointingHandCursor))
+        btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn.setFixedSize(30, 26)
         btn.setVisible(visible)
         IconRenderer.set_button_icon(btn, icon_name, color=C.TEXT_SECONDARY, size=14)

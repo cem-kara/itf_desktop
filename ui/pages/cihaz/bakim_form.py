@@ -187,8 +187,8 @@ class BakimTableModel(BaseTableModel):
 
     def _align(self, key):
         if key in ("PlanlananTarih", "BakimTarihi", "Durum"):
-            return Qt.AlignCenter
-        return Qt.AlignVCenter | Qt.AlignLeft
+            return Qt.AlignmentFlag.AlignCenter
+        return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
     def set_rows(self, rows: List[Dict[str, Any]]):
         self.set_data(rows)
@@ -252,7 +252,7 @@ class BakimKayitForm(QWidget):
         root.addWidget(self._build_kpi_bar())
 
         sep = QFrame()
-        sep.setFrameShape(QFrame.HLine)
+        sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
         sep.setStyleSheet(f"background:{_C['border']};")
         root.addWidget(sep)
@@ -267,7 +267,7 @@ class BakimKayitForm(QWidget):
         lt_layout = QVBoxLayout(list_tab)
         lt_layout.setContentsMargins(0, 0, 0, 0)
         lt_layout.setSpacing(0)
-        self._h_splitter = QSplitter(Qt.Horizontal)
+        self._h_splitter = QSplitter(Qt.Orientation.Horizontal)
         self._h_splitter.setStyleSheet(S.get("splitter", ""))
         self._h_splitter.addWidget(self._build_left_panel())
         self._h_splitter.addWidget(self._build_right_panel())
@@ -418,18 +418,18 @@ class BakimKayitForm(QWidget):
         self._model = BakimTableModel()
         self.table = QTableView()
         self.table.setModel(self._model)
-        self.table.setSelectionBehavior(QTableView.SelectRows)
-        self.table.setSelectionMode(QTableView.SingleSelection)
+        self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self.table.setStyleSheet(S["table"])
-        self.table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         for i, (_, _, w) in enumerate(BAKIM_COLUMNS):
             self.table.setColumnWidth(i, w)
         hdr = self.table.horizontalHeader()
         hdr.setStretchLastSection(False)
-        hdr.setSectionResizeMode(QHeaderView.Stretch)
+        hdr.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.selectionModel().currentChanged.connect(self._on_row_selected)
         self.table.doubleClicked.connect(self._open_bakim_form_execution)
-        self.table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._show_context_menu)
         layout.addWidget(self.table, 1)
 
@@ -511,7 +511,7 @@ class BakimKayitForm(QWidget):
             f"padding:2px 8px;border-radius:10px;"
             f"background:{_C['border']};"
         )
-        self.lbl_det_durum.setAlignment(Qt.AlignCenter)
+        self.lbl_det_durum.setAlignment(Qt.AlignmentFlag.AlignCenter)
         top_row.addWidget(self.lbl_det_durum)
         dh_layout.addLayout(top_row)
 
@@ -524,7 +524,7 @@ class BakimKayitForm(QWidget):
 
         # Ayırıcı çizgi
         sep = QFrame()
-        sep.setFrameShape(QFrame.HLine)
+        sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
         sep.setStyleSheet(f"background:{border};")
         dh_layout.addWidget(sep)
@@ -593,7 +593,7 @@ class BakimKayitForm(QWidget):
         ph_layout = QVBoxLayout(placeholder)
         ph_layout.addStretch()
         ph_lbl = QLabel('Kayıt seçip "Bakım Bilgisi Gir" butonuna tıklayın\nveya çift tıklayın.')
-        ph_lbl.setAlignment(Qt.AlignCenter)
+        ph_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         ph_lbl.setStyleSheet(f"font-size:11px;color:{_C['muted']};")
         ph_layout.addWidget(ph_lbl)
         ph_layout.addStretch()
@@ -1067,7 +1067,7 @@ class BakimKayitForm(QWidget):
         rows = self._all_rows
         if not rows:
             empty = QLabel("Gösterilecek bakım verisi yok.")
-            empty.setAlignment(Qt.AlignCenter)
+            empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             empty.setStyleSheet(
                 f"color:{_C['muted']};font-size:13px;padding:40px;"
             )
@@ -1448,7 +1448,7 @@ class BakimKayitForm(QWidget):
         bar_bg = QWidget()
         bar_bg.setFixedHeight(6)
         bar_bg.setStyleSheet(f"background:{_C['border']};border-radius:3px;")
-        bar_bg.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        bar_bg.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         bar_fill = QWidget(bar_bg)
         bar_fill.setFixedHeight(6)
         bar_fill.setStyleSheet(f"background:{fill_color};border-radius:3px;")
@@ -1457,7 +1457,7 @@ class BakimKayitForm(QWidget):
 
         cnt = QLabel(str(value))
         cnt.setFixedWidth(24)
-        cnt.setAlignment(Qt.AlignRight)
+        cnt.setAlignment(Qt.AlignmentFlag.AlignRight)
         cnt.setStyleSheet(
             f"font-size:10px;font-weight:600;color:{fill_color};background:transparent;"
         )
@@ -1506,10 +1506,10 @@ class BakimKayitForm(QWidget):
         for val, et in zip(degerler, etiketler):
             col = QVBoxLayout()
             col.setSpacing(2)
-            col.setAlignment(Qt.AlignBottom)
+            col.setAlignment(Qt.AlignmentFlag.AlignBottom)
 
             val_lbl = QLabel(str(val) if val else "")
-            val_lbl.setAlignment(Qt.AlignHCenter)
+            val_lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter)
             val_lbl.setStyleSheet(f"font-size:9px;color:{_C['muted']};background:transparent;")
             col.addWidget(val_lbl)
 
@@ -1520,7 +1520,7 @@ class BakimKayitForm(QWidget):
             bar = QWidget()
             bar.setFixedSize(16, bar_h)
             bar.setStyleSheet(f"background:{bar_color};border-radius:3px 3px 0 0;")
-            col.addWidget(bar, 0, Qt.AlignHCenter)
+            col.addWidget(bar, 0, Qt.AlignmentFlag.AlignHCenter)
             bar_row_l.addLayout(col)
 
         cl.addLayout(bar_row_l)
@@ -1529,7 +1529,7 @@ class BakimKayitForm(QWidget):
         lbl_row.setSpacing(4)
         for et in etiketler:
             lbl = QLabel(et)
-            lbl.setAlignment(Qt.AlignHCenter)
+            lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter)
             lbl.setStyleSheet(f"font-size:9px;color:{_C['muted']};background:transparent;")
             lbl_row.addWidget(lbl)
         cl.addLayout(lbl_row)
@@ -1581,7 +1581,7 @@ class BakimKayitForm(QWidget):
 
             periyot = QLabel(str(r.get("BakimPeriyodu","")) or "—")
             periyot.setStyleSheet(f"font-size:12px;color:{_C['text']};background:transparent;")
-            periyot.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+            periyot.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Preferred)
             rl.addWidget(periyot)
 
             tarih_str = r.get("PlanlananTarih","")
@@ -1631,11 +1631,11 @@ class _BakimSparkline(QWidget):
         super().__init__(parent)
         self._values = values or [0] * 12
         self.setMinimumHeight(28)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         w = self.width()
         h = self.height()

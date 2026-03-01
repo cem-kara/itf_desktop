@@ -156,7 +156,7 @@ class AdminPanel(QWidget):
         """Placeholder widget"""
         widget = QWidget()
         layout = QVBoxLayout(widget)
-        layout.setAlignment(Qt.AlignCenter)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         label = QLabel(f"{name}")
         label.setStyleSheet(f"""
@@ -166,12 +166,12 @@ class AdminPanel(QWidget):
                 padding: 40px;
             }}
         """)
-        label.setAlignment(Qt.AlignCenter)
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(label)
         
         info = QLabel("Bu özellik yakında eklenecek...")
         info.setStyleSheet(f"color: {DarkTheme.TEXT_DISABLED}; font-size: 12px;")
-        info.setAlignment(Qt.AlignCenter)
+        info.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(info)
         
         return widget

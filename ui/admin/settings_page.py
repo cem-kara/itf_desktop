@@ -208,7 +208,7 @@ class SettingsPage(QWidget):
         right_widget.setLayout(right_panel)
         
         # Splitter ile sol-sağ bölme
-        splitter = QSplitter(Qt.Horizontal)
+        splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.addWidget(left_widget)
         splitter.addWidget(right_widget)
         splitter.setSizes([300, 500])
@@ -279,7 +279,7 @@ class SettingsPage(QWidget):
             self._list_kod.clear()
             for kod in sorted(unique_kodlar.keys()):
                 item = QListWidgetItem(kod)
-                item.setData(Qt.UserRole, kod)  # Kod'u saklı tut
+                item.setData(Qt.ItemDataRole.UserRole, kod)  # Kod'u saklı tut
                 self._list_kod.addItem(item)
             
             logger.info(f"{len(unique_kodlar)} benzersiz kod yüklendi")
@@ -298,7 +298,7 @@ class SettingsPage(QWidget):
         """Kod seçildiğinde sağ tarafı güncelle"""
         current_item = self._list_kod.currentItem()
         if current_item:
-            kod = current_item.data(Qt.UserRole)
+            kod = current_item.data(Qt.ItemDataRole.UserRole)
             self._load_menu_elemanlari(kod)
         else:
             self._load_menu_elemanlari(None)
@@ -307,7 +307,7 @@ class SettingsPage(QWidget):
         """Yeni Ana Kategori (Kod) ekle"""
         dialog = SabitEditDialog(parent=self)
         dialog.setWindowTitle("Yeni Kategori Ekle")
-        if dialog.exec() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             kod, menu_eleman, aciklama = dialog.get_data()
             
             if not kod or not menu_eleman:
@@ -339,8 +339,8 @@ class SettingsPage(QWidget):
                     
                     # Rowid ve Kod'u saklı tut
                     item_menu = QTableWidgetItem(sabit.get("MenuEleman", ""))
-                    item_menu.setData(Qt.UserRole, sabit.get("Rowid", ""))  # Rowid
-                    item_menu.setData(Qt.UserRole + 1, kod)  # Kod
+                    item_menu.setData(Qt.ItemDataRole.UserRole, sabit.get("Rowid", ""))  # Rowid
+                    item_menu.setData(Qt.ItemDataRole.UserRole + 1, kod)  # Kod
                     self._table_menu_elemanlari.setItem(row, 0, item_menu)
                     
                     # Açıklama
@@ -381,7 +381,7 @@ class SettingsPage(QWidget):
         # Eğer Kod seçili değilse, yeni Kod'u seç
         if not current_item:
             dialog = SabitEditDialog(parent=self)
-            if dialog.exec() == QDialog.Accepted:
+            if dialog.exec() == QDialog.DialogCode.Accepted:
                 kod, menu_eleman, aciklama = dialog.get_data()
                 
                 if not kod or not menu_eleman:
@@ -397,14 +397,14 @@ class SettingsPage(QWidget):
             return
         
         # Kod seçili ise, yeni MenuEleman ekle
-        kod = current_item.data(Qt.UserRole)
+        kod = current_item.data(Qt.ItemDataRole.UserRole)
         
         dialog = SabitEditDialog(kod=kod, parent=self)
         # Kod alanını devre dışı bırak (zaten seçili)
         dialog._txt_kod.setReadOnly(True)
         dialog._txt_kod.setStyleSheet("background-color: #f0f0f0;")
         
-        if dialog.exec() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             _, menu_eleman, aciklama = dialog.get_data()
             
             if not menu_eleman:
@@ -425,8 +425,8 @@ class SettingsPage(QWidget):
             QMessageBox.warning(self, "Uyarı", "Lütfen düzenlemek için bir seçenek seçin")
             return
         
-        rowid = self._table_menu_elemanlari.item(row, 0).data(Qt.UserRole)
-        kod = self._table_menu_elemanlari.item(row, 0).data(Qt.UserRole + 1)
+        rowid = self._table_menu_elemanlari.item(row, 0).data(Qt.ItemDataRole.UserRole)
+        kod = self._table_menu_elemanlari.item(row, 0).data(Qt.ItemDataRole.UserRole + 1)
         menu_eleman = self._table_menu_elemanlari.item(row, 0).text()
         aciklama = self._table_menu_elemanlari.item(row, 1).text()
         
@@ -435,7 +435,7 @@ class SettingsPage(QWidget):
         dialog._txt_kod.setReadOnly(True)
         dialog._txt_kod.setStyleSheet("background-color: #f0f0f0;")
         
-        if dialog.exec() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             _, menu_eleman, aciklama = dialog.get_data()
             
             if not menu_eleman:
@@ -456,7 +456,7 @@ class SettingsPage(QWidget):
             QMessageBox.warning(self, "Uyarı", "Lütfen silinecek seçeneği seçin")
             return
         
-        rowid = self._table_menu_elemanlari.item(row, 0).data(Qt.UserRole)
+        rowid = self._table_menu_elemanlari.item(row, 0).data(Qt.ItemDataRole.UserRole)
         menu_eleman = self._table_menu_elemanlari.item(row, 0).text()
         aciklama = self._table_menu_elemanlari.item(row, 1).text()
         
@@ -464,11 +464,11 @@ class SettingsPage(QWidget):
             self,
             "Seçenek Sil",
             f"'{menu_eleman}' seçeneğini silmek istediğinizden emin misiniz?\n\n({aciklama})",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
         )
         
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             result = self._service.delete_sabit(rowid)
             if result["success"]:
                 QMessageBox.information(self, "Başarılı", "Seçenek silindi")
@@ -479,7 +479,7 @@ class SettingsPage(QWidget):
     def _add_tatil(self):
         """Yeni tatil ekle"""
         dialog = TatilEditDialog(parent=self)
-        if dialog.exec() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             tarih, resmi_tatil = dialog.get_data()
             
             if not tarih or not resmi_tatil:
@@ -504,7 +504,7 @@ class SettingsPage(QWidget):
         resmi_tatil = self._table_tatiller.item(row, 1).text()
         
         dialog = TatilEditDialog(tarih, resmi_tatil, parent=self)
-        if dialog.exec() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             new_tarih, resmi_tatil = dialog.get_data()
             
             if not new_tarih or not resmi_tatil:
@@ -538,11 +538,11 @@ class SettingsPage(QWidget):
             self,
             "Tatil Sil",
             f"'{resmi_tatil}' ({tarih}) tatilini silmek istediğinizden emin misiniz?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
         )
         
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             result = self._service.delete_tatil(tarih)
             if result["success"]:
                 QMessageBox.information(self, "Başarılı", result["message"])

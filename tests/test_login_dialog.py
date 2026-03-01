@@ -33,7 +33,7 @@ def test_login_dialog_accepts_on_success(monkeypatch):
 
     dialog._on_accept()
 
-    assert dialog.result() == QDialog.Accepted
+    assert dialog.result() == QDialog.DialogCode.Accepted
     assert auth.calls == [("alice", "pass1234")]
 
 
@@ -52,5 +52,5 @@ def test_login_dialog_rejects_on_failure(monkeypatch):
 
     dialog._on_accept()
 
-    assert dialog.result() != QDialog.Accepted
+    assert dialog.result() != QDialog.DialogCode.Accepted
     assert auth.calls == [("alice", "wrong")]

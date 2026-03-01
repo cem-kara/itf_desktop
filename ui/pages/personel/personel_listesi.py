@@ -85,20 +85,20 @@ class AvatarDownloaderWorker(QThread):
 
 class PersonelTableModel(BaseTableModel):
 
-    RAW_ROW_ROLE  = Qt.UserRole + 1
-    IZIN_PCT_ROLE = Qt.UserRole + 2   # float 0–1  (-1 = veri yok)
-    IZIN_TXT_ROLE = Qt.UserRole + 3   # "13 / 20"
+    RAW_ROW_ROLE  = Qt.ItemDataRole.UserRole + 1
+    IZIN_PCT_ROLE = Qt.ItemDataRole.UserRole + 2   # float 0–1  (-1 = veri yok)
+    IZIN_TXT_ROLE = Qt.ItemDataRole.UserRole + 3   # "13 / 20"
 
     def __init__(self, data=None, parent=None):
         super().__init__(COLUMNS, data, parent)
         self._izin_map: dict[str, dict] = {}
 
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if role == Qt.SizeHintRole and orientation == Qt.Horizontal:
+    def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
+        if role == Qt.ItemDataRole.SizeHintRole and orientation == Qt.Orientation.Horizontal:
             return QSize(COLUMNS[section][2], 28)
         return super().headerData(section, orientation, role)
 
-    def data(self, index, role=Qt.DisplayRole):
+    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return None
         row = self._data[index.row()]
@@ -110,7 +110,7 @@ class PersonelTableModel(BaseTableModel):
             return self._izin_pct(row)
         if role == self.IZIN_TXT_ROLE and col == "_izin_bar":
             return self._izin_txt(row)
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             if col in ("_avatar", "_izin_bar", "_actions"): return ""
             if col == "AdSoyad":      return str(row.get("AdSoyad", ""))
             if col == "_tc_sicil":   return str(row.get("KimlikNo", ""))
@@ -118,10 +118,10 @@ class PersonelTableModel(BaseTableModel):
             if col == "CepTelefonu": return str(row.get("CepTelefonu", "") or "—")
             if col == "Durum":       return str(row.get("Durum", ""))
             return str(row.get(col, ""))
-        if role == Qt.TextAlignmentRole:
+        if role == Qt.ItemDataRole.TextAlignmentRole:
             if col in ("Durum", "_avatar"):
-                return Qt.AlignCenter
-            return Qt.AlignVCenter | Qt.AlignLeft
+                return Qt.AlignmentFlag.AlignCenter
+            return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
         return None
 
     def get_row(self, idx: int):
@@ -195,10 +195,10 @@ class PersonelDelegate(QStyledItemDelegate):
             # Daire şeklinde kırp
             size = 26
             tm = QPixmap(size, size)
-            tm.fill(Qt.transparent)
+            tm.fill(Qt.GlobalColor.transparent)
             
             pp = QPainter(tm)
-            pp.setRenderHint(QPainter.Antialiasing)
+            pp.setRenderHint(QPainter.RenderHint.Antialiasing)
             
             # Daire mask path'i oluştur
             path = QPainterPath()
@@ -206,7 +206,7 @@ class PersonelDelegate(QStyledItemDelegate):
             pp.setClipPath(path)
             
             # Pixmap'i scaled versiyonu daire içine çiz
-            scaled = pixmap.scaledToWidth(size, Qt.SmoothTransformation)
+            scaled = pixmap.scaledToWidth(size, Qt.TransformationMode.SmoothTransformation)
             pp.drawPixmap(0, 0, scaled)
             pp.end()
             
@@ -218,13 +218,13 @@ class PersonelDelegate(QStyledItemDelegate):
 
     def paint(self, painter: QPainter, option, index):
         painter.save()
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         row  = index.row()
         col  = index.column()
         key  = COLUMNS[col][0]
         rect = option.rect
-        is_sel   = bool(option.state & QStyle.State_Selected)
+        is_sel   = bool(option.state & QStyle.StateFlag.State_Selected)
         is_hover = (row == self._hover_row)
 
         # ── Zemin (temadan) ──
@@ -295,39 +295,39 @@ class PersonelDelegate(QStyledItemDelegate):
         cx, cy, r = rect.center().x(), rect.center().y(), 13
         hue = (sum(ord(c) for c in ad) * 37) % 360
         p.setBrush(QBrush(QColor.fromHsl(hue, 100, 55)))
-        p.setPen(Qt.NoPen)
+        p.setPen(Qt.PenStyle.NoPen)
         p.drawEllipse(QPoint(cx, cy), r, r)
-        p.setFont(QFont("", 8, QFont.Bold))
+        p.setFont(QFont("", 8, QFont.Weight.Bold))
         p.setPen(QColor(C.TEXT_PRIMARY))
-        p.drawText(rect, Qt.AlignCenter, initials)
+        p.drawText(rect, Qt.AlignmentFlag.AlignCenter, initials)
 
     def _draw_primary(self, p, rect, text):
-        p.setFont(QFont("", 9, QFont.Medium))
+        p.setFont(QFont("", 9, QFont.Weight.Medium))
         p.setPen(QColor(C.TEXT_PRIMARY))
         r = QRect(rect.x() + 8, rect.y(), rect.width() - 16, rect.height())
-        p.drawText(r, Qt.AlignVCenter | Qt.AlignLeft,
-                   p.fontMetrics().elidedText(text, Qt.ElideRight, r.width()))
+        p.drawText(r, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                   p.fontMetrics().elidedText(text, Qt.TextElideMode.ElideRight, r.width()))
 
     def _draw_two(self, p, rect, top, bottom, mono_top=False):
         pad = 8
         r1 = QRect(rect.x() + pad, rect.y() + 4,  rect.width() - pad*2, 17)
         r2 = QRect(rect.x() + pad, rect.y() + 21, rect.width() - pad*2, 14)
         # Üst satır
-        p.setFont(QFont("Courier New", 8) if mono_top else QFont("", 9, QFont.Medium))
+        p.setFont(QFont("Courier New", 8) if mono_top else QFont("", 9, QFont.Weight.Medium))
         p.setPen(QColor(C.TEXT_SECONDARY))
-        p.drawText(r1, Qt.AlignVCenter | Qt.AlignLeft,
-                   p.fontMetrics().elidedText(top, Qt.ElideRight, r1.width()))
+        p.drawText(r1, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                   p.fontMetrics().elidedText(top, Qt.TextElideMode.ElideRight, r1.width()))
         # Alt satır (muted)
         p.setFont(QFont("", 8))
         p.setPen(QColor(C.TEXT_MUTED))
-        p.drawText(r2, Qt.AlignVCenter | Qt.AlignLeft,
-                   p.fontMetrics().elidedText(bottom, Qt.ElideRight, r2.width()))
+        p.drawText(r2, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                   p.fontMetrics().elidedText(bottom, Qt.TextElideMode.ElideRight, r2.width()))
 
     def _draw_mono(self, p, rect, text):
         p.setFont(QFont("Courier New", 8))
         p.setPen(QColor(C.TEXT_MUTED))
         r = QRect(rect.x() + 8, rect.y(), rect.width() - 16, rect.height())
-        p.drawText(r, Qt.AlignVCenter | Qt.AlignLeft, text)
+        p.drawText(r, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft, text)
 
     def _draw_izin_bar(self, p, rect, pct, txt):
         """Üstte kalan/toplam metni, altta ince progress bar."""
@@ -342,11 +342,11 @@ class PersonelDelegate(QStyledItemDelegate):
         # Metin
         p.setFont(QFont("Courier New", 8))
         p.setPen(QColor(C.TEXT_MUTED))
-        p.drawText(QRect(bx, ty, bw, 14), Qt.AlignVCenter | Qt.AlignLeft, txt or "—")
+        p.drawText(QRect(bx, ty, bw, 14), Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft, txt or "—")
 
         # Arka plan (BG_TERTIARY)
         p.setBrush(QBrush(QColor(C.BG_TERTIARY)))
-        p.setPen(Qt.NoPen)
+        p.setPen(Qt.PenStyle.NoPen)
         p.drawRoundedRect(bx, by, bw, bh, 2, 2)
 
         # Dolu kısım (pct'ye göre renk)
@@ -366,7 +366,7 @@ class PersonelDelegate(QStyledItemDelegate):
         r_val, g_val, b_val, a_val = ComponentStyles.get_status_color(durum)
         fg_hex = ComponentStyles.get_status_text_color(durum)
 
-        font = QFont("", 8, QFont.Medium)
+        font = QFont("", 8, QFont.Weight.Medium)
         p.setFont(font)
         fm   = QFontMetrics(font)
         tw   = fm.horizontalAdvance(durum)
@@ -378,7 +378,7 @@ class PersonelDelegate(QStyledItemDelegate):
         p.setPen(QPen(QColor(r_val, g_val, b_val, min(a_val + 80, 255)), 1))
         p.drawRoundedRect(px, py, pw, ph, 4, 4)
         p.setPen(QColor(fg_hex))
-        p.drawText(QRect(px, py, pw, ph), Qt.AlignCenter, durum)
+        p.drawText(QRect(px, py, pw, ph), Qt.AlignmentFlag.AlignCenter, durum)
 
     def _draw_action_btns(self, p, rect, row):
         """Hover'da görünen "Detay" ve "İzin" butonları."""
@@ -404,7 +404,7 @@ class PersonelDelegate(QStyledItemDelegate):
             p.drawRoundedRect(br_global, 4, 4)
             p.setFont(QFont("", 9))
             p.setPen(QColor(C.TEXT_SECONDARY))
-            p.drawText(br_global, Qt.AlignCenter, lbl)
+            p.drawText(br_global, Qt.AlignmentFlag.AlignCenter, lbl)
 
     def get_action_at(self, row: int, pos: QPoint):
         for (r, i), rect in self._btn_rects.items():
@@ -508,7 +508,7 @@ class PersonelListesiPage(QWidget):
         for lbl in ("Aktif", "Pasif", "İzinli", "Tümü"):
             btn = QPushButton(lbl)
             btn.setCheckable(True)
-            btn.setCursor(QCursor(Qt.PointingHandCursor))
+            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             btn.setFixedHeight(28)
             btn.setMinimumWidth(90)  # Sayıların sığması için sabit genişlik
             
@@ -557,14 +557,14 @@ class PersonelListesiPage(QWidget):
 
         self.btn_yenile = QPushButton()
         self.btn_yenile.setToolTip("Yenile")
-        self.btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_yenile.setFixedSize(32, 28)
         self.btn_yenile.setStyleSheet(STYLES["refresh_btn"])
         IconRenderer.set_button_icon(self.btn_yenile, "refresh", color=C.TEXT_SECONDARY, size=16)
         lay.addWidget(self.btn_yenile)
 
         self.btn_yeni = QPushButton(" Yeni Personel")
-        self.btn_yeni.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_yeni.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_yeni.setStyleSheet(STYLES["action_btn"])
         IconRenderer.set_button_icon(self.btn_yeni, "user_add", color=C.BTN_PRIMARY_TEXT, size=16)
         self.btn_yeni.setIconSize(QSize(16, 16))
@@ -608,7 +608,7 @@ class PersonelListesiPage(QWidget):
         lay.addStretch()
 
         self.btn_excel = QPushButton(" Excel")
-        self.btn_excel.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_excel.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_excel.setStyleSheet(STYLES["excel_btn"])
         IconRenderer.set_button_icon(self.btn_excel, "download", color=C.TEXT_SECONDARY, size=14)
         self.btn_excel.setIconSize(QSize(14, 14))
@@ -619,20 +619,20 @@ class PersonelListesiPage(QWidget):
         self._model = PersonelTableModel()
         self._proxy = QSortFilterProxyModel()
         self._proxy.setSourceModel(self._model)
-        self._proxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self._proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self._proxy.setFilterKeyColumn(-1)
 
         self.table = QTableView()
         self.table.setModel(self._proxy)
         self.table.setStyleSheet(STYLES["table"])
         self.table.setAlternatingRowColors(False)
-        self.table.setSelectionBehavior(QTableView.SelectRows)
-        self.table.setSelectionMode(QTableView.SingleSelection)
+        self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self.table.setSortingEnabled(True)
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
         self.table.setMouseTracking(True)
-        self.table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.verticalHeader().setDefaultSectionSize(40)
 
         self._delegate = PersonelDelegate(self.table)
@@ -640,10 +640,10 @@ class PersonelListesiPage(QWidget):
 
         hdr = self.table.horizontalHeader()
         for i, (_, _, w) in enumerate(COLUMNS):
-            hdr.setSectionResizeMode(i, QHeaderView.Fixed)
+            hdr.setSectionResizeMode(i, QHeaderView.ResizeMode.Fixed)
             self.table.setColumnWidth(i, w)
-        hdr.setSectionResizeMode(COL_IDX["AdSoyad"], QHeaderView.Stretch)
-        hdr.setSectionResizeMode(COL_IDX["_birim"],  QHeaderView.Stretch)
+        hdr.setSectionResizeMode(COL_IDX["AdSoyad"], QHeaderView.ResizeMode.Stretch)
+        hdr.setSectionResizeMode(COL_IDX["_birim"],  QHeaderView.ResizeMode.Stretch)
         return self.table
 
     def _build_footer(self) -> QFrame:
@@ -678,7 +678,7 @@ class PersonelListesiPage(QWidget):
 
         # Lazy-loading: "Daha fazla yükle" butonu
         self.btn_load_more = QPushButton("Daha Fazla Yükle")
-        self.btn_load_more.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_load_more.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_load_more.setFixedHeight(28)
         self.btn_load_more.setStyleSheet(STYLES["action_btn"])
         self.btn_load_more.setVisible(False)  # İlk başta gizle
@@ -1083,8 +1083,8 @@ class PersonelListesiPage(QWidget):
         if QMessageBox.question(
             self, "Durum Değiştir",
             f'"{ad}" personelinin durumu "{yeni}" olarak değiştirilsin mi?',
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
-        ) != QMessageBox.Yes:
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No,
+        ) != QMessageBox.StandardButton.Yes:
             return
         try:
             # Service kullanarak güncelle

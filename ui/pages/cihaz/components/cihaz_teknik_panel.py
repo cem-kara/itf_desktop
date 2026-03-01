@@ -72,7 +72,7 @@ def _make_pair_widget(lbl_text: str, val_widget: QLabel, bg: str) -> QWidget:
     """
     w = QWidget()
     w.setStyleSheet(f"background: {bg};")
-    w.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+    w.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
     hbox = QHBoxLayout(w)
     hbox.setContentsMargins(0, 0, 0, 0)
@@ -82,12 +82,12 @@ def _make_pair_widget(lbl_text: str, val_widget: QLabel, bg: str) -> QWidget:
     lbl.setStyleSheet(_LBL_CSS + f" background: {bg};")
     lbl.setWordWrap(True)
     lbl.setMinimumWidth(160)
-    lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Minimum)
-    lbl.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+    lbl.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+    lbl.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
     val_widget.setStyleSheet(val_widget.styleSheet() + f" background: {bg};")
     val_widget.setWordWrap(True)
-    val_widget.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+    val_widget.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
     hbox.addWidget(lbl)
     hbox.addWidget(val_widget, stretch=1)
@@ -107,7 +107,7 @@ class _TableSection(QWidget):
 
     def __init__(self, title: str, parent=None):
         super().__init__(parent)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self._physical_row = 0   # Fiziksel satir sayisi
 
         outer = QVBoxLayout(self)
@@ -127,7 +127,7 @@ class _TableSection(QWidget):
         # Bolum baslik satiri
         hdr = QLabel(title)
         hdr.setStyleSheet(_HDR_CSS)
-        hdr.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        hdr.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self._vbox.addWidget(hdr)
 
         outer.addWidget(self._frame)
@@ -138,7 +138,7 @@ class _TableSection(QWidget):
         """Alt-bolum baslik (Sterilite Bilgisi, Raf Omru vb.)."""
         sub = QLabel(title)
         sub.setStyleSheet(_SUBHDR_CSS)
-        sub.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        sub.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self._vbox.addWidget(sub)
         self._physical_row = 0   # Sifirla
 
@@ -157,7 +157,7 @@ class _TableSection(QWidget):
         row_w.setStyleSheet(
             f"background: {bg}; border-bottom: {_BORDER_CSS};"
         )
-        row_w.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        row_w.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         hbox = QHBoxLayout(row_w)
         hbox.setContentsMargins(0, 0, 0, 0)
@@ -167,7 +167,7 @@ class _TableSection(QWidget):
         hbox.addWidget(_make_pair_widget(lbl1, val1, bg), 1)
 
         sep = QFrame()
-        sep.setFrameShape(QFrame.VLine)
+        sep.setFrameShape(QFrame.Shape.VLine)
         sep.setFixedWidth(1)
         sep.setStyleSheet(f"background: {_BORDER}; border: none;")
         hbox.addWidget(sep)
@@ -178,7 +178,7 @@ class _TableSection(QWidget):
         else:
             ph = QWidget()
             ph.setStyleSheet(f"background: {bg};")
-            ph.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+            ph.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
             hbox.addWidget(ph, 1)
 
         self._vbox.addWidget(row_w)
@@ -227,7 +227,7 @@ class CihazTeknikPanel(QWidget):
         action_bar.setStyleSheet(
             f"background: {_BG_SECT}; border-bottom: {_BORDER_CSS};"
         )
-        action_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        action_bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         action_lay = QHBoxLayout(action_bar)
         action_lay.setContentsMargins(14, 10, 14, 10)
@@ -334,7 +334,7 @@ class CihazTeknikPanel(QWidget):
         val = QLabel("")
         val.setTextInteractionFlags(Qt.TextSelectableByMouse)
         val.setWordWrap(True)
-        val.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        val.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         if is_link:
             val.setOpenExternalLinks(True)
             val.setTextFormat(Qt.RichText)

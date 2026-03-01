@@ -87,8 +87,8 @@ class KalibrasyonTableModel(BaseTableModel):
 
     def _align(self, key):
         if key in ("YapilanTarih", "BitisTarihi", "Durum"):
-            return Qt.AlignCenter
-        return Qt.AlignVCenter | Qt.AlignLeft
+            return Qt.AlignmentFlag.AlignCenter
+        return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
     def set_rows(self, rows: List[Dict[str, Any]]):
         self.set_data(rows)
@@ -164,7 +164,7 @@ class KalibrasyonKayitForm(QWidget):
         root.addWidget(self._build_kpi_bar())
 
         sep = QFrame()
-        sep.setFrameShape(QFrame.HLine)
+        sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
         sep.setStyleSheet(f"background:{_C['border']};")
         root.addWidget(sep)
@@ -178,7 +178,7 @@ class KalibrasyonKayitForm(QWidget):
         lt_layout = QVBoxLayout(list_tab)
         lt_layout.setContentsMargins(0, 0, 0, 0)
         lt_layout.setSpacing(0)
-        self._h_splitter = QSplitter(Qt.Horizontal)
+        self._h_splitter = QSplitter(Qt.Orientation.Horizontal)
         self._h_splitter.setStyleSheet(S.get("splitter", ""))
         self._h_splitter.addWidget(self._build_left_panel())
         self._h_splitter.addWidget(self._build_right_panel())
@@ -314,17 +314,17 @@ class KalibrasyonKayitForm(QWidget):
         self._model = KalibrasyonTableModel()
         self.table = QTableView()
         self.table.setModel(self._model)
-        self.table.setSelectionBehavior(QTableView.SelectRows)
-        self.table.setSelectionMode(QTableView.SingleSelection)
+        self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self.table.setStyleSheet(S["table"])
-        self.table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         for i, (_, _, w) in enumerate(KAL_COLUMNS):
             self.table.setColumnWidth(i, w)
         hdr = self.table.horizontalHeader()
         hdr.setStretchLastSection(False)
-        hdr.setSectionResizeMode(QHeaderView.Stretch)
+        hdr.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.selectionModel().currentChanged.connect(self._on_row_selected)
-        self.table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._show_context_menu)
         self.table.doubleClicked.connect(self._open_kal_form)
         layout.addWidget(self.table, 1)
@@ -382,7 +382,7 @@ class KalibrasyonKayitForm(QWidget):
             f"font-size:10px;font-weight:700;color:{_C['muted']};"
             f"padding:2px 8px;border-radius:10px;background:{_C['border']};"
         )
-        self.lbl_det_durum.setAlignment(Qt.AlignCenter)
+        self.lbl_det_durum.setAlignment(Qt.AlignmentFlag.AlignCenter)
         top_row.addWidget(self.lbl_det_durum)
         dh_l.addLayout(top_row)
 
@@ -395,7 +395,7 @@ class KalibrasyonKayitForm(QWidget):
 
         # Ayırıcı
         sep = QFrame()
-        sep.setFrameShape(QFrame.HLine)
+        sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
         sep.setStyleSheet(f"background:{border};")
         dh_l.addWidget(sep)
@@ -460,7 +460,7 @@ class KalibrasyonKayitForm(QWidget):
         ph_l = QVBoxLayout(ph)
         ph_l.addStretch()
         ph_lbl = QLabel('Yeni kayıt için "+ Kayıt Ekle" veya çift tıklayın.')
-        ph_lbl.setAlignment(Qt.AlignCenter)
+        ph_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         ph_lbl.setStyleSheet(f"font-size:11px;color:{_C['muted']};")
         ph_l.addWidget(ph_lbl)
         ph_l.addStretch()
@@ -713,7 +713,7 @@ class KalibrasyonKayitForm(QWidget):
         rows = self._all_rows
         if not rows:
             empty = QLabel("Gösterilecek kalibrasyon verisi yok.")
-            empty.setAlignment(Qt.AlignCenter)
+            empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             empty.setStyleSheet(f"color:{_C['muted']};font-size:13px;padding:40px;")
             self._perf_layout.addWidget(empty)
             self._perf_layout.addStretch()
@@ -1015,7 +1015,7 @@ class KalibrasyonKayitForm(QWidget):
         bar_bg = QWidget()
         bar_bg.setFixedHeight(6)
         bar_bg.setStyleSheet(f"background:{_C['border']};border-radius:3px;")
-        bar_bg.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        bar_bg.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         bar_fill = QWidget(bar_bg)
         bar_fill.setFixedHeight(6)
         bar_fill.setStyleSheet(f"background:{fill_color};border-radius:3px;")
@@ -1023,7 +1023,7 @@ class KalibrasyonKayitForm(QWidget):
         hl.addWidget(bar_bg)
         cnt = QLabel(str(value))
         cnt.setFixedWidth(24)
-        cnt.setAlignment(Qt.AlignRight)
+        cnt.setAlignment(Qt.AlignmentFlag.AlignRight)
         cnt.setStyleSheet(
             f"font-size:10px;font-weight:600;color:{fill_color};background:transparent;"
         )
@@ -1068,9 +1068,9 @@ class KalibrasyonKayitForm(QWidget):
         for val, _ in zip(degerler, etiketler):
             col = QVBoxLayout()
             col.setSpacing(2)
-            col.setAlignment(Qt.AlignBottom)
+            col.setAlignment(Qt.AlignmentFlag.AlignBottom)
             val_lbl = QLabel(str(val) if val else "")
-            val_lbl.setAlignment(Qt.AlignHCenter)
+            val_lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter)
             val_lbl.setStyleSheet(f"font-size:9px;color:{_C['muted']};background:transparent;")
             col.addWidget(val_lbl)
             bar_color = (_C["red"] if val > max_val * 0.7 else
@@ -1079,7 +1079,7 @@ class KalibrasyonKayitForm(QWidget):
             bar = QWidget()
             bar.setFixedSize(16, bar_h)
             bar.setStyleSheet(f"background:{bar_color};border-radius:3px 3px 0 0;")
-            col.addWidget(bar, 0, Qt.AlignHCenter)
+            col.addWidget(bar, 0, Qt.AlignmentFlag.AlignHCenter)
             bar_row_l.addLayout(col)
         cl.addLayout(bar_row_l)
 
@@ -1087,7 +1087,7 @@ class KalibrasyonKayitForm(QWidget):
         lbl_row.setSpacing(4)
         for et in etiketler:
             lbl = QLabel(et)
-            lbl.setAlignment(Qt.AlignHCenter)
+            lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter)
             lbl.setStyleSheet(f"font-size:9px;color:{_C['muted']};background:transparent;")
             lbl_row.addWidget(lbl)
         cl.addLayout(lbl_row)
@@ -1146,7 +1146,7 @@ class KalibrasyonKayitForm(QWidget):
 
             firma = QLabel(str(r.get("Firma","")) or "—")
             firma.setStyleSheet(f"font-size:12px;color:{_C['text']};background:transparent;")
-            firma.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+            firma.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Preferred)
             rl.addWidget(firma)
 
             sert = QLabel(str(r.get("SertifikaNo","")) or "—")
@@ -1177,11 +1177,11 @@ class _KalSparkline(QWidget):
         super().__init__(parent)
         self._values = values or [0] * 12
         self.setMinimumHeight(28)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         w, h, n = self.width(), self.height(), len(self._values)
         if n == 0:
             return

@@ -92,7 +92,7 @@ class IzinFHSZPuantajMerkezPage(QWidget):
 
         # Kapat
         btn_kapat = QPushButton("Kapat")
-        btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_kapat.setToolTip("Kapat")
         btn_kapat.setStyleSheet(STYLES["close_btn"])
         btn_kapat.clicked.connect(self.kapat_istegi.emit)
@@ -111,7 +111,7 @@ class IzinFHSZPuantajMerkezPage(QWidget):
 
         for code, label in TABS:
             btn = QPushButton(label)
-            btn.setCursor(QCursor(Qt.PointingHandCursor))
+            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             btn.setStyleSheet(self._tab_btn_qss(active=False))
             btn.clicked.connect(lambda _, c=code: self._switch_tab(c))
             nav_lay.addWidget(btn)
@@ -124,7 +124,7 @@ class IzinFHSZPuantajMerkezPage(QWidget):
     def _sep(self) -> QFrame:
         """Dikey ayırıcı"""
         sep = QFrame()
-        sep.setFrameShape(QFrame.VLine)
+        sep.setFrameShape(QFrame.Shape.VLine)
         sep.setLineWidth(1)
         sep.setStyleSheet(f"color:{C.BORDER_PRIMARY};")
         sep.setMaximumWidth(1)

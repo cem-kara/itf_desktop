@@ -63,7 +63,7 @@ class RolePermissionsDialog(QDialog):
         self._table.setColumnCount(2)
         self._table.setHorizontalHeaderLabels(["Yetki", "Açıklama"])
         self._table.horizontalHeader().setStretchLastSection(True)
-        self._table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self._table.setAlternatingRowColors(True)
         layout.addWidget(self._table)
@@ -84,7 +84,7 @@ class RolePermissionsDialog(QDialog):
             key_item = QTableWidgetItem(perm["key"])
             key_item.setFlags(key_item.flags() | Qt.ItemIsUserCheckable)
             key_item.setCheckState(
-                Qt.Checked if perm["id"] in self._selected_ids else Qt.Unchecked
+                Qt.CheckState.Checked if perm["id"] in self._selected_ids else Qt.CheckState.Unchecked
             )
             self._table.setItem(row, 0, key_item)
 
@@ -95,7 +95,7 @@ class RolePermissionsDialog(QDialog):
         selected = []
         for row in range(self._table.rowCount()):
             item = self._table.item(row, 0)
-            if item and item.checkState() == Qt.Checked:
+            if item and item.checkState() == Qt.CheckState.Checked:
                 selected.append(self._permissions[row]["id"])
         return selected
 
@@ -137,8 +137,8 @@ class RolesView(QWidget):
         self.table.setColumnCount(3)
         self.table.setHorizontalHeaderLabels(["ID", "Rol Adı", "Yetki Sayısı"])
         self.table.horizontalHeader().setStretchLastSection(True)
-        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setAlternatingRowColors(True)
         layout.addWidget(self.table)
@@ -198,7 +198,7 @@ class RolesView(QWidget):
         ):
             return
         dialog = RoleDialog("Yeni Rol", parent=self)
-        if dialog.exec() != QDialog.Accepted:
+        if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         name = dialog.get_name()
         if not name:
@@ -228,7 +228,7 @@ class RolesView(QWidget):
         selected = self._perm_repo.get_role_permissions(role_id)
 
         dialog = RolePermissionsDialog(permissions, selected, parent=self)
-        if dialog.exec() != QDialog.Accepted:
+        if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         try:
             selected_ids = dialog.get_selected_permission_ids()
@@ -252,7 +252,7 @@ class RolesView(QWidget):
         role_id = int(self.table.item(row, 0).text())
         current_name = self.table.item(row, 1).text()
         dialog = RoleDialog("Rol Düzenle", name=current_name, parent=self)
-        if dialog.exec() != QDialog.Accepted:
+        if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         new_name = dialog.get_name()
         if not new_name:
@@ -298,7 +298,7 @@ class RolesView(QWidget):
             self,
             "Onay",
             f"'{role_name}' rolünü silmek istediğinizden emin misiniz?",
-        ) != QMessageBox.Yes:
+        ) != QMessageBox.StandardButton.Yes:
             return
 
         try:

@@ -62,10 +62,10 @@ class BackupTableModel(BaseTableModel):
 
     def _align(self, key):
         if key in ("size_mb",):
-            return Qt.AlignCenter
+            return Qt.AlignmentFlag.AlignCenter
         if key == "created":
-            return Qt.AlignCenter
-        return Qt.AlignVCenter | Qt.AlignLeft
+            return Qt.AlignmentFlag.AlignCenter
+        return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
 
 class BackupPage(QWidget):
@@ -240,8 +240,8 @@ class BackupPage(QWidget):
         # Tablo
         self._table = QTableView()
         self._table.setAlternatingRowColors(True)
-        self._table.setSelectionBehavior(QTableView.SelectRows)
-        self._table.setSelectionMode(QTableView.SingleSelection)
+        self._table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self._table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self._table.setSortingEnabled(False)
         self._table.horizontalHeader().setStretchLastSection(True)
         self._table.verticalHeader().setVisible(False)
@@ -261,8 +261,8 @@ class BackupPage(QWidget):
     def _create_separator(self):
         """Dikey ayırıcı çizgi"""
         line = QFrame()
-        line.setFrameShape(QFrame.VLine)
-        line.setFrameShadow(QFrame.Sunken)
+        line.setFrameShape(QFrame.Shape.VLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
         return line
 
     def _load_backups(self):
@@ -303,11 +303,11 @@ class BackupPage(QWidget):
             self,
             "Yedek Oluştur",
             "Yeni yedek oluşturmak istediğinizden emin misiniz?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes
         )
         
-        if reply != QMessageBox.Yes:
+        if reply != QMessageBox.StandardButton.Yes:
             return
         
         try:
@@ -372,11 +372,11 @@ class BackupPage(QWidget):
             self,
             "Tam Yedek Oluştur",
             msg,
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes
         )
         
-        if reply != QMessageBox.Yes:
+        if reply != QMessageBox.StandardButton.Yes:
             return
         
         try:
@@ -432,11 +432,11 @@ class BackupPage(QWidget):
             f"MEVCUT VERİTABANI YEDEĞİ ALINACAK VE\n"
             f"SEÇİLİ YEDEK GERİ YÜKLENECEKTİR!\n\n"
             f"Bu işlem sonrası uygulama yeniden başlatılmalıdır.",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
         )
         
-        if reply != QMessageBox.Yes:
+        if reply != QMessageBox.StandardButton.Yes:
             return
         
         try:
@@ -474,11 +474,11 @@ class BackupPage(QWidget):
             f"Bu yedeği silmek istediğinizden emin misiniz?\n\n"
             f"Dosya: {backup['filename']}\n"
             f"Tarih: {backup['created']}",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
         )
         
-        if reply != QMessageBox.Yes:
+        if reply != QMessageBox.StandardButton.Yes:
             return
         
         try:
@@ -503,11 +503,11 @@ class BackupPage(QWidget):
             "Eski Yedekleri Temizle",
             f"En yeni {keep_count} yedek hariç diğerleri silinecek.\n\n"
             f"Devam etmek istiyor musunuz?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
         )
         
-        if reply != QMessageBox.Yes:
+        if reply != QMessageBox.StandardButton.Yes:
             return
         
         try:

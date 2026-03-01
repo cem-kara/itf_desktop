@@ -186,13 +186,13 @@ class CheckableComboBox(QComboBox):
 
     def handleItemPressed(self, index):
         item = self.model().itemFromIndex(index)
-        item.setCheckState(Qt.Unchecked if item.checkState() == Qt.Checked else Qt.Checked)
+        item.setCheckState(Qt.CheckState.Unchecked if item.checkState() == Qt.CheckState.Checked else Qt.CheckState.Checked)
         QTimer.singleShot(10, self.updateText)
 
     def updateText(self):
         items = [self.model().item(i).text()
                  for i in range(self.count())
-                 if self.model().item(i).checkState() == Qt.Checked]
+                 if self.model().item(i).checkState() == Qt.CheckState.Checked]
         self.lineEdit().setText(", ".join(items))
 
     def setCheckedItems(self, text_list):
@@ -202,15 +202,15 @@ class CheckableComboBox(QComboBox):
             text_list = []
         for i in range(self.count()):
             item = self.model().item(i)
-            item.setCheckState(Qt.Checked if item.text() in text_list else Qt.Unchecked)
+            item.setCheckState(Qt.CheckState.Checked if item.text() in text_list else Qt.CheckState.Unchecked)
         self.updateText()
 
     def getCheckedItems(self): return self.lineEdit().text()
 
     def addItem(self, text, data=None):
         item = QStandardItem(text)
-        item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
-        item.setData(Qt.Unchecked, Qt.CheckStateRole)
+        item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
+        item.setData(Qt.CheckState.Unchecked, Qt.ItemDataRole.CheckStateRole)
         self.model().appendRow(item)
 
     def addItems(self, texts):
@@ -671,8 +671,8 @@ class RKEEnvanterModel(BaseTableModel):
 
     def _align(self, key):
         if key in ("KontrolTarihi", "Durum"):
-            return Qt.AlignCenter
-        return Qt.AlignVCenter | Qt.AlignLeft
+            return Qt.AlignmentFlag.AlignCenter
+        return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
     def set_rows(self, rows):
         self.set_data(rows)
@@ -949,7 +949,7 @@ class RKEMuayenePage(QWidget):
             f"color:{DarkTheme.TEXT_SECONDARY};padding:0 12px;}}QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};}}"
         )
         btn_dosya.setFixedHeight(28)
-        btn_dosya.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_dosya.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_dosya.clicked.connect(self.dosya_sec)
         file_row.addWidget(self.lbl_dosya, 1)
         file_row.addWidget(btn_dosya)
@@ -963,13 +963,13 @@ class RKEMuayenePage(QWidget):
         self.tbl_gecmis = QTableView()
         self.tbl_gecmis.setModel(self._gecmis_model)
         self.tbl_gecmis.setStyleSheet(_S_TABLE)
-        self.tbl_gecmis.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.tbl_gecmis.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tbl_gecmis.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tbl_gecmis.verticalHeader().setVisible(False)
         self.tbl_gecmis.setShowGrid(False)
         self.tbl_gecmis.setAlternatingRowColors(True)
         self.tbl_gecmis.setFixedHeight(140)
-        self.tbl_gecmis.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.tbl_gecmis.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tbl_gecmis.doubleClicked.connect(self._gecmis_satir_tiklandi)
         grp_gecmis.add_widget(self.tbl_gecmis)
         il.addWidget(grp_gecmis)
@@ -997,7 +997,7 @@ class RKEMuayenePage(QWidget):
             f"font-size:10px;letter-spacing:1px;}}"
             f"QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};border-color:{DarkTheme.TEXT_SECONDARY};}}"
         )
-        self.btn_temizle.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_temizle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_temizle.clicked.connect(self.temizle)
         self.btn_kaydet = QPushButton("Ã¢Å“â€œ  KAYDET")
         self.btn_kaydet.setFixedHeight(34)
@@ -1006,7 +1006,7 @@ class RKEMuayenePage(QWidget):
             f"color:#051a10;font-family:{DarkTheme.MONOSPACE};font-size:10px;font-weight:800;"
             f"letter-spacing:1px;}}"
         )
-        self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_kaydet.clicked.connect(self.kaydet)
         if self._action_guard:
             self._action_guard.disable_if_unauthorized(self.btn_kaydet, "cihaz.write")
@@ -1049,7 +1049,7 @@ class RKEMuayenePage(QWidget):
             f"QPushButton{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;"
             f"color:{DarkTheme.TEXT_SECONDARY};}}QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};}}"
         )
-        btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_yenile.clicked.connect(self.verileri_yukle)
 
         btn_toplu = QPushButton("Ã¢â€“Â¶ Toplu Muayene")
@@ -1058,7 +1058,7 @@ class RKEMuayenePage(QWidget):
             f"QPushButton{{background:{DarkTheme.ACCENT};border:none;border-radius:4px;"
             f"color:#0a1420;font-family:{DarkTheme.MONOSPACE};font-size:9px;font-weight:700;padding:0 12px;}}"
         )
-        btn_toplu.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_toplu.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_toplu.clicked.connect(self.ac_toplu_dialog)
 
         fl.addWidget(self.cmb_filtre_abd)
@@ -1073,7 +1073,7 @@ class RKEMuayenePage(QWidget):
         self.tablo.setModel(self._model)
         self.tablo.setStyleSheet(_S_TABLE)
         self.tablo.setAlternatingRowColors(True)
-        self.tablo.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tablo.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.tablo.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tablo.verticalHeader().setVisible(False)
@@ -1081,9 +1081,9 @@ class RKEMuayenePage(QWidget):
         hdr = self.tablo.horizontalHeader()
         for i, w in enumerate(_RKE_WIDTHS):
             if i == len(_RKE_COLS) - 1:
-                hdr.setSectionResizeMode(i, QHeaderView.Stretch)
+                hdr.setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch)
             else:
-                hdr.setSectionResizeMode(i, QHeaderView.Interactive)
+                hdr.setSectionResizeMode(i, QHeaderView.ResizeMode.Interactive)
                 hdr.resizeSection(i, w)
         self.tablo.clicked.connect(self._sag_tablo_tiklandi)
         vl.addWidget(self.tablo, 1)
@@ -1313,7 +1313,7 @@ class RKEMuayenePage(QWidget):
             checkable_combo_cls=CheckableComboBox,
             worker_cls=TopluKayitWorker,
         )
-        if dlg.exec() == QDialog.Accepted:
+        if dlg.exec() == QDialog.DialogCode.Accepted:
             QMessageBox.information(self, "Bilgi", "Toplu kayÄ±t baÅarÄ±lÄ±.")
             self.verileri_yukle()
 

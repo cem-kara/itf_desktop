@@ -99,7 +99,7 @@ class CihazMerkezPage(QWidget):
         top_lay.setSpacing(10)
 
         btn_back = QPushButton(" Listeye")
-        btn_back.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_back.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_back.setStyleSheet(STYLES["back_btn"])
         IconRenderer.set_button_icon(btn_back, "arrow_left", color=C.TEXT_SECONDARY, size=14)
         btn_back.setIconSize(QSize(14, 14))
@@ -110,7 +110,7 @@ class CihazMerkezPage(QWidget):
         # Cihaz ikonu (avatar yerine)
         self.lbl_avatar = QLabel()
         self.lbl_avatar.setFixedSize(34, 34)
-        self.lbl_avatar.setAlignment(Qt.AlignCenter)
+        self.lbl_avatar.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_avatar.setStyleSheet(
             f"background:{C.BG_TERTIARY}; border-radius:8px;"
             f"font-size:13px; font-weight:700; color:{C.TEXT_SECONDARY};"
@@ -141,7 +141,7 @@ class CihazMerkezPage(QWidget):
         # Kapat (X)
         btn_kapat = QPushButton()
         btn_kapat.setFixedSize(28, 28)
-        btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_kapat.setToolTip("Kapat")
         btn_kapat.setStyleSheet("background:transparent; border:none;")
         btn_kapat.clicked.connect(self.kapat_istegi.emit)
@@ -163,7 +163,7 @@ class CihazMerkezPage(QWidget):
 
         for code, label in TABS:
             btn = QPushButton(label)
-            btn.setCursor(QCursor(Qt.PointingHandCursor))
+            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             btn.setStyleSheet(self._tab_btn_qss(active=False))
             btn.clicked.connect(lambda _, c=code: self._switch_tab(c))
             nav_lay.addWidget(btn)
@@ -222,7 +222,7 @@ class CihazMerkezPage(QWidget):
                 if not px.isNull():
                     self.lbl_avatar.setPixmap(
                         px.scaled(34, 34, Qt.KeepAspectRatioByExpanding,
-                                  Qt.SmoothTransformation)
+                                  Qt.TransformationMode.SmoothTransformation)
                     )
                     self.lbl_avatar.setText("")
             
@@ -315,7 +315,7 @@ class CihazMerkezPage(QWidget):
         except Exception as e:
             logger.error(f"Modül yükleme hatası ({code}): {e}")
             err = QLabel(f"Modül yüklenemedi: {code}\n{e}")
-            err.setAlignment(Qt.AlignCenter)
+            err.setAlignment(Qt.AlignmentFlag.AlignCenter)
             err.setStyleSheet(STYLES.get("stat_red", f"color:{C.STATUS_ERROR};"))
             return err
 

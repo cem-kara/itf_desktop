@@ -51,17 +51,17 @@ C_GUN, C_IZIN, C_SAAT, C_KUM, C_SUA = 4, 5, 6, 7, 8
 class SuaDelegate(QStyledItemDelegate):
     """Şua hak ediş günlerini renkli badge olarak gösterir."""
     def paint(self, painter, option, index):
-        bg = QColor(29, 117, 254, 60) if option.state & QStyle.State_Selected \
+        bg = QColor(29, 117, 254, 60) if option.state & QStyle.StateFlag.State_Selected \
             else QColor("transparent")
         painter.fillRect(option.rect, bg)
 
         try:
-            deger = float(index.data(Qt.DisplayRole))
+            deger = float(index.data(Qt.ItemDataRole.DisplayRole))
         except (ValueError, TypeError):
             deger = 0
 
         painter.save()
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = QRectF(option.rect)
         rect.adjust(8, 4, -8, -4)
 
@@ -80,8 +80,8 @@ class SuaDelegate(QStyledItemDelegate):
         painter.setPen(QPen(c_border, 1))
         painter.drawPath(path)
         painter.setPen(c_text)
-        painter.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        painter.drawText(rect, Qt.AlignCenter, f"{deger:.0f}")
+        painter.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, f"{deger:.0f}")
         painter.restore()
 
 
@@ -146,7 +146,7 @@ class PuantajRaporPage(QWidget):
 
         self.btn_getir = QPushButton("Raporu Olustur")
         self.btn_getir.setStyleSheet(S["report_btn"])
-        self.btn_getir.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_getir.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_getir, "clipboard_list", color=DarkTheme.TEXT_PRIMARY, size=14)
         fp.addWidget(self.btn_getir)
 
@@ -155,7 +155,7 @@ class PuantajRaporPage(QWidget):
         # ── BİLGİ LABEL ──
         self.lbl_bilgi = QLabel("Veri bekleniyor...")
         self.lbl_bilgi.setStyleSheet(S["info_label"])
-        self.lbl_bilgi.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.lbl_bilgi.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         main.addWidget(self.lbl_bilgi)
 
         # ── TABLO ──
@@ -164,14 +164,14 @@ class PuantajRaporPage(QWidget):
         self.tablo.setHorizontalHeaderLabels(TABLO_KOLONLARI)
         self.tablo.verticalHeader().setVisible(False)
         self.tablo.setAlternatingRowColors(True)
-        self.tablo.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tablo.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tablo.setStyleSheet(S["table"])
 
         h = self.tablo.horizontalHeader()
-        h.setSectionResizeMode(QHeaderView.Stretch)
-        h.setSectionResizeMode(C_KIMLIK, QHeaderView.ResizeToContents)
-        h.setSectionResizeMode(C_SUA, QHeaderView.Fixed)
+        h.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        h.setSectionResizeMode(C_KIMLIK, QHeaderView.ResizeMode.ResizeToContents)
+        h.setSectionResizeMode(C_SUA, QHeaderView.ResizeMode.Fixed)
         self.tablo.setColumnWidth(C_SUA, 150)
 
         # Şua delegate
@@ -212,14 +212,14 @@ class PuantajRaporPage(QWidget):
 
         self.btn_excel = QPushButton("Excel Indir")
         self.btn_excel.setStyleSheet(S["excel_btn"])
-        self.btn_excel.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_excel.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_excel.setEnabled(False)
         IconRenderer.set_button_icon(self.btn_excel, "download", color=DarkTheme.TEXT_PRIMARY, size=14)
         bf.addWidget(self.btn_excel)
 
         self.btn_pdf = QPushButton("PDF Indir")
         self.btn_pdf.setStyleSheet(S["pdf_btn"])
-        self.btn_pdf.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_pdf.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_pdf.setEnabled(False)
         IconRenderer.set_button_icon(self.btn_pdf, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         bf.addWidget(self.btn_pdf)
@@ -392,8 +392,8 @@ class PuantajRaporPage(QWidget):
                 self._set_item(i, C_KUM, f"{row['KumulatifSaat']:.0f}")
                 # Şua hak ediş — delegate çizecek
                 item_sua = QTableWidgetItem(str(row["SuaHakEdis"]))
-                item_sua.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                item_sua.setTextAlignment(Qt.AlignCenter)
+                item_sua.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
+                item_sua.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 self.tablo.setItem(i, C_SUA, item_sua)
 
             self._rapor_data = rows
@@ -420,9 +420,9 @@ class PuantajRaporPage(QWidget):
 
     def _set_item(self, row, col, text):
         item = QTableWidgetItem(str(text))
-        item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+        item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
         if col >= C_GUN:
-            item.setTextAlignment(Qt.AlignCenter)
+            item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         self.tablo.setItem(row, col, item)
 
     # ═══════════════════════════════════════════

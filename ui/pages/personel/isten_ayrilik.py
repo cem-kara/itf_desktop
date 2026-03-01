@@ -308,7 +308,7 @@ class IstenAyrilikPage(QWidget):
         dosya_h = QHBoxLayout()
         self.btn_dosya = QPushButton("Dosya Sec")
         self.btn_dosya.setStyleSheet(S["file_btn"])
-        self.btn_dosya.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_dosya.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_dosya.clicked.connect(self._select_file)
         IconRenderer.set_button_icon(self.btn_dosya, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
         dosya_h.addWidget(self.btn_dosya)
@@ -362,7 +362,7 @@ class IstenAyrilikPage(QWidget):
 
         lbl_y = QLabel("YILLIK İZİN")
         lbl_y.setStyleSheet(S["section_title"])
-        ig.addWidget(lbl_y, 0, 0, 1, 2, Qt.AlignCenter)
+        ig.addWidget(lbl_y, 0, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
         self.lbl_y_toplam = self._add_stat(ig, 1, "Toplam Hak", "stat_value")
         self.lbl_y_kul = self._add_stat(ig, 2, "Kullanılan", "stat_red")
         self.lbl_y_kal = self._add_stat(ig, 3, "Kalan", "stat_green")
@@ -372,7 +372,7 @@ class IstenAyrilikPage(QWidget):
 
         lbl_s = QLabel("ŞUA İZNİ")
         lbl_s.setStyleSheet(S["section_title"])
-        ig.addWidget(lbl_s, 5, 0, 1, 2, Qt.AlignCenter)
+        ig.addWidget(lbl_s, 5, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
         self.lbl_s_kul = self._add_stat(ig, 6, "Kullanılan", "stat_red")
         self.lbl_s_kal = self._add_stat(ig, 7, "Kalan", "stat_green")
 
@@ -403,7 +403,7 @@ class IstenAyrilikPage(QWidget):
 
         self.btn_onayla = QPushButton("ONAYLA VE BITIR")
         self.btn_onayla.setStyleSheet(S["danger_btn"])
-        self.btn_onayla.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_onayla.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_onayla.clicked.connect(self._on_confirm)
         IconRenderer.set_button_icon(self.btn_onayla, "alert_triangle", color=DarkTheme.TEXT_PRIMARY, size=14)
         onay_l.addWidget(self.btn_onayla)
@@ -443,7 +443,7 @@ class IstenAyrilikPage(QWidget):
         lbl.setStyleSheet(S["stat_label"])
         grid.addWidget(lbl, row, 0)
         val = QLabel("—")
-        val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        val.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         val.setStyleSheet(S[style_key])
         grid.addWidget(val, row, 1)
         return val
@@ -530,9 +530,9 @@ class IstenAyrilikPage(QWidget):
             f"Neden: {neden}\n"
             f"Tarih: {self.dt_tarih.date().toString('dd.MM.yyyy')}\n\n"
             "Devam etmek istiyor musunuz?",
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
         )
-        if cevap != QMessageBox.Yes:
+        if cevap != QMessageBox.StandardButton.Yes:
             return
 
         tc = self._data.get("KimlikNo", "")

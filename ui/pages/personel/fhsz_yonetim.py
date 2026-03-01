@@ -108,23 +108,23 @@ class KosulDelegate(QStyledItemDelegate):
         return editor
 
     def setEditorData(self, editor, index):
-        text = index.data(Qt.EditRole)
+        text = index.data(Qt.ItemDataRole.EditRole)
         if text in self.items:
             editor.setCurrentText(text)
 
     def setModelData(self, editor, model, index):
-        model.setData(index, editor.currentText(), Qt.EditRole)
+        model.setData(index, editor.currentText(), Qt.ItemDataRole.EditRole)
 
     def updateEditorGeometry(self, editor, option, index):
         editor.setGeometry(option.rect)
 
     def paint(self, painter, option, index):
         """Badge çizimi: Koşul A → yeşil, Koşul B → mavi."""
-        bg = QColor(29, 117, 254, 60) if option.state & QStyle.State_Selected \
+        bg = QColor(29, 117, 254, 60) if option.state & QStyle.StateFlag.State_Selected \
             else QColor("transparent")
         painter.fillRect(option.rect, bg)
 
-        text = str(index.data(Qt.DisplayRole) or "")
+        text = str(index.data(Qt.ItemDataRole.DisplayRole) or "")
         if "KOŞULU A" in str(text).upper():
             badge_bg = QColor(46, 125, 50, 140)
             border_c = QColor("#66bb6a")
@@ -133,7 +133,7 @@ class KosulDelegate(QStyledItemDelegate):
             border_c = QColor("#42a5f5")
 
         painter.save()
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = QRectF(option.rect)
         rect.adjust(5, 4, -5, -4)
         path = QPainterPath()
@@ -142,8 +142,8 @@ class KosulDelegate(QStyledItemDelegate):
         painter.setPen(QPen(border_c, 1.5))
         painter.drawPath(path)
         painter.setPen(QColor("#ffffff"))
-        painter.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        painter.drawText(rect, Qt.AlignCenter, text)
+        painter.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
         painter.restore()
 
 
@@ -154,17 +154,17 @@ class KosulDelegate(QStyledItemDelegate):
 class SonucDelegate(QStyledItemDelegate):
     """Orijinaldeki SonucDelegate'in birebir karşılığı."""
     def paint(self, painter, option, index):
-        bg = QColor(29, 117, 254, 60) if option.state & QStyle.State_Selected \
+        bg = QColor(29, 117, 254, 60) if option.state & QStyle.StateFlag.State_Selected \
             else QColor("transparent")
         painter.fillRect(option.rect, bg)
 
         try:
-            deger = float(index.data(Qt.DisplayRole))
+            deger = float(index.data(Qt.ItemDataRole.DisplayRole))
         except (ValueError, TypeError):
             deger = 0
 
         painter.save()
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = QRectF(option.rect)
         rect.adjust(8, 5, -8, -5)
 
@@ -179,8 +179,8 @@ class SonucDelegate(QStyledItemDelegate):
         painter.setPen(QPen(c_border, 1))
         painter.drawPath(path)
         painter.setPen(c_text)
-        painter.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        painter.drawText(rect, Qt.AlignCenter, f"{deger:.0f}")
+        painter.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, f"{deger:.0f}")
         painter.restore()
 
 
@@ -252,7 +252,7 @@ class FHSZYonetimPage(QWidget):
 
         self.btn_hesapla = QPushButton("HESAPLA")
         self.btn_hesapla.setStyleSheet(S["calc_btn"])
-        self.btn_hesapla.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_hesapla.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_hesapla, "bar_chart", color=DarkTheme.TEXT_PRIMARY, size=14)
         fp.addWidget(self.btn_hesapla)
 
@@ -264,16 +264,16 @@ class FHSZYonetimPage(QWidget):
         self.tablo.setHorizontalHeaderLabels(TABLO_KOLONLARI)
         self.tablo.verticalHeader().setVisible(False)
         self.tablo.setAlternatingRowColors(True)
-        self.tablo.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tablo.setStyleSheet(S["table"])
         self.tablo.setEditTriggers(QAbstractItemView.SelectedClicked | QAbstractItemView.DoubleClicked)
 
         h = self.tablo.horizontalHeader()
-        h.setSectionResizeMode(QHeaderView.Stretch)
-        h.setSectionResizeMode(C_KIMLIK, QHeaderView.ResizeToContents)
-        h.setSectionResizeMode(C_KOSUL, QHeaderView.Fixed)
+        h.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        h.setSectionResizeMode(C_KIMLIK, QHeaderView.ResizeMode.ResizeToContents)
+        h.setSectionResizeMode(C_KOSUL, QHeaderView.ResizeMode.Fixed)
         self.tablo.setColumnWidth(C_KOSUL, 170)
-        h.setSectionResizeMode(C_SAAT, QHeaderView.Fixed)
+        h.setSectionResizeMode(C_SAAT, QHeaderView.ResizeMode.Fixed)
         self.tablo.setColumnWidth(C_SAAT, 130)
 
         # AitYıl + Dönem gizli
@@ -319,7 +319,7 @@ class FHSZYonetimPage(QWidget):
 
         self.btn_kaydet = QPushButton("KAYDET / GUNCELLE")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
-        self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         bf.addWidget(self.btn_kaydet)
 
@@ -456,7 +456,7 @@ class FHSZYonetimPage(QWidget):
     def _set_item(self, row, col, text):
         """Salt-okunur hücre ekle."""
         item = QTableWidgetItem(str(text))
-        item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+        item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
         self.tablo.setItem(row, col, item)
 
     def _satir_hesapla(self, row):
@@ -589,7 +589,7 @@ class FHSZYonetimPage(QWidget):
 
             kosul = row_data.get("CalismaKosulu") or "Çalışma Koşulu B"
             item_k = QTableWidgetItem(str(kosul))
-            item_k.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
+            item_k.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)
             self.tablo.setItem(row_idx, C_KOSUL, item_k)
 
             self._set_item(row_idx, C_YIL, self.cmb_yil.currentText())
@@ -677,7 +677,7 @@ class FHSZYonetimPage(QWidget):
                    and self._birim_kosul_map[birim_upper] == "A":
                     kosul = "Çalışma Koşulu A"
                 item_k = QTableWidgetItem(kosul)
-                item_k.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
+                item_k.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)
                 self.tablo.setItem(row_idx, C_KOSUL, item_k)
 
                 self._set_item(row_idx, C_YIL, self.cmb_yil.currentText())
@@ -750,7 +750,7 @@ class FHSZYonetimPage(QWidget):
                and self._birim_kosul_map[birim_upper] == "A":
                 kosul = "Çalışma Koşulu A"
             item_k = QTableWidgetItem(kosul)
-            item_k.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
+            item_k.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)
             self.tablo.setItem(row_idx, C_KOSUL, item_k)
 
             self._set_item(row_idx, C_YIL, self.cmb_yil.currentText())
@@ -812,9 +812,9 @@ class FHSZYonetimPage(QWidget):
                     f"'Evet' derseniz:\n"
                     f"1. Mevcut kayıtlar silinecek.\n"
                     f"2. Tablodaki GÜNCEL veriler kaydedilecek.",
-                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
                 )
-                if cevap != QMessageBox.Yes:
+                if cevap != QMessageBox.StandardButton.Yes:
                     self.lbl_durum.setText("İptal edildi.")
                     return
 

@@ -113,8 +113,8 @@ class ArizaTableModel(BaseTableModel):
 
     def _align(self, key):
         if key in ("BaslangicTarihi", "Oncelik", "Durum"):
-            return Qt.AlignCenter
-        return Qt.AlignVCenter | Qt.AlignLeft
+            return Qt.AlignmentFlag.AlignCenter
+        return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
     def set_rows(self, rows: List[Dict[str, Any]]):
         self.set_data(rows)
@@ -183,7 +183,7 @@ class ArizaKayitForm(QWidget):
         root.addWidget(self._build_kpi_bar())
 
         sep = QFrame()
-        sep.setFrameShape(QFrame.HLine)
+        sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
         sep.setStyleSheet(
             f"background:{getattr(DarkTheme,'BORDER','#242938')};"
@@ -200,7 +200,7 @@ class ArizaKayitForm(QWidget):
         lt_layout = QVBoxLayout(list_tab)
         lt_layout.setContentsMargins(0, 0, 0, 0)
         lt_layout.setSpacing(0)
-        self._h_splitter = QSplitter(Qt.Horizontal)
+        self._h_splitter = QSplitter(Qt.Orientation.Horizontal)
         self._h_splitter.setStyleSheet(S.get("splitter", ""))
         self._h_splitter.addWidget(self._build_left_panel())
         self._h_splitter.addWidget(self._build_form_panel())   # orta: gizli form
@@ -394,19 +394,19 @@ class ArizaKayitForm(QWidget):
         self._model = ArizaTableModel()
         self.table = QTableView()
         self.table.setModel(self._model)
-        self.table.setSelectionBehavior(QTableView.SelectRows)
-        self.table.setSelectionMode(QTableView.SingleSelection)
+        self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self.table.setStyleSheet(S["table"])
-        self.table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         for i, (_, _, w) in enumerate(ARIZA_COLUMNS):
             self.table.setColumnWidth(i, w)
         header = self.table.horizontalHeader()
         header.setStretchLastSection(False)
-        header.setSectionResizeMode(QHeaderView.Stretch)
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
 
         self.table.selectionModel().currentChanged.connect(self._on_row_selected)
-        self.table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._show_context_menu)
         layout.addWidget(self.table, 1)
 
@@ -945,11 +945,11 @@ class ArizaKayitForm(QWidget):
             self, 
             "Hatalı Giriş Olarak İşaretle",
             f"Arıza '{ariza_id}' hatalı giriş olarak işaretlenecek. Devam etmek istiyor musunuz?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
         )
         
-        if reply != QMessageBox.Yes:
+        if reply != QMessageBox.StandardButton.Yes:
             return
         
         try:
@@ -1007,7 +1007,7 @@ class ArizaKayitForm(QWidget):
         rows = self._all_rows
         if not rows:
             empty = QLabel("Gösterilecek arıza verisi yok.")
-            empty.setAlignment(Qt.AlignCenter)
+            empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             empty.setStyleSheet(
                 f"color:{getattr(DarkTheme,'TEXT_MUTED','#5a6278')};font-size:13px;padding:40px;"
             )
@@ -1260,7 +1260,7 @@ class ArizaKayitForm(QWidget):
         bar_bg.setStyleSheet(
             f"background:{border};border-radius:3px;"
         )
-        bar_bg.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        bar_bg.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         bar_fill = QWidget(bar_bg)
         bar_fill.setFixedHeight(6)
@@ -1273,7 +1273,7 @@ class ArizaKayitForm(QWidget):
 
         cnt = QLabel(str(value))
         cnt.setFixedWidth(24)
-        cnt.setAlignment(Qt.AlignRight)
+        cnt.setAlignment(Qt.AlignmentFlag.AlignRight)
         cnt.setStyleSheet(f"font-size:10px;font-weight:600;color:{fill_color};background:transparent;")
         hl.addWidget(cnt)
         return w
@@ -1325,10 +1325,10 @@ class ArizaKayitForm(QWidget):
         for i, (val, et) in enumerate(zip(degerler, etiketler)):
             col = QVBoxLayout()
             col.setSpacing(2)
-            col.setAlignment(Qt.AlignBottom)
+            col.setAlignment(Qt.AlignmentFlag.AlignBottom)
 
             val_lbl = QLabel(str(val) if val else "")
-            val_lbl.setAlignment(Qt.AlignHCenter)
+            val_lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter)
             val_lbl.setStyleSheet(
                 f"font-size:9px;color:{muted};background:transparent;"
             )
@@ -1343,7 +1343,7 @@ class ArizaKayitForm(QWidget):
             bar.setStyleSheet(
                 f"background:{bar_color};border-radius:3px 3px 0 0;opacity:0.8;"
             )
-            col.addWidget(bar, 0, Qt.AlignHCenter)
+            col.addWidget(bar, 0, Qt.AlignmentFlag.AlignHCenter)
             bar_row.addLayout(col)
 
         cl.addLayout(bar_row)
@@ -1353,7 +1353,7 @@ class ArizaKayitForm(QWidget):
         lbl_row.setSpacing(4)
         for et in etiketler:
             lbl = QLabel(et)
-            lbl.setAlignment(Qt.AlignHCenter)
+            lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter)
             lbl.setStyleSheet(
                 f"font-size:9px;color:{muted};background:transparent;"
             )
@@ -1424,7 +1424,7 @@ class ArizaKayitForm(QWidget):
 
             lbl_baslik = QLabel(baslik)
             lbl_baslik.setStyleSheet(f"font-size:12px;color:{text};background:transparent;")
-            lbl_baslik.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+            lbl_baslik.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Preferred)
             rl.addWidget(lbl_baslik)
 
             lbl_sayi = QLabel(f"{sayi}× tekrar")
@@ -1448,11 +1448,11 @@ class _SparklineWidget(QWidget):
         super().__init__(parent)
         self._values = values or [0] * 12
         self.setMinimumHeight(28)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         w = self.width()
         h = self.height()

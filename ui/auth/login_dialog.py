@@ -43,8 +43,8 @@ class LoginDialog(QDialog):
 
         # Başlık
         lbl_title = QLabel("REPYS SİSTEM GİRİŞ")
-        lbl_title.setAlignment(Qt.AlignCenter)
-        lbl_title.setFont(QFont("Arial", 20, QFont.Bold))
+        lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lbl_title.setFont(QFont("Arial", 20, QFont.Weight.Bold))
         lbl_title.setStyleSheet("color: #4dabf7; border: none;")
         card_layout.addWidget(lbl_title)
 
@@ -70,7 +70,7 @@ class LoginDialog(QDialog):
         # Giriş butonu
         self._button_login = QPushButton("GİRİŞ")
         self._button_login.setFixedHeight(50)
-        self._button_login.setCursor(Qt.PointingHandCursor)
+        self._button_login.setCursor(Qt.CursorShape.PointingHandCursor)
         self._button_login.setStyleSheet(
             "QPushButton { background-color: #0078d4; color: white; font-weight: bold; "
             "border-radius: 5px; font-size: 15px; } "
@@ -81,7 +81,7 @@ class LoginDialog(QDialog):
 
         # Kapat butonu
         btn_cancel = QPushButton("İptal")
-        btn_cancel.setCursor(Qt.PointingHandCursor)
+        btn_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_cancel.setStyleSheet("background: transparent; color: #888; border: none;")
         btn_cancel.clicked.connect(self.reject)
         card_layout.addWidget(btn_cancel)

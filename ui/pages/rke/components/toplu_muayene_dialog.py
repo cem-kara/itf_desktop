@@ -207,7 +207,7 @@ class TopluMuayeneDialog(QDialog):
             f"font-size:10px;padding:0 16px;}}QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};}}"
         )
         btn_iptal.setFixedHeight(36)
-        btn_iptal.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_iptal.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_iptal.clicked.connect(self.reject)
 
         self.btn_kaydet = QPushButton("▶ Başlat")
@@ -217,7 +217,7 @@ class TopluMuayeneDialog(QDialog):
         )
         self.btn_kaydet.setFixedHeight(36)
         self.btn_kaydet.setFixedWidth(120)
-        self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_kaydet.clicked.connect(self.kaydet)
 
         btn_row.addWidget(btn_iptal)

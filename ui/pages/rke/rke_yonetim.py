@@ -165,8 +165,8 @@ class RKETableModel(BaseTableModel):
 
     def _align(self, key):
         if key in ("KontrolTarihi", "HizmetYili", "Durum", "KursunEsdegeri", "Bedeni"):
-            return Qt.AlignCenter
-        return Qt.AlignVCenter | Qt.AlignLeft
+            return Qt.AlignmentFlag.AlignCenter
+        return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
     def set_rows(self, rows):
         self.set_data(rows)
@@ -418,7 +418,7 @@ class RKEYonetimPenceresi(QWidget):
         lbl_aciklama = self._value_label()
         lbl_aciklama.setFixedHeight(70)
         lbl_aciklama.setWordWrap(True)
-        lbl_aciklama.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        lbl_aciklama.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         lbl_aciklama.setStyleSheet(
             f"QLabel{{background:{DarkTheme.BG_ELEVATED};color:{DarkTheme.TEXT_PRIMARY};"
             f"border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:6px;"
@@ -435,12 +435,12 @@ class RKEYonetimPenceresi(QWidget):
         tbl = QTableView()
         tbl.setModel(self._gecmis_model)
         tbl.setStyleSheet(_S_TABLE)
-        tbl.setSelectionBehavior(QAbstractItemView.SelectRows)
+        tbl.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         tbl.setEditTriggers(QAbstractItemView.NoEditTriggers)
         tbl.verticalHeader().setVisible(False)
         tbl.setShowGrid(False); tbl.setAlternatingRowColors(True)
         tbl.setFixedHeight(120)
-        tbl.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        tbl.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         tbl.setStyleSheet(_S_TABLE + f"QTableView{{border-radius:0;border:none;}}")
         grp_gec.add_widget(tbl); il.addWidget(grp_gec)
         il.addStretch()
@@ -495,7 +495,7 @@ class RKEYonetimPenceresi(QWidget):
             f"QPushButton{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;"
             f"color:{DarkTheme.TEXT_SECONDARY};}}QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};}}"
         )
-        btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_yenile.clicked.connect(self.load_data)
 
         fl.addWidget(self.cmb_filtre_abd); fl.addWidget(self.cmb_filtre_dur)
@@ -508,15 +508,15 @@ class RKEYonetimPenceresi(QWidget):
         self.tablo.setModel(self._model)
         self.tablo.setStyleSheet(_S_TABLE)
         self.tablo.setAlternatingRowColors(True)
-        self.tablo.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.tablo.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tablo.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.tablo.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tablo.verticalHeader().setVisible(False)
         self.tablo.setShowGrid(False)
         self.tablo.setSortingEnabled(True)
         hdr = self.tablo.horizontalHeader()
         for i, w in enumerate(_CW):
-            hdr.setSectionResizeMode(i, QHeaderView.Stretch if i == 2 else QHeaderView.Interactive)
+            hdr.setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch if i == 2 else QHeaderView.ResizeMode.Interactive)
             if i != 2: hdr.resizeSection(i, w)
         self.tablo.doubleClicked.connect(self._on_double_click)
         vl.addWidget(self.tablo, 1)
@@ -568,7 +568,7 @@ class RKEYonetimPenceresi(QWidget):
 
     def _btn(self, text, style="secondary") -> QPushButton:
         b = QPushButton(text); b.setFixedHeight(34)
-        b.setCursor(QCursor(Qt.PointingHandCursor))
+        b.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         if style == "primary":
             b.setStyleSheet(
                 f"QPushButton{{background:{DarkTheme.STATUS_SUCCESS};border:none;border-radius:5px;"

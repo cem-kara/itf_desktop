@@ -100,7 +100,7 @@ class PersonelMerkezPage(QWidget):
         top_lay.setSpacing(10)
 
         btn_back = QPushButton(" Listeye")
-        btn_back.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_back.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_back.setStyleSheet(STYLES["back_btn"])
         IconRenderer.set_button_icon(btn_back, "arrow_left", color=C.TEXT_SECONDARY, size=14)
         btn_back.setIconSize(QSize(14, 14))
@@ -111,7 +111,7 @@ class PersonelMerkezPage(QWidget):
         # Avatar
         self.lbl_avatar = QLabel()
         self.lbl_avatar.setFixedSize(34, 34)
-        self.lbl_avatar.setAlignment(Qt.AlignCenter)
+        self.lbl_avatar.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_avatar.setStyleSheet(
             f"background:{C.BG_TERTIARY}; border-radius:8px;"
             f"font-size:13px; font-weight:700; color:{C.TEXT_SECONDARY};"
@@ -140,7 +140,7 @@ class PersonelMerkezPage(QWidget):
 
         # İzin / Muayene header butonları
         self.btn_izin_ekle = QPushButton(" İzin Gir")
-        self.btn_izin_ekle.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_izin_ekle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_izin_ekle.setStyleSheet(STYLES["refresh_btn"])
         IconRenderer.set_button_icon(self.btn_izin_ekle, "calendar", color=C.TEXT_SECONDARY, size=14)
         self.btn_izin_ekle.setIconSize(QSize(14, 14))
@@ -148,7 +148,7 @@ class PersonelMerkezPage(QWidget):
         top_lay.addWidget(self.btn_izin_ekle)
 
         self.btn_muayene_ekle = QPushButton(" Muayene")
-        self.btn_muayene_ekle.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_muayene_ekle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_muayene_ekle.setStyleSheet(STYLES["refresh_btn"])
         IconRenderer.set_button_icon(self.btn_muayene_ekle, "activity", color=C.TEXT_SECONDARY, size=14)
         self.btn_muayene_ekle.setIconSize(QSize(14, 14))
@@ -158,7 +158,7 @@ class PersonelMerkezPage(QWidget):
         # Kapat (X)
         btn_kapat = QPushButton()
         btn_kapat.setFixedSize(28, 28)
-        btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_kapat.setToolTip("Kapat")
         btn_kapat.setStyleSheet("background:transparent; border:none;")
         btn_kapat.clicked.connect(self.kapat_istegi.emit)
@@ -180,7 +180,7 @@ class PersonelMerkezPage(QWidget):
 
         for code, label in TABS:
             btn = QPushButton(label)
-            btn.setCursor(QCursor(Qt.PointingHandCursor))
+            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             btn.setStyleSheet(self._tab_btn_qss(active=False))
             btn.clicked.connect(lambda _, c=code: self._switch_tab(c))
             nav_lay.addWidget(btn)
@@ -222,7 +222,7 @@ class PersonelMerkezPage(QWidget):
         btn_form_kapat = QPushButton()
         btn_form_kapat.setFixedSize(20, 20)
         btn_form_kapat.setStyleSheet("background:transparent; border:none;")
-        btn_form_kapat.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_form_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_form_kapat.clicked.connect(self._hide_form)
         try:
             IconRenderer.set_button_icon(btn_form_kapat, "x", color=C.TEXT_MUTED, size=11)
@@ -296,7 +296,7 @@ class PersonelMerkezPage(QWidget):
                     if not px.isNull():
                         self.lbl_avatar.setPixmap(
                             px.scaled(34, 34, Qt.KeepAspectRatioByExpanding,
-                                      Qt.SmoothTransformation)
+                                      Qt.TransformationMode.SmoothTransformation)
                         )
                         self.lbl_avatar.setText("")
                     else:
@@ -427,7 +427,7 @@ class PersonelMerkezPage(QWidget):
         except Exception as e:
             logger.error(f"Modül yükleme hatası ({code}): {e}")
             err = QLabel(f"Modül yüklenemedi: {code}\n{e}")
-            err.setAlignment(Qt.AlignCenter)
+            err.setAlignment(Qt.AlignmentFlag.AlignCenter)
             err.setStyleSheet(STYLES.get("stat_red", f"color:{C.STATUS_ERROR};"))
             return err
 
@@ -511,7 +511,7 @@ class PersonelMerkezPage(QWidget):
     @staticmethod
     def _action_btn(label: str, icon: str, callback) -> QPushButton:
         btn = QPushButton(label)
-        btn.setCursor(QCursor(Qt.PointingHandCursor))
+        btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn.setFixedHeight(34)
         btn.setStyleSheet(STYLES["action_btn"])
         try:

@@ -81,11 +81,11 @@ class IzinTableModel(BaseTableModel):
 
     def _align(self, key):
         if key in ("Gun", "Durum"):
-            return Qt.AlignCenter
-        return Qt.AlignVCenter | Qt.AlignLeft
+            return Qt.AlignmentFlag.AlignCenter
+        return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
-    def data(self, index, role=Qt.DisplayRole):
-        if role == Qt.UserRole:
+    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
+        if role == Qt.ItemDataRole.UserRole:
             if not index.isValid():
                 return None
             row = self.get_row(index.row()) or {}
@@ -178,14 +178,14 @@ class IzinTakipPage(QWidget):
         self.btn_yeni = QPushButton("Yeni Izin")
         self.btn_yeni.setStyleSheet(S["save_btn"])
         self.btn_yeni.setToolTip("Yeni İzin")
-        self.btn_yeni.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_yeni.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_yeni, "plus", color=DarkTheme.TEXT_PRIMARY, size=14)
         fp.addWidget(self.btn_yeni)
 
         self.btn_yenile = QPushButton("Yenile")
         self.btn_yenile.setStyleSheet(S["refresh_btn"])
         self.btn_yenile.setToolTip("Yenile")
-        self.btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_yenile, "sync", color=DarkTheme.TEXT_PRIMARY, size=14)
         fp.addWidget(self.btn_yenile)
 
@@ -211,26 +211,26 @@ class IzinTakipPage(QWidget):
         self._model = IzinTableModel()
         self._proxy = QSortFilterProxyModel()
         self._proxy.setSourceModel(self._model)
-        self._proxy.setSortRole(Qt.UserRole)
+        self._proxy.setSortRole(Qt.ItemDataRole.UserRole)
 
         self.table = QTableView()
         self.table.setModel(self._proxy)
         self.table.setAlternatingRowColors(True)
-        self.table.setSelectionBehavior(QTableView.SelectRows)
-        self.table.setSelectionMode(QTableView.SingleSelection)
+        self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self.table.setSortingEnabled(True)
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
         self.table.setStyleSheet(S["table"])
-        self.table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._show_context_menu)
 
         header = self.table.horizontalHeader()
         header.setStretchLastSection(False)
         for i in range(len(IZIN_COLUMNS)):
-            header.setSectionResizeMode(i, QHeaderView.Stretch)
-        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # Gün
-        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)  # Durum
+            header.setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)  # Gün
+        header.setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)  # Durum
 
         tl.addWidget(self.table, 1)
 
@@ -272,7 +272,7 @@ class IzinTakipPage(QWidget):
         btn_drawer_close = QPushButton()
         btn_drawer_close.setFixedSize(32, 32)
         btn_drawer_close.setStyleSheet(S["close_btn"])
-        btn_drawer_close.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_drawer_close.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(btn_drawer_close, "x", color=DarkTheme.TEXT_PRIMARY, size=16)
         btn_drawer_close.clicked.connect(self._close_drawer)
         header_lay.addWidget(btn_drawer_close)
@@ -292,7 +292,7 @@ class IzinTakipPage(QWidget):
         # ─ Personel Seçimi ─
         grp_personel = QGroupBox("Personel Secimi")
         grp_personel.setStyleSheet(S["group"])
-        grp_personel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        grp_personel.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         pg = QGridLayout(grp_personel)
         pg.setSpacing(8)
         pg.setContentsMargins(12, 12, 12, 12)
@@ -306,7 +306,7 @@ class IzinTakipPage(QWidget):
         self.cmb_hizmet_sinifi = QComboBox()
         self.cmb_hizmet_sinifi.setStyleSheet(S["combo"])
         self.cmb_hizmet_sinifi.setMinimumWidth(200)
-        self.cmb_hizmet_sinifi.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.cmb_hizmet_sinifi.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         pg.addWidget(self.cmb_hizmet_sinifi, 0, 1)
 
         lbl_p = QLabel("Personel")
@@ -319,7 +319,7 @@ class IzinTakipPage(QWidget):
         self.cmb_personel.lineEdit().setPlaceholderText("İsim yazarak ara...")
         self.cmb_personel.setInsertPolicy(QComboBox.NoInsert)
         self.cmb_personel.setMinimumWidth(200)
-        self.cmb_personel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.cmb_personel.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         pg.addWidget(self.cmb_personel, 1, 1)
 
         self.lbl_personel_info = QLabel("")
@@ -332,7 +332,7 @@ class IzinTakipPage(QWidget):
         # ─ İzin Giriş Formu ─
         grp_giris = QGroupBox("Yeni Izin Girisi")
         grp_giris.setStyleSheet(S["group"])
-        grp_giris.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        grp_giris.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         fg = QGridLayout(grp_giris)
         fg.setSpacing(10)
         fg.setContentsMargins(12, 12, 12, 12)
@@ -346,7 +346,7 @@ class IzinTakipPage(QWidget):
         self.cmb_izin_tipi = QComboBox()
         self.cmb_izin_tipi.setStyleSheet(S["combo"])
         self.cmb_izin_tipi.setMinimumWidth(200)
-        self.cmb_izin_tipi.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.cmb_izin_tipi.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         fg.addWidget(self.cmb_izin_tipi, 0, 1)
 
         # Max gün uyarı etiketi
@@ -367,7 +367,7 @@ class IzinTakipPage(QWidget):
         self.dt_baslama.setStyleSheet(S["date"])
         self.dt_baslama.setMinimumWidth(160)
         self.dt_baslama.setMaximumWidth(240)
-        self.dt_baslama.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.dt_baslama.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self._setup_calendar(self.dt_baslama)
         h_tarih.addWidget(self.dt_baslama, 2)
 
@@ -394,12 +394,12 @@ class IzinTakipPage(QWidget):
         self.dt_bitis.setStyleSheet(S["date"])
         self.dt_bitis.setMinimumWidth(160)
         self.dt_bitis.setMaximumWidth(240)
-        self.dt_bitis.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.dt_bitis.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         fg.addWidget(self.dt_bitis, 3, 1)
 
         self.btn_kaydet = QPushButton("IZIN KAYDET")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
-        self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_kaydet.setEnabled(False)
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         fg.addWidget(self.btn_kaydet, 4, 0, 1, 2)
@@ -408,7 +408,7 @@ class IzinTakipPage(QWidget):
         # ─ Bakiye Panosu ─
         grp_bakiye = QGroupBox("Izin Bakiyesi")
         grp_bakiye.setStyleSheet(S["group"])
-        grp_bakiye.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        grp_bakiye.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         bg = QGridLayout(grp_bakiye)
         bg.setSpacing(4)
         bg.setContentsMargins(12, 12, 12, 12)
@@ -417,7 +417,7 @@ class IzinTakipPage(QWidget):
 
         lbl_y = QLabel("YILLIK İZİN")
         lbl_y.setStyleSheet(S["section_title"])
-        bg.addWidget(lbl_y, 0, 0, 1, 2, Qt.AlignCenter)
+        bg.addWidget(lbl_y, 0, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
 
         self.lbl_y_devir = self._add_stat(bg, 1, "Devir", "stat_value")
         self.lbl_y_hak = self._add_stat(bg, 2, "Hakediş", "stat_value")
@@ -429,7 +429,7 @@ class IzinTakipPage(QWidget):
 
         lbl_s = QLabel("ŞUA İZNİ")
         lbl_s.setStyleSheet(S["section_title"])
-        bg.addWidget(lbl_s, 6, 0, 1, 2, Qt.AlignCenter)
+        bg.addWidget(lbl_s, 6, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
 
         self.lbl_s_hak = self._add_stat(bg, 7, "Hakediş", "stat_value")
         self.lbl_s_kul = self._add_stat(bg, 8, "Kullanılan", "stat_red")
@@ -522,7 +522,7 @@ class IzinTakipPage(QWidget):
         lbl.setStyleSheet(S["stat_label"])
         grid.addWidget(lbl, row, 0)
         val = QLabel("—")
-        val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        val.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         val.setStyleSheet(S[style_key])
         grid.addWidget(val, row, 1)
         return val
@@ -792,7 +792,7 @@ class IzinTakipPage(QWidget):
         self._model.set_data(filtered)
 
         # Varsayılan sıralama: Başlama sütunu (index 2) descending
-        self.table.sortByColumn(2, Qt.DescendingOrder)
+        self.table.sortByColumn(2, Qt.SortOrder.DescendingOrder)
 
         total_gun = sum(int(r.get("Gun", 0)) for r in filtered
                         if str(r.get("Gun", "")).isdigit())
@@ -922,9 +922,9 @@ class IzinTakipPage(QWidget):
                                 f"Girilen gün sayısı: {gun} gün\n\n"
                                 f"Eksik: {gun - kalan} gün\n\n"
                                 f"Yine de kaydetmek istiyor musunuz?",
-                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+                                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
                             )
-                            if cevap != QMessageBox.Yes:
+                            if cevap != QMessageBox.StandardButton.Yes:
                                 return
 
                     elif izin_tipi == "Şua İzni":
@@ -936,9 +936,9 @@ class IzinTakipPage(QWidget):
                                 f"Girilen gün sayısı: {gun} gün\n\n"
                                 f"Eksik: {gun - kalan} gün\n\n"
                                 f"Yine de kaydetmek istiyor musunuz?",
-                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+                                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
                             )
-                            if cevap != QMessageBox.Yes:
+                            if cevap != QMessageBox.StandardButton.Yes:
                                 return
             except Exception as e:
                 logger.error(f"Bakiye kontrolü hatası: {e}")
@@ -1067,9 +1067,9 @@ class IzinTakipPage(QWidget):
         cevap = QMessageBox.question(
             self, "İzin İptal",
             f"{ad} personelinin bu izni iptal edilsin mi?",
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
         )
-        if cevap == QMessageBox.Yes:
+        if cevap == QMessageBox.StandardButton.Yes:
             self._durum_degistir(izin_id, ad, "İptal")
 
     def _durum_degistir(self, izin_id, ad, yeni_durum):

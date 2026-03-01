@@ -608,7 +608,7 @@ class MainWindow(QMainWindow):
         # Opsiyonel: Kullanıcıya bildirim göster
         from PySide6.QtWidgets import QMessageBox
         msg_box = QMessageBox(self)
-        msg_box.setIcon(QMessageBox.Warning)
+        msg_box.setIcon(QMessageBox.Icon.Warning)
         msg_box.setWindowTitle("Senkronizasyon Hatası")
 
         # API 503 (Servis Ulaşılamıyor) hatası için özel mesaj
@@ -644,7 +644,7 @@ class MainWindow(QMainWindow):
                 f"   - logs/errors.log"
             )
 
-        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
         msg_box.exec()
 
     def closeEvent(self, event):

@@ -556,10 +556,10 @@ class CihazEklePage(QWidget):
             "Operasyonu İptal Et",
             "Emin misiniz? Kaydedilen cihaz verisi kalmayacak.\n"
             "ÜTS sorgulması iptal edilecek.",
-            QMessageBox.Yes | QMessageBox.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             # Tab 1'e dön
             self._tabs.setCurrentIndex(0)
             

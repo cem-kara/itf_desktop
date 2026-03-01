@@ -21,25 +21,25 @@ class BaseTableModel(QAbstractTableModel):
     def columnCount(self, parent=QModelIndex()):
         return len(self._columns)
 
-    def data(self, index, role=Qt.DisplayRole):
+    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return None
         row = self._data[index.row()]
         key = self._keys[index.column()]
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             return self._display(key, row)
-        if role == Qt.ForegroundRole:
+        if role == Qt.ItemDataRole.ForegroundRole:
             return self._fg(key, row)
-        if role == Qt.BackgroundRole:
+        if role == Qt.ItemDataRole.BackgroundRole:
             return self._bg(key, row)
-        if role == Qt.TextAlignmentRole:
+        if role == Qt.ItemDataRole.TextAlignmentRole:
             return self._align(key)
-        if role == Qt.UserRole:
+        if role == Qt.ItemDataRole.UserRole:
             return row  # tüm satır dict'i
         return None
 
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
+    def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
+        if role == Qt.ItemDataRole.DisplayRole and orientation == Qt.Orientation.Horizontal:
             return self._columns[section][1]
         return None
 
@@ -54,7 +54,7 @@ class BaseTableModel(QAbstractTableModel):
         return None
 
     def _align(self, key):
-        return Qt.AlignVCenter | Qt.AlignLeft
+        return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
     # ── Ortak metodlar ──────────────────────────────────
     def set_data(self, data):

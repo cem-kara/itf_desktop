@@ -44,8 +44,8 @@ class ArizaIslemTableModel(BaseTableModel):
 
     def _align(self, key):
         if key in ("Tarih", "Saat", "YeniDurum"):
-            return Qt.AlignCenter
-        return Qt.AlignVCenter | Qt.AlignLeft
+            return Qt.AlignmentFlag.AlignCenter
+        return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
     def set_rows(self, rows: List[Dict[str, Any]]):
         self.set_data(rows)
@@ -333,8 +333,8 @@ class ArizaIslemPenceresi(QWidget):
         self.table.setModel(self._model)
         self.table.setStyleSheet(S["table"])
         self.table.setAlternatingRowColors(True)
-        self.table.setSelectionBehavior(QTableView.SelectRows)
-        self.table.setSelectionMode(QTableView.SingleSelection)
+        self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
         self.table.setSortingEnabled(False)
@@ -344,9 +344,9 @@ class ArizaIslemPenceresi(QWidget):
         header.setStretchLastSection(False)
         for i, (_, _, w) in enumerate(ISLEM_COLUMNS):
             if i == len(ISLEM_COLUMNS) - 1:
-                header.setSectionResizeMode(i, QHeaderView.Stretch)
+                header.setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch)
             else:
-                header.setSectionResizeMode(i, QHeaderView.ResizeToContents)
+                header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
             header.resizeSection(i, w)
 
         self.table.selectionModel().currentChanged.connect(self._on_row_selected)
@@ -401,7 +401,7 @@ class ArizaIslemPenceresi(QWidget):
         fl.addLayout(hdr)
 
         sep = QFrame()
-        sep.setFrameShape(QFrame.HLine)
+        sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
         sep.setStyleSheet(f"background:{border};")
         fl.addWidget(sep)

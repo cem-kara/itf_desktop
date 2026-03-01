@@ -82,7 +82,7 @@ class PermissionsView(QWidget):
         self.table.setColumnCount(2)
         self.table.setHorizontalHeaderLabels(["Permission Key", "Açıklama"])
         self.table.horizontalHeader().setStretchLastSection(True)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setAlternatingRowColors(True)
         layout.addWidget(self.table)
@@ -118,7 +118,7 @@ class PermissionsView(QWidget):
         ):
             return
         dialog = PermissionDialog(self)
-        if dialog.exec() != QDialog.Accepted:
+        if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         data = dialog.get_data()
         if not data["key"]:

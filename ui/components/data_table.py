@@ -32,18 +32,18 @@ class DictTableModel(QAbstractTableModel):
     def columnCount(self, parent=QModelIndex()):
         return len(self._headers)
 
-    def data(self, index, role=Qt.DisplayRole):
+    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return None
 
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             col_key = self._headers[index.column()]
             return str(self._data[index.row()].get(col_key, ""))
 
         return None
 
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
+    def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
+        if role == Qt.ItemDataRole.DisplayRole and orientation == Qt.Orientation.Horizontal:
             if section < len(self._display_headers):
                 return self._display_headers[section]
         return None
@@ -112,13 +112,13 @@ class DataTableWidget(QWidget):
         # ── Tablo ──
         self.table_view = QTableView()
         self.table_view.setAlternatingRowColors(True)
-        self.table_view.setSelectionBehavior(QTableView.SelectRows)
-        self.table_view.setSelectionMode(QTableView.SingleSelection)
+        self.table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self.table_view.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self.table_view.setSortingEnabled(True)
         self.table_view.verticalHeader().setVisible(False)
         self.table_view.horizontalHeader().setStretchLastSection(True)
         self.table_view.horizontalHeader().setSectionResizeMode(
-            QHeaderView.Interactive
+            QHeaderView.ResizeMode.Interactive
         )
         self.table_view.setShowGrid(True)
 
@@ -126,7 +126,7 @@ class DataTableWidget(QWidget):
         self._model = DictTableModel()
         self._proxy = QSortFilterProxyModel()
         self._proxy.setSourceModel(self._model)
-        self._proxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self._proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self._proxy.setFilterKeyColumn(-1)  # Tüm kolonlarda ara
         self.table_view.setModel(self._proxy)
 
@@ -146,7 +146,7 @@ class DataTableWidget(QWidget):
         self._model = DictTableModel(data, headers, display_headers)
         self._proxy = QSortFilterProxyModel()
         self._proxy.setSourceModel(self._model)
-        self._proxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self._proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self._proxy.setFilterKeyColumn(-1)
         self.table_view.setModel(self._proxy)
 
@@ -183,10 +183,10 @@ class DataTableWidget(QWidget):
     def _auto_resize(self):
         header = self.table_view.horizontalHeader()
         for i in range(self._model.columnCount()):
-            header.setSectionResizeMode(i, QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
         # Son kolonu stretch yap
         if self._model.columnCount() > 0:
             header.setSectionResizeMode(
                 self._model.columnCount() - 1,
-                QHeaderView.Stretch
+                QHeaderView.ResizeMode.Stretch
             )

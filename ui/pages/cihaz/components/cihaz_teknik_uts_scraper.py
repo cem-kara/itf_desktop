@@ -116,12 +116,12 @@ class _Worker(QObject):
 
 def _mk_pair(lbl_txt, val, bg):
     w = QWidget(); w.setStyleSheet(f"background:{bg};")
-    w.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+    w.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
     h = QHBoxLayout(w); h.setContentsMargins(0,0,0,0); h.setSpacing(6)
     l = QLabel(lbl_txt)
     l.setStyleSheet(_LBL_CSS + f"background:{bg};")
     l.setWordWrap(True); l.setMinimumWidth(160)
-    l.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Minimum)
+    l.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
     val.setStyleSheet(val.styleSheet() + f"background:{bg};")
     val.setWordWrap(True)
     h.addWidget(l); h.addWidget(val, stretch=1)
@@ -131,7 +131,7 @@ def _mk_pair(lbl_txt, val, bg):
 class _Sec(QWidget):
     def __init__(self, title, parent=None):
         super().__init__(parent)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self._r = 0
         outer = QVBoxLayout(self); outer.setContentsMargins(0,0,0,0); outer.setSpacing(0)
         self._frame = QFrame()
@@ -151,16 +151,16 @@ class _Sec(QWidget):
         bg = _BG_ODD if self._r % 2 else _BG_EVEN; self._r += 1
         rw = QWidget()
         rw.setStyleSheet(f"background:{bg};border-bottom:{_BC};")
-        rw.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        rw.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         rh = QHBoxLayout(rw); rh.setContentsMargins(0,0,0,0); rh.setSpacing(0)
         rh.addWidget(_mk_pair(l1, v1, bg), stretch=1)
-        sep = QFrame(); sep.setFrameShape(QFrame.VLine); sep.setFixedWidth(1)
+        sep = QFrame(); sep.setFrameShape(QFrame.Shape.VLine); sep.setFixedWidth(1)
         sep.setStyleSheet(f"background:{_BORDER};border:none;"); rh.addWidget(sep)
         if l2 and v2:
             rh.addWidget(_mk_pair(l2, v2, bg), stretch=1)
         else:
             ph = QWidget(); ph.setStyleSheet(f"background:{bg};")
-            ph.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+            ph.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
             rh.addWidget(ph, stretch=1)
         self._vb.addWidget(rw)
 
@@ -204,7 +204,7 @@ class CihazTeknikUtsScraper(QWidget):
 
         root.addWidget(self._search_box())
 
-        self._stat = QLabel(""); self._stat.setAlignment(Qt.AlignCenter)
+        self._stat = QLabel(""); self._stat.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._stat.setStyleSheet(f"color:{_TEXT_SEC};font-size:11px;")
         self._stat.hide(); root.addWidget(self._stat)
 
@@ -249,7 +249,7 @@ class CihazTeknikUtsScraper(QWidget):
         self._inp.returnPressed.connect(self._start)
         row.addWidget(self._inp, stretch=1)
         btn = QPushButton("Sorgula"); btn.setStyleSheet(_BTN_P)
-        btn.setCursor(Qt.PointingHandCursor); btn.clicked.connect(self._start)
+        btn.setCursor(Qt.CursorShape.PointingHandCursor); btn.clicked.connect(self._start)
         row.addWidget(btn); vb.addLayout(row)
 
         return box
@@ -260,18 +260,18 @@ class CihazTeknikUtsScraper(QWidget):
 
         self._btn_debug = QPushButton("🛠  Ham JSON")
         self._btn_debug.setStyleSheet(_BTN_S)
-        self._btn_debug.setCursor(Qt.PointingHandCursor)
+        self._btn_debug.setCursor(Qt.CursorShape.PointingHandCursor)
         self._btn_debug.setVisible(False)
         self._btn_debug.clicked.connect(self._show_debug)
         h.addWidget(self._btn_debug)
 
         h.addStretch()
         b_cancel = QPushButton("İptal"); b_cancel.setStyleSheet(_BTN_S)
-        b_cancel.setCursor(Qt.PointingHandCursor)
+        b_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
         b_cancel.clicked.connect(self.canceled.emit); h.addWidget(b_cancel)
 
         self._b_save = QPushButton("💾  Veritabanına Kaydet")
-        self._b_save.setStyleSheet(_BTN_P); self._b_save.setCursor(Qt.PointingHandCursor)
+        self._b_save.setStyleSheet(_BTN_P); self._b_save.setCursor(Qt.CursorShape.PointingHandCursor)
         self._b_save.setEnabled(False); self._b_save.clicked.connect(self._save)
         h.addWidget(self._b_save)
         return bar
@@ -352,7 +352,7 @@ class CihazTeknikUtsScraper(QWidget):
             lb = QLabel(val if val else "—")
             lb.setTextInteractionFlags(Qt.TextSelectableByMouse)
             lb.setWordWrap(True)
-            lb.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+            lb.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
             lb.setStyleSheet(_VAL_CSS + (f"color:{_WARNING};" if not val else ""))
             return lb
 

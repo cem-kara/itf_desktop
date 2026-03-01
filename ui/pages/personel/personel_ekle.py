@@ -198,20 +198,20 @@ class PersonelEklePage(QWidget):
         photo_grp = QGroupBox("Fotograf")
         photo_grp.setStyleSheet(S["group"])
         photo_lay = QVBoxLayout(photo_grp)
-        photo_lay.setAlignment(Qt.AlignCenter)
+        photo_lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.lbl_resim = QLabel("Fotoğraf\nYüklenmedi")
         self.lbl_resim.setFixedSize(160, 200)
-        self.lbl_resim.setAlignment(Qt.AlignCenter)
+        self.lbl_resim.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_resim.setStyleSheet(S["photo_area"])
-        photo_lay.addWidget(self.lbl_resim, alignment=Qt.AlignCenter)
+        photo_lay.addWidget(self.lbl_resim, alignment=Qt.AlignmentFlag.AlignCenter)
 
         btn_resim = QPushButton("Fotograf Sec")
         btn_resim.setStyleSheet(S["photo_btn"])
-        btn_resim.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_resim.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_resim.clicked.connect(self._select_photo)
         IconRenderer.set_button_icon(btn_resim, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
-        photo_lay.addWidget(btn_resim, alignment=Qt.AlignCenter)
+        photo_lay.addWidget(btn_resim, alignment=Qt.AlignmentFlag.AlignCenter)
         left_l.addWidget(photo_grp)
 
         # Kimlik Bilgileri
@@ -340,7 +340,7 @@ class PersonelEklePage(QWidget):
 
             btn_dip = QPushButton(f"Diploma {i} Sec")
             btn_dip.setStyleSheet(S["file_btn"])
-            btn_dip.setCursor(QCursor(Qt.PointingHandCursor))
+            btn_dip.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             btn_dip.clicked.connect(lambda checked, idx=i: self._select_diploma(idx))
             IconRenderer.set_button_icon(btn_dip, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
             col.addWidget(btn_dip)
@@ -357,7 +357,7 @@ class PersonelEklePage(QWidget):
 
             if i == "1":
                 sep = QFrame()
-                sep.setFrameShape(QFrame.VLine)
+                sep.setFrameShape(QFrame.Shape.VLine)
                 sep.setFixedWidth(1)
                 sep.setStyleSheet(S["separator"])
                 edu_main.addWidget(sep)
@@ -394,7 +394,7 @@ class PersonelEklePage(QWidget):
 
         btn_iptal = QPushButton("IPTAL")
         btn_iptal.setStyleSheet(S["cancel_btn"])
-        btn_iptal.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_iptal.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_iptal.clicked.connect(self._on_cancel)
         IconRenderer.set_button_icon(btn_iptal, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         footer.addWidget(btn_iptal)
@@ -402,7 +402,7 @@ class PersonelEklePage(QWidget):
         title = "GÜNCELLE" if self._is_edit else "KAYDET"
         self.btn_kaydet = QPushButton(f"PERSONELI {title}")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
-        self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_kaydet.clicked.connect(self._on_save)
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         if self._action_guard:
@@ -648,7 +648,7 @@ class PersonelEklePage(QWidget):
             pixmap = QPixmap(path)
             if not pixmap.isNull():
                 self.lbl_resim.setPixmap(
-                    pixmap.scaled(160, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                    pixmap.scaled(160, 200, Qt.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
                 )
             self.lbl_resim.setToolTip(os.path.basename(path))
             logger.info(f"Fotoğraf seçildi: {path}")

@@ -80,7 +80,7 @@ class PersonelOverviewPanel(QWidget):
         # Sol: Fotoğraf + yükleme butonu
         self.lbl_resim = QLabel()
         self.lbl_resim.setFixedSize(80, 100)
-        self.lbl_resim.setAlignment(Qt.AlignCenter)
+        self.lbl_resim.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_resim.setStyleSheet(
             f"border: 1px solid {DarkTheme.BORDER_PRIMARY}; border-radius: 6px; "
             f"background: {DarkTheme.BG_SECONDARY}; color: {DarkTheme.TEXT_DISABLED};"
@@ -89,7 +89,7 @@ class PersonelOverviewPanel(QWidget):
         photo_v = QVBoxLayout()
         photo_v_widget = QWidget()
         photo_v_widget.setLayout(photo_v)
-        photo_v.addWidget(self.lbl_resim, 0, Qt.AlignHCenter)
+        photo_v.addWidget(self.lbl_resim, 0, Qt.AlignmentFlag.AlignHCenter)
 
         self._photo_upload_btn = QPushButton("Resim Yükle")
         self._photo_upload_btn.setFixedSize(90, 26)
@@ -97,7 +97,7 @@ class PersonelOverviewPanel(QWidget):
             f"background: {DarkTheme.BTN_PRIMARY_BG}; color: {DarkTheme.BTN_PRIMARY_TEXT}; border-radius:4px;"
         )
         self._photo_upload_btn.clicked.connect(self._on_photo_upload)
-        photo_v.addWidget(self._photo_upload_btn, 0, Qt.AlignHCenter)
+        photo_v.addWidget(self._photo_upload_btn, 0, Qt.AlignmentFlag.AlignHCenter)
 
         h_main_layout.addWidget(photo_v_widget)
 
@@ -170,7 +170,7 @@ class PersonelOverviewPanel(QWidget):
         hint = QLabel("Diploma ve ek belgeler için Belgeler sekmesini kullanın.")
         hint.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 11px;")
         btn_docs = QPushButton("Belgeler")
-        btn_docs.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_docs.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_docs.setStyleSheet(S.get("btn_action", S.get("refresh_btn", "")))
         try:
             IconRenderer.set_button_icon(btn_docs, "upload", color=DarkTheme.TEXT_SECONDARY, size=14)
@@ -223,7 +223,7 @@ class PersonelOverviewPanel(QWidget):
             if not pixmap.isNull():
                 self.lbl_resim.setText("")
                 self.lbl_resim.setPixmap(
-                    pixmap.scaled(self.lbl_resim.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                    pixmap.scaled(self.lbl_resim.size(), Qt.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
                 )
                 self.lbl_resim.setToolTip(os.path.basename(photo_ref))
                 return
@@ -246,7 +246,7 @@ class PersonelOverviewPanel(QWidget):
                         if not pixmap.isNull():
                             self.lbl_resim.setText("")
                             self.lbl_resim.setPixmap(
-                                pixmap.scaled(self.lbl_resim.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                                pixmap.scaled(self.lbl_resim.size(), Qt.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
                             )
                             self.lbl_resim.setToolTip("Drive fotoğrafı")
                             return
@@ -392,7 +392,7 @@ class PersonelOverviewPanel(QWidget):
     def _create_icon_btn(self, icon_name, tooltip, callback, visible=True):
         btn = QPushButton("")
         btn.setToolTip(tooltip)
-        btn.setCursor(QCursor(Qt.PointingHandCursor))
+        btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn.setFixedSize(30, 26)
         btn.setVisible(visible)
         IconRenderer.set_button_icon(btn, icon_name, color=DarkTheme.TEXT_SECONDARY, size=14)
@@ -473,7 +473,7 @@ class PersonelOverviewPanel(QWidget):
         )
         
         completer = QCompleter(self)
-        completer.setCaseSensitivity(Qt.CaseInsensitive)
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         completer.setFilterMode(Qt.MatchContains)
         combo.setCompleter(completer)
 
@@ -499,7 +499,7 @@ class PersonelOverviewPanel(QWidget):
         )
 
         completer = QCompleter(self)
-        completer.setCaseSensitivity(Qt.CaseInsensitive)
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         completer.setFilterMode(Qt.MatchContains)
         combo.setCompleter(completer)
         

@@ -228,8 +228,8 @@ class RaporTableModel(BaseTableModel):
 
     def _align(self, key):
         if key in ("Tarih", "Sonuc", "Pb"):
-            return Qt.AlignCenter
-        return Qt.AlignVCenter | Qt.AlignLeft
+            return Qt.AlignmentFlag.AlignCenter
+        return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
     def set_rows(self, rows):
         self.set_data(rows)
@@ -339,7 +339,7 @@ class RKERaporPenceresi(QWidget):
         hl.addWidget(sec_widget)
 
         # dikey ayraç
-        sep=QFrame(); sep.setFrameShape(QFrame.VLine)
+        sep=QFrame(); sep.setFrameShape(QFrame.Shape.VLine)
         sep.setStyleSheet(f"background:{_BD};width:1px;")
         hl.addWidget(sep)
 
@@ -366,7 +366,7 @@ class RKERaporPenceresi(QWidget):
         hl.addWidget(fil_widget,1)
 
         # ayraç
-        sep2=QFrame(); sep2.setFrameShape(QFrame.VLine)
+        sep2=QFrame(); sep2.setFrameShape(QFrame.Shape.VLine)
         sep2.setStyleSheet(f"background:{_BD};width:1px;")
         hl.addWidget(sep2)
 
@@ -380,7 +380,7 @@ class RKERaporPenceresi(QWidget):
 
         self.btn_yenile=QPushButton("âŸ³  VERİLERİ YENİLE")
         self.btn_yenile.setFixedHeight(30); self.btn_yenile.setMinimumWidth(180)
-        self.btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_yenile.setStyleSheet(
             f"QPushButton{{background:transparent;border:1px solid {_BD2};border-radius:5px;"
             f"color:{_TX1};font-family:{_MONO};font-size:9px;letter-spacing:1px;}}"
@@ -390,7 +390,7 @@ class RKERaporPenceresi(QWidget):
         self.btn_olustur=QPushButton("ğŸ“„  PDF RAPOR OLUŞTUR")
         self.btn_olustur.setObjectName("btn_kaydet")
         self.btn_olustur.setFixedHeight(30); self.btn_olustur.setMinimumWidth(180)
-        self.btn_olustur.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_olustur.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_olustur.setStyleSheet(
             f"QPushButton{{background:{_RED};border:none;border-radius:5px;"
             f"color:#fff;font-family:{_MONO};font-size:9px;font-weight:800;letter-spacing:1px;}}"
@@ -412,13 +412,13 @@ class RKERaporPenceresi(QWidget):
         self._rapor_model=RaporTableModel(); self.tablo=QTableView()
         self.tablo.setModel(self._rapor_model); self.tablo.setStyleSheet(_S_TABLE)
         self.tablo.setAlternatingRowColors(True)
-        self.tablo.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tablo.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tablo.verticalHeader().setVisible(False); self.tablo.setShowGrid(False)
         self.tablo.setSortingEnabled(True)
         hdr=self.tablo.horizontalHeader()
         for i,w in enumerate(_RW):
-            hdr.setSectionResizeMode(i,QHeaderView.Stretch if i==len(_RCOLS)-1 else QHeaderView.Interactive)
+            hdr.setSectionResizeMode(i,QHeaderView.ResizeMode.Stretch if i==len(_RCOLS)-1 else QHeaderView.ResizeMode.Interactive)
             if i!=len(_RCOLS)-1: hdr.resizeSection(i,w)
         vl.addWidget(self.tablo,1)
 
@@ -461,7 +461,7 @@ class RKERaporPenceresi(QWidget):
             self.btn_olustur.setEnabled(False)
             self.btn_yenile.setText("âŸ³  YÃœKLENİYOR...")
             self.lbl_durum.setText("Veriler yükleniyor...")
-            QApplication.setOverrideCursor(Qt.WaitCursor)
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
 
             self.loader = RaporVeriYukleyici(self._rke_repo, self._muayene_repo)
             self.loader.veri_hazir.connect(self.veriler_geldi)
@@ -570,7 +570,7 @@ class RKERaporPenceresi(QWidget):
         self.btn_olustur.setEnabled(False)
         self.btn_olustur.setText("İŞleniyor...")
         self.lbl_durum.setText("PDF oluŞturuluyor...")
-        QApplication.setOverrideCursor(Qt.WaitCursor)
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         self.worker=RaporOlusturucuWorker(mod,self.filtrelenmis_veri,{"ozet":ozet})
         self.worker.log_mesaji.connect(self.lbl_durum.setText)
         self.worker.islem_bitti.connect(self._rapor_tamam)

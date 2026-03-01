@@ -30,27 +30,27 @@ class RecentLeaveTableModel(QAbstractTableModel):
     def columnCount(self, parent=QModelIndex()):
         return len(IZIN_COLUMNS)
 
-    def data(self, index, role=Qt.DisplayRole):
+    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return None
         row = self._data[index.row()]
         col_key = self._keys[index.column()]
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             value = row.get(col_key, "")
             # Tarih formatlamasını _fmt_date fonksiyonuna bırakalım.
             if "Tarihi" in col_key:
                 return self._fmt_date(value)
             return str(value)
-        if role == Qt.TextAlignmentRole:
+        if role == Qt.ItemDataRole.TextAlignmentRole:
             if col_key == "GunSayisi":
-                return Qt.AlignCenter
+                return Qt.AlignmentFlag.AlignCenter
             if "Tarihi" in col_key:
-                return Qt.AlignCenter
-            return Qt.AlignVCenter | Qt.AlignLeft
+                return Qt.AlignmentFlag.AlignCenter
+            return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
         return None
 
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
+    def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
+        if role == Qt.ItemDataRole.DisplayRole and orientation == Qt.Orientation.Horizontal:
             return self._headers[section]
         return None
 
@@ -165,8 +165,8 @@ class PersonelIzinPanel(QWidget):
         self._leave_table_view.setStyleSheet(S["table"])
         self._leave_table_view.verticalHeader().setVisible(False)
         self._leave_table_view.setEditTriggers(QTableView.NoEditTriggers)
-        self._leave_table_view.setSelectionBehavior(QTableView.SelectRows)
-        self._leave_table_view.setSelectionMode(QTableView.SingleSelection)
+        self._leave_table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self._leave_table_view.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self._leave_table_view.setAlternatingRowColors(True)
 
         header = self._leave_table_view.horizontalHeader()
@@ -174,9 +174,9 @@ class PersonelIzinPanel(QWidget):
         # Son sütun (Açıklama) kalan alanı dolduracak şekilde genişler.
         for i, col_info in enumerate(IZIN_COLUMNS):
             width = col_info[2]
-            header.setSectionResizeMode(i, QHeaderView.Interactive)
+            header.setSectionResizeMode(i, QHeaderView.ResizeMode.Interactive)
             self._leave_table_view.setColumnWidth(i, width)
-        header.setSectionResizeMode(len(IZIN_COLUMNS) - 1, QHeaderView.Stretch)
+        header.setSectionResizeMode(len(IZIN_COLUMNS) - 1, QHeaderView.ResizeMode.Stretch)
         
         v_recent_leaves.addWidget(self._leave_table_view)
         main_layout.addWidget(grp_recent_leaves)
@@ -188,7 +188,7 @@ class PersonelIzinPanel(QWidget):
         lbl.setStyleSheet(S["stat_label"])
         grid.addWidget(lbl, row, 0)
         val = QLabel("—")
-        val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        val.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         val.setStyleSheet(S[style_key])
         grid.addWidget(val, row, 1)
         return val

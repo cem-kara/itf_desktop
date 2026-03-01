@@ -193,7 +193,7 @@ class StatCard(QFrame):
         self._title  = title
         self._icon   = icon
         self._accent = accent
-        self.setCursor(QCursor(Qt.PointingHandCursor))
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setMinimumSize(180, 100)
         self._build_ui()
         self._apply_style(hover=False)
@@ -209,7 +209,7 @@ class StatCard(QFrame):
 
         self._icon_lbl = QLabel()
         self._icon_lbl.setFixedSize(32, 32)
-        self._icon_lbl.setAlignment(Qt.AlignCenter)
+        self._icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         _icon_map = {
             "⚠️": "alert_triangle", "🆕": "plus_circle", "🛠️": "wrench",
@@ -333,7 +333,7 @@ def _section_header(title: str) -> QLabel:
 
 def _divider() -> QFrame:
     line = QFrame()
-    line.setFrameShape(QFrame.HLine)
+    line.setFrameShape(QFrame.Shape.HLine)
     line.setStyleSheet(f"color: {BORDER}; background: {BORDER}; max-height: 1px;")
     return line
 
@@ -384,7 +384,7 @@ class DashboardPage(QWidget):
         except Exception:
             pass
         self.refresh_button.setFixedHeight(34)
-        self.refresh_button.setCursor(QCursor(Qt.PointingHandCursor))
+        self.refresh_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.refresh_button.setStyleSheet(S.get("btn_refresh", ""))
         self.refresh_button.clicked.connect(self.load_data)
 

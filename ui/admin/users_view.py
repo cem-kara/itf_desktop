@@ -106,7 +106,7 @@ class UsersView(QWidget):
         self.table.setColumnCount(4)
         self.table.setHorizontalHeaderLabels(["ID", "Kullanıcı Adı", "Durum", "Roller"])
         self.table.horizontalHeader().setStretchLastSection(True)
-        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.setAlternatingRowColors(True)
@@ -188,7 +188,7 @@ class UsersView(QWidget):
         ):
             return
         dialog = UserDialog(self._db, parent=self)
-        if dialog.exec() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             data = dialog.get_data()
             
             if not data["username"]:
@@ -235,7 +235,7 @@ class UsersView(QWidget):
         user = self._auth_repo.get_user_by_id(user_id)
         
         dialog = UserDialog(self._db, user, parent=self)
-        if dialog.exec() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             data = dialog.get_data()
             
             try:
@@ -277,10 +277,10 @@ class UsersView(QWidget):
             self,
             "Onay",
             f"'{username}' kullanıcısını silmek istediğinizden emin misiniz?",
-            QMessageBox.Yes | QMessageBox.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             try:
                 self._auth_repo.delete_user(user_id)
                 logger.info(f"Kullanıcı silindi: {username}")
@@ -309,7 +309,7 @@ class UsersView(QWidget):
         selected_roles = {r.id for r in self._auth_repo.get_user_roles(user_id)}
 
         dialog = RoleSelectDialog(roles, selected_roles, username=username, parent=self)
-        if dialog.exec() != QDialog.Accepted:
+        if dialog.exec() != QDialog.DialogCode.Accepted:
             return
 
         try:
@@ -356,14 +356,14 @@ class RoleSelectDialog(QDialog):
             self._table.insertRow(row)
             item = QTableWidgetItem(role["name"])
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(Qt.Checked if role["id"] in self._selected else Qt.Unchecked)
+            item.setCheckState(Qt.CheckState.Checked if role["id"] in self._selected else Qt.CheckState.Unchecked)
             self._table.setItem(row, 0, item)
 
     def get_selected_role_ids(self) -> list[int]:
         selected = []
         for row in range(self._table.rowCount()):
             item = self._table.item(row, 0)
-            if item and item.checkState() == Qt.Checked:
+            if item and item.checkState() == Qt.CheckState.Checked:
                 selected.append(self._roles[row]["id"])
         return selected
 

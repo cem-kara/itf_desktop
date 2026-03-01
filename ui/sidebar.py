@@ -63,7 +63,7 @@ class FlatSection(QWidget):
 
     def add_item(self, baslik: str, callback, icon_key: str | None = None) -> QPushButton:
         btn = QPushButton(f"  {baslik}")
-        btn.setCursor(QCursor(Qt.PointingHandCursor))
+        btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn.setCheckable(True)
         btn.setFixedHeight(34)
         btn._baslik = baslik
@@ -250,7 +250,7 @@ class Sidebar(QWidget):
 
         # Bildirim butonu
         self.notifications_btn = QPushButton("  Bildirimler")
-        self.notifications_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.notifications_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         try:
             self.notifications_btn.setIcon(
                 Icons.get("bell_dot", size=14, color=NOTIFY_TEXT))
@@ -276,7 +276,7 @@ class Sidebar(QWidget):
 
         # Senkronize Et butonu
         self.sync_btn = QPushButton("  Senkronize Et")
-        self.sync_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.sync_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         try:
             self.sync_btn.setIcon(Icons.get("sync", size=14, color=SYNC_TEXT))
             self.sync_btn.setIconSize(QSize(14, 14))

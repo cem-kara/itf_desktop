@@ -72,10 +72,10 @@ class LogTableModel(BaseTableModel):
 
     def _align(self, key):
         if key == "timestamp":
-            return Qt.AlignCenter
+            return Qt.AlignmentFlag.AlignCenter
         if key == "level":
-            return Qt.AlignCenter
-        return Qt.AlignVCenter | Qt.AlignLeft
+            return Qt.AlignmentFlag.AlignCenter
+        return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
 
 class LogViewerPage(QWidget):
@@ -208,8 +208,8 @@ class LogViewerPage(QWidget):
         # Tablo
         self._table = QTableView()
         self._table.setAlternatingRowColors(True)
-        self._table.setSelectionBehavior(QTableView.SelectRows)
-        self._table.setSelectionMode(QTableView.SingleSelection)
+        self._table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self._table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self._table.setSortingEnabled(False)
         self._table.horizontalHeader().setStretchLastSection(True)
         self._table.verticalHeader().setVisible(False)
@@ -323,7 +323,7 @@ class LogViewerPage(QWidget):
 
     def _toggle_auto_refresh(self, state):
         """Otomatik yenilemeyi aç/kapat"""
-        if state == Qt.Checked:
+        if state == Qt.CheckState.Checked:
             self._auto_refresh_timer.start(10000)  # 10 saniye
             logger.info("Otomatik log yenileme aktifleştirildi")
         else:

@@ -44,12 +44,12 @@ COL_IDX = {c[0]: i for i, c in enumerate(COLUMNS)}
 
 class CihazTableModel(BaseTableModel):
 
-    RAW_ROW_ROLE = Qt.UserRole + 1
+    RAW_ROW_ROLE = Qt.ItemDataRole.UserRole + 1
 
     def __init__(self, data=None, parent=None):
         super().__init__(COLUMNS, data, parent)
 
-    def data(self, index, role=Qt.DisplayRole):
+    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return None
         row = self._data[index.row()]
@@ -58,7 +58,7 @@ class CihazTableModel(BaseTableModel):
         if role == self.RAW_ROW_ROLE:
             return row
 
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             if key == "_cihaz":
                 return f"{row.get('Cihazid', '')} {row.get('CihazTipi', '')}".strip()
             if key == "_marka_model":
@@ -100,13 +100,13 @@ class CihazDelegate(QStyledItemDelegate):
 
     def paint(self, painter: QPainter, option, index):
         painter.save()
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         row = index.row()
         col = index.column()
         key = COLUMNS[col][0]
         rect = option.rect
-        is_sel = bool(option.state & QStyle.State_Selected)
+        is_sel = bool(option.state & QStyle.StateFlag.State_Selected)
         is_hover = (row == self._hover_row)
 
         if is_sel:
@@ -161,22 +161,22 @@ class CihazDelegate(QStyledItemDelegate):
         pad = 8
         r1 = QRect(rect.x() + pad, rect.y() + 4, rect.width() - pad * 2, 17)
         r2 = QRect(rect.x() + pad, rect.y() + 21, rect.width() - pad * 2, 14)
-        p.setFont(QFont("Courier New", 10) if mono_top else QFont("Segoe UI", 11, QFont.Medium))
+        p.setFont(QFont("Courier New", 10) if mono_top else QFont("Segoe UI", 11, QFont.Weight.Medium))
         p.setPen(QColor(C.TEXT_PRIMARY))
-        p.drawText(r1, Qt.AlignVCenter | Qt.AlignLeft,
-                   p.fontMetrics().elidedText(top, Qt.ElideRight, r1.width()))
+        p.drawText(r1, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                   p.fontMetrics().elidedText(top, Qt.TextElideMode.ElideRight, r1.width()))
         p.setFont(QFont("Segoe UI", 9))
         p.setPen(QColor(C.TEXT_MUTED))
-        p.drawText(r2, Qt.AlignVCenter | Qt.AlignLeft,
-                   p.fontMetrics().elidedText(bottom, Qt.ElideRight, r2.width()))
+        p.drawText(r2, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                   p.fontMetrics().elidedText(bottom, Qt.TextElideMode.ElideRight, r2.width()))
 
     def _draw_mono(self, p, rect, text):
         pad = 8
         r = QRect(rect.x() + pad, rect.y(), rect.width() - pad * 2, rect.height())
         p.setFont(QFont("Segoe UI", 11))
         p.setPen(QColor(C.TEXT_PRIMARY))
-        p.drawText(r, Qt.AlignVCenter | Qt.AlignLeft,
-                   p.fontMetrics().elidedText(text, Qt.ElideRight, r.width()))
+        p.drawText(r, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                   p.fontMetrics().elidedText(text, Qt.TextElideMode.ElideRight, r.width()))
 
     def _draw_status_pill(self, p, rect, text):
         text = text or "—"
@@ -185,11 +185,11 @@ class CihazDelegate(QStyledItemDelegate):
         fg = ComponentStyles.get_status_text_color(text)
         br, bgc, bb, ba = bg
         p.setBrush(QBrush(QColor(br, bgc, bb, ba)))
-        p.setPen(Qt.NoPen)
+        p.setPen(Qt.PenStyle.NoPen)
         p.drawRoundedRect(r, 11, 11)
         p.setPen(QColor(fg))
-        p.setFont(QFont("Segoe UI", 9, QFont.Medium))
-        p.drawText(r, Qt.AlignCenter, text)
+        p.setFont(QFont("Segoe UI", 9, QFont.Weight.Medium))
+        p.drawText(r, Qt.AlignmentFlag.AlignCenter, text)
 
     def _draw_action_btns(self, p, rect, row):
         labels = [
@@ -205,8 +205,8 @@ class CihazDelegate(QStyledItemDelegate):
             p.setPen(QPen(QColor(C.BORDER_STRONG)))
             p.drawRoundedRect(btn_rect, 6, 6)
             p.setPen(QColor(fg))
-            p.setFont(QFont("Segoe UI", 9, QFont.Medium))
-            p.drawText(btn_rect, Qt.AlignCenter, label)
+            p.setFont(QFont("Segoe UI", 9, QFont.Weight.Medium))
+            p.drawText(btn_rect, Qt.AlignmentFlag.AlignCenter, label)
             self._btn_rects[(row, key)] = btn_rect
             x += self.BTN_W + self.BTN_GAP
 
@@ -287,7 +287,7 @@ class CihazListesiPage(QWidget):
         for lbl in ("Aktif", "Bakımda", "Arızalı", "Tümü"):
             btn = QPushButton(lbl)
             btn.setCheckable(True)
-            btn.setCursor(QCursor(Qt.PointingHandCursor))
+            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             btn.setFixedHeight(28)
             btn.setMinimumWidth(90)
 
@@ -333,14 +333,14 @@ class CihazListesiPage(QWidget):
 
         self.btn_yenile = QPushButton()
         self.btn_yenile.setToolTip("Yenile")
-        self.btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_yenile.setFixedSize(32, 28)
         self.btn_yenile.setStyleSheet(STYLES["refresh_btn"])
         IconRenderer.set_button_icon(self.btn_yenile, "refresh", color=C.TEXT_SECONDARY, size=16)
         lay.addWidget(self.btn_yenile)
 
         self.btn_yeni = QPushButton(" Yeni Cihaz")
-        self.btn_yeni.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_yeni.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_yeni.setStyleSheet(STYLES["action_btn"])
         IconRenderer.set_button_icon(self.btn_yeni, "plus", color=C.BTN_PRIMARY_TEXT, size=16)
         self.btn_yeni.setIconSize(QSize(16, 16))
@@ -398,15 +398,15 @@ class CihazListesiPage(QWidget):
         self._model = CihazTableModel()
         self._proxy = QSortFilterProxyModel()
         self._proxy.setSourceModel(self._model)
-        self._proxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self._proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self._proxy.setFilterKeyColumn(-1)
 
         self.table = QTableView()
         self.table.setModel(self._proxy)
         self.table.setStyleSheet(STYLES["table"])
         self.table.setAlternatingRowColors(False)
-        self.table.setSelectionBehavior(QTableView.SelectRows)
-        self.table.setSelectionMode(QTableView.SingleSelection)
+        self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self.table.setSortingEnabled(True)
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
@@ -418,10 +418,10 @@ class CihazListesiPage(QWidget):
 
         hdr = self.table.horizontalHeader()
         for i, (_, _, w) in enumerate(COLUMNS):
-            hdr.setSectionResizeMode(i, QHeaderView.Fixed)
+            hdr.setSectionResizeMode(i, QHeaderView.ResizeMode.Fixed)
             self.table.setColumnWidth(i, w)
-        hdr.setSectionResizeMode(COL_IDX["_marka_model"], QHeaderView.Stretch)
-        hdr.setSectionResizeMode(COL_IDX["Birim"], QHeaderView.Stretch)
+        hdr.setSectionResizeMode(COL_IDX["_marka_model"], QHeaderView.ResizeMode.Stretch)
+        hdr.setSectionResizeMode(COL_IDX["Birim"], QHeaderView.ResizeMode.Stretch)
         return self.table
 
     def _build_footer(self) -> QFrame:
@@ -455,7 +455,7 @@ class CihazListesiPage(QWidget):
         lay.addWidget(self.progress)
 
         self.btn_load_more = QPushButton("Daha Fazla Yükle")
-        self.btn_load_more.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_load_more.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_load_more.setFixedHeight(28)
         self.btn_load_more.setStyleSheet(STYLES["action_btn"])
         self.btn_load_more.setVisible(False)
