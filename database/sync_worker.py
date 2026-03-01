@@ -5,6 +5,7 @@ from core.config import AppConfig
 from database.sqlite_manager import SQLiteManager
 from core.di import get_registry
 from database.sync_service import SyncService, SyncBatchError
+from core.services.file_sync_service import FileSyncService
 
 
 class SyncWorker(QThread):
@@ -51,6 +52,24 @@ class SyncWorker(QThread):
                 db=db,
                 registry=registry
             )
+
+            # 📁 DOSYA SYNC — DB sync'ten önce çalışır.
+            # Offline kaydedilen dosyaları Drive'a yükler,
+            # DrivePath dolu kayıtlar ardından Sheets'e push edilir.
+            try:
+                logger.info("Dosya senkronizasyonu başlıyor...")
+                file_sync = FileSyncService(db=db, registry=registry)
+                file_result = file_sync.push_pending_files()
+                if file_result["total"] > 0:
+                    logger.info(
+                        f"Dosya sync: {file_result['uploaded']} yüklendi, "
+                        f"{file_result['skipped']} atlandı, "
+                        f"{file_result['failed']} başarısız "
+                        f"(toplam {file_result['total']})"
+                    )
+            except Exception as file_err:
+                # Dosya sync hatası DB sync'i durdurmasın
+                logger.error(f"Dosya sync hatası (DB sync devam ediyor): {file_err}")
 
             # 🔁 TÜM TABLOLAR - Hata takibi ile
             try:

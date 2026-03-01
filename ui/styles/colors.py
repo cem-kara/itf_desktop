@@ -165,3 +165,16 @@ class DarkTheme:
     STATE_LEAVE   = (245, 158, 11,  35)   # Sarı — izinli
 
     RKE_PURP= "#a855f7"
+
+
+C = {
+    "red": getattr(DarkTheme, "DANGER", getattr(DarkTheme, "STATUS_ERROR", "#f75f5f")),
+    "amber": getattr(DarkTheme, "WARNING", getattr(DarkTheme, "STATUS_WARNING", "#f5a623")),
+    "green": getattr(DarkTheme, "SUCCESS", getattr(DarkTheme, "STATUS_SUCCESS", "#3ecf8e")),
+    "accent": getattr(DarkTheme, "ACCENT", "#4f8ef7"),
+    "muted": getattr(DarkTheme, "TEXT_MUTED", "#5a6278"),
+    "surface": getattr(DarkTheme, "SURFACE", getattr(DarkTheme, "BG_SECONDARY", "#13161d")),
+    "panel": getattr(DarkTheme, "PANEL", getattr(DarkTheme, "BG_ELEVATED", "#191d26")),
+    "border": getattr(DarkTheme, "BORDER", getattr(DarkTheme, "BORDER_PRIMARY", "#242938")),
+    "text": getattr(DarkTheme, "TEXT_PRIMARY", "#eef0f5"),
+}

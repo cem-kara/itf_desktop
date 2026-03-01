@@ -29,7 +29,7 @@ class PersonelOverviewPanel(QWidget):
         self._widgets = {}  # Alan adı -> QLineEdit
         self._upload_buttons = {}  # Alan adı -> QPushButton (diploma gibi)
         self._groups = {}   # Grup adı -> (layout, edit_btn, save_btn, cancel_btn)
-        # Dosya upload yönetimi (personel_upload_service ile uyumlu)
+        # Dosya upload yönetimi (personel_ekle ile uyumlu)
         self._file_paths = {}          # {'Resim': local_path, 'Diploma1': local_path, ...}
         self._drive_links = {}         # {'Resim': drive_link, 'Diploma1': link, ...}
         self._drive_folders = {}       # {'Personel_Resim': folder_id, ...}
@@ -902,7 +902,10 @@ class PersonelOverviewPanel(QWidget):
             ext = os.path.splitext(file_path)[1]
             custom_name = f"{tc_no}_{db_field}{ext}"
 
-            from ui.pages.personel.services.personel_upload_service import DriveUploadWorker
+            try:
+                from ui.pages.personel.personel_ekle import DriveUploadWorker
+            except Exception:
+                from ui.pages.personel.personel_ekle import DriveUploadWorker
 
             self._upload_meta[db_field] = {
                 "tc_no": tc_no,

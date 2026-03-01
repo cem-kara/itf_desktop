@@ -11,7 +11,12 @@ from ui.admin.audit_view import AuditView
 from ui.admin.permissions_view import PermissionsView
 from ui.admin.users_view import UsersView
 from ui.admin.roles_view import RolesView
+from ui.admin.log_viewer_page import LogViewerPage
+from ui.admin.yil_sonu_devir_page import YilSonuDevirPage
+from ui.admin.backup_page import BackupPage
+from ui.admin.settings_page import SettingsPage
 from ui.styles.colors import DarkTheme
+from ui.styles.icons import Icons, IconRenderer
 
 
 class AdminPanel(QWidget):
@@ -59,19 +64,43 @@ class AdminPanel(QWidget):
         
         # Kullanıcılar sekmesi
         self.users_view = UsersView(self._db, action_guard=self._action_guard)
-        self._tabs.addTab(self.users_view, "👤 Kullanıcılar")
+        self._tabs.addTab(self.users_view, "Kullanıcılar")
+        self._tabs.setTabIcon(0, Icons.get("user"))
         
         # Roller sekmesi
         self.roles_view = RolesView(self._db, action_guard=self._action_guard)
-        self._tabs.addTab(self.roles_view, "🛡️ Roller")
+        self._tabs.addTab(self.roles_view, "Roller")
+        self._tabs.setTabIcon(1, Icons.get("shield"))
         
         # Yetkiler sekmesi
         self.permissions_view = PermissionsView(self._db, action_guard=self._action_guard)
-        self._tabs.addTab(self.permissions_view, "🔑 Yetkiler")
+        self._tabs.addTab(self.permissions_view, "Yetkiler")
+        self._tabs.setTabIcon(2, Icons.get("lock"))
         
         # Audit log sekmesi
         self.audit_view = AuditView(self._db, action_guard=self._action_guard)
-        self._tabs.addTab(self.audit_view, "📋 Audit Log")
+        self._tabs.addTab(self.audit_view, "Audit Log")
+        self._tabs.setTabIcon(3, Icons.get("clipboard_list"))
+        
+        # Log görüntüleyici sekmesi
+        self.log_viewer = LogViewerPage()
+        self._tabs.addTab(self.log_viewer, "Log Görüntüleyici")
+        self._tabs.setTabIcon(4, Icons.get("file_text"))
+        
+        # Yıl sonu devir işlemleri sekmesi
+        self.yil_sonu_devir = YilSonuDevirPage(self._db)
+        self._tabs.addTab(self.yil_sonu_devir, "Yıl Sonu Devir")
+        self._tabs.setTabIcon(5, Icons.get("calendar_year"))
+        
+        # Yedekleme sekmesi
+        self.backup_page = BackupPage()
+        self._tabs.addTab(self.backup_page, "Yedekleme")
+        self._tabs.setTabIcon(6, Icons.get("database"))
+        
+        # Ayarlar sekmesi
+        self.settings_page = SettingsPage()
+        self._tabs.addTab(self.settings_page, "Ayarlar")
+        self._tabs.setTabIcon(7, Icons.get("settings"))
         
         layout.addWidget(self._tabs)
     
@@ -82,35 +111,28 @@ class AdminPanel(QWidget):
             QFrame {{
                 background: {DarkTheme.BG_SECONDARY};
                 border-bottom: 2px solid {DarkTheme.BORDER_PRIMARY};
-                padding: 16px;
+                padding: 8px;
             }}
         """)
         
         header_layout = QHBoxLayout(header)
-        header_layout.setContentsMargins(24, 16, 24, 16)
+        header_layout.setContentsMargins(20, 8, 20, 8)
         
         # Başlık
-        title_layout = QVBoxLayout()
-        
         title = QLabel("Admin Panel")
         font = QFont()
-        font.setPointSize(18)
+        font.setPointSize(16)
         font.setBold(True)
         title.setFont(font)
         title.setStyleSheet(f"color: {DarkTheme.TEXT_PRIMARY};")
         
-        subtitle = QLabel("Kullanıcı ve rol yönetimi")
-        subtitle.setStyleSheet(f"color: {DarkTheme.TEXT_SECONDARY}; font-size: 13px;")
-        
-        title_layout.addWidget(title)
-        title_layout.addWidget(subtitle)
-        
-        header_layout.addLayout(title_layout)
+        header_layout.addWidget(title)
         header_layout.addStretch()
         
         # Kapatma butonu
-        self.btn_kapat = QPushButton("✕ Kapat")
-        self.btn_kapat.setFixedHeight(36)
+        self.btn_kapat = QPushButton("Kapat")
+        IconRenderer.set_button_icon(self.btn_kapat, "x", size=14)
+        self.btn_kapat.setFixedHeight(32)
         self.btn_kapat.setStyleSheet(f"""
             QPushButton {{
                 background: {DarkTheme.BG_TERTIARY};
@@ -136,7 +158,7 @@ class AdminPanel(QWidget):
         layout = QVBoxLayout(widget)
         layout.setAlignment(Qt.AlignCenter)
         
-        label = QLabel(f"🚧 {name}")
+        label = QLabel(f"{name}")
         label.setStyleSheet(f"""
             QLabel {{
                 color: {DarkTheme.TEXT_DISABLED};

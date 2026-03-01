@@ -189,6 +189,67 @@ class GoogleDriveService:
             logger.error(f"Metadata getirme hatası ({file_id}): {e}")
             return None
     
+    def find_or_create_folder(
+        self,
+        folder_name: str,
+        parent_folder_id: Optional[str] = None
+    ) -> str:
+        """
+        Drive'da klasör bul, yoksa oluştur.
+
+        Args:
+            folder_name: Klasör adı
+            parent_folder_id: Üst klasör ID (None → Drive root)
+
+        Returns:
+            str: Klasör ID'si
+
+        Raises:
+            GoogleServisHatasi: Drive erişimi başarısız
+        """
+        try:
+            # Önce mevcut klasörü ara
+            query = (
+                f"name='{folder_name}' "
+                f"and mimeType='application/vnd.google-apps.folder' "
+                f"and trashed=false"
+            )
+            if parent_folder_id:
+                query += f" and '{parent_folder_id}' in parents"
+
+            results = self.service.files().list(
+                q=query,
+                fields="files(id, name)",
+                spaces="drive",
+            ).execute()
+
+            files = results.get("files", [])
+            if files:
+                folder_id = files[0]["id"]
+                logger.debug(f"Klasör bulundu: '{folder_name}' (ID: {folder_id})")
+                return folder_id
+
+            # Yoksa oluştur
+            metadata = {
+                "name": folder_name,
+                "mimeType": "application/vnd.google-apps.folder",
+            }
+            if parent_folder_id:
+                metadata["parents"] = [parent_folder_id]
+
+            folder = self.service.files().create(
+                body=metadata,
+                fields="id",
+            ).execute()
+
+            folder_id = folder["id"]
+            logger.info(f"Klasör oluşturuldu: '{folder_name}' (ID: {folder_id})")
+            return folder_id
+
+        except Exception as e:
+            logger.error(f"find_or_create_folder hatası ('{folder_name}'): {e}")
+            raise GoogleServisHatasi(f"Klasör oluşturulamadı: {e}")
+
     @staticmethod
     def extract_file_id(drive_link: str) -> Optional[str]:
         """

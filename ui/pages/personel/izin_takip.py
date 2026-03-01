@@ -20,6 +20,9 @@ from PySide6.QtGui import QColor, QCursor
 
 from core.logger import logger
 from core.date_utils import parse_date, to_ui_date
+from core.services.izin_service import IzinService
+from core.di import get_registry
+from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
@@ -56,65 +59,42 @@ DURUM_COLORS_FG = {
 }
 
 
-class IzinTableModel(QAbstractTableModel):
+class IzinTableModel(BaseTableModel):
     def __init__(self, data=None, parent=None):
-        super().__init__(parent)
-        self._data = data or []
-        self._keys = [c[0] for c in IZIN_COLUMNS]
-        self._headers = [c[1] for c in IZIN_COLUMNS]
+        super().__init__(IZIN_COLUMNS, data, parent)
 
-    def rowCount(self, parent=QModelIndex()):
-        return len(self._data)
+    def _display(self, key, row):
+        val = str(row.get(key, ""))
+        if key in ("BaslamaTarihi", "BitisTarihi") and val:
+            return to_ui_date(val)
+        return val
 
-    def columnCount(self, parent=QModelIndex()):
-        return len(IZIN_COLUMNS)
+    def _bg(self, key, row):
+        if key == "Durum":
+            return DURUM_COLORS_BG.get(str(row.get("Durum", "")))
+        return None
+
+    def _fg(self, key, row):
+        if key == "Durum":
+            return DURUM_COLORS_FG.get(str(row.get("Durum", "")), QColor(DarkTheme.TEXT_MUTED))
+        return None
+
+    def _align(self, key):
+        if key in ("Gun", "Durum"):
+            return Qt.AlignCenter
+        return Qt.AlignVCenter | Qt.AlignLeft
 
     def data(self, index, role=Qt.DisplayRole):
-        if not index.isValid():
-            return None
-        row = self._data[index.row()]
-        col_key = self._keys[index.column()]
-
-        if role == Qt.DisplayRole:
-            val = str(row.get(col_key, ""))
-            if col_key in ("BaslamaTarihi", "BitisTarihi") and val:
-                return to_ui_date(val)
-            return val
-
-        if role == Qt.BackgroundRole and col_key == "Durum":
-            return DURUM_COLORS_BG.get(str(row.get("Durum", "")))
-
-        if role == Qt.ForegroundRole and col_key == "Durum":
-            return DURUM_COLORS_FG.get(str(row.get("Durum", "")), QColor(DarkTheme.TEXT_MUTED))
-
-        if role == Qt.TextAlignmentRole:
-            if col_key in ("Gun", "Durum"):
-                return Qt.AlignCenter
-            return Qt.AlignVCenter | Qt.AlignLeft
-
-        # Sıralama için ham ISO değer
         if role == Qt.UserRole:
+            if not index.isValid():
+                return None
+            row = self.get_row(index.row()) or {}
+            col_key = self._keys[index.column()]
             if col_key in ("BaslamaTarihi", "BitisTarihi"):
                 d = parse_date(row.get(col_key, ""))
                 return d.isoformat() if d else ""
             return str(row.get(col_key, ""))
-
-        return None
-
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
-            return self._headers[section]
-        return None
-
-    def set_data(self, data):
-        self.beginResetModel()
-        self._data = data or []
-        self.endResetModel()
-
-    def get_row(self, row_idx):
-        if 0 <= row_idx < len(self._data):
-            return self._data[row_idx]
-        return None
+        return super().data(index, role)
 
 
 # ═══════════════════════════════════════════════
@@ -127,6 +107,7 @@ class IzinTakipPage(QWidget):
         super().__init__(parent)
         self.setStyleSheet(S["page"])
         self._db = db
+        self._svc = IzinService(get_registry(db))
         self._all_izin = []
         self._all_personel = []
         self._tatiller = []

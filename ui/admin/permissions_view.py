@@ -19,6 +19,7 @@ from PySide6.QtGui import QFont
 
 from core.logger import logger
 from database.permission_repository import PermissionRepository
+from ui.styles.icons import Icons, IconRenderer
 
 
 class PermissionDialog(QDialog):
@@ -87,7 +88,8 @@ class PermissionsView(QWidget):
         layout.addWidget(self.table)
 
         actions = QHBoxLayout()
-        self.btn_refresh = QPushButton("🔄 Yenile")
+        self.btn_refresh = QPushButton("Yenile")
+        IconRenderer.set_button_icon(self.btn_refresh, "refresh", size=14)
         self.btn_refresh.clicked.connect(self.load_permissions)
         actions.addStretch()
         actions.addWidget(self.btn_refresh)

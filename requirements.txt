@@ -22,6 +22,7 @@ google-api-python-client==2.108.0  # Google API client
 # ─── Logging & Monitoring ──────────────────────────────────────
 python-dateutil==2.8.2 # Tarih işlemleri
 pytz==2023.3           # Saat dilimi
+psutil==5.9.6          # Sistem/disk bilgileri (opsiyonel - yedekleme için)
 
 # ─── Geliştirme Araçları (Opsiyonel) ──────────────────────────
 pytest==7.4.3          # Unit testing

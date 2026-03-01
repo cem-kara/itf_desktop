@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 
 from core.logger import logger
 from core.date_utils import parse_date, to_db_date, to_ui_date
+from ui.components.base_table_model import BaseTableModel
 from ui.theme_manager import ThemeManager
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
@@ -121,52 +122,23 @@ class MuayeneTimelineWidget(QWidget):
             return QColor(239, 68, 68)  # red-500
 
 
-class SaglikTakipTableModel(QAbstractTableModel):
+class SaglikTakipTableModel(BaseTableModel):
     def __init__(self, rows=None, parent=None):
-        super().__init__(parent)
-        self._rows = rows or []
-        self._keys = [c[0] for c in TABLE_COLUMNS]
-        self._headers = [c[1] for c in TABLE_COLUMNS]
+        super().__init__(TABLE_COLUMNS, rows, parent)
 
-    def rowCount(self, parent=QModelIndex()):
-        return len(self._rows)
+    def _display(self, key, row):
+        value = row.get(key, "")
+        if key in ("MuayeneTarihi", "SonrakiKontrolTarihi"):
+            return to_ui_date(value, "")
+        return str(value)
 
-    def columnCount(self, parent=QModelIndex()):
-        return len(TABLE_COLUMNS)
-
-    def data(self, index, role=Qt.DisplayRole):
-        if not index.isValid():
-            return None
-        row = self._rows[index.row()]
-        key = self._keys[index.column()]
-
-        if role == Qt.DisplayRole:
-            value = row.get(key, "")
-            if key in ("MuayeneTarihi", "SonrakiKontrolTarihi"):
-                return to_ui_date(value, "")
-            return str(value)
-
-        if role == Qt.TextAlignmentRole:
-            if key in ("MuayeneTarihi", "SonrakiKontrolTarihi", "Sonuc", "Durum"):
-                return Qt.AlignCenter
-            return Qt.AlignVCenter | Qt.AlignLeft
-
-        return None
-
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
-            return self._headers[section]
-        return None
+    def _align(self, key):
+        if key in ("MuayeneTarihi", "SonrakiKontrolTarihi", "Sonuc", "Durum"):
+            return Qt.AlignCenter
+        return Qt.AlignVCenter | Qt.AlignLeft
 
     def set_rows(self, rows):
-        self.beginResetModel()
-        self._rows = rows or []
-        self.endResetModel()
-
-    def get_row(self, idx):
-        if 0 <= idx < len(self._rows):
-            return self._rows[idx]
-        return None
+        self.set_data(rows)
 
 
 class SaglikTakipPage(QWidget):

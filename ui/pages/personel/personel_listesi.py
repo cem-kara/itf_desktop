@@ -21,7 +21,10 @@ from PySide6.QtGui import (
 
 from core.logger import logger
 from core.date_utils import parse_date, to_db_date, to_ui_date
+from core.services.personel_service import PersonelService
+from core.di import get_registry
 from database.repository_registry import RepositoryRegistry
+from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
 from ui.styles.components import ComponentStyles, STYLES
 from ui.styles.icons import IconRenderer
@@ -80,28 +83,20 @@ class AvatarDownloaderWorker(QThread):
 #  TABLO MODELİ
 # ═══════════════════════════════════════════════════════════
 
-class PersonelTableModel(QAbstractTableModel):
+class PersonelTableModel(BaseTableModel):
 
     RAW_ROW_ROLE  = Qt.UserRole + 1
     IZIN_PCT_ROLE = Qt.UserRole + 2   # float 0–1  (-1 = veri yok)
     IZIN_TXT_ROLE = Qt.UserRole + 3   # "13 / 20"
 
     def __init__(self, data=None, parent=None):
-        super().__init__(parent)
-        self._data: list[dict] = data or []
+        super().__init__(COLUMNS, data, parent)
         self._izin_map: dict[str, dict] = {}
-        self._keys    = [c[0] for c in COLUMNS]
-        self._headers = [c[1] for c in COLUMNS]
-
-    def rowCount(self, parent=QModelIndex()): return len(self._data)
-    def columnCount(self, parent=QModelIndex()): return len(COLUMNS)
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
-            return self._headers[section]
         if role == Qt.SizeHintRole and orientation == Qt.Horizontal:
             return QSize(COLUMNS[section][2], 28)
-        return None
+        return super().headerData(section, orientation, role)
 
     def data(self, index, role=Qt.DisplayRole):
         if not index.isValid():
@@ -133,9 +128,7 @@ class PersonelTableModel(QAbstractTableModel):
         return self._data[idx] if 0 <= idx < len(self._data) else None
 
     def set_data(self, data: list):
-        self.beginResetModel()
-        self._data = data or []
-        self.endResetModel()
+        super().set_data(data)
 
     def set_izin_map(self, m: dict):
         """Geriye dönük uyumluluk için tutuldu. Artık izin bilgileri row içinde."""
@@ -434,6 +427,7 @@ class PersonelListesiPage(QWidget):
         super().__init__(parent)
         self.setStyleSheet(STYLES["page"])
         self._db             = db
+        self._svc            = PersonelService(get_registry(db))
         self._action_guard   = action_guard
         self._all_data       = []
         self._izin_map       = {}
@@ -1093,10 +1087,13 @@ class PersonelListesiPage(QWidget):
         ) != QMessageBox.Yes:
             return
         try:
-            registry = RepositoryRegistry(self._db)
-            registry.get("Personel").update(tc, {"Durum": yeni})
-            logger.info(f"Durum: {tc} → {yeni}")
-            self.load_data()
+            # Service kullanarak güncelle
+            success = self._svc.guncelle(tc, {"Durum": yeni})
+            if success:
+                logger.info(f"Durum: {tc} → {yeni}")
+                self.load_data()
+            else:
+                QMessageBox.critical(self, "Hata", "Durum güncellemesi başarısız")
         except Exception as e:
             logger.error(f"Durum değiştirme: {e}")
             QMessageBox.critical(self, "Hata", f"İşlem başarısız:\n{e}")

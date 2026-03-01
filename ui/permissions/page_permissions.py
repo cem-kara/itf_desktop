@@ -9,9 +9,9 @@ PAGE_PERMISSIONS: dict[str, str] = {
     "Personel Listesi": "personel.read",
     "Personel Ekle": "personel.write",
     "Sağlık Takip": "personel.read",
-    "SaÄŸlÄ±k Takip": "personel.read",
+    "Sağlık Takip": "personel.read",
     "İzin Takip ve FHSZ Yönetim": "personel.write",
-    "Ä°zin Takip ve FHSZ YÃ¶netim": "personel.write",
+    "İzin Takip ve FHSZ Yönetim": "personel.write",
 
     # Cihaz
     "Cihaz Listesi": "cihaz.read",
@@ -26,10 +26,10 @@ PAGE_PERMISSIONS: dict[str, str] = {
     # Yönetici
     "Admin Panel": "admin.panel",
     "Log Görüntüleyici": "admin.panel",
-    "Log GÃ¶rÃ¼ntÃ¼leyici": "admin.panel",
+    "Log Görüntüleyici": "admin.panel",
     "Yedek Yönetimi": "admin.panel",
-    "Yedek YÃ¶netimi": "admin.panel",
+    "Yedek Yönetimi": "admin.panel",
     "Ayarlar": "admin.panel",
     "Yıl Sonu İzin": "admin.panel",
-    "YÄ±l Sonu Ä°zin": "admin.panel",
+    "Yıl Sonu İzin": "admin.panel",
 }

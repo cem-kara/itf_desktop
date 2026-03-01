@@ -12,6 +12,7 @@ from core.logger import logger
 from database.auth_repository import AuthRepository
 from database.permission_repository import PermissionRepository
 from core.auth.password_hasher import PasswordHasher
+from ui.styles.icons import Icons, IconRenderer
 
 
 class UserDialog(QDialog):
@@ -93,7 +94,8 @@ class UsersView(QWidget):
         
         header.addStretch()
         
-        self.btn_add = QPushButton("+ Yeni Kullanıcı")
+        self.btn_add = QPushButton("Yeni Kullanıcı")
+        IconRenderer.set_button_icon(self.btn_add, "user_add", size=14)
         self.btn_add.clicked.connect(self._add_user)
         header.addWidget(self.btn_add)
         
@@ -114,20 +116,24 @@ class UsersView(QWidget):
         actions = QHBoxLayout()
         
         self.btn_edit = QPushButton("Düzenle")
+        IconRenderer.set_button_icon(self.btn_edit, "edit", size=14)
         self.btn_edit.clicked.connect(self._edit_user)
         actions.addWidget(self.btn_edit)
         
         self.btn_roles = QPushButton("Rolleri Yönet")
+        IconRenderer.set_button_icon(self.btn_roles, "shield", size=14)
         self.btn_roles.clicked.connect(self._manage_roles)
         actions.addWidget(self.btn_roles)
         
         self.btn_delete = QPushButton("Sil")
+        IconRenderer.set_button_icon(self.btn_delete, "trash", size=14)
         self.btn_delete.clicked.connect(self._delete_user)
         actions.addWidget(self.btn_delete)
         
         actions.addStretch()
         
-        self.btn_refresh = QPushButton("🔄 Yenile")
+        self.btn_refresh = QPushButton("Yenile")
+        IconRenderer.set_button_icon(self.btn_refresh, "refresh", size=14)
         self.btn_refresh.clicked.connect(self.load_users)
         actions.addWidget(self.btn_refresh)
         
