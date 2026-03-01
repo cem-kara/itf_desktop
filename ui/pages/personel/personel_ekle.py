@@ -17,11 +17,14 @@ from core.auth.password_hasher import PasswordHasher
 from core.di import get_registry
 from core.services.dokuman_service import DokumanService
 from core.services.personel_service import PersonelService
+from core.validators import validate_tc_kimlik_no, validate_email
+from core.text_utils import turkish_title_case
 from database.auth_repository import AuthRepository
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 from ui.theme_manager import ThemeManager
+from ui.components.formatted_widgets import apply_title_case_formatting
 
 
 class DokumanUploadWorker(QThread):
@@ -58,59 +61,6 @@ class DokumanUploadWorker(QThread):
                 )
         except Exception as e:
             self.upload_error.emit(self._job.get("db_field", ""), str(e))
-
-
-# ─── TC Kimlik No Validatörü ───
-def validate_tc_kimlik_no(tc_str: str) -> bool:
-    """
-    TC Kimlik No algoritması uygulaması.
-    - 11 rakam olmalı
-    - İlk basamak 0 olamaz
-    - Kontrol hanesi kontrol edilir
-    
-    Algoritma:
-    1. Pozisyonlar 1,3,5,7,9 (indices 0,2,4,6,8) topla → S1
-    2. Pozisyonlar 2,4,6,8 (indices 1,3,5,7) topla → S2
-    3. 10.basamak = (S1 * 7 - S2) % 10
-    4. 11.basamak = (S1 + S2 + 10.basamak) % 10
-    """
-    if not tc_str or len(tc_str) != 11 or not tc_str.isdigit():
-        return False
-    if tc_str[0] == '0':
-        return False
-    
-    # Tek pozisyonlar (1, 3, 5, 7, 9) = indices (0, 2, 4, 6, 8)
-    sum_odd = sum(int(tc_str[i]) for i in range(0, 9, 2))
-    # Çift pozisyonlar (2, 4, 6, 8) = indices (1, 3, 5, 7) — NOT 9!
-    sum_even = sum(int(tc_str[i]) for i in range(1, 9, 2))
-    
-    # 10. basamak (index 9) hesaplama
-    expected_10th = (sum_odd * 7 - sum_even) % 10
-    # 11. basamak (index 10) hesaplama
-    expected_11th = (sum_odd + sum_even + expected_10th) % 10
-    
-    actual_10th = int(tc_str[9])
-    actual_11th = int(tc_str[10])
-    
-    is_valid = actual_10th == expected_10th and actual_11th == expected_11th
-    
-    # Debug log (sadece hata durumunda)
-    if not is_valid:
-        logger.debug(f"TC kontrol hatası: {tc_str}")
-        logger.debug(f"  Tek pozisyonlar (1,3,5,7,9): {sum_odd}")
-        logger.debug(f"  Çift pozisyonlar (2,4,6,8,10): {sum_even}")
-        logger.debug(f"  10. basamak: beklenen={expected_10th}, gerçek={actual_10th}")
-        logger.debug(f"  11. basamak: beklenen={expected_11th}, gerçek={actual_11th}")
-    
-    return is_valid
-
-
-def validate_email(email_str: str) -> bool:
-    """Basit email format doğrulaması."""
-    if not email_str:
-        return True  # Opsiyonel alan
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return bool(re.match(pattern, email_str))
 
 
 def generate_username_from_name(ad_soyad: str) -> str:
@@ -300,7 +250,7 @@ class PersonelEklePage(QWidget):
         contact_lay = QVBoxLayout(contact_grp)
 
         row_c = QHBoxLayout()
-        self.ui["cep_tel"] = self._make_input("Cep Telefonu", row_c, placeholder="05XX XXX XX XX")
+        self.ui["cep_tel"] = self._make_input("Cep Telefonu", row_c, placeholder="05XX XXX XX XX", auto_format=False)
         
         # Email ile validation status
         email_container = QWidget()
@@ -349,7 +299,7 @@ class PersonelEklePage(QWidget):
 
         row_k2 = QHBoxLayout()
         self.ui["gorev_yeri"] = self._make_combo("Görev Yeri", row_k2, stretch=1)
-        self.ui["sicil_no"] = self._make_input("Kurum Sicil No", row_k2, stretch=1)
+        self.ui["sicil_no"] = self._make_input("Kurum Sicil No", row_k2, stretch=1, auto_format=False)
         corp_lay.addLayout(row_k2)
 
         row_k3 = QHBoxLayout()
@@ -375,8 +325,8 @@ class PersonelEklePage(QWidget):
 
             self.ui[f"okul{i}"] = self._make_combo_v(f"Okul Adı", col, editable=True)
             self.ui[f"fakulte{i}"] = self._make_combo_v(f"Bölüm / Fakülte", col, editable=True)
-            self.ui[f"mezun_tarihi{i}"] = self._make_input_v(f"Mezuniyet Tarihi", col)
-            self.ui[f"diploma_no{i}"] = self._make_input_v(f"Diploma No", col)
+            self.ui[f"mezun_tarihi{i}"] = self._make_input_v(f"Mezuniyet Tarihi", col, auto_format=False)
+            self.ui[f"diploma_no{i}"] = self._make_input_v(f"Diploma No", col, auto_format=False)
 
             btn_dip = QPushButton(f"Diploma {i} Sec")
             btn_dip.setStyleSheet(S["file_btn"])
@@ -455,7 +405,7 @@ class PersonelEklePage(QWidget):
     #  YARDIMCI WIDGET FABRİKALARI
     # ═══════════════════════════════════════════
 
-    def _make_input(self, label, parent_layout, required=False, placeholder="", stretch=0):
+    def _make_input(self, label, parent_layout, required=False, placeholder="", stretch=0, auto_format=True):
         container = QWidget()
         container.setStyleSheet("background: transparent;")
         lay = QVBoxLayout(container)
@@ -470,9 +420,14 @@ class PersonelEklePage(QWidget):
             inp.setPlaceholderText(placeholder)
         lay.addWidget(inp)
         parent_layout.addWidget(container, stretch)
+        
+        # Otomatik formatting uygula (özel alanlar hariç)
+        if auto_format:
+            apply_title_case_formatting(inp)
+        
         return inp
 
-    def _make_combo(self, label, parent_layout, required=False, editable=False, stretch=0):
+    def _make_combo(self, label, parent_layout, required=False, editable=False, stretch=0, auto_format=True):
         container = QWidget()
         container.setStyleSheet("background: transparent;")
         lay = QVBoxLayout(container)
@@ -486,6 +441,13 @@ class PersonelEklePage(QWidget):
         cmb.setEditable(editable)
         lay.addWidget(cmb)
         parent_layout.addWidget(container, stretch)
+        
+        # Editable combo'lara otomatik formatting ekle
+        if editable and auto_format:
+            line_edit = cmb.lineEdit()
+            if line_edit:
+                apply_title_case_formatting(line_edit)
+        
         return cmb
 
     def _make_date(self, label, parent_layout, required=False):
@@ -510,7 +472,7 @@ class PersonelEklePage(QWidget):
         return de
 
     # Dikey versiyon (eğitim bölümü için)
-    def _make_input_v(self, label, parent_layout, placeholder=""):
+    def _make_input_v(self, label, parent_layout, placeholder="", auto_format=True):
         lbl = QLabel(label)
         lbl.setStyleSheet(S["label"])
         parent_layout.addWidget(lbl)
@@ -519,9 +481,14 @@ class PersonelEklePage(QWidget):
         if placeholder:
             inp.setPlaceholderText(placeholder)
         parent_layout.addWidget(inp)
+        
+        # Otomatik formatting uygula (özel alanlar hariç)
+        if auto_format:
+            apply_title_case_formatting(inp)
+        
         return inp
 
-    def _make_combo_v(self, label, parent_layout, editable=False):
+    def _make_combo_v(self, label, parent_layout, editable=False, auto_format=True):
         lbl = QLabel(label)
         lbl.setStyleSheet(S["label"])
         parent_layout.addWidget(lbl)
@@ -529,6 +496,13 @@ class PersonelEklePage(QWidget):
         cmb.setStyleSheet(S["combo"])
         cmb.setEditable(editable)
         parent_layout.addWidget(cmb)
+        
+        # Editable combo'lara otomatik formatting ekle
+        if editable and auto_format:
+            line_edit = cmb.lineEdit()
+            if line_edit:
+                apply_title_case_formatting(line_edit)
+        
         return cmb
 
     # ═══════════════════════════════════════════

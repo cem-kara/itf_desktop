@@ -1058,3 +1058,608 @@ for root, dirs, files in os.walk('ui/'):
                 print(f'{n:3d}  {path}')
 " | sort -rn
 ```
+---
+
+## 8. METİN FORMATLAMA VE VALİDASYON — Merkezi Modüller
+
+### 8.1 Genel Bakış
+
+Kullanıcı girdilerini standart hale getirmek ve doğrulamak için **3 merkezi modül** kullanılır:
+
+| Modül | Dosya | İçerik |
+|-------|-------|--------|
+| **Text Utils** | `core/text_utils.py` | Türkçe destekli metin formatlama fonksiyonları |
+| **Validators** | `core/validators.py` | TC Kimlik, email, telefon vb. doğrulama fonksiyonları |
+| **Formatted Widgets** | `ui/components/formatted_widgets.py` | Otomatik formatlama özellikli Qt widget'ları |
+
+**Avantajlar:**
+- ✅ Kod tekrarı önlenir
+- ✅ Tüm uygulamada tutarlı format
+- ✅ Türkçe karakter desteği (İ/ı, Ş/ş, Ğ/ğ vb.)
+- ✅ Merkezi bakım ve güncelleme
+- ✅ Test edilebilir
+
+---
+
+### 8.2 Text Utilities (`core/text_utils.py`)
+
+#### 8.2.1 turkish_title_case()
+
+Her kelimenin ilk harfini büyük yapar (Türkçe destekli).
+
+```python
+from core.text_utils import turkish_title_case
+
+# Kullanım
+text = turkish_title_case("ahmet cem KARA")
+# → "Ahmet Cem Kara"
+
+text = turkish_title_case("istanbul üniversitesi")
+# → "İstanbul Üniversitesi"
+
+text = turkish_title_case("şükrü özer")
+# → "Şükrü Özer"
+```
+
+**Ne zaman kullanılır:**
+- Ad Soyad alanları
+- Okul/Fakülte isimleri
+- Şehir/İlçe isimleri
+- Görev yeri isimleri
+
+---
+
+#### 8.2.2 turkish_upper() / turkish_lower()
+
+Türkçe karakterleri doğru dönüştürür.
+
+```python
+from core.text_utils import turkish_upper, turkish_lower
+
+# Uppercase
+text = turkish_upper("istanbul")
+# → "İSTANBUL" (doğru - "ISTANBUL" değil!)
+
+# Lowercase
+text = turkish_lower("İSTANBUL")
+# → "istanbul" (doğru - "ıstanbul" değil!)
+```
+
+---
+
+#### 8.2.3 capitalize_first_letter()
+
+Sadece ilk harfi büyük yapar (çok satırlı içerik için).
+
+```python
+from core.text_utils import capitalize_first_letter
+
+text = capitalize_first_letter("merhaba dünya. bu bir test.")
+# → "Merhaba dünya. bu bir test."
+```
+
+**Ne zaman kullanılır:**
+- Açıklama/Not alanları
+- Çok satırlı metin girişleri
+
+---
+
+#### 8.2.4 format_phone_number()
+
+Telefon numarasını standart formata çevirir.
+
+```python
+from core.text_utils import format_phone_number
+
+phone = format_phone_number("05551234567")
+# → "0555 123 45 67"
+
+phone = format_phone_number("5551234567")
+# → "0555 123 45 67"
+```
+
+---
+
+#### 8.2.5 normalize_whitespace()
+
+Fazla boşlukları temizler.
+
+```python
+from core.text_utils import normalize_whitespace
+
+text = normalize_whitespace("Ahmet   Cem  KARA")
+# → "Ahmet Cem KARA"
+```
+
+---
+
+### 8.3 Validators (`core/validators.py`)
+
+#### 8.3.1 validate_tc_kimlik_no()
+
+TC Kimlik No algoritması ile doğrulama.
+
+```python
+from core.validators import validate_tc_kimlik_no
+
+# Geçerli TC
+is_valid = validate_tc_kimlik_no("10000000146")
+# → True
+
+# Geçersiz TC
+is_valid = validate_tc_kimlik_no("12345678901")
+# → False
+```
+
+**Algoritma:**
+1. 11 rakam olmalı
+2. İlk basamak 0 olamaz
+3. 10. basamak = (tek pozisyonlar * 7 - çift pozisyonlar) % 10
+4. 11. basamak = (tüm basamaklar toplamı) % 10
+
+---
+
+#### 8.3.2 validate_email()
+
+Email format doğrulaması.
+
+```python
+from core.validators import validate_email
+
+is_valid = validate_email("test@example.com")
+# → True
+
+is_valid = validate_email("invalid-email")
+# → False
+
+is_valid = validate_email("")
+# → True (opsiyonel alan için)
+```
+
+---
+
+#### 8.3.3 validate_phone_number()
+
+Türkiye GSM formatı (05XX XXX XX XX).
+
+```python
+from core.validators import validate_phone_number
+
+is_valid = validate_phone_number("05551234567")
+# → True
+
+is_valid = validate_phone_number("0555 123 45 67")
+# → True
+
+is_valid = validate_phone_number("123456")
+# → False
+```
+
+---
+
+#### 8.3.4 Diğer Validatörler
+
+```python
+from core.validators import (
+    validate_not_empty,
+    validate_length,
+    validate_numeric,
+    validate_alphanumeric,
+    validate_date_format
+)
+
+# Boş kontrol
+validate_not_empty("Ahmet")  # → True
+validate_not_empty("   ")    # → False
+
+# Uzunluk kontrol
+validate_length("test", min_len=3, max_len=10)  # → True
+
+# Sadece rakam
+validate_numeric("12345")  # → True
+validate_numeric("12a45")  # → False
+
+# Alfanumerik
+validate_alphanumeric("ABC123")  # → True
+validate_alphanumeric("ABC@123") # → False
+
+# Tarih format
+validate_date_format("01.03.2026")  # → True
+validate_date_format("2026-03-01")  # → False
+```
+
+---
+
+### 8.4 Formatted Widgets (`ui/components/formatted_widgets.py`)
+
+Otomatik formatlama özellikli widget'lar oluşturur.
+
+#### 8.4.1 apply_title_case_formatting()
+
+QLineEdit'e gerçek zamanlı Title Case formatlama ekler.
+
+```python
+from PySide6.QtWidgets import QLineEdit
+from ui.components.formatted_widgets import apply_title_case_formatting
+
+# Widget oluştur
+line_edit = QLineEdit()
+
+# Otomatik formatlama ekle
+apply_title_case_formatting(line_edit)
+
+# Kullanıcı "ahmet cem" yazarsa → otomatik "Ahmet Cem" olur
+```
+
+**Özellikler:**
+- Kullanıcı yazarken gerçek zamanlı formatlar
+- Cursor pozisyonunu korur
+- Sonsuz döngü önlenir (signal blocking)
+
+---
+
+#### 8.4.2 apply_combo_title_case_formatting()
+
+Editable QComboBox'a Title Case formatlama ekler.
+
+```python
+from PySide6.QtWidgets import QComboBox
+from ui.components.formatted_widgets import apply_combo_title_case_formatting
+
+combo = QComboBox()
+combo.setEditable(True)
+
+# Otomatik formatlama ekle
+apply_combo_title_case_formatting(combo)
+```
+
+---
+
+#### 8.4.3 Diğer Formatting Fonksiyonları
+
+```python
+from ui.components.formatted_widgets import (
+    apply_uppercase_formatting,
+    apply_lowercase_formatting,
+    apply_phone_number_formatting,
+    apply_numeric_only
+)
+
+# Uppercase
+line_edit = QLineEdit()
+apply_uppercase_formatting(line_edit)
+# Kullanıcı "istanbul" yazarsa → "İSTANBUL"
+
+# Lowercase
+line_edit = QLineEdit()
+apply_lowercase_formatting(line_edit)
+# Kullanıcı "İSTANBUL" yazarsa → "istanbul"
+
+# Telefon numarası
+line_edit = QLineEdit()
+apply_phone_number_formatting(line_edit)
+# Kullanıcı "5551234567" yazarsa → "0555 123 45 67"
+
+# Sadece rakam
+line_edit = QLineEdit()
+apply_numeric_only(line_edit)
+# Kullanıcı "12a34" yazarsa → "1234" (otomatik temizlenir)
+```
+
+---
+
+#### 8.4.4 Widget Factory Fonksiyonları
+
+Hazır formatlanmış widget'lar oluşturur.
+
+```python
+from ui.components.formatted_widgets import (
+    create_title_case_line_edit,
+    create_uppercase_line_edit,
+    create_numeric_line_edit,
+    create_phone_line_edit
+)
+
+# Title Case input
+line_edit = create_title_case_line_edit()
+
+# Uppercase input
+line_edit = create_uppercase_line_edit()
+
+# Sadece rakam input
+line_edit = create_numeric_line_edit()
+
+# Telefon input
+line_edit = create_phone_line_edit()
+```
+
+---
+
+### 8.5 Form Oluştururken Best Practices
+
+#### 8.5.1 Standart Form Alanları
+
+```python
+from ui.components.formatted_widgets import apply_title_case_formatting
+
+class MyForm(QWidget):
+    def __init__(self):
+        super().__init__()
+        
+        # Ad Soyad (Title Case)
+        self.txt_ad_soyad = QLineEdit()
+        apply_title_case_formatting(self.txt_ad_soyad)
+        
+        # TC Kimlik (Sadece rakam)
+        self.txt_tc = QLineEdit()
+        self.txt_tc.setMaxLength(11)
+        from ui.components.formatted_widgets import apply_numeric_only
+        apply_numeric_only(self.txt_tc)
+        
+        # Email (Normal - validasyon save'de)
+        self.txt_email = QLineEdit()
+        self.txt_email.setPlaceholderText("ornek@email.com")
+        
+        # Telefon (Otomatik format)
+        self.txt_telefon = QLineEdit()
+        from ui.components.formatted_widgets import apply_phone_number_formatting
+        apply_phone_number_formatting(self.txt_telefon)
+```
+
+---
+
+#### 8.5.2 Editable Combo'lar
+
+```python
+from ui.components.formatted_widgets import apply_combo_title_case_formatting
+
+# Doğum Yeri (Editable combo)
+self.cmb_dogum_yeri = QComboBox()
+self.cmb_dogum_yeri.setEditable(True)
+apply_combo_title_case_formatting(self.cmb_dogum_yeri)
+
+# Okul Adı (Editable combo)
+self.cmb_okul = QComboBox()
+self.cmb_okul.setEditable(True)
+apply_combo_title_case_formatting(self.cmb_okul)
+```
+
+---
+
+#### 8.5.3 Özel Alanlar (Formatting Hariç)
+
+Bazı alanlar otomatik formatlama **almamalı**:
+
+```python
+# Sicil No, Diploma No, Mezuniyet Tarihi vb.
+self.txt_sicil_no = QLineEdit()
+# ❌ Formatting ekleme! (alfanumerik, özel format olabilir)
+
+self.txt_diploma_no = QLineEdit()
+# ❌ Formatting ekleme!
+
+self.txt_mezuniyet_tarihi = QLineEdit()
+# ❌ Formatting ekleme! (tarih formatı korunmalı)
+```
+
+---
+
+#### 8.5.4 Kaydetme Sırasında Validasyon
+
+```python
+from core.validators import (
+    validate_tc_kimlik_no,
+    validate_email,
+    validate_not_empty
+)
+from PySide6.QtWidgets import QMessageBox
+
+def _on_save(self):
+    # TC Kimlik validasyonu
+    tc = self.txt_tc.text().strip()
+    if not validate_tc_kimlik_no(tc):
+        QMessageBox.warning(self, "Uyarı", "Geçersiz TC Kimlik No!")
+        self.txt_tc.setFocus()
+        return
+    
+    # Ad Soyad zorunlu
+    ad_soyad = self.txt_ad_soyad.text().strip()
+    if not validate_not_empty(ad_soyad):
+        QMessageBox.warning(self, "Uyarı", "Ad Soyad boş olamaz!")
+        self.txt_ad_soyad.setFocus()
+        return
+    
+    # Email validasyonu (opsiyonel alan)
+    email = self.txt_email.text().strip()
+    if email and not validate_email(email):
+        QMessageBox.warning(self, "Uyarı", "Geçersiz email formatı!")
+        self.txt_email.setFocus()
+        return
+    
+    # Kaydet
+    # ...
+```
+
+---
+
+### 8.6 Gerçek Zamanlı Validasyon ile Visual Feedback
+
+```python
+from PySide6.QtWidgets import QLabel
+from PySide6.QtGui import QPixmap
+from core.validators import validate_tc_kimlik_no
+
+class MyForm(QWidget):
+    def __init__(self):
+        super().__init__()
+        
+        # TC Kimlik + Status Icon
+        self.txt_tc = QLineEdit()
+        self.txt_tc.textChanged.connect(self._validate_tc_on_change)
+        
+        self._tc_status = QLabel()
+        self._tc_status.setFixedWidth(20)
+        
+    def _validate_tc_on_change(self):
+        tc = self.txt_tc.text().strip()
+        
+        if len(tc) == 0:
+            self._tc_status.clear()
+        elif len(tc) == 11:
+            if validate_tc_kimlik_no(tc):
+                # Yeşil onay ikonu
+                self._tc_status.setText("✅")
+            else:
+                # Kırmızı hata ikonu
+                self._tc_status.setText("❌")
+        else:
+            # Sarı uyarı
+            self._tc_status.setText("⚠️")
+```
+
+---
+
+### 8.7 Import Kısayolları
+
+`core/__init__.py` ve `ui/components/__init__.py` dosyaları kısayol import sağlar:
+
+```python
+# Kısa yol (önerilen)
+from core import (
+    turkish_title_case,
+    validate_tc_kimlik_no,
+    validate_email
+)
+
+# Tam yol (alternatif)
+from core.text_utils import turkish_title_case
+from core.validators import validate_tc_kimlik_no, validate_email
+```
+
+```python
+# Kısa yol (önerilen)
+from ui.components import (
+    apply_title_case_formatting,
+    create_numeric_line_edit
+)
+
+# Tam yol (alternatif)
+from ui.components.formatted_widgets import (
+    apply_title_case_formatting,
+    create_numeric_line_edit
+)
+```
+
+---
+
+### 8.8 Mevcut Form'ları Refactor Ederken
+
+Eski kod:
+
+```python
+# ❌ Eski yöntem - Her dosyada tekrar
+def turkish_title_case(text):
+    # ... 50 satır kod tekrarı
+    pass
+
+line_edit = QLineEdit()
+line_edit.textChanged.connect(lambda: ...)  # Manuel formatlama
+```
+
+Yeni kod:
+
+```python
+# ✅ Yeni yöntem - Merkezi modül
+from ui.components import apply_title_case_formatting
+
+line_edit = QLineEdit()
+apply_title_case_formatting(line_edit)  # Tek satır!
+```
+
+**Refactor kontrol listesi:**
+```
+[ ] Yerel turkish_title_case fonksiyonunu sil
+[ ] Yerel validate_tc_kimlik_no fonksiyonunu sil
+[ ] Manuel text formatting signal'larını sil
+[ ] core.text_utils ve core.validators import et
+[ ] ui.components.formatted_widgets kullan
+[ ] Test et (özellikle Türkçe karakterler: İ, Ş, Ğ vb.)
+```
+
+---
+
+### 8.9 Test Örnekleri
+
+```python
+# test_text_utils.py
+from core.text_utils import turkish_title_case, turkish_upper, turkish_lower
+
+def test_turkish_title_case():
+    assert turkish_title_case("istanbul") == "İstanbul"
+    assert turkish_title_case("şükrü") == "Şükrü"
+    assert turkish_title_case("MEHMET ALİ") == "Mehmet Ali"
+
+def test_turkish_upper():
+    assert turkish_upper("istanbul") == "İSTANBUL"
+    assert turkish_upper("şükrü") == "ŞÜKRÜ"
+
+def test_turkish_lower():
+    assert turkish_lower("İSTANBUL") == "istanbul"
+    assert turkish_lower("ŞÜKRÜ") == "şükrü"
+```
+
+```python
+# test_validators.py
+from core.validators import validate_tc_kimlik_no, validate_email
+
+def test_tc_kimlik():
+    assert validate_tc_kimlik_no("10000000146") == True
+    assert validate_tc_kimlik_no("12345678901") == False
+    assert validate_tc_kimlik_no("0123456789") == False
+
+def test_email():
+    assert validate_email("test@example.com") == True
+    assert validate_email("invalid") == False
+    assert validate_email("") == True  # Opsiyonel
+```
+
+---
+
+### 8.10 Troubleshooting
+
+**Problem:** Türkçe "i" harfi büyütülünce "I" oluyor (yanlış)
+```python
+# ❌ Python default
+"istanbul".upper()  # → "ISTANBUL" (yanlış!)
+
+# ✅ Bizim fonksiyon
+from core.text_utils import turkish_upper
+turkish_upper("istanbul")  # → "İSTANBUL" (doğru!)
+```
+
+**Problem:** Cursor pozisyonu kayıyor
+```python
+# ✅ apply_title_case_formatting otomatik halleder
+# Cursor pozisyonu korunur, kullanıcı yazmaya devam edebilir
+```
+
+**Problem:** Sonsuz döngü (textChanged signal)
+```python
+# ✅ apply_title_case_formatting içinde blockSignals(True) kullanılır
+# Sonsuz döngü önlenir
+```
+
+**Problem:** Editable combo formatlanmıyor
+```python
+# ❌ Yanlış
+combo = QComboBox()
+combo.setEditable(True)
+apply_title_case_formatting(combo)  # QLineEdit bekliyor!
+
+# ✅ Doğru
+combo = QComboBox()
+combo.setEditable(True)
+apply_combo_title_case_formatting(combo)  # QComboBox için özel
+```
+
+---
