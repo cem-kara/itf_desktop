@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
+    QComboBox,
     QPushButton,
     QLabel,
     QTableWidget,
@@ -20,7 +21,6 @@ from PySide6.QtWidgets import (
     QDateEdit,
     QMessageBox,
     QDialog,
-    QGroupBox,
     QTabWidget,
     QListWidget,
     QListWidgetItem,
@@ -30,6 +30,11 @@ from PySide6.QtCore import Qt, QDate
 
 from core.logger import logger
 from core.services.settings_service import SettingsService
+from core.validators import validate_not_empty
+from ui.components.formatted_widgets import (
+    apply_title_case_formatting,
+    apply_combo_title_case_formatting,
+)
 from ui.styles.colors import DarkTheme as C
 from ui.styles.components import STYLES
 from ui.styles.icons import Icons, IconRenderer
@@ -60,6 +65,7 @@ class SabitEditDialog(QDialog):
         self._txt_menu_eleman.setStyleSheet(STYLES["input_field"])
         self._txt_menu_eleman.setText(menu_eleman)
         self._txt_menu_eleman.setPlaceholderText("Örn: Tıp, Mühendislik, Fen Bilgisi")
+        apply_title_case_formatting(self._txt_menu_eleman)
         layout.addWidget(self._txt_menu_eleman)
         
         # Açıklama
@@ -74,13 +80,18 @@ class SabitEditDialog(QDialog):
         btn_layout = QHBoxLayout()
         btn_ok = QPushButton("Tamam")
         IconRenderer.set_button_icon(btn_ok, "check", size=14)
-        btn_ok.clicked.connect(self.accept)
+        btn_ok.clicked.connect(self._on_accept)
         btn_cancel = QPushButton("İptal")
         IconRenderer.set_button_icon(btn_cancel, "x", size=14)
         btn_cancel.clicked.connect(self.reject)
         btn_layout.addWidget(btn_ok)
         btn_layout.addWidget(btn_cancel)
         layout.addLayout(btn_layout)
+    
+    def _on_accept(self):
+        """Validate before accepting"""
+        if self.validate():
+            self.accept()
     
     def get_data(self) -> tuple[str, str, str]:
         """Giriş verilerini döndür"""
@@ -89,12 +100,35 @@ class SabitEditDialog(QDialog):
             self._txt_menu_eleman.text().strip(),
             self._txt_aciklama.text().strip()
         )
+    
+    def validate(self) -> bool:
+        """Form doğrulaması — Rehber Bölüm 8.5.4"""
+        kod = self._txt_kod.text().strip()
+        menu_eleman = self._txt_menu_eleman.text().strip()
+        
+        if not validate_not_empty(kod):
+            QMessageBox.warning(self, "Uyarı", "Kod alanı boş olamaz!")
+            self._txt_kod.setFocus()
+            return False
+        
+        if not validate_not_empty(menu_eleman):
+            QMessageBox.warning(self, "Uyarı", "Menü Elemanı alanı boş olamaz!")
+            self._txt_menu_eleman.setFocus()
+            return False
+        
+        return True
 
 
 class TatilEditDialog(QDialog):
     """Tatil Düzenleme Dialogu"""
     
-    def __init__(self, tarih: str = "", resmi_tatil: str = "", parent=None):
+    def __init__(
+        self,
+        tarih: str = "",
+        resmi_tatil: str = "",
+        tatil_adlari: list[str] | None = None,
+        parent=None,
+    ):
         super().__init__(parent)
         self.setWindowTitle("Tatil Düzenleme")
         self.setModal(True)
@@ -108,21 +142,32 @@ class TatilEditDialog(QDialog):
         self._date_edit.setCalendarPopup(True)
         self._date_edit.setDate(QDate.fromString(tarih, "yyyy-MM-dd") if tarih else QDate.currentDate())
         self._date_edit.setDateRange(QDate(2020, 1, 1), QDate(2050, 12, 31))
+        self._date_edit.setStyleSheet(STYLES["input_date"])
         layout.addWidget(self._date_edit)
         
         # Tatil Adı
         layout.addWidget(QLabel("Tatil Adı:"))
-        self._txt_resmi_tatil = QLineEdit()
-        self._txt_resmi_tatil.setStyleSheet(STYLES["input_field"])
-        self._txt_resmi_tatil.setText(resmi_tatil)
-        self._txt_resmi_tatil.setPlaceholderText("Örn: Yeni Yıl")
-        layout.addWidget(self._txt_resmi_tatil)
+        self._cmb_resmi_tatil = QComboBox()
+        self._cmb_resmi_tatil.setEditable(True)
+        self._cmb_resmi_tatil.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        self._cmb_resmi_tatil.setStyleSheet(STYLES["input_combo"])
+        self._cmb_resmi_tatil.lineEdit().setPlaceholderText("Örn: Yeni Yıl")
+
+        unique_adlar = sorted({(ad or "").strip() for ad in (tatil_adlari or []) if (ad or "").strip()})
+        self._cmb_resmi_tatil.addItems(unique_adlar)
+
+        if resmi_tatil and resmi_tatil.strip() and resmi_tatil.strip() not in unique_adlar:
+            self._cmb_resmi_tatil.addItem(resmi_tatil.strip())
+
+        self._cmb_resmi_tatil.setCurrentText(resmi_tatil)
+        apply_combo_title_case_formatting(self._cmb_resmi_tatil)
+        layout.addWidget(self._cmb_resmi_tatil)
         
         # Butonlar
         btn_layout = QHBoxLayout()
         btn_ok = QPushButton("Tamam")
         IconRenderer.set_button_icon(btn_ok, "check", size=14)
-        btn_ok.clicked.connect(self.accept)
+        btn_ok.clicked.connect(self._on_accept)
         btn_cancel = QPushButton("İptal")
         IconRenderer.set_button_icon(btn_cancel, "x", size=14)
         btn_cancel.clicked.connect(self.reject)
@@ -130,20 +175,47 @@ class TatilEditDialog(QDialog):
         btn_layout.addWidget(btn_cancel)
         layout.addLayout(btn_layout)
     
+    def _on_accept(self):
+        """Validate before accepting"""
+        if self.validate():
+            self.accept()
+    
     def get_data(self) -> tuple[str, str]:
         """Giriş verilerini döndür"""
         return (
             self._date_edit.date().toString("yyyy-MM-dd"),
-            self._txt_resmi_tatil.text().strip()
+            self._cmb_resmi_tatil.currentText().strip()
         )
+    
+    def validate(self) -> bool:
+        """Form doğrulaması — Rehber Bölüm 8.5.4"""
+        resmi_tatil = self._cmb_resmi_tatil.currentText().strip()
+        
+        if not validate_not_empty(resmi_tatil):
+            QMessageBox.warning(self, "Uyarı", "Tatil Adı boş olamaz!")
+            self._cmb_resmi_tatil.setFocus()
+            return False
+        
+        return True
 
 
 class SettingsPage(QWidget):
-    """Ayarlar sayfası"""
+    """Ayarlar sayfası — Rehber Bölüm 1.3 uyumlu"""
     
-    def __init__(self, parent=None):
+    def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self._service = SettingsService()
+        self._db = db
+        
+        # Service bağlantısı — di.py kullan (Rehber Bölüm 1.3)
+        if db:
+            from core.di import get_registry
+            from database.repository_registry import RepositoryRegistry
+            # SettingsService henüz registry kullanmıyor, direkt SQLiteManager kullanıyor
+            # Bu yüzden şimdilik direkt instance oluşturuyoruz
+            self._service = SettingsService()
+        else:
+            self._service = SettingsService()
+        
         self._setup_ui()
         self._load_data()
     
@@ -230,6 +302,16 @@ class SettingsPage(QWidget):
         # ======== TATİLLER TAB ========
         tatiller_widget = QWidget()
         tatiller_layout = QVBoxLayout(tatiller_widget)
+
+        # Yıl filtresi
+        filter_layout = QHBoxLayout()
+        filter_layout.addWidget(QLabel("Yıl:"))
+        self._cmb_tatil_yil = QComboBox()
+        self._cmb_tatil_yil.setStyleSheet(STYLES["input_combo"])
+        self._cmb_tatil_yil.currentIndexChanged.connect(self._load_tatiller)
+        filter_layout.addWidget(self._cmb_tatil_yil)
+        filter_layout.addStretch()
+        tatiller_layout.addLayout(filter_layout)
         
         # Tablo
         self._table_tatiller = QTableWidget()
@@ -362,9 +444,40 @@ class SettingsPage(QWidget):
         """Tatilleri yükle"""
         try:
             tatiller = self._service.get_tatiller()
+
+            # Yıl filtresi seçeneklerini güncelle
+            selected_year = self._cmb_tatil_yil.currentData() if hasattr(self, "_cmb_tatil_yil") else None
+            years = sorted(
+                {
+                    t.get("Tarih", "")[:4]
+                    for t in tatiller
+                    if t.get("Tarih", "") and t.get("Tarih", "")[:4].isdigit()
+                },
+                reverse=True,
+            )
+
+            self._cmb_tatil_yil.blockSignals(True)
+            self._cmb_tatil_yil.clear()
+            self._cmb_tatil_yil.addItem("Tüm Yıllar", None)
+            for year in years:
+                self._cmb_tatil_yil.addItem(year, year)
+
+            if selected_year in years:
+                self._cmb_tatil_yil.setCurrentText(selected_year)
+            else:
+                self._cmb_tatil_yil.setCurrentIndex(0)
+            self._cmb_tatil_yil.blockSignals(False)
+
+            active_year = self._cmb_tatil_yil.currentData()
+            filtered_tatiller = [
+                tatil
+                for tatil in tatiller
+                if not active_year or tatil.get("Tarih", "").startswith(f"{active_year}-")
+            ]
+
             self._table_tatiller.setRowCount(0)
             
-            for tatil in tatiller:
+            for tatil in filtered_tatiller:
                 row = self._table_tatiller.rowCount()
                 self._table_tatiller.insertRow(row)
                 
@@ -374,11 +487,27 @@ class SettingsPage(QWidget):
                 # Tatil Adı
                 self._table_tatiller.setItem(row, 1, QTableWidgetItem(tatil.get("ResmiTatil", "")))
             
-            logger.info(f"{len(tatiller)} tatil yüklendi")
+            year_text = active_year if active_year else "Tüm Yıllar"
+            logger.info(f"{len(filtered_tatiller)} tatil yüklendi (Yıl: {year_text})")
             
         except Exception as e:
             logger.error(f"Tatiller yükleme hatası: {e}")
             QMessageBox.critical(self, "Hata", f"Tatiller yüklenemedi:\n{str(e)}")
+
+    def _get_unique_tatil_adlari(self) -> list[str]:
+        """Tatiller tablosundaki benzersiz tatil adlarını döndür."""
+        try:
+            tatiller = self._service.get_tatiller()
+            return sorted(
+                {
+                    (t.get("ResmiTatil", "") or "").strip()
+                    for t in tatiller
+                    if (t.get("ResmiTatil", "") or "").strip()
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Tatil adı listesi alınamadı: {e}")
+            return []
     
     def _add_menu_eleman(self):
         """Seçili Kod'a yeni MenuEleman ekle"""
@@ -484,7 +613,10 @@ class SettingsPage(QWidget):
     
     def _add_tatil(self):
         """Yeni tatil ekle"""
-        dialog = TatilEditDialog(parent=self)
+        dialog = TatilEditDialog(
+            tatil_adlari=self._get_unique_tatil_adlari(),
+            parent=self,
+        )
         if dialog.exec() == QDialog.DialogCode.Accepted:
             tarih, resmi_tatil = dialog.get_data()
             
@@ -509,7 +641,12 @@ class SettingsPage(QWidget):
         tarih = self._table_tatiller.item(row, 0).text()
         resmi_tatil = self._table_tatiller.item(row, 1).text()
         
-        dialog = TatilEditDialog(tarih, resmi_tatil, parent=self)
+        dialog = TatilEditDialog(
+            tarih=tarih,
+            resmi_tatil=resmi_tatil,
+            tatil_adlari=self._get_unique_tatil_adlari(),
+            parent=self,
+        )
         if dialog.exec() == QDialog.DialogCode.Accepted:
             new_tarih, resmi_tatil = dialog.get_data()
             

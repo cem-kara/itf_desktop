@@ -11,6 +11,7 @@ def apply_title_case_formatting(line_edit: QLineEdit):
     """
     QLineEdit'e otomatik Title Case formatting ekler.
     Kullanıcı yazarken her kelimenin ilk harfi büyük yapılır.
+    Boşluk karakterleri korunur.
     
     Args:
         line_edit: Formatlama uygulanacak QLineEdit widget
@@ -43,9 +44,10 @@ def apply_title_case_formatting(line_edit: QLineEdit):
             line_edit.setText(formatted_text)
             line_edit.blockSignals(False)
             
-            # Cursor'u metnin sonuna koy (metin trim edildikten sonra)
-            # Bu, kullanıcı yazarken en doğal davranış
-            line_edit.setCursorPosition(len(formatted_text))
+            # Cursor'u yerini koru, ama metin uzunluğu değişirse sınırlandır
+            # Boşluk korunduğu için cursor pozisyonu genellikle aynı kalır
+            new_cursor_pos = min(cursor_pos, len(formatted_text))
+            line_edit.setCursorPosition(new_cursor_pos)
     
     line_edit.textChanged.connect(on_text_changed)
 
@@ -71,7 +73,9 @@ def apply_uppercase_formatting(line_edit: QLineEdit):
             line_edit.blockSignals(True)
             line_edit.setText(formatted_text)
             line_edit.blockSignals(False)
-            line_edit.setCursorPosition(min(cursor_pos, len(formatted_text)))
+            # Cursor pozisyonunu koru
+            new_cursor_pos = min(cursor_pos, len(formatted_text))
+            line_edit.setCursorPosition(new_cursor_pos)
     
     line_edit.textChanged.connect(on_text_changed)
 
@@ -97,7 +101,9 @@ def apply_lowercase_formatting(line_edit: QLineEdit):
             line_edit.blockSignals(True)
             line_edit.setText(formatted_text)
             line_edit.blockSignals(False)
-            line_edit.setCursorPosition(min(cursor_pos, len(formatted_text)))
+            # Cursor pozisyonunu koru
+            new_cursor_pos = min(cursor_pos, len(formatted_text))
+            line_edit.setCursorPosition(new_cursor_pos)
     
     line_edit.textChanged.connect(on_text_changed)
 

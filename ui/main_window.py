@@ -253,13 +253,6 @@ class MainWindow(QMainWindow):
             page.load_data()
             return page
 
-        # if baslik == "Arıza Kayıt":
-        #     from ui.pages.cihaz.ariza_kayit import ArizaKayitPenceresi
-        #     page = ArizaKayitPenceresi(db=self._db)
-        #     if hasattr(page, "btn_iptal"):
-        #         page.btn_iptal.clicked.connect(lambda: self._close_page("Arıza Kayıt"))
-        #     return page
-
         if baslik == "Teknik Hizmetler":
             from ui.pages.cihaz.teknik_hizmetler import TeknikHizmetlerPage
             page = TeknikHizmetlerPage(db=self._db, action_guard=self._action_guard)
@@ -293,7 +286,12 @@ class MainWindow(QMainWindow):
             page = AdminPanel(db=self._db, action_guard=self._action_guard)
             page.btn_kapat.clicked.connect(lambda: self._close_page("Admin Panel"))
             return page
-               
+
+        if baslik == "Ayarlar":
+            from ui.admin.settings_page import SettingsPage
+            page = SettingsPage(db=self._db)
+            return page
+        
         return PlaceholderPage(
             title=baslik,
             subtitle=f"{group} modülü — geliştirme aşamasında"
@@ -664,11 +662,18 @@ class MainWindow(QMainWindow):
     def _on_personel_saved(self):
         """Personel kaydedildikten sonra listeye dön ve yenile."""
         if "Personel Listesi" in self._pages:
+            # Personel Listesi cache'de varsa oraya dön
             page = self._pages["Personel Listesi"]
             page.load_data()
             self.stack.setCurrentWidget(page)
             self.page_title.setText("Personel Listesi")
             self.sidebar.set_active("Personel Listesi")
+        else:
+            # Personel Listesi yoksa welcome sayfasına dön
+            if hasattr(self, '_welcome') and self._welcome:
+                self.stack.setCurrentWidget(self._welcome)
+                self.page_title.setText("")
+                self.sidebar.set_active(None)
 
         # Ekle formunu sıfırla (sonraki açılışta taze form)
         if "Personel Ekle" in self._pages:

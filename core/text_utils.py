@@ -9,7 +9,7 @@ def turkish_title_case(text: str) -> str:
     """
     Türkçe karakterleri destekleyen Title Case formatter.
     Her kelimenin ilk harfini büyük, geri kalanını küçük yapar.
-    Baştaki ve sondaki boşlukları kaldırır, ortadaki boşlukları normalize eder.
+    Baştaki ve sondaki boşlukları KORUR, ortadaki boşlukları normalize eder.
     
     Args:
         text: Formatlanacak metin
@@ -20,18 +20,22 @@ def turkish_title_case(text: str) -> str:
     Examples:
         >>> turkish_title_case("ahmet cem KARA")
         "Ahmet Cem Kara"
-        >>> turkish_title_case("  ahmet  cem  ")
-        "Ahmet Cem"
         >>> turkish_title_case("istanbul üniversitesi")
         "İstanbul Üniversitesi"
     """
     if not text:
         return text
     
-    # Baştaki ve sondaki boşlukları kaldır
-    text = text.strip()
+    # Baştaki/sondaki boşluk korunduğu için, sadece üst/alt boşlukları tut
+    # Ama formatlama için strip() yapıp sonra sonda boşluk varsa geri ekle
+    leading_spaces = len(text) - len(text.lstrip())
+    trailing_spaces = len(text) - len(text.rstrip())
     
-    if not text:
+    # Formatlama için strip'le
+    text_stripped = text.strip()
+    
+    if not text_stripped:
+        # Sadece boşluk ise orijinali döndür
         return text
     
     # Türkçe karakter dönüşüm haritası
@@ -60,7 +64,7 @@ def turkish_title_case(text: str) -> str:
     
     # Kelimeleri ayır (boşlukları normalize et)
     import re
-    words = re.split(r'\s+', text)
+    words = re.split(r'\s+', text_stripped)
     # Boş stringler varsa kaldır
     words = [w for w in words if w]
     
@@ -68,7 +72,12 @@ def turkish_title_case(text: str) -> str:
     formatted_words = [format_word(word) for word in words]
     
     # Tek boşluk ile birleştir
-    return ' '.join(formatted_words)
+    formatted = ' '.join(formatted_words)
+    
+    # Baş/sonda boşlukları geri ekle
+    formatted = ' ' * leading_spaces + formatted + ' ' * trailing_spaces
+    
+    return formatted
 
 
 def turkish_upper(text: str) -> str:

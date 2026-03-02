@@ -15,6 +15,7 @@
 # ═══════════════════════════════════════════════════════════════
 
 from ui.styles.colors import DarkTheme as C, Colors
+from ui.styles.icons  import Icons
 
 
 class ComponentStyles:
@@ -228,47 +229,52 @@ class ComponentStyles:
     """
 
     INPUT_COMBO = f"""
-    QComboBox {{
-        background:    {C.INPUT_BG};
-        color:         {C.TEXT_PRIMARY};
-        border:        1px solid {C.INPUT_BORDER};
-        border-radius: 4px;
-        padding:       6px 32px 6px 10px;   /* sağ: ok için yer */
-        font-family:   {C.MONOSPACE};
-        font-size:     12px;
-    }}
-    QComboBox:focus {{
-        border-color:  {C.BORDER_FOCUS};
-    }}
-    QComboBox::drop-down {{
-        subcontrol-origin:   padding;
-        subcontrol-position: right center;
-        width:               28px;
-        border-left:         1px solid {C.BORDER_PRIMARY};
-        border-radius:       0 4px 4px 0;
-        background:          {C.BG_ELEVATED};
-    }}
-    QComboBox::down-arrow {{
-        image: none;               /* varsa custom ikon */
-        width:  0;
-        height: 0;
-        border-left:   4px solid transparent;
-        border-right:  4px solid transparent;
-        border-top:    5px solid {C.TEXT_SECONDARY};
-    }}
-    QComboBox:on::down-arrow {{
-        border-top:    none;
-        border-bottom: 5px solid {C.TEXT_SECONDARY};
-    }}
-    QComboBox QAbstractItemView {{
-        background:    {C.BG_ELEVATED};
-        color:         {C.TEXT_PRIMARY};
-        border:        1px solid {C.BORDER_SECONDARY};
-        selection-background-color: {C.ACCENT_BG};
-        selection-color: {C.TEXT_PRIMARY};
-        padding:       4px;
-        outline:       none;
-    }}
+        QComboBox {{
+            background-color: {C.INPUT_BG};
+            border: 1px solid {C.BORDER_SECONDARY};
+            border-radius: 4px;
+            padding: 5px 32px 5px 9px;
+            min-height: 22px;
+            color: {C.TEXT_PRIMARY};
+            font-family: {C.MONOSPACE};
+        }}
+        QComboBox:focus  {{ border-color: {C.INPUT_BORDER_FOCUS}; }}
+        QComboBox:hover  {{ border-color: {C.BORDER_STRONG}; }}
+        QComboBox::drop-down {{
+            subcontrol-origin:          padding;
+            subcontrol-position:        right center;
+            width:                      28px;
+            border-left:                1px solid {C.BORDER_PRIMARY};
+            border-top-right-radius:    3px;
+            border-bottom-right-radius: 3px;
+            background:                 {C.BG_ELEVATED};
+        }}
+        QComboBox::drop-down:hover {{ background: {C.ACCENT_BG}; }}
+        QComboBox::down-arrow {{
+            image:  url("{Icons.qss_url("chevron_down", C.TEXT_SECONDARY, 12)}");
+            width:  12px;
+            height: 12px;
+        }}
+        QComboBox::down-arrow:on {{
+            image:  "none";
+        }}
+        QComboBox QAbstractItemView {{
+            background-color:           {C.BG_ELEVATED};
+            border:                     1px solid {C.BORDER_SECONDARY};
+            color:                      {C.TEXT_PRIMARY};
+            selection-background-color: {C.ACCENT_BG};
+            selection-color:            {C.TEXT_PRIMARY};
+            padding:                    4px;
+            outline:                    0;
+        }}
+        QComboBox QAbstractItemView::item {{
+            min-height: 26px;
+            padding:    3px 8px;
+        }}
+        QComboBox QAbstractItemView::item:hover {{
+            background-color: {C.ACCENT_BG};
+            color:            {C.ACCENT2};
+        }}
     """
 
     INPUT_DATE = f"""
@@ -276,13 +282,31 @@ class ComponentStyles:
             background-color: {C.INPUT_BG};
             border: 1px solid {C.BORDER_SECONDARY};
             border-radius: 4px;
-            padding: 5px 9px;
+            padding: 5px 32px 5px 9px;
             min-height: 22px;
             color: {C.TEXT_PRIMARY};
             font-family: {C.MONOSPACE};
         }}
-        QDateEdit:focus {{ border-color: {C.INPUT_BORDER_FOCUS}; }}
-        QDateEdit::drop-down {{ border: none; width: 20px; }}
+        QDateEdit:focus  {{ border-color: {C.INPUT_BORDER_FOCUS}; }}
+        QDateEdit:hover  {{ border-color: {C.BORDER_STRONG}; }}
+        QDateEdit::drop-down {{
+            subcontrol-origin:          padding;
+            subcontrol-position:        right center;
+            width:                      28px;
+            border-left:                1px solid {C.BORDER_PRIMARY};
+            border-top-right-radius:    3px;
+            border-bottom-right-radius: 3px;
+            background:                 {C.BG_ELEVATED};
+        }}
+        QDateEdit::drop-down:hover {{ background: {C.ACCENT_BG}; }}
+        QDateEdit::down-arrow {{
+            image:  url("{Icons.qss_url("chevron_down", C.TEXT_SECONDARY, 12)}");
+            width:  12px;
+            height: 12px;
+        }}
+        QDateEdit::down-arrow:on {{
+            image:  "none";
+        }}
     """
 
     INPUT_TEXT = f"""
@@ -406,12 +430,12 @@ class ComponentStyles:
         }}
         QHeaderView::section {{
             background-color: {C.BG_PRIMARY};
-            color: {C.TEXT_TABLE_HEADER};
+            color: {C.TEXT_MUTED};
             border: none;
             border-bottom: 1px solid {C.BORDER_PRIMARY};
             padding: 7px 10px;
             font-family: {C.MONOSPACE};
-            font-size: 11px;
+            font-size: 8px;
             font-weight: 700;
             letter-spacing: 2px;
         }}

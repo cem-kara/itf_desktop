@@ -23,7 +23,6 @@ from ui.pages.personel.components.personel_dokuman_panel import PersonelDokumanP
 from ui.pages.personel.components.personel_izin_panel import PersonelIzinPanel
 from ui.pages.personel.components.personel_saglik_panel import PersonelSaglikPanel
 from ui.pages.personel.components.hizli_izin_giris import HizliIzinGirisDialog
-from ui.pages.personel.components.hizli_saglik_giris import HizliSaglikGirisDialog
 
 C = DarkTheme
 
@@ -138,7 +137,7 @@ class PersonelMerkezPage(QWidget):
 
         top_lay.addStretch()
 
-        # İzin / Muayene header butonları
+        # İzin header butonu
         self.btn_izin_ekle = QPushButton(" İzin Gir")
         self.btn_izin_ekle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_izin_ekle.setStyleSheet(STYLES["refresh_btn"])
@@ -146,14 +145,6 @@ class PersonelMerkezPage(QWidget):
         self.btn_izin_ekle.setIconSize(QSize(14, 14))
         self.btn_izin_ekle.clicked.connect(lambda: self._toggle_form("IZIN"))
         top_lay.addWidget(self.btn_izin_ekle)
-
-        self.btn_muayene_ekle = QPushButton(" Muayene")
-        self.btn_muayene_ekle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_muayene_ekle.setStyleSheet(STYLES["refresh_btn"])
-        IconRenderer.set_button_icon(self.btn_muayene_ekle, "activity", color=C.TEXT_SECONDARY, size=14)
-        self.btn_muayene_ekle.setIconSize(QSize(14, 14))
-        self.btn_muayene_ekle.clicked.connect(lambda: self._toggle_form("SAGLIK"))
-        top_lay.addWidget(self.btn_muayene_ekle)
 
         # Kapat (X)
         btn_kapat = QPushButton()
@@ -258,7 +249,6 @@ class PersonelMerkezPage(QWidget):
         info_lay.addWidget(self._section_lbl("HIZLI İŞLEMLER"))
         for label, icon, cb in [
             ("İzin Gir",        "calendar",     lambda: self._toggle_form("IZIN")),
-            ("Muayene Ekle",    "stethoscope",  lambda: self._toggle_form("SAGLIK")),
             ("FHSZ Görüntüle",  "bar_chart",    None),
             ("Durum Değiştir",  "refresh",      None),
         ]:
@@ -403,6 +393,14 @@ class PersonelMerkezPage(QWidget):
 
         self.content_stack.setCurrentWidget(self._modules[code])
 
+        # Sekmeye geçince gerekiyorsa veriyi tazele
+        current = self._modules.get(code)
+        if current and hasattr(current, "load_data") and code in {"SAGLIK", "DOKUMAN"}:
+            try:
+                current.load_data()
+            except Exception as e:
+                logger.warning(f"Sekme veri tazeleme hatası ({code}): {e}")
+
     def _create_module(self, code: str) -> QWidget:
         try:
             if code == "GENEL":
@@ -413,8 +411,12 @@ class PersonelMerkezPage(QWidget):
                 w = PersonelIzinPanel(self.db, self.personel_id)
             elif code == "SAGLIK":
                 w = PersonelSaglikPanel(self.db, self.personel_id)
+                if hasattr(w, "open_documents"):
+                    w.open_documents.connect(self._open_documents_for_saglik)
             elif code == "DOKUMAN":
                 w = PersonelDokumanPanel(self.personel_id, self.db, sabitler_cache=self.sabitler_cache)
+                if hasattr(w, "saved"):
+                    w.saved.connect(self._refresh_saglik_module)
             elif code == "AYRILIS":
                 from ui.pages.personel.isten_ayrilik import IstenAyrilikPage
                 w = IstenAyrilikPage(self.db, personel_data=self.ozet_data.get("personel", {}))
@@ -464,11 +466,6 @@ class PersonelMerkezPage(QWidget):
                 form = HizliIzinGirisDialog(self.db, p, parent=self)
                 form.izin_kaydedildi.connect(self._on_form_saved)
                 form.cancelled.connect(self._hide_form)
-            elif form_type == "SAGLIK":
-                self.lbl_form_title.setText("MUAYENE GİRİŞİ")
-                form = HizliSaglikGirisDialog(self.db, p, parent=self)
-                form.saglik_kaydedildi.connect(self._on_form_saved)
-                form.cancelled.connect(self._hide_form)
             else:
                 return
 
@@ -494,6 +491,27 @@ class PersonelMerkezPage(QWidget):
     def _on_form_saved(self):
         self._hide_form()
         self._load_data()
+
+    def _open_documents_for_saglik(self, kayit_no: str):
+        self._switch_tab("DOKUMAN")
+        dokuman_modul = self._modules.get("DOKUMAN")
+        if not dokuman_modul:
+            return
+
+        set_related_record = getattr(dokuman_modul, "set_related_record", None)
+        if callable(set_related_record):
+            set_related_record(kayit_no, "Personel_Saglik_Takip")
+
+    def _refresh_saglik_module(self):
+        saglik_modul = self._modules.get("SAGLIK")
+        if not saglik_modul:
+            return
+        load_data = getattr(saglik_modul, "load_data", None)
+        if callable(load_data):
+            try:
+                load_data()
+            except Exception as e:
+                logger.warning(f"Sağlık modülü yenileme hatası: {e}")
 
     # ═══════════════════════════════════════════════════
     #  YARDIMCI OLUŞTURUCULAR

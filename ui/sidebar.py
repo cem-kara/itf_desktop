@@ -6,6 +6,14 @@ from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QVBoxLayout, QWidget, QGraphicsDropShadowEffect,
 )
+
+
+class MenuButton(QPushButton):
+    """Custom button with additional attributes for menu items."""
+    def __init__(self, text: str = "", parent=None):
+        super().__init__(text, parent)
+        self._baslik: str = ""
+        self._icon_key: str | None = None
 from core.config import AppConfig
 from core.paths import BASE_DIR
 from ui.styles.colors import DarkTheme as T
@@ -61,8 +69,8 @@ class FlatSection(QWidget):
         self._content_lay.setSpacing(1)
         lay.addWidget(self.content)
 
-    def add_item(self, baslik: str, callback, icon_key: str | None = None) -> QPushButton:
-        btn = QPushButton(f"  {baslik}")
+    def add_item(self, baslik: str, callback, icon_key: str | None = None) -> MenuButton:
+        btn = MenuButton(f"  {baslik}")
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn.setCheckable(True)
         btn.setFixedHeight(34)
@@ -191,9 +199,9 @@ class Sidebar(QWidget):
             f"color: #e2eaf4; font-size: 14px; font-weight: 800;"
             f" letter-spacing: -0.01em; background: transparent;"
         )
-        ver_lbl = QLabel(f"Teknik Servis · v{AppConfig.VERSION}")
+        ver_lbl = QLabel(f"Versiyon · v{AppConfig.VERSION}")
         ver_lbl.setStyleSheet(
-            f"color: {GROUP_LBL}; font-size: 10px; background: transparent;"
+            f"color: {GROUP_LBL}; font-size: 11px; background: transparent;"
         )
         name_col.addWidget(name_lbl)
         name_col.addWidget(ver_lbl)
@@ -211,7 +219,7 @@ class Sidebar(QWidget):
         # ── Kaydırılabilir Menü ────────────────────────────────
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setStyleSheet(f"""
             QScrollArea {{ border: none; background: transparent; }}
             QWidget {{ background: transparent; }}

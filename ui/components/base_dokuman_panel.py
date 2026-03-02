@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
     QPushButton, QScrollArea, QComboBox, QLineEdit,
     QMessageBox, QFileDialog, QTableWidget, QTableWidgetItem, QHeaderView,
+    QAbstractItemView,
 )
 from PySide6.QtCore import Qt, QUrl, Signal
 from PySide6.QtGui import QDesktopServices, QColor
@@ -80,6 +81,8 @@ class BaseDokumanPanel(QWidget):
         self._db           = db
         self._sabitler     = sabitler_cache or []
         self._dokumanlari  = []
+        self._iliskili_id  = None
+        self._iliskili_tip = None
 
         self._svc = DokumanService(db) if db else None
 
@@ -105,6 +108,11 @@ class BaseDokumanPanel(QWidget):
         """Belgeleri yeniden yükle."""
         self._load_dokumanlari()
 
+    def set_related_record(self, iliskili_id=None, iliskili_tip=None):
+        """Yeni yüklenecek belgeler için ilişkili kayıt bağlamı ayarlar."""
+        self._iliskili_id = str(iliskili_id).strip() if iliskili_id else None
+        self._iliskili_tip = str(iliskili_tip).strip() if iliskili_tip else None
+
     # Geriye dönük uyumluluk alias'ları
     def set_cihaz_id(self, cihaz_id: str):
         self.set_entity_id(cihaz_id)
@@ -123,7 +131,7 @@ class BaseDokumanPanel(QWidget):
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setStyleSheet(S.get("scroll", ""))
 
         content = QWidget()
@@ -156,50 +164,52 @@ class BaseDokumanPanel(QWidget):
 
         fl.addWidget(self._lbl("📄  Belge Yükle", bold=True, color=_ACCENT, size=13))
 
-        # Belge türü
+        # Belge Türü + Seçilen Dosya + Dosya Seç Butonu (yan yana)
         r1 = QHBoxLayout()
-        r1.addWidget(self._lbl("Belge Türü:", w=90))
+        r1.setSpacing(10)
+        
+        # Belge Türü
+        r1.addWidget(self._lbl("Belge Türü:", w=80))
         self._combo_tur = QComboBox()
         self._combo_tur.setStyleSheet(S.get("input_combo", ""))
         self._combo_tur.setMinimumHeight(30)
         r1.addWidget(self._combo_tur, 1)
-        fl.addLayout(r1)
-
-        # Dosya seçici
-        r2 = QHBoxLayout()
+        
+        # Seçilen Dosya
+        r1.addWidget(self._lbl("Seçilen Dosya:", w=90))
         self._inp_dosya = QLineEdit()
         self._inp_dosya.setPlaceholderText("Dosya seçilmedi...")
         self._inp_dosya.setReadOnly(True)
         self._inp_dosya.setStyleSheet(S.get("input_field", ""))
         self._inp_dosya.setMinimumHeight(30)
+        r1.addWidget(self._inp_dosya, 2)
+        
+        # Dosya Seç Butonu
         btn_sec = QPushButton("📁 Dosya Seç")
         btn_sec.setStyleSheet(S.get("btn_action", ""))
         btn_sec.setMinimumHeight(30)
-        btn_sec.setMinimumWidth(100)
+        btn_sec.setMaximumWidth(120)
         btn_sec.clicked.connect(self._browse)
-        r2.addWidget(self._inp_dosya, 1)
-        r2.addWidget(btn_sec)
-        fl.addLayout(r2)
+        r1.addWidget(btn_sec, 0)
+        fl.addLayout(r1)
 
-        # Açıklama
-        r3 = QHBoxLayout()
-        r3.addWidget(self._lbl("Açıklama:", w=90))
+        # Açıklama + Yükle butonu (yan yana)
+        r2 = QHBoxLayout()
+        r2.setSpacing(10)
+        r2.addWidget(self._lbl("Açıklama:", w=80))
         self._inp_aciklama = QLineEdit()
         self._inp_aciklama.setPlaceholderText("Belge hakkında notlar...")
         self._inp_aciklama.setStyleSheet(S.get("input_field", ""))
         self._inp_aciklama.setMinimumHeight(30)
-        r3.addWidget(self._inp_aciklama, 1)
-        fl.addLayout(r3)
-
-        # Yükle butonu
-        r4 = QHBoxLayout()
-        r4.addStretch()
+        r2.addWidget(self._inp_aciklama, 2)
+        
         self._btn_yukle = QPushButton("✓ Belgeyi Yükle")
         self._btn_yukle.setStyleSheet(S.get("save_btn", ""))
-        self._btn_yukle.setMinimumHeight(34)
+        self._btn_yukle.setMinimumHeight(30)
+        self._btn_yukle.setMaximumWidth(140)
         self._btn_yukle.clicked.connect(self._upload)
-        r4.addWidget(self._btn_yukle)
-        fl.addLayout(r4)
+        r2.addWidget(self._btn_yukle, 0)
+        fl.addLayout(r2)
 
         if not self._entity_id:
             form.setEnabled(False)
@@ -215,8 +225,8 @@ class BaseDokumanPanel(QWidget):
             ["Belge Türü", "Dosya Adı", "Açıklama", "Tarih"]
         )
         self._tablo.setStyleSheet(S.get("table", ""))
-        self._tablo.setSelectionBehavior(QTableWidget.SelectRows)
-        self._tablo.setSelectionMode(QTableWidget.SingleSelection)
+        self._tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self._tablo.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self._tablo.setAlternatingRowColors(True)
         self._tablo.setMinimumHeight(200)
         hh = self._tablo.horizontalHeader()
@@ -325,6 +335,31 @@ class BaseDokumanPanel(QWidget):
             QMessageBox.warning(self, "Hata", "Lütfen belge türü seçin.")
             return
 
+        # ⚠️ DB'de entity gerçekten var mı kontrol et
+        try:
+            registry = RepositoryRegistry(self._db)
+            # entity_type'a göre tablo adını belirle
+            table_name_map = {
+                "personel": "Personel",
+                "cihaz": "Cihaz",
+                "rke": "RKE",
+            }
+            table_name = table_name_map.get(self._entity_type)
+            if table_name:
+                repo = registry.get(table_name)
+                if repo:
+                    existing = repo.get_by_id(self._entity_id)
+                    if not existing:
+                        QMessageBox.warning(
+                            self, "Hata",
+                            f"Bu {self._entity_type} kaydı henüz oluşturulmamış.\n\n"
+                            f"Lütfen önce kaydı kaydediniz, sonra belge yükleyiniz."
+                        )
+                        return
+        except Exception as e:
+            logger.warning(f"BaseDokumanPanel: Entity DB kontrol hatası: {e}")
+            # Kontrol başarısız olsa da devam et
+
         self._btn_yukle.setEnabled(False)
         self._btn_yukle.setText("Yükleniyor...")
 
@@ -337,6 +372,8 @@ class BaseDokumanPanel(QWidget):
                 folder_name = self._folder_name,
                 doc_type    = self._doc_type,
                 aciklama    = aciklama,
+                iliskili_id = self._iliskili_id,
+                iliskili_tip= self._iliskili_tip,
             )
 
             if not sonuc["ok"]:
@@ -347,6 +384,17 @@ class BaseDokumanPanel(QWidget):
             self._inp_dosya.clear()
             self._inp_aciklama.clear()
             self._load_dokumanlari()
+
+            if self._iliskili_tip == "Personel_Saglik_Takip" and self._iliskili_id:
+                try:
+                    registry = RepositoryRegistry(self._db)
+                    saglik_repo = registry.get("Personel_Saglik_Takip")
+                    saglik_repo.update(self._iliskili_id, {
+                        "RaporDosya": sonuc.get("drive_link") or sonuc.get("belge_adi") or ""
+                    })
+                except Exception as upd_err:
+                    logger.warning(f"BaseDokumanPanel: RaporDosya güncellenemedi: {upd_err}")
+
             QMessageBox.information(self, "Başarılı", f"{belge_tur}\n{mod_text}.")
             self.saved.emit()
 

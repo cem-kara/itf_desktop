@@ -10,10 +10,12 @@ from core.di import get_registry
 from core.logger import logger
 from core.paths import DB_PATH
 from core.services.dokuman_service import DokumanService
+from core.text_utils import turkish_title_case
 from ui.theme_manager import ThemeManager
-from ui.styles import Colors, DarkTheme
+from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
+from ui.components.formatted_widgets import apply_title_case_formatting, apply_combo_title_case_formatting
 import os
 import tempfile
 
@@ -59,26 +61,35 @@ class PersonelOverviewPanel(QWidget):
     Özet metrikleri ve düzenlenebilir personel bilgilerini gösterir.
     """
     open_documents = Signal()
+    
     def __init__(self, ozet_data, db=None, sabitler_cache=None, parent=None):
         super().__init__(parent)
         self.data = ozet_data or {}
         self.db = db
-        self._registry = get_registry(db) if db else None
+        
+        # Service enjeksiyonu (geliştirici rehberi: db parametresi)
+        if db:
+            self._registry = get_registry(db)
+        else:
+            self._registry = None
+            
         self.sabitler_cache = sabitler_cache  # Cache'den gelen Sabitler listesi
         self.personel_data = self.data.get("personel", {})
-        self._widgets = {}  # Alan adı -> QLineEdit
-        self._upload_buttons = {}  # Alan adı -> QPushButton (diploma gibi)
+        
+        self._widgets = {}  # Alan adı -> QLineEdit/QComboBox
+        self._view_buttons = {}  # Diploma görüntüleme butonları (sadece mevcut dosyaları açmak için)
         self._groups = {}   # Grup adı -> (layout, edit_btn, save_btn, cancel_btn)
-        # Dosya upload yönetimi (personel_ekle ile uyumlu)
-        self._file_paths = {}          # {'Resim': local_path, 'Diploma1': local_path, ...}
-        self._drive_links = {}         # {'Resim': drive_link, 'Diploma1': link, ...}
-        self._drive_folders = {}       # {'Personel_Resim': folder_id, ...}
+        
+        # Dosya upload yönetimi (sadece fotoğraf yükleme, diploma belgeler sayfasında)
+        self._file_paths = {}          # {'Resim': local_path}
+        self._drive_links = {}         # {'Resim': drive_link}
+        self._drive_folders = {}       # {'Personel_Resim': folder_id}
         self._all_sabit = []           # Sistem_DriveID ve diğer sabitler
         self._upload_workers = []
         self._pending_uploads = 0
         self._upload_errors = []
         self._upload_meta = {}  # alan_adi -> metadata
-        self._view_buttons = {}     # db_key -> QPushButton
+        
         self._setup_ui()
         self._populate_combos()
 
@@ -94,112 +105,116 @@ class PersonelOverviewPanel(QWidget):
 
         content = QWidget()
         content.setStyleSheet("background: transparent;")
-        layout = QVBoxLayout(content)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(10)
+        content_layout = QHBoxLayout(content)
+        content_layout.setSpacing(20)
+        content_layout.setContentsMargins(0, 0, 0, 0)
 
         if not self.personel_data:
-            layout.addWidget(QLabel("Personel verisi bulunamadı."))
+            content_layout.addWidget(QLabel("Personel verisi bulunamadı."))
             scroll.setWidget(content)
             main_layout.addWidget(scroll)
             return
 
-        # ── 1. Kimlik Bilgileri (Header Kısmı - Düzenlenemez) ──
-        header_frame = QFrame()
-        header_frame.setStyleSheet(f"""
-            QFrame {{
-                background-color: {DarkTheme.BG_SECONDARY};
-                border: 1px solid {DarkTheme.BORDER_PRIMARY};
-                border-radius: 8px;
-            }}
-        """)
-        h_main_layout = QHBoxLayout(header_frame)
-        h_main_layout.setContentsMargins(15, 15, 15, 15)
-        h_main_layout.setSpacing(20)
+        # Formu ortala
+        content_layout.addStretch()
 
-        # Sol: Fotoğraf + yükleme butonu
+        # ── SOL GRUP (Fotoğraf ve Kimlik Bilgileri) ──
+        left_grp = QGroupBox("Fotograf ve Kimlik Bilgileri")
+        left_grp.setStyleSheet(S["group"])
+        left_grp.setFixedWidth(250)
+        left_l = QVBoxLayout(left_grp)
+        left_l.setSpacing(8)
+        left_l.setContentsMargins(8, 12, 8, 12)
+
+        # Fotoğraf
         self.lbl_resim = QLabel()
-        self.lbl_resim.setFixedSize(80, 100)
+        self.lbl_resim.setFixedSize(120, 140)
         self.lbl_resim.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_resim.setStyleSheet(
             f"border: 1px solid {DarkTheme.BORDER_PRIMARY}; border-radius: 6px; "
-            f"background: {DarkTheme.BG_SECONDARY}; color: {DarkTheme.TEXT_DISABLED};"
+            f"background: {DarkTheme.BG_SECONDARY};"
         )
-
-        photo_v = QVBoxLayout()
-        photo_v_widget = QWidget()
-        photo_v_widget.setLayout(photo_v)
-        photo_v.addWidget(self.lbl_resim, 0, Qt.AlignmentFlag.AlignHCenter)
+        left_l.addWidget(self.lbl_resim, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self._photo_upload_btn = QPushButton("Resim Yükle")
-        self._photo_upload_btn.setFixedSize(90, 26)
-        self._photo_upload_btn.setStyleSheet(
-            f"background: {DarkTheme.BTN_PRIMARY_BG}; color: {DarkTheme.BTN_PRIMARY_TEXT}; border-radius:4px;"
-        )
+        self._photo_upload_btn.setStyleSheet(S["file_btn"])
         self._photo_upload_btn.clicked.connect(self._on_photo_upload)
-        photo_v.addWidget(self._photo_upload_btn, 0, Qt.AlignmentFlag.AlignHCenter)
+        IconRenderer.set_button_icon(self._photo_upload_btn, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
+        left_l.addWidget(self._photo_upload_btn, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        h_main_layout.addWidget(photo_v_widget)
+        # Ayırıcı çizgi
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setFixedHeight(1)
+        sep.setStyleSheet(f"background-color: {DarkTheme.BORDER_PRIMARY};")
+        left_l.addWidget(sep)
 
-        # Sağ: Bilgiler
-        info_widget = QWidget()
-        info_widget.setStyleSheet("background:transparent;")
-        h_layout = QGridLayout(info_widget)
-        h_layout.setContentsMargins(0, 0, 0, 0)
-        h_layout.setVerticalSpacing(15)
-        h_layout.setHorizontalSpacing(20)
+        # Kimlik Bilgileri
+        tc_lbl = QLabel("TC Kimlik No")
+        tc_lbl.setStyleSheet(S["required_label"])
+        left_l.addWidget(tc_lbl)
+        self.tc_display = QLabel(str(self.personel_data.get("KimlikNo", "")))
+        self.tc_display.setStyleSheet(S["input"])
+        left_l.addWidget(self.tc_display)
 
-        # Başlık
-        lbl_baslik = QLabel("KİMLİK BİLGİLERİ")
-        lbl_baslik.setStyleSheet(
-            f"color: {DarkTheme.ACCENT}; font-weight: bold; font-size: 12px; letter-spacing: 1px;"
-        )
-        h_layout.addWidget(lbl_baslik, 0, 0, 1, 2)
+        ad_lbl = QLabel("Ad Soyad")
+        ad_lbl.setStyleSheet(S["required_label"])
+        left_l.addWidget(ad_lbl)
+        self.ad_display = QLabel(str(self.personel_data.get("AdSoyad", "")))
+        self.ad_display.setStyleSheet(S["input"])
+        left_l.addWidget(self.ad_display)
 
-        # Bilgiler
-        self._add_readonly_item(h_layout, 1, 0, "TC Kimlik No", self.personel_data.get("KimlikNo"))
-        self._add_readonly_item(h_layout, 1, 1, "Ad Soyad", self.personel_data.get("AdSoyad"))
-        self._add_readonly_item(h_layout, 2, 0, "Doğum Yeri", self.personel_data.get("DogumYeri"))
-        self._add_readonly_item(h_layout, 2, 1, "Doğum Tarihi", self._fmt_date(self.personel_data.get("DogumTarihi")))
-        
-        h_main_layout.addWidget(info_widget, 1)
+        dogum_yeri_lbl = QLabel("Doğum Yeri")
+        dogum_yeri_lbl.setStyleSheet(S["label"])
+        left_l.addWidget(dogum_yeri_lbl)
+        self.dogum_yeri_display = QLabel(str(self.personel_data.get("DogumYeri", "")))
+        self.dogum_yeri_display.setStyleSheet(S["input"])
+        left_l.addWidget(self.dogum_yeri_display)
 
-        layout.addWidget(header_frame)
-        
+        dogum_tarihi_lbl = QLabel("Doğum Tarihi")
+        dogum_tarihi_lbl.setStyleSheet(S["label"])
+        left_l.addWidget(dogum_tarihi_lbl)
+        self.dogum_tarihi_display = QLabel(self._fmt_date(self.personel_data.get("DogumTarihi", "")))
+        self.dogum_tarihi_display.setStyleSheet(S["input"])
+        left_l.addWidget(self.dogum_tarihi_display)
+
         self._set_photo_preview(self.personel_data.get("Resim"))
+        self.ad_display.setProperty("formatted", True)  # Text formatting bayrağı
 
-        # Fotoğraf yükle butonunu yalnızca düzenleme sırasında etkinleştirmek istiyorsanız,
-        # grup düzenleme mantığına bağlayabilirsiniz. Şu an varsayılan olarak aktif bırakıyoruz.
-
-        # ── 2. İletişim ve Kadro (Yan Yana) ──
-        mid_layout = QHBoxLayout()
-        mid_layout.setSpacing(10)
+        # ── SAĞ SÜTUN (Grid Form) ──
+        right = QWidget()
+        right.setMaximumWidth(800)
+        right_l = QVBoxLayout(right)
+        right_l.setSpacing(12)
+        right_l.setContentsMargins(0, 0, 0, 0)
 
         # İletişim Grubu
         grp_iletisim = self._create_editable_group("İletişim Bilgileri", "iletisim")
         iletisim_content_widget = self._groups["iletisim"]["widget"]
         g2 = QGridLayout(iletisim_content_widget)
         g2.setSpacing(12)
+        g2.setColumnStretch(0, 1)
+        g2.setColumnStretch(1, 1)
         self._add_editable_item(g2, 0, 0, "Cep Telefonu", "CepTelefonu", "iletisim")
-        self._add_editable_item(g2, 1, 0, "E-posta", "Eposta", "iletisim")
-        mid_layout.addWidget(grp_iletisim)
+        self._add_editable_item(g2, 0, 1, "E-posta", "Eposta", "iletisim")
+        right_l.addWidget(grp_iletisim)
 
         # Kadro Grubu
         grp_kurum = self._create_editable_group("Kadro ve Kurumsal Bilgiler", "kadro")
         kadro_content_widget = self._groups["kadro"]["widget"]
         g3 = QGridLayout(kadro_content_widget)
         g3.setSpacing(12)
+        g3.setColumnStretch(0, 1)
+        g3.setColumnStretch(1, 1)
         self._add_editable_combo(g3, 0, 0, "Hizmet Sınıfı", "HizmetSinifi", "kadro")
         self._add_editable_combo(g3, 0, 1, "Kadro Ünvanı", "KadroUnvani", "kadro")
         self._add_editable_item(g3, 1, 1, "Sicil No", "KurumSicilNo", "kadro")
         self._add_editable_combo(g3, 1, 0, "Görev Yeri", "GorevYeri", "kadro")
         self._add_editable_date(g3, 2, 0, "Başlama Tarihi", "MemuriyeteBaslamaTarihi", "kadro")
-        self._add_readonly_item(g3, 2, 1, "Durum", self.personel_data.get("Durum")) # Durum buradan değişmesin
-        mid_layout.addWidget(grp_kurum)
+        self._add_readonly_item(g3, 2, 1, "Durum", self.personel_data.get("Durum"))
+        right_l.addWidget(grp_kurum)
 
-        layout.addLayout(mid_layout)
-
-        # ── 3. Eğitim Bilgileri (4 Kolonlu Grid) ──
+        # Eğitim Grubu
         grp_egitim = self._create_editable_group("Eğitim Bilgileri", "egitim")
         egitim_content_widget = self._groups["egitim"]["widget"]
         g4 = QGridLayout(egitim_content_widget)
@@ -241,11 +256,16 @@ class PersonelOverviewPanel(QWidget):
         self._add_editable_date_only(g4, 3, 2, "MezuniyetTarihi2", "egitim")
         self._add_editable_field_only(g4, 3, 3, "DiplomaNo2", "egitim")
         
-        layout.addWidget(grp_egitim)
+        right_l.addWidget(grp_egitim)
+        right_l.addStretch()
 
-        layout.addStretch()
+        # Layout'a bileşenleri ekle
+        content_layout.addWidget(left_grp, alignment=Qt.AlignmentFlag.AlignTop)
+        content_layout.addWidget(right)
+        content_layout.addStretch()
+
         scroll.setWidget(content)
-        main_layout.addWidget(scroll)
+        main_layout.addWidget(scroll, 1)
 
     def _set_photo_preview(self, photo_ref):
         """Fotoğraf alanını yerel dosya veya Drive linkinden önizler."""
@@ -255,22 +275,29 @@ class PersonelOverviewPanel(QWidget):
 
         if not photo_ref:
             self.lbl_resim.setText("Fotoğraf\nYok")
+            logger.debug("Fotoğraf referansı boş")
             return
 
         # Yerel dosya ise doğrudan yükle
         if os.path.exists(photo_ref):
-            pixmap = QPixmap(photo_ref)
-            if not pixmap.isNull():
-                self.lbl_resim.setText("")
-                self.lbl_resim.setPixmap(
-                    pixmap.scaled(
-                        self.lbl_resim.size(),
-                        Qt.AspectRatioMode.KeepAspectRatio,
-                        Qt.TransformationMode.SmoothTransformation,
+            try:
+                pixmap = QPixmap(photo_ref)
+                if not pixmap.isNull():
+                    self.lbl_resim.setText("")
+                    self.lbl_resim.setPixmap(
+                        pixmap.scaled(
+                            self.lbl_resim.size(),
+                            Qt.AspectRatioMode.KeepAspectRatio,
+                            Qt.TransformationMode.SmoothTransformation,
+                        )
                     )
-                )
-                self.lbl_resim.setToolTip(os.path.basename(photo_ref))
-                return
+                    self.lbl_resim.setToolTip(os.path.basename(photo_ref))
+                    logger.debug(f"Lokal fotoğraf yüklendi: {os.path.basename(photo_ref)}")
+                    return
+                else:
+                    logger.warning(f"Fotoğraf dosyası geçersiz (pixmap null): {photo_ref}")
+            except Exception as e:
+                logger.error(f"Lokal fotoğraf yükleme hatası: {e}", exc_info=True)
 
         # Drive linki ise geçici dosyaya indirip önizle
         if photo_ref.startswith("http"):
@@ -285,8 +312,9 @@ class PersonelOverviewPanel(QWidget):
                         pixmap = QPixmap(tmp_path)
                         try:
                             os.remove(tmp_path)
-                        except OSError:
-                            pass
+                        except OSError as oe:
+                            logger.warning(f"Geçici dosya silinemedi: {oe}")
+                        
                         if not pixmap.isNull():
                             self.lbl_resim.setText("")
                             self.lbl_resim.setPixmap(
@@ -297,34 +325,47 @@ class PersonelOverviewPanel(QWidget):
                                 )
                             )
                             self.lbl_resim.setToolTip("Drive fotoğrafı")
+                            logger.debug("Drive fotoğrafı yüklendi")
                             return
+                        else:
+                            logger.warning("Drive'dan indirilen fotoğraf geçersiz (pixmap null)")
+                    else:
+                        logger.warning(f"Drive download başarısız: {file_id}")
             except Exception as e:
-                logger.warning(f"Fotoğraf önizleme yüklenemedi: {e}")
+                logger.warning(f"Drive fotoğraf önizleme hatası: {e}", exc_info=True)
 
         self.lbl_resim.setText("Fotoğraf\nYüklenemedi")
         self.lbl_resim.setToolTip(photo_ref[:200])
+        logger.warning(f"Fotoğraf yüklenemedi: {photo_ref[:100]}")
 
     def _populate_combos(self):
+        """Combo box'ları Sabitler ve Personel tablosundan doldur"""
         if not self._registry:
             return
+        
         try:
-            registry = self._registry
-            
-            # Cache'den gelmişse DB'yi sorgulamıyoruz
+            # Cache'den gelmediyse DB'yi sorgula
             if self.sabitler_cache:
                 all_sabit = self.sabitler_cache
             else:
-                sabitler_repo = registry.get("Sabitler")
-                all_sabit = sabitler_repo.get_all()
+                sabitler_repo = self._registry.get("Sabitler")
+                if not sabitler_repo:
+                    logger.warning("Sabitler repository bulunamadı")
+                    return
+                    
+                all_sabit = sabitler_repo.get_all() or []
 
             def get_sabit(kod):
+                """Belirli bir Sabitler kodunun değerlerini al"""
                 return sorted([
-                    str(r.get("MenuEleman", "")).strip()
+                    str((r or {}).get("MenuEleman") or "").strip()
                     for r in all_sabit
-                    if r.get("Kod") == kod and r.get("MenuEleman", "").strip()
+                    if isinstance(r, dict)
+                    and r.get("Kod") == kod
+                    and str(r.get("MenuEleman") or "").strip()
                 ])
 
-            # Populate Kadro combos
+            # Populate Kadro combos (Hizmet Sınıfı, Kadro Ünvanı, Görev Yeri)
             for key, kod in [("HizmetSinifi", "Hizmet_Sinifi"), 
                              ("KadroUnvani", "Kadro_Unvani"), 
                              ("GorevYeri", "Gorev_Yeri")]:
@@ -335,55 +376,76 @@ class PersonelOverviewPanel(QWidget):
                     combo.clear()
                     combo.addItem("")
                     combo.addItems(items)
-                    combo.setCurrentText(current_val)
-                    if combo.completer():
-                        combo.completer().setModel(combo.model())
-
-            # Populate Egitim combos
-            personel_repo = registry.get("Personel")
-            all_personel = personel_repo.get_all()
-
-            for col_key, combo_keys in [
-                (("MezunOlunanOkul", "MezunOlunanOkul2"), ("MezunOlunanOkul", "MezunOlunanOkul2")),
-                (("MezunOlunanFakulte", "MezunOlunanFakulte2"), ("MezunOlunanFakulte", "MezunOlunanFakulte2"))
-            ]:
-                unique_vals = sorted(set(
-                    s for r in all_personel for col in col_key if (s := str(r.get(col, "")).strip())
-                ))
-                for key in combo_keys:
-                    combo = self._widgets.get(key)
-                    if isinstance(combo, QComboBox):
-                        current_val = combo.currentText()
-                        combo.clear()
-                        combo.addItem("")
-                        combo.addItems(unique_vals)
+                    if current_val:
                         combo.setCurrentText(current_val)
-                        if combo.completer():
-                            combo.completer().setModel(combo.model())
+                    # Text formatting'ı koru
+                    apply_combo_title_case_formatting(combo)
+
+            # Populate Eğitim combos (Okul ve Fakülte listeleri)
+            personel_repo = self._registry.get("Personel")
+            if personel_repo:
+                all_personel = personel_repo.get_all() or []
+
+                for col_key, combo_keys in [
+                    (("MezunOlunanOkul", "MezunOlunanOkul2"), ("MezunOlunanOkul", "MezunOlunanOkul2")),
+                    (("MezunOlunanFakulte", "MezunOlunanFakulte2"), ("MezunOlunanFakulte", "MezunOlunanFakulte2"))
+                ]:
+                    unique_vals = sorted(set(
+                        s
+                        for r in all_personel
+                        if isinstance(r, dict)
+                        for col in col_key
+                        if (s := str(r.get(col) or "").strip())
+                    ))
+                    
+                    for key in combo_keys:
+                        combo = self._widgets.get(key)
+                        if isinstance(combo, QComboBox):
+                            current_val = combo.currentText()
+                            combo.clear()
+                            combo.addItem("")
+                            combo.addItems(unique_vals)
+                            if current_val:
+                                combo.setCurrentText(current_val)
+                            # Text formatting'ı koru
+                            apply_combo_title_case_formatting(combo)
 
             # Drive klasör ID'lerini yükle
-            self._all_sabit = all_sabit  # ← offline_folder_name için gerekli
+            self._all_sabit = all_sabit
             self._drive_folders = {
-                str(r.get("MenuEleman", "")).strip(): str(r.get("Aciklama", "")).strip()
+                str(r.get("MenuEleman") or "").strip(): str(r.get("Aciklama") or "").strip()
                 for r in all_sabit
-                if r.get("Kod") == "Sistem_DriveID" and r.get("Aciklama", "").strip()
+                if isinstance(r, dict)
+                and r.get("Kod") == "Sistem_DriveID"
+                and str(r.get("Aciklama") or "").strip()
             }
-            if not self.sabitler_cache:  # Cache'den gelmediyse log bas
-                logger.info(f"Drive klasörleri yüklendi: {list(self._drive_folders.keys())}")
+            
+            if not self.sabitler_cache and all_sabit:
+                logger.info(f"Sabitler yüklendi: {len(all_sabit)} kayıt, {len(self._drive_folders)} drive klasörü")
 
         except Exception as e:
-            logger.error(f"PersonelOverviewPanel combo doldurma hatası: {e}")
+            logger.error(f"Combo doldurma hatası: {e}", exc_info=True)
 
     def _create_editable_group(self, title, group_id):
-        grp = QGroupBox()
+        grp = QGroupBox(title)
         grp.setStyleSheet(f"""
             QGroupBox {{
                 background-color: {DarkTheme.BG_SECONDARY};
                 border: 1px solid {DarkTheme.BORDER_PRIMARY};
                 border-radius: 8px;
-                margin-top: 0px;
+                margin-top: 8px;
                 font-weight: bold;
                 color: {DarkTheme.TEXT_PRIMARY};
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                subcontrol-position: top left;
+                left: 12px;
+                padding: 0 6px;
+                color: {DarkTheme.ACCENT};
+                font-size: 12px;
+                font-weight: 700;
+                background-color: {DarkTheme.BG_SECONDARY};
             }}
         """)
         
@@ -392,14 +454,8 @@ class PersonelOverviewPanel(QWidget):
         vbox = QVBoxLayout(grp)
         vbox.setContentsMargins(10, 10, 10, 10)
         
-        # Header Satırı (Başlık + Butonlar)
+        # Header Satırı (Butonlar)
         header_row = QHBoxLayout()
-        
-        lbl_title = QLabel(title)
-        lbl_title.setStyleSheet(
-            f"color: {DarkTheme.ACCENT}; font-weight: bold; font-size: 13px;"
-        )
-        header_row.addWidget(lbl_title)
         header_row.addStretch()
 
         # Butonlar
@@ -409,10 +465,10 @@ class PersonelOverviewPanel(QWidget):
         
         # Stil özelleştirme
         btn_save.setStyleSheet(
-            f"background: {Colors.GREEN_600}; color: {DarkTheme.TEXT_PRIMARY}; border-radius: 4px; padding: 4px 8px;"
+            f"background: #16a34a; color: {DarkTheme.TEXT_PRIMARY}; border-radius: 4px; padding: 4px 8px;"
         )
         btn_cancel.setStyleSheet(
-            f"background: {Colors.RED_600}; color: {DarkTheme.TEXT_PRIMARY}; border-radius: 4px; padding: 4px 8px;"
+            f"background: #dc2626; color: {DarkTheme.TEXT_PRIMARY}; border-radius: 4px; padding: 4px 8px;"
         )
 
         header_row.addWidget(btn_edit)
@@ -510,7 +566,7 @@ class PersonelOverviewPanel(QWidget):
         val = self.personel_data.get(db_key, "")
         combo = QComboBox()
         combo.setEditable(True)
-        combo.setInsertPolicy(QComboBox.NoInsert)
+        combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         combo.addItem(str(val) if val else "")
         combo.setCurrentText(str(val) if val else "")
         combo.setEnabled(False)
@@ -521,7 +577,7 @@ class PersonelOverviewPanel(QWidget):
         
         completer = QCompleter(self)
         completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-        completer.setFilterMode(Qt.MatchContains)
+        completer.setFilterMode(Qt.MatchFlag.MatchContains)
         combo.setCompleter(completer)
 
         l.addWidget(combo)
@@ -535,7 +591,7 @@ class PersonelOverviewPanel(QWidget):
         val = self.personel_data.get(db_key, "")
         combo = QComboBox()
         combo.setEditable(True)
-        combo.setInsertPolicy(QComboBox.NoInsert)
+        combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         combo.setPlaceholderText("-")
         combo.addItem(str(val) if val else "")
         combo.setCurrentText(str(val) if val else "")
@@ -547,7 +603,7 @@ class PersonelOverviewPanel(QWidget):
 
         completer = QCompleter(self)
         completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-        completer.setFilterMode(Qt.MatchContains)
+        completer.setFilterMode(Qt.MatchFlag.MatchContains)
         combo.setCompleter(completer)
         
         layout.addWidget(combo, row, col)
@@ -556,7 +612,7 @@ class PersonelOverviewPanel(QWidget):
         self._groups[group_id]["fields"].append(db_key)
 
     def _add_editable_field_only(self, layout, row, col, db_key, group_id):
-        """Sadece Input ekler (Eğitim tablosu için)."""
+        """Sadece Input ekler (Diploma alanı için - sadece görüntüleme)."""
         val = self.personel_data.get(db_key, "")
         inp = QLineEdit(str(val) if val else "")
         inp.setReadOnly(True)
@@ -566,31 +622,24 @@ class PersonelOverviewPanel(QWidget):
             f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px;"
         )
 
-        # Container: input + upload button (diploma için)
+        # Container: input + görüntüle butonu
         container = QWidget()
         h = QHBoxLayout(container)
         h.setContentsMargins(0, 0, 0, 0)
         h.setSpacing(6)
         h.addWidget(inp, 1)
 
-        upload_btn = QPushButton("Yükle")
-        upload_btn.setFixedSize(70, 26)
-        upload_btn.setEnabled(False)  # yalnızca edit modda etkin olacak
-        upload_btn.setStyleSheet(f"background: {DarkTheme.BG_HOVER}; border-radius:4px;")
-        upload_btn.clicked.connect(lambda _checked, k=db_key: self._on_upload_diploma(k))
-        h.addWidget(upload_btn)
-
-        # Görüntüle butonu (edit modda da her zaman görünür, ama dosya yoksa tıklanamaz)
-        view_btn = QPushButton("Aç")
-        view_btn.setFixedSize(40, 22)
+        # Görüntüle butonu (mevcut diploma varsa aç)
+        view_btn = QPushButton("Görüntüle")
+        #view_btn.setFixedSize(80, 22)
         view_btn.setEnabled(False)
+        view_btn.setToolTip("Mevcut diplomayı görüntüle")
         view_btn.clicked.connect(lambda _checked, k=db_key: self._on_view_diploma(k))
         h.addWidget(view_btn)
 
         layout.addWidget(container, row, col)
 
         self._widgets[db_key] = inp
-        self._upload_buttons[db_key] = upload_btn
         self._view_buttons[db_key] = view_btn
         self._groups[group_id]["fields"].append(db_key)
 
@@ -696,17 +745,10 @@ class PersonelOverviewPanel(QWidget):
                     d = QDate.fromString(str(val), "yyyy-MM-dd")
                     widget.setDate(d if d.isValid() else QDate.currentDate())
             
-            # Diploma yükleme ve açma butonlarını grup düzenleme moduna göre etkinleştir
-            if key in self._upload_buttons:
-                try:
-                    self._upload_buttons[key].setEnabled(edit_mode)
-                except Exception:
-                    pass
+            # Diploma görüntüleme butonunu güncelle (dosya varsa etkin)
             if key in self._view_buttons:
                 try:
                     # "Aç" butonu: dosya varsa tıklanabilir olsun (edit modu fark etmiyor)
-                    # ama stil olarak edit modunda ara bilgilendirme yapabiliriz
-                    # Şimdilik: sadece dosya varsa etkin yap
                     has_file = bool(self.personel_data.get({
                         'DiplomaNo': 'Diploma1',
                         'DiplomaNo2': 'Diploma2'
@@ -716,51 +758,66 @@ class PersonelOverviewPanel(QWidget):
                     pass
 
     def _save_group(self, group_id):
+        """Grup verilerini kaydet"""
         if not self._registry:
-            QMessageBox.warning(self, "Hata", "Veritabanı bağlantısı yok.")
+            logger.error("Registry yok, veri kaydı başarısız")
+            QMessageBox.critical(self, "Hata", "Veritabanı bağlantısı yoktur.")
             return
 
         grp = self._groups[group_id]
         update_data = {}
         
-        # Verileri topla
-        for key in grp["fields"]:
-            widget = self._widgets[key]
-            val = ""
-            if isinstance(widget, QLineEdit):
-                val = widget.text().strip()
-            elif isinstance(widget, QComboBox):
-                val = widget.currentText().strip()
-            elif isinstance(widget, QDateEdit):
-                val = widget.date().toString("yyyy-MM-dd")
-            update_data[key] = val
+        try:
+            # Verileri topla ve valide et
+            for key in grp["fields"]:
+                widget = self._widgets[key]
+                val = ""
+                
+                if isinstance(widget, QLineEdit):
+                    val = widget.text().strip()
+                    # Zorunlu alanları kontrol et
+                    if not val and key in ["Ad", "Soyad", "CepTel", "Email"]:
+                        raise ValueError(f"{key} alanı boş bırakılamaz.")
+                elif isinstance(widget, QComboBox):
+                    val = widget.currentText().strip()
+                elif isinstance(widget, QDateEdit):
+                    val = widget.date().toString("yyyy-MM-dd")
+                    # Geçerli tarih kontrolü
+                    if not widget.date().isValid():
+                        raise ValueError(f"Geçersiz tarih formatı ({key}).")
+                
+                update_data[key] = val
+        except ValueError as e:
+            logger.warning(f"Veri validasyon hatası ({group_id}): {e}")
+            QMessageBox.warning(self, "Girdi Hatası", str(e))
+            return
             
         try:
+            # Registry'den Personel repository'sini al
             repo = self._registry.get("Personel")
+            if not repo:
+                raise RuntimeError("Personel repository bulunamadı.")
 
             tc = self.personel_data.get("KimlikNo")
             if not tc:
-                raise ValueError("TC Kimlik No bulunamadı.")
+                raise ValueError("TC Kimlik No geliştirici verilerinde bulunamadı.")
+            
+            logger.debug(f"Personel güncelleme başlatıldı: {tc} (grup: {group_id})")
 
-            # Dosya yükleme adımı: eğer kullanıcı diploma veya fotoğraf seçtiyse
-            # önce Drive'a yükle, sonra DB güncellemesini yap
-            # _file_paths oluştur
+            # Dosya yükleme adımı: sadece fotoğraf yükleme burada yapılır
+            # Diploma yüklemeleri Belgeler sayfasında yapılır
             self._file_paths = {}
             foto = self.personel_data.get("Resim", "")
             if foto and os.path.exists(str(foto)):
                 self._file_paths["Resim"] = foto
-
-            if self.personel_data.get("DiplomaNo_file"):
-                self._file_paths["Diploma1"] = self.personel_data.get("DiplomaNo_file")
-            if self.personel_data.get("DiplomaNo2_file"):
-                self._file_paths["Diploma2"] = self.personel_data.get("DiplomaNo2_file")
 
             # Eğer yükleme gerekmiyorsa doğrudan kaydet
             if not self._file_paths:
                 repo.update(tc, update_data)
                 self.personel_data.update(update_data)
                 self._toggle_edit(group_id, False)
-                logger.info(f"Personel güncellendi ({group_id}): {tc}")
+                logger.info(f"Personel başarıyla güncellendi: {tc} ({group_id})")
+                QMessageBox.information(self, "Başarılı", "Veriler kaydedildi.")
                 return
 
             # Upload callback sonrası DB güncellemesi
@@ -768,115 +825,118 @@ class PersonelOverviewPanel(QWidget):
                 for drive_key, link in self._drive_links.items():
                     if drive_key == 'Resim':
                         update_data['Resim'] = link
-                    elif drive_key == 'Diploma1':
-                        update_data['Diploma1'] = link
-                    elif drive_key == 'Diploma2':
-                        update_data['Diploma2'] = link
                 
                 # Lokal dosyalar da kaydet (Drive'a yüklenen dosyalar veya lokal kalanlar)
-                for file_key in ['Resim', 'Diploma1', 'Diploma2']:
-                    if file_key in self._file_paths:
-                        if file_key not in self._drive_links:  # Drive'a yüklenmedi
-                            local_path = self._save_file_locally(self._file_paths[file_key], tc, file_key)
-                            if local_path:
-                                update_data[file_key] = local_path
+                if 'Resim' in self._file_paths:
+                    if 'Resim' not in self._drive_links:  # Drive'a yüklenmedi
+                        local_path = self._save_file_locally(self._file_paths['Resim'], tc, 'Resim')
+                        if local_path:
+                            update_data['Resim'] = local_path
 
                 repo.update(tc, update_data)
                 self.personel_data.update(update_data)
                 self._toggle_edit(group_id, False)
-                logger.info(f"Personel güncellendi ({group_id}): {tc}")
+                logger.info(f"Personel (dosya dahil) başarıyla güncellendi: {tc} ({group_id})")
+                QMessageBox.information(self, "Başarılı", "Veriler ve dosyalar kaydedildi.")
 
             self._upload_files_to_drive(tc, _after_upload)
 
+        except ValueError as ve:
+            logger.warning(f"Veri hatası (kayıt): {ve}")
+            QMessageBox.warning(self, "Veri Hatası", str(ve))
+        except RuntimeError as re:
+            logger.error(f"İşlem hatası: {re}")
+            QMessageBox.critical(self, "İşlem Hatası", str(re))
         except Exception as e:
-            logger.error(f"Güncelleme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Güncelleme başarısız:\n{e}")
-
-    def _on_upload_diploma(self, db_key):
-        """Diploma veya ek dosya yükleme işlemini tetikler (dosya seçici)."""
-        try:
-            path, _ = QFileDialog.getOpenFileName(self, "Diploma Dosyası Seç", "", "PDF Dosyaları (*.pdf);;Tüm Dosyalar (*)")
-            if not path:
-                return
-
-            # Seçilen dosyanın yolunu widget'a ve iç veriye kaydet
-            widget = self._widgets.get(db_key)
-            if isinstance(widget, QLineEdit):
-                widget.setText(path)
-                widget.setToolTip(path)
-
-            # Ayrıca personel_data içine dosya yolunu saklayalım (DB kaydı opsiyonel)
-            self.personel_data[f"{db_key}_file"] = path
-            # Güncelle UI
-            self._refresh_diploma_display(db_key)
-
-        except Exception as e:
-            logger.error(f"Diploma yükleme hatası ({db_key}): {e}")
-            QMessageBox.warning(self, "Yükleme Hatası", f"Dosya yüklenemedi: {e}")
+            logger.error(f"Beklenmeyen güncelleme hatası ({group_id}): {e}", exc_info=True)
+            QMessageBox.critical(self, "Sistem Hatası", f"Güncelleme başarısız:\nAyrıntılar için logları kontrol edin.")
 
     def _on_photo_upload(self):
+        """Fotoğraf seçim ve yükleme işlemini tetikler."""
         try:
             path, _ = QFileDialog.getOpenFileName(self, "Fotoğraf Seç", "", "Görüntü Dosyaları (*.png *.jpg *.jpeg *.bmp);;Tüm Dosyalar (*)")
             if not path:
+                logger.debug("Fotoğraf seçimi iptal edildi")
                 return
+            
             # Önizlemeyi güncelle
             self._set_photo_preview(path)
             self.personel_data["Resim"] = path
+            logger.debug(f"Fotoğraf seçildi: {os.path.basename(path)}")
             
             # Resmi otomatik olarak Drive'a yükle ve veritabanına kaydet
             if self.db:
                 self._save_photo_to_db(path)
         except Exception as e:
-            logger.warning(f"Fotoğraf yüklenemedi: {e}")
+            logger.warning(f"Fotoğraf yüklenemedi: {e}", exc_info=True)
+            QMessageBox.warning(self, "Fotoğraf Yükleme Hatası", f"İşlem gerçekleştirilemedi:\n{str(e)}")
 
     def _save_photo_to_db(self, photo_path):
         """Resmi Drive'a yükleyip veritabanına kaydeder."""
         try:
             if not self._registry:
-                return
+                raise RuntimeError("Registry başlatılmamış, fotoğraf kaydedilemez")
+            
             repo = self._registry.get("Personel")
+            if not repo:
+                raise RuntimeError("Personel repository bulunamadı")
             
             tc = self.personel_data.get("KimlikNo")
             if not tc:
-                raise ValueError("TC Kimlik No bulunamadı.")
+                raise ValueError("TC Kimlik No bulunamadı")
+            
+            logger.debug(f"Fotoğraf kaydı başlatıldı: {tc}")
             
             # Resmi Drive'a yükle
             self._file_paths = {"Resim": photo_path}
             self._drive_links = {}
             
             def _after_upload():
-                # Drive linki veritabanına kaydet
-                if "Resim" in self._drive_links:
-                    drive_link = self._drive_links["Resim"]
-                    repo.update(tc, {"Resim": drive_link})
-                    self.personel_data["Resim"] = drive_link
-                    logger.info(f"Fotoğraf veritabanına kaydedildi: {tc}")
-                    QMessageBox.information(self, "Başarılı", "Fotoğraf başarıyla güncellendi.")
-                else:
-                    # Drive yok, lokal dosyayı kaydet
-                    local_path = self._save_file_locally(photo_path, tc, "Resim")
-                    if local_path:
-                        repo.update(tc, {"Resim": local_path})
-                        self.personel_data["Resim"] = local_path
-                        logger.info(f"Fotoğraf lokal klasöre kaydedildi: {local_path}")
-                        QMessageBox.information(self, "Başarılı", "Fotoğraf güncellendi (lokal kayıt).")
+                try:
+                    # Drive linki veritabanına kaydet
+                    if "Resim" in self._drive_links:
+                        drive_link = self._drive_links["Resim"]
+                        repo.update(tc, {"Resim": drive_link})
+                        self.personel_data["Resim"] = drive_link
+                        logger.info(f"Fotoğraf Drive'a yüklendi ve DB güncellendi: {tc}")
+                        QMessageBox.information(self, "Başarılı", "Fotoğraf başarıyla güncellendi.")
                     else:
-                        raise Exception("Dosya kaydedilemedi")
+                        # Drive yok, lokal dosyayı kaydet
+                        local_path = self._save_file_locally(photo_path, tc, "Resim")
+                        if local_path:
+                            repo.update(tc, {"Resim": local_path})
+                            self.personel_data["Resim"] = local_path
+                            logger.info(f"Fotoğraf lokal klasöre kaydedildi: {local_path}")
+                            QMessageBox.information(self, "Başarılı", "Fotoğraf güncellendi (lokal kayıt).")
+                        else:
+                            raise RuntimeError("Dosya kaydedilemedi, lokal klasör oluşturulamadı")
+                except Exception as e:
+                    logger.error(f"Upload callback hatası: {e}", exc_info=True)
+                    QMessageBox.critical(self, "Kayıt Hatası", f"Fotoğraf kaydedilemedi:\n{str(e)}")
             
             self._upload_files_to_drive(tc, _after_upload)
             
+        except ValueError as ve:
+            logger.warning(f"Veri hatası (fotoğraf): {ve}")
+            QMessageBox.warning(self, "Veri Hatası", str(ve))
+        except RuntimeError as re:
+            logger.error(f"İşlem hatası (fotoğraf): {re}")
+            QMessageBox.critical(self, "İşlem Hatası", str(re))
         except Exception as e:
-            logger.error(f"Fotoğraf kaydetme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Fotoğraf kaydedilemedi:\n{e}")
+            logger.error(f"Fotoğraf kaydetme hatası: {e}", exc_info=True)
+            QMessageBox.critical(self, "Sistem Hatası", f"Fotoğraf kaydedilemedi:\nAyrıntılar için logları kontrol edin.")
 
     def _save_file_locally(self, source_file_path, tc_no, file_type):
         """
         Dosyayı lokal klasöre kaydeder.
-        Cloud adapter'ın  offline_folder_name yapısı ile uyumlu.
+        Cloud adapter'ın offline_folder_name yapısı ile uyumlu.
         Example: data/offline_uploads/Personel_Resim/TC_Resim.jpg
         """
         try:
             from core.paths import BASE_DIR
+            
+            if not os.path.exists(source_file_path):
+                raise FileNotFoundError(f"Kaynak dosya bulunamadı: {source_file_path}")
             
             # Dosya türüne göre klasör eşlemesi
             file_class_map = {
@@ -887,8 +947,7 @@ class PersonelOverviewPanel(QWidget):
             
             folder_name = file_class_map.get(file_type, "")
             if not folder_name:
-                logger.warning(f"Bilinmeyen dosya türü: {file_type}")
-                return None
+                raise ValueError(f"Bilinmeyen dosya türü: {file_type}")
             
             # Lokal klasör oluştur (offline_uploads direktinin altında, cloud adapter ile uyumlu)
             local_base = os.path.join(BASE_DIR, "data", "offline_uploads", folder_name)
@@ -906,14 +965,20 @@ class PersonelOverviewPanel(QWidget):
             
             return dest_path
             
+        except FileNotFoundError as fe:
+            logger.warning(f"Dosya bulunamadı (lokal kayıt): {fe}")
+            return None
+        except ValueError as ve:
+            logger.warning(f"Geçersiz parametre (lokal kayıt): {ve}")
+            return None
         except Exception as e:
-            logger.error(f"Lokal dosya kaydetme hatası: {e}")
+            logger.error(f"Lokal dosya kaydetme hatası: {e}", exc_info=True)
             return None
 
     def _upload_files_to_drive(self, tc_no, callback):
-        """Seçili dosyaları DokumanService ile yükler, bitince callback çağırır."""
+        """Seçili dosyaları DokumanService ile yükler, bitince callback çağırır (sadece fotoğraf)."""
         
-        # Dosya map: self._file_paths örn {'Resim': path, 'Diploma1': path}
+        # Dosya map: self._file_paths örn {'Resim': path}
         if not getattr(self, "_file_paths", None):
             callback()
             return
@@ -924,18 +989,6 @@ class PersonelOverviewPanel(QWidget):
                 "doc_type": "Personel_Resim",
                 "db_field": "Resim",
                 "belge_turu": "Resim",
-            },
-            "Diploma1": {
-                "folder_name": "Personel_Diploma",
-                "doc_type": "Personel_Diploma",
-                "db_field": "Diploma1",
-                "belge_turu": "Diploma1",
-            },
-            "Diploma2": {
-                "folder_name": "Personel_Diploma",
-                "doc_type": "Personel_Diploma",
-                "db_field": "Diploma2",
-                "belge_turu": "Diploma2",
             },
         }
 
@@ -950,15 +1003,8 @@ class PersonelOverviewPanel(QWidget):
             map_info = upload_map[file_key]
 
             ext = os.path.splitext(file_path)[1]
-            # Diploma dosya adı formatı: TCKimlik_Diploma_Tarih
-            # Örn: 12345678901_Diploma_20260301.pdf
-            if file_key in ("Diploma1", "Diploma2"):
-                tarih = QDate.currentDate().toString("yyyyMMdd")
-                custom_name = f"{tc_no}_Diploma_{tarih}{ext}"
-                if file_key == "Diploma2":
-                    custom_name = f"{tc_no}_Diploma_{tarih}_2{ext}"
-            else:
-                custom_name = f"{tc_no}_{map_info['db_field']}{ext}"
+            # Fotoğraf dosya adı: TCKimlik_Resim.ext
+            custom_name = f"{tc_no}_{map_info['db_field']}{ext}"
 
             self._upload_meta[map_info["db_field"]] = {
                 "tc_no": tc_no,
@@ -991,105 +1037,129 @@ class PersonelOverviewPanel(QWidget):
             self._upload_callback = callback
 
     def _on_upload_finished(self, alan_adi, sonuc):
-        """Tek dosya yükleme tamamlandı."""
-        # alan_adi: db field like 'Resim' or 'Diploma1'
-        kayit_linki = sonuc.get("drive_link") or sonuc.get("local_path") or ""
-        self._drive_links[alan_adi] = kayit_linki
-        logger.info(f"Dosya yükleme OK: {alan_adi} → {kayit_linki}")
-        self._pending_uploads -= 1
-        # UI'ı güncelle: personel_data'ya ekle ve label'ı set et
+        """Tek dosya yükleme tamamlandı (sadece fotoğraf)."""
         try:
-            if alan_adi == 'Diploma1':
-                self.personel_data['Diploma1'] = kayit_linki
-            elif alan_adi == 'Diploma2':
-                self.personel_data['Diploma2'] = kayit_linki
-            elif alan_adi == 'Resim':
+            # alan_adi: db field like 'Resim'
+            kayit_linki = sonuc.get("drive_link") or sonuc.get("local_path") or ""
+            self._drive_links[alan_adi] = kayit_linki
+            logger.info(f"Dosya yükleme başarılı: {alan_adi} → {os.path.basename(kayit_linki) if kayit_linki else 'N/A'}")
+            self._pending_uploads -= 1
+            
+            # UI'ı güncelle: personel_data'ya ekle
+            if alan_adi == 'Resim':
                 self.personel_data['Resim'] = kayit_linki
-            # refresh display for diploma keys
-            if alan_adi in ('Diploma1', 'Diploma2'):
-                key = 'DiplomaNo' if alan_adi == 'Diploma1' else 'DiplomaNo2'
-                self._refresh_diploma_display(key)
-        except Exception:
-            pass
-        if self._pending_uploads <= 0:
-            self._finalize_uploads()
+            
+            if self._pending_uploads <= 0:
+                logger.debug(f"Tüm dosyalar yüklendi ({len(self._drive_links)} kayıt)")
+                self._finalize_uploads()
+                
+        except Exception as e:
+            logger.error(f"Upload finished callback hatası: {e}", exc_info=True)
 
     def _refresh_diploma_display(self, db_key):
-        """Update diploma view button state based on saved or staged file."""
-        # db_key is like 'DiplomaNo' or 'DiplomaNo2'
-        # map to Drive fields: DiplomaNo -> Diploma1, DiplomaNo2 -> Diploma2
-        mapping = { 'DiplomaNo': 'Diploma1', 'DiplomaNo2': 'Diploma2' }
-        drive_key = mapping.get(db_key, None)
-        view = self._view_buttons.get(db_key)
-        if view is None:
-            return
-        # Prefer saved drive link
-        link = ''
-        if drive_key and self.personel_data.get(drive_key):
-            link = self.personel_data.get(drive_key)
-        # Fallback local staged file
-        elif self.personel_data.get(f"{db_key}_file"):
-            link = self.personel_data.get(f"{db_key}_file")
+        """Diploma görüntüle butonunun durumunu dosya mevcudiyetine göre güncelle."""
+        try:
+            # db_key örnek: 'DiplomaNo' veya 'DiplomaNo2'
+            # Drive alanlarına eşleme: DiplomaNo → Diploma1, DiplomaNo2 → Diploma2
+            mapping = {'DiplomaNo': 'Diploma1', 'DiplomaNo2': 'Diploma2'}
+            drive_key = mapping.get(db_key, None)
+            
+            view_btn = self._view_buttons.get(db_key)
+            if not view_btn:
+                return
+            
+            # Kaydedilmiş drive linki tercih et
+            link = ''
+            if drive_key and self.personel_data.get(drive_key):
+                link = self.personel_data.get(drive_key)
+            # Yedek olarak staged dosya
+            elif self.personel_data.get(f"{db_key}_file"):
+                link = self.personel_data.get(f"{db_key}_file")
 
-        # Enable "Aç" button only if file exists
-        view.setEnabled(bool(link))
+            # "Aç" butonu sadece dosya varsa tıklanabilir
+            view_btn.setEnabled(bool(link))
+            logger.debug(f"Diploma görüntüleme güncellendi: {db_key} → {'etkin' if link else 'kapalı'}")
+            
+        except Exception as e:
+            logger.warning(f"Diploma display refresh hatası: {e}", exc_info=True)
 
     def _on_view_diploma(self, db_key):
-        """Open diploma: web link or local file."""
-        mapping = { 'DiplomaNo': 'Diploma1', 'DiplomaNo2': 'Diploma2' }
-        drive_key = mapping.get(db_key, None)
-        link = None
-        if drive_key and self.personel_data.get(drive_key):
-            link = self.personel_data.get(drive_key)
-        elif self.personel_data.get(f"{db_key}_file"):
-            link = self.personel_data.get(f"{db_key}_file")
-        if not link:
-            return
+        """Diploma dosyasını aç: web linki veya lokal dosya."""
         try:
+            mapping = {'DiplomaNo': 'Diploma1', 'DiplomaNo2': 'Diploma2'}
+            drive_key = mapping.get(db_key, None)
+            
+            link = None
+            if drive_key and self.personel_data.get(drive_key):
+                link = self.personel_data.get(drive_key)
+            elif self.personel_data.get(f"{db_key}_file"):
+                link = self.personel_data.get(f"{db_key}_file")
+            
+            if not link:
+                logger.warning(f"Diploma linki bulunamadı: {db_key}")
+                return
+            
             import webbrowser
             if link.startswith('http'):
                 webbrowser.open(link)
+                logger.debug(f"Web tarayıcısında diploma açıldı: {db_key}")
             else:
-                # local file
+                # Lokal dosya
                 try:
                     os.startfile(link)
+                    logger.debug(f"Lokal dosya açıldı: {os.path.basename(link)}")
                 except Exception:
                     webbrowser.open('file://' + os.path.abspath(link))
+                    logger.debug(f"Dosya tarayıcısı ile açıldı: {os.path.basename(link)}")
         except Exception as e:
-            logger.error(f"Diploma görüntülenemedi: {e}")
+            logger.error(f"Diploma görüntülenemiyor ({db_key}): {e}", exc_info=True)
+            QMessageBox.warning(self, "Açma Hatası", f"Diploma dosyası açılamadı:\n{str(e)}")
 
     def _on_upload_error(self, alan_adi, hata):
         """Tek dosya yükleme hatası."""
         self._upload_errors.append(f"{alan_adi}: {hata}")
-        logger.error(f"Drive yükleme HATA: {alan_adi} → {hata}")
+        logger.error(f"Drive yükleme hatası: {alan_adi} → {hata}")
         self._pending_uploads -= 1
+        
         if self._pending_uploads <= 0:
+            logger.warning(f"Upload tamamlandı (hatalı): {len(self._upload_errors)} dosya yüklenemedi")
             self._finalize_uploads()
 
     def _finalize_uploads(self):
         """Tüm yüklemeler tamamlandığında çağrılır."""
-        # Temizle
-        self._upload_workers.clear()
+        try:
+            # Temizle
+            self._upload_workers.clear()
 
-        if self._upload_errors:
-            QMessageBox.warning(
-                self, "Drive Yükleme Uyarısı",
-                "Bazı dosyalar yüklenemedi:\n" + "\n".join(self._upload_errors)
-            )
+            if self._upload_errors:
+                logger.warning(f"Upload tamamlandı (hatalı): {len(self._upload_errors)} dosya yüklenemedi")
+                QMessageBox.warning(
+                    self, "Drive Yükleme Uyarısı",
+                    f"Bazı dosyalar yüklenemedi ({len(self._upload_errors)} hata):\n" + "\n".join(self._upload_errors)
+                )
+            else:
+                logger.debug("Tüm dosyalar başarıyla yüklendi")
 
-        if hasattr(self, "_upload_callback") and callable(self._upload_callback):
-            try:
-                self._upload_callback()
-            except Exception as e:
-                logger.error(f"Upload callback hatası: {e}")
+            if hasattr(self, "_upload_callback") and callable(self._upload_callback):
+                try:
+                    self._upload_callback()
+                except Exception as e:
+                    logger.error(f"Upload callback hatası: {e}", exc_info=True)
+                    QMessageBox.critical(self, "Callback Hatası", f"İşlem tamamlanamadı:\n{str(e)}")
+        except Exception as e:
+            logger.error(f"Finalize uploads hatası: {e}", exc_info=True)
 
     def _fmt_date(self, val):
-        if not val: return "-"
+        """Tarihi YYYY-MM-DD formatından DD.MM.YYYY formatına çevir."""
+        if not val:
+            return "-"
         try:
             from datetime import datetime
             if "-" in str(val):
                 d = datetime.strptime(str(val), "%Y-%m-%d")
                 return d.strftime("%d.%m.%Y")
-        except:
-            pass
+        except ValueError as ve:
+            logger.warning(f"Tarih formatı hatası: {val} → {ve}")
+        except Exception as e:
+            logger.error(f"Tarih formatı dönüşüm hatası: {e}", exc_info=True)
         return str(val)

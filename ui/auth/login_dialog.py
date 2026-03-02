@@ -3,6 +3,7 @@ from __future__ import annotations
 from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
@@ -10,7 +11,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QPixmap
 
 
 class LoginDialog(QDialog):
@@ -22,8 +23,8 @@ class LoginDialog(QDialog):
 
         self.setWindowTitle("System Login")
         self.resize(400, 450)
-        self.setWindowFlags(Qt.FramelessWindowHint)
-        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         self._setup_ui()
 
@@ -42,11 +43,25 @@ class LoginDialog(QDialog):
         card_layout.setSpacing(20)
 
         # Başlık
-        lbl_title = QLabel("REPYS SİSTEM GİRİŞ")
+        title_layout = QHBoxLayout()
+        title_layout.setSpacing(15)
+        title_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # Logo
+        logo_label = QLabel()
+        logo_pixmap = QPixmap("ui/styles/icons/Logo.ico").scaledToWidth(50, Qt.TransformationMode.SmoothTransformation)
+        logo_label.setPixmap(logo_pixmap)
+        logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # Başlık metni
+        lbl_title = QLabel("REPYS GİRİŞ")
         lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         lbl_title.setFont(QFont("Arial", 20, QFont.Weight.Bold))
         lbl_title.setStyleSheet("color: #4dabf7; border: none;")
-        card_layout.addWidget(lbl_title)
+        
+        title_layout.addWidget(logo_label)
+        title_layout.addWidget(lbl_title)
+        card_layout.addLayout(title_layout)
 
         # Kullanıcı adı alanı
         self._username = QLineEdit()
@@ -61,7 +76,7 @@ class LoginDialog(QDialog):
         # Şifre alanı
         self._password = QLineEdit()
         self._password.setPlaceholderText("Şifre")
-        self._password.setEchoMode(QLineEdit.Password)
+        self._password.setEchoMode(QLineEdit.EchoMode.Password)
         self._password.setFixedHeight(45)
         self._password.setStyleSheet(self._username.styleSheet())
         self._password.returnPressed.connect(self._on_accept)

@@ -52,26 +52,8 @@
         "baslik": "Admin Panel",
         "implemented": true,
         "note": "Kullanıcı ve rol yönetimi"
-      },
-      {
-        "baslik": "Yıl Sonu İzin",
-        "implemented": false,
-        "note": "Yıl sonu izin devir işlemleri"
-      },
-      {
-        "baslik": "Log Görüntüleyici",
-        "implemented": true,
-        "note": "Uygulama log dosyalarını incele"
-      },
-      {
-        "baslik": "Yedek Yönetimi",
-        "implemented": true,
-        "note": "Veritabanı yedeklerini listele, al ve geri yükle"
-      },
-      {
-        "baslik": "Ayarlar",
-        "implemented": false
       }
+      
     ]
   }
 }
