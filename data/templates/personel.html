@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="description" content="Personel Bilgi Formu - PDF Şablonu">
+      <title>Personel Bilgi Formu</title>
+      <style>
+            * {
+                  margin: 0;
+                  padding: 0;
+                  box-sizing: border-box;
+            }
+
+            html,
+            body {
+                  width: 100%;
+                  height: 100%;
+            }
+
+            body {
+                  font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+                  color: #333;
+                  line-height: 1.4;
+                  background: #f5f5f5;
+                  padding: 20px;
+            }
+
+            @media print {
+                  body {
+                        background: white;
+                        padding: 0;
+                        margin: 0;
+                  }
+
+                  .container {
+                        box-shadow: none;
+                        max-width: 100%;
+                        padding: 0 15px;
+                  }
+            }
+
+            .container {
+                  max-width: 210mm;
+                  margin: 0 auto;
+                  background: white;
+                  padding: 20px;
+                  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .form-title {
+                  text-align: center;
+                  font-size: 14pt;
+                  font-weight: bold;
+                  margin-bottom: 20px;
+                  text-decoration: underline;
+                  padding-bottom: 10px;
+            }
+
+            .section-title {
+                  background-color: #e8e8e8;
+                  padding: 8px 10px;
+                  font-weight: bold;
+                  font-size: 11pt;
+                  border: 1px solid #000;
+                  margin-bottom: 0;
+                  margin-top: 15px;
+            }
+
+            .form-section {
+                  margin-bottom: 20px;
+            }
+
+            table {
+                  width: 100%;
+                  border-collapse: collapse;
+                  border: 1px solid #000;
+                  font-size: 10pt;
+            }
+
+            td {
+                  border: 1px solid #000;
+                  padding: 6px 8px;
+                  vertical-align: top;
+                  min-height: 20px;
+            }
+
+            .label-cell {
+                  width: 30%;
+                  font-weight: normal;
+                  background-color: #f9f9f9;
+            }
+
+            .content-cell {
+                  width: 70%;
+                  background-color: #fff;
+            }
+
+            .two-column-header {
+                  display: grid;
+                  grid-template-columns: 1fr 1fr;
+                  gap: 15px;
+                  margin-bottom: 20px;
+            }
+
+            .photo-box {
+                  border: 1px solid #000;
+                  min-height: 150px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: #999;
+                  font-size: 10pt;
+                  background-color: #fafafa;
+            }
+
+            .info-section {
+                  background-color: #e8e8e8;
+                  padding: 8px 10px;
+                  font-weight: bold;
+                  font-size: 11pt;
+                  border: 1px solid #000;
+                  margin-bottom: 0;
+                  margin-top: 0;
+            }
+
+            .no-top-margin {
+                  margin-top: 0;
+            }
+
+            @media (max-width: 768px) {
+                  .two-column-header {
+                        grid-template-columns: 1fr;
+                  }
+            }
+
+            @media print {
+                  .form-section {
+                        page-break-inside: avoid;
+                  }
+
+                  table {
+                        page-break-inside: avoid;
+                  }
+
+                  body {
+                        padding: 0;
+                  }
+            }
+      </style>
+</head>
+
+<body>
+      <div class="container">
+            <div class="form-title">Personel Bilgi Formu</div>
+
+            <!-- Kimlik ve Fotoğraf Bilgileri -->
+            <div class="form-section">
+                  <div class="two-column-header">
+                        <div>
+                              <div class="info-section">Fotoğraf</div>
+                              <div class="photo-box">Fotoğraf / Resim</div>
+                        </div>
+                        <div>
+                              <div class="info-section">Kimlik Bilgileri</div>
+                              <table>
+                                    <tr>
+                                          <td class="label-cell">T.C. Kimlik No:</td>
+                                          <td class="content-cell"></td>
+                                    </tr>
+                                    <tr>
+                                          <td class="label-cell">Adı Soyadı:</td>
+                                          <td class="content-cell"></td>
+                                    </tr>
+                                    <tr>
+                                          <td class="label-cell">Doğum Yeri:</td>
+                                          <td class="content-cell"></td>
+                                    </tr>
+                                    <tr>
+                                          <td class="label-cell">Doğum Tarihi:</td>
+                                          <td class="content-cell"></td>
+                                    </tr>
+                              </table>
+
+                              <div class="info-section no-top-margin">İletişim Bilgileri</div>
+                              <table>
+                                    <tr>
+                                          <td class="label-cell">Cep Telefonu:</td>
+                                          <td class="content-cell"></td>
+                                    </tr>
+                                    <tr>
+                                          <td class="label-cell">E-Posta:</td>
+                                          <td class="content-cell"></td>
+                                    </tr>
+                              </table>
+                        </div>
+                  </div>
+            </div>
+
+            <!-- Kurumsal Bilgiler -->
+            <div class="form-section">
+                  <div class="section-title">Kurumsal Bilgiler</div>
+                  <table>
+                        <tr>
+                              <td class="label-cell">Hizmet Sınıfı:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                        <tr>
+                              <td class="label-cell">Kadro Ünvanı:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                        <tr>
+                              <td class="label-cell">Kurum Sicil No:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                        <tr>
+                              <td class="label-cell">Son Görev Yeri:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                        <tr>
+                              <td class="label-cell">Göreve Başlama Tarihi:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                        <tr>
+                              <td class="label-cell">Görev Ayrılış Tarihi:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                        <tr>
+                              <td class="label-cell">Ayrılış Nedeni:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                  </table>
+            </div>
+
+            <!-- Eğitim Bilgileri -->
+            <div class="form-section">
+                  <div class="section-title">Eğitim Bilgileri</div>
+                  <table>
+                        <tr>
+                              <td class="label-cell">Ortaöğretim (Lise/Ön Lisans):</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                        <tr>
+                              <td class="label-cell">Okul/Kurum Adı:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                        <tr>
+                              <td class="label-cell">Bölüm/Alan:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                        <tr>
+                              <td class="label-cell">Yüksek Öğretim:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                        <tr>
+                              <td class="label-cell">Üniversite/Kurum Adı:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                        <tr>
+                              <td class="label-cell">Bölüm/Alan:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                        <tr>
+                              <td class="label-cell">Diploma Tarihi:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                  </table>
+            </div>
+
+            <!-- İzin Bilgileri -->
+            <div class="form-section">
+                  <div class="section-title">İzin Bilgileri (2025)</div>
+                  <table>
+                        <tr>
+                              <td class="label-cell">Kullanılan Yıllık İzin (Gün):</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                        <tr>
+                              <td class="label-cell">Kullanılan Hastalık İzni:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                        <tr>
+                              <td class="label-cell">Kullanılan Diğer İzin:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                        <tr>
+                              <td class="label-cell">Kalan Yıllık İzin:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                  </table>
+            </div>
+
+            <!-- Sağlık Bilgileri -->
+            <div class="form-section">
+                  <div class="section-title">Sağlık Muayeneleri</div>
+                  <table>
+                        <tr>
+                              <td class="label-cell">Son Muayene Tarihi:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                        <tr>
+                              <td class="label-cell">Muayene Sonucu:</td>
+                              <td class="content-cell"></td>
+                        </tr>
+                        <tr>
+                              <td class="label-cell" style="height: 60px; vertical-align: top;">Açıklamalar:</td>
+                              <td class="content-cell" style="height: 60px; vertical-align: top;"></td>
+                        </tr>
+                  </table>
+            </div>
+      </div>
+</body>
+
+</html>
+<tr>
+      <td width=141 rowspan=10>
+            <p align=center>Foto�raf</p>
+      </td>
+      <td width=16 rowspan=10 valign=top>
+            <p>&nbsp;</p>
+      </td>
+      <td width=447 colspan=2 valign=top>
+            <p align=center>Kimlik Bilgileri</p>
+      </td>
+</tr>
+<tr>
+      <td width=135 valign=top>
+            <p>T.C. Kimlik No:</p>
+      </td>
+      <td width=311 valign=top>
+            <p>&nbsp;</p>
+      </td>
+</tr>
+<tr>
+      <td width=135 valign=top>
+            <p>Ad� Soyad�:</p>
+      </td>
+      <td width=311 valign=top>
+            <p>&nbsp;</p>
+      </td>
+</tr>
+<tr>
+      <td width=135 valign=top>
+            <p>Do�um Yeri:</p>
+      </td>
+      <td width=311 valign=top>
+            <p>&nbsp;</p>
+      </td>
+</tr>
+<tr>
+      <td width=135 valign=top>
+            <p>Do�um Tarihi:</p>
+      </td>
+      <td width=311 valign=top>
+            <p>&nbsp;</p>
+      </td>
+</tr>
+<tr>
+      <td width=447 colspan=2 valign=top>
+            <p align=center>�leti�im Bilgileri</p>
+      </td>
+</tr>
+<tr>
+      <td width=135 valign=top>
+            <p>Cep Telefonu:</p>
+      </td>
+      <td width=311 valign=top>
+            <p>&nbsp;</p>
+      </td>
+</tr>
+<tr>
+      <td width=135 valign=top>
+            <p>E Posta:</p>
+      </td>
+      <td width=311 valign=top>
+            <p>&nbsp;</p>
+      </td>
+</tr>
+<tr>
+      <td width=135 valign=top>
+            <p>&nbsp;</p>
+      </td>
+      <td width=311 valign=top>
+            <p>&nbsp;</p>
+      </td>
+</tr>
+<tr>
+      <td width=135 valign=top>
+            <p>&nbsp;</p>
+      </td>
+      <td width=311 valign=top>
+            <p>&nbsp;</p>
+      </td>
+</tr>
+<tr>
+      <td width=604 colspan=4 valign=top>
+            <p align=center>Kurumsal Bilgiler</p>
+      </td>
+</tr>
+<tr>
+      <td width=604 colspan=4 valign=top>
+            <p>Hizmet S�n�f�:</p>
+      </td>
+</tr>
+<tr>
+      <td width=604 colspan=4 valign=top>
+            <p>Kadro Unvan�:</p>
+      </td>
+</tr>
+<tr>
+      <td width=604 colspan=4 valign=top>
+            <p>Kurum Sicil No:</p>
+      </td>
+</tr>
+<tr>
+      <td width=604 colspan=4 valign=top>
+            <p>Son G�rev Yeri:</p>
+      </td>
+</tr>
+<tr>
+      <td width=604 colspan=4 valign=top>
+            <p>G�reve Ba�lama Tarihi:</p>
+      </td>
+</tr>
+<tr>
+      <td width=604 colspan=4 valign=top>
+            <p>G�rev Ayr�l�� Tarihi:</p>
+      </td>
+</tr>
+<tr>
+      <td width=604 colspan=4 valign=top>
+            <p>Ayr�l�� Nedeni:</p>
+      </td>
+</tr>
+<tr>
+      <td width=604 colspan=4>
+            <p align=center>E�itim Bilgileri</p>
+      </td>
+</tr>
+<tr>
+      <td width=604 colspan=4 valign=top>
+            <p>Lise / �n lisans / Lisans:</p>
+      </td>
+</tr>
+<tr>
+      <td width=604 colspan=4 valign=top>
+            <p>&nbsp;</p>
+      </td>
+</tr>
+<tr>
+      <td width=604 colspan=4 valign=top>
+            <p>&nbsp;</p>
+      </td>
+</tr>
+<tr>
+      <td width=604 colspan=4 valign=top>
+            <p>�n lisans / Lisans / Y�ksek Lisans / Doktora</p>
+      </td>
+</tr>
+<tr>
+      <td width=604 colspan=4 valign=top>
+            <p>&nbsp;</p>
+      </td>
+</tr>
+<tr>
+      <td width=604 colspan=4 valign=top>
+            <p>&nbsp;</p>
+      </td>
+</tr>
+<tr>
+      <td width=604 colspan=4 valign=top>
+            <p>&nbsp;</p>
+      </td>
+</tr>
+</table>
+<p>&nbsp;</p>
+<table border=1 cellspacing=0 cellpadding=0>
+      <tr>
+            <td width=604 valign=top>
+                  <p>�zin Bilgileri</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>2025 y�l� </p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>Kulland��� Y�ll�k izin</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>Kulland��� �ua �zini</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>Kulland��� Di�er �zin</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>&nbsp;</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>Son 1 y�l izin kullan�lan �zin D�k�m�</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>&nbsp;</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>&nbsp;</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>&nbsp;</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>&nbsp;</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>&nbsp;</p>
+            </td>
+      </tr>
+</table>
+<p>&nbsp;</p>
+<table border=1 cellspacing=0 cellpadding=0>
+      <tr>
+            <td width=604 valign=top>
+                  <p>Sa�l�k Muayeneleri</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>&nbsp;</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>&nbsp;</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>&nbsp;</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>&nbsp;</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>&nbsp;</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>&nbsp;</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>&nbsp;</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>&nbsp;</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>&nbsp;</p>
+            </td>
+      </tr>
+      <tr>
+            <td width=604 valign=top>
+                  <p>&nbsp;</p>
+            </td>
+      </tr>
+</table>
+<p>&nbsp;</p>
+</div>
+</body>
+
+</html>

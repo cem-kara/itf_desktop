@@ -289,7 +289,7 @@ class _PDFSablon:
             doc.setHtml(html)
 
             writer = QPdfWriter(kayit_yolu)
-            writer.setPageSize(QPageSize(QPageSize.A4))
+            writer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
             writer.setPageMargins(QMarginsF(15, 15, 15, 15))
             writer.setResolution(150)
 
