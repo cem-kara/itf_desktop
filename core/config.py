@@ -1,6 +1,12 @@
 import json
 import os
 
+# Tema okuma/yazma için settings.py kullanan yardımcı
+try:
+    from core import settings as _app_settings
+except ImportError:
+    _app_settings = None
+
 from core.paths import BASE_DIR
 
 
