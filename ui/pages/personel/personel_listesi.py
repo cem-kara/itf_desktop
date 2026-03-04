@@ -443,7 +443,10 @@ class PersonelListesiPage(QWidget):
         lay.setSpacing(8)
 
         title = QLabel("Personel Listesi")
-        title.setStyleSheet(f"font-size:13px; font-weight:600; color:{C.TEXT_PRIMARY}; background:transparent;")
+        title.setProperty("color-role", "primary")
+        title.setStyleSheet("font-size: 13px; font-weight: 600; background: transparent;")
+        title.style().unpolish(title)
+        title.style().polish(title)
         lay.addWidget(title)
         lay.addWidget(self._sep())
 
@@ -573,7 +576,10 @@ class PersonelListesiPage(QWidget):
         lay.setSpacing(8)
 
         lbl = QLabel("FİLTRE:")
-        lbl.setStyleSheet(f"font-size:11px; color:{C.TEXT_DISABLED}; background:transparent;")
+        lbl.setProperty("color-role", "disabled")
+        lbl.setStyleSheet("font-size: 11px; background: transparent;")
+        lbl.style().unpolish(lbl)
+        lbl.style().polish(lbl)
         lay.addWidget(lbl)
 
         self.cmb_gorev_yeri = QComboBox()
@@ -1222,5 +1228,7 @@ class PersonelListesiPage(QWidget):
     def _sep() -> QFrame:
         s = QFrame()
         s.setFixedSize(1, 20)
-        s.setStyleSheet(f"background: {C.BORDER_PRIMARY};")
+        s.setProperty("bg-role", "separator")
+        s.style().unpolish(s)
+        s.style().polish(s)
         return s

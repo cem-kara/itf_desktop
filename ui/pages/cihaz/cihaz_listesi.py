@@ -279,7 +279,10 @@ class CihazListesiPage(QWidget):
         lay.setSpacing(8)
 
         title = QLabel("Cihaz Listesi")
-        title.setStyleSheet(f"font-size:13px; font-weight:600; color:{C.TEXT_PRIMARY}; background:transparent;")
+        title.setProperty("color-role", "primary")
+        title.setStyleSheet("font-size: 13px; font-weight: 600; background: transparent;")
+        title.style().unpolish(title)
+        title.style().polish(title)
         lay.addWidget(title)
 
         lay.addWidget(self._sep())
@@ -367,11 +370,17 @@ class CihazListesiPage(QWidget):
         lay.setSpacing(8)
 
         lbl = QLabel("FİLTRE:")
-        lbl.setStyleSheet(f"font-size:11px; color:{C.TEXT_DISABLED}; background:transparent;")
+        lbl.setProperty("color-role", "disabled")
+        lbl.setStyleSheet("font-size: 11px; background: transparent;")
+        lbl.style().unpolish(lbl)
+        lbl.style().polish(lbl)
         lay.addWidget(lbl)
 
         lbl_abd = QLabel("Birim:")
-        lbl_abd.setStyleSheet(f"font-size:11px; color:{C.TEXT_DISABLED}; background:transparent;")
+        lbl_abd.setProperty("color-role", "disabled")
+        lbl_abd.setStyleSheet("font-size: 11px; background: transparent;")
+        lbl_abd.style().unpolish(lbl_abd)
+        lbl_abd.style().polish(lbl_abd)
         lay.addWidget(lbl_abd)
 
         self.cmb_abd = QComboBox()
@@ -381,7 +390,10 @@ class CihazListesiPage(QWidget):
         lay.addWidget(self.cmb_abd)
 
         lbl_kaynak = QLabel("Kaynak:")
-        lbl_kaynak.setStyleSheet(f"font-size:11px; color:{C.TEXT_DISABLED}; background:transparent;")
+        lbl_kaynak.setProperty("color-role", "disabled")
+        lbl_kaynak.setStyleSheet("font-size: 11px; background: transparent;")
+        lbl_kaynak.style().unpolish(lbl_kaynak)
+        lbl_kaynak.style().polish(lbl_kaynak)
         lay.addWidget(lbl_kaynak)
 
         self.cmb_kaynak = QComboBox()
@@ -684,5 +696,7 @@ class CihazListesiPage(QWidget):
     def _sep():
         f = QFrame()
         f.setFixedSize(1, 22)
-        f.setStyleSheet(f"background:{C.BORDER_PRIMARY};")
+        f.setProperty("bg-role", "separator")
+        f.style().unpolish(f)
+        f.style().polish(f)
         return f

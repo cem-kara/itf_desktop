@@ -137,7 +137,7 @@ class FieldGroup(QWidget):
 
         bar = QFrame()
         bar.setFixedSize(3, 14)
-        bar.setStyleSheet(f"background:{color};border-radius:2px;border:none;")
+        bar.setStyleSheet("border: none;")
 
         lbl = QLabel(title.upper())
         lbl.setStyleSheet(
@@ -756,7 +756,9 @@ class RKEMuayenePage(QWidget):
     def _build_kpi_bar(self) -> QWidget:
         bar = QWidget()
         bar.setFixedHeight(68)
-        bar.setStyleSheet(f"background:{DarkTheme.BG_PRIMARY};border-bottom:1px solid {DarkTheme.BORDER_PRIMARY};")
+        bar.setProperty("bg-role", "page")
+        bar.style().unpolish(bar)
+        bar.style().polish(bar)
         hl = QHBoxLayout(bar)
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setSpacing(1)
@@ -773,18 +775,22 @@ class RKEMuayenePage(QWidget):
     
     def _mk_kpi_card(self, key, title, val, color) -> QWidget:
         w = QWidget()
-        w.setStyleSheet(f"background:{DarkTheme.BG_PRIMARY};")
+        w.setProperty("bg-role", "page")
+        w.style().unpolish(w)
+        w.style().polish(w)
         hl = QHBoxLayout(w)
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setSpacing(0)
 
         accent = QFrame()
         accent.setFixedWidth(3)
-        accent.setStyleSheet(f"background:{color};border:none;")
+        accent.setStyleSheet("border: none;")
         hl.addWidget(accent)
 
         content = QWidget()
-        content.setStyleSheet(f"background:{DarkTheme.BG_PRIMARY};")
+        content.setProperty("bg-role", "page")
+        content.style().unpolish(content)
+        content.style().polish(content)
         vl = QVBoxLayout(content)
         vl.setContentsMargins(14, 8, 14, 8)
         vl.setSpacing(2)
@@ -807,7 +813,9 @@ class RKEMuayenePage(QWidget):
 
     def _build_body(self) -> QWidget:
         body = QWidget()
-        body.setStyleSheet(f"background:{DarkTheme.BG_PRIMARY};")
+        body.setProperty("bg-role", "page")
+        body.style().unpolish(body)
+        body.style().polish(body)
         hl = QHBoxLayout(body)
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setSpacing(0)
@@ -818,7 +826,9 @@ class RKEMuayenePage(QWidget):
 
         sep = QFrame()
         sep.setFixedWidth(1)
-        sep.setStyleSheet(f"background:{DarkTheme.BORDER_PRIMARY};")
+        sep.setProperty("bg-role", "separator")
+        sep.style().unpolish(sep)
+        sep.style().polish(sep)
         hl.addWidget(sep)
 
         hl.addWidget(self._build_list_panel(), 1)
@@ -826,7 +836,9 @@ class RKEMuayenePage(QWidget):
 
     def _build_form_panel(self) -> QWidget:
         panel = QWidget()
-        panel.setStyleSheet(f"background:{DarkTheme.BG_PRIMARY};")
+        panel.setProperty("bg-role", "page")
+        panel.style().unpolish(panel)
+        panel.style().polish(panel)
         vl = QVBoxLayout(panel)
         vl.setContentsMargins(0, 0, 0, 0)
         vl.setSpacing(0)
@@ -834,11 +846,16 @@ class RKEMuayenePage(QWidget):
         # Panel baÅlÄ±k
         hdr = QWidget()
         hdr.setFixedHeight(36)
-        hdr.setStyleSheet(f"background:{DarkTheme.BG_PRIMARY};border-bottom:1px solid {DarkTheme.BORDER_PRIMARY};")
+        hdr.setProperty("bg-role", "page")
+        hdr.style().unpolish(hdr)
+        hdr.style().polish(hdr)
         hh = QHBoxLayout(hdr)
         hh.setContentsMargins(14, 0, 14, 0)
         t1 = QLabel("MUAYENE FORMU")
-        t1.setStyleSheet(f"color:{DarkTheme.TEXT_MUTED};font-family:{DarkTheme.MONOSPACE};font-size:9px;font-weight:700;letter-spacing:2px;")
+        t1.setProperty("color-role", "muted")
+        t1.setStyleSheet("font-family: {DarkTheme.MONOSPACE}; font-size: 9px; font-weight: 700; letter-spacing: 2px;")
+        t1.style().unpolish(t1)
+        t1.style().polish(t1)
         hh.addWidget(t1)
         hh.addStretch()
         vl.addWidget(hdr)
@@ -942,7 +959,10 @@ class RKEMuayenePage(QWidget):
         # Dosya satÄ±rÄ±
         file_row = QHBoxLayout()
         self.lbl_dosya = QLabel("Rapor seÃ§ilmedi")
-        self.lbl_dosya.setStyleSheet(f"color:{DarkTheme.TEXT_MUTED};font-size:10px;")
+        self.lbl_dosya.setProperty("color-role", "muted")
+        self.lbl_dosya.setStyleSheet("font-size: 10px;")
+        self.lbl_dosya.style().unpolish(self.lbl_dosya)
+        self.lbl_dosya.style().polish(self.lbl_dosya)
         btn_dosya = QPushButton("ÄŸÅ¸â€œâ€š Rapor YÃ¼kle")
         btn_dosya.setStyleSheet(
             f"QPushButton{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;"
@@ -1017,7 +1037,9 @@ class RKEMuayenePage(QWidget):
 
     def _build_list_panel(self) -> QWidget:
         panel = QWidget()
-        panel.setStyleSheet(f"background:{DarkTheme.BG_PRIMARY};")
+        panel.setProperty("bg-role", "page")
+        panel.style().unpolish(panel)
+        panel.style().polish(panel)
         vl = QVBoxLayout(panel)
         vl.setContentsMargins(0, 0, 0, 0)
         vl.setSpacing(0)
@@ -1025,7 +1047,9 @@ class RKEMuayenePage(QWidget):
         # Filtre Ã§ubuÄŸu
         fbar = QWidget()
         fbar.setFixedHeight(52)
-        fbar.setStyleSheet(f"background:{DarkTheme.BG_PRIMARY};border-bottom:1px solid {DarkTheme.BORDER_PRIMARY};")
+        fbar.setProperty("bg-role", "page")
+        fbar.style().unpolish(fbar)
+        fbar.style().polish(fbar)
         fl = QHBoxLayout(fbar)
         fl.setContentsMargins(12, 10, 12, 10)
         fl.setSpacing(8)
@@ -1091,7 +1115,10 @@ class RKEMuayenePage(QWidget):
         # Footer
         footer = QWidget()
         footer.setFixedHeight(44)
-        footer.setStyleSheet(f"background:{DarkTheme.BG_SECONDARY};border-top:1px solid {DarkTheme.BORDER_PRIMARY};")
+        footer.setProperty("bg-role", "panel")
+        footer.setProperty("border-role", "top")
+        footer.style().unpolish(footer)
+        footer.style().polish(footer)
         fl = QHBoxLayout(footer)
         fl.setContentsMargins(12, 8, 12, 8)
         fl.setSpacing(8)

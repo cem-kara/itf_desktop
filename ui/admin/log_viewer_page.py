@@ -101,7 +101,10 @@ class LogViewerPage(QWidget):
         # Başlık
         title_layout = QHBoxLayout()
         title_label = QLabel("Log Görüntüleyici")
-        title_label.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {C.TEXT_PRIMARY};")
+        title_label.setProperty("color-role", "primary")
+        title_label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        title_label.style().unpolish(title_label)
+        title_label.style().polish(title_label)
         title_icon = QLabel()
         title_icon.setPixmap(Icons.pixmap("file_text", size=24))
         title_layout.addWidget(title_icon)

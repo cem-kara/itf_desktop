@@ -169,7 +169,7 @@ class _TableSection(QWidget):
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.VLine)
         sep.setFixedWidth(1)
-        sep.setStyleSheet(f"background: {_BORDER}; border: none;")
+        sep.setStyleSheet("border: none;")
         hbox.addWidget(sep)
 
         # Ikinci cift: Label2 | Value2 (eger varsa)

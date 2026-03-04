@@ -104,7 +104,10 @@ class IzinFHSZPuantajMerkezPage(QWidget):
         # ── Sekme nav ──
         nav = QWidget()
         nav.setFixedHeight(36)
-        nav.setStyleSheet(f"background:transparent; border-top:1px solid {C.BORDER_SECONDARY};")
+        nav.setProperty("border-role", "top-secondary")
+        nav.setStyleSheet("background: transparent;")
+        nav.style().unpolish(nav)
+        nav.style().polish(nav)
         nav_lay = QHBoxLayout(nav)
         nav_lay.setContentsMargins(16, 0, 16, 0)
         nav_lay.setSpacing(0)

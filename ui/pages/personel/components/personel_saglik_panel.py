@@ -164,15 +164,24 @@ class PersonelSaglikPanel(QWidget):
         
         # Başlıklar
         lbl_muayene_turu = QLabel("Muayene Türü")
-        lbl_muayene_turu.setStyleSheet(f"color: {C.TEXT_MUTED}; font-weight: 600;")
+        lbl_muayene_turu.setProperty("color-role", "muted")
+        lbl_muayene_turu.setStyleSheet("font-weight: 600;")
+        lbl_muayene_turu.style().unpolish(lbl_muayene_turu)
+        lbl_muayene_turu.style().polish(lbl_muayene_turu)
         form_grid.addWidget(lbl_muayene_turu, 0, 0)
         
         lbl_tarih = QLabel("Tarih")
-        lbl_tarih.setStyleSheet(f"color: {C.TEXT_MUTED}; font-weight: 600;")
+        lbl_tarih.setProperty("color-role", "muted")
+        lbl_tarih.setStyleSheet("font-weight: 600;")
+        lbl_tarih.style().unpolish(lbl_tarih)
+        lbl_tarih.style().polish(lbl_tarih)
         form_grid.addWidget(lbl_tarih, 0, 1)
         
         lbl_durum = QLabel("Durum")
-        lbl_durum.setStyleSheet(f"color: {C.TEXT_MUTED}; font-weight: 600;")
+        lbl_durum.setProperty("color-role", "muted")
+        lbl_durum.setStyleSheet("font-weight: 600;")
+        lbl_durum.style().unpolish(lbl_durum)
+        lbl_durum.style().polish(lbl_durum)
         form_grid.addWidget(lbl_durum, 0, 2)
         
         # Muayene türleri
@@ -186,7 +195,9 @@ class PersonelSaglikPanel(QWidget):
         for idx, (key, label) in enumerate(exams, start=1):
             # Label
             lbl = QLabel(label)
-            lbl.setStyleSheet(f"color: {C.TEXT_PRIMARY};")
+            lbl.setProperty("color-role", "primary")
+            lbl.style().unpolish(lbl)
+            lbl.style().polish(lbl)
             form_grid.addWidget(lbl, idx, 0)
             
             # Tarih
@@ -213,7 +224,9 @@ class PersonelSaglikPanel(QWidget):
         note_layout = QVBoxLayout()
         note_layout.setSpacing(4)
         lbl_not = QLabel("Açıklama")
-        lbl_not.setStyleSheet(f"color: {C.TEXT_MUTED};")
+        lbl_not.setProperty("color-role", "muted")
+        lbl_not.style().unpolish(lbl_not)
+        lbl_not.style().polish(lbl_not)
         note_layout.addWidget(lbl_not)
         self.inp_not = QLineEdit()
         self.inp_not.setStyleSheet(S["input"])
@@ -244,11 +257,17 @@ class PersonelSaglikPanel(QWidget):
         l.setSpacing(2)
         
         lbl_t = QLabel(text)
-        lbl_t.setStyleSheet(f"color: {C.TEXT_MUTED}; font-size: 11px;")
+        lbl_t.setProperty("color-role", "muted")
+        lbl_t.setStyleSheet("font-size: 11px;")
+        lbl_t.style().unpolish(lbl_t)
+        lbl_t.style().polish(lbl_t)
         l.addWidget(lbl_t)
         
         val = QLabel("—")
-        val.setStyleSheet(f"color: {C.TEXT_PRIMARY}; font-size: 14px; font-weight: 500;")
+        val.setProperty("color-role", "primary")
+        val.setStyleSheet("font-size: 14px; font-weight: 500;")
+        val.style().unpolish(val)
+        val.style().polish(val)
         l.addWidget(val)
         
         grid.addWidget(container, row, col)
@@ -311,9 +330,12 @@ class PersonelSaglikPanel(QWidget):
                 try:
                     next_check_date = datetime.strptime(str(next_check_date_str).split(' ')[0], '%Y-%m-%d').date()
                     if next_check_date < date.today():
-                        self.lbl_sonraki_muayene.setStyleSheet(f"color: {Colors.RED_500}; font-size: 14px; font-weight: bold;")
+                        self.lbl_sonraki_muayene.setStyleSheet("font-size: 14px; font-weight: bold;")
                     else:
-                        self.lbl_sonraki_muayene.setStyleSheet(f"color: {C.TEXT_PRIMARY}; font-size: 14px; font-weight: 500;")
+                        self.lbl_sonraki_muayene.setProperty("color-role", "primary")
+                        self.lbl_sonraki_muayene.setStyleSheet("font-size: 14px; font-weight: 500;")
+                        self.lbl_sonraki_muayene.style().unpolish(self.lbl_sonraki_muayene)
+                        self.lbl_sonraki_muayene.style().polish(self.lbl_sonraki_muayene)
                 except ValueError: pass
         else:
             self._clear_ui()

@@ -327,7 +327,7 @@ class IstenAyrilikPage(QWidget):
         IconRenderer.set_button_icon(self.btn_dosya, "upload", color=C.TEXT_PRIMARY, size=14)
         dosya_h.addWidget(self.btn_dosya)
         self.lbl_dosya = QLabel("")
-        self.lbl_dosya.setStyleSheet(f"color: {Colors.GREEN_400}; font-size: 11px; background: transparent;")
+        self.lbl_dosya.setStyleSheet("font-size: 11px; background: transparent;")
         dosya_h.addWidget(self.lbl_dosya, 1)
         fg.addLayout(dosya_h, 2, 1)
 
@@ -352,10 +352,13 @@ class IstenAyrilikPage(QWidget):
             dg.addWidget(l, i, 0)
             if val and str(val).startswith("http"):
                 v = QLabel("Mevcut")
-                v.setStyleSheet(f"color: {Colors.GREEN_400}; font-size: 12px; background: transparent;")
+                v.setStyleSheet("font-size: 12px; background: transparent;")
             else:
                 v = QLabel("—")
-                v.setStyleSheet(f"color: {C.TEXT_DISABLED}; font-size: 12px; background: transparent;")
+                v.setProperty("color-role", "disabled")
+                v.setStyleSheet("font-size: 12px; background: transparent;")
+                v.style().unpolish(v)
+                v.style().polish(v)
             dg.addWidget(v, i, 1)
         left_l.addWidget(grp_dosya)
 
@@ -412,7 +415,7 @@ class IstenAyrilikPage(QWidget):
             "• Eski Drive dosyalarını silecek"
         )
         uyari.setWordWrap(True)
-        uyari.setStyleSheet(f"color: {Colors.RED_400}; font-size: 12px; background: transparent;")
+        uyari.setStyleSheet("font-size: 12px; background: transparent;")
         onay_l.addWidget(uyari)
 
         self.btn_onayla = QPushButton("ONAYLA VE BITIR")
@@ -449,7 +452,10 @@ class IstenAyrilikPage(QWidget):
         main.addWidget(self.progress)
 
         self.lbl_status = QLabel("")
-        self.lbl_status.setStyleSheet(f"color: {C.TEXT_MUTED}; font-size: 12px; background: transparent;")
+        self.lbl_status.setProperty("color-role", "muted")
+        self.lbl_status.setStyleSheet("font-size: 12px; background: transparent;")
+        self.lbl_status.style().unpolish(self.lbl_status)
+        self.lbl_status.style().polish(self.lbl_status)
         main.addWidget(self.lbl_status)
 
     def _add_stat(self, grid, row, text, style_key):

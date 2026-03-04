@@ -283,7 +283,10 @@ class SaglikTakipPage(QWidget):
         header_lay.setContentsMargins(12, 12, 12, 12)
         
         lbl_drawer_title = QLabel("Sağlık Kontrolü Detay")
-        lbl_drawer_title.setStyleSheet(f"font-size: 14px; font-weight: 600; color: {DarkTheme.TEXT_PRIMARY};")
+        lbl_drawer_title.setProperty("color-role", "primary")
+        lbl_drawer_title.setStyleSheet("font-size: 14px; font-weight: 600;")
+        lbl_drawer_title.style().unpolish(lbl_drawer_title)
+        lbl_drawer_title.style().polish(lbl_drawer_title)
         header_lay.addWidget(lbl_drawer_title)
         header_lay.addStretch()
 

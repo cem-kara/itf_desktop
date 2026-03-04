@@ -230,7 +230,7 @@ class KalibrasyonKayitForm(QWidget):
             f"color:{_C['muted']};background:transparent;"
         )
         v = QLabel(default)
-        v.setStyleSheet(f"font-size:18px;font-weight:700;color:{color};background:transparent;")
+        v.setStyleSheet("font-size: 18px; font-weight: 700; background: transparent;")
         vl.addWidget(t); vl.addWidget(v)
         self._kpi_labels[key] = v
         return card

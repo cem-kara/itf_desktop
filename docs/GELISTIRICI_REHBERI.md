@@ -109,7 +109,6 @@ class XxxService:
 
 ```python
 from core.services.xxx_service import XxxService
-from ui.styles.colors import DarkTheme as C
 from ui.styles.components import STYLES
 
 class XxxPage(QWidget):
@@ -129,15 +128,29 @@ class XxxPage(QWidget):
 
     def _setup_ui(self):
         """UI bileşenlerini oluştur"""
-        # Kontrol elemanlarına STYLES dictionary'yi uygula
+        # Input kontrolleri → STYLES dictionary
         self._input = QLineEdit()
         self._input.setStyleSheet(STYLES["input_field"])
-        
+
         self._combo = QComboBox()
         self._combo.setStyleSheet(STYLES["input_combo"])
-        
-        # Renkler için DarkTheme token'larını kullan
-        self._label = QLabel(f"color: {C.TEXT_PRIMARY};")
+
+        # Renkler → setProperty ile QSS rol sistemi (ASLA f-string setStyleSheet yazmayın)
+        self._label = QLabel("Başlık")
+        self._label.setProperty("color-role", "primary")
+        self._label.style().unpolish(self._label)
+        self._label.style().polish(self._label)
+
+        self._muted = QLabel("Açıklama")
+        self._muted.setProperty("color-role", "muted")
+        self._muted.style().unpolish(self._muted)
+        self._muted.style().polish(self._muted)
+
+        # Arka plan → bg-role
+        panel = QWidget()
+        panel.setProperty("bg-role", "panel")
+        panel.style().unpolish(panel)
+        panel.style().polish(panel)
 
     def _load_data(self):
         if not self._svc:
@@ -400,8 +413,10 @@ Geçmişte yapılan hatalar — bunları tekrarlama:
 | PK adını kafadan yaz (`"ArizaId"`) | `table_config.py`'den kopyala (`"Arizaid"`) |
 | UI'dan direkt `RepositoryRegistry().get()` çağır | Service method'u çağır |
 | Yeni `QAbstractTableModel` sıfırdan yaz | `BaseTableModel`'i extend et |
-| Hardcoded hex renkler (#f0f0f0, #333, #e81123) | DarkTheme token'larını kullan (C.TEXT_PRIMARY, C.BG_SECONDARY, C.STATUS_ERROR) |
+| Hardcoded hex renkler (#f0f0f0, #333, #e81123) | DarkTheme token'larını DOĞRUDAN DEĞİL, `setProperty` ile kullan |
 | Her dosyaya `_C = {"red": ...}` kopyala | `from ui.styles.colors import DarkTheme as C` |
+| `setStyleSheet(f"color: {C.TEXT_MUTED}; ...")` ile renk yaz | `setProperty("color-role", "muted")` + unpolish/polish |
+| `setStyleSheet(f"background: {C.BG_SECONDARY}")` ile arka plan yaz | `setProperty("bg-role", "panel")` + unpolish/polish |
 | QLineEdit/QComboBox/QSpinBox'a manuel stylesheet | `setStyleSheet(STYLES["input_field"])` veya `STYLES["input_combo"]` |
 | Service yazmadan önce UI'a gömülü iş mantığını test et | Önce service yaz, test yaz, sonra UI'a bağla |
 | 20 dosyayı aynı anda refactor et | Sadece girdiğin dosyayı düzelt |
@@ -438,142 +453,362 @@ o seferlik servise bağla. Toplu yapmaya çalışma.
 
 ---
 
-## 5a. TEMA SİSTEMİ — DarkTheme + STYLES
+## 5a. TEMA SİSTEMİ — QSS Rol Sistemi (v3 Refactor)
+
+> **ÖNEMLİ:** Bu bölüm Mart 2026'daki tam refaktör sonrası güncellenmiştir.
+> `setStyleSheet(f"color: {C.TEXT_MUTED}...")` artık **yasaktır** — her yerde
+> `setProperty` + QSS rol sistemi kullanılır.
+
+---
 
 ### 5a.1 Mimari Özet
 
-UI widget'larının tema renkleri iki katmandan oluşur:
+Tema sistemi üç katmandan oluşur:
 
 ```
-DarkTheme Semantic Token'ları (ui/styles/colors.py)
-  └── C.TEXT_PRIMARY, C.BG_SECONDARY, C.STATUS_ERROR, C.BTN_PRIMARY_BG vb.
-      (50+ sabit, canlı tema değişikliği yapılamaz ama okuyamayacak kadar net)
+1. _LiveThemeMeta (ui/styles/colors.py)
+   └── DarkTheme.BG_PRIMARY çağrıldığında aktif temayı (Dark/Light) döndürür
+       Tüm import'lar DarkTheme kullanmaya devam eder, kod değişmez.
 
-STYLES Pre-built Component Stylesheets (ui/styles/components.py)
-  └── STYLES["input_field"], STYLES["input_combo"], STYLES["spin"] vb.
-      (DarkTheme token'ları f-string'lerle birleştirmiş QSS, callable değil)
+2. theme_template.qss — QSS Rol Sistemi
+   └── *[color-role="muted"]  { color: {TEXT_MUTED}; }
+       *[bg-role="panel"]     { background-color: {BG_SECONDARY}; }
+       Tema değişince app.setStyleSheet() çağrısı tüm roller'ı günceller.
+
+3. STYLES dict (ui/styles/components.py)
+   └── STYLES["input_field"], STYLES["btn_action"] vb.
+       Input/buton gibi karmaşık widget'lar için pre-built QSS blokları.
+       refresh_styles() çağrıldığında aktif temayı kullanarak yeniden üretilir.
 ```
 
-**Mimarinin avantajları:**
-- **Merkezi tema:** Tüm renkler `DarkTheme` sınıfında
-- **Birleştirilebilirlik:** İnput alanları, butonlar, başlıklar gibi tüm kontrol elemanları pre-built STYLES ile üstünlük kazanır
-- **Dark/Light geçişi:** Gelecekte `LightTheme` sınıfı eklenince tüm UI otomatik uyum sağlar
-
-### 5a.2 DarkTheme Token'ları Kullanımı
+**Neden f-string setStyleSheet artık yasak?**
 
 ```python
-from ui.styles.colors import DarkTheme as C
-
-# Yazı renkleri
-C.TEXT_PRIMARY       # Birinci kat metin (#e8edf5 — beyaz)
-C.TEXT_SECONDARY     # İkinci kat metin (#8fa3b8 — gri)
-C.TEXT_MUTED         # Devre dışı metin (#4d6070)
-C.TEXT_DISABLED      # Pasif metin (#263850 — çok koyu)
-
-# Arka plan katmanları
-C.BG_PRIMARY         # Ana arka plan (#0d1117 — en koyu)
-C.BG_SECONDARY       # İkinci katman (#121820)
-C.BG_TERTIARY        # Üçüncü katman
-
-# Component renkleri
-C.BTN_PRIMARY_BG     # Mavi buton (#365a9f)
-C.BTN_PRIMARY_HOVER  # Mavi buton hover (#4a74c6)
-C.BTN_DANGER_BG      # Kırmızı buton (#e81123)
-C.BTN_DANGER_HOVER   # Kırmızı buton hover
-C.STATUS_SUCCESS     # Yeşil durum (#3ecf8e)
-C.STATUS_ERROR       # Kırmızı durum (#f75f5f)
-C.STATUS_WARNING     # Sarı durum (#facc15)
-C.ACCENT             # Vurgu rengi (Mavi tonu)
-C.ACCENT2            # Başka vurgu (Yeşil tonu)
-
-# Input kontrol elemanları
-C.INPUT_BG           # Input arka plan
-C.INPUT_BORDER       # Input kenar rengi
-C.INPUT_BORDER_FOCUS # Input focus durumu
+# Bu satır çalıştığında Python C.TEXT_MUTED değerini hesaplar
+# ve "#4d6070" string'ini widget'a yazar.
+# Tema değişse de widget "#4d6070" değerini tutar — tema körü olur.
+label.setStyleSheet(f"color: {C.TEXT_MUTED}; font-size: 11px;")  # ❌
 ```
 
-**Kullanım örneği — QLabel'a renk ekle:**
+**QSS rol sistemi neden doğru çalışır?**
+
 ```python
-lbl = QLabel("Başlık")
-lbl.setStyleSheet(f"color: {C.TEXT_PRIMARY}; font-weight: bold;")
+# Widget sadece rolünü bilir, rengi bilmez.
+# app.setStyleSheet() çağrıldığında QSS motoru rolden rengi hesaplar.
+label.setProperty("color-role", "muted")   # ✅
+label.style().unpolish(label)
+label.style().polish(label)
 ```
 
-### 5a.3 STYLES Dictionary — Pre-built Stylesheets
+---
+
+### 5a.2 Renk Rolleri — color-role
+
+```python
+# Kullanım:
+widget.setProperty("color-role", "<rol>")
+widget.style().unpolish(widget)
+widget.style().polish(widget)
+```
+
+| Rol | Token | Kullanım |
+|-----|-------|----------|
+| `"primary"` | `TEXT_PRIMARY` | Normal metin, başlıklar |
+| `"secondary"` | `TEXT_SECONDARY` | İkincil metin |
+| `"muted"` | `TEXT_MUTED` | Açıklama, hint metni |
+| `"disabled"` | `TEXT_DISABLED` | Pasif/devre dışı metin |
+| `"accent"` | `ACCENT` | Vurgu, link, aktif etiket |
+| `"accent2"` | `ACCENT2` | İkincil vurgu |
+| `"ok"` | `STATUS_SUCCESS` | Başarı durumu |
+| `"warn"` | `STATUS_WARNING` | Uyarı durumu |
+| `"err"` | `STATUS_ERROR` | Hata durumu |
+| `"info"` | `STATUS_INFO` | Bilgi durumu |
+
+**Örnek:**
+```python
+# Durum label'ı — runtime'da rol değiştirilir
+lbl = QLabel("Kayıt Başarılı")
+lbl.setProperty("color-role", "ok")
+lbl.style().unpolish(lbl)
+lbl.style().polish(lbl)
+
+# Dinamik durum güncellemesi
+def set_status(self, durum: str):
+    role_map = {"ok": "ok", "hata": "err", "uyarı": "warn"}
+    self._status_lbl.setProperty("color-role", role_map.get(durum, "muted"))
+    self._status_lbl.style().unpolish(self._status_lbl)
+    self._status_lbl.style().polish(self._status_lbl)
+```
+
+---
+
+### 5a.3 Arka Plan Rolleri — bg-role
+
+```python
+widget.setProperty("bg-role", "<rol>")
+widget.style().unpolish(widget)
+widget.style().polish(widget)
+```
+
+| Rol | Token | Kullanım |
+|-----|-------|----------|
+| `"page"` | `BG_PRIMARY` | Ana pencere/sayfa zemini |
+| `"panel"` | `BG_SECONDARY` | Panel, kart, QGroupBox içi |
+| `"elevated"` | `BG_ELEVATED` | Popup, tooltip zemini |
+| `"hover"` | `BG_TERTIARY` | Hover efekti |
+| `"input"` | `INPUT_BG` | Input arka planı |
+| `"separator"` | `BORDER_PRIMARY` | Yatay/dikey ayırıcı çizgi |
+| `"separator-secondary"` | `BORDER_SECONDARY` | İkincil ayırıcı |
+| `"accent"` | `ACCENT` | Accent renkli arka plan |
+| `"transparent"` | transparent | Şeffaf arka plan |
+
+**Örnek — Separator:**
+```python
+sep = QFrame()
+sep.setFrameShape(QFrame.Shape.HLine)
+sep.setFixedHeight(1)
+sep.setProperty("bg-role", "separator")  # ✅ Renk yazmaya gerek yok
+sep.style().unpolish(sep)
+sep.style().polish(sep)
+```
+
+---
+
+### 5a.4 Kenarlık Rolleri — border-role
+
+```python
+widget.setProperty("border-role", "<rol>")
+```
+
+| Rol | Açıklama |
+|-----|----------|
+| `"top"` | Üst kenarlık (`BORDER_PRIMARY`) |
+| `"top-secondary"` | Üst kenarlık (`BORDER_SECONDARY`) |
+| `"bottom"` | Alt kenarlık |
+| `"panel"` | Dört taraf, panel görünümü |
+
+**Örnek — Nav bar:**
+```python
+nav = QWidget()
+nav.setProperty("border-role", "top-secondary")  # ✅
+# Eski: nav.setStyleSheet(f"border-top:1px solid {C.BORDER_SECONDARY};")  ❌
+```
+
+---
+
+### 5a.5 Font Rolleri — font-role (sadece QLabel)
+
+```python
+lbl.setProperty("font-role", "<rol>")
+```
+
+| Rol | Boyut |
+|-----|-------|
+| `"xs"` | 9px |
+| `"sm"` | 10px |
+| `"body"` | 11px |
+| `"md"` | 12px |
+| `"lg"` | 13px |
+| `"xl"` | 14px |
+| `"stat"` | 16px |
+| `"hero"` | 18px, bold |
+
+**Örnek — Renk + Font birlikte:**
+```python
+lbl = QLabel("Toplam: 42")
+lbl.setProperty("color-role", "accent")
+lbl.setProperty("font-role", "stat")
+lbl.style().unpolish(lbl)
+lbl.style().polish(lbl)
+```
+
+---
+
+### 5a.6 QGroupBox — gb-role
+
+```python
+grp = QGroupBox("Kadro Bilgileri")
+grp.setProperty("gb-role", "section")  # Standart panel görünümü
+```
+
+`gb-role="section"` uygulanan QGroupBox otomatik olarak:
+- Arka plan: `BG_SECONDARY`
+- Kenarlık: `BORDER_PRIMARY`, `border-radius: 8px`
+- Başlık rengi: `ACCENT`
+
+---
+
+### 5a.7 STYLES Dictionary — Karmaşık Widget'lar
+
+Roller basit renk/bg atamalar için yeterlidir. Input, buton gibi karmaşık
+`:focus`, `:hover`, `:disabled` state'lere ihtiyaç duyan widget'lar için
+`STYLES` dict kullanılmaya devam eder.
 
 ```python
 from ui.styles.components import STYLES
 
-# Input alanları
-STYLES["input_field"]    # QLineEdit — focus, read-only state'ler dahil
-STYLES["input_combo"]    # QComboBox — dropdown rengi, selection dahil
-STYLES["spin"]           # QSpinBox/QDoubleSpinBox — up/down butonları stilize
-STYLES["input_date"]     # QDateEdit — takvim popup rengi
+# Input widget'ları — STYLES kullan (roller yetmez)
+inp.setStyleSheet(STYLES["input_field"])    # QLineEdit
+cmb.setStyleSheet(STYLES["input_combo"])    # QComboBox
+spn.setStyleSheet(STYLES["spin"])           # QSpinBox
+dte.setStyleSheet(STYLES["input_date"])     # QDateEdit
 
-# Label'lar
-STYLES["label_form"]     # QLabel — form sayfasında küçük label
-STYLES["label_title"]    # QLabel — sayfa başlığı (14pt, bold)
-STYLES["section_label"]  # QLabel — bölüm başlığı
-
-# Butonlar (zaten iki renk tema'da tanımlıymış halinde)
-STYLES["btn_action"]     # Mavi aksiyon butonu
-STYLES["btn_primary"]    # Birinci aksiyon butonu
-STYLES["btn_secondary"]  # Şeffaf buton
-STYLES["btn_danger"]     # Kırmızı sil/iptal butonu
+# Butonlar
+btn.setStyleSheet(STYLES["btn_action"])     # Mavi aksiyon
+btn.setStyleSheet(STYLES["btn_primary"])    # Birincil
+btn.setStyleSheet(STYLES["btn_secondary"])  # Şeffaf
+btn.setStyleSheet(STYLES["btn_danger"])     # Kırmızı
 ```
 
-**Kullanım örneği:**
+**STYLES'ın da dinamik olması için:** `refresh_styles()` çağrısı
+`theme_manager.set_theme()` içinde otomatik yapılıyor. STYLES'ı kullanan
+widget'lar tema değişiminden önce `setStyleSheet`'leri uygulanmış olduğundan
+`_on_theme_changed` metodunda sayfalar yeniden oluşturulur (bkz. 5a.9).
+
+---
+
+### 5a.8 DarkTheme Token'ları — Hâlâ Kullanılır
+
+`DarkTheme` sınıfı artık `_LiveThemeMeta` metaclass ile donatılmıştır.
+`DarkTheme.BG_PRIMARY` yazıldığında aktif tema (Dark veya Light) döndürülür.
+Import'lar değişmez.
+
+```python
+from ui.styles.colors import DarkTheme as C
+
+# Bunlar hâlâ geçerli — özellikle IconRenderer, badge rengi gibi
+# Renk string'i gereken (setStyleSheet dışı) yerlerde kullan:
+IconRenderer.set_button_icon(btn, "save", color=C.TEXT_PRIMARY, size=14)
+
+badge_color = C.STATUS_SUCCESS   # String olarak renk gerekiyorsa
+QColor(C.ACCENT)                 # QPalette vb. için
+
+# Tüm token listesi:
+C.TEXT_PRIMARY / TEXT_SECONDARY / TEXT_MUTED / TEXT_DISABLED
+C.BG_PRIMARY / BG_SECONDARY / BG_TERTIARY / BG_ELEVATED
+C.BORDER_PRIMARY / BORDER_SECONDARY / BORDER_FOCUS
+C.ACCENT / ACCENT2 / ACCENT_BG
+C.INPUT_BG / INPUT_BORDER / INPUT_BORDER_FOCUS
+C.BTN_PRIMARY_BG / BTN_PRIMARY_HOVER / BTN_PRIMARY_TEXT
+C.BTN_DANGER_BG / BTN_DANGER_TEXT
+C.BTN_SUCCESS_BG / BTN_SUCCESS_TEXT
+C.STATUS_SUCCESS / STATUS_WARNING / STATUS_ERROR / STATUS_INFO
+C.RKE_PURP
+```
+
+**Dikkat:** `setStyleSheet(f"color: {C.TEXT_MUTED}")` **yasak** olduğu için
+token'ları doğrudan `setStyleSheet` içinde kullanmayın. Renk string'ine
+ihtiyaç duyan başka API'ler (QPalette, QColor, IconRenderer) için kullanın.
+
+---
+
+### 5a.9 Tema Değişimi — Nasıl Çalışır
+
+`settings_page.py`'de tema değiştirildiğinde:
+
+```
+ThemeManager.set_theme(app, "light")
+  │
+  ├─ ThemeRegistry güncellenir
+  ├─ QPalette güncellenir
+  ├─ app.setStyleSheet(yeni_qss)   → tüm [color-role], [bg-role] widget'ları güncellenir
+  ├─ refresh_styles()              → STYLES dict yeniden üretilir
+  ├─ widget.refresh_theme()        → refresh_theme() metodu olan widget'lar çağrılır
+  ├─ _on_theme_changed signal      → MainWindow dinler
+  │
+  └─ MainWindow._on_theme_changed()
+       └─ Tüm _pages cache'i temizlenir (deleteLater)
+          Kullanıcı menüden tekrar tıklayınca sayfa yeni temayla sıfırdan açılır
+```
+
+**Neden sayfalar yeniden oluşturuluyor?**
+
+STYLES kullanan widget'lar (input, buton) `__init__`'te `setStyleSheet` çağrısı
+yapar. Bu string widget içine yazılır ve app.setStyleSheet() çağrısı bunu
+değiştiremez. Sayfayı yeniden oluşturmak tek güvenilir çözümdür.
+
+**setProperty kullanan widget'lar** (rol sistemi) ise `_on_theme_changed`
+tetiklendiğinde `app.setStyleSheet()` ile otomatik güncellenir — sayfa
+yeniden oluşturulmasına gerek yoktur.
+
+---
+
+### 5a.10 Yapma / Yap Tablosu
+
+| ❌ Yapma | ✅ Yap |
+|---------|--------|
+| `setStyleSheet(f"color: {C.TEXT_MUTED}; ...")` | `setProperty("color-role", "muted")` + unpolish/polish |
+| `setStyleSheet(f"background: {C.BG_SECONDARY}")` | `setProperty("bg-role", "panel")` + unpolish/polish |
+| `setStyleSheet(f"border-top: 1px solid {C.BORDER_SECONDARY}")` | `setProperty("border-role", "top-secondary")` |
+| `sep.setStyleSheet(f"background-color: {C.BORDER_PRIMARY}")` | `sep.setProperty("bg-role", "separator")` |
+| `grp.setStyleSheet(f"QGroupBox {{ background: {C.BG_SECONDARY}; ... }}")` | `grp.setProperty("gb-role", "section")` |
+| Hardcoded hex: `setStyleSheet("color: #4d6070")` | Rol sistemi veya DarkTheme token'ı |
+| `inp.setStyleSheet(f"background: {C.INPUT_BG}; ...")` | `inp.setStyleSheet(STYLES["input_field"])` |
+| `DarkTheme.BG_PRIMARY` string'ini setStyleSheet içinde kullan | setProperty + rol |
+| Yeni sayfa dosyasında `from ui.styles.colors import DarkTheme as C` ve f-string stil | Sadece STYLES + setProperty |
+
+---
+
+### 5a.11 Tam Örnek — Yeni Sayfa
+
 ```python
 from ui.styles.components import STYLES
+from ui.styles.colors import DarkTheme as C  # IconRenderer vb. için
+from ui.styles.icons import IconRenderer
 
-# QLineEdit'e STYLES uygula
-input_field = QLineEdit()
-input_field.setStyleSheet(STYLES["input_field"])
+class OzetPage(QWidget):
+    def _setup_ui(self):
+        # Sayfa zemini
+        self.setProperty("bg-role", "page")
 
-# QComboBox'a STYLES uygula
-combo = QComboBox()
-combo.setStyleSheet(STYLES["input_combo"])
+        # Başlık label
+        title = QLabel("Özet Rapor")
+        title.setProperty("color-role", "primary")
+        title.setProperty("font-role", "hero")
+        title.style().unpolish(title)
+        title.style().polish(title)
 
-# QSpinBox'a STYLES uygula
-spin = QSpinBox()
-spin.setStyleSheet(STYLES["spin"])
+        # Açıklama label
+        desc = QLabel("Seçili döneme ait veriler")
+        desc.setProperty("color-role", "muted")
+        desc.setProperty("font-role", "body")
+        desc.style().unpolish(desc)
+        desc.style().polish(desc)
+
+        # Separator
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setFixedHeight(1)
+        sep.setProperty("bg-role", "separator")
+
+        # Nav bar
+        nav = QWidget()
+        nav.setProperty("border-role", "top-secondary")
+
+        # GroupBox
+        grp = QGroupBox("Kişisel Bilgiler")
+        grp.setProperty("gb-role", "section")
+
+        # Input — STYLES kullan
+        inp = QLineEdit()
+        inp.setStyleSheet(STYLES["input_field"])
+
+        # İkon butonu — C token'ı sadece renk string'i için
+        btn = QPushButton()
+        IconRenderer.set_button_icon(btn, "edit", color=C.TEXT_SECONDARY, size=14)
+        btn.setStyleSheet(STYLES["btn_secondary"])
+
+        # Durum label — dinamik
+        self._status = QLabel()
+        self._set_status("bekliyor")
+
+    def _set_status(self, durum: str):
+        role = {"ok": "ok", "hata": "err", "uyarı": "warn"}.get(durum, "muted")
+        self._status.setProperty("color-role", role)
+        self._status.style().unpolish(self._status)
+        self._status.style().polish(self._status)
 ```
 
-### 5a.4 Admin Dosyaları — Tema Durum Tablosu
-
-| Dosya | Durum | STYLES uygulanan elemanlar |
-|-------|-------|----------------------------|
-| `admin_panel.py` | ✅ Merkezi tema | DarkTheme token'ları kullanıyor |
-| `audit_view.py` | ✅ Tamamlandı | QLineEdit (input_field), QComboBox (input_combo), QSpinBox (spin) |
-| `backup_page.py` | ✅ Tamamlandı | QSpinBox (spin), başlık rengi (TEXT_PRIMARY) |
-| `log_viewer_page.py` | ✅ Tamamlandı | QComboBox (input_combo), QSpinBox (spin), QLineEdit (input_field) |
-| `permissions_view.py` | ✅ Tamamlandı | QLineEdit (input_field) |
-| `roles_view.py` | ✅ Tamamlandı | QLineEdit (input_field) |
-| `settings_page.py` | ✅ Tamamlandı | QLineEdit (input_field), yeni hardcoded renk yok |
-| `users_view.py` | ✅ Tamamlandı | QLineEdit (input_field) |
-| `yil_sonu_devir_page.py` | ✅ Tamamlandı | QTextEdit, QPushButton (token'lar), QCheckBox |
-
-### 5a.5 Fırsatçı Temizlik — Hâlâ Hardcoded Renk Kullanan Dosyalar
-
-Aşağıdaki dosyaları açarken, bulduğunuz `#f0f0f0`, `#333`, `#e81123` gibi hex renkleri
-DarkTheme token'larıyla değiştir:
-
-```python
-# ❌ YAPMA — hardcoded hex
-self.label.setStyleSheet("color: #f0f0f0;")
-self.btn.setStyleSheet("background-color: #333;")
-
-# ✅ YAP — DarkTheme token'ları
-from ui.styles.colors import DarkTheme as C
-self.label.setStyleSheet(f"color: {C.TEXT_PRIMARY};")
-self.btn.setStyleSheet(f"background-color: {C.BG_SECONDARY};")
-```
-
-**Renk eşlemesi:**
-- `#f0f0f0` (açık gri) → `C.TEXT_PRIMARY` veya `C.INPUT_BG`
-- `#333` (koyu gri) → `C.BG_TERTIARY` veya `C.BG_SECONDARY`
-- `#e81123` (kırmızı) → `C.STATUS_ERROR` veya `C.BTN_DANGER_BG`
-- `#00ff00` (yeşil terminal) → `C.STATUS_SUCCESS`
-- `#444` (kenar rengi) → `C.INPUT_BORDER`
 
 ---
 

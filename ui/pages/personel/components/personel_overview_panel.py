@@ -146,7 +146,9 @@ class PersonelOverviewPanel(QWidget):
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background-color: {DarkTheme.BORDER_PRIMARY};")
+        sep.setProperty("bg-role", "separator")
+        sep.style().unpolish(sep)
+        sep.style().polish(sep)
         left_l.addWidget(sep)
 
         # Kimlik Bilgileri
@@ -223,7 +225,10 @@ class PersonelOverviewPanel(QWidget):
         # Belgeler sekmesine yönlendirme
         hint_row = QHBoxLayout()
         hint = QLabel("Diploma ve ek belgeler için Belgeler sekmesini kullanın.")
-        hint.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 11px;")
+        hint.setProperty("color-role", "muted")
+        hint.setStyleSheet("font-size: 11px;")
+        hint.style().unpolish(hint)
+        hint.style().polish(hint)
         btn_docs = QPushButton("Belgeler")
         btn_docs.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_docs.setStyleSheet(S.get("btn_action", S.get("refresh_btn", "")))
@@ -241,7 +246,10 @@ class PersonelOverviewPanel(QWidget):
         headers = ["Okul Adı", "Bölüm / Fakülte", "Mezuniyet Tarihi", "Diploma No"]
         for i, h in enumerate(headers):
             lbl = QLabel(h)
-            lbl.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 11px; font-weight: bold;")
+            lbl.setProperty("color-role", "muted")
+            lbl.setStyleSheet("font-size: 11px; font-weight: bold;")
+            lbl.style().unpolish(lbl)
+            lbl.style().polish(lbl)
             g4.addWidget(lbl, 1, i)
 
         # 1. Okul
@@ -516,12 +524,18 @@ class PersonelOverviewPanel(QWidget):
         l.setSpacing(2)
         
         lbl_t = QLabel(label)
-        lbl_t.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 11px;")
+        lbl_t.setProperty("color-role", "muted")
+        lbl_t.setStyleSheet("font-size: 11px;")
+        lbl_t.style().unpolish(lbl_t)
+        lbl_t.style().polish(lbl_t)
         l.addWidget(lbl_t)
         
         val_str = str(value) if value else "-"
         lbl_v = QLabel(val_str)
-        lbl_v.setStyleSheet(f"color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;")
+        lbl_v.setProperty("color-role", "primary")
+        lbl_v.setStyleSheet("font-size: 13px; font-weight: 500;")
+        lbl_v.style().unpolish(lbl_v)
+        lbl_v.style().polish(lbl_v)
         lbl_v.setWordWrap(True)
         l.addWidget(lbl_v)
         
@@ -535,7 +549,10 @@ class PersonelOverviewPanel(QWidget):
         l.setSpacing(2)
         
         lbl_t = QLabel(label)
-        lbl_t.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 11px;")
+        lbl_t.setProperty("color-role", "muted")
+        lbl_t.setStyleSheet("font-size: 11px;")
+        lbl_t.style().unpolish(lbl_t)
+        lbl_t.style().polish(lbl_t)
         l.addWidget(lbl_t)
         
         val = self.personel_data.get(db_key, "")
@@ -560,7 +577,10 @@ class PersonelOverviewPanel(QWidget):
         l.setSpacing(2)
         
         lbl_t = QLabel(label)
-        lbl_t.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 11px;")
+        lbl_t.setProperty("color-role", "muted")
+        lbl_t.setStyleSheet("font-size: 11px;")
+        lbl_t.style().unpolish(lbl_t)
+        lbl_t.style().polish(lbl_t)
         l.addWidget(lbl_t)
         
         val = self.personel_data.get(db_key, "")
@@ -654,7 +674,10 @@ class PersonelOverviewPanel(QWidget):
         l.setSpacing(2)
         
         lbl_t = QLabel(label)
-        lbl_t.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 11px;")
+        lbl_t.setProperty("color-role", "muted")
+        lbl_t.setStyleSheet("font-size: 11px;")
+        lbl_t.style().unpolish(lbl_t)
+        lbl_t.style().polish(lbl_t)
         l.addWidget(lbl_t)
         
         val = self.personel_data.get(db_key, "")

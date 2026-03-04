@@ -14,7 +14,6 @@ from ui.admin.roles_view import RolesView
 from ui.admin.log_viewer_page import LogViewerPage
 from ui.admin.yil_sonu_devir_page import YilSonuDevirPage
 from ui.admin.backup_page import BackupPage
-from ui.admin.settings_page import SettingsPage
 from ui.styles.colors import DarkTheme
 from ui.styles.icons import Icons, IconRenderer
 
@@ -97,11 +96,6 @@ class AdminPanel(QWidget):
         self._tabs.addTab(self.backup_page, "Yedekleme")
         self._tabs.setTabIcon(6, Icons.get("database"))
         
-        # Ayarlar sekmesi
-        self.settings_page = SettingsPage()
-        self._tabs.addTab(self.settings_page, "Ayarlar")
-        self._tabs.setTabIcon(7, Icons.get("settings"))
-        
         layout.addWidget(self._tabs)
     
     def _build_header(self):
@@ -124,7 +118,9 @@ class AdminPanel(QWidget):
         font.setPointSize(16)
         font.setBold(True)
         title.setFont(font)
-        title.setStyleSheet(f"color: {DarkTheme.TEXT_PRIMARY};")
+        title.setProperty("color-role", "primary")
+        title.style().unpolish(title)
+        title.style().polish(title)
         
         header_layout.addWidget(title)
         header_layout.addStretch()
@@ -170,7 +166,10 @@ class AdminPanel(QWidget):
         layout.addWidget(label)
         
         info = QLabel("Bu özellik yakında eklenecek...")
-        info.setStyleSheet(f"color: {DarkTheme.TEXT_DISABLED}; font-size: 12px;")
+        info.setProperty("color-role", "disabled")
+        info.setStyleSheet("font-size: 12px;")
+        info.style().unpolish(info)
+        info.style().polish(info)
         info.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(info)
         

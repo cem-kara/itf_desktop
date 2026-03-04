@@ -327,3 +327,40 @@ QFrame[frameShape="5"] {{  /* VLine */
     color: {BORDER_PRIMARY};
     background-color: {BORDER_PRIMARY};
 }}
+
+/* ── QTableWidget / QTableView ────────────────────────────────– */
+QTableWidget, QTableView {{
+    background-color: {BG_PRIMARY};
+    color: {TEXT_PRIMARY};
+    gridline-color: {BORDER_PRIMARY};
+    border: 1px solid {BORDER_PRIMARY};
+    border-radius: 6px;
+    alternate-background-color: {BG_SECONDARY};
+}}
+
+QTableWidget::item, QTableView::item {{
+    padding: 4px;
+    color: {TEXT_PRIMARY};
+    background-color: {BG_PRIMARY};
+    border: none;
+}}
+
+QTableWidget::item:alternate, QTableView::item:alternate {{
+    background-color: {BG_SECONDARY};
+}}
+
+QTableWidget::item:selected, QTableView::item:selected {{
+    background-color: {ACCENT_BG};
+    color: {ACCENT};
+}}
+
+QHeaderView::section {{
+    background-color: {BG_SECONDARY};
+    color: {TEXT_TABLE_HEADER};
+    padding: 8px 6px;
+    border: none;
+    border-bottom: 1px solid {BORDER_PRIMARY};
+    border-right: 1px solid {BORDER_PRIMARY};
+    font-weight: 600;
+    font-size: 12px;
+}}

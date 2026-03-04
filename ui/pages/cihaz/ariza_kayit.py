@@ -448,7 +448,7 @@ class ArizaKayitForm(QWidget):
         # Kapatma butonu — sağ üstte tek X
         hdr = QWidget()
         hdr.setFixedHeight(30)
-        hdr.setStyleSheet(f"background:{surface};border-bottom:1px solid {border};")
+        hdr.setStyleSheet("border-bottom: 1px solid {border};")
         hdr_l = QHBoxLayout(hdr)
         hdr_l.setContentsMargins(0, 0, 6, 0)
         hdr_l.setSpacing(0)
@@ -1166,7 +1166,7 @@ class ArizaKayitForm(QWidget):
         muted  = getattr(DarkTheme, "TEXT_MUTED",   "#5a6278")
 
         container = QWidget()
-        container.setStyleSheet(f"background:transparent;")
+        container.setStyleSheet("background: transparent;")
         grid = QGridLayout(container)
         grid.setContentsMargins(0, 0, 0, 0)
         grid.setSpacing(10)
@@ -1245,14 +1245,14 @@ class ArizaKayitForm(QWidget):
         """Tek bir yatay bar satırı oluşturur."""
         border = getattr(DarkTheme, "BORDER", "#242938")
         w = QWidget()
-        w.setStyleSheet(f"background:transparent;")
+        w.setStyleSheet("background: transparent;")
         hl = QHBoxLayout(w)
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setSpacing(6)
 
         lbl = QLabel(label)
         lbl.setFixedWidth(46)
-        lbl.setStyleSheet(f"font-size:10px;color:{muted};background:transparent;")
+        lbl.setStyleSheet("font-size: 10px; background: transparent;")
         hl.addWidget(lbl)
 
         bar_bg = QWidget()
@@ -1274,7 +1274,7 @@ class ArizaKayitForm(QWidget):
         cnt = QLabel(str(value))
         cnt.setFixedWidth(24)
         cnt.setAlignment(Qt.AlignmentFlag.AlignRight)
-        cnt.setStyleSheet(f"font-size:10px;font-weight:600;color:{fill_color};background:transparent;")
+        cnt.setStyleSheet("font-size: 10px; font-weight: 600; background: transparent;")
         hl.addWidget(cnt)
         return w
 
@@ -1399,7 +1399,7 @@ class ArizaKayitForm(QWidget):
 
         if not tekrarlar:
             lbl = QLabel("Son 90 günde tekrarlayan arıza tespit edilmedi.")
-            lbl.setStyleSheet(f"color:{muted};font-size:12px;padding:12px;")
+            lbl.setStyleSheet("font-size: 12px; padding: 12px;")
             cl.addWidget(lbl)
             return container
 
@@ -1423,7 +1423,7 @@ class ArizaKayitForm(QWidget):
             rl.addWidget(chip)
 
             lbl_baslik = QLabel(baslik)
-            lbl_baslik.setStyleSheet(f"font-size:12px;color:{text};background:transparent;")
+            lbl_baslik.setStyleSheet("font-size: 12px; background: transparent;")
             lbl_baslik.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Preferred)
             rl.addWidget(lbl_baslik)
 

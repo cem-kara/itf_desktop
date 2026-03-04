@@ -26,7 +26,7 @@ from ui.styles.icons import IconRenderer
 from ui.theme_manager import ThemeManager
 from ui.components.formatted_widgets import apply_title_case_formatting, apply_combo_title_case_formatting
 from ui.pages.personel.components.personel_dokuman_panel import PersonelDokumanPanel
-
+from ui.styles.colors import get_current_theme
 
 class DokumanUploadWorker(QThread):
     """Tek bir dosya için DokumanService upload worker'ı."""
@@ -214,7 +214,9 @@ class PersonelEklePage(QWidget):
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background-color: {DarkTheme.BORDER_PRIMARY};")
+        sep.setProperty("bg-role", "separator")
+        sep.style().unpolish(sep)
+        sep.style().polish(sep)
         left_l.addWidget(sep)
 
         # TC Kimlik
@@ -375,7 +377,10 @@ class PersonelEklePage(QWidget):
 
         # Başlık
         edu_header = QLabel("Lise / Önlisans / Lisans")
-        edu_header.setStyleSheet(f"color: {DarkTheme.ACCENT}; font-weight: 600; font-size: 12px; background: transparent;")
+        edu_header.setProperty("color-role", "accent")
+        edu_header.setStyleSheet("font-weight: 600; font-size: 12px; background: transparent;")
+        edu_header.style().unpolish(edu_header)
+        edu_header.style().polish(edu_header)
         edu_lay.addWidget(edu_header)
 
         edu_grid = QGridLayout()
@@ -411,12 +416,17 @@ class PersonelEklePage(QWidget):
         sep_edu = QFrame()
         sep_edu.setFrameShape(QFrame.Shape.HLine)
         sep_edu.setFixedHeight(1)
-        sep_edu.setStyleSheet(f"background-color: {DarkTheme.BORDER_PRIMARY};")
+        sep_edu.setProperty("bg-role", "separator")
+        sep_edu.style().unpolish(sep_edu)
+        sep_edu.style().polish(sep_edu)
         edu_grid.addWidget(sep_edu, 1, 0, 1, 4)
 
         # Başlık: 2. Okul
         header2 = QLabel("Önlisans / Lisans / Yüksek Lisans / Doktora")
-        header2.setStyleSheet(f"color: {DarkTheme.ACCENT}; font-weight: 600; font-size: 12px; background: transparent;")
+        header2.setProperty("color-role", "accent")
+        header2.setStyleSheet("font-weight: 600; font-size: 12px; background: transparent;")
+        header2.style().unpolish(header2)
+        header2.style().polish(header2)
         edu_grid.addWidget(header2, 2, 0, 1, 4)
 
         # 2. Satır - Eğitim 2
@@ -910,41 +920,68 @@ class PersonelEklePage(QWidget):
         if not tc_text:
             # Boş
             self._tc_status.setText("⚠")
-            self._tc_status.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 16px;")
+            self._tc_status.setProperty("color-role", "muted")
+            self._tc_status.setStyleSheet("font-size: 16px;")
+            self._tc_status.style().unpolish(self._tc_status)
+            self._tc_status.style().polish(self._tc_status)
         elif validate_tc_kimlik_no(tc_text):
             # Geçerli
             self._tc_status.setText("✓")
-            self._tc_status.setStyleSheet(f"color: {DarkTheme.STATUS_SUCCESS}; font-size: 16px;")
+            self._tc_status.setProperty("color-role", "ok")
+            self._tc_status.setStyleSheet("font-size: 16px;")
+            self._tc_status.style().unpolish(self._tc_status)
+            self._tc_status.style().polish(self._tc_status)
         else:
             # Geçersiz
             self._tc_status.setText("✗")
-            self._tc_status.setStyleSheet(f"color: {DarkTheme.STATUS_ERROR}; font-size: 16px;")
+            self._tc_status.setProperty("color-role", "err")
+            self._tc_status.setStyleSheet("font-size: 16px;")
+            self._tc_status.style().unpolish(self._tc_status)
+            self._tc_status.style().polish(self._tc_status)
 
     def _validate_email_on_change(self):
         """E-posta real-time validasyonu (merkezi validator kullanır)."""
         email_text = self.ui["eposta"].text().strip()
         if not email_text:
             self._email_status.setText("⚠")
-            self._email_status.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 16px;")
+            self._email_status.setProperty("color-role", "muted")
+            self._email_status.setStyleSheet("font-size: 16px;")
+            self._email_status.style().unpolish(self._email_status)
+            self._email_status.style().polish(self._email_status)
         elif validate_email(email_text):
             self._email_status.setText("✓")
-            self._email_status.setStyleSheet(f"color: {DarkTheme.STATUS_SUCCESS}; font-size: 16px;")
+            self._email_status.setProperty("color-role", "ok")
+            self._email_status.setStyleSheet("font-size: 16px;")
+            self._email_status.style().unpolish(self._email_status)
+            self._email_status.style().polish(self._email_status)
         else:
             self._email_status.setText("✗")
-            self._email_status.setStyleSheet(f"color: {DarkTheme.STATUS_ERROR}; font-size: 16px;")
+            self._email_status.setProperty("color-role", "err")
+            self._email_status.setStyleSheet("font-size: 16px;")
+            self._email_status.style().unpolish(self._email_status)
+            self._email_status.style().polish(self._email_status)
 
     def _validate_phone_on_change(self):
         """Telefon numarası real-time validasyonu (merkezi validator kullanır)."""
         phone_text = self.ui["cep_tel"].text().strip()
         if not phone_text:
             self._phone_status.setText("⚠")
-            self._phone_status.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 16px;")
+            self._phone_status.setProperty("color-role", "muted")
+            self._phone_status.setStyleSheet("font-size: 16px;")
+            self._phone_status.style().unpolish(self._phone_status)
+            self._phone_status.style().polish(self._phone_status)
         elif validate_phone_number(phone_text):
             self._phone_status.setText("✓")
-            self._phone_status.setStyleSheet(f"color: {DarkTheme.STATUS_SUCCESS}; font-size: 16px;")
+            self._phone_status.setProperty("color-role", "ok")
+            self._phone_status.setStyleSheet("font-size: 16px;")
+            self._phone_status.style().unpolish(self._phone_status)
+            self._phone_status.style().polish(self._phone_status)
         else:
             self._phone_status.setText("✗")
-            self._phone_status.setStyleSheet(f"color: {DarkTheme.STATUS_ERROR}; font-size: 16px;")
+            self._phone_status.setProperty("color-role", "err")
+            self._phone_status.setStyleSheet("font-size: 16px;")
+            self._phone_status.style().unpolish(self._phone_status)
+            self._phone_status.style().polish(self._phone_status)
 
     # ═══════════════════════════════════════════
     #  KAYDET / İPTAL
