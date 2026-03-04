@@ -254,7 +254,9 @@ class BakimKayitForm(QWidget):
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background:{_C['border']};")
+        sep.setProperty("bg-role", "separator")
+        sep.style().unpolish(sep)
+        sep.style().polish(sep)
         root.addWidget(sep)
 
         # ── Sekmeli Ana Alan ────────────────────────────
@@ -289,7 +291,9 @@ class BakimKayitForm(QWidget):
     def _build_kpi_bar(self) -> QWidget:
         bar = QWidget()
         bar.setFixedHeight(68)
-        bar.setStyleSheet(f"background:{_C['surface']};")
+        bar.setProperty("bg-role", "panel")
+        bar.style().unpolish(bar)
+        bar.style().polish(bar)
         layout = QHBoxLayout(bar)
         layout.setContentsMargins(12, 8, 12, 8)
         layout.setSpacing(1)
@@ -594,7 +598,10 @@ class BakimKayitForm(QWidget):
         ph_layout.addStretch()
         ph_lbl = QLabel('Kayıt seçip "Bakım Bilgisi Gir" butonuna tıklayın\nveya çift tıklayın.')
         ph_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        ph_lbl.setStyleSheet(f"font-size:11px;color:{_C['muted']};")
+        ph_lbl.setProperty("color-role", "muted")
+        ph_lbl.setStyleSheet("font-size: 11px;")
+        ph_lbl.style().unpolish(ph_lbl)
+        ph_lbl.style().polish(ph_lbl)
         ph_layout.addWidget(ph_lbl)
         ph_layout.addStretch()
         self._exec_content_stack.addWidget(placeholder)   # index 0
@@ -742,7 +749,9 @@ class BakimKayitForm(QWidget):
 
     def _field_lbl(self, title: str, value: str) -> QWidget:
         w = QWidget()
-        w.setStyleSheet(f"background:{_C['panel']};")
+        w.setProperty("bg-role", "elevated")
+        w.style().unpolish(w)
+        w.style().polish(w)
         vl = QVBoxLayout(w)
         vl.setContentsMargins(0, 0, 0, 0)
         vl.setSpacing(1)
@@ -752,7 +761,10 @@ class BakimKayitForm(QWidget):
         )
         v = QLabel(value)
         v.setObjectName("val")
-        v.setStyleSheet(f"font-size:12px;color:{_C['text']};")
+        v.setProperty("color-role", "primary")
+        v.setStyleSheet("font-size: 12px;")
+        v.style().unpolish(v)
+        v.style().polish(v)
         v.setWordWrap(True)
         vl.addWidget(t)
         vl.addWidget(v)
@@ -1283,7 +1295,10 @@ class BakimKayitForm(QWidget):
         """Bakım planı olan markalar için kart grid."""
         if not marka_data:
             lbl = QLabel("Eşleşen marka verisi bulunamadı.")
-            lbl.setStyleSheet(f"color:{_C['muted']};font-size:12px;padding:12px;")
+            lbl.setProperty("color-role", "muted")
+            lbl.setStyleSheet("font-size: 12px; padding: 12px;")
+            lbl.style().unpolish(lbl)
+            lbl.style().polish(lbl)
             return lbl
 
         container = QWidget()
@@ -1442,12 +1457,18 @@ class BakimKayitForm(QWidget):
 
         lbl = QLabel(label)
         lbl.setFixedWidth(56)
-        lbl.setStyleSheet(f"font-size:10px;color:{_C['muted']};background:transparent;")
+        lbl.setProperty("color-role", "muted")
+        lbl.setStyleSheet("font-size: 10px;")
+        lbl.style().unpolish(lbl)
+        lbl.style().polish(lbl)
         hl.addWidget(lbl)
 
         bar_bg = QWidget()
         bar_bg.setFixedHeight(6)
-        bar_bg.setStyleSheet(f"background:{_C['border']};border-radius:3px;")
+        bar_bg.setProperty("bg-role", "separator")
+        bar_bg.setStyleSheet("border-radius: 3px;")
+        bar_bg.style().unpolish(bar_bg)
+        bar_bg.style().polish(bar_bg)
         bar_bg.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         bar_fill = QWidget(bar_bg)
         bar_fill.setFixedHeight(6)
@@ -1510,7 +1531,10 @@ class BakimKayitForm(QWidget):
 
             val_lbl = QLabel(str(val) if val else "")
             val_lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-            val_lbl.setStyleSheet(f"font-size:9px;color:{_C['muted']};background:transparent;")
+            val_lbl.setProperty("color-role", "muted")
+            val_lbl.setStyleSheet("font-size: 9px;")
+            val_lbl.style().unpolish(val_lbl)
+            val_lbl.style().polish(val_lbl)
             col.addWidget(val_lbl)
 
             bar_color = _C["red"] if val > max_val * 0.7 else \
@@ -1530,7 +1554,10 @@ class BakimKayitForm(QWidget):
         for et in etiketler:
             lbl = QLabel(et)
             lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-            lbl.setStyleSheet(f"font-size:9px;color:{_C['muted']};background:transparent;")
+            lbl.setProperty("color-role", "muted")
+            lbl.setStyleSheet("font-size: 9px;")
+            lbl.style().unpolish(lbl)
+            lbl.style().polish(lbl)
             lbl_row.addWidget(lbl)
         cl.addLayout(lbl_row)
 
@@ -1551,7 +1578,10 @@ class BakimKayitForm(QWidget):
 
         if not gecikmisler:
             lbl = QLabel("Gecikmiş bakım bulunmuyor.")
-            lbl.setStyleSheet(f"color:{_C['muted']};font-size:12px;padding:12px;")
+            lbl.setProperty("color-role", "muted")
+            lbl.setStyleSheet("font-size: 12px; padding: 12px;")
+            lbl.style().unpolish(lbl)
+            lbl.style().polish(lbl)
             cl.addWidget(lbl)
             return container
 
@@ -1575,12 +1605,18 @@ class BakimKayitForm(QWidget):
             rl.addWidget(chip)
 
             plan_no = QLabel(str(r.get("Planid",""))[:20])
-            plan_no.setStyleSheet(f"font-size:11px;color:{_C['muted']};background:transparent;")
+            plan_no.setProperty("color-role", "muted")
+            plan_no.setStyleSheet("font-size: 11px;")
+            plan_no.style().unpolish(plan_no)
+            plan_no.style().polish(plan_no)
             plan_no.setFixedWidth(120)
             rl.addWidget(plan_no)
 
             periyot = QLabel(str(r.get("BakimPeriyodu","")) or "—")
-            periyot.setStyleSheet(f"font-size:12px;color:{_C['text']};background:transparent;")
+            periyot.setProperty("color-role", "primary")
+            periyot.setStyleSheet("font-size: 12px;")
+            periyot.style().unpolish(periyot)
+            periyot.style().polish(periyot)
             periyot.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Preferred)
             rl.addWidget(periyot)
 

@@ -145,7 +145,10 @@ class IzinTakipPage(QWidget):
         self._add_sep(fp)
 
         lbl_ay = QLabel("Ay:")
-        lbl_ay.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 12px; background: transparent;")
+        lbl_ay.setProperty("color-role", "muted")
+        lbl_ay.setStyleSheet("font-size: 12px; background: transparent;")
+        lbl_ay.style().unpolish(lbl_ay)
+        lbl_ay.style().polish(lbl_ay)
         fp.addWidget(lbl_ay)
 
         self.cmb_ay = QComboBox()
@@ -159,7 +162,10 @@ class IzinTakipPage(QWidget):
         fp.addWidget(self.cmb_ay)
 
         lbl_yil = QLabel("Yıl:")
-        lbl_yil.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 12px; background: transparent;")
+        lbl_yil.setProperty("color-role", "muted")
+        lbl_yil.setStyleSheet("font-size: 12px; background: transparent;")
+        lbl_yil.style().unpolish(lbl_yil)
+        lbl_yil.style().polish(lbl_yil)
         fp.addWidget(lbl_yil)
 
         self.cmb_yil = QComboBox()
@@ -265,7 +271,10 @@ class IzinTakipPage(QWidget):
         header_lay.setContentsMargins(12, 12, 12, 12)
 
         lbl_drawer = QLabel("Izin Girisi")
-        lbl_drawer.setStyleSheet(f"font-size: 14px; font-weight: 600; color: {DarkTheme.TEXT_PRIMARY};")
+        lbl_drawer.setProperty("color-role", "primary")
+        lbl_drawer.setStyleSheet("font-size: 14px; font-weight: 600;")
+        lbl_drawer.style().unpolish(lbl_drawer)
+        lbl_drawer.style().polish(lbl_drawer)
         header_lay.addWidget(lbl_drawer)
         header_lay.addStretch()
 
@@ -511,7 +520,9 @@ class IzinTakipPage(QWidget):
         sep = QFrame()
         sep.setFixedWidth(1)
         sep.setFixedHeight(20)
-        sep.setStyleSheet(f"background-color: {DarkTheme.BORDER_PRIMARY};")
+        sep.setProperty("bg-role", "separator")
+        sep.style().unpolish(sep)
+        sep.style().polish(sep)
         layout.addWidget(sep)
 
     def _setup_calendar(self, date_edit):

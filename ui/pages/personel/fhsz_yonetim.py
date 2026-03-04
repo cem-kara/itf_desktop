@@ -245,7 +245,10 @@ class FHSZYonetimPage(QWidget):
         self._add_sep(fp)
 
         self.lbl_donem = QLabel("Dönem aralığı: ...")
-        self.lbl_donem.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 11px; font-style: italic;")
+        self.lbl_donem.setProperty("color-role", "muted")
+        self.lbl_donem.setStyleSheet("font-size: 11px;")
+        self.lbl_donem.style().unpolish(self.lbl_donem)
+        self.lbl_donem.style().polish(self.lbl_donem)
         fp.addWidget(self.lbl_donem)
 
         fp.addStretch()
@@ -337,7 +340,9 @@ class FHSZYonetimPage(QWidget):
         sep = QFrame()
         sep.setFixedWidth(1)
         sep.setFixedHeight(20)
-        sep.setStyleSheet(f"background-color: {DarkTheme.BORDER_PRIMARY};")
+        sep.setProperty("bg-role", "separator")
+        sep.style().unpolish(sep)
+        sep.style().polish(sep)
         layout.addWidget(sep)
 
     # ═══════════════════════════════════════════

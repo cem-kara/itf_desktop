@@ -39,7 +39,10 @@ class PlaceholderPage(QWidget):
         layout.addWidget(lbl_title)
 
         lbl_sub = QLabel(subtitle or "Bu sayfa henüz geliştirme aşamasında.")
-        lbl_sub.setStyleSheet("font-size: 14px; color: #5a5d6e; background: transparent;")
+        lbl_sub.setProperty("color-role", "muted")
+        lbl_sub.setStyleSheet("font-size: 14px; background: transparent;")
+        lbl_sub.style().unpolish(lbl_sub)
+        lbl_sub.style().polish(lbl_sub)
         lbl_sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(lbl_sub)
 

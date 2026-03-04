@@ -42,6 +42,7 @@ class MainWindow(QMainWindow):
         self._setup_sync()
         self._setup_bildirim()
         self._load_sabitler_cache()  # Uygulama başladığında bir kere yükle
+        self._setup_theme_listener()  # Tema değişikliğini dinle
 
     def _build_ui(self):
         central = QWidget()
@@ -53,7 +54,9 @@ class MainWindow(QMainWindow):
 
         # ── Ana alan (sidebar + içerik) ───────────────────────────
         body = QWidget()
-        body.setStyleSheet(f"background: {DarkTheme.BG_PRIMARY};")
+        body.setProperty("bg-role", "page")
+        body.style().unpolish(body)
+        body.style().polish(body)
         main_layout = QHBoxLayout(body)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
@@ -73,7 +76,9 @@ class MainWindow(QMainWindow):
         # İçerik alanı
         content = QWidget()
         content.setObjectName("content_area")
-        content.setStyleSheet(f"background: {DarkTheme.BG_PRIMARY};")
+        content.setProperty("bg-role", "page")
+        content.style().unpolish(content)
+        content.style().polish(content)
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(0)
@@ -775,3 +780,76 @@ class MainWindow(QMainWindow):
             cihaz_id = device_data.get("Cihazid", "") if isinstance(device_data, dict) else ""
             if cihaz_id:
                 page.open_tab("BAKIM", cihaz_id=cihaz_id)
+
+    def _setup_theme_listener(self):
+        """Tema değişikliğini dinle"""
+        try:
+            from ui.theme_manager import ThemeManager
+            theme_manager = ThemeManager.instance()
+            theme_manager.theme_changed.connect(self._on_theme_changed)
+            logger.debug("MainWindow tema değişikliği listener'ı bağlandı")
+        except Exception as e:
+            logger.error(f"Tema değişikliği listener kurulumu hatası: {e}")
+
+    @Slot(str)
+    def _on_theme_changed(self, theme_name: str):
+        """
+        Tema değiştiğinde tüm sayfaları yıkıp yeniden oluşturmaya hazırlar.
+
+        Neden unpolish/polish yetmez?
+        Her sayfanın __init__'inde setStyleSheet() ile renk yazılmaz — setProperty kullanılır.
+        satırları string olarak widget'a yazılır. Tema değişse de bu stringler
+        widget içinde saklı kalır — unpolish/polish onları yeniden değerlendirmez.
+
+        Çözüm: Tüm önbelleğe alınmış sayfaları stack'ten kaldır ve sil.
+        Kullanıcı menüden tekrar tıkladığında sayfa yeni tema renkleriyle
+        sıfırdan oluşturulur (_create_page lazy-load yapıyor).
+        """
+        logger.info(f"MainWindow tema değişikliği: {theme_name} — sayfalar yeniden oluşturulacak")
+
+        try:
+            # 1. Hangi sayfa şu an gösteriliyor? (settings sayfası hariç sıfırla)
+            current = self.stack.currentWidget()
+
+            # 2. Settings sayfası dışındaki tüm önbelleklenmiş sayfaları yıkıyoruz.
+            #    Settings sayfasını koruyoruz — kullanıcı tema seçimini oradan yapıyor,
+            #    kapatırsak uygulama gösterecek sayfa bulamaz.
+            keys_to_remove = []
+            for key, widget in list(self._pages.items()):
+                if widget is current:
+                    continue   # Aktif sayfayı en sona bırak
+                try:
+                    self.stack.removeWidget(widget)
+                    widget.deleteLater()
+                    keys_to_remove.append(key)
+                    logger.debug(f"Sayfa kaldırıldı: {key}")
+                except Exception as e:
+                    logger.debug(f"Sayfa kaldırma hatası [{key}]: {e}")
+
+            for key in keys_to_remove:
+                self._pages.pop(key, None)
+
+            # 3. Aktif sayfa da yeniden oluşturulsun: stack'te welcome ekrana dön,
+            #    aktif sayfayı da kaldır (bir sonraki menü tıklamasında yeniden açılır)
+            if current and current is not self._welcome:
+                # Aktif sayfanın key'ini bul
+                active_key = next((k for k, v in self._pages.items() if v is current), None)
+                try:
+                    self.stack.setCurrentWidget(self._welcome)
+                    self.stack.removeWidget(current)
+                    current.deleteLater()
+                    if active_key:
+                        self._pages.pop(active_key, None)
+                except Exception as e:
+                    logger.debug(f"Aktif sayfa kaldırma hatası: {e}")
+
+            # 4. MainWindow ve sabit bileşenleri (sidebar vb.) yenile
+            self.style().unpolish(self)
+            self.style().polish(self)
+            self.update()
+            self.repaint()
+
+            logger.info(f"Tema '{theme_name}' uygulandı — {len(keys_to_remove)} sayfa sıfırlandı")
+
+        except Exception as e:
+            logger.error(f"Tema değişikliği işleme hatası: {e}", exc_info=True)

@@ -1,4 +1,4 @@
-﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    REPYS v3 â€” Medikal Dark-Blue Tema (theme_template.qss)
    Palette: Deep Navy Â· Cyan accent
    
@@ -327,4 +327,125 @@ QFrame[frameShape="5"] {  /* VLine */
     color: {BORDER_PRIMARY};
     background-color: {BORDER_PRIMARY};
 }
+
+/* Table Widget / View */
+QTableWidget, QTableView {
+    background-color: {BG_PRIMARY};
+    color: {TEXT_PRIMARY};
+    gridline-color: {BORDER_PRIMARY};
+    border: 1px solid {BORDER_PRIMARY};
+    border-radius: 6px;
+    alternate-background-color: {BG_SECONDARY};
+}
+
+QTableWidget::item, QTableView::item {
+    padding: 4px;
+    color: {TEXT_PRIMARY};
+    background-color: {BG_PRIMARY};
+    border: none;
+}
+
+QTableWidget::item:alternate, QTableView::item:alternate {
+    background-color: {BG_SECONDARY};
+}
+
+QTableWidget::item:selected, QTableView::item:selected {
+    background-color: {ACCENT_BG};
+    color: {ACCENT};
+}
+
+QHeaderView::section {
+    background-color: {BG_SECONDARY};
+    color: {TEXT_TABLE_HEADER};
+    padding: 8px 6px;
+    border: none;
+    border-bottom: 1px solid {BORDER_PRIMARY};
+    border-right: 1px solid {BORDER_PRIMARY};
+    font-weight: 600;
+    font-size: 12px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   REPYS v3 — Semantik Rol Sistemi
+   
+   Python'da setProperty("color-role", "muted") çağrısı yapın.
+   Renk ve arka plan tüm tema değişimlerinde otomatik güncellenir.
+   setStyleSheet() ile renk yazmak GEREKMİYOR.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Renk Rolleri (QLabel, QWidget vb.) ─────────────────────── */
+*[color-role="primary"]   { color: {TEXT_PRIMARY};   background: transparent; }
+*[color-role="secondary"] { color: {TEXT_SECONDARY}; background: transparent; }
+*[color-role="muted"]     { color: {TEXT_MUTED};     background: transparent; }
+*[color-role="disabled"]  { color: {TEXT_DISABLED};  background: transparent; }
+*[color-role="accent"]    { color: {ACCENT};         background: transparent; }
+*[color-role="accent2"]   { color: {ACCENT2};        background: transparent; }
+*[color-role="ok"]        { color: {STATUS_SUCCESS}; background: transparent; }
+*[color-role="warn"]      { color: {STATUS_WARNING}; background: transparent; }
+*[color-role="err"]       { color: {STATUS_ERROR};   background: transparent; }
+*[color-role="info"]      { color: {STATUS_INFO};    background: transparent; }
+
+/* ── Arka Plan Rolleri ──────────────────────────────────────── */
+*[bg-role="page"]      { background-color: {BG_PRIMARY};   }
+*[bg-role="panel"]     { background-color: {BG_SECONDARY}; }
+*[bg-role="elevated"]  { background-color: {BG_ELEVATED};  }
+*[bg-role="hover"]     { background-color: {BG_TERTIARY};  }
+*[bg-role="input"]     { background-color: {INPUT_BG};     }
+*[bg-role="separator"] { background-color: {BORDER_PRIMARY}; border: none; max-height: 1px; }
+*[bg-role="separator-secondary"] { background-color: {BORDER_SECONDARY}; border: none; max-height: 1px; }
+*[bg-role="accent"]    { background-color: {ACCENT}; border: none; }
+*[bg-role="transparent"] { background: transparent; border: none; }
+
+/* ── Kenarlık Rolleri ───────────────────────────────────────── */
+*[border-role="top"]    { background: transparent; border-top: 1px solid {BORDER_PRIMARY}; border-left: none; border-right: none; border-bottom: none; }
+*[border-role="top-secondary"] { background: transparent; border-top: 1px solid {BORDER_SECONDARY}; border-left: none; border-right: none; border-bottom: none; }
+*[border-role="bottom"] { background: transparent; border-bottom: 1px solid {BORDER_PRIMARY}; border-left: none; border-right: none; border-top: none; }
+*[border-role="panel"]  { background-color: {BG_SECONDARY}; border: 1px solid {BORDER_PRIMARY}; border-radius: 8px; }
+
+/* ── QGroupBox Rolleri ──────────────────────────────────────── */
+QGroupBox[gb-role="section"] {
+    background-color: {BG_SECONDARY};
+    border: 1px solid {BORDER_PRIMARY};
+    border-radius: 8px;
+    margin-top: 8px;
+    font-weight: bold;
+    color: {TEXT_PRIMARY};
+}
+QGroupBox[gb-role="section"]::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 12px;
+    padding: 0 6px;
+    color: {ACCENT};
+    font-size: 12px;
+    font-weight: 700;
+    background-color: {BG_SECONDARY};
+}
+
+/* ── Nav Bar (sekme altı çizgi) ─────────────────────────────── */
+QWidget[nav-role="bar"] {
+    background: transparent;
+    border-top: 1px solid {BORDER_SECONDARY};
+}
+
+/* ── İkon Buton ─────────────────────────────────────────────── */
+QPushButton[btn-role="icon"] {
+    background: rgba(255,255,255,0.08);
+    border: none;
+    border-radius: 4px;
+}
+QPushButton[btn-role="icon"]:hover {
+    background: rgba(255,255,255,0.18);
+}
+
+/* ── Status badge label ──────────────────────────────────────── */
+QLabel[font-role="xs"]   { font-size: 9px;  }
+QLabel[font-role="sm"]   { font-size: 10px; }
+QLabel[font-role="body"] { font-size: 11px; }
+QLabel[font-role="md"]   { font-size: 12px; }
+QLabel[font-role="lg"]   { font-size: 13px; }
+QLabel[font-role="xl"]   { font-size: 14px; }
+QLabel[font-role="stat"] { font-size: 16px; }
+QLabel[font-role="hero"] { font-size: 18px; font-weight: bold; }
 

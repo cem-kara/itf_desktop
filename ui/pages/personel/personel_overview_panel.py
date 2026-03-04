@@ -12,7 +12,7 @@ from core.paths import DB_PATH
 from core.services.dokuman_service import DokumanService
 from core.text_utils import turkish_title_case
 from ui.theme_manager import ThemeManager
-from ui.styles import DarkTheme
+from ui.styles.colors import get_current_theme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 from ui.components.formatted_widgets import apply_title_case_formatting, apply_combo_title_case_formatting
@@ -131,15 +131,15 @@ class PersonelOverviewPanel(QWidget):
         self.lbl_resim.setFixedSize(120, 140)
         self.lbl_resim.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_resim.setStyleSheet(
-            f"border: 1px solid {DarkTheme.BORDER_PRIMARY}; border-radius: 6px; "
-            f"background: {DarkTheme.BG_SECONDARY};"
+            f"border: 1px solid {get_current_theme().BORDER_PRIMARY}; border-radius: 6px; "
+            f"background: {get_current_theme().BG_SECONDARY};"
         )
         left_l.addWidget(self.lbl_resim, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self._photo_upload_btn = QPushButton("Resim Yükle")
         self._photo_upload_btn.setStyleSheet(S["file_btn"])
         self._photo_upload_btn.clicked.connect(self._on_photo_upload)
-        IconRenderer.set_button_icon(self._photo_upload_btn, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self._photo_upload_btn, "upload", color=get_current_theme().TEXT_PRIMARY, size=14)
         left_l.addWidget(self._photo_upload_btn, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Ayırıcı çizgi
@@ -233,7 +233,7 @@ class PersonelOverviewPanel(QWidget):
         btn_docs.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_docs.setStyleSheet(S.get("btn_action", S.get("refresh_btn", "")))
         try:
-            IconRenderer.set_button_icon(btn_docs, "upload", color=DarkTheme.TEXT_SECONDARY, size=14)
+            IconRenderer.set_button_icon(btn_docs, "upload", color=get_current_theme().TEXT_SECONDARY, size=14)
         except Exception:
             pass
         btn_docs.clicked.connect(self.open_documents.emit)
@@ -438,22 +438,22 @@ class PersonelOverviewPanel(QWidget):
         grp = QGroupBox(title)
         grp.setStyleSheet(f"""
             QGroupBox {{
-                background-color: {DarkTheme.BG_SECONDARY};
-                border: 1px solid {DarkTheme.BORDER_PRIMARY};
+                background-color: {get_current_theme().BG_SECONDARY};
+                border: 1px solid {get_current_theme().BORDER_PRIMARY};
                 border-radius: 8px;
                 margin-top: 8px;
                 font-weight: bold;
-                color: {DarkTheme.TEXT_PRIMARY};
+                color: {get_current_theme().TEXT_PRIMARY};
             }}
             QGroupBox::title {{
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 left: 12px;
                 padding: 0 6px;
-                color: {DarkTheme.ACCENT};
+                color: {get_current_theme().ACCENT};
                 font-size: 12px;
                 font-weight: 700;
-                background-color: {DarkTheme.BG_SECONDARY};
+                background-color: {get_current_theme().BG_SECONDARY};
             }}
         """)
         
@@ -473,10 +473,10 @@ class PersonelOverviewPanel(QWidget):
         
         # Stil özelleştirme
         btn_save.setStyleSheet(
-            f"background: #16a34a; color: {DarkTheme.TEXT_PRIMARY}; border-radius: 4px; padding: 4px 8px;"
+            f"background: #16a34a; color: {get_current_theme().TEXT_PRIMARY}; border-radius: 4px; padding: 4px 8px;"
         )
         btn_cancel.setStyleSheet(
-            f"background: #dc2626; color: {DarkTheme.TEXT_PRIMARY}; border-radius: 4px; padding: 4px 8px;"
+            f"background: #dc2626; color: {get_current_theme().TEXT_PRIMARY}; border-radius: 4px; padding: 4px 8px;"
         )
 
         header_row.addWidget(btn_edit)
@@ -506,7 +506,7 @@ class PersonelOverviewPanel(QWidget):
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn.setFixedSize(30, 26)
         btn.setVisible(visible)
-        IconRenderer.set_button_icon(btn, icon_name, color=DarkTheme.TEXT_SECONDARY, size=14)
+        IconRenderer.set_button_icon(btn, icon_name, color=get_current_theme().TEXT_SECONDARY, size=14)
         btn.setStyleSheet("""
             QPushButton {
                 background: rgba(255,255,255,0.1); 
@@ -559,8 +559,8 @@ class PersonelOverviewPanel(QWidget):
         inp = QLineEdit(str(val) if val else "")
         inp.setReadOnly(True)
         inp.setStyleSheet(
-            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
-            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
+            f"background: {get_current_theme().BG_TERTIARY}; border: 1px solid {get_current_theme().BORDER_SECONDARY}; "
+            f"border-radius: 4px; padding: 6px; color: {get_current_theme().TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
         )
         l.addWidget(inp)
         
@@ -591,8 +591,8 @@ class PersonelOverviewPanel(QWidget):
         combo.setCurrentText(str(val) if val else "")
         combo.setEnabled(False)
         combo.setStyleSheet(
-            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
-            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
+            f"background: {get_current_theme().BG_TERTIARY}; border: 1px solid {get_current_theme().BORDER_SECONDARY}; "
+            f"border-radius: 4px; padding: 6px; color: {get_current_theme().TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
         )
         
         completer = QCompleter(self)
@@ -617,8 +617,8 @@ class PersonelOverviewPanel(QWidget):
         combo.setCurrentText(str(val) if val else "")
         combo.setEnabled(False)
         combo.setStyleSheet(
-            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
-            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px;"
+            f"background: {get_current_theme().BG_TERTIARY}; border: 1px solid {get_current_theme().BORDER_SECONDARY}; "
+            f"border-radius: 4px; padding: 6px; color: {get_current_theme().TEXT_PRIMARY}; font-size: 13px;"
         )
 
         completer = QCompleter(self)
@@ -638,8 +638,8 @@ class PersonelOverviewPanel(QWidget):
         inp.setReadOnly(True)
         inp.setPlaceholderText("-")
         inp.setStyleSheet(
-            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
-            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px;"
+            f"background: {get_current_theme().BG_TERTIARY}; border: 1px solid {get_current_theme().BORDER_SECONDARY}; "
+            f"border-radius: 4px; padding: 6px; color: {get_current_theme().TEXT_PRIMARY}; font-size: 13px;"
         )
 
         # Container: input + görüntüle butonu
@@ -690,8 +690,8 @@ class PersonelOverviewPanel(QWidget):
 
         date_edit.setEnabled(False)
         date_edit.setStyleSheet(
-            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
-            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
+            f"background: {get_current_theme().BG_TERTIARY}; border: 1px solid {get_current_theme().BORDER_SECONDARY}; "
+            f"border-radius: 4px; padding: 6px; color: {get_current_theme().TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
         )
         
         ThemeManager.setup_calendar_popup(date_edit)
@@ -714,8 +714,8 @@ class PersonelOverviewPanel(QWidget):
 
         date_edit.setEnabled(False)
         date_edit.setStyleSheet(
-            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
-            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px;"
+            f"background: {get_current_theme().BG_TERTIARY}; border: 1px solid {get_current_theme().BORDER_SECONDARY}; "
+            f"border-radius: 4px; padding: 6px; color: {get_current_theme().TEXT_PRIMARY}; font-size: 13px;"
         )
 
         ThemeManager.setup_calendar_popup(date_edit)
@@ -732,16 +732,16 @@ class PersonelOverviewPanel(QWidget):
         grp["btn_cancel"].setVisible(edit_mode)
         
         style_edit = (
-            f"background: {DarkTheme.BG_SECONDARY}; border: 1px solid {DarkTheme.INPUT_BORDER_FOCUS}; "
-            f"border-radius: 4px; padding: 4px; color: {DarkTheme.TEXT_PRIMARY};"
+            f"background: {get_current_theme().BG_SECONDARY}; border: 1px solid {get_current_theme().INPUT_BORDER_FOCUS}; "
+            f"border-radius: 4px; padding: 4px; color: {get_current_theme().TEXT_PRIMARY};"
         )
-        style_read = f"background: transparent; border: none; color: {DarkTheme.TEXT_PRIMARY}; font-weight: 500;"
+        style_read = f"background: transparent; border: none; color: {get_current_theme().TEXT_PRIMARY}; font-weight: 500;"
         style_combo_read = (
-            f"background: transparent; border: none; color: {DarkTheme.TEXT_PRIMARY}; "
+            f"background: transparent; border: none; color: {get_current_theme().TEXT_PRIMARY}; "
             "font-size: 13px; font-weight: 500; padding: 4px;"
         )
         style_date_read = (
-            f"background: transparent; border: none; color: {DarkTheme.TEXT_PRIMARY}; "
+            f"background: transparent; border: none; color: {get_current_theme().TEXT_PRIMARY}; "
             "font-size: 13px; font-weight: 500; padding: 4px;"
         )
         
@@ -1171,6 +1171,60 @@ class PersonelOverviewPanel(QWidget):
                     QMessageBox.critical(self, "Callback Hatası", f"İşlem tamamlanamadı:\n{str(e)}")
         except Exception as e:
             logger.error(f"Finalize uploads hatası: {e}", exc_info=True)
+
+
+    def refresh_theme(self):
+        """Tema değişikliğinde tüm widget stillerini yeniden uygular."""
+        C = get_current_theme()
+
+        # Fotoğraf alanı
+        if hasattr(self, 'lbl_resim'):
+            self.lbl_resim.setStyleSheet(
+                f"border: 1px solid {C.BORDER_PRIMARY}; border-radius: 6px; "
+                f"background: {C.BG_SECONDARY};"
+            )
+
+        # Ayırıcı çizgiler
+        for child in self.findChildren(__import__('PySide6.QtWidgets', fromlist=['QFrame']).QFrame):
+            if child.frameShape().value == 4:  # HLine
+                child.setProperty("bg-role", "separator")
+                child.style().unpolish(child)
+                child.style().polish(child)
+
+        # Tüm QLineEdit'leri güncelle (read-only olanlar)
+        from PySide6.QtWidgets import QLineEdit, QComboBox, QDateEdit, QGroupBox, QLabel
+        read_style = f"background: transparent; border: none; color: {C.TEXT_PRIMARY}; font-weight: 500;"
+        field_style = (
+            f"background: {C.BG_TERTIARY}; border: 1px solid {C.BORDER_SECONDARY}; "
+            f"border-radius: 4px; padding: 6px; color: {C.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
+        )
+
+        for key, widget in self._widgets.items():
+            if isinstance(widget, QLineEdit) and widget.isReadOnly():
+                widget.setStyleSheet(read_style)
+            elif isinstance(widget, QComboBox) and not widget.isEnabled():
+                widget.setStyleSheet(
+                    f"background: transparent; border: none; color: {C.TEXT_PRIMARY}; "
+                    "font-size: 13px; font-weight: 500; padding: 4px;"
+                )
+            elif isinstance(widget, QDateEdit) and not widget.isEnabled():
+                widget.setStyleSheet(
+                    f"background: transparent; border: none; color: {C.TEXT_PRIMARY}; "
+                    "font-size: 13px; font-weight: 500; padding: 4px;"
+                )
+
+        # GroupBox'ları güncelle
+        for grp_id, grp_data in self._groups.items():
+            pass  # GroupBox stilleri QSS üzerinden ThemeManager tarafından güncellenir
+
+        # Label stilleri
+        for lbl in self.findChildren(QLabel):
+            ss = lbl.styleSheet()
+            if 'TEXT_MUTED' in ss or ('font-size: 11px' in ss and 'color:' in ss):
+                lbl.setProperty("color-role", "muted")
+                lbl.setStyleSheet("font-size: 11px;")
+                lbl.style().unpolish(lbl)
+                lbl.style().polish(lbl)
 
     def _fmt_date(self, val):
         """Tarihi YYYY-MM-DD formatından DD.MM.YYYY formatına çevir."""

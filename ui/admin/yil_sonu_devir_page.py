@@ -214,11 +214,17 @@ class YilSonuDevirPage(QWidget):
             "<i style='color: #f7b731;'>Lütfen işlemden önce veritabanı yedeği alınız!</i>"
         )
         lbl_bilgi.setWordWrap(True)
-        lbl_bilgi.setStyleSheet(f"color: {C.TEXT_SECONDARY}; font-weight: normal; font-size: 13px; padding: 8px;")
+        lbl_bilgi.setProperty("color-role", "secondary")
+        lbl_bilgi.setStyleSheet("font-weight: normal; font-size: 13px; padding: 8px;")
+        lbl_bilgi.style().unpolish(lbl_bilgi)
+        lbl_bilgi.style().polish(lbl_bilgi)
         v_uyari.addWidget(lbl_bilgi)
         
         self.chk_onay = QCheckBox("Riskleri anladım, işlemi onaylıyorum.")
-        self.chk_onay.setStyleSheet(f"color: {C.STATUS_ERROR}; font-weight: bold; font-size: 13px;")
+        self.chk_onay.setProperty("color-role", "err")
+        self.chk_onay.setStyleSheet("font-weight: bold; font-size: 13px;")
+        self.chk_onay.style().unpolish(self.chk_onay)
+        self.chk_onay.style().polish(self.chk_onay)
         self.chk_onay.stateChanged.connect(self._onay_degisti)
         v_uyari.addWidget(self.chk_onay)
         

@@ -150,7 +150,7 @@ class _Sec(QWidget):
     def row(self, l1, v1, l2="", v2=None):
         bg = _BG_ODD if self._r % 2 else _BG_EVEN; self._r += 1
         rw = QWidget()
-        rw.setStyleSheet(f"background:{bg};border-bottom:{_BC};")
+        rw.setStyleSheet("border-bottom: {_BC};")
         rw.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         rh = QHBoxLayout(rw); rh.setContentsMargins(0,0,0,0); rh.setSpacing(0)
         rh.addWidget(_mk_pair(l1, v1, bg), stretch=1)
@@ -205,7 +205,7 @@ class CihazTeknikUtsScraper(QWidget):
         root.addWidget(self._search_box())
 
         self._stat = QLabel(""); self._stat.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._stat.setStyleSheet(f"color:{_TEXT_SEC};font-size:11px;")
+        self._stat.setStyleSheet("font-size: 11px;")
         self._stat.hide(); root.addWidget(self._stat)
 
         self._prog = QProgressBar(); self._prog.setRange(0,0); self._prog.setFixedHeight(3)
@@ -226,7 +226,9 @@ class CihazTeknikUtsScraper(QWidget):
 
     def _search_box(self):
         box = QFrame()
-        box.setStyleSheet(f"QFrame{{border:{_BC};border-radius:8px;background:{_BG_SECT};}}")
+        box.setProperty("border-role", "panel")
+        box.style().unpolish(box)
+        box.style().polish(box)
         vb = QVBoxLayout(box); vb.setContentsMargins(20,18,20,18); vb.setSpacing(12)
 
         title = QLabel("🔍  ÜTS Ürün Sorgulama")
@@ -239,7 +241,7 @@ class CihazTeknikUtsScraper(QWidget):
             "Birincil Ürün Numarasını (barkod) girin. ÜTS sistemi sorgulanarak\n"
             "tüm teknik bilgiler otomatik doldurulur."
         )
-        desc.setStyleSheet(f"color:{_TEXT_SEC};font-size:11px;border:none;background:transparent;")
+        desc.setStyleSheet("font-size: 11px; border: none; background: transparent;")
         desc.setWordWrap(True); vb.addWidget(desc)
 
         row = QHBoxLayout(); row.setSpacing(8)

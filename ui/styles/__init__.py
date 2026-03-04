@@ -13,17 +13,18 @@
 #
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-from ui.styles.colors import Colors, DarkTheme
-from ui.styles.components import ComponentStyles
+# ui/styles/__init__.py
+from ui.styles.colors import Colors, DarkTheme, ThemeProxy, get_current_theme
 from ui.styles.light_theme import LightTheme
 from ui.styles.theme_registry import ThemeRegistry, ThemeType, ThemeDefinition
+from ui.styles.components import STYLES, refresh_styles
+
+# Geriye dönük uyumluluk — ComponentStyles'ı import edenler için
+from ui.styles.components import ComponentStyles
 
 __all__ = [
-    "Colors",
-    "DarkTheme",
-    "LightTheme",
-    "ComponentStyles",
-    "ThemeRegistry",
-    "ThemeType",
-    "ThemeDefinition",
+    "Colors", "DarkTheme", "LightTheme",
+    "ThemeProxy", "get_current_theme",
+    "STYLES", "ComponentStyles", "refresh_styles",
+    "ThemeRegistry", "ThemeType", "ThemeDefinition",
 ]

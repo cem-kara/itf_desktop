@@ -3,13 +3,15 @@
 #
 #  İKİ KATMANLI PALET SİSTEMİ
 #  ┌─ Colors     ─ Ham hex değerleri, global renk paleti
-#  └─ DarkTheme  ─ Anlamsal (semantic) tasarım token'ları
+#  ├─ DarkTheme  ─ Anlamsal (semantic) tasarım token'ları
+#  └─ ThemeProxy ─ Runtime tema proxy'si (dinamik tema değişimi)
 #
-#  Kullanım:
-#     from ui.styles.colors import Colors, DarkTheme
+#  Kullanım (bileşen dosyalarında):
+#     from ui.styles.colors import ThemeProxy as C
+#     # C.TEXT_PRIMARY → her zaman aktif temanın rengini döndürür
 #
-#  ⚠  Sayfa/bileşen kodunda doğrudan Colors kullanmayın.
-#     Her zaman DarkTheme token'larını tercih edin.
+#  ⚠  Sayfa/bileşen kodunda DarkTheme'i doğrudan KULLANMAYIN.
+#     ThemeProxy veya get_current_theme() kullanın.
 # ═══════════════════════════════════════════════════════════════
 
 
@@ -80,7 +82,38 @@ class Colors:
     MENU_ITEM   = "#8aa8c8"
 
 
-class DarkTheme:
+# ══════════════════════════════════════════════════════════════
+#  _LiveThemeMeta  —  DarkTheme.XXX erişimini aktif temaya yönlendirir
+#
+#  Projedeki 47 dosyada SIFIR değişiklik gerekir.
+#  DarkTheme.BG_PRIMARY, DarkTheme.ACCENT vb. her çağrıldığında
+#  o anki aktif tema (Dark veya Light) kullanılır.
+#
+#  Nasıl çalışır?
+#    • type.__getattribute__ sınıf attribute erişimini yakalar
+#    • ThemeRegistry'den aktif temayı bulur
+#    • Aktif tema DarkTheme'in kendisiyse → normal değerlere döner
+#    • Başka tema (LightTheme) aktifse → o temadan döner
+#    • Herhangi bir hata durumunda → DarkTheme'in gerçek değerine fallback
+# ══════════════════════════════════════════════════════════════
+class _LiveThemeMeta(type):
+    def __getattribute__(cls, name: str):
+        # Dunder / private isimler → normal class davranışı
+        if name.startswith('_'):
+            return type.__getattribute__(cls, name)
+        try:
+            from ui.styles.theme_registry import ThemeRegistry
+            theme_cls = ThemeRegistry.instance().get_active_theme().theme_class
+            # DarkTheme'in kendisi aktifse → sonsuz döngü önleme
+            if theme_cls is cls:
+                return type.__getattribute__(cls, name)
+            return getattr(theme_cls, name)
+        except Exception:
+            # Herhangi bir hata → DarkTheme'in gerçek değeri (güvenli)
+            return type.__getattribute__(cls, name)
+
+
+class DarkTheme(metaclass=_LiveThemeMeta):
     """
     Medikal koyu mavi dark tema — anlamsal tasarım token'ları.
 
@@ -95,41 +128,34 @@ class DarkTheme:
     MONOSPACE = "JetBrains Mono"   # Tablolar, input'lar, KPI değerleri
 
     # ── Zemin katmanları ─────────────────────────────────────────
-    #    BG_PRIMARY  : Ana pencere zemini
-    #    BG_SECONDARY: Panel / kart zemini
-    #    BG_TERTIARY : Zebra satır, gömülü alan (= BG_PRIMARY, bilerek)
-    #    BG_ELEVATED : Popup, tooltip, yükseltilmiş bileşen
     BG_PRIMARY   = "#0d1117"
     BG_SECONDARY = "#121820"
-    BG_TERTIARY  = "#0d1117"   # ← BG_PRIMARY ile aynı (tablo zebra zemin)
+    BG_TERTIARY  = "#0d1117"
     BG_ELEVATED  = "#1a2030"
     BG_HOVER     = "rgba(61,142,245,0.06)"
     BG_SELECTED  = "rgba(61,142,245,0.14)"
 
     # ── Kenarlıklar ──────────────────────────────────────────────
-    #    BORDER_PRIMARY  : Varsayılan kenarlık
-    #    BORDER_SECONDARY: Çok ince / iç kenarlık
-    #    BORDER_STRONG   : Belirgin kenarlık, hover'da kullanılır
-    #    BORDER_FOCUS    : Odak halkası rengi (mavi)
     BORDER_PRIMARY   = "#1e2d3d"
     BORDER_SECONDARY = "#253545"
-    BORDER_STRONG    = "#253545"   # BORDER_SECONDARY ile aynı — bağımsız güncelleme için ayrı tutuldu
+    BORDER_STRONG    = "#253545"
     BORDER_FOCUS     = "#3d8ef5"
 
     # ── Metin ────────────────────────────────────────────────────
-    TEXT_PRIMARY   = "#e8edf5"   # Birincil metin — parlak beyaza yakın
-    TEXT_SECONDARY = "#8fa3b8"   # İkincil metin — mavi-gri
-    TEXT_MUTED     = "#4d6070"   # Açıklama, yardımcı metin
-    TEXT_DISABLED  = "#263850"   # Devre dışı bileşen metni
-    TEXT_TABLE_HEADER = "#c7dcf1"   # Tablo başlık metni — koyu mavi
+    TEXT_PRIMARY      = "#e8edf5"
+    TEXT_SECONDARY    = "#8fa3b8"
+    TEXT_MUTED        = "#4d6070"
+    TEXT_DISABLED     = "#263850"
+    TEXT_TABLE_HEADER = "#c7dcf1"
+
     # ── Input alanları ───────────────────────────────────────────
-    INPUT_BG           = "#1a2030"   # = BG_ELEVATED
-    INPUT_BORDER       = "#1e2d3d"   # = BORDER_PRIMARY
-    INPUT_BORDER_FOCUS = "#3d8ef5"   # = BORDER_FOCUS
+    INPUT_BG           = "#1a2030"
+    INPUT_BORDER       = "#1e2d3d"
+    INPUT_BORDER_FOCUS = "#3d8ef5"
 
     # ── Vurgu (Accent) ───────────────────────────────────────────
-    ACCENT    = "#3d8ef5"              # Ana vurgu rengi — mavi
-    ACCENT2   = "#20c0d8"              # İkincil vurgu — cyan
+    ACCENT    = "#3d8ef5"
+    ACCENT2   = "#20c0d8"
     ACCENT_BG = "rgba(61,142,245,0.12)"
 
     # ── Butonlar ─────────────────────────────────────────────────
@@ -160,21 +186,64 @@ class DarkTheme:
     STATUS_INFO    = "#3d8ef5"
 
     # ── Badge RGBA (r, g, b, alpha) ──────────────────────────────
-    STATE_ACTIVE  = (16,  185, 129, 35)   # Yeşil — aktif
-    STATE_PASSIVE = (239, 68,  68,  35)   # Kırmızı — pasif / arıza
-    STATE_LEAVE   = (245, 158, 11,  35)   # Sarı — izinli
+    STATE_ACTIVE  = (16,  185, 129, 35)
+    STATE_PASSIVE = (239, 68,  68,  35)
+    STATE_LEAVE   = (245, 158, 11,  35)
 
-    RKE_PURP= "#a855f7"
+    RKE_PURP = "#a855f7"
 
 
+# ══════════════════════════════════════════════════════════════
+#  ThemeProxy — Runtime tema değişimi için dinamik proxy
+# ══════════════════════════════════════════════════════════════
+
+class _ThemeProxyMeta(type):
+    """
+    ThemeProxy için metaclass.
+    Sınıf üzerinde yapılan attribute erişimlerini (C.BG_PRIMARY gibi)
+    her seferinde aktif temaya yönlendirir.
+    """
+    def __getattr__(cls, name: str):
+        # ThemeRegistry import'u döngüsel import'u önlemek için burada
+        from ui.styles.theme_registry import ThemeRegistry
+        theme_def = ThemeRegistry.instance().get_active_theme()
+        theme_cls = theme_def.theme_class
+        try:
+            return getattr(theme_cls, name)
+        except AttributeError:
+            # Fallback: DarkTheme'den dene
+            return getattr(DarkTheme, name)
+
+
+class ThemeProxy(metaclass=_ThemeProxyMeta):
+    """
+    Aktif temaya dinamik erişim sağlayan proxy sınıfı.
+
+    Kullanım (components.py, page dosyaları):
+        from ui.styles.colors import ThemeProxy as C
+        color = C.TEXT_PRIMARY   # → aktif temanın rengi
+
+    Bu sayede tema değiştiğinde tüm get_styles() çağrıları
+    güncel renkleri döndürür.
+    """
+    pass
+
+
+def get_current_theme():
+    """Aktif tema sınıfını döndür (DarkTheme veya LightTheme)."""
+    from ui.styles.theme_registry import ThemeRegistry
+    return ThemeRegistry.instance().get_active_theme().theme_class
+
+
+# Geriye dönük uyumluluk — eski kod kırmak istemiyorsak:
 C = {
-    "red": getattr(DarkTheme, "DANGER", getattr(DarkTheme, "STATUS_ERROR", "#f75f5f")),
-    "amber": getattr(DarkTheme, "WARNING", getattr(DarkTheme, "STATUS_WARNING", "#f5a623")),
-    "green": getattr(DarkTheme, "SUCCESS", getattr(DarkTheme, "STATUS_SUCCESS", "#3ecf8e")),
-    "accent": getattr(DarkTheme, "ACCENT", "#4f8ef7"),
-    "muted": getattr(DarkTheme, "TEXT_MUTED", "#5a6278"),
-    "surface": getattr(DarkTheme, "SURFACE", getattr(DarkTheme, "BG_SECONDARY", "#13161d")),
-    "panel": getattr(DarkTheme, "PANEL", getattr(DarkTheme, "BG_ELEVATED", "#191d26")),
-    "border": getattr(DarkTheme, "BORDER", getattr(DarkTheme, "BORDER_PRIMARY", "#242938")),
-    "text": getattr(DarkTheme, "TEXT_PRIMARY", "#eef0f5"),
+    "red":     getattr(DarkTheme, "STATUS_ERROR",   "#f75f5f"),
+    "amber":   getattr(DarkTheme, "STATUS_WARNING",  "#f5a623"),
+    "green":   getattr(DarkTheme, "STATUS_SUCCESS",  "#3ecf8e"),
+    "accent":  getattr(DarkTheme, "ACCENT",          "#4f8ef7"),
+    "muted":   getattr(DarkTheme, "TEXT_MUTED",      "#5a6278"),
+    "surface": getattr(DarkTheme, "BG_SECONDARY",    "#13161d"),
+    "panel":   getattr(DarkTheme, "BG_ELEVATED",     "#191d26"),
+    "border":  getattr(DarkTheme, "BORDER_PRIMARY",  "#242938"),
+    "text":    getattr(DarkTheme, "TEXT_PRIMARY",    "#eef0f5"),
 }

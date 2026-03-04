@@ -280,7 +280,7 @@ class RKERaporPenceresi(QWidget):
     # â”€â”€ KPI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     def _mk_kpi_bar(self) -> QWidget:
         bar=QWidget(); bar.setFixedHeight(68)
-        bar.setStyleSheet(f"background:{_BG1};border-bottom:1px solid {_BD};")
+        bar.setStyleSheet("border-bottom: 1px solid {_BD};")
         hl=QHBoxLayout(bar); hl.setContentsMargins(0,0,0,0); hl.setSpacing(1)
         for key,title,val,color in [
             ("toplam","TOPLAM KAYIT","0",_BLUE),
@@ -296,7 +296,7 @@ class RKERaporPenceresi(QWidget):
         w=QWidget(); w.setStyleSheet(f"background:{_BG1};")
         hl=QHBoxLayout(w); hl.setContentsMargins(0,0,0,0); hl.setSpacing(0)
         accent=QFrame(); accent.setFixedWidth(3)
-        accent.setStyleSheet(f"background:{color};border:none;")
+        accent.setStyleSheet("border: none;")
         content=QWidget(); content.setStyleSheet(f"background:{_BG1};")
         vl=QVBoxLayout(content); vl.setContentsMargins(14,8,14,8); vl.setSpacing(2)
         lt=QLabel(title)
@@ -312,7 +312,7 @@ class RKERaporPenceresi(QWidget):
     # â”€â”€ KONTROL PANELİ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     def _mk_control_panel(self) -> QWidget:
         outer=QWidget(); outer.setFixedHeight(110)
-        outer.setStyleSheet(f"background:{_BG1};border-bottom:1px solid {_BD};")
+        outer.setStyleSheet("border-bottom: 1px solid {_BD};")
         hl=QHBoxLayout(outer); hl.setContentsMargins(16,10,16,10); hl.setSpacing(20)
 
         # â”€â”€ Rapor Türü â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -355,7 +355,7 @@ class RKERaporPenceresi(QWidget):
                                ("cmb_birim","BİRİM",160),("cmb_tarih","İŞLEM TARİHİ",150)]:
             col=QVBoxLayout(); col.setSpacing(4); col.setContentsMargins(0,0,0,0)
             l=QLabel(title)
-            l.setStyleSheet(f"color:{_TX2};font-family:{_MONO};font-size:8px;font-weight:700;letter-spacing:1px;")
+            l.setStyleSheet("font-family: {_MONO}; font-size: 8px; font-weight: 700; letter-spacing: 1px;")
             w=QComboBox(); w.setFixedHeight(28); w.setMinimumWidth(mw); w.setStyleSheet(_S_COMBO)
             col.addWidget(l); col.addWidget(w); fh.addLayout(col)
             setattr(self,attr,w)
@@ -423,12 +423,12 @@ class RKERaporPenceresi(QWidget):
         vl.addWidget(self.tablo,1)
 
         foot=QWidget(); foot.setFixedHeight(30)
-        foot.setStyleSheet(f"background:{_BG1};border-top:1px solid {_BD};")
+        foot.setStyleSheet("border-top: 1px solid {_BD};")
         fl=QHBoxLayout(foot); fl.setContentsMargins(12,0,12,0)
         self.lbl_durum=QLabel("")
-        self.lbl_durum.setStyleSheet(f"color:{_TX2};font-family:{_MONO};font-size:9px;")
+        self.lbl_durum.setStyleSheet("font-family: {_MONO}; font-size: 9px;")
         self.lbl_sayi=QLabel("0 kayıt")
-        self.lbl_sayi.setStyleSheet(f"color:{_TX2};font-family:{_MONO};font-size:9px;")
+        self.lbl_sayi.setStyleSheet("font-family: {_MONO}; font-size: 9px;")
         fl.addWidget(self.lbl_durum); fl.addStretch(); fl.addWidget(self.lbl_sayi)
         vl.addWidget(foot)
         return panel

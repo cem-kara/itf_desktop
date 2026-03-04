@@ -141,7 +141,10 @@ class ArizaIslemForm(QWidget):
         belge_lay.setSpacing(8)
         
         self.lbl_rapor_belge = QLabel("Belge seçilmedi")
-        self.lbl_rapor_belge.setStyleSheet(S.get("info_label", f"color: {DarkTheme.TEXT_MUTED}; font-size: 11px;"))
+        self.lbl_rapor_belge.setProperty("color-role", "muted")
+        self.lbl_rapor_belge.setStyleSheet("font-size: 11px;")
+        self.lbl_rapor_belge.style().unpolish(self.lbl_rapor_belge)
+        self.lbl_rapor_belge.style().polish(self.lbl_rapor_belge)
         belge_lay.addWidget(self.lbl_rapor_belge, 1)
         
         self.btn_belge_sec = QPushButton("Belge Seç")
@@ -195,13 +198,19 @@ class ArizaIslemForm(QWidget):
         if file_path:
             self._rapor_belge_path = file_path
             self.lbl_rapor_belge.setText(Path(file_path).name)
-            self.lbl_rapor_belge.setStyleSheet(S.get("info_label", f"color: {DarkTheme.ACCENT}; font-size: 11px;"))
+            self.lbl_rapor_belge.setProperty("color-role", "accent")
+        self.lbl_rapor_belge.setStyleSheet("font-size: 11px;")
+        self.lbl_rapor_belge.style().unpolish(self.lbl_rapor_belge)
+        self.lbl_rapor_belge.style().polish(self.lbl_rapor_belge)
     
     def _clear_rapor_belge(self):
         """Seçilen belgeyi temizle."""
         self._rapor_belge_path = None
         self.lbl_rapor_belge.setText("Belge seçilmedi")
-        self.lbl_rapor_belge.setStyleSheet(S.get("info_label", f"color: {DarkTheme.TEXT_MUTED}; font-size: 11px;"))
+        self.lbl_rapor_belge.setProperty("color-role", "muted")
+        self.lbl_rapor_belge.setStyleSheet("font-size: 11px;")
+        self.lbl_rapor_belge.style().unpolish(self.lbl_rapor_belge)
+        self.lbl_rapor_belge.style().polish(self.lbl_rapor_belge)
 
     def _save(self):
         if self._action_guard and not self._action_guard.check_and_warn(
@@ -461,7 +470,7 @@ class ArizaIslemPenceresi(QWidget):
         )
         v = QLabel("—")
         v.setObjectName("val")
-        v.setStyleSheet(f"font-size:11px;color:{text_pr};background:transparent;")
+        v.setStyleSheet("font-size: 11px; background: transparent;")
         v.setWordWrap(True)
         vl.addWidget(t)
         vl.addWidget(v)

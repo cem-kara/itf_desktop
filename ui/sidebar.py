@@ -187,7 +187,7 @@ class Sidebar(QWidget):
             hl.addWidget(logo_lbl)
         except Exception:
             dot = QLabel("✚")
-            dot.setStyleSheet(f"color:{ACTIVE_TEXT}; font-size:18px; font-weight:900; background:transparent;")
+            dot.setStyleSheet("font-size: 18px; font-weight: 900; background: transparent;")
             hl.addWidget(dot)
 
         # Başlık sütunu

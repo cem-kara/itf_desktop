@@ -53,6 +53,13 @@
         "implemented": true,
         "note": "Kullanıcı ve rol yönetimi"
       }
+    ],
+    "AYARLAR": [
+      {
+        "baslik": "Ayarlar",
+        "implemented": true,
+        "note": "Kullanıcı tercihleri ve sistem ayarları"
+      }  
       
     ]
   }

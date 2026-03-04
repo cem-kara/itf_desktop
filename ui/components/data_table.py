@@ -104,7 +104,10 @@ class DataTableWidget(QWidget):
         toolbar.addWidget(self.search_input, 1)
 
         self.count_label = QLabel("0 kayıt")
-        self.count_label.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 12px; padding-right: 4px;")
+        self.count_label.setProperty("color-role", "muted")
+        self.count_label.setStyleSheet("font-size: 12px;")
+        self.count_label.style().unpolish(self.count_label)
+        self.count_label.style().polish(self.count_label)
         toolbar.addWidget(self.count_label)
 
         layout.addLayout(toolbar)

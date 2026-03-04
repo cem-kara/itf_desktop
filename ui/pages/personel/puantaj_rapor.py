@@ -236,7 +236,9 @@ class PuantajRaporPage(QWidget):
     def _add_sep(self, layout):
         sep = QFrame()
         sep.setFixedWidth(1); sep.setFixedHeight(20)
-        sep.setStyleSheet(f"background-color: {DarkTheme.BORDER_PRIMARY};")
+        sep.setProperty("bg-role", "separator")
+        sep.style().unpolish(sep)
+        sep.style().polish(sep)
         layout.addWidget(sep)
 
     # ═══════════════════════════════════════════
