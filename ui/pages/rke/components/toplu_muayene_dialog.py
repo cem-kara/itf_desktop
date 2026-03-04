@@ -204,7 +204,7 @@ class TopluMuayeneDialog(QDialog):
         self.lbl_file.setStyleSheet("font-size: 10px;")
         self.lbl_file.style().unpolish(self.lbl_file)
         self.lbl_file.style().polish(self.lbl_file)
-        btn_file = QPushButton("📂 Ortak Rapor")
+        btn_file = QPushButton("Ortak Rapor")
         btn_file.setStyleSheet(
             f"QPushButton{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;"
             f"color:{DarkTheme.TEXT_SECONDARY};padding:0 12px;}}QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};}}"

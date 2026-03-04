@@ -119,7 +119,7 @@ class CihazMerkezPage(QWidget):
             f"background:{C.BG_TERTIARY}; border-radius:8px;"
             f"font-size:13px; font-weight:700; color:{C.TEXT_SECONDARY};"
         )
-        self.lbl_avatar.setText("🔧")
+        self.lbl_avatar.setText("")
         top_lay.addWidget(self.lbl_avatar)
 
         # Cihaz ID + detay

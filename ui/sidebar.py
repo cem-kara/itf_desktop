@@ -186,7 +186,7 @@ class Sidebar(QWidget):
             logo_lbl.setFixedSize(22, 22)
             hl.addWidget(logo_lbl)
         except Exception:
-            dot = QLabel("✚")
+            dot = QLabel("+")
             dot.setStyleSheet("font-size: 18px; font-weight: 900; background: transparent;")
             hl.addWidget(dot)
 

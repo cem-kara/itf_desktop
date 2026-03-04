@@ -142,7 +142,7 @@ class BaseDokumanPanel(QWidget):
 
         # Uyarı (entity_id yoksa)
         if not self._entity_id:
-            warn = QLabel("⚠  Lütfen önce kaydı kaydedin")
+            warn = QLabel("Lütfen önce kaydı kaydedin")
             warn.setStyleSheet(
                 f"color:{_ERROR}; font-size:12px;"
                 f"background:rgba(224,92,92,.1);"
@@ -162,7 +162,7 @@ class BaseDokumanPanel(QWidget):
         fl.setContentsMargins(14, 12, 14, 12)
         fl.setSpacing(10)
 
-        fl.addWidget(self._lbl("📄  Belge Yükle", bold=True, color=_ACCENT, size=13))
+        fl.addWidget(self._lbl("Belge Yükle", bold=True, color=_ACCENT, size=13))
 
         # Belge Türü + Seçilen Dosya + Dosya Seç Butonu (yan yana)
         r1 = QHBoxLayout()
@@ -185,7 +185,7 @@ class BaseDokumanPanel(QWidget):
         r1.addWidget(self._inp_dosya, 2)
         
         # Dosya Seç Butonu
-        btn_sec = QPushButton("📁 Dosya Seç")
+        btn_sec = QPushButton("Dosya Seç")
         btn_sec.setStyleSheet(S.get("btn_action", ""))
         btn_sec.setMinimumHeight(30)
         btn_sec.setMaximumWidth(120)
@@ -203,7 +203,7 @@ class BaseDokumanPanel(QWidget):
         self._inp_aciklama.setMinimumHeight(30)
         r2.addWidget(self._inp_aciklama, 2)
         
-        self._btn_yukle = QPushButton("✓ Belgeyi Yükle")
+        self._btn_yukle = QPushButton("Belgeyi Yükle")
         self._btn_yukle.setStyleSheet(S.get("save_btn", ""))
         self._btn_yukle.setMinimumHeight(30)
         self._btn_yukle.setMaximumWidth(140)
@@ -403,7 +403,7 @@ class BaseDokumanPanel(QWidget):
             QMessageBox.critical(self, "Hata", f"Yükleme başarısız:\n{e}")
         finally:
             self._btn_yukle.setEnabled(True)
-            self._btn_yukle.setText("✓ Belgeyi Yükle")
+            self._btn_yukle.setText("Belgeyi Yükle")
 
     def _ac(self, index):
         """Tabloda çift tıklanan dosyayı aç."""

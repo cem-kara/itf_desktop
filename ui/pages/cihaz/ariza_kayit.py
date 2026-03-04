@@ -722,10 +722,10 @@ class ArizaKayitForm(QWidget):
         self.lbl_det_id.setText(f"#{ariza_id[-10:] if len(ariza_id)>10 else ariza_id}")
 
         tarih = to_ui_date(row.get("BaslangicTarihi",""), "")
-        self.lbl_det_tarih.setText(f"📅 {tarih}")
+        self.lbl_det_tarih.setText(f"{tarih}")
 
         tip = row.get("ArizaTipi","—")
-        self.lbl_det_tip.setText(f"🏷 {tip}")
+        self.lbl_det_tip.setText(f"{tip}")
 
         oncelik = row.get("Oncelik","")
         onc_color = _ONCELIK_COLOR.get(oncelik, _C["muted"])
@@ -843,13 +843,13 @@ class ArizaKayitForm(QWidget):
             return
 
         menu = QMenu(self)
-        act_detay = menu.addAction("👁 Detayı Görüntüle")
-        act_duzenle = menu.addAction("✏️ Düzenle")
+        act_detay = menu.addAction("Detayı Görüntüle")
+        act_duzenle = menu.addAction("Düzenle")
         menu.addSeparator()
-        act_islem = menu.addAction("➕ Bu Arızaya İşlem Ekle")
-        act_hatali = menu.addAction("⚠️ Hatalı Giriş Olarak İşaretle")
+        act_islem = menu.addAction("Bu Arızaya İşlem Ekle")
+        act_hatali = menu.addAction("Hatalı Giriş Olarak İşaretle")
         menu.addSeparator()
-        act_ariza = menu.addAction("📋 Yeni Arıza Gir")
+        act_ariza = menu.addAction("Yeni Arıza Gir")
         
         result = menu.exec(self.table.mapToGlobal(pos))
 
