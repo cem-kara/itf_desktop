@@ -31,9 +31,9 @@ class PermissionDialog(QDialog):
         self.setMinimumWidth(360)
 
         self._key = QLineEdit()
-        self._key.setStyleSheet(STYLES["input_field"])
+        # setStyleSheet kaldırıldı: input_field — global QSS kuralı geçerli
         self._desc = QLineEdit()
-        self._desc.setStyleSheet(STYLES["input_field"])
+        # setStyleSheet kaldırıldı: input_field — global QSS kuralı geçerli
 
         form = QFormLayout()
         form.addRow("Permission Key:", self._key)

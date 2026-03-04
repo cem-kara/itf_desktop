@@ -62,7 +62,9 @@ class CihazMerkezPage(QWidget):
     # ═══════════════════════════════════════════════════
 
     def _setup_ui(self):
-        self.setStyleSheet(STYLES["page"])
+        self.setProperty("bg-role", "page")
+        self.style().unpolish(self)
+        self.style().polish(self)
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
@@ -100,7 +102,9 @@ class CihazMerkezPage(QWidget):
 
         btn_back = QPushButton(" Listeye")
         btn_back.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        btn_back.setStyleSheet(STYLES["back_btn"])
+        btn_back.setProperty("style-role", "secondary")
+        btn_back.style().unpolish(btn_back)
+        btn_back.style().polish(btn_back)
         IconRenderer.set_button_icon(btn_back, "arrow_left", color=C.TEXT_SECONDARY, size=14)
         btn_back.setIconSize(QSize(14, 14))
         btn_back.clicked.connect(self.kapat_istegi.emit)
@@ -126,7 +130,9 @@ class CihazMerkezPage(QWidget):
             f"font-size:14px; font-weight:600; color:{C.TEXT_PRIMARY}; background:transparent;"
         )
         self.lbl_detay = QLabel("…")
-        self.lbl_detay.setStyleSheet(STYLES["info_label"])
+        self.lbl_detay.setProperty("style-role", "info")
+        self.lbl_detay.style().unpolish(self.lbl_detay)
+        self.lbl_detay.style().polish(self.lbl_detay)
         info_lay.addWidget(self.lbl_cihaz_id)
         info_lay.addWidget(self.lbl_detay)
         top_lay.addLayout(info_lay)

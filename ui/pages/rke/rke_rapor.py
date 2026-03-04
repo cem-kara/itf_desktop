@@ -29,8 +29,8 @@ _RED  = DarkTheme.STATUS_ERROR; _AMBER= DarkTheme.STATUS_WARNING; _GREEN= DarkTh
 _BLUE = DarkTheme.ACCENT; _CYAN = DarkTheme.ACCENT2; _PURP = DarkTheme.RKE_PURP
 _MONO = DarkTheme.MONOSPACE
 
-_S_COMBO = STYLES["input_combo"]
-_S_TABLE = STYLES["table"]
+# _S_COMBO kaldırıldı — global QSS kuralı geçerli
+# _S_TABLE kaldırıldı — global QSS kuralı geçerli
 
 
 # ==================================================================

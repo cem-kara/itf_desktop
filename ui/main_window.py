@@ -794,62 +794,18 @@ class MainWindow(QMainWindow):
     @Slot(str)
     def _on_theme_changed(self, theme_name: str):
         """
-        Tema değiştiğinde tüm sayfaları yıkıp yeniden oluşturmaya hazırlar.
+        Tema değiştiğinde UI'ı günceller.
 
-        Neden unpolish/polish yetmez?
-        Her sayfanın __init__'inde setStyleSheet() ile renk yazılmaz — setProperty kullanılır.
-        satırları string olarak widget'a yazılır. Tema değişse de bu stringler
-        widget içinde saklı kalır — unpolish/polish onları yeniden değerlendirmez.
-
-        Çözüm: Tüm önbelleğe alınmış sayfaları stack'ten kaldır ve sil.
-        Kullanıcı menüden tekrar tıkladığında sayfa yeni tema renkleriyle
-        sıfırdan oluşturulur (_create_page lazy-load yapıyor).
+        Aşama 2 sonrası: Tüm renkler QSS property selector'larından geliyor.
+        app.setStyleSheet() çağrısı (ThemeManager içinde) yeni QSS'i zaten uyguladı.
+        Burada sadece Qt'nin style cache'ini temizlemek yeterli — sayfa yıkmaya gerek yok.
         """
-        logger.info(f"MainWindow tema değişikliği: {theme_name} — sayfalar yeniden oluşturulacak")
-
+        logger.info(f"Tema değiştirildi: {theme_name} — UI yenileniyor")
         try:
-            # 1. Hangi sayfa şu an gösteriliyor? (settings sayfası hariç sıfırla)
-            current = self.stack.currentWidget()
-
-            # 2. Settings sayfası dışındaki tüm önbelleklenmiş sayfaları yıkıyoruz.
-            #    Settings sayfasını koruyoruz — kullanıcı tema seçimini oradan yapıyor,
-            #    kapatırsak uygulama gösterecek sayfa bulamaz.
-            keys_to_remove = []
-            for key, widget in list(self._pages.items()):
-                if widget is current:
-                    continue   # Aktif sayfayı en sona bırak
-                try:
-                    self.stack.removeWidget(widget)
-                    widget.deleteLater()
-                    keys_to_remove.append(key)
-                    logger.debug(f"Sayfa kaldırıldı: {key}")
-                except Exception as e:
-                    logger.debug(f"Sayfa kaldırma hatası [{key}]: {e}")
-
-            for key in keys_to_remove:
-                self._pages.pop(key, None)
-
-            # 3. Aktif sayfa da yeniden oluşturulsun: stack'te welcome ekrana dön,
-            #    aktif sayfayı da kaldır (bir sonraki menü tıklamasında yeniden açılır)
-            if current and current is not self._welcome:
-                # Aktif sayfanın key'ini bul
-                active_key = next((k for k, v in self._pages.items() if v is current), None)
-                try:
-                    self.stack.setCurrentWidget(self._welcome)
-                    self.stack.removeWidget(current)
-                    current.deleteLater()
-                    if active_key:
-                        self._pages.pop(active_key, None)
-                except Exception as e:
-                    logger.debug(f"Aktif sayfa kaldırma hatası: {e}")
-
-            # 4. MainWindow ve sabit bileşenleri (sidebar vb.) yenile
+            # Tüm pencereyi yenile — alt widget'lar otomatik güncellenir
             self.style().unpolish(self)
             self.style().polish(self)
             self.update()
-            self.repaint()
-
-            logger.info(f"Tema '{theme_name}' uygulandı — {len(keys_to_remove)} sayfa sıfırlandı")
-
+            logger.info(f"Tema '{theme_name}' uygulandı")
         except Exception as e:
-            logger.error(f"Tema değişikliği işleme hatası: {e}", exc_info=True)
+            logger.error(f"Tema yenileme hatası: {e}", exc_info=True)

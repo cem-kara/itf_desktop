@@ -51,7 +51,9 @@ class IzinFHSZPuantajMerkezPage(QWidget):
     # ═══════════════════════════════════════════════════
 
     def _setup_ui(self):
-        self.setStyleSheet(STYLES["page"])
+        self.setProperty("bg-role", "page")
+        self.style().unpolish(self)
+        self.style().polish(self)
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
@@ -94,7 +96,9 @@ class IzinFHSZPuantajMerkezPage(QWidget):
         btn_kapat = QPushButton("Kapat")
         btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_kapat.setToolTip("Kapat")
-        btn_kapat.setStyleSheet(STYLES["close_btn"])
+        btn_kapat.setProperty("style-role", "danger")
+        btn_kapat.style().unpolish(btn_kapat)
+        btn_kapat.style().polish(btn_kapat)
         btn_kapat.clicked.connect(self.kapat_istegi.emit)
         IconRenderer.set_button_icon(btn_kapat, "x", color=C.TEXT_PRIMARY, size=14)
         top_lay.addWidget(btn_kapat)

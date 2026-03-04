@@ -13,11 +13,11 @@ from ui.styles.colors import DarkTheme
 from ui.styles.components import STYLES
 
 
-_S_PAGE = STYLES["page"]
-_S_DATE = STYLES["input_date"]
-_S_COMBO = STYLES["input_combo"]
-_S_TABLE = STYLES["table"]
-_S_PBAR = STYLES["progress"]
+# _S_PAGE kaldırıldı — global QSS kuralı geçerli
+# _S_DATE kaldırıldı — global QSS kuralı geçerli
+# _S_COMBO kaldırıldı — global QSS kuralı geçerli
+# _S_TABLE kaldırıldı — global QSS kuralı geçerli
+# _S_PBAR kaldırıldı — global QSS kuralı geçerli
 
 
 class TopluMuayeneDialog(QDialog):
@@ -49,7 +49,7 @@ class TopluMuayeneDialog(QDialog):
 
         self.setWindowTitle(f"Toplu Muayene - {len(self.ekipmanlar)} Ekipman")
         self.resize(640, 600)
-        self.setStyleSheet(_S_PAGE)
+        # setStyleSheet kaldırıldı (_S_PAGE) — global QSS
         self._setup_ui()
 
     def _setup_ui(self):
@@ -65,7 +65,7 @@ class TopluMuayeneDialog(QDialog):
         )
         gl = QVBoxLayout(grp_list)
         lst = QListWidget()
-        lst.setStyleSheet(_S_TABLE)
+        # setStyleSheet kaldırıldı (_S_TABLE) — global QSS
         lst.setFixedHeight(90)
         lst.addItems(self.ekipmanlar)
         gl.addWidget(lst)
@@ -83,10 +83,10 @@ class TopluMuayeneDialog(QDialog):
         hf.setSpacing(12)
         self.dt_fiz = QDateEdit(QDate.currentDate())
         self.dt_fiz.setCalendarPopup(True)
-        self.dt_fiz.setStyleSheet(_S_DATE)
+        # setStyleSheet kaldırıldı (_S_DATE) — global QSS
         self.dt_fiz.setFixedHeight(28)
         self.cmb_fiz = QComboBox()
-        self.cmb_fiz.setStyleSheet(_S_COMBO)
+        # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_fiz.setFixedHeight(28)
         self.cmb_fiz.addItems(["Kullanıma Uygun", "Kullanıma Uygun Değil"])
         lbl_t = QLabel("Tarih:")
@@ -118,10 +118,10 @@ class TopluMuayeneDialog(QDialog):
         hs.setSpacing(12)
         self.dt_sko = QDateEdit(QDate.currentDate())
         self.dt_sko.setCalendarPopup(True)
-        self.dt_sko.setStyleSheet(_S_DATE)
+        # setStyleSheet kaldırıldı (_S_DATE) — global QSS
         self.dt_sko.setFixedHeight(28)
         self.cmb_sko = QComboBox()
-        self.cmb_sko.setStyleSheet(_S_COMBO)
+        # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_sko.setFixedHeight(28)
         self.cmb_sko.addItems(["Kullanıma Uygun", "Kullanıma Uygun Değil", "Yapılmadı"])
         lbl_t2 = QLabel("Tarih:")
@@ -158,7 +158,7 @@ class TopluMuayeneDialog(QDialog):
         lbl_ke.style().polish(lbl_ke)
         self.cmb_kontrol = QComboBox()
         self.cmb_kontrol.setEditable(True)
-        self.cmb_kontrol.setStyleSheet(_S_COMBO)
+        # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_kontrol.setFixedHeight(28)
         self.cmb_kontrol.addItems(self.kontrol_listesi)
         if self.kullanici_adi:
@@ -171,7 +171,7 @@ class TopluMuayeneDialog(QDialog):
         lbl_bs.style().polish(lbl_bs)
         self.cmb_sorumlu = QComboBox()
         self.cmb_sorumlu.setEditable(True)
-        self.cmb_sorumlu.setStyleSheet(_S_COMBO)
+        # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_sorumlu.setFixedHeight(28)
         self.cmb_sorumlu.addItems(self.sorumlu_listesi)
 
@@ -192,7 +192,7 @@ class TopluMuayeneDialog(QDialog):
             return
 
         self.cmb_aciklama = self._checkable_combo_cls()
-        self.cmb_aciklama.setStyleSheet(_S_COMBO)
+        # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_aciklama.setFixedHeight(28)
         self.cmb_aciklama.addItems(self.teknik_aciklamalar)
         og.addWidget(lbl_acik, 1, 0, 1, 1)
@@ -219,7 +219,7 @@ class TopluMuayeneDialog(QDialog):
         self.pbar = QProgressBar()
         self.pbar.setVisible(False)
         self.pbar.setFixedHeight(3)
-        self.pbar.setStyleSheet(_S_PBAR)
+        # setStyleSheet kaldırıldı (_S_PBAR) — global QSS
         root.addWidget(self.pbar)
 
         btn_row = QHBoxLayout()

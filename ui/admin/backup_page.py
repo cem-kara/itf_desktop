@@ -229,7 +229,7 @@ class BackupPage(QWidget):
         # Temizleme
         btn_layout.addWidget(QLabel("Sadece son"))
         self._spin_keep_count = QSpinBox()
-        self._spin_keep_count.setStyleSheet(STYLES["spin"])
+        # setStyleSheet kaldırıldı: spin — global QSS kuralı geçerli
         self._spin_keep_count.setRange(1, 100)
         self._spin_keep_count.setValue(10)
         self._spin_keep_count.setSuffix(" yedek tut")
