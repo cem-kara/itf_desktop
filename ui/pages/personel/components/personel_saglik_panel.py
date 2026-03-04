@@ -276,8 +276,8 @@ class PersonelSaglikPanel(QWidget):
     def load_data(self):
         if not self.db or not self.personel_id: return
         try:
-            registry = get_registry(self.db)
-            repo = registry.get("Personel_Saglik_Takip")
+            from core.di import get_saglik_service as _sf
+            repo = _sf(self.db)._r.get("Personel_Saglik_Takip")
             all_records = repo.get_all()
             
             self.saglik_records = [r for r in all_records if str(r.get("Personelid", "")).strip() == self.personel_id]
@@ -290,7 +290,7 @@ class PersonelSaglikPanel(QWidget):
                 str(r.get("KayitNo", "")).strip() for r in self.saglik_records if str(r.get("KayitNo", "")).strip()
             }
             if kayit_nolari:
-                dokuman_repo = registry.get("Dokumanlar")
+                dokuman_repo = _sf(self.db)._r.get("Dokumanlar")
                 docs = dokuman_repo.get_where({
                     "EntityType": "personel",
                     "EntityId": self.personel_id,
@@ -423,8 +423,8 @@ class PersonelSaglikPanel(QWidget):
         
         # Personel verisini al
         try:
-            registry = get_registry(self.db)
-            personel_repo = registry.get("Personel")
+            from core.di import get_saglik_service as _sf
+            personel_repo = _sf(self.db)._r.get("Personel")
             personel_data = personel_repo.get_by_id(self.personel_id)
             
             if not personel_data:
@@ -455,7 +455,7 @@ class PersonelSaglikPanel(QWidget):
                 "Notlar": aciklama,
             }
 
-            takip_repo = registry.get("Personel_Saglik_Takip")
+            takip_repo = _sf(self.db)._r.get("Personel_Saglik_Takip")
             takip_repo.insert(payload)
             self._last_kayit_no = kayit_no
 

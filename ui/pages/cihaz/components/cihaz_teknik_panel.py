@@ -1,3 +1,4 @@
+from core.di import get_cihaz_service as _get_cihaz_service
 # -*- coding: utf-8 -*-
 """
 Cihaz Teknik Panel
@@ -16,7 +17,7 @@ from PySide6.QtCore import Qt, Signal
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from core.logger import logger
-from database.repository_registry import RepositoryRegistry
+
 from database.table_config import TABLES
 
 C = DarkTheme
@@ -349,7 +350,7 @@ class CihazTeknikPanel(QWidget):
     def _load_data(self):
         if self.db and self.cihaz_id:
             try:
-                registry    = RepositoryRegistry(self.db)
+                registry    = _get_cihaz_service(self.db)._r
                 teknik_repo = registry.get("Cihaz_Teknik")
                 teknik      = teknik_repo.get_by_id(self.cihaz_id)
                 self.teknik_data = teknik if teknik else {"Cihazid": self.cihaz_id}
@@ -412,7 +413,7 @@ class CihazTeknikPanel(QWidget):
             return
 
         try:
-            repo = RepositoryRegistry(self.db).get("Cihaz_Teknik")
+            repo = _get_cihaz_service(self.db)._r.get("Cihaz_Teknik")
             repo.insert(payload)
             self.teknik_data.update(payload)
             QMessageBox.information(self, "Başarılı", "Teknik bilgiler kaydedildi.")

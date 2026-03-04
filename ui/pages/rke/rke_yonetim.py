@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QColor, QCursor
 
-from database.repository_registry import RepositoryRegistry
+from core.di import get_rke_service as _get_rke_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.colors import DarkTheme
 from ui.styles.components import STYLES
@@ -226,7 +226,8 @@ class RKEYonetimPenceresi(QWidget):
             try:
                 from core.di import get_registry
                 self._registry = get_registry(self._db)
-                self._rke_repo = self._registry.get("RKE_List")
+                self._rke_svc = _get_rke_service(self._db)
+                self._rke_repo = self._rke_svc._r.get("RKE_List")
             except Exception as e:
                 from core.logger import logger
                 logger.error(f"Repository başlatma hatası: {e}")
@@ -667,7 +668,7 @@ class RKEYonetimPenceresi(QWidget):
             
             # Muayene listesini yükle
             if self._registry:
-                muayene_repo = self._registry.get("RKE_Muayene")
+                muayene_repo = _get_rke_service(self._db if hasattr(self, "_db") else self.db)._r.get("RKE_Muayene")
                 if muayene_repo:
                     self.muayene_listesi = muayene_repo.get_all()
             

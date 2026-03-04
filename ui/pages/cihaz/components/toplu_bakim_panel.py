@@ -1,3 +1,4 @@
+from core.di import get_cihaz_service as _get_cihaz_service
 # -*- coding: utf-8 -*-
 import time
 from datetime import datetime
@@ -11,7 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.logger import logger
-from database.repository_registry import RepositoryRegistry
+
 from ui.styles.colors import C as _C
 from ui.styles.components import STYLES as S
 
@@ -162,7 +163,7 @@ class TopluBakimPlanPanel(QWidget):
         self.cmb_marka_filter.clear()
         self.cmb_marka_filter.addItem("Tüm Markalar", None)
         try:
-            repo = RepositoryRegistry(self._db).get("Cihazlar")
+            repo = _get_cihaz_service(self._db)._r.get("Cihazlar")
             self._all_cihazlar = repo.get_all() or []
         except Exception as e:
             logger.error(f"Cihaz listesi yüklenemedi: {e}")
@@ -247,7 +248,7 @@ class TopluBakimPlanPanel(QWidget):
                 kayitlar.append(kayit)
 
         try:
-            repo = RepositoryRegistry(self._db).get("Periyodik_Bakim")
+            repo = _get_cihaz_service(self._db)._r.get("Periyodik_Bakim")
             for kayit in kayitlar:
                 repo.insert(kayit)
             self.toplam_plan = len(kayitlar)

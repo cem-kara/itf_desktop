@@ -484,9 +484,8 @@ class MainWindow(QMainWindow):
     def _load_sabitler_cache(self):
         """Sabitler tablosunu cache'e yükler (performans için bir kere)."""
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
-            self._sabitler_cache = registry.get("Sabitler").get_all()
+            from core.di import get_cihaz_service as _cs
+            self._sabitler_cache = _cs(self._db).get_sabitler()
             logger.info(f"Sabitler cache yüklendi: {len(self._sabitler_cache)} kayıt")
         except Exception as e:
             logger.error(f"Sabitler cache yükleme hatası: {e}")

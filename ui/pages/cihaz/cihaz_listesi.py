@@ -16,7 +16,7 @@ from PySide6.QtGui import (
 )
 
 from core.logger import logger
-from database.repository_registry import RepositoryRegistry
+from core.di import get_cihaz_service as _get_cihaz_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
 from ui.styles.components import ComponentStyles, STYLES
@@ -514,10 +514,8 @@ class CihazListesiPage(QWidget):
             self._total_count = 0
             self._all_data = []
 
-            registry = RepositoryRegistry(self._db)
-            cihaz_repo = registry.get("Cihazlar")
-
-            page_data, total = cihaz_repo.get_paginated(
+            svc = _get_cihaz_service(self._db)
+            page_data, total = svc.get_cihaz_paginated(
                 page=self._current_page,
                 page_size=self._page_size
             )
@@ -525,7 +523,7 @@ class CihazListesiPage(QWidget):
             self._total_count = total
 
             self._model.set_data(self._all_data)
-            self._populate_combos(registry)
+            self._populate_combos(svc)
             self._apply_filters()
             self._update_load_more_button()
         except Exception as e:
@@ -539,11 +537,9 @@ class CihazListesiPage(QWidget):
             self.btn_load_more.setEnabled(False)
             self.progress.setVisible(True)
 
-            registry = RepositoryRegistry(self._db)
-            cihaz_repo = registry.get("Cihazlar")
-
+            svc = _get_cihaz_service(self._db)
             self._current_page += 1
-            page_data, _ = cihaz_repo.get_paginated(
+            page_data, _ = svc.get_cihaz_paginated(
                 page=self._current_page,
                 page_size=self._page_size
             )
@@ -600,10 +596,10 @@ class CihazListesiPage(QWidget):
         self._model.set_data(filtered)
         self._update_count()
 
-    def _populate_combos(self, registry):
+    def _populate_combos(self, svc):
         sabitler = []
         try:
-            sabitler = registry.get("Sabitler").get_all()
+            sabitler = svc.get_sabitler()
         except Exception as e:
             logger.debug(f"Sabitler okunamadi: {e}")
 

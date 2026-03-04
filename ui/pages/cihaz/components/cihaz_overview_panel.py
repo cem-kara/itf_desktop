@@ -1,3 +1,4 @@
+from core.di import get_cihaz_service as _get_cihaz_service
 # -*- coding: utf-8 -*-
 """
 Cihaz Overview Panel
@@ -18,7 +19,7 @@ from ui.styles import DarkTheme, Colors
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 from core.logger import logger
-from database.repository_registry import RepositoryRegistry
+
 
 C = DarkTheme
 
@@ -297,7 +298,7 @@ class CihazOverviewPanel(QWidget):
         if not self.db:
             return
         try:
-            registry = RepositoryRegistry(self.db)
+            registry = _get_cihaz_service(self.db)._r
             sabitler = registry.get("Sabitler").get_all()
 
             grouped = {}
@@ -428,7 +429,7 @@ class CihazOverviewPanel(QWidget):
             update_data[key] = val
             
         try:
-            registry = RepositoryRegistry(self.db)
+            registry = _get_cihaz_service(self.db)._r
             repo = registry.get("Cihazlar")
 
             cihaz_id = self.cihaz_data.get("Cihazid")
@@ -459,7 +460,7 @@ class CihazOverviewPanel(QWidget):
         """Veri yenileme (gerekirse)."""
         if self.db and self.cihaz_data.get("Cihazid"):
             try:
-                registry = RepositoryRegistry(self.db)
+                registry = _get_cihaz_service(self.db)._r
                 cihaz_repo = registry.get("Cihazlar")
                 cihazlar = cihaz_repo.get_by_kod(self.cihaz_data.get("Cihazid"), "Cihazid")
                 if cihazlar:

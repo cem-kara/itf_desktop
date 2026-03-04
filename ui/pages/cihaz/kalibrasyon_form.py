@@ -126,8 +126,9 @@ class KalibrasyonKayitForm(QWidget):
         
         # Service layer
         if db:
-            from database.repository_registry import RepositoryRegistry
-            self._svc = KalibrasyonService(RepositoryRegistry(db))
+            from core.di import get_cihaz_service as _gcf
+            self._cihaz_svc = _gcf(db)
+            self._svc = KalibrasyonService(self._cihaz_svc._r)
         else:
             self._svc = None
 

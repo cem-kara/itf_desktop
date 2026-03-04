@@ -50,44 +50,10 @@ class DashboardWorker(QThread):
         db = None
         try:
             from database.sqlite_manager import SQLiteManager
-            from core.di import get_registry
+            from core.di import get_dashboard_service
             db = SQLiteManager(db_path=self._db_path)
-            registry = get_registry(db)
-            today = datetime.now()
-            today_str = today.strftime('%Y-%m-%d')
-
-            six_months_later = (today + timedelta(days=180)).strftime('%Y-%m-%d')
-            data['yaklasan_ndk'] = self._get_count(registry, "Cihazlar",
-                f"BitisTarihi BETWEEN '{today_str}' AND '{six_months_later}'")
-
-            month_start = today.replace(day=1).strftime('%Y-%m-%d')
-            _, last_day = calendar.monthrange(today.year, today.month)
-            month_end = today.replace(day=last_day).strftime('%Y-%m-%d')
-            data['aylik_bakim'] = self._get_count(registry, "Periyodik_Bakim",
-                f"PlanlananTarih BETWEEN '{month_start}' AND '{month_end}' AND Durum = 'Planlandı'")
-            data['aylik_kalibrasyon'] = self._get_count(registry, "Kalibrasyon",
-                f"BitisTarihi BETWEEN '{month_start}' AND '{month_end}' AND Durum = 'Tamamlandı'")
-
-            one_week_ago = (today - timedelta(days=7)).strftime('%Y-%m-%d')
-            data['yeni_arizalar'] = self._get_count(registry, "Cihaz_Ariza",
-                f"BaslangicTarihi >= '{one_week_ago}' AND Durum <> 'Kapatıldı'")
-
-            data['aktif_personel'] = self._get_count(registry, "Personel", "Durum = 'Aktif'")
-            data.update(self._get_monthly_leave_stats(registry))
-
-            one_month_later = (today + timedelta(days=30)).strftime('%Y-%m-%d')
-            data['yaklasan_rke'] = self._get_count(registry, "RKE_List",
-                f"KontrolTarihi BETWEEN '{today_str}' AND '{one_month_later}' AND Durum = 'Planlandı'")
-
-            three_months_later = (today + timedelta(days=90)).strftime('%Y-%m-%d')
-            data['yaklasan_saglik'] = self._get_count(registry, "Personel_Saglik_Takip",
-                f"SonrakiKontrolTarihi BETWEEN '{today_str}' AND '{three_months_later}' AND Durum != 'Pasif'")
-            data['gecmis_saglik'] = self._get_count(registry, "Personel_Saglik_Takip",
-                f"SonrakiKontrolTarihi < '{today_str}' AND SonrakiKontrolTarihi != '' AND Durum != 'Pasif'")
-
-            data['acik_arizalar'] = self._get_count(registry, "Cihaz_Ariza", "Durum = 'Açık'")
-            data['gecmis_kalibrasyon'] = self._get_count(registry, "Kalibrasyon",
-                f"BitisTarihi < '{today_str}' AND BitisTarihi != '' AND Durum = 'Tamamlandı'")
+            svc = get_dashboard_service(db)
+            data.update(svc.get_dashboard_data())
 
             log_stats = LogStatistics.get_log_stats()
             data['hata_log_satir'] = log_stats.get('errors.log', {}).get('lines', 0)

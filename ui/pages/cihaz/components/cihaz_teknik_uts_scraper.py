@@ -411,7 +411,7 @@ class CihazTeknikUtsScraper(QWidget):
         if not self._parsed: return
         self._parsed["Cihazid"] = self.cihaz_id
         try:
-            repo = RepositoryRegistry(self.db).get("Cihaz_Teknik")
+            from core.di import get_cihaz_service as _gcf5; repo = _gcf5(self.db)._r.get("Cihaz_Teknik")
             
             # Mevcut kaydı kontrol et
             existing = repo.get_by_cihaz_id(self.cihaz_id)

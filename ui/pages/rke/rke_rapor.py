@@ -262,8 +262,9 @@ class RKERaporPenceresi(QWidget):
             try:
                 from core.di import get_registry
                 self._registry = get_registry(self._db)
-                self._rke_repo = self._registry.get("RKE_List")
-                self._muayene_repo = self._registry.get("RKE_Muayene")
+                self._rke_svc = _get_rke_service(self._db)
+                self._rke_repo = self._rke_svc._r.get("RKE_List")
+                self._muayene_repo = self._rke_svc._r.get("RKE_Muayene")
             except Exception as e:
                 logger.error(f"Repository baŞlatma hatası: {e}")
 

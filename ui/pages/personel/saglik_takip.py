@@ -423,10 +423,10 @@ class SaglikTakipPage(QWidget):
         if not self._db:
             return
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            personel_repo = registry.get("Personel")
-            takip_repo = registry.get("Personel_Saglik_Takip")
+            from core.di import get_saglik_service as _svc_factory
+            _svc = _svc_factory(self._db)
+            personel_repo = _svc._r.get("Personel")
+            takip_repo = _svc._r.get("Personel_Saglik_Takip")
 
             all_personel = personel_repo.get_all()
             self._personel_rows = [
@@ -703,10 +703,10 @@ class SaglikTakipPage(QWidget):
         }
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            takip_repo = registry.get("Personel_Saglik_Takip")
-            personel_repo = registry.get("Personel")
+            from core.di import get_saglik_service as _svc_factory
+            _svc = _svc_factory(self._db)
+            takip_repo = _svc._r.get("Personel_Saglik_Takip")
+            personel_repo = _svc._r.get("Personel")
             mevcut = takip_repo.get_by_id(payload["KayitNo"])
             if mevcut:
                 takip_repo.update(payload["KayitNo"], payload)
@@ -834,9 +834,9 @@ class SaglikTakipPage(QWidget):
             return
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            takip_repo = registry.get("Personel_Saglik_Takip")
+            from core.di import get_saglik_service as _svc_factory
+            _svc = _svc_factory(self._db)
+            takip_repo = _svc._r.get("Personel_Saglik_Takip")
             mevcut = takip_repo.get_all()
             mevcut_keys = {(str(r.get("Personelid", "")), int(r.get("Yil") or 0)) for r in mevcut}
 

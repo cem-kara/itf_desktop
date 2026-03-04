@@ -257,7 +257,7 @@ class BaseDokumanPanel(QWidget):
             # Cache'den veya DB'den oku
             sabitler = self._sabitler
             if not sabitler:
-                sabitler = RepositoryRegistry(self._db).get("Sabitler").get_all()
+                from core.di import get_cihaz_service as _cs_f; sabitler = _cs_f(self._db).get_sabitler()
 
             turleri = [
                 s.get("MenuEleman", "")
@@ -337,7 +337,7 @@ class BaseDokumanPanel(QWidget):
 
         # ⚠️ DB'de entity gerçekten var mı kontrol et
         try:
-            registry = RepositoryRegistry(self._db)
+            from core.di import get_registry; registry = get_registry(self._db)
             # entity_type'a göre tablo adını belirle
             table_name_map = {
                 "personel": "Personel",
@@ -387,7 +387,7 @@ class BaseDokumanPanel(QWidget):
 
             if self._iliskili_tip == "Personel_Saglik_Takip" and self._iliskili_id:
                 try:
-                    registry = RepositoryRegistry(self._db)
+                    from core.di import get_registry; registry = get_registry(self._db)
                     saglik_repo = registry.get("Personel_Saglik_Takip")
                     saglik_repo.update(self._iliskili_id, {
                         "RaporDosya": sonuc.get("drive_link") or sonuc.get("belge_adi") or ""

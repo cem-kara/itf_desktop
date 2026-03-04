@@ -1,3 +1,4 @@
+from core.di import get_cihaz_service as _get_cihaz_service
 # -*- coding: utf-8 -*-
 """Ariza Islem — ariza üzerinde yapılan işlemleri kaydetme ve görüntüleme."""
 from typing import List, Dict, Any, Optional
@@ -15,7 +16,7 @@ from PySide6.QtGui import QCursor
 from core.date_utils import to_ui_date
 from core.logger import logger
 from core.paths import DATA_DIR
-from database.repository_registry import RepositoryRegistry
+
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
@@ -247,12 +248,12 @@ class ArizaIslemForm(QWidget):
         }
 
         try:
-            repo_islem = RepositoryRegistry(self._db).get("Ariza_Islem")
+            svc = _get_cihaz_service(self._db); repo_islem = svc._r.get("Ariza_Islem")
             repo_islem.insert(data)
 
             # Ana arızanın durumunu güncelle
             try:
-                repo_ariza = RepositoryRegistry(self._db).get("Cihaz_Ariza")
+                repo_ariza = svc._r.get("Cihaz_Ariza")
                 repo_ariza.update(self._ariza_id, {"Durum": yeni_durum})
             except Exception as e:
                 logger.error(f"Arıza durumu güncellenemedi: {e}")
@@ -273,7 +274,7 @@ class ArizaIslemForm(QWidget):
                         logger.info(f"Arıza işlem rapor belgesi kopyalandı: {dst}")
                         
                         # Cihaz_Belgeler tablosuna kaydet
-                        repo_belge = RepositoryRegistry(self._db).get("Cihaz_Belgeler")
+                        repo_belge = svc._r.get("Cihaz_Belgeler")
                         belge_data = {
                             "Cihazid": self._cihaz_id,
                             "BelgeTuru": "Arıza İşlem Raporu",
@@ -510,7 +511,7 @@ class ArizaIslemPenceresi(QWidget):
             return
 
         try:
-            repo = RepositoryRegistry(self._db).get("Ariza_Islem")
+            repo = _get_cihaz_service(self._db)._r.get("Ariza_Islem")
             rows = repo.get_by_kod(self._ariza_id, "Arizaid")
             # En yeni işlemler altta olacak şekilde ters sırala
             rows.sort(key=lambda r: (r.get("Tarih", "") or "", r.get("Saat", "") or ""), reverse=True)

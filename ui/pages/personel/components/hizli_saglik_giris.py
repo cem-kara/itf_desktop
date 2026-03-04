@@ -228,10 +228,10 @@ class HizliSaglikGirisDialog(QDialog):
         }
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            takip_repo = registry.get("Personel_Saglik_Takip")
-            personel_repo = registry.get("Personel")
+            from core.di import get_saglik_service as _sf
+            _svc = _sf(self._db)
+            takip_repo = _svc._r.get("Personel_Saglik_Takip")
+            personel_repo = _svc._r.get("Personel")
             
             takip_repo.insert(payload)
 

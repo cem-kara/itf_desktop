@@ -1,3 +1,4 @@
+from core.di import get_cihaz_service as _get_cihaz_service
 # -*- coding: utf-8 -*-
 """Ariza Girisi Form — Yeni arıza kaydı."""
 from datetime import datetime
@@ -10,7 +11,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.logger import logger
-from database.repository_registry import RepositoryRegistry
+
 from ui.styles.components import STYLES as S
 
 
@@ -178,7 +179,7 @@ class ArizaGirisForm(QWidget):
                 "Durum":           self.cmb_durum.currentText().strip(),
                 "Rapor":           "",
             }
-            RepositoryRegistry(self._db).get("Cihaz_Ariza").insert(record)
+            _get_cihaz_service(self._db).ariza_ekle(record)
             logger.info(f"Arıza kaydedildi: {ariza_id}")
             self._clear()
             self.saved.emit()

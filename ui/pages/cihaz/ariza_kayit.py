@@ -140,8 +140,9 @@ class ArizaKayitForm(QWidget):
         
         # Service layer
         if db:
-            from database.repository_registry import RepositoryRegistry
-            self._svc = ArizaService(RepositoryRegistry(db))
+            from core.di import get_cihaz_service as _gcf4
+            self._cihaz_svc = _gcf4(db)
+            self._svc = ArizaService(self._cihaz_svc._r)
         else:
             self._svc = None
 

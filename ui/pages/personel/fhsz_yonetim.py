@@ -391,18 +391,18 @@ class FHSZYonetimPage(QWidget):
         self.progress.setVisible(True)
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
+            from core.di import get_fhsz_service as _fhsz_factory
+            _svc4 = _fhsz_factory(self._db)
 
             # 1. Personeller
             self._all_personel = registry.get("Personel").get_all()
 
             # 2. İzinler
-            self._all_izin = registry.get("Izin_Giris").get_all()
+            self._all_izin = _svc.get_izin_listesi()
 
             # 3. Tatiller → numpy busday_count formatı
             try:
-                tatiller = registry.get("Tatiller").get_all()
+                tatiller = _svc.get_tatil_gunleri()
                 self._tatil_listesi_np = []
                 for r in tatiller:
                     d = parse_date(r.get("Tarih", ""))
@@ -413,7 +413,8 @@ class FHSZYonetimPage(QWidget):
 
             # 4. Sabitler → Kod="Gorev_Yeri"
             #    MenuEleman = birim adı | Aciklama = "Çalışma Koşulu A / B"
-            sabitler = registry.get("Sabitler").get_all()
+            sabitler_raw = _svc._r.get("Sabitler").get_all()
+            sabitler = sabitler_raw
 
             self._birim_kosul_map = {}
 
@@ -548,8 +549,8 @@ class FHSZYonetimPage(QWidget):
         ay_str = self.cmb_ay.currentText()
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
+            from core.di import get_fhsz_service as _fhsz_factory
+            _svc4 = _fhsz_factory(self._db)
 
             # Mevcut kayıtları kontrol et
             tum_puantaj = registry.get("FHSZ_Puantaj").get_all()
@@ -797,9 +798,9 @@ class FHSZYonetimPage(QWidget):
         ay_str = self.cmb_ay.currentText()
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            repo = registry.get("FHSZ_Puantaj")
+            from core.di import get_fhsz_service as _fhsz_factory
+            _svc3 = _fhsz_factory(self._db)
+            repo = _svc3._r.get("FHSZ_Puantaj")
 
             # Mevcut kayıt kontrol
             tum = repo.get_all()
@@ -890,8 +891,8 @@ class FHSZYonetimPage(QWidget):
         3. sua_hak_edis_hesapla → İzin_Bilgi.SuaCariYilKazanim güncelle
         """
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
+            from core.di import get_fhsz_service as _fhsz_factory
+            _svc4 = _fhsz_factory(self._db)
 
             tum = repo_puantaj.get_all()
             personel_toplam = {}
@@ -905,7 +906,7 @@ class FHSZYonetimPage(QWidget):
                     saat = 0
                 personel_toplam[tc] = personel_toplam.get(tc, 0) + saat
 
-            izin_bilgi = registry.get("Izin_Bilgi")
+            izin_bilgi = _svc4._r.get("Izin_Bilgi")
             for tc, toplam_saat in personel_toplam.items():
                 yeni_hak = sua_hak_edis_hesapla(toplam_saat)
                 try:

@@ -22,7 +22,7 @@ from ui.styles import DarkTheme
 from ui.styles.components import STYLES
 from ui.styles.icons import IconRenderer
 from core.logger import logger
-from database.repository_registry import RepositoryRegistry
+from core.di import get_cihaz_service as _get_cihaz_service
 from ui.pages.cihaz.components.uts_parser import scrape_uts
 from ui.pages.cihaz.components.ariza_detail_panel import CihazArizaPanel
 from ui.pages.cihaz.components.kalibrasyon_detail_panel import KalibrasyonDetailPanel
@@ -188,11 +188,9 @@ class CihazMerkezPage(QWidget):
 
     def _load_data(self):
         try:
-            registry = RepositoryRegistry(self.db)
-            cihaz_repo = registry.get("Cihazlar")
-            
+            svc = _get_cihaz_service(self.db)
             # Cihaz verisini çek
-            cihazlar = cihaz_repo.get_by_kod(self.cihaz_id, "Cihazid")
+            cihazlar = [svc.get_cihaz(self.cihaz_id)] if svc.get_cihaz(self.cihaz_id) else []
             if not cihazlar:
                 QMessageBox.warning(self, "Hata", f"Cihaz bulunamadı: {self.cihaz_id}")
                 self.kapat_istegi.emit()

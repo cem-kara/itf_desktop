@@ -87,7 +87,7 @@ class IslemKaydedici(QThread):
         try:
             # QThread içinde yeni DB bağlantısı oluştur (thread-safe)
             local_db = SQLiteManager(db_path=self._db_path, check_same_thread=False)
-            repo = RepositoryRegistry(local_db).get("Periyodik_Bakim")
+            from core.di import get_cihaz_service as _gcf2; repo = _gcf2(local_db)._r.get("Periyodik_Bakim")
             if self.tip == "INSERT":
                 # veri: List[Dict] - birden fazla kayıt
                 for kayit in self.veri:
@@ -214,8 +214,9 @@ class BakimKayitForm(QWidget):
         
         # Service layer
         if db:
-            from database.repository_registry import RepositoryRegistry
-            self._svc = BakimService(RepositoryRegistry(db))
+            from core.di import get_cihaz_service as _gcf3
+            self._cihaz_svc = _gcf3(db)
+            self._svc = BakimService(self._cihaz_svc._r)
         else:
             self._svc = None
 
