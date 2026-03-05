@@ -1,4 +1,7 @@
 {
+  "theme": "dark",
+  "app_mode": "offline",
+  "auto_sync": false,
   "menu_yapilandirma": {
     "PERSONEL": [
       {
@@ -61,6 +64,5 @@
         "note": "Kullanıcı tercihleri ve sistem ayarları"
       }
     ]
-  },
-  "theme": "dark"
+  }
 }

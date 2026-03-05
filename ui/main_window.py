@@ -511,7 +511,7 @@ class MainWindow(QMainWindow):
             self.sidebar.set_sync_status("Offline mod", self.STATUS_SYNCING_COLOR)
             self._set_sync_status_label("Offline mod", self.STATUS_SYNCING_COLOR)
             return
-        if AppConfig.AUTO_SYNC:
+        if AppConfig.get_auto_sync():
             QTimer.singleShot(3000, self._start_sync)
             self._sync_timer = QTimer(self)
             self._sync_timer.timeout.connect(self._start_sync)

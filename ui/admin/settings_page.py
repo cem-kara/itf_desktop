@@ -34,6 +34,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QDate
 
 from core.logger import logger
+from core.config import AppConfig
 from core.services.settings_service import SettingsService
 from core.validators import validate_not_empty
 from ui.components.formatted_widgets import (
@@ -553,7 +554,7 @@ class SettingsPage(QWidget):
         self._chk_online_mod.setStyleSheet("font-size: 12px; font-weight: 500;")
         self._chk_online_mod.style().unpolish(self._chk_online_mod)
         self._chk_online_mod.style().polish(self._chk_online_mod)
-        self._chk_online_mod.setChecked(True)
+        self._chk_online_mod.setChecked(AppConfig.is_online_mode())
         self._chk_online_mod.stateChanged.connect(self._on_online_mode_changed)
         sistem_layout.addWidget(self._chk_online_mod)
         
@@ -572,7 +573,7 @@ class SettingsPage(QWidget):
         self._chk_auto_sync.setStyleSheet("font-size: 12px; font-weight: 500;")
         self._chk_auto_sync.style().unpolish(self._chk_auto_sync)
         self._chk_auto_sync.style().polish(self._chk_auto_sync)
-        self._chk_auto_sync.setChecked(True)
+        self._chk_auto_sync.setChecked(AppConfig.get_auto_sync())
         self._chk_auto_sync.setEnabled(True)
         sistem_layout.addWidget(self._chk_auto_sync)
         
@@ -1096,17 +1097,17 @@ class SettingsPage(QWidget):
             logger.info(f"Sistem ayarları güncellendi - Mod: {mod_text}")
             logger.info(f"Online Mod: {is_online}, Otomatik Senkronizasyon: {auto_sync}")
             
-            # TODO: Ayarları veritabanında veya config dosyasında kaydedecek
-            # config_service.save_system_settings({
-            #     "online_mode": is_online,
-            #     "auto_sync": auto_sync
-            # })
-            
+            # AppConfig üzerinden kaydet (settings.json'a yazar)
+            mode = AppConfig.MODE_ONLINE if is_online else AppConfig.MODE_OFFLINE
+            AppConfig.set_app_mode(mode, persist=True)
+            AppConfig.set_auto_sync(auto_sync, persist=True)
+
             QMessageBox.information(
                 self,
                 "Başarılı",
                 f"Sistem ayarları kaydedilmiştir.\n\n"
-                f"Mevcut Mod: {mod_text}"
+                f"Mevcut Mod: {mod_text}\n"
+                f"Yeniden başlatmada geçerli olacaktır."
             )
         except Exception as e:
             logger.error(f"Sistem ayarları kaydetme hatası: {e}")

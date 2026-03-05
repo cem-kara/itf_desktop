@@ -1,4 +1,3 @@
-import json
 import os
 
 # Tema okuma/yazma için settings.py kullanan yardımcı
@@ -46,9 +45,9 @@ class AppConfig:
         """
         Çalışma modunu şu öncelik sırasıyla belirler:
         1) APP_MODE environment variable
-        2) ayarlar.json içindeki app_mode alanı
+        2) ayarlar.json içindeki app_mode alanı  (settings.get ile)
         3) credentials.json yoksa offline fallback
-        4) varsayılan online
+        4) varsayılan offline
         """
         env_mode = cls._normalize_mode(os.getenv("APP_MODE"))
         if env_mode:
@@ -57,16 +56,12 @@ class AppConfig:
             return cls.APP_MODE
 
         try:
-            if os.path.exists(cls.SETTINGS_PATH):
-                with open(cls.SETTINGS_PATH, "r", encoding="utf-8") as f:
-                    settings = json.load(f)
-                file_mode = cls._normalize_mode(settings.get("app_mode"))
-                if file_mode:
-                    cls.APP_MODE = file_mode
-                    cls.APP_MODE_SOURCE = "settings"
-                    return cls.APP_MODE
+            file_mode = cls._normalize_mode(_app_settings.get("app_mode"))
+            if file_mode:
+                cls.APP_MODE = file_mode
+                cls.APP_MODE_SOURCE = "settings"
+                return cls.APP_MODE
         except Exception:
-            # Settings parse/read hatası modu bozmasın
             pass
 
         if not os.path.exists(cls.CREDENTIALS_PATH):
@@ -95,19 +90,25 @@ class AppConfig:
         cls.APP_MODE = normalized
         cls.APP_MODE_SOURCE = "runtime"
 
-        if persist:
-            settings = {}
-            if os.path.exists(cls.SETTINGS_PATH):
-                try:
-                    with open(cls.SETTINGS_PATH, "r", encoding="utf-8") as f:
-                        settings = json.load(f)
-                except Exception:
-                    settings = {}
-            settings["app_mode"] = normalized
-            with open(cls.SETTINGS_PATH, "w", encoding="utf-8") as f:
-                json.dump(settings, f, ensure_ascii=False, indent=2)
+        if persist and _app_settings:
+            _app_settings.set("app_mode", normalized)
 
         return cls.APP_MODE
+
+    @classmethod
+    def set_auto_sync(cls, enabled: bool, persist=False):
+        """Otomatik senkronizasyonu etkinleştir/devre dışı bırak."""
+        cls.AUTO_SYNC = enabled
+        if persist and _app_settings:
+            _app_settings.set("auto_sync", enabled)
+        return cls.AUTO_SYNC
+
+    @classmethod
+    def get_auto_sync(cls) -> bool:
+        """Kaydedilmiş auto_sync değerini oku."""
+        if _app_settings:
+            return bool(_app_settings.get("auto_sync", cls.AUTO_SYNC))
+        return cls.AUTO_SYNC
 
 
 # Import anında modu çözümle (env/settings/credentials)
