@@ -18,7 +18,6 @@ from core.date_utils import to_ui_date, parse_date, to_db_date
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.colors import DarkTheme as C, Colors
 from ui.styles.components import STYLES as S
-from ui.theme_manager import ThemeManager
 
 SAGLIK_COLUMNS = [
     ("MuayeneTarihi", "Muayene Tarihi", 120),
@@ -41,7 +40,7 @@ class SaglikTableModel(BaseTableModel):
             return "Aç" if row.get("_RaporDoc") else "-"
         value = row.get(key, "")
         if "Tarihi" in key:
-            return to_ui_date(value, "-")
+            return self._fmt_date(value, "-")
         return str(value) if value else ""
 
     def _align(self, key):
@@ -206,7 +205,6 @@ class PersonelSaglikPanel(QWidget):
             de.setCalendarPopup(True)
             de.setMinimumHeight(32)
             de.setStyleSheet(S["date"])
-            ThemeManager.setup_calendar_popup(de)
             form_grid.addWidget(de, idx, 1)
             
             # Durum
@@ -276,8 +274,8 @@ class PersonelSaglikPanel(QWidget):
     def load_data(self):
         if not self.db or not self.personel_id: return
         try:
-            registry = get_registry(self.db)
-            repo = registry.get("Personel_Saglik_Takip")
+            from core.di import get_saglik_service as _sf
+            repo = _sf(self.db)._r.get("Personel_Saglik_Takip")
             all_records = repo.get_all()
             
             self.saglik_records = [r for r in all_records if str(r.get("Personelid", "")).strip() == self.personel_id]
@@ -290,7 +288,7 @@ class PersonelSaglikPanel(QWidget):
                 str(r.get("KayitNo", "")).strip() for r in self.saglik_records if str(r.get("KayitNo", "")).strip()
             }
             if kayit_nolari:
-                dokuman_repo = registry.get("Dokumanlar")
+                dokuman_repo = _sf(self.db)._r.get("Dokumanlar")
                 docs = dokuman_repo.get_where({
                     "EntityType": "personel",
                     "EntityId": self.personel_id,
@@ -423,8 +421,8 @@ class PersonelSaglikPanel(QWidget):
         
         # Personel verisini al
         try:
-            registry = get_registry(self.db)
-            personel_repo = registry.get("Personel")
+            from core.di import get_saglik_service as _sf
+            personel_repo = _sf(self.db)._r.get("Personel")
             personel_data = personel_repo.get_by_id(self.personel_id)
             
             if not personel_data:
@@ -455,7 +453,7 @@ class PersonelSaglikPanel(QWidget):
                 "Notlar": aciklama,
             }
 
-            takip_repo = registry.get("Personel_Saglik_Takip")
+            takip_repo = _sf(self.db)._r.get("Personel_Saglik_Takip")
             takip_repo.insert(payload)
             self._last_kayit_no = kayit_no
 

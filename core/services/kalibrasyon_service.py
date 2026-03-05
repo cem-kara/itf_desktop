@@ -56,7 +56,7 @@ class KalibrasyonService:
         try:
             repo = self._r.get("Kalibrasyon")
             if guncelle:
-                kal_id = veri.get("KalibrasyonId")
+                kal_id = veri.get("Kaid")
                 if not kal_id:
                     return False
                 repo.update(kal_id, veri)

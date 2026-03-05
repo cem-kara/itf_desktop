@@ -1,6 +1,13 @@
 # ui/styles/icons.py
+#
+# SVG ikonlar Lucide Icons projesinden esinlenilerek hazırlanmıştır.
+# Lucide Icons — MIT Lisansı — https://lucide.dev
+# Copyright (c) 2020 Lucide Contributors
+#
+# Tabler Icons — MIT Lisansı — https://tabler.io/icons  
+# Copyright (c) 2020 Paweł Kuna
 # -------------------------------------------------------------
-# Profesyonel SVG kon Ktphanesi  PySide6 Uyumlu
+# Profesyonel SVG İkon Kütüphanesi  PySide6 Uyumlu
 #
 # Kullanm:
 #   from ui.styles.icons import Icons, IconRenderer
@@ -556,10 +563,10 @@ def _build_svg(paths: str, color: str, size: int) -> str:
 def _render_svg(svg_str: str, size: int) -> QPixmap:
     """SVG string'i QPixmap'e dntrr."""
     pixmap = QPixmap(size, size)
-    pixmap.fill(Qt.transparent)
+    pixmap.fill(Qt.GlobalColor.transparent)
     renderer = QSvgRenderer(QByteArray(svg_str.encode("utf-8")))
     painter = QPainter(pixmap)
-    painter.setRenderHint(QPainter.Antialiasing)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
     renderer.render(painter)
     painter.end()
     return pixmap

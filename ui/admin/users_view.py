@@ -34,14 +34,14 @@ class UserDialog(QDialog):
         form = QFormLayout()
         
         self.username_edit = QLineEdit()
-        self.username_edit.setStyleSheet(STYLES["input_field"])
+        # setStyleSheet kaldırıldı: input_field — global QSS kuralı geçerli
         self.username_edit.setPlaceholderText("İnsan kullanıcı adı")
         if self._is_edit:
             self.username_edit.setText(user_data.username)
             self.username_edit.setEnabled(False)  # Username değiştirilmez
         
         self.password_edit = QLineEdit()
-        self.password_edit.setStyleSheet(STYLES["input_field"])
+        # setStyleSheet kaldırıldı: input_field — global QSS kuralı geçerli
         self.password_edit.setEchoMode(QLineEdit.Password)
         self.password_edit.setPlaceholderText("Şifre" if not self._is_edit else "Boş bırakılırsa değişmez")
         

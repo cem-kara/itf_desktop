@@ -80,14 +80,14 @@ except ImportError:
     })
 
 # 
-_S_PAGE = STYLES["page"]
-_S_INPUT = STYLES["input"]
-_S_DATE = STYLES["input_date"]
-_S_COMBO = STYLES["input_combo"]
-_S_TEXTEDIT = STYLES["input_text"]
-_S_TABLE = STYLES["table"]
-_S_SCROLL = STYLES["scrollbar"]
-_S_PBAR = STYLES["progress"]
+# _S_PAGE kaldırıldı — global QSS kuralı geçerli
+# _S_INPUT kaldırıldı — global QSS kuralı geçerli
+# _S_DATE kaldırıldı — global QSS kuralı geçerli
+# _S_COMBO kaldırıldı — global QSS kuralı geçerli
+# _S_TEXTEDIT kaldırıldı — global QSS kuralı geçerli
+# _S_TABLE kaldırıldı — global QSS kuralı geçerli
+# _S_SCROLL kaldırıldı — global QSS kuralı geçerli
+# _S_PBAR kaldırıldı — global QSS kuralı geçerli
 
 
 # RKE envanter tablo kolonlarÄ±
@@ -275,11 +275,11 @@ class VeriYukleyici(QThread):
             muayene_repo = None
             if not self._use_sheets:
                 from database.sqlite_manager import SQLiteManager
-                from core.di import get_registry
+                from core.di import get_rke_service
                 db = SQLiteManager(db_path=self._db_path, check_same_thread=True)
-                registry = get_registry(db)
-                rke_repo = registry.get("RKE_List")
-                muayene_repo = registry.get("RKE_Muayene")
+                rke_svc = get_rke_service(db)
+                rke_repo = rke_svc.get_rke_repo()
+                muayene_repo = rke_svc.get_muayene_repo()
 
             ws_rke = None
             ws_muayene = None
@@ -375,11 +375,11 @@ class KayitWorker(QThread):
             drive_link = "-"
             upload_result = {"mode": "none", "drive_link": "", "local_path": "", "error": ""}
 
-            # Local DB (Dokumanlar iÃ§in) her zaman aÃ§Ä±lÄ±r
+            # Local DB (Dokumanlar için) her zaman açılır
             from database.sqlite_manager import SQLiteManager
-            from core.di import get_registry
+            from core.di import get_rke_service, get_dokuman_service
             db = SQLiteManager(db_path=self._db_path, check_same_thread=True)
-            registry = get_registry(db)
+            rke_svc = get_rke_service(db)
 
             if self.dosya_yolu and os.path.exists(self.dosya_yolu):
                 storage = StorageService(db)
@@ -393,7 +393,7 @@ class KayitWorker(QThread):
                 # Dokumanlar tablosuna kaydet
                 if upload_result.get("mode") != "none":
                     try:
-                        repo_doc = registry.get("Dokumanlar")
+                        repo_doc = rke_svc.get_dokuman_repo()
                         repo_doc.insert({
                             "EntityType": "rke",
                             "EntityId": str(self.veri.get("EkipmanNo", "")),
@@ -414,8 +414,8 @@ class KayitWorker(QThread):
             rke_repo = None
             muayene_repo = None
             if not self._use_sheets:
-                rke_repo = registry.get("RKE_List")
-                muayene_repo = registry.get("RKE_Muayene")
+                rke_repo = rke_svc.get_rke_repo()
+                muayene_repo = rke_svc.get_muayene_repo()
 
             if self._use_sheets:
                 ws_muayene = veritabani_getir('rke', 'rke_muayene')
@@ -514,9 +514,9 @@ class TopluKayitWorker(QThread):
             upload_result = {"mode": "none", "drive_link": "", "local_path": "", "error": ""}
 
             from database.sqlite_manager import SQLiteManager
-            from core.di import get_registry
+            from core.di import get_rke_service
             db = SQLiteManager(db_path=self._db_path, check_same_thread=True)
-            registry = get_registry(db)
+            rke_svc = get_rke_service(db)
 
             if self.dosya_yolu and os.path.exists(self.dosya_yolu):
                 storage = StorageService(db)
@@ -530,8 +530,8 @@ class TopluKayitWorker(QThread):
             rke_repo = None
             muayene_repo = None
             if not self._use_sheets:
-                rke_repo = registry.get("RKE_List")
-                muayene_repo = registry.get("RKE_Muayene")
+                rke_repo = rke_svc.get_rke_repo()
+                muayene_repo = rke_svc.get_muayene_repo()
 
             if self._use_sheets:
                 ws_muayene = veritabani_getir('rke', 'rke_muayene')
@@ -629,7 +629,7 @@ class TopluKayitWorker(QThread):
 
                     if upload_result.get("mode") != "none":
                         try:
-                            repo_doc = registry.get("Dokumanlar")
+                            repo_doc = rke_svc.get_dokuman_repo()
                             repo_doc.insert({
                                 "EntityType": "rke",
                                 "EntityId": str(ekipman_no),
@@ -725,7 +725,7 @@ class RKEMuayenePage(QWidget):
         self.kullanici_adi = kullanici_adi
         self.setWindowTitle("RKE Muayene GiriÅi")
         self.resize(1200, 820)
-        self.setStyleSheet(_S_PAGE)
+        # setStyleSheet kaldırıldı (_S_PAGE) — global QSS
 
         self.rke_data: List[Dict]   = []
         self.rke_dict: Dict         = {}
@@ -863,7 +863,7 @@ class RKEMuayenePage(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
-        scroll.setStyleSheet(_S_SCROLL)
+        # setStyleSheet kaldırıldı (_S_SCROLL) — global QSS
 
         inner = QWidget()
         inner.setStyleSheet("background:transparent;")
@@ -880,7 +880,7 @@ class RKEMuayenePage(QWidget):
         g.addWidget(self._lbl("EKÄ°PMAN NO"), 0, 0, 1, 2)
         self.cmb_rke = QComboBox()
         self.cmb_rke.setEditable(True)
-        self.cmb_rke.setStyleSheet(_S_COMBO)
+        # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_rke.setFixedHeight(28)
         self.cmb_rke.setPlaceholderText("Ara veya seÃ§in...")
         self.cmb_rke.currentIndexChanged.connect(self.ekipman_secildi)
@@ -898,10 +898,10 @@ class RKEMuayenePage(QWidget):
         gf.addWidget(self._lbl("DURUM"), 0, 1)
         self.dt_fiziksel = QDateEdit(QDate.currentDate())
         self.dt_fiziksel.setCalendarPopup(True)
-        self.dt_fiziksel.setStyleSheet(_S_DATE)
+        # setStyleSheet kaldırıldı (_S_DATE) — global QSS
         self.dt_fiziksel.setFixedHeight(28)
         self.cmb_fiziksel = QComboBox()
-        self.cmb_fiziksel.setStyleSheet(_S_COMBO)
+        # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_fiziksel.setFixedHeight(28)
         self.cmb_fiziksel.addItems(["KullanÄ±ma Uygun", "KullanÄ±ma Uygun DeÄŸil"])
         gf.addWidget(self.dt_fiziksel, 1, 0)
@@ -919,10 +919,10 @@ class RKEMuayenePage(QWidget):
         gs.addWidget(self._lbl("DURUM"), 0, 1)
         self.dt_skopi = QDateEdit(QDate.currentDate())
         self.dt_skopi.setCalendarPopup(True)
-        self.dt_skopi.setStyleSheet(_S_DATE)
+        # setStyleSheet kaldırıldı (_S_DATE) — global QSS
         self.dt_skopi.setFixedHeight(28)
         self.cmb_skopi = QComboBox()
-        self.cmb_skopi.setStyleSheet(_S_COMBO)
+        # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_skopi.setFixedHeight(28)
         self.cmb_skopi.addItems(["KullanÄ±ma Uygun", "KullanÄ±ma Uygun DeÄŸil", "YapÄ±lmadÄ±"])
         gs.addWidget(self.dt_skopi, 1, 0)
@@ -940,19 +940,19 @@ class RKEMuayenePage(QWidget):
         go.addWidget(self._lbl("BÄ°RÄ°M SORUMLUSU"), 0, 1)
         self.cmb_kontrol = QComboBox()
         self.cmb_kontrol.setEditable(True)
-        self.cmb_kontrol.setStyleSheet(_S_COMBO)
+        # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_kontrol.setFixedHeight(28)
         if self.kullanici_adi:
             self.cmb_kontrol.setCurrentText(str(self.kullanici_adi))
         self.cmb_sorumlu = QComboBox()
         self.cmb_sorumlu.setEditable(True)
-        self.cmb_sorumlu.setStyleSheet(_S_COMBO)
+        # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_sorumlu.setFixedHeight(28)
         go.addWidget(self.cmb_kontrol, 1, 0)
         go.addWidget(self.cmb_sorumlu, 1, 1)
         go.addWidget(self._lbl("TEKNÄ°K AÃƒâ€¡IKLAMA (Ãƒâ€¡oklu SeÃ§im)"), 2, 0, 1, 2)
         self.cmb_aciklama = CheckableComboBox()
-        self.cmb_aciklama.setStyleSheet(_S_COMBO)
+        # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_aciklama.setFixedHeight(28)
         go.addWidget(self.cmb_aciklama, 3, 0, 1, 2)
 
@@ -982,7 +982,7 @@ class RKEMuayenePage(QWidget):
         self._gecmis_model = GecmisModel()
         self.tbl_gecmis = QTableView()
         self.tbl_gecmis.setModel(self._gecmis_model)
-        self.tbl_gecmis.setStyleSheet(_S_TABLE)
+        # setStyleSheet kaldırıldı (_S_TABLE) — global QSS
         self.tbl_gecmis.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tbl_gecmis.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tbl_gecmis.verticalHeader().setVisible(False)
@@ -1002,7 +1002,7 @@ class RKEMuayenePage(QWidget):
         self.pbar = QProgressBar()
         self.pbar.setVisible(False)
         self.pbar.setFixedHeight(3)
-        self.pbar.setStyleSheet(_S_PBAR)
+        # setStyleSheet kaldırıldı (_S_PBAR) — global QSS
         vl.addWidget(self.pbar)
 
         # Butonlar
@@ -1055,14 +1055,14 @@ class RKEMuayenePage(QWidget):
         fl.setSpacing(8)
 
         self.cmb_filtre_abd = QComboBox()
-        self.cmb_filtre_abd.setStyleSheet(_S_COMBO)
+        # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_filtre_abd.setFixedHeight(28)
         self.cmb_filtre_abd.setMinimumWidth(160)
         self.cmb_filtre_abd.addItem("TÃ¼m ABD")
         self.cmb_filtre_abd.currentIndexChanged.connect(self.tabloyu_filtrele)
 
         self.txt_ara = QLineEdit()
-        self.txt_ara.setStyleSheet(_S_INPUT)
+        # setStyleSheet kaldırıldı (_S_INPUT) — global QSS
         self.txt_ara.setFixedHeight(28)
         self.txt_ara.setPlaceholderText("Ara...")
         self.txt_ara.textChanged.connect(self.tabloyu_filtrele)
@@ -1095,7 +1095,7 @@ class RKEMuayenePage(QWidget):
         self._model = RKEEnvanterModel()
         self.tablo = QTableView()
         self.tablo.setModel(self._model)
-        self.tablo.setStyleSheet(_S_TABLE)
+        # setStyleSheet kaldırıldı (_S_TABLE) — global QSS
         self.tablo.setAlternatingRowColors(True)
         self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tablo.setSelectionMode(QAbstractItemView.ExtendedSelection)

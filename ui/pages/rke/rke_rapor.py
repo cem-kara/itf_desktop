@@ -15,6 +15,7 @@ from PySide6.QtGui import (
 )
 
 from core.logger import logger
+from core.di import get_rke_service as _get_rke_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.colors import DarkTheme
 from ui.styles.components import STYLES
@@ -29,8 +30,8 @@ _RED  = DarkTheme.STATUS_ERROR; _AMBER= DarkTheme.STATUS_WARNING; _GREEN= DarkTh
 _BLUE = DarkTheme.ACCENT; _CYAN = DarkTheme.ACCENT2; _PURP = DarkTheme.RKE_PURP
 _MONO = DarkTheme.MONOSPACE
 
-_S_COMBO = STYLES["input_combo"]
-_S_TABLE = STYLES["table"]
+# _S_COMBO kaldırıldı — global QSS kuralı geçerli
+# _S_TABLE kaldırıldı — global QSS kuralı geçerli
 
 
 # ==================================================================
@@ -260,10 +261,10 @@ class RKERaporPenceresi(QWidget):
         self._muayene_repo = None
         if self._db:
             try:
-                from core.di import get_registry
-                self._registry = get_registry(self._db)
-                self._rke_repo = self._registry.get("RKE_List")
-                self._muayene_repo = self._registry.get("RKE_Muayene")
+
+                self._rke_svc = _get_rke_service(self._db)
+                self._rke_repo = self._rke_svc.get_rke_repo()
+                self._muayene_repo = self._rke_svc.get_muayene_repo()
             except Exception as e:
                 logger.error(f"Repository baŞlatma hatası: {e}")
 
@@ -356,7 +357,7 @@ class RKERaporPenceresi(QWidget):
             col=QVBoxLayout(); col.setSpacing(4); col.setContentsMargins(0,0,0,0)
             l=QLabel(title)
             l.setStyleSheet("font-family: {_MONO}; font-size: 8px; font-weight: 700; letter-spacing: 1px;")
-            w=QComboBox(); w.setFixedHeight(28); w.setMinimumWidth(mw); w.setStyleSheet(_S_COMBO)
+            w=QComboBox(); w.setFixedHeight(28); w.setMinimumWidth(mw)
             col.addWidget(l); col.addWidget(w); fh.addLayout(col)
             setattr(self,attr,w)
         self.cmb_abd.currentIndexChanged.connect(self.abd_birim_degisti)
@@ -410,7 +411,7 @@ class RKERaporPenceresi(QWidget):
         vl=QVBoxLayout(panel); vl.setContentsMargins(0,0,0,0); vl.setSpacing(0)
 
         self._rapor_model=RaporTableModel(); self.tablo=QTableView()
-        self.tablo.setModel(self._rapor_model); self.tablo.setStyleSheet(_S_TABLE)
+        self.tablo.setModel(self._rapor_model)
         self.tablo.setAlternatingRowColors(True)
         self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tablo.setEditTriggers(QAbstractItemView.NoEditTriggers)

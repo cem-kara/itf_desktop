@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QColor, QCursor
 
-from database.repository_registry import RepositoryRegistry
+from core.di import get_rke_service as _get_rke_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.colors import DarkTheme
 from ui.styles.components import STYLES
@@ -22,14 +22,14 @@ from ui.styles.icons import IconRenderer
 
 
 # ── ORTAK STİL STRİNGLERİ ────────────────────────────────────────
-_S_PAGE = STYLES["page"]
-_S_INPUT = STYLES["input"]
-_S_DATE = STYLES["input_date"]
-_S_COMBO = STYLES["input_combo"]
-_S_TEXTEDIT = STYLES["input_text"]
-_S_TABLE = STYLES["table"]
-_S_SCROLL = STYLES["scrollbar"]
-_S_PBAR = STYLES["progress"]
+# _S_PAGE kaldırıldı — global QSS kuralı geçerli
+# _S_INPUT kaldırıldı — global QSS kuralı geçerli
+# _S_DATE kaldırıldı — global QSS kuralı geçerli
+# _S_COMBO kaldırıldı — global QSS kuralı geçerli
+# _S_TEXTEDIT kaldırıldı — global QSS kuralı geçerli
+# _S_TABLE kaldırıldı — global QSS kuralı geçerli
+# _S_SCROLL kaldırıldı — global QSS kuralı geçerli
+# _S_PBAR kaldırıldı — global QSS kuralı geçerli
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -209,7 +209,7 @@ class RKEYonetimPenceresi(QWidget):
         self._action_guard = action_guard
         self.setWindowTitle("RKE Envanter Yönetimi")
         self.resize(1280, 840)
-        self.setStyleSheet(_S_PAGE)
+        # setStyleSheet kaldırıldı (_S_PAGE) — global QSS
 
         self.sabitler: Dict          = {}
         self.rke_listesi: List[Dict] = []
@@ -219,14 +219,12 @@ class RKEYonetimPenceresi(QWidget):
         self._kpi: Dict[str, QLabel]    = {}
         
         # Repository'leri hazırla
-        self._registry = None
+        self._rke_svc = _get_rke_service(self._db) if self._db else None
         self._rke_repo = None
         self._sabitler_cache = {}
-        if self._db:
+        if self._rke_svc:
             try:
-                from core.di import get_registry
-                self._registry = get_registry(self._db)
-                self._rke_repo = self._registry.get("RKE_List")
+                self._rke_repo = self._rke_svc.get_rke_repo()
             except Exception as e:
                 from core.logger import logger
                 logger.error(f"Repository başlatma hatası: {e}")
@@ -356,7 +354,7 @@ class RKEYonetimPenceresi(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
-        scroll.setStyleSheet(_S_SCROLL)
+        # setStyleSheet kaldırıldı (_S_SCROLL) — global QSS
 
         inner = QWidget(); inner.setStyleSheet("background:transparent;")
         il = QVBoxLayout(inner)
@@ -449,14 +447,13 @@ class RKEYonetimPenceresi(QWidget):
         self._gecmis_model = _GecmisModel()
         tbl = QTableView()
         tbl.setModel(self._gecmis_model)
-        tbl.setStyleSheet(_S_TABLE)
+        # setStyleSheet kaldırıldı (_S_TABLE) — global QSS
         tbl.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         tbl.setEditTriggers(QAbstractItemView.NoEditTriggers)
         tbl.verticalHeader().setVisible(False)
         tbl.setShowGrid(False); tbl.setAlternatingRowColors(True)
         tbl.setFixedHeight(120)
         tbl.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        tbl.setStyleSheet(_S_TABLE + f"QTableView{{border-radius:0;border:none;}}")
         grp_gec.add_widget(tbl); il.addWidget(grp_gec)
         il.addStretch()
 
@@ -465,7 +462,7 @@ class RKEYonetimPenceresi(QWidget):
         # Progress bar
         self.pbar = QProgressBar()
         self.pbar.setVisible(False); self.pbar.setFixedHeight(2)
-        self.pbar.setStyleSheet(_S_PBAR)
+        # setStyleSheet kaldırıldı (_S_PBAR) — global QSS
         vl.addWidget(self.pbar)
 
         # Butonlar
@@ -502,7 +499,7 @@ class RKEYonetimPenceresi(QWidget):
         self.cmb_filtre_dur.addItems(["Tüm Durumlar","Kullanıma Uygun","Kullanıma Uygun Değil","Hurda","Tamirde"])
         self.cmb_filtre_dur.currentIndexChanged.connect(self.tabloyu_filtrele)
 
-        self.txt_ara = QLineEdit(); self.txt_ara.setStyleSheet(_S_INPUT)
+        self.txt_ara = QLineEdit()
         self.txt_ara.setFixedHeight(28); self.txt_ara.setPlaceholderText("⌕  Ara...")
         self.txt_ara.textChanged.connect(self.tabloyu_filtrele)
 
@@ -523,7 +520,7 @@ class RKEYonetimPenceresi(QWidget):
         self._model = RKETableModel()
         self.tablo = QTableView()
         self.tablo.setModel(self._model)
-        self.tablo.setStyleSheet(_S_TABLE)
+        # setStyleSheet kaldırıldı (_S_TABLE) — global QSS
         self.tablo.setAlternatingRowColors(True)
         self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tablo.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -577,19 +574,19 @@ class RKEYonetimPenceresi(QWidget):
         return l
 
     def _input(self, ro=False) -> QLineEdit:
-        w = QLineEdit(); w.setFixedHeight(28); w.setStyleSheet(_S_INPUT)
+        w = QLineEdit(); w.setFixedHeight(28)
         if ro: w.setReadOnly(True)
         return w
 
     def _combo(self, width=None) -> QComboBox:
-        w = QComboBox(); w.setFixedHeight(28); w.setStyleSheet(_S_COMBO)
+        w = QComboBox(); w.setFixedHeight(28)
         if width: w.setMinimumWidth(width)
         return w
 
     def _date(self) -> QDateEdit:
         w = QDateEdit(); w.setCalendarPopup(True)
         w.setDisplayFormat("yyyy-MM-dd"); w.setDate(QDate.currentDate())
-        w.setFixedHeight(28); w.setStyleSheet(_S_DATE)
+        w.setFixedHeight(28)
         return w
 
     def _btn(self, text, style="secondary") -> QPushButton:
@@ -666,10 +663,9 @@ class RKEYonetimPenceresi(QWidget):
             self.rke_listesi = self._rke_repo.get_all()
             
             # Muayene listesini yükle
-            if self._registry:
-                muayene_repo = self._registry.get("RKE_Muayene")
-                if muayene_repo:
-                    self.muayene_listesi = muayene_repo.get_all()
+            muayene_repo = self._rke_svc.get_muayene_repo() if self._rke_svc else None
+            if muayene_repo:
+                self.muayene_listesi = muayene_repo.get_all()
             
             # Combo'ları doldur
             self._populate_combos()

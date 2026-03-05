@@ -29,6 +29,7 @@ from PySide6.QtGui import QColor, QDesktopServices, QPainter, QBrush
 
 from core.date_utils import to_ui_date
 from core.logger import logger
+from core.di import get_cihaz_service
 from core.services.bakim_service import BakimService
 from database.sqlite_manager import SQLiteManager
 from ui.components.base_table_model import BaseTableModel
@@ -40,14 +41,58 @@ from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 
 
-_DURUM_COLOR = {
-    "Planlandi":   _C["accent"],
-    "Planlandı":   _C["accent"],
-    "Yapildi":  _C["green"],
-    "Yapıldı":  _C["green"],
-    "Gecikmis": _C["red"],
-    "Gecikmiş": _C["red"],
-}
+# ─────────────────────────────────────────────────────────────
+#  Form Modları
+# ─────────────────────────────────────────────────────────────
+class FormMode:
+    """Form işletim modları."""
+    PLAN_CREATION = "plan_creation"      # Yeni bakım planı oluşturma
+    EXECUTION_INFO = "execution_info"    # Yapılan bakım bilgisi giriş
+
+
+# ─────────────────────────────────────────────────────────────
+#  Yardımcı Fonksiyonlar
+# ─────────────────────────────────────────────────────────────
+def ay_ekle(kaynak_tarih: datetime, ay_sayisi: int) -> datetime:
+    """Bir tarihe belirtilen ay sayısını ekler."""
+    return kaynak_tarih + relativedelta(months=ay_sayisi)
+
+
+# ─────────────────────────────────────────────────────────────
+#  Thread Sınıfları
+# ─────────────────────────────────────────────────────────────
+class IslemKaydedici(QThread):
+    """Bakım kaydı ekleme/güncelleme işlemlerini thread'de yapar."""
+    islem_tamam = Signal()
+    hata_olustu = Signal(str)
+
+    def __init__(self, db, islem_tipi: str, veri: Any):
+        super().__init__()
+        self.db = db
+        self._db_path = getattr(db, "db_path", None)
+        self.tip = islem_tipi  # "INSERT" veya "UPDATE"
+        self.veri = veri
+
+    def run(self):
+        local_db = None
+        try:
+            # QThread içinde yeni DB bağlantısı oluştur (thread-safe)
+            local_db = SQLiteManager(db_path=self._db_path, check_same_thread=False)
+            svc = get_cihaz_service(local_db)
+            if self.tip == "INSERT":
+                # veri: List[Dict] - birden fazla kayıt
+                for kayit in self.veri:
+                    svc.insert_periyodik_bakim(kayit)
+            elif self.tip == "UPDATE":
+                # veri: Dict - tek kayıt güncelleme
+                svc.update_periyodik_bakim(self.veri)
+            self.islem_tamam.emit()
+        except Exception as e:
+            logger.error(f"Bakım kaydı işlemi başarısız: {e}")
+            self.hata_olustu.emit(str(e))
+        finally:
+            if local_db:
+                local_db.close()
 
 
 # ─────────────────────────────────────────────────────────────
@@ -170,28 +215,25 @@ class FormPanel(QGroupBox):
 #  Model
 # ─────────────────────────────────────────────────────────────
 class BakimTableModel(BaseTableModel):
+    DATE_KEYS = frozenset({"PlanlananTarih", "BakimTarihi"})
     def __init__(self, rows: Optional[List[Dict[str, Any]]] = None, parent=None):
         super().__init__(BAKIM_COLUMNS, rows, parent)
 
     def _display(self, key, row):
         val = row.get(key, "")
         if key in ("PlanlananTarih", "BakimTarihi"):
-            return to_ui_date(val, "")
+            return self._fmt_date(val, "")
         return str(val) if val else ""
 
     def _fg(self, key, row):
         if key == "Durum":
-            c = _DURUM_COLOR.get(row.get("Durum", ""))
-            return QColor(c) if c else None
+            return self._status_fg(row.get("Durum", ""))
         return None
 
     def _align(self, key):
         if key in ("PlanlananTarih", "BakimTarihi", "Durum"):
             return Qt.AlignmentFlag.AlignCenter
         return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
-
-    def set_rows(self, rows: List[Dict[str, Any]]):
-        self.set_data(rows)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -214,8 +256,8 @@ class BakimKayitForm(QWidget):
         
         # Service layer
         if db:
-            from database.repository_registry import RepositoryRegistry
-            self._svc = BakimService(RepositoryRegistry(db))
+            self._cihaz_svc = get_cihaz_service(db)
+            self._svc = BakimService(self._cihaz_svc._r)
         else:
             self._svc = None
 
@@ -411,7 +453,7 @@ class BakimKayitForm(QWidget):
         self.btn_yeni.clicked.connect(self._open_bakim_form)
         fb_l.addWidget(self.btn_yeni)
 
-        self.btn_toplu = QPushButton("⚡ Toplu Plan")
+        self.btn_toplu = QPushButton("Toplu Plan")
         self.btn_toplu.setStyleSheet(S.get("btn_primary", ""))
         self.btn_toplu.clicked.connect(self._open_toplu_plan_dialog)
         fb_l.addWidget(self.btn_toplu)
@@ -426,11 +468,7 @@ class BakimKayitForm(QWidget):
         self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self.table.setStyleSheet(S["table"])
         self.table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        for i, (_, _, w) in enumerate(BAKIM_COLUMNS):
-            self.table.setColumnWidth(i, w)
-        hdr = self.table.horizontalHeader()
-        hdr.setStretchLastSection(False)
-        hdr.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self._model.setup_columns(self.table)
         self.table.selectionModel().currentChanged.connect(self._on_row_selected)
         self.table.doubleClicked.connect(self._open_bakim_form_execution)
         self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -908,7 +946,8 @@ class BakimKayitForm(QWidget):
 
         # Durum etiketi (pill)
         durum   = row.get("Durum","")
-        dur_c   = _DURUM_COLOR.get(durum, _C["muted"])
+        dur_c_map = {"Planlandi": _C["accent"], "Planlandı": _C["accent"], "Yapildi": _C["green"], "Yapıldı": _C["green"], "Gecikmis": _C["red"], "Gecikmiş": _C["red"]}
+        dur_c   = dur_c_map.get(durum, _C["muted"])
         if durum:
             self.lbl_det_durum.setText(f"● {durum}")
             self.lbl_det_durum.setStyleSheet(
@@ -1806,7 +1845,7 @@ class _BakimGirisForm(QWidget):
         # ═══════════════════════════════════════════════════════
         #  3. İŞLEM DETAYLARI (Yapılan İşlemler, Durumu)
         # ═══════════════════════════════════════════════════════
-        self._panel_islem = self._create_panel("🔨 İşlem Detayları")
+        self._panel_islem = self._create_panel("İşlem Detayları")
         
         # Durum
         self.cmb_durum = QComboBox()
@@ -1814,7 +1853,7 @@ class _BakimGirisForm(QWidget):
         self.cmb_durum.addItems(["Planlandı", "Yapıldı", "Gecikmiş"])
         self.cmb_durum.setMinimumHeight(36)
         self.cmb_durum.currentTextChanged.connect(self._durum_kontrol)
-        self._panel_islem.add_field("✓ Bakım Durumu", self.cmb_durum)
+        self._panel_islem.add_field("Bakım Durumu", self.cmb_durum)
         
         # Bakım Tarihi
         self.dt_bakim = QDateEdit(QDate.currentDate())
@@ -1822,28 +1861,28 @@ class _BakimGirisForm(QWidget):
         self.dt_bakim.setDisplayFormat("ddd, d MMMM yyyy")
         self.dt_bakim.setStyleSheet(S["date"])
         self.dt_bakim.setMinimumHeight(36)
-        self._panel_islem.add_field("✔️ Bakım Yapılan Tarih", self.dt_bakim)
+        self._panel_islem.add_field("Bakım Yapılan Tarih", self.dt_bakim)
         
         # Yapılan İşlemler
         self.txt_islemler = QTextEdit()
         self.txt_islemler.setStyleSheet(S["input_text"])
         self.txt_islemler.setFixedHeight(80)
         self.txt_islemler.setPlaceholderText("✓ İşlem 1: ...\n✓ İşlem 2: ...\n✓ Ölçüm: ...")
-        self._panel_islem.add_full_width_field("🛠️  Yapılan İşlemler ve Ölçümler", self.txt_islemler)
+        self._panel_islem.add_full_width_field("Yapılan İşlemler ve Ölçümler", self.txt_islemler)
         
         # Açıklama / Notlar
         self.txt_aciklama = QTextEdit()
         self.txt_aciklama.setStyleSheet(S["input_text"])
         self.txt_aciklama.setFixedHeight(70)
         self.txt_aciklama.setPlaceholderText("Ek notlar, sorunlar, öneriler...")
-        self._panel_islem.add_full_width_field("📝 Not / Açıklamalar", self.txt_aciklama)
+        self._panel_islem.add_full_width_field("Not / Açıklamalar", self.txt_aciklama)
         
         root.addWidget(self._panel_islem)
 
         # ═══════════════════════════════════════════════════════
         #  4. TEKNİSYEN & RAPOR BİLGİLERİ
         # ═══════════════════════════════════════════════════════
-        self._panel_teknis = self._create_panel("👤 Sorumlular & Belgeler")
+        self._panel_teknis = self._create_panel("Sorumlular & Belgeler")
         
         # Teknisyen
         self.txt_teknisyen = QLineEdit()
@@ -1852,7 +1891,7 @@ class _BakimGirisForm(QWidget):
         self.txt_teknisyen.setMinimumHeight(36)
         if self._kullanici_adi:
             self.txt_teknisyen.setText(str(self._kullanici_adi))
-        self._panel_teknis.add_field("👨‍🔧 Teknisyen Adı", self.txt_teknisyen)
+        self._panel_teknis.add_field("Teknisyen Adı", self.txt_teknisyen)
         
         # Rapor / Dosya Yükleme
         file_container = QWidget()
@@ -1860,14 +1899,14 @@ class _BakimGirisForm(QWidget):
         file_layout.setContentsMargins(0, 0, 0, 0)
         file_layout.setSpacing(8)
         
-        self.lbl_dosya = QLabel("📋 Rapor Yok")
+        self.lbl_dosya = QLabel("Rapor Yok")
         self.lbl_dosya.setStyleSheet(
             f"color:{_C['muted']};font-style:italic;padding:8px 12px;"
             f"background:{_C['panel']};border-radius:4px;border:1px dashed {_C['border']};"
         )
         file_layout.addWidget(self.lbl_dosya, 1)
         
-        self.btn_dosya_ac = QPushButton("📥 Aç")
+        self.btn_dosya_ac = QPushButton("Aç")
         self.btn_dosya_ac.setVisible(False)
         self.btn_dosya_ac.setFixedSize(70, 36)
         self.btn_dosya_ac.setStyleSheet(
@@ -1878,7 +1917,7 @@ class _BakimGirisForm(QWidget):
         self.btn_dosya_ac.clicked.connect(self._dosyayi_ac)
         file_layout.addWidget(self.btn_dosya_ac)
         
-        btn_dosya_sec = QPushButton("📤 Seç & Yükle")
+        btn_dosya_sec = QPushButton("Seç & Yükle")
         btn_dosya_sec.setFixedSize(110, 36)
         btn_dosya_sec.setStyleSheet(
             f"QPushButton{{background:{_C['panel']};border:1px solid {_C['accent']};"
@@ -1888,7 +1927,7 @@ class _BakimGirisForm(QWidget):
         btn_dosya_sec.clicked.connect(self._dosya_sec)
         file_layout.addWidget(btn_dosya_sec)
         
-        self._panel_teknis.add_field("📄 Bakım Raporu", file_container)
+        self._panel_teknis.add_field("Bakım Raporu", file_container)
         root.addWidget(self._panel_teknis)
 
         # ═══════════════════════════════════════════════════════
@@ -1915,7 +1954,8 @@ class _BakimGirisForm(QWidget):
         btns.setContentsMargins(8, 8, 8, 8)
         btns.setSpacing(8)
         
-        btn_temizle = QPushButton("🗑️  Temizle")
+        btn_temizle = QPushButton("Temizle")
+        IconRenderer.set_button_icon(btn_temizle, "trash", color="#f87171", size=14)
         btn_temizle.setMinimumHeight(38)
         btn_temizle.setMinimumWidth(100)
         btn_temizle.setStyleSheet(
@@ -1929,7 +1969,8 @@ class _BakimGirisForm(QWidget):
         
         btns.addStretch()
         
-        btn_kaydet = QPushButton("💾 Bakımı Kaydet")
+        btn_kaydet = QPushButton("Bakımı Kaydet")
+        IconRenderer.set_button_icon(btn_kaydet, "save", color="#00b4d8", size=14)
         btn_kaydet.setMinimumHeight(38)
         btn_kaydet.setMinimumWidth(140)
         btn_kaydet.setStyleSheet(
@@ -2051,7 +2092,7 @@ class _BakimGirisForm(QWidget):
         rapor = self._plan_data.get("Rapor", "")
         if rapor and "http" in rapor:
             self._mevcut_link = rapor
-            self.lbl_dosya.setText("📥 Mevcut Rapor")
+            self.lbl_dosya.setText("Mevcut Rapor")
             self.btn_dosya_ac.setVisible(True)
 
     def _periyot_plan_degisti(self):
@@ -2074,7 +2115,7 @@ class _BakimGirisForm(QWidget):
         """Durum değiştiğinde gerekli alanları kontrol eder."""
         durum = self.cmb_durum.currentText()
         if durum == "Yapildi":
-            self.lbl_dosya.setText("✨ Rapor Yükleyiniz (Yapıldı Durumu)")
+            self.lbl_dosya.setText("Rapor Yükleyiniz (Yapıldı Durumu)")
             self.lbl_dosya.setStyleSheet(
                 f"color:white;font-weight:bold;font-style:italic;padding:8px 12px;"
                 f"background:{_C['amber']};border-radius:4px;border:1px solid {_C['amber']};"
@@ -2085,7 +2126,7 @@ class _BakimGirisForm(QWidget):
             )
         else:
             if not self._mevcut_link:
-                self.lbl_dosya.setText("📋 Rapor Gerekmiyor")
+                self.lbl_dosya.setText("Rapor Gerekmiyor")
                 self.lbl_dosya.setStyleSheet(
                     f"color:{_C['muted']};font-style:italic;padding:8px 12px;"
                     f"background:{_C['panel']};border-radius:4px;border:1px dashed {_C['border']};"
@@ -2278,7 +2319,7 @@ class _BakimGirisForm(QWidget):
         self.cmb_periyot_plan.setCurrentIndex(0)
         self._secilen_dosya = None
         self._mevcut_link = None
-        self.lbl_dosya.setText("📋 Rapor Yok")
+        self.lbl_dosya.setText("Rapor Yok")
         self.lbl_dosya.setStyleSheet(
             f"color:{_C['muted']};font-style:italic;padding:8px 12px;"
             f"background:{_C['panel']};border-radius:4px;border:1px dashed {_C['border']};"

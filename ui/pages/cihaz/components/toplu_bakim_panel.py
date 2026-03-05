@@ -1,3 +1,4 @@
+from core.di import get_cihaz_service as _get_cihaz_service
 # -*- coding: utf-8 -*-
 import time
 from datetime import datetime
@@ -11,7 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.logger import logger
-from database.repository_registry import RepositoryRegistry
+
 from ui.styles.colors import C as _C
 from ui.styles.components import STYLES as S
 
@@ -95,10 +96,10 @@ class TopluBakimPlanPanel(QWidget):
         self.cmb_plan_tipi.setStyleSheet(S["combo"])
         self.cmb_plan_tipi.setMinimumHeight(36)
         self.cmb_plan_tipi.addItems([
-            "📌 Tek Seferlik",
-            "🔄 3 Ay (4 Plan)",
-            "⏱️  6 Ay (2 Plan)",
-            "📆 1 Yıl (1 Plan)",
+            "Tek Seferlik",
+            "3 Ay (4 Plan)",
+            "6 Ay (2 Plan)",
+            "1 Yıl (1 Plan)",
         ])
         layout.addWidget(self.cmb_plan_tipi)
 
@@ -132,7 +133,7 @@ class TopluBakimPlanPanel(QWidget):
         layout.addStretch()
 
         btn_layout = QHBoxLayout()
-        btn_iptal = QPushButton("❌ İptal")
+        btn_iptal = QPushButton("İptal")
         btn_iptal.setMinimumHeight(38)
         btn_iptal.setStyleSheet(
             f"QPushButton{{background:{_C['panel']};border:1px solid {_C['border']};"
@@ -143,7 +144,7 @@ class TopluBakimPlanPanel(QWidget):
 
         btn_layout.addStretch()
 
-        btn_olustur = QPushButton("✅ Planları Oluştur")
+        btn_olustur = QPushButton("Planları Oluştur")
         btn_olustur.setMinimumHeight(38)
         btn_olustur.setMinimumWidth(120)
         btn_olustur.setStyleSheet(
@@ -162,7 +163,7 @@ class TopluBakimPlanPanel(QWidget):
         self.cmb_marka_filter.clear()
         self.cmb_marka_filter.addItem("Tüm Markalar", None)
         try:
-            repo = RepositoryRegistry(self._db).get("Cihazlar")
+            repo = _get_cihaz_service(self._db)._r.get("Cihazlar")
             self._all_cihazlar = repo.get_all() or []
         except Exception as e:
             logger.error(f"Cihaz listesi yüklenemedi: {e}")
@@ -247,7 +248,7 @@ class TopluBakimPlanPanel(QWidget):
                 kayitlar.append(kayit)
 
         try:
-            repo = RepositoryRegistry(self._db).get("Periyodik_Bakim")
+            repo = _get_cihaz_service(self._db)._r.get("Periyodik_Bakim")
             for kayit in kayitlar:
                 repo.insert(kayit)
             self.toplam_plan = len(kayitlar)

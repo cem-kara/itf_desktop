@@ -20,6 +20,7 @@ from PySide6.QtCore import Qt, Signal, QThread, QObject
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from core.logger import logger
+from core.di import get_cihaz_service
 from database.repository_registry import RepositoryRegistry
 from ui.pages.cihaz.components.uts_parser import (
     scrape_uts,
@@ -231,7 +232,7 @@ class CihazTeknikUtsScraper(QWidget):
         box.style().polish(box)
         vb = QVBoxLayout(box); vb.setContentsMargins(20,18,20,18); vb.setSpacing(12)
 
-        title = QLabel("🔍  ÜTS Ürün Sorgulama")
+        title = QLabel("ÜTS Ürün Sorgulama")
         title.setStyleSheet(
             f"color:{_ACCENT};font-size:13px;font-weight:700;border:none;background:transparent;"
         )
@@ -260,7 +261,7 @@ class CihazTeknikUtsScraper(QWidget):
         bar = QWidget(); bar.setStyleSheet("background:transparent;")
         h = QHBoxLayout(bar); h.setContentsMargins(0,0,0,0); h.setSpacing(10)
 
-        self._btn_debug = QPushButton("🛠  Ham JSON")
+        self._btn_debug = QPushButton("Ham JSON")
         self._btn_debug.setStyleSheet(_BTN_S)
         self._btn_debug.setCursor(Qt.CursorShape.PointingHandCursor)
         self._btn_debug.setVisible(False)
@@ -272,7 +273,8 @@ class CihazTeknikUtsScraper(QWidget):
         b_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
         b_cancel.clicked.connect(self.canceled.emit); h.addWidget(b_cancel)
 
-        self._b_save = QPushButton("💾  Veritabanına Kaydet")
+        self._b_save = QPushButton("Veritabanına Kaydet")
+        IconRenderer.set_button_icon(self._b_save, "save", color="#00b4d8", size=14)
         self._b_save.setStyleSheet(_BTN_P); self._b_save.setCursor(Qt.CursorShape.PointingHandCursor)
         self._b_save.setEnabled(False); self._b_save.clicked.connect(self._save)
         h.addWidget(self._b_save)
@@ -411,14 +413,14 @@ class CihazTeknikUtsScraper(QWidget):
         if not self._parsed: return
         self._parsed["Cihazid"] = self.cihaz_id
         try:
-            repo = RepositoryRegistry(self.db).get("Cihaz_Teknik")
+            svc = get_cihaz_service(self.db)
             
             # Mevcut kaydı kontrol et
-            existing = repo.get_by_cihaz_id(self.cihaz_id)
+            existing = svc.get_cihaz_teknik(self.cihaz_id)
             if existing:
-                repo.update(self.cihaz_id, self._parsed)
+                svc.update_cihaz_teknik(self.cihaz_id, self._parsed)
             else:
-                repo.insert(self._parsed)
+                svc.insert_cihaz_teknik(self._parsed)
             
             filled = sum(1 for v in self._parsed.values() if v)
             self._st("✅ Kaydedildi!", _SUCCESS)

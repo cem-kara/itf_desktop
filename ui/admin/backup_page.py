@@ -27,7 +27,6 @@ from PySide6.QtWidgets import (
     QSpinBox,
     QFrame,
     QCheckBox,
-    QScrollArea,
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
@@ -229,7 +228,7 @@ class BackupPage(QWidget):
         # Temizleme
         btn_layout.addWidget(QLabel("Sadece son"))
         self._spin_keep_count = QSpinBox()
-        self._spin_keep_count.setStyleSheet(STYLES["spin"])
+        # setStyleSheet kaldırıldı: spin — global QSS kuralı geçerli
         self._spin_keep_count.setRange(1, 100)
         self._spin_keep_count.setValue(10)
         self._spin_keep_count.setSuffix(" yedek tut")

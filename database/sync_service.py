@@ -389,11 +389,7 @@ class SyncService:
 
             valid_records = list(merged.values())
 
-            # ── 3. Local tabloyu temizle ──
-            self.db.execute(f"DELETE FROM {table_name}")
-            logger.info(f"  Local {table_name} tablosu temizlendi")
-
-            # ── 4. INSERT ile kayıtları yaz ──
+            # ── 3-4. Local tabloyu temizle ve kayıtları yaz (TRANSACTION) ──
             # Birleştirme sonrası artık duplicate PK kalmaz,
             # yine de OR REPLACE bırakıyoruz ek güvence olarak.
             inserted = 0
@@ -402,19 +398,40 @@ class SyncService:
             placeholders = ", ".join(["?"] * len(columns))
             sql = f"INSERT OR REPLACE INTO {table_name} ({cols_str}) VALUES ({placeholders})"
 
-            for row in valid_records:
-                values = [row.get(col, "") for col in columns]
-                try:
-                    self.db.execute(sql, values)
-                    inserted += 1
-                except Exception as row_error:
-                    row_preview = {c: row.get(c) for c in columns}
-                    failed_rows.append({"error": str(row_error), "data": row_preview})
-                    logger.error(
-                        f"  [{table_name}] INSERT hatası: "
-                        f"{type(row_error).__name__}: {row_error} | Veri: {row_preview}"
-                    )
-                    continue
+            try:
+                # Transaction başlat: DELETE + ALL INSERTs atomik işlem
+                self.db.conn.execute("BEGIN")
+                
+                # DELETE FROM {table_name}
+                self.db.conn.execute(f"DELETE FROM {table_name}")
+                logger.info(f"  Local {table_name} tablosu temizlendi (transaction içinde)")
+                
+                # INSERT ALL rows
+                for row in valid_records:
+                    values = [row.get(col, "") for col in columns]
+                    try:
+                        self.db.conn.execute(sql, values)
+                        inserted += 1
+                    except Exception as row_error:
+                        row_preview = {c: row.get(c) for c in columns}
+                        failed_rows.append({"error": str(row_error), "data": row_preview})
+                        logger.error(
+                            f"  [{table_name}] INSERT hatası: "
+                            f"{type(row_error).__name__}: {row_error} | Veri: {row_preview}"
+                        )
+                        # Devam et, transaction'da kalış
+                
+                # Transaction commit (DELETE ve tüm başarılı INSERTs kalıcı)
+                self.db.conn.commit()
+                logger.info(f"[{table_name}] Transaction commit: {inserted} kayıt yazıldı")
+                
+            except Exception as txn_error:
+                # Transaction rollback: DELETE ve kısmi INSERTs geri alındı
+                self.db.conn.rollback()
+                logger.error(
+                    f"[{table_name}] Transaction rollback nedeni: {type(txn_error).__name__}: {txn_error}"
+                )
+                raise
 
             # ── 5. Özet rapor ──
             total_skipped = len(skipped_rows) + len(failed_rows)

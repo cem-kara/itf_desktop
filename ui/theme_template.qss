@@ -449,3 +449,181 @@ QLabel[font-role="xl"]   { font-size: 14px; }
 QLabel[font-role="stat"] { font-size: 16px; }
 QLabel[font-role="hero"] { font-size: 18px; font-weight: bold; }
 
+
+/* ══════════════════════════════════════════════════════════════
+   REPYS v3.2 — style-role Sistemi
+   
+   Python'da: widget.setStyleSheet(STYLES["btn_action"])  →  KALDIRILDI
+   Yeni yöntem: btn.setProperty("style-role", "action")
+   
+   Tema değişince app.setStyleSheet() çağrılır — otomatik güncellenir.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Buton Rolleri ──────────────────────────────────────────── */
+QPushButton[style-role="action"] {
+    background-color: {BTN_PRIMARY_BG};
+    color: {BTN_PRIMARY_TEXT};
+    border: none;
+    border-radius: 4px;
+    padding: 4px 14px;
+    font-weight: 700;
+}
+QPushButton[style-role="action"]:hover    { background-color: {BTN_PRIMARY_HOVER}; }
+QPushButton[style-role="action"]:pressed  { opacity: 0.8; }
+QPushButton[style-role="action"]:disabled {
+    background-color: {BORDER_PRIMARY};
+    color: {TEXT_MUTED};
+}
+
+QPushButton[style-role="secondary"] {
+    background-color: transparent;
+    color: {TEXT_SECONDARY};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-weight: 600;
+}
+QPushButton[style-role="secondary"]:hover {
+    background-color: {BG_ELEVATED};
+    color: {TEXT_PRIMARY};
+    border-color: {INPUT_BORDER_FOCUS};
+}
+QPushButton[style-role="secondary"]:disabled {
+    color: {TEXT_MUTED};
+    border-color: {BORDER_PRIMARY};
+}
+
+QPushButton[style-role="success"] {
+    background-color: transparent;
+    color: {TEXT_SECONDARY};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-weight: 600;
+}
+QPushButton[style-role="success"]:hover {
+    background-color: {BTN_SUCCESS_BG};
+    color: {BTN_SUCCESS_TEXT};
+    border-color: {BTN_SUCCESS_BORDER};
+}
+
+QPushButton[style-role="danger"] {
+    background-color: transparent;
+    color: {TEXT_SECONDARY};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-weight: 600;
+}
+QPushButton[style-role="danger"]:hover {
+    background-color: {BTN_DANGER_BG};
+    color: {BTN_DANGER_TEXT};
+    border-color: {BTN_DANGER_BORDER};
+}
+
+QPushButton[style-role="refresh"] {
+    background-color: transparent;
+    color: {TEXT_SECONDARY};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-weight: 600;
+}
+QPushButton[style-role="refresh"]:hover {
+    background-color: {BG_ELEVATED};
+    color: {TEXT_PRIMARY};
+}
+
+/* ── Etiket Rolleri ─────────────────────────────────────────── */
+QLabel[style-role="form"] {
+    color: {TEXT_SECONDARY};
+    font-size: 11px;
+    font-weight: 700;
+    background: transparent;
+    letter-spacing: 0.04em;
+}
+QLabel[style-role="title"] {
+    color: {TEXT_PRIMARY};
+    font-size: 15px;
+    font-weight: 700;
+    background: transparent;
+}
+QLabel[style-role="section"] {
+    color: {TEXT_PRIMARY};
+    font-size: 13px;
+    font-weight: 700;
+    background: transparent;
+    letter-spacing: 0.02em;
+}
+QLabel[style-role="section-title"] {
+    color: {TEXT_PRIMARY};
+    font-size: 14px;
+    font-weight: 700;
+    background: transparent;
+    padding: 6px 0;
+}
+QLabel[style-role="info"] {
+    color: {TEXT_SECONDARY};
+    font-size: 12px;
+    font-weight: 500;
+    background: transparent;
+}
+QLabel[style-role="footer"] {
+    color: {TEXT_MUTED};
+    font-size: 10px;
+    font-weight: 400;
+    background: transparent;
+}
+QLabel[style-role="header-name"] {
+    color: {TEXT_PRIMARY};
+    font-size: 14px;
+    font-weight: 700;
+    background: transparent;
+    letter-spacing: 0.01em;
+}
+QLabel[style-role="required"] {
+    color: {TEXT_SECONDARY};
+    font-size: 11px;
+    font-weight: 700;
+    background: transparent;
+    letter-spacing: 0.04em;
+}
+QLabel[style-role="stat-label"] {
+    color: {TEXT_MUTED};
+    font-size: 12px;
+    font-weight: 500;
+    background: transparent;
+}
+QLabel[style-role="stat-value"] {
+    color: {TEXT_PRIMARY};
+    font-size: 16px;
+    font-weight: 600;
+    background: transparent;
+}
+QLabel[style-role="stat-red"]   { color: {STATUS_ERROR};   font-size: 16px; font-weight: 600; background: transparent; }
+QLabel[style-role="stat-green"] { color: {STATUS_SUCCESS}; font-size: 16px; font-weight: 600; background: transparent; }
+QLabel[style-role="stat-highlight"] {
+    color: {ACCENT};
+    font-size: 16px;
+    font-weight: 700;
+    background: transparent;
+}
+QLabel[style-role="value"] {
+    color: {TEXT_PRIMARY};
+    font-size: 13px;
+    font-weight: 500;
+    background: transparent;
+}
+QLabel[style-role="donem"] {
+    color: {ACCENT};
+    font-size: 13px;
+    font-weight: 600;
+    background: transparent;
+    padding: 4px 8px;
+}
+
+/* ── QScrollArea düz (scroll + scrollbar alias) ─────────────── */
+QScrollArea[style-role="plain"] {
+    background: transparent;
+    border: none;
+}

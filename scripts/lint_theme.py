@@ -112,7 +112,7 @@ def format_report(findings: dict, root: Path) -> str:
         lines.append("")
 
     lines.append(f"Toplam: {total} ihlal")
-    lines.append("Düzeltme rehberi: GELISTIRICI_REHBERI.md — Bölüm 5a")
+    lines.append("Düzeltme rehberi: GELISTIRICI_REHBERI_v2.md — Bölüm 5a")
 
     return "\n".join(lines)
 

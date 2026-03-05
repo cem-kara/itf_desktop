@@ -33,7 +33,7 @@ class RoleDialog(QDialog):
         self.setMinimumWidth(360)
 
         self._name = QLineEdit()
-        self._name.setStyleSheet(STYLES["input_field"])
+        # setStyleSheet kaldırıldı: input_field — global QSS kuralı geçerli
         self._name.setText(name)
 
         form = QFormLayout()

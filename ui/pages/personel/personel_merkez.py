@@ -60,7 +60,9 @@ class PersonelMerkezPage(QWidget):
     # ═══════════════════════════════════════════════════
 
     def _setup_ui(self):
-        self.setStyleSheet(STYLES["page"])
+        self.setProperty("bg-role", "page")
+        self.style().unpolish(self)
+        self.style().polish(self)
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
@@ -100,7 +102,9 @@ class PersonelMerkezPage(QWidget):
 
         btn_back = QPushButton(" Listeye")
         btn_back.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        btn_back.setStyleSheet(STYLES["back_btn"])
+        btn_back.setProperty("style-role", "secondary")
+        btn_back.style().unpolish(btn_back)
+        btn_back.style().polish(btn_back)
         IconRenderer.set_button_icon(btn_back, "arrow_left", color=C.TEXT_SECONDARY, size=14)
         btn_back.setIconSize(QSize(14, 14))
         btn_back.clicked.connect(self.kapat_istegi.emit)
@@ -125,7 +129,9 @@ class PersonelMerkezPage(QWidget):
             f"font-size:14px; font-weight:600; color:{C.TEXT_PRIMARY}; background:transparent;"
         )
         self.lbl_detay = QLabel("…")
-        self.lbl_detay.setStyleSheet(STYLES["info_label"])
+        self.lbl_detay.setProperty("style-role", "info")
+        self.lbl_detay.style().unpolish(self.lbl_detay)
+        self.lbl_detay.style().polish(self.lbl_detay)
         info_lay.addWidget(self.lbl_ad)
         info_lay.addWidget(self.lbl_detay)
         top_lay.addLayout(info_lay)
@@ -140,7 +146,9 @@ class PersonelMerkezPage(QWidget):
         # İzin header butonu
         self.btn_izin_ekle = QPushButton(" İzin Gir")
         self.btn_izin_ekle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_izin_ekle.setStyleSheet(STYLES["refresh_btn"])
+        self.btn_izin_ekle.setProperty("style-role", "refresh")
+        self.btn_izin_ekle.style().unpolish(self.btn_izin_ekle)
+        self.btn_izin_ekle.style().polish(self.btn_izin_ekle)
         IconRenderer.set_button_icon(self.btn_izin_ekle, "calendar", color=C.TEXT_SECONDARY, size=14)
         self.btn_izin_ekle.setIconSize(QSize(14, 14))
         self.btn_izin_ekle.clicked.connect(lambda: self._toggle_form("IZIN"))
@@ -210,7 +218,9 @@ class PersonelMerkezPage(QWidget):
 
         form_hdr = QHBoxLayout()
         self.lbl_form_title = QLabel("İşlem")
-        self.lbl_form_title.setStyleSheet(STYLES["section_label"])
+        self.lbl_form_title.setProperty("style-role", "section")
+        self.lbl_form_title.style().unpolish(self.lbl_form_title)
+        self.lbl_form_title.style().polish(self.lbl_form_title)
         form_hdr.addWidget(self.lbl_form_title)
         form_hdr.addStretch()
         btn_form_kapat = QPushButton()
@@ -234,7 +244,9 @@ class PersonelMerkezPage(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(STYLES["scroll"])
+        scroll.setProperty("style-role", "plain")
+        scroll.style().unpolish(scroll)
+        scroll.style().polish(scroll)
 
         info_widget = QWidget()
         info_widget.setStyleSheet("background:transparent;")
@@ -306,8 +318,10 @@ class PersonelMerkezPage(QWidget):
                     "İzinli": STYLES["header_durum_izinli"],
                 }
                 self.lbl_durum.setText(durum)
+                # Fallback: hiç durum eşleşmezse boş stil kullan (transparent)
+                fallback_style = f"color:{C.TEXT_SECONDARY}; background:transparent; font-size:11px;"
                 self.lbl_durum.setStyleSheet(
-                    durum_style_map.get(durum, STYLES.get("info_label", ""))
+                    durum_style_map.get(durum, fallback_style)
                 )
 
             # Uyarılar
@@ -435,7 +449,8 @@ class PersonelMerkezPage(QWidget):
             logger.error(f"Modül yükleme hatası ({code}): {e}")
             err = QLabel(f"Modül yüklenemedi: {code}\n{e}")
             err.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            err.setStyleSheet(STYLES.get("stat_red", f"color:{C.STATUS_ERROR};"))
+            # Fallback: stat_red yoksa direkt hata rengi kullan
+            err.setStyleSheet(STYLES.get("stat_red") or f"color:{C.STATUS_ERROR};")
             return err
 
     # ═══════════════════════════════════════════════════
@@ -532,7 +547,9 @@ class PersonelMerkezPage(QWidget):
     @staticmethod
     def _section_lbl(text: str) -> QLabel:
         lbl = QLabel(text)
-        lbl.setStyleSheet(STYLES["section_label"])
+        lbl.setProperty("style-role", "section")
+        lbl.style().unpolish(lbl)
+        lbl.style().polish(lbl)
         return lbl
 
     @staticmethod
@@ -540,7 +557,9 @@ class PersonelMerkezPage(QWidget):
         btn = QPushButton(label)
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn.setFixedHeight(34)
-        btn.setStyleSheet(STYLES["action_btn"])
+        btn.setProperty("style-role", "action")
+        btn.style().unpolish(btn)
+        btn.style().polish(btn)
         try:
             IconRenderer.set_button_icon(btn, icon, color=C.TEXT_SECONDARY, size=13)
         except Exception:

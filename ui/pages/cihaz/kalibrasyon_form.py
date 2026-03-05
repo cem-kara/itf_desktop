@@ -25,6 +25,7 @@ from PySide6.QtGui import QColor, QPainter, QBrush
 
 from core.date_utils import to_ui_date
 from core.logger import logger
+from core.di import get_cihaz_service
 from core.services.kalibrasyon_service import KalibrasyonService
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.colors import C as _C
@@ -59,19 +60,19 @@ KAL_COLUMNS = [
 #  Model
 # ─────────────────────────────────────────────────────────────
 class KalibrasyonTableModel(BaseTableModel):
+    DATE_KEYS = frozenset({"YapilanTarih", "BitisTarihi"})
     def __init__(self, rows: Optional[List[Dict[str, Any]]] = None, parent=None):
         super().__init__(KAL_COLUMNS, rows, parent)
 
     def _display(self, key, row):
         val = row.get(key, "")
         if key in ("YapilanTarih", "BitisTarihi"):
-            return to_ui_date(val, "")
+            return self._fmt_date(val, "")
         return str(val) if val else ""
 
     def _fg(self, key, row):
         if key == "Durum":
-            c = _DURUM_COLOR.get(row.get("Durum", ""))
-            return QColor(c) if c else None
+            return self._status_fg(row.get("Durum", ""))
         if key == "BitisTarihi":
             return QColor(_bitis_rengi(row.get("BitisTarihi", "")))
         return None
@@ -89,9 +90,6 @@ class KalibrasyonTableModel(BaseTableModel):
         if key in ("YapilanTarih", "BitisTarihi", "Durum"):
             return Qt.AlignmentFlag.AlignCenter
         return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
-
-    def set_rows(self, rows: List[Dict[str, Any]]):
-        self.set_data(rows)
 
 
 def _bitis_rengi(bitis_raw: str) -> str:
@@ -126,8 +124,8 @@ class KalibrasyonKayitForm(QWidget):
         
         # Service layer
         if db:
-            from database.repository_registry import RepositoryRegistry
-            self._svc = KalibrasyonService(RepositoryRegistry(db))
+            self._cihaz_svc = get_cihaz_service(db)
+            self._svc = KalibrasyonService(self._cihaz_svc._r)
         else:
             self._svc = None
 
@@ -322,11 +320,7 @@ class KalibrasyonKayitForm(QWidget):
         self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self.table.setStyleSheet(S["table"])
         self.table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        for i, (_, _, w) in enumerate(KAL_COLUMNS):
-            self.table.setColumnWidth(i, w)
-        hdr = self.table.horizontalHeader()
-        hdr.setStretchLastSection(False)
-        hdr.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self._model.setup_columns(self.table)
         self.table.selectionModel().currentChanged.connect(self._on_row_selected)
         self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._show_context_menu)
@@ -605,7 +599,8 @@ class KalibrasyonKayitForm(QWidget):
         self.lbl_det_title.setText(f"{cihaz}  —  {firma}" if firma else cihaz or "—")
         self.lbl_det_kalid.setText(f"Kal. No: {kalid}" if kalid else "")
 
-        dur_c = _DURUM_COLOR.get(durum, _C["muted"])
+        dur_c_map = {"Planlandi": _C["accent"], "Planlandı": _C["accent"], "Yapildi": _C["green"], "Yapıldı": _C["green"], "Gecikmis": _C["red"], "Gecikmiş": _C["red"]}
+        dur_c = dur_c_map.get(durum, _C["muted"])
         if durum:
             self.lbl_det_durum.setText(f"● {durum}")
             self.lbl_det_durum.setStyleSheet(
