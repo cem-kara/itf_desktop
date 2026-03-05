@@ -20,6 +20,34 @@ class RkeService:
         self._r = registry
 
     # ───────────────────────────────────────────────────────────
+    #  Repository Accessor'ları (UI için güvenli geçiş)
+    # ───────────────────────────────────────────────────────────
+
+    def get_rke_repo(self):
+        """RKE_List repository erişimi."""
+        try:
+            return self._r.get("RKE_List")
+        except Exception as e:
+            logger.error(f"RKE repo erişim hatası: {e}")
+            return None
+
+    def get_muayene_repo(self):
+        """RKE_Muayene repository erişimi."""
+        try:
+            return self._r.get("RKE_Muayene")
+        except Exception as e:
+            logger.error(f"Muayene repo erişim hatası: {e}")
+            return None
+
+    def get_dokuman_repo(self):
+        """Dokumanlar repository erişimi."""
+        try:
+            return self._r.get("Dokumanlar")
+        except Exception as e:
+            logger.error(f"Dokumanlar repo erişim hatası: {e}")
+            return None
+
+    # ───────────────────────────────────────────────────────────
     #  RKE Envanter
     # ───────────────────────────────────────────────────────────
 

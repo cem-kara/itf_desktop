@@ -1,6 +1,6 @@
 # REPYS — Oturum Başlangıç Dosyası
 > Bu dosyayı her yeni Claude oturumunda GELISTIRICI_REHBERI_v2.md ile birlikte ver.
-> Claude bu iki dosyayı görünce projeyi sıfırdan analiz etmeden kaldığın yerden devam eder.
+> Son güncelleme: 2026-03-05 (zip analizi ile doğrulandı)
 
 ---
 
@@ -8,8 +8,7 @@
 
 **REPYS** — Radyoloji bölümü için PySide6 masaüstü uygulaması.
 - Personel yönetimi, cihaz takibi, RKE muayene, sağlık kayıtları, izin takibi
-- SQLite + Google Sheets senkronizasyonu
-- Online/offline çalışma modu
+- SQLite + Google Sheets senkronizasyonu — online/offline çalışma
 
 **Proje dizini:** `itf_desktop/`  
 **Giriş noktası:** `main.pyw`  
@@ -17,107 +16,106 @@
 
 ---
 
-## TAMAMLANAN ÇALIŞMALAR (Aşama 0–6)
+## TAMAMLANAN ÇALIŞMALAR — ZIP İLE DOĞRULANDI
 
-| Aşama | Ne yapıldı | Durum |
+| # | Ne yapıldı | Durum |
 |---|---|---|
-| 0 | Lint altyapısı, `scripts/lint_theme.py`, pre-commit hook | ✅ |
-| 1 | Tema dict tabanlı mimari — `themes.py`, `settings.py`, `colors.py` | ✅ |
-| 2 | `setStyleSheet` → QSS `style-role` / `color-role` sistemi | ✅ (kısmen) |
-| 3 | 6 servis: Cihaz, RKE, Saglik, Fhsz, Personel, Dashboard | ✅ |
-| 4 | `BaseTableModel` zenginleştirildi: `setup_columns`, `_fmt_date`, `status_fg` | ✅ |
-| 5 | Emoji → `Icons` / `IconRenderer` sistemi | ✅ |
-| 6 | `ayarlar.json` yapısı, `AppConfig.set_app_mode/set_auto_sync` | ✅ |
-| — | Encoding standardizasyonu (UTF-8) | ✅ yapılıyor |
+| Aşama 0 | Lint altyapısı, pre-commit hook | ✅ |
+| Aşama 1–6 | Tema sistemi, servisler, BaseTableModel, ikonlar, AppConfig | ✅ |
+| TODO-1 | BaseRepository'ye `delete()` ve `get_by_pk()` eklendi | ✅ KOD ONAYLANDI |
+| TODO-2 | DI'ya 15 servis fabrikası eklendi (0 eksik) | ✅ KOD ONAYLANDI |
+| TODO-3 | Personel UI → Servis katmanı (**kısmen**) | ⚠️ 10 çağrı kaldı |
+| TODO-4 | RKE UI → Servis katmanı | ✅ KOD ONAYLANDI (0 çağrı kaldı) |
+| TODO-4b | Cihaz UI anti-pattern temizliği (**kısmen**) | ⚠️ 5 bypass kaldı |
+| TODO-5 | Sync pull-only transaction (BEGIN/ROLLBACK) | ✅ KOD ONAYLANDI |
+| — | `migrations.py` squash — CURRENT_VERSION=1 | ✅ KOD ONAYLANDI |
+| — | `MesajKutusu` — native QMessageBox yerine | ✅ KOD ONAYLANDI |
+| — | `HakkindaDialog` + LGPL bildirimi | ✅ KOD ONAYLANDI |
 
 ---
 
-## MEVCUT DURUM — SAYISAL
+## MEVCUT DURUM — ZIP'TEN ALINAN GERÇEK SAYILAR
 
 ```
-Potansiyel crash (get_by_pk + delete eksik): 20 çağrı
-DI'ya kayıtlı servis fabrikası            :  7 / 15
-UI içinde get_registry() direkt çağrı     : 26 adet
-setStyleSheet(f-string) kalan             : 87 adet
+BaseRepository delete/get_by_pk : ✅ VAR
+DI fabrika sayısı               : 15 / 15  ✅
+Personel UI get_registry() kalan: 10 çağrı ❌
+  izin_takip.py           3x (satır 110, 973, 1086)
+  isten_ayrilik.py        3x (satır 480, 497, 633)
+  hizli_izin_giris.py     2x (satır 95, 169)
+  puantaj_rapor.py        1x (satır 284)
+  personel_overview_panel 1x (satır 70)
+RKE UI get_registry() kalan     : 0 ✅
+Cihaz svc._r.get() bypass kalan : 5 çağrı ❌
+  ariza_islem.py          1x (satır 502)
+  cihaz_teknik_panel.py   1x (satır 416)
+  toplu_bakim_panel.py    2x (satır 166, 251)
+  ariza_duzenle_form.py   1x (satır 137)
+setStyleSheet(f-string) kalan   : 352 adet
+Sync transaction (BEGIN/ROLLBACK): ✅ VAR
+CURRENT_VERSION migrations      : 1 ✅
 ```
 
 ---
 
 ## AÇIK TODO'LAR (öncelik sırasıyla)
 
-### 🔴 TODO-1 — BaseRepository'ye `delete()` ve `get_by_pk()` ekle
-**Dosya:** `database/base_repository.py`  
-**Durum:** AÇIK — 20 servis çağrısı crash üretiyor  
-**Ne eklenecek:**
-```python
-def get_by_pk(self, pk_value):
-    return self.get_by_id(pk_value)
+### 🔴 TODO-3 DEVAM — Personel UI Kalan 10 get_registry() Çağrısı
 
-def delete(self, pk_value) -> bool:
-    try:
-        where_vals = self._resolve_pk_params(pk_value)
-        sql = f"DELETE FROM {self.table} WHERE {self._pk_where()}"
-        self.db.execute(sql, where_vals)
-        logger.info(f"{self.table} silindi: {pk_value}")
-        return True
-    except Exception as e:
-        logger.error(f"{self.table}.delete hatası [{pk_value}]: {e}")
-        return False
+**izin_takip.py satır 110:**
+```python
+# ❌ YANLIŞ
+self._svc = IzinService(get_registry(db))
+# ✅ DOĞRU
+from core.di import get_izin_service
+self._svc = get_izin_service(db)
 ```
 
----
+**izin_takip.py satır 973 ve 1086 — lazy import pattern:**
+```python
+# ❌ YANLIŞ
+from core.di import get_registry
+registry = get_registry(self._db)
+# ✅ DOĞRU — self._svc zaten __init__'te kurulu, direkt kullan
+self._svc.ilgili_metod(...)
+```
 
-### 🔴 TODO-2 — DI'ya 9 Eksik Servis Fabrikası Ekle
-**Dosya:** `core/di.py`  
-**Durum:** AÇIK — Mevcut: 7 fabrika | Gerekli: 15  
-**Eksikler:** `get_izin_service`, `get_ariza_service`, `get_bakim_service`,
-`get_kalibrasyon_service`, `get_dokuman_service`, `get_backup_service`,
-`get_log_service`, `get_settings_service`, `get_file_sync_service`
+**isten_ayrilik.py satır 480, 497, 633:**
+- `get_izin_service(self._db)` ile değiştir
 
----
+**hizli_izin_giris.py satır 95, 169:**
+- `get_izin_service(self._db)` ile değiştir
+- Sabitler/Tatiller için `get_fhsz_service` veya ileriki SabitlerService
 
-### 🔴 TODO-3 — Personel UI → Servis Katmanına Bağla
-**Durum:** AÇIK  
+**puantaj_rapor.py satır 284:**
+- `get_fhsz_service(self._db)` ile değiştir
 
-| Dosya | get_registry çağrısı | Hedef |
-|---|---|---|
-| `personel/izin_takip.py` | 6x | `get_izin_service(db)` |
-| `personel/isten_ayrilik.py` | 3x | `get_personel_service(db)` |
-| `personel/personel_ekle.py` | 1x | `get_personel_service(db)` |
-| `personel/personel_listesi.py` | 1x | `get_personel_service(db)` |
-| `personel/personel_overview_panel.py` | 1x | `get_personel_service(db)` |
-| `personel/components/hizli_izin_giris.py` | 2x | `get_izin_service(db)` |
-| `personel/components/personel_izin_panel.py` | 1x | `get_izin_service(db)` |
-| `personel/components/personel_ozet_servisi.py` | 1x | `get_personel_service(db)` |
-| `personel/puantaj_rapor.py` | 1x | `get_fhsz_service(db)` |
+**personel_overview_panel.py (components) satır 70:**
+- `self._registry` → `self._personel_svc = get_personel_service(db)`
 
 ---
 
-### 🔴 TODO-4 — RKE UI → Servis Katmanına Bağla
-**Durum:** AÇIK  
+### 🔴 TODO-4b DEVAM — Cihaz svc._r.get() Bypass Kalan 5 Çağrı
 
-| Dosya | get_registry çağrısı | Hedef |
-|---|---|---|
-| `rke/rke_muayene.py` | 3x | `get_rke_service(db)` |
-| `rke/rke_rapor.py` | 1x | `get_rke_service(db)` |
-| `rke/rke_yonetim.py` | 1x | `get_rke_service(db)` |
+Her biri için **CihazService'e metod ekle**, sonra UI'da o metodu çağır:
 
----
-
-### 🟡 TODO-5 — Sync Pull-Only Transaction
-**Dosya:** `database/sync_service.py` satır ~393  
-**Durum:** AÇIK — DELETE sonrası hata → tablo boş kalır  
+| Dosya | Satır | Bypass edilen | CihazService'e eklenecek metod |
+|---|---|---|---|
+| `ariza_islem.py` | 502 | `Ariza_Islem` | `get_ariza_islem_listesi(ariza_id)` |
+| `cihaz_teknik_panel.py` | 416 | `Cihaz_Teknik` | `get_cihaz_teknik(cihaz_id)` |
+| `toplu_bakim_panel.py` | 166 | `Cihazlar` | `get_cihaz(cihaz_id)` zaten var |
+| `toplu_bakim_panel.py` | 251 | `Periyodik_Bakim` | `get_bakim_listesi(cihaz_id)` zaten var |
+| `ariza_duzenle_form.py` | 137 | `Cihaz_Ariza` | `get_ariza(ariza_id)` zaten var |
 
 ---
 
-### 🟡 TODO-6 — Kod İçi Temizlik (fırsatçı)
-**Durum:** DEVAM EDİYOR — Her dosyaya girildiğinde yapılıyor  
-**En kötü dosyalar:** `bakim_form.py` (12x), `rke_rapor.py` (11x), `kalibrasyon_form.py` (7x)
+### 🟡 TODO-6 — setStyleSheet(f-string) Temizliği
+**Toplam:** 352 adet — fırsatçı temizlik (dosyaya girince yap)  
+**En kötü dosyalar:** `bakim_form.py`, `kalibrasyon_form.py`, `rke_rapor.py`
 
 ---
 
 ### 🟢 TODO-7 — Kullanılmayan Dosyaları Sil
-**Durum:** AÇIK  
 ```bash
 git rm core/cihaz_ozet_servisi.py
 git rm ui/components/data_table.py
@@ -126,87 +124,81 @@ git rm ui/components/data_table.py
 ---
 
 ### 🟢 TODO-8 — Testler
-**Durum:** AÇIK — `tests/services/` klasörü henüz yok
+`tests/services/` klasörü henüz yok
 
 ---
 
-## ÇALIŞMA KURALLARI (Claude ile)
+## ÇALIŞMA KURALLARI
 
-### İstek Formatı
-
-**Temizlik için:**
+**Temizlik isteği:**
 ```
 "Bu dosyayı rehbere göre temizle — iş mantığına dokunma, sadece pattern'ları düzelt"
 + dosya içeriği
 ```
 
-**Yeni özellik için:**
+**Yeni özellik isteği:**
 ```
-DOSYA: ui/pages/personel/izin_takip.py
-EKLENECEK:
-  Ne: [özellik]
-  Nerede: [konum]
-  Servis: [hangi servis metodu]
-  Beklenen davranış: [ne yapmalı]
+DOSYA: ui/pages/xxx/yyy.py
+EKLENECEK: Ne / Nerede / Hangi servis / Beklenen davranış
 DOKUNMA: [değişmeyecek kısımlar]
 ```
 
-**Hata için:**
+**Hata isteği:**
 ```
-"Şu hata var:" + TAM traceback yapıştır
-(sadece hata mesajı değil, dosya adı ve satır numarasıyla birlikte)
-```
-
-### Adım Sırası — Her Değişiklik İçin
-
-```
-1. Temizlik → test et → onayla → commit: "refactor: xxx.py temizlendi"
-2. Yeni özellik → test et → onayla → commit: "feat: xxx.py excel export"
+Tam traceback yapıştır (dosya adı + satır numarasıyla)
 ```
 
-**Bu iki adım ayrı commit** — birleştirme, geri alması zorlaşır.
-
-### Kural: Claude Sadece İstenenle İlgilenir
-
-- İstenmeyeni değiştirmez
-- "Bunu da düzelteyim mi?" demez — not alır, sonraki oturumda sorar
-- Kapsam kaymasını sen kontrol edersin
+**Adım sırası:** Temizlik → test et → commit → Yeni özellik → test et → commit  
+**Kural:** Claude sadece istenenle ilgilenir, kapsam kaydırmaz
 
 ---
 
 ## DEĞİŞİKLİK LOGU
-> Her tamamlanan iş buraya eklenir — rehber güncel kalır.
 
 ```
 2026-03-05: Aşama 0–6 tamamlandı
-2026-03-05: GELISTIRICI_REHBERI_v2.md oluşturuldu
-2026-03-05: Encoding standardizasyonu başlandı
-[YENİ SATIRLARI BURAYA EKLE]
+2026-03-05: TODO-1 tamamlandı — BaseRepo delete/get_by_pk
+2026-03-05: TODO-2 tamamlandı — 15 DI fabrikası
+2026-03-05: TODO-3 kısmen — 10 get_registry çağrısı kaldı
+2026-03-05: TODO-4 tamamlandı — RKE UI temiz
+2026-03-05: TODO-4b kısmen — 5 bypass kaldı
+2026-03-05: TODO-5 tamamlandı — Sync transaction
+2026-03-05: migrations.py squash — CURRENT_VERSION=1
+2026-03-05: MesajKutusu + HakkindaDialog eklendi
 ```
 
 ---
 
-## HIZLI DURUM KONTROL KOMUTU
+## HIZLI DURUM KONTROL
 
 ```bash
-# Her oturum başında çalıştır, çıktıyı Claude'a ver
 python3 - << 'PYEOF'
 import os, re, glob
-base = '.'
-crash = sum(len(re.findall(r'\.get_by_pk\(|\.delete\(', open(fp,errors='ignore').read()))
-           for fp in glob.glob(f"{base}/core/services/*.py"))
-di = open(f"{base}/core/di.py").read()
+BASE = '.'
+def r(fp): return open(fp,errors='ignore').read() if os.path.exists(fp) else ''
+# BaseRepo
+br = r('database/base_repository.py')
+print(f"BaseRepo delete    : {'✅' if 'def delete' in br else '❌'}")
+print(f"BaseRepo get_by_pk : {'✅' if 'def get_by_pk' in br else '❌'}")
+# DI
+di = r('core/di.py')
 di_count = len(re.findall(r'^def get_\w+_service', di, re.M))
-gr = sum(len(re.findall(r'get_registry\(', open(os.path.join(r,f),errors='ignore').read()))
-        for r,d,fs in os.walk(f"{base}/ui") for f in fs
-        if f.endswith('.py') and '__pycache__' not in r)
-ss = sum(len(re.findall(r'setStyleSheet\s*\(\s*f["\']', open(os.path.join(r,f),errors='ignore').read()))
-        for r,d,fs in os.walk(f"{base}/ui") for f in fs
-        if f.endswith('.py') and '__pycache__' not in r)
-print(f"crash riski : {crash}")
-print(f"DI fabrika  : {di_count}/15")
-print(f"get_registry: {gr}")
-print(f"f-string ss : {ss}")
+print(f"DI fabrika         : {di_count}/15 {'✅' if di_count>=15 else '❌'}")
+# Personel get_registry
+gr_p = sum(len(re.findall(r'get_registry\(', r(os.path.join(root,f))))
+           for root,dirs,files in os.walk('ui/pages/personel')
+           for f in files if f.endswith('.py') and '__pycache__' not in root)
+print(f"Personel get_reg   : {gr_p} {'✅' if gr_p==0 else '❌'}")
+# Cihaz bypass
+gr_c = sum(len(re.findall(r'_r\.get\(', r(os.path.join(root,f))))
+           for root,dirs,files in os.walk('ui/pages/cihaz')
+           for f in files if f.endswith('.py') and '__pycache__' not in root)
+print(f"Cihaz bypass       : {gr_c} {'✅' if gr_c==0 else '❌'}")
+# setStyleSheet
+ss = sum(len(re.findall(r'setStyleSheet\s*\(\s*f', r(os.path.join(root,f))))
+         for root,dirs,files in os.walk('ui/')
+         for f in files if f.endswith('.py') and '__pycache__' not in root)
+print(f"setStyleSheet(f-s) : {ss} adet")
 PYEOF
 ```
 
@@ -216,12 +208,10 @@ PYEOF
 
 | Dosya | Amaç |
 |---|---|
-| `GELISTIRICI_REHBERI_v2.md` | Tam teknik referans — API, şablonlar, TODO detayları |
-| `OTURUM_BASLANGIC.md` | Bu dosya — oturum bağlamı ve açık işler |
+| `GELISTIRICI_REHBERI_v2.md` | Tam teknik referans |
+| `OTURUM_BASLANGIC.md` | Bu dosya — güncel durum |
 | `database/base_repository.py` | BaseRepository API |
-| `database/repository_registry.py` | Hangi tablo → hangi repo |
-| `database/table_config.py` | Tablo şemaları ve PK'lar |
 | `core/di.py` | Servis fabrikaları |
-| `ui/theme_template.qss` | Tüm QSS rolleri |
-| `ui/components/base_table_model.py` | Model şablonu |
-
+| `ui/dialogs/mesaj_kutusu.py` | MesajKutusu (native yerine) |
+| `ui/dialogs/about_dialog.py` | HakkindaDialog (LGPL) |
+| `database/migrations.py` | v1 squash, CURRENT_VERSION=1 |

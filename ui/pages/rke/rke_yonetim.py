@@ -224,7 +224,7 @@ class RKEYonetimPenceresi(QWidget):
         self._sabitler_cache = {}
         if self._rke_svc:
             try:
-                self._rke_repo = self._rke_svc._r.get("RKE_List")
+                self._rke_repo = self._rke_svc.get_rke_repo()
             except Exception as e:
                 from core.logger import logger
                 logger.error(f"Repository başlatma hatası: {e}")
@@ -454,7 +454,6 @@ class RKEYonetimPenceresi(QWidget):
         tbl.setShowGrid(False); tbl.setAlternatingRowColors(True)
         tbl.setFixedHeight(120)
         tbl.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        tbl.setStyleSheet(_S_TABLE + f"QTableView{{border-radius:0;border:none;}}")
         grp_gec.add_widget(tbl); il.addWidget(grp_gec)
         il.addStretch()
 
@@ -500,7 +499,7 @@ class RKEYonetimPenceresi(QWidget):
         self.cmb_filtre_dur.addItems(["Tüm Durumlar","Kullanıma Uygun","Kullanıma Uygun Değil","Hurda","Tamirde"])
         self.cmb_filtre_dur.currentIndexChanged.connect(self.tabloyu_filtrele)
 
-        self.txt_ara = QLineEdit(); self.txt_ara.setStyleSheet(_S_INPUT)
+        self.txt_ara = QLineEdit()
         self.txt_ara.setFixedHeight(28); self.txt_ara.setPlaceholderText("⌕  Ara...")
         self.txt_ara.textChanged.connect(self.tabloyu_filtrele)
 
@@ -575,19 +574,19 @@ class RKEYonetimPenceresi(QWidget):
         return l
 
     def _input(self, ro=False) -> QLineEdit:
-        w = QLineEdit(); w.setFixedHeight(28); w.setStyleSheet(_S_INPUT)
+        w = QLineEdit(); w.setFixedHeight(28)
         if ro: w.setReadOnly(True)
         return w
 
     def _combo(self, width=None) -> QComboBox:
-        w = QComboBox(); w.setFixedHeight(28); w.setStyleSheet(_S_COMBO)
+        w = QComboBox(); w.setFixedHeight(28)
         if width: w.setMinimumWidth(width)
         return w
 
     def _date(self) -> QDateEdit:
         w = QDateEdit(); w.setCalendarPopup(True)
         w.setDisplayFormat("yyyy-MM-dd"); w.setDate(QDate.currentDate())
-        w.setFixedHeight(28); w.setStyleSheet(_S_DATE)
+        w.setFixedHeight(28)
         return w
 
     def _btn(self, text, style="secondary") -> QPushButton:
@@ -664,10 +663,9 @@ class RKEYonetimPenceresi(QWidget):
             self.rke_listesi = self._rke_repo.get_all()
             
             # Muayene listesini yükle
-            if self._registry:
-                muayene_repo = _get_rke_service(self._db if hasattr(self, "_db") else self.db)._r.get("RKE_Muayene")
-                if muayene_repo:
-                    self.muayene_listesi = muayene_repo.get_all()
+            muayene_repo = self._rke_svc.get_muayene_repo() if self._rke_svc else None
+            if muayene_repo:
+                self.muayene_listesi = muayene_repo.get_all()
             
             # Combo'ları doldur
             self._populate_combos()

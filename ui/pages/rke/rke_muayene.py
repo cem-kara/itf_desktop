@@ -278,8 +278,8 @@ class VeriYukleyici(QThread):
                 from core.di import get_rke_service
                 db = SQLiteManager(db_path=self._db_path, check_same_thread=True)
                 rke_svc = get_rke_service(db)
-                rke_repo = rke_svc._r.get("RKE_List")
-                muayene_repo = rke_svc._r.get("RKE_Muayene")
+                rke_repo = rke_svc.get_rke_repo()
+                muayene_repo = rke_svc.get_muayene_repo()
 
             ws_rke = None
             ws_muayene = None
@@ -393,7 +393,7 @@ class KayitWorker(QThread):
                 # Dokumanlar tablosuna kaydet
                 if upload_result.get("mode") != "none":
                     try:
-                        repo_doc = rke_svc._r.get("Dokumanlar")
+                        repo_doc = rke_svc.get_dokuman_repo()
                         repo_doc.insert({
                             "EntityType": "rke",
                             "EntityId": str(self.veri.get("EkipmanNo", "")),
@@ -414,8 +414,8 @@ class KayitWorker(QThread):
             rke_repo = None
             muayene_repo = None
             if not self._use_sheets:
-                rke_repo = registry.get("RKE_List")
-                muayene_repo = registry.get("RKE_Muayene")
+                rke_repo = rke_svc.get_rke_repo()
+                muayene_repo = rke_svc.get_muayene_repo()
 
             if self._use_sheets:
                 ws_muayene = veritabani_getir('rke', 'rke_muayene')
@@ -530,8 +530,8 @@ class TopluKayitWorker(QThread):
             rke_repo = None
             muayene_repo = None
             if not self._use_sheets:
-                rke_repo = rke_svc._r.get("RKE_List")
-                muayene_repo = rke_svc._r.get("RKE_Muayene")
+                rke_repo = rke_svc.get_rke_repo()
+                muayene_repo = rke_svc.get_muayene_repo()
 
             if self._use_sheets:
                 ws_muayene = veritabani_getir('rke', 'rke_muayene')
@@ -629,7 +629,7 @@ class TopluKayitWorker(QThread):
 
                     if upload_result.get("mode") != "none":
                         try:
-                            repo_doc = registry.get("Dokumanlar")
+                            repo_doc = rke_svc.get_dokuman_repo()
                             repo_doc.insert({
                                 "EntityType": "rke",
                                 "EntityId": str(ekipman_no),

@@ -20,7 +20,7 @@ from PySide6.QtGui import (
 )
 
 from core.logger import logger
-from core.di import get_personel_service, get_izin_service
+from core.di import get_personel_service, get_izin_service, get_registry
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
 from ui.styles.components import ComponentStyles, STYLES
@@ -386,6 +386,7 @@ class PersonelListesiPage(QWidget):
         self.style().unpolish(self)
         self.style().polish(self)
         self._db             = db
+        self._registry       = get_registry(db) if db else None
         self._svc            = get_personel_service(db) if db else None
         self._izin_svc       = get_izin_service(db) if db else None
         self._action_guard   = action_guard
