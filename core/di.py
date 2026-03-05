@@ -6,6 +6,73 @@ from core.auth.authorization_service import AuthorizationService
 from core.auth.password_hasher import PasswordHasher
 from core.auth.session_context import SessionContext
 
+# ── Service factory'leri ────────────────────────────────────────
+# Her çağrıda registry üzerinden taze servis döner.
+# UI'da:
+#   from core.di import get_cihaz_service
+#   svc = get_cihaz_service(self._db)
+# ────────────────────────────────────────────────────────────────
+
+def get_cihaz_service(db):
+    from core.services.cihaz_service import CihazService
+    return CihazService(get_registry(db))
+
+def get_rke_service(db):
+    from core.services.rke_service import RkeService
+    return RkeService(get_registry(db))
+
+def get_saglik_service(db):
+    from core.services.saglik_service import SaglikService
+    return SaglikService(get_registry(db))
+
+def get_fhsz_service(db):
+    from core.services.fhsz_service import FhszService
+    return FhszService(get_registry(db))
+
+def get_personel_service(db):
+    from core.services.personel_service import PersonelService
+    return PersonelService(get_registry(db))
+
+def get_dashboard_service(db):
+    from core.services.dashboard_service import DashboardService
+    return DashboardService(get_registry(db))
+
+def get_izin_service(db):
+    from core.services.izin_service import IzinService
+    return IzinService(get_registry(db))
+
+def get_ariza_service(db):
+    from core.services.ariza_service import ArizaService
+    return ArizaService(get_registry(db))
+
+def get_bakim_service(db):
+    from core.services.bakim_service import BakimService
+    return BakimService(get_registry(db))
+
+def get_kalibrasyon_service(db):
+    from core.services.kalibrasyon_service import KalibrasyonService
+    return KalibrasyonService(get_registry(db))
+
+def get_dokuman_service(db):
+    from core.services.dokuman_service import DokumanService
+    return DokumanService(get_registry(db))
+
+def get_backup_service(db):
+    from core.services.backup_service import BackupService
+    return BackupService()
+
+def get_log_service(db):
+    from core.services.log_service import LogService
+    return LogService()
+
+def get_settings_service(db):
+    from core.services.settings_service import SettingsService
+    return SettingsService()
+
+def get_file_sync_service(db):
+    from core.services.file_sync_service import FileSyncService
+    return FileSyncService(db, get_registry(db))
+
 
 _fallback_registry_cache = {}
 

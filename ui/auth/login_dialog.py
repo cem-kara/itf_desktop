@@ -57,7 +57,10 @@ class LoginDialog(QDialog):
         lbl_title = QLabel("REPYS GİRİŞ")
         lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         lbl_title.setFont(QFont("Arial", 20, QFont.Weight.Bold))
-        lbl_title.setStyleSheet("color: #4dabf7; border: none;")
+        lbl_title.setProperty("color-role", "accent")
+        lbl_title.setStyleSheet("border: none;")
+        lbl_title.style().unpolish(lbl_title)
+        lbl_title.style().polish(lbl_title)
         
         title_layout.addWidget(logo_label)
         title_layout.addWidget(lbl_title)
@@ -97,7 +100,10 @@ class LoginDialog(QDialog):
         # Kapat butonu
         btn_cancel = QPushButton("İptal")
         btn_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_cancel.setStyleSheet("background: transparent; color: #888; border: none;")
+        btn_cancel.setProperty("color-role", "muted")
+        btn_cancel.setStyleSheet("background: transparent; border: none;")
+        btn_cancel.style().unpolish(btn_cancel)
+        btn_cancel.style().polish(btn_cancel)
         btn_cancel.clicked.connect(self.reject)
         card_layout.addWidget(btn_cancel)
 

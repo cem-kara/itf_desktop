@@ -3,8 +3,8 @@ import os
 import uuid
 from datetime import date, datetime
 
-from PySide6.QtCore import Qt, QModelIndex, QAbstractTableModel, QDate, QPropertyAnimation, QEasingCurve, QRect, QSize
-from PySide6.QtGui import QCursor, QPainter, QColor, QBrush, QFont, QPen, QFontMetrics
+from PySide6.QtCore import Qt, QDate, QPropertyAnimation, QEasingCurve
+from PySide6.QtGui import QCursor, QPainter, QColor, QBrush, QFont, QPen
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QFrame, QScrollArea,
     QLabel, QComboBox, QLineEdit, QPushButton, QTableView, QHeaderView,
@@ -15,7 +15,6 @@ from core.logger import logger
 from core.date_utils import parse_date, to_db_date, to_ui_date
 from core.services.dokuman_service import DokumanService
 from ui.components.base_table_model import BaseTableModel
-from ui.theme_manager import ThemeManager
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
@@ -130,7 +129,7 @@ class SaglikTakipTableModel(BaseTableModel):
     def _display(self, key, row):
         value = row.get(key, "")
         if key in ("MuayeneTarihi", "SonrakiKontrolTarihi"):
-            return to_ui_date(value, "")
+            return self._fmt_date(value, "")
         return str(value)
 
     def _align(self, key):
@@ -303,7 +302,7 @@ class SaglikTakipPage(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(S.get("scroll", ""))
+        scroll.setStyleSheet(S.get("scroll") or "")
 
         form_content = QWidget()
         form_content.setStyleSheet("background: transparent;")
@@ -332,7 +331,7 @@ class SaglikTakipPage(QWidget):
         self.cmb_personel = QComboBox()
         self.cmb_personel.setStyleSheet(S["combo"])
         self.cmb_personel.setEditable(True)
-        self.cmb_personel.setInsertPolicy(QComboBox.NoInsert)
+        self.cmb_personel.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         self.cmb_personel.lineEdit().setPlaceholderText("Personel seciniz...")
         g1.addWidget(self.cmb_personel, 0, 1)
 
@@ -423,10 +422,10 @@ class SaglikTakipPage(QWidget):
         if not self._db:
             return
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            personel_repo = registry.get("Personel")
-            takip_repo = registry.get("Personel_Saglik_Takip")
+            from core.di import get_saglik_service as _svc_factory
+            _svc = _svc_factory(self._db)
+            personel_repo = _svc._r.get("Personel")
+            takip_repo = _svc._r.get("Personel_Saglik_Takip")
 
             all_personel = personel_repo.get_all()
             self._personel_rows = [
@@ -543,18 +542,17 @@ class SaglikTakipPage(QWidget):
         gl.setVerticalSpacing(6)
 
         lbl_tarih = QLabel("Muayene Tarihi")
-        lbl_tarih.setStyleSheet(S.get("label", ""))
+        lbl_tarih.setStyleSheet(S.get("label") or "")
         gl.addWidget(lbl_tarih, 0, 0)
 
         de = QDateEdit(QDate.currentDate())
         de.setDisplayFormat("dd.MM.yyyy")
         de.setCalendarPopup(True)
         de.setStyleSheet(S["date"])
-        ThemeManager.setup_calendar_popup(de)
         gl.addWidget(de, 0, 1)
 
         lbl_durum = QLabel("Durum")
-        lbl_durum.setStyleSheet(S.get("label", ""))
+        lbl_durum.setStyleSheet(S.get("label") or "")
         gl.addWidget(lbl_durum, 0, 2)
 
         cmb = QComboBox()
@@ -703,10 +701,10 @@ class SaglikTakipPage(QWidget):
         }
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            takip_repo = registry.get("Personel_Saglik_Takip")
-            personel_repo = registry.get("Personel")
+            from core.di import get_saglik_service as _svc_factory
+            _svc = _svc_factory(self._db)
+            takip_repo = _svc._r.get("Personel_Saglik_Takip")
+            personel_repo = _svc._r.get("Personel")
             mevcut = takip_repo.get_by_id(payload["KayitNo"])
             if mevcut:
                 takip_repo.update(payload["KayitNo"], payload)
@@ -834,9 +832,9 @@ class SaglikTakipPage(QWidget):
             return
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            takip_repo = registry.get("Personel_Saglik_Takip")
+            from core.di import get_saglik_service as _svc_factory
+            _svc = _svc_factory(self._db)
+            takip_repo = _svc._r.get("Personel_Saglik_Takip")
             mevcut = takip_repo.get_all()
             mevcut_keys = {(str(r.get("Personelid", "")), int(r.get("Yil") or 0)) for r in mevcut}
 

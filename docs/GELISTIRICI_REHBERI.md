@@ -1,32 +1,243 @@
-# REPYS — Geliştirici Rehberi
+# REPYS v3 — Geliştirici Rehberi
+> Son güncelleme: Mart 2026 — Aşama 0–6 refactor tamamlandı.  
 > Yeni modül eklerken, mevcut dosyaya girerken ve servis bağlarken bu dosyaya bak.
-> "Aynı hataları yapma" listesi + fırsatçı refactor kontrol listesi.
 
 ---
 
-## 1. YENİ MODÜL AÇARKEN — Adım Adım
+## 0. ÖNCE OKU — Mevcut Mimari Özeti
 
-### 1.1 Önce tablo adını ve PK'yı kontrol et
+```
+itf_desktop/
+├── core/
+│   ├── config.py          ← AppConfig (app_mode, auto_sync, log ayarları)
+│   ├── settings.py        ← ayarlar.json okuma/yazma (get/set)
+│   ├── di.py              ← Dependency Injection fabrika fonksiyonları
+│   ├── date_utils.py      ← to_ui_date, parse_date, to_db_date
+│   ├── validators.py      ← TC, email, telefon validasyonu
+│   ├── text_utils.py      ← turkish_title_case, turkish_upper
+│   └── services/          ← TÜM iş mantığı burada (UI'dan doğrudan DB YOK)
+│       ├── cihaz_service.py
+│       ├── personel_service.py
+│       ├── rke_service.py
+│       ├── saglik_service.py
+│       ├── fhsz_service.py
+│       ├── dashboard_service.py
+│       ├── ariza_service.py
+│       ├── bakim_service.py
+│       ├── kalibrasyon_service.py
+│       ├── izin_service.py
+│       ├── dokuman_service.py
+│       ├── backup_service.py
+│       ├── log_service.py
+│       ├── settings_service.py
+│       └── file_sync_service.py
+├── ui/
+│   ├── theme_template.qss ← Tüm renkler burada (token tabanlı)
+│   ├── theme_manager.py   ← Tema uygulama (ThemeManager.instance())
+│   ├── styles/
+│   │   ├── colors.py      ← DarkTheme / C alias (live token)
+│   │   ├── themes.py      ← DARK / LIGHT dict (ham token değerleri)
+│   │   ├── components.py  ← STYLES dict (geçiş döneminde, kademeli silinecek)
+│   │   └── icons.py       ← Icons, IconRenderer, IconColors
+│   └── components/
+│       └── base_table_model.py  ← TÜM model sınıflarının ebeveyni
+```
 
-`database/table_config.py`'ye bak. Yanlış tablo adı en sık yapılan hata.
+---
 
-| Tablo               | PK          | Notlar                        |
-|---------------------|-------------|-------------------------------|
-| `Personel`          | `KimlikNo`  | "Personeller" değil           |
-| `Izin_Giris`        | `Izinid`    | "Izin" değil, "IzinId" değil  |
-| `Izin_Bilgi`        | `TCKimlik`  | İzin bakiye tablosu           |
-| `Cihaz_Ariza`       | `Arizaid`   | "ArizaId" değil               |
-| `Periyodik_Bakim`   | `Planid`    |                               |
-| `Kalibrasyon`       | `Kalid`     | "KalibrasyonId" değil         |
-| `Cihazlar`          | `Cihazid`   |                               |
-| `Sabitler`          | `Rowid`     | Dropdown listeleri buradan    |
-| `Personel_Saglik_Takip` | `KayitNo` |                            |
-| `RKE_Muayene`       | `KayitNo`   |                               |
-| `RKE_List`          | `EkipmanNo` |                               |
-| `FHSZ_Puantaj`      | —           | table_config'e bak            |
-| `Ariza_Islem`       | `Islemid`   |                               |
+## 1. SİLİNECEK DOSYALAR
 
-**Kontrol:** Yeni service yazarken şunu çalıştır:
+Hiçbir yerden import edilmiyor — güvenle silinebilir:
+
+| Dosya | Sebep |
+|---|---|
+| `core/cihaz_ozet_servisi.py` | `CihazService` tarafından tamamen ikame edildi |
+| `ui/components/data_table.py` | `DictTableModel` ve `DataTableWidget` — kullanılmıyor |
+
+```bash
+git rm core/cihaz_ozet_servisi.py
+git rm ui/components/data_table.py
+git commit -m "chore: kullanılmayan dosyalar silindi"
+```
+
+---
+
+## 2. KOD İÇİ TEMİZLENECEK SATIRLAR
+
+Bir dosyaya girdiğinde gördüklerini düzelt — fırsatçı refactor prensibi.
+
+### 2.1 Lokal `_DURUM_COLOR` dict → `self.status_fg()` kullan
+
+`BaseTableModel.status_fg()` tüm durum renklerini merkezi tutuyor. Bu dosyalardaki lokal dict'ler silinebilir:
+
+- `ui/pages/cihaz/ariza_kayit.py` — `_DURUM_COLOR = {...}` bloğu
+- `ui/pages/cihaz/bakim_form.py` — `_DURUM_COLOR = {...}` bloğu
+- `ui/pages/cihaz/kalibrasyon_form.py` — `_DURUM_COLOR = {...}` bloğu
+- `ui/pages/personel/izin_takip.py` — `DURUM_COLORS_FG = {...}` bloğu
+
+```python
+# ÖNCE (silinecek)
+_DURUM_COLOR = {"Açık": "#ef4444", "Tamamlandı": "#22c55e"}
+def _fg(self, key, row):
+    if key == "Durum":
+        c = _DURUM_COLOR.get(row.get("Durum", ""))
+        return QColor(c) if c else None
+
+# SONRA
+def _fg(self, key, row):
+    if key == "Durum":
+        return self.status_fg(row.get("Durum", ""))
+```
+
+### 2.2 Lokal `set_rows()` alias tanımları → silinebilir
+
+`BaseTableModel`'de zaten var. Bu dosyalarda lokal tanımı sil:
+
+`rke_yonetim.py`, `rke_rapor.py`, `rke_muayene.py`, `ariza_islem.py`,
+`kalibrasyon_form.py`, `ariza_kayit.py`, `bakim_form.py`, `saglik_takip.py`
+
+```python
+# Silinecek satır
+def set_rows(self, rows): self.set_data(rows)
+```
+
+### 2.3 Model dosyalarındaki `to_ui_date` import → `self._fmt_date` veya `DATE_KEYS`
+
+`BaseTableModel._fmt_date()` ve `DATE_KEYS` artık tüm tarih formatlamayı yapıyor.
+
+Etkilenen dosyalar: `base_table_model.py`, `ariza_islem.py`, `kalibrasyon_form.py`,
+`ariza_kayit.py`, `bakim_form.py`, `personel_saglik_panel.py`
+
+```python
+# ÖNCE
+from core.date_utils import to_ui_date
+def _display(self, key, row):
+    if key == "Tarih": return to_ui_date(row.get(key,""), "")
+
+# SONRA — seçenek A: DATE_KEYS (override gerektirmez)
+class BakimModel(BaseTableModel):
+    DATE_KEYS = frozenset({"PlanlananTarih", "BakimTarihi"})
+
+# SONRA — seçenek B: _fmt_date
+def _display(self, key, row):
+    if key == "Tarih": return self._fmt_date(row.get(key,""), "")
+```
+
+### 2.4 `cihaz_listesi.py` — lokal `RAW_ROW_ROLE` tanımı
+
+`BaseTableModel`'de tanımlı, lokal tanımı sil:
+```python
+# Silinecek satır
+RAW_ROW_ROLE = Qt.ItemDataRole.UserRole + 1
+```
+
+---
+
+## 3. DEVAM EDECEK GÜNCELLEMELER
+
+### 3.1 🔴 DI'ya Eksik Servis Fabrikaları — `core/di.py`
+
+9 servis DI'ya kayıtlı değil:
+
+```python
+# core/di.py — bunları ekle
+def get_izin_service(db):
+    from core.services.izin_service import IzinService
+    return IzinService(get_registry(db))
+
+def get_ariza_service(db):
+    from core.services.ariza_service import ArizaService
+    return ArizaService(get_registry(db))
+
+def get_bakim_service(db):
+    from core.services.bakim_service import BakimService
+    return BakimService(get_registry(db))
+
+def get_kalibrasyon_service(db):
+    from core.services.kalibrasyon_service import KalibrasyonService
+    return KalibrasyonService(get_registry(db))
+
+def get_dokuman_service(db):
+    from core.services.dokuman_service import DokumanService
+    return DokumanService(get_registry(db))
+
+def get_backup_service(db):
+    from core.services.backup_service import BackupService
+    return BackupService(get_registry(db))
+
+def get_log_service(db):
+    from core.services.log_service import LogService
+    return LogService(get_registry(db))
+
+def get_settings_service(db):
+    from core.services.settings_service import SettingsService
+    return SettingsService(get_registry(db))
+
+def get_file_sync_service(db):
+    from core.services.file_sync_service import FileSyncService
+    return FileSyncService(get_registry(db))
+```
+
+### 3.2 🔴 Personel UI → Servis Katmanına Taşı
+
+| Dosya | Çağrı | Hedef Servis |
+|---|---|---|
+| `personel/izin_takip.py` | 6x get_registry | `get_izin_service(db)` |
+| `personel/isten_ayrilik.py` | 3x | `get_personel_service(db)` |
+| `personel/personel_ekle.py` | 1x | `get_personel_service(db)` |
+| `personel/personel_listesi.py` | 1x | `get_personel_service(db)` |
+| `personel/personel_overview_panel.py` | 1x | `get_personel_service(db)` |
+| `personel/components/hizli_izin_giris.py` | 2x | `get_izin_service(db)` |
+| `personel/components/personel_izin_panel.py` | 1x | `get_izin_service(db)` |
+| `personel/puantaj_rapor.py` | 1x | `get_fhsz_service(db)` |
+
+### 3.3 🔴 RKE UI → Servis Katmanına Taşı
+
+| Dosya | Çağrı | Hedef Servis |
+|---|---|---|
+| `rke/rke_muayene.py` | 3x | `get_rke_service(db)` |
+| `rke/rke_rapor.py` | 1x | `get_rke_service(db)` |
+| `rke/rke_yonetim.py` | 1x | `get_rke_service(db)` |
+
+### 3.4 🟡 87 `setStyleSheet(f-string)` → `setProperty` ile QSS
+
+Tema değiştirmede bu widget'lar güncellenmez. En kritik dosyalar:
+`bakim_form.py` (12), `rke_rapor.py` (11), `kalibrasyon_form.py` (7), `sidebar.py` (4)
+
+```python
+# ÖNCE (tema değişince güncellenmez)
+label.setStyleSheet(f"color: {C.TEXT_SECONDARY}; font-size: 12px;")
+
+# SONRA (QSS otomatik günceller)
+label.setProperty("color-role", "secondary")
+label.setStyleSheet("font-size: 12px;")   # sadece renk dışı özellikler
+```
+
+### 3.5 🟡 `base_dokuman_panel.py` + `yil_sonu_devir_page.py` — RepositoryRegistry direkt
+
+```python
+# ÖNCE
+from database.repository_registry import RepositoryRegistry
+registry = RepositoryRegistry(self._db)
+
+# SONRA
+from core.di import get_dokuman_service
+svc = get_dokuman_service(self._db)
+```
+
+### 3.6 🟢 Testler Yaz
+
+```bash
+mkdir -p tests/services
+# pytest + MagicMock pattern için → Bölüm 6'ya bak
+```
+
+---
+
+## 4. YENİ MODÜL EKLERKEN
+
+### 4.1 Tablo adlarını kontrol et
+
 ```python
 python -c "
 import re
@@ -35,19 +246,27 @@ print(tables)
 "
 ```
 
----
+| Tablo | PK | Not |
+|---|---|---|
+| `Personel` | `KimlikNo` | "Personeller" değil |
+| `Izin_Giris` | `Izinid` | "IzinId" değil |
+| `Izin_Bilgi` | `TCKimlik` | İzin bakiye tablosu |
+| `Cihaz_Ariza` | `Arizaid` | "ArizaId" değil |
+| `Periyodik_Bakim` | `Planid` | |
+| `Kalibrasyon` | `Kalid` | "Kaid" değil |
+| `Cihazlar` | `Cihazid` | |
+| `Sabitler` | `Rowid` | Dropdown listeleri |
+| `Personel_Saglik_Takip` | `KayitNo` | |
+| `RKE_Muayene` | `KayitNo` | |
+| `RKE_List` | `EkipmanNo` | |
+| `FHSZ_Puantaj` | — | Composite PK — table_config'e bak |
+| `Ariza_Islem` | `Islemid` | |
 
-### 1.2 Yeni service dosyası şablonu
-
-**Dosya:** `core/services/xxx_service.py`
+### 4.2 Servis dosyası şablonu
 
 ```python
-"""
-XxxService — [Ne yapıyor, tek cümle]
-Sorumluluklar:
-- ...
-"""
-from typing import Optional, List, Dict
+# core/services/xxx_service.py
+from typing import Optional
 from core.logger import logger
 from database.repository_registry import RepositoryRegistry
 
@@ -58,30 +277,30 @@ class XxxService:
             raise ValueError("RepositoryRegistry boş olamaz")
         self._r = registry
 
-    def get_xxx_listesi(self, filtre_id: Optional[str] = None) -> List[Dict]:
+    def get_listesi(self, filtre_id: Optional[str] = None) -> list:
         try:
             rows = self._r.get("TABLO_ADI").get_all() or []
             if filtre_id:
-                rows = [r for r in rows if str(r.get("ALAN", "")) == str(filtre_id)]
+                rows = [r for r in rows if str(r.get("ALAN","")) == str(filtre_id)]
             return rows
         except Exception as e:
-            logger.error(f"Xxx listesi yükleme hatası: {e}")
+            logger.error(f"XxxService.get_listesi hatası: {e}")
             return []
 
-    def kaydet(self, veri: Dict, guncelle: bool = False) -> bool:
+    def kaydet(self, veri: dict, guncelle: bool = False) -> bool:
         try:
             repo = self._r.get("TABLO_ADI")
             if guncelle:
-                pk = veri.get("GERCEK_PK_ADI")   # ← table_config'den bak!
+                pk = veri.get("GERCEK_PK_ADI")   # table_config'den bak!
                 if not pk:
-                    logger.error("UPDATE için PK gerekli")
+                    logger.error("UPDATE için PK boş olamaz")
                     return False
                 repo.update(pk, veri)
             else:
                 repo.insert(veri)
             return True
         except Exception as e:
-            logger.error(f"Xxx kaydet hatası: {e}")
+            logger.error(f"XxxService.kaydet hatası: {e}")
             return False
 
     def sil(self, pk: str) -> bool:
@@ -89,163 +308,241 @@ class XxxService:
             self._r.get("TABLO_ADI").delete(pk)
             return True
         except Exception as e:
-            logger.error(f"Xxx sil hatası: {e}")
+            logger.error(f"XxxService.sil hatası: {e}")
             return False
+```
+
+Servis yazıldıktan sonra **`core/di.py`'ye fabrika ekle:**
+```python
+def get_xxx_service(db):
+    from core.services.xxx_service import XxxService
+    return XxxService(get_registry(db))
 ```
 
 **Kontrol listesi:**
 ```
-[ ] Tablo adını table_config.py'den kopyaladım (yazmadım)
+[ ] Tablo adını table_config.py'den kopyaladım
 [ ] PK adını table_config.py'den kopyaladım
 [ ] Her method try/except ile sarılı
-[ ] Hata durumunda [] veya False veya None dönüyor (exception fırlatmıyor)
+[ ] Hata durumunda [] veya False veya None dönüyor
 [ ] logger.error() çağrılıyor
 [ ] __init__'te None kontrolü var
+[ ] core/di.py'ye get_xxx_service() eklendi
 ```
 
----
-
-### 1.3 UI sayfası şablonu (service bağlantısı + tema ile)
+### 4.3 UI sayfası şablonu
 
 ```python
-from core.services.xxx_service import XxxService
-from ui.styles.components import STYLES
+from core.di import get_xxx_service
+from ui.styles.colors import DarkTheme as C
+from ui.styles.icons import IconRenderer, IconColors
 
 class XxxPage(QWidget):
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self._db = db
-
-        # Service bağlantısı — di.py kullan
-        if db:
-            from core.di import get_registry
-            self._svc = XxxService(get_registry(db))
-        else:
-            self._svc = None
-
+        self._db  = db
+        self._svc = get_xxx_service(db) if db else None
         self._setup_ui()
         self._load_data()
 
     def _setup_ui(self):
-        """UI bileşenlerini oluştur"""
-        # Input kontrolleri → STYLES dictionary
-        self._input = QLineEdit()
-        self._input.setStyleSheet(STYLES["input_field"])
+        lbl = QLabel("Başlık")
+        lbl.setProperty("color-role", "primary")   # f-string değil!
 
-        self._combo = QComboBox()
-        self._combo.setStyleSheet(STYLES["input_combo"])
-
-        # Renkler → setProperty ile QSS rol sistemi (ASLA f-string setStyleSheet yazmayın)
-        self._label = QLabel("Başlık")
-        self._label.setProperty("color-role", "primary")
-        self._label.style().unpolish(self._label)
-        self._label.style().polish(self._label)
-
-        self._muted = QLabel("Açıklama")
-        self._muted.setProperty("color-role", "muted")
-        self._muted.style().unpolish(self._muted)
-        self._muted.style().polish(self._muted)
-
-        # Arka plan → bg-role
-        panel = QWidget()
-        panel.setProperty("bg-role", "panel")
-        panel.style().unpolish(panel)
-        panel.style().polish(panel)
+        btn = QPushButton("Kaydet")
+        btn.setProperty("style-role", "action")
+        IconRenderer.set_button_icon(btn, "save", color=IconColors.PRIMARY, size=14)
 
     def _load_data(self):
         if not self._svc:
             return
-        rows = self._svc.get_xxx_listesi()
-        self._model.set_data(rows)
+        self._model.set_data(self._svc.get_listesi())
 ```
 
 **YAPMA:**
 ```python
-# ❌ YAPMA — UI'dan direkt registry çağırma
-repo = RepositoryRegistry(self._db).get("Periyodik_Bakim")
-rows = [r for r in repo.get_all() if ...]
+# ❌ UI'dan direkt DB çağrısı
+from core.di import get_registry
+repo = get_registry(db).get("Periyodik_Bakim")
 
-# ✅ YAP — service'ten çağır
-rows = self._svc.get_bakim_listesi(self._cihaz_id)
+# ❌ Inline f-string renk
+label.setStyleSheet(f"color: {C.TEXT_PRIMARY};")
+
+# ✅ Doğrusu
+self._svc.get_bakim_listesi(cihaz_id)
+label.setProperty("color-role", "primary")
 ```
 
----
-
-### 1.4 TableModel şablonu
+### 4.4 TableModel şablonu
 
 ```python
 from ui.components.base_table_model import BaseTableModel
-from core.date_utils import to_ui_date
 
 XXX_COLUMNS = [
-    ("DbAlani1", "Başlık 1", 120),
-    ("DbAlani2", "Başlık 2",  80),
+    ("DbAlani1", "Başlık 1", 120),   # (db_key, header, genişlik_px)
     ("Tarih",    "Tarih",     90),
     ("Durum",    "Durum",     70),
 ]
 
-_DURUM_RENK = {
-    "Aktif":   "#3ecf8e",
-    "Pasif":   "#f75f5f",
-}
-
 class XxxTableModel(BaseTableModel):
+    DATE_KEYS    = frozenset({"Tarih"})            # otomatik _fmt_date
+    ALIGN_CENTER = frozenset({"Durum", "Tarih"})   # merkez hizalama
+
     def __init__(self, rows=None, parent=None):
         super().__init__(XXX_COLUMNS, rows, parent)
 
-    def _display(self, key, row):
-        val = row.get(key, "")
-        if key == "Tarih":
-            return to_ui_date(val, "")
-        return str(val) if val else ""
-
     def _fg(self, key, row):
         if key == "Durum":
-            c = _DURUM_RENK.get(row.get("Durum", ""))
-            return QColor(c) if c else None
+            return self.status_fg(row.get("Durum", ""))
         return None
-
-    def _align(self, key):
-        if key in ("Tarih", "Durum"):
-            return Qt.AlignCenter
-        return Qt.AlignVCenter | Qt.AlignLeft
-
-    # Geriye dönük uyumluluk için alias (set_rows → set_data)
-    def set_rows(self, rows): self.set_data(rows)
 ```
+
+**BaseTableModel tam API:**
+
+```python
+# Veri yükleme
+model.set_data(rows)         # tüm veriyi değiştir + reset
+model.set_rows(rows)         # set_data alias — geriye uyumluluk
+model.append_rows(rows)      # sayfalama: mevcut veriye ekle (reset yok)
+model.clear()                # tüm veriyi temizle
+
+# Satır erişimi
+model.get_row(idx)           # indeks → dict (geçersizse None)
+model.all_data()             # tüm satırlar → list[dict]
+len(model)                   # satır sayısı
+
+# QTableView entegrasyonu
+model.setup_columns(view)                          # son kolon stretch
+model.setup_columns(view, stretch_keys=["Baslik"]) # belirli kolonlar stretch
+
+# Özel roller
+index.data(model.RAW_ROW_ROLE)    # satır dict (tercih et)
+index.data(Qt.ItemDataRole.UserRole)  # satır dict (eski API)
+
+# Override noktaları
+model._display(key, row)    # gösterim değeri
+model._fg(key, row)         # ön plan rengi → QColor | None
+model._bg(key, row)         # arka plan rengi → QColor | None
+model._align(key)           # hizalama
+model._fmt_date(val, "")    # tarih → "GG.AA.YYYY"
+model.status_fg(durum)      # durum string → QColor
+model.status_bg(durum)      # durum string → QColor (arka plan)
+```
+
+**Desteklenen durum renkleri (status_fg/status_bg):**
+`Aktif`, `Pasif`, `İzinli`, `Açık`, `İşlemde`, `Beklemede`, `Planlandı`,
+`Tamamlandı`, `Onaylandı`, `İptal`, `Geçerli`, `Geçersiz`,
+`Uygun`, `Uygun Değil`, `Hurda`, `Tamirde`
 
 **YAPMA:**
 ```python
-# ❌ YAPMA — BaseTableModel'i extend etmeden sıfırdan yaz
-class XxxTableModel(QAbstractTableModel):
-    def rowCount(...): ...
-    def columnCount(...): ...
-    def data(...): ...  # 50 satır duplikasyon
+# ❌ Sıfırdan QAbstractTableModel — 80 satır duplikasyon
+class BakimModel(QAbstractTableModel):
+    def rowCount(self, ...): ...
 
-# ✅ YAP — BaseTableModel'i extend et, sadece farklı olanı yaz
-class XxxTableModel(BaseTableModel):
-    ...
+# ❌ Lokal durum dict
+_DURUM_RENK = {"Açık": "#ef4444"}
+
+# ❌ Lokal set_rows alias
+def set_rows(self, rows): self.set_data(rows)
+
+# ❌ to_ui_date (model içinde)
+from core.date_utils import to_ui_date
 ```
 
 ---
 
-### 1.5 Renk sabitleri
+## 5. TEMA SİSTEMİ — Doğru Kullanım
+
+### 5.1 color-role (metin rengi)
 
 ```python
-# ❌ YAPMA — her dosyada ayrı _C dict tanımlama
-_C = {"red": "#f75f5f", "green": "#3ecf8e", ...}
+lbl.setProperty("color-role", "primary")    # TEXT_PRIMARY
+lbl.setProperty("color-role", "secondary")  # TEXT_SECONDARY
+lbl.setProperty("color-role", "muted")      # TEXT_MUTED
+lbl.setProperty("color-role", "disabled")   # TEXT_DISABLED
+lbl.setProperty("color-role", "accent")     # ACCENT
+lbl.setProperty("color-role", "accent2")    # ACCENT2
+lbl.setProperty("color-role", "ok")         # STATUS_SUCCESS
+lbl.setProperty("color-role", "warn")       # STATUS_WARNING
+lbl.setProperty("color-role", "err")        # STATUS_ERROR
+lbl.setProperty("color-role", "info")       # STATUS_INFO
+```
 
-# ✅ YAP — merkezi colors.py'den al
-from ui.styles.colors import C as _C
+### 5.2 style-role (QPushButton)
+
+```python
+btn.setProperty("style-role", "action")     # mavi primary
+btn.setProperty("style-role", "secondary")  # gri
+btn.setProperty("style-role", "danger")     # kırmızı
+btn.setProperty("style-role", "success")    # yeşil
+btn.setProperty("style-role", "refresh")    # yenile
+```
+
+### 5.3 style-role (QLabel)
+
+```python
+lbl.setProperty("style-role", "title")
+lbl.setProperty("style-role", "section")
+lbl.setProperty("style-role", "section-title")
+lbl.setProperty("style-role", "form")
+lbl.setProperty("style-role", "value")
+lbl.setProperty("style-role", "footer")
+lbl.setProperty("style-role", "required")
+lbl.setProperty("style-role", "stat-value")
+lbl.setProperty("style-role", "stat-label")
+lbl.setProperty("style-role", "stat-green")
+lbl.setProperty("style-role", "stat-red")
+lbl.setProperty("style-role", "stat-highlight")
+```
+
+### 5.4 Icon sistemi
+
+```python
+from ui.styles.icons import Icons, IconRenderer, IconColors
+
+# Butona ikon
+btn = QPushButton("Kaydet")
+IconRenderer.set_button_icon(btn, "save", color=IconColors.PRIMARY, size=14)
+
+# Label'a ikon
+lbl = QLabel()
+IconRenderer.set_label_icon(lbl, "users", size=20, color=IconColors.PRIMARY)
+
+# QIcon (menü / action)
+icon = Icons.get("calendar", size=16, color="#8b8fa3")
+
+# Mevcut ikonlar
+Icons.available()
+```
+
+`IconColors`: `PRIMARY`, `DANGER`, `SUCCESS`, `WARNING`, `MUTED`, `TEXT`, `EXCEL`, `PDF`, `NOTIFICATION`, `SYNC`
+
+### 5.5 Ayarlar (AppConfig + settings.py)
+
+```python
+from core import settings
+from core.config import AppConfig
+
+# Okuma
+settings.get("theme", "dark")         # "dark" | "light"
+settings.get("app_mode", "offline")   # "online" | "offline"
+settings.get("auto_sync", False)      # bool
+
+# Yazma (ayarlar.json'a kaydeder)
+settings.set("theme", "light")
+AppConfig.set_app_mode("online", persist=True)
+AppConfig.set_auto_sync(True, persist=True)
+AppConfig.is_online_mode()
+AppConfig.get_auto_sync()
 ```
 
 ---
 
-### 1.6 Test dosyası şablonu
-
-**Dosya:** `tests/services/test_xxx_service.py`
+## 6. TEST YAZMA
 
 ```python
+# tests/services/test_xxx_service.py
 import pytest
 from unittest.mock import MagicMock
 from core.services.xxx_service import XxxService
@@ -266,1635 +563,114 @@ class TestInit:
             XxxService(None)
 
 
-class TestGetXxxListesi:
+class TestGetListesi:
     def test_bos_liste(self, svc, reg):
-        reg.get("TABLO_ADI").get_all.return_value = []
-        assert svc.get_xxx_listesi() == []
+        reg.get.return_value.get_all.return_value = []
+        assert svc.get_listesi() == []
 
     def test_filtre_calisir(self, svc, reg):
-        reg.get("TABLO_ADI").get_all.return_value = [
-            {"Pk": "1", "FiltreAlani": "A"},
-            {"Pk": "2", "FiltreAlani": "B"},
+        reg.get.return_value.get_all.return_value = [
+            {"Pk": "1", "Alan": "A"},
+            {"Pk": "2", "Alan": "B"},
         ]
-        result = svc.get_xxx_listesi(filtre_id="A")
-        assert len(result) == 1
+        assert len(svc.get_listesi(filtre_id="A")) == 1
 
-    def test_repo_hatasi_bos_liste(self, svc, reg):
-        reg.get("TABLO_ADI").get_all.side_effect = Exception("Hata")
-        assert svc.get_xxx_listesi() == []
+    def test_repo_hatasi_bos_doner(self, svc, reg):
+        reg.get.return_value.get_all.side_effect = Exception("DB hatası")
+        assert svc.get_listesi() == []
 
 
 class TestKaydet:
     def test_insert(self, svc, reg):
         mock_repo = MagicMock()
         reg.get.return_value = mock_repo
-        assert svc.kaydet({"Alan": "deger"}, guncelle=False) is True
+        assert svc.kaydet({"Alan": "deger"}) is True
         mock_repo.insert.assert_called_once()
 
     def test_update_pk_yoksa_false(self, svc, reg):
-        assert svc.kaydet({"Alan": "deger"}, guncelle=True) is False
+        assert svc.kaydet({}, guncelle=True) is False
 
-    def test_db_hatasi_false(self, svc, reg):
-        mock_repo = MagicMock()
-        mock_repo.insert.side_effect = Exception("Hata")
-        reg.get.return_value = mock_repo
+    def test_db_hatasi_false_doner(self, svc, reg):
+        reg.get.return_value.insert.side_effect = Exception("Hata")
         assert svc.kaydet({"Alan": "deger"}) is False
 ```
 
-**Kontrol listesi:**
-```
-[ ] Her public method için en az 1 test var
-[ ] Hata durumu (DB exception) testi var
-[ ] İş kuralı olan methodlar için edge case testi var
-[ ] Tablo adı mock'ta doğru yazılmış (table_config'den bakıldı)
+```bash
+pip install pytest
+pytest tests/ -v
 ```
 
 ---
 
-## 2. MEVCUT DOSYAYA GİRERKEN — Fırsatçı Refactor
-
-Bir dosyayı **başka bir sebepten** açtığında (bug fix, yeni özellik, UI değişikliği),
-o dosyada aşağıdaki kontrolleri yap. **Toplu refactor yapma** — sadece girdiğin dosyayı düzelt.
-
-### Kontrol Listesi (her dosya girişinde)
-
-```
-[ ] 1. Bu dosyada RepositoryRegistry doğrudan çağrılıyor mu?
-       → Evet ise, o method'un yaptığı işi service'e taşı
-       → Service yoksa yeni service yaz (Bölüm 1.2'yi kullan)
-
-[ ] 2. Bu dosyada QAbstractTableModel sıfırdan extend ediliyor mu?
-       → Evet ise, BaseTableModel'e geçir (Bölüm 1.4'ü kullan)
-
-[ ] 3. Bu dosyada _C = {"red": ..., "green": ...} var mı?
-       → Evet ise, sil ve "from ui.styles.colors import C as _C" ekle
-
-[ ] 4. Dosyada iş kuralı var mı? (hesaplama, filtreleme, durum geçişi)
-       → Evet ise, bu kural service'te mi yoksa UI'da mı?
-       → UI'da ise ve test edilmemişse, service'e taşı + test yaz
-
-[ ] 5. Dosyada BOM veya CRLF var mı?
-       → python scripts/fix_utf8_bom.py
-```
-
-### Fırsatçı Refactor Örnekleri
-
-**Örnek A — Bug fix yaparken:**
-```
-Görev: saglik_takip.py'de tarih gösterimi yanlış
-Girince fark ettin: registry.get("Personel_Saglik_Takip") 6 kez çağrılıyor
-Yap: SaglikService yaz, bu 6 çağrıyı oraya taşı, tarih bugünü de düzelt
-Commit: "fix: tarih gösterimi + refactor: SaglikService eklendi"
-```
-
-**Örnek B — Yeni alan eklerken:**
-```
-Görev: fhsz_yonetim.py'ye yeni bir sütun ekleyeceksin
-Girince fark ettin: _C = {"red": ..., "green": ...} var
-Yap: _C'yi sil, colors.py import'unu ekle — sonra asıl işi yap
-Commit: "feat: yeni sütun + chore: _C → colors.py"
-```
-
----
-
-## 3. DOSYA YAPISI — Neyi Nereye Koyarsın
-
-```
-core/
-├── services/           ← İş mantığı buraya (DB bağımlı ama UI bağımsız)
-│   ├── bakim_service.py
-│   ├── ariza_service.py
-│   ├── izin_service.py
-│   ├── kalibrasyon_service.py
-│   └── personel_service.py
-│
-ui/
-├── components/         ← Paylaşılan UI bileşenleri
-│   ├── base_table_model.py   ← Tüm TableModel'ler bunu extend eder
-│   └── drive_upload_worker.py
-├── styles/
-│   └── colors.py       ← _C renk dict'i buradan alınır (C alias)
-│
-tests/
-└── services/           ← Her service için test dosyası
-    ├── test_bakim_service.py
-    ├── test_ariza_service.py
-    ├── test_izin_service.py
-    ├── test_kalibrasyon_service.py
-    └── test_personel_service.py
-```
-
-**Karar ağacı — yeni dosyayı nereye koyacaksın?**
-
-```
-Yeni kod nedir?
-│
-├── Veritabanı işlemi + iş kuralı → core/services/xxx_service.py
-│
-├── Birden fazla UI sayfasında kullanılacak widget → ui/components/
-│
-├── Sadece bir sayfaya özgü ama bağımsız dialog/panel
-│   └── ui/pages/[alan]/components/xxx_dialog.py
-│
-├── Sayfanın ana formu → ui/pages/[alan]/xxx_form.py (büyük olsa da tek dosya)
-│
-└── Test → tests/services/test_xxx_service.py
-```
-
----
-
-## 4. YAPMA LİSTESİ
-
-Geçmişte yapılan hatalar — bunları tekrarlama:
-
-| ❌ Yapma | ✅ Yap |
-|---------|--------|
-| Tablo adını kafadan yaz (`"Personeller"`) | `table_config.py`'den kopyala (`"Personel"`) |
-| PK adını kafadan yaz (`"ArizaId"`) | `table_config.py`'den kopyala (`"Arizaid"`) |
-| UI'dan direkt `RepositoryRegistry().get()` çağır | Service method'u çağır |
-| Yeni `QAbstractTableModel` sıfırdan yaz | `BaseTableModel`'i extend et |
-| Hardcoded hex renkler (#f0f0f0, #333, #e81123) | DarkTheme token'larını DOĞRUDAN DEĞİL, `setProperty` ile kullan |
-| Her dosyaya `_C = {"red": ...}` kopyala | `from ui.styles.colors import DarkTheme as C` |
-| `setStyleSheet(f"color: {C.TEXT_MUTED}; ...")` ile renk yaz | `setProperty("color-role", "muted")` + unpolish/polish |
-| `setStyleSheet(f"background: {C.BG_SECONDARY}")` ile arka plan yaz | `setProperty("bg-role", "panel")` + unpolish/polish |
-| QLineEdit/QComboBox/QSpinBox'a manuel stylesheet | `setStyleSheet(STYLES["input_field"])` veya `STYLES["input_combo"]` |
-| Service yazmadan önce UI'a gömülü iş mantığını test et | Önce service yaz, test yaz, sonra UI'a bağla |
-| 20 dosyayı aynı anda refactor et | Sadece girdiğin dosyayı düzelt |
-| Test dosyası olmadan service'i canlıya al | Önce test yaz, testler geçsin, sonra bağla |
-| Windows'ta düzenlenen dosyayı CRLF ile commit et | `fix_utf8_bom.py` çalıştır veya editörde LF ayarla |
-
----
-
-## 5. KALAN DİREKT DB ÇAĞRILARI (Fırsatçı Temizlenecek)
-
-Bu dosyalara **başka bir sebepten** girdiğinde, direkt registry çağrılarını
-o seferlik servise bağla. Toplu yapmaya çalışma.
-
-| Dosya | Kalan çağrı | Hangi service |
-|-------|------------|--------------|
-| `personel/izin_takip.py` | 13 | `IzinService` (bağlı ama eksik method'lar var) |
-| `personel/components/personel_overview_panel.py` | 12 | `PersonelService` |
-| `personel/personel_ekle.py` | 11 | `PersonelService` (kısmen bağlı) |
-| `personel/components/hizli_izin_giris.py` | 10 | `IzinService` |
-| `rke/rke_muayene.py` | 8 | `RkeService` (henüz yok) |
-| `personel/personel_listesi.py` | 8 | `PersonelService` (kısmen bağlı) |
-| `personel/fhsz_yonetim.py` | 7 | `FhszService` (henüz yok) |
-| `cihaz/components/cihaz_overview_panel.py` | 7 | mevcut servisler |
-| `cihaz/cihaz_ekle.py` | 7 | `CihazService` (henüz yok) |
-| `personel/saglik_takip.py` | 6 | `SaglikService` (henüz yok) |
-| `cihaz/cihaz_listesi.py` | 6 | mevcut servisler |
-| `cihaz/ariza_islem.py` | 5 | `ArizaService` |
-| *(diğerleri 1–4 çağrı)* | ... | ... |
-
-**Yeni service gerektiğinde** (rke, fhsz, saglik, cihaz):
-→ Bölüm 1.2 şablonunu kullan
-→ Bölüm 1.6 test şablonunu kullan
-→ Önce test yaz, sonra UI'a bağla
-
----
-
-## 5a. TEMA SİSTEMİ — QSS Rol Sistemi (v3 Refactor)
-
-> **ÖNEMLİ:** Bu bölüm Mart 2026'daki tam refaktör sonrası güncellenmiştir.
-> `setStyleSheet(f"color: {C.TEXT_MUTED}...")` artık **yasaktır** — her yerde
-> `setProperty` + QSS rol sistemi kullanılır.
-
----
-
-### 5a.1 Mimari Özet
-
-Tema sistemi üç katmandan oluşur:
-
-```
-1. _LiveThemeMeta (ui/styles/colors.py)
-   └── DarkTheme.BG_PRIMARY çağrıldığında aktif temayı (Dark/Light) döndürür
-       Tüm import'lar DarkTheme kullanmaya devam eder, kod değişmez.
-
-2. theme_template.qss — QSS Rol Sistemi
-   └── *[color-role="muted"]  { color: {TEXT_MUTED}; }
-       *[bg-role="panel"]     { background-color: {BG_SECONDARY}; }
-       Tema değişince app.setStyleSheet() çağrısı tüm roller'ı günceller.
-
-3. STYLES dict (ui/styles/components.py)
-   └── STYLES["input_field"], STYLES["btn_action"] vb.
-       Input/buton gibi karmaşık widget'lar için pre-built QSS blokları.
-       refresh_styles() çağrıldığında aktif temayı kullanarak yeniden üretilir.
-```
-
-**Neden f-string setStyleSheet artık yasak?**
+## 7. TÜRKÇE METİN VE VALİDASYON
 
 ```python
-# Bu satır çalıştığında Python C.TEXT_MUTED değerini hesaplar
-# ve "#4d6070" string'ini widget'a yazar.
-# Tema değişse de widget "#4d6070" değerini tutar — tema körü olur.
-label.setStyleSheet(f"color: {C.TEXT_MUTED}; font-size: 11px;")  # ❌
-```
-
-**QSS rol sistemi neden doğru çalışır?**
-
-```python
-# Widget sadece rolünü bilir, rengi bilmez.
-# app.setStyleSheet() çağrıldığında QSS motoru rolden rengi hesaplar.
-label.setProperty("color-role", "muted")   # ✅
-label.style().unpolish(label)
-label.style().polish(label)
-```
-
----
-
-### 5a.2 Renk Rolleri — color-role
-
-```python
-# Kullanım:
-widget.setProperty("color-role", "<rol>")
-widget.style().unpolish(widget)
-widget.style().polish(widget)
-```
-
-| Rol | Token | Kullanım |
-|-----|-------|----------|
-| `"primary"` | `TEXT_PRIMARY` | Normal metin, başlıklar |
-| `"secondary"` | `TEXT_SECONDARY` | İkincil metin |
-| `"muted"` | `TEXT_MUTED` | Açıklama, hint metni |
-| `"disabled"` | `TEXT_DISABLED` | Pasif/devre dışı metin |
-| `"accent"` | `ACCENT` | Vurgu, link, aktif etiket |
-| `"accent2"` | `ACCENT2` | İkincil vurgu |
-| `"ok"` | `STATUS_SUCCESS` | Başarı durumu |
-| `"warn"` | `STATUS_WARNING` | Uyarı durumu |
-| `"err"` | `STATUS_ERROR` | Hata durumu |
-| `"info"` | `STATUS_INFO` | Bilgi durumu |
-
-**Örnek:**
-```python
-# Durum label'ı — runtime'da rol değiştirilir
-lbl = QLabel("Kayıt Başarılı")
-lbl.setProperty("color-role", "ok")
-lbl.style().unpolish(lbl)
-lbl.style().polish(lbl)
-
-# Dinamik durum güncellemesi
-def set_status(self, durum: str):
-    role_map = {"ok": "ok", "hata": "err", "uyarı": "warn"}
-    self._status_lbl.setProperty("color-role", role_map.get(durum, "muted"))
-    self._status_lbl.style().unpolish(self._status_lbl)
-    self._status_lbl.style().polish(self._status_lbl)
-```
-
----
-
-### 5a.3 Arka Plan Rolleri — bg-role
-
-```python
-widget.setProperty("bg-role", "<rol>")
-widget.style().unpolish(widget)
-widget.style().polish(widget)
-```
-
-| Rol | Token | Kullanım |
-|-----|-------|----------|
-| `"page"` | `BG_PRIMARY` | Ana pencere/sayfa zemini |
-| `"panel"` | `BG_SECONDARY` | Panel, kart, QGroupBox içi |
-| `"elevated"` | `BG_ELEVATED` | Popup, tooltip zemini |
-| `"hover"` | `BG_TERTIARY` | Hover efekti |
-| `"input"` | `INPUT_BG` | Input arka planı |
-| `"separator"` | `BORDER_PRIMARY` | Yatay/dikey ayırıcı çizgi |
-| `"separator-secondary"` | `BORDER_SECONDARY` | İkincil ayırıcı |
-| `"accent"` | `ACCENT` | Accent renkli arka plan |
-| `"transparent"` | transparent | Şeffaf arka plan |
-
-**Örnek — Separator:**
-```python
-sep = QFrame()
-sep.setFrameShape(QFrame.Shape.HLine)
-sep.setFixedHeight(1)
-sep.setProperty("bg-role", "separator")  # ✅ Renk yazmaya gerek yok
-sep.style().unpolish(sep)
-sep.style().polish(sep)
-```
-
----
-
-### 5a.4 Kenarlık Rolleri — border-role
-
-```python
-widget.setProperty("border-role", "<rol>")
-```
-
-| Rol | Açıklama |
-|-----|----------|
-| `"top"` | Üst kenarlık (`BORDER_PRIMARY`) |
-| `"top-secondary"` | Üst kenarlık (`BORDER_SECONDARY`) |
-| `"bottom"` | Alt kenarlık |
-| `"panel"` | Dört taraf, panel görünümü |
-
-**Örnek — Nav bar:**
-```python
-nav = QWidget()
-nav.setProperty("border-role", "top-secondary")  # ✅
-# Eski: nav.setStyleSheet(f"border-top:1px solid {C.BORDER_SECONDARY};")  ❌
-```
-
----
-
-### 5a.5 Font Rolleri — font-role (sadece QLabel)
-
-```python
-lbl.setProperty("font-role", "<rol>")
-```
-
-| Rol | Boyut |
-|-----|-------|
-| `"xs"` | 9px |
-| `"sm"` | 10px |
-| `"body"` | 11px |
-| `"md"` | 12px |
-| `"lg"` | 13px |
-| `"xl"` | 14px |
-| `"stat"` | 16px |
-| `"hero"` | 18px, bold |
-
-**Örnek — Renk + Font birlikte:**
-```python
-lbl = QLabel("Toplam: 42")
-lbl.setProperty("color-role", "accent")
-lbl.setProperty("font-role", "stat")
-lbl.style().unpolish(lbl)
-lbl.style().polish(lbl)
-```
-
----
-
-### 5a.6 QGroupBox — gb-role
-
-```python
-grp = QGroupBox("Kadro Bilgileri")
-grp.setProperty("gb-role", "section")  # Standart panel görünümü
-```
-
-`gb-role="section"` uygulanan QGroupBox otomatik olarak:
-- Arka plan: `BG_SECONDARY`
-- Kenarlık: `BORDER_PRIMARY`, `border-radius: 8px`
-- Başlık rengi: `ACCENT`
-
----
-
-### 5a.7 STYLES Dictionary — Karmaşık Widget'lar
-
-Roller basit renk/bg atamalar için yeterlidir. Input, buton gibi karmaşık
-`:focus`, `:hover`, `:disabled` state'lere ihtiyaç duyan widget'lar için
-`STYLES` dict kullanılmaya devam eder.
-
-```python
-from ui.styles.components import STYLES
-
-# Input widget'ları — STYLES kullan (roller yetmez)
-inp.setStyleSheet(STYLES["input_field"])    # QLineEdit
-cmb.setStyleSheet(STYLES["input_combo"])    # QComboBox
-spn.setStyleSheet(STYLES["spin"])           # QSpinBox
-dte.setStyleSheet(STYLES["input_date"])     # QDateEdit
-
-# Butonlar
-btn.setStyleSheet(STYLES["btn_action"])     # Mavi aksiyon
-btn.setStyleSheet(STYLES["btn_primary"])    # Birincil
-btn.setStyleSheet(STYLES["btn_secondary"])  # Şeffaf
-btn.setStyleSheet(STYLES["btn_danger"])     # Kırmızı
-```
-
-**STYLES'ın da dinamik olması için:** `refresh_styles()` çağrısı
-`theme_manager.set_theme()` içinde otomatik yapılıyor. STYLES'ı kullanan
-widget'lar tema değişiminden önce `setStyleSheet`'leri uygulanmış olduğundan
-`_on_theme_changed` metodunda sayfalar yeniden oluşturulur (bkz. 5a.9).
-
----
-
-### 5a.8 DarkTheme Token'ları — Hâlâ Kullanılır
-
-`DarkTheme` sınıfı artık `_LiveThemeMeta` metaclass ile donatılmıştır.
-`DarkTheme.BG_PRIMARY` yazıldığında aktif tema (Dark veya Light) döndürülür.
-Import'lar değişmez.
-
-```python
-from ui.styles.colors import DarkTheme as C
-
-# Bunlar hâlâ geçerli — özellikle IconRenderer, badge rengi gibi
-# Renk string'i gereken (setStyleSheet dışı) yerlerde kullan:
-IconRenderer.set_button_icon(btn, "save", color=C.TEXT_PRIMARY, size=14)
-
-badge_color = C.STATUS_SUCCESS   # String olarak renk gerekiyorsa
-QColor(C.ACCENT)                 # QPalette vb. için
-
-# Tüm token listesi:
-C.TEXT_PRIMARY / TEXT_SECONDARY / TEXT_MUTED / TEXT_DISABLED
-C.BG_PRIMARY / BG_SECONDARY / BG_TERTIARY / BG_ELEVATED
-C.BORDER_PRIMARY / BORDER_SECONDARY / BORDER_FOCUS
-C.ACCENT / ACCENT2 / ACCENT_BG
-C.INPUT_BG / INPUT_BORDER / INPUT_BORDER_FOCUS
-C.BTN_PRIMARY_BG / BTN_PRIMARY_HOVER / BTN_PRIMARY_TEXT
-C.BTN_DANGER_BG / BTN_DANGER_TEXT
-C.BTN_SUCCESS_BG / BTN_SUCCESS_TEXT
-C.STATUS_SUCCESS / STATUS_WARNING / STATUS_ERROR / STATUS_INFO
-C.RKE_PURP
-```
-
-**Dikkat:** `setStyleSheet(f"color: {C.TEXT_MUTED}")` **yasak** olduğu için
-token'ları doğrudan `setStyleSheet` içinde kullanmayın. Renk string'ine
-ihtiyaç duyan başka API'ler (QPalette, QColor, IconRenderer) için kullanın.
-
----
-
-### 5a.9 Tema Değişimi — Nasıl Çalışır
-
-`settings_page.py`'de tema değiştirildiğinde:
-
-```
-ThemeManager.set_theme(app, "light")
-  │
-  ├─ ThemeRegistry güncellenir
-  ├─ QPalette güncellenir
-  ├─ app.setStyleSheet(yeni_qss)   → tüm [color-role], [bg-role] widget'ları güncellenir
-  ├─ refresh_styles()              → STYLES dict yeniden üretilir
-  ├─ widget.refresh_theme()        → refresh_theme() metodu olan widget'lar çağrılır
-  ├─ _on_theme_changed signal      → MainWindow dinler
-  │
-  └─ MainWindow._on_theme_changed()
-       └─ Tüm _pages cache'i temizlenir (deleteLater)
-          Kullanıcı menüden tekrar tıklayınca sayfa yeni temayla sıfırdan açılır
-```
-
-**Neden sayfalar yeniden oluşturuluyor?**
-
-STYLES kullanan widget'lar (input, buton) `__init__`'te `setStyleSheet` çağrısı
-yapar. Bu string widget içine yazılır ve app.setStyleSheet() çağrısı bunu
-değiştiremez. Sayfayı yeniden oluşturmak tek güvenilir çözümdür.
-
-**setProperty kullanan widget'lar** (rol sistemi) ise `_on_theme_changed`
-tetiklendiğinde `app.setStyleSheet()` ile otomatik güncellenir — sayfa
-yeniden oluşturulmasına gerek yoktur.
-
----
-
-### 5a.10 Yapma / Yap Tablosu
-
-| ❌ Yapma | ✅ Yap |
-|---------|--------|
-| `setStyleSheet(f"color: {C.TEXT_MUTED}; ...")` | `setProperty("color-role", "muted")` + unpolish/polish |
-| `setStyleSheet(f"background: {C.BG_SECONDARY}")` | `setProperty("bg-role", "panel")` + unpolish/polish |
-| `setStyleSheet(f"border-top: 1px solid {C.BORDER_SECONDARY}")` | `setProperty("border-role", "top-secondary")` |
-| `sep.setStyleSheet(f"background-color: {C.BORDER_PRIMARY}")` | `sep.setProperty("bg-role", "separator")` |
-| `grp.setStyleSheet(f"QGroupBox {{ background: {C.BG_SECONDARY}; ... }}")` | `grp.setProperty("gb-role", "section")` |
-| Hardcoded hex: `setStyleSheet("color: #4d6070")` | Rol sistemi veya DarkTheme token'ı |
-| `inp.setStyleSheet(f"background: {C.INPUT_BG}; ...")` | `inp.setStyleSheet(STYLES["input_field"])` |
-| `DarkTheme.BG_PRIMARY` string'ini setStyleSheet içinde kullan | setProperty + rol |
-| Yeni sayfa dosyasında `from ui.styles.colors import DarkTheme as C` ve f-string stil | Sadece STYLES + setProperty |
-
----
-
-### 5a.11 Tam Örnek — Yeni Sayfa
-
-```python
-from ui.styles.components import STYLES
-from ui.styles.colors import DarkTheme as C  # IconRenderer vb. için
-from ui.styles.icons import IconRenderer
-
-class OzetPage(QWidget):
-    def _setup_ui(self):
-        # Sayfa zemini
-        self.setProperty("bg-role", "page")
-
-        # Başlık label
-        title = QLabel("Özet Rapor")
-        title.setProperty("color-role", "primary")
-        title.setProperty("font-role", "hero")
-        title.style().unpolish(title)
-        title.style().polish(title)
-
-        # Açıklama label
-        desc = QLabel("Seçili döneme ait veriler")
-        desc.setProperty("color-role", "muted")
-        desc.setProperty("font-role", "body")
-        desc.style().unpolish(desc)
-        desc.style().polish(desc)
-
-        # Separator
-        sep = QFrame()
-        sep.setFrameShape(QFrame.Shape.HLine)
-        sep.setFixedHeight(1)
-        sep.setProperty("bg-role", "separator")
-
-        # Nav bar
-        nav = QWidget()
-        nav.setProperty("border-role", "top-secondary")
-
-        # GroupBox
-        grp = QGroupBox("Kişisel Bilgiler")
-        grp.setProperty("gb-role", "section")
-
-        # Input — STYLES kullan
-        inp = QLineEdit()
-        inp.setStyleSheet(STYLES["input_field"])
-
-        # İkon butonu — C token'ı sadece renk string'i için
-        btn = QPushButton()
-        IconRenderer.set_button_icon(btn, "edit", color=C.TEXT_SECONDARY, size=14)
-        btn.setStyleSheet(STYLES["btn_secondary"])
-
-        # Durum label — dinamik
-        self._status = QLabel()
-        self._set_status("bekliyor")
-
-    def _set_status(self, durum: str):
-        role = {"ok": "ok", "hata": "err", "uyarı": "warn"}.get(durum, "muted")
-        self._status.setProperty("color-role", role)
-        self._status.style().unpolish(self._status)
-        self._status.style().polish(self._status)
-```
-
-
----
-
-## 6. KALAN DİREKT DB ÇAĞRILARI (Fırsatçı Temizlenecek)
-
-Eski bölüm numarası 5 — şimdi 6 oldu.
-
-## 7. DOSYA YÖNETİMİ — Belge Yükleme ve Drive Entegrasyonu
-
-### 7.1 Mimari Özet
-
-Hibrit dosyalama sistemi üç katmandan oluşur:
-
-```
-UI Katmanı
-  BaseDokumanPanel          ← Belge paneli gereken her yerde bunu extend et
-  (cihaz/personel_dokuman_panel sadece 20 satır wrapper)
-
-Servis Katmanı
-  DokumanService            ← upload + Dokumanlar DB kaydı tek method
-  FileSyncService           ← offline dosyaları sync sırasında Drive'a çıkar
-
-Drive Katmanı
-  GoogleDriveService        ← find_or_create_folder() klasörü otomatik oluşturur
-  OfflineCloudAdapter       ← Drive yoksa local'e kopyalar, aynı arayüz
-```
-
----
-
-### 7.2 Yeni Belge Paneli Açarken
-
-**Doğru yol — BaseDokumanPanel extend et:**
-
-```python
-# ui/pages/xxx/components/xxx_dokuman_panel.py
-from ui.components.base_dokuman_panel import BaseDokumanPanel
-
-class XxxDokumanPanel(BaseDokumanPanel):
-    def __init__(self, entity_id, db=None, parent=None):
-        super().__init__(
-            entity_type   = "xxx",           # "cihaz" | "personel" | "rke"
-            entity_id     = entity_id,
-            folder_name   = "Xxx_Belgeler",  # Drive'da oluşturulacak klasör adı
-            doc_type      = "Xxx_Belge",     # Dokumanlar.DocType değeri
-            belge_tur_kod = "Xxx_Belge_Tur", # Sabitler'deki Kod değeri
-            db            = db,
-            parent        = parent,
-        )
-```
-
-Bu kadar. Upload formu, dosya listesi, Drive/local hibrit yükleme, Dokumanlar DB kaydı —
-hepsi `BaseDokumanPanel`'de. Eklenecek tek şey `folder_name`.
-
-**Checklist:**
-```
-[ ] folder_name Sabitler tablosuna EKLEMEDİM (gerek yok, Drive otomatik oluşturur)
-[ ] DocType değerini file_sync_service.py'deki DOCTYPE_FOLDER_MAP'e ekledim
-[ ] entity_type "cihaz" | "personel" | "rke" formatında
-[ ] Sabitler'de "Xxx_Belge_Tur" Kod değerleri var (yoksa default "Belge/Rapor/Diğer" çıkar)
-```
-
----
-
-### 7.3 Panel Dışında Dosya Yüklerken — DokumanService
-
-Panel dışında (worker thread, kayıt sırasında otomatik yükleme vb.) belge yüklenmesi
-gerekiyorsa **DokumanService** kullan:
-
-```python
-from core.services.dokuman_service import DokumanService
-
-svc = DokumanService(db)
-sonuc = svc.upload_and_save(
-    file_path    = "/path/to/file.pdf",
-    entity_type  = "personel",
-    entity_id    = tc_no,
-    belge_turu   = "Diploma1",
-    folder_name  = "Personel_Diploma",
-    doc_type     = "Personel_Diploma",
-    aciklama     = "",
-    iliskili_id  = None,   # opsiyonel: ilişkili kayıt ID
-    iliskili_tip = None,   # opsiyonel: "RKE_Muayene" vb.
+from core.text_utils import turkish_title_case, turkish_upper, turkish_lower
+from core.validators import validate_tc_kimlik_no, validate_email, validate_not_empty
+from ui.components.formatted_widgets import (
+    apply_title_case_formatting,
+    apply_numeric_only,
+    apply_phone_number_formatting,
+    apply_combo_title_case_formatting,
 )
 
-if sonuc["ok"]:
-    drive_link = sonuc["drive_link"]   # online ise
-    local_path = sonuc["local_path"]   # offline ise
-else:
-    logger.error(sonuc["error"])
-```
+# QLineEdit otomatik formatlama
+apply_title_case_formatting(self.txt_ad_soyad)
+apply_numeric_only(self.txt_tc); self.txt_tc.setMaxLength(11)
+apply_phone_number_formatting(self.txt_tel)
 
-`upload_and_save` online modda Drive'a, offline modda `data/offline_uploads/<folder_name>/`'e
-yükler. Dokumanlar tablosuna her iki durumda da kaydeder.
-
----
-
-### 7.3.1 QThread ile DokumanService — SQLite Thread Safety
-
-**ÖNEMLİ:** SQLite connection'ları oluşturuldukları thread'de kullanılmalıdır.  
-QThread içinde `DokumanService` kullanırken **db instance'ı değil, db_path gönderin**:
-
-```python
-from PySide6.QtCore import QThread, Signal
-from database.sqlite_manager import SQLiteManager
-from core.services.dokuman_service import DokumanService
-from core.paths import DB_PATH
-
-class DokumanUploadWorker(QThread):
-    """Tek bir dosya için DokumanService upload worker'ı."""
-    upload_finished = Signal(str, dict)
-    upload_error = Signal(str, str)
-
-    def __init__(self, db_path: str, job: dict, parent=None):
-        super().__init__(parent)
-        self._db_path = db_path  # ← db instance DEĞİL, db_path!
-        self._job = job
-
-    def run(self):
-        try:
-            # Her thread kendi DB connection'ını oluşturur (SQLite thread güvenliği için)
-            db = SQLiteManager(self._db_path, check_same_thread=False)
-            svc = DokumanService(db)
-            sonuc = svc.upload_and_save(
-                file_path=self._job["file_path"],
-                entity_type=self._job["entity_type"],
-                entity_id=self._job["entity_id"],
-                belge_turu=self._job["belge_turu"],
-                folder_name=self._job["folder_name"],
-                doc_type=self._job["doc_type"],
-                custom_name=self._job.get("custom_name"),
-            )
-            if sonuc.get("ok"):
-                self.upload_finished.emit(self._job["db_field"], sonuc)
-            else:
-                self.upload_error.emit(
-                    self._job["db_field"],
-                    sonuc.get("error", "Bilinmeyen yükleme hatası")
-                )
-        except Exception as e:
-            self.upload_error.emit(self._job.get("db_field", ""), str(e))
-
-# UI panelinden kullanım:
-worker = DokumanUploadWorker(DB_PATH, job)  # ← self._db.db_path DEĞİL, DB_PATH!
-worker.upload_finished.connect(self._on_upload_success)
-worker.upload_error.connect(self._on_upload_error)
-worker.start()
-```
-
-**Checklist:**
-```
-[ ] QThread worker'a db instance yerine db_path gönderiyorum
-[ ] Worker'ın run() metodunda yeni SQLiteManager(db_path, check_same_thread=False) oluşturuyorum
-[ ] DB_PATH'i core.paths'ten import ettim
-[ ] Main thread'de oluşturulan db connection'ını thread'ler arası paylaşmıyorum
-```
-
-**YAPMA:**
-```python
-# ❌ Main thread'in db instance'ını worker'a gönderme
-worker = DokumanUploadWorker(self._db, job)
-
-# ❌ Thread içinde main thread connection'ını kullanma
-svc = DokumanService(self._db)  # SQLite hatası: "objects created in a thread can only be used in that same thread"
-
-# ✅ YAP — db_path gönder, thread içinde yeni connection oluştur
-worker = DokumanUploadWorker(DB_PATH, job)
+# Kaydetme validasyonu
+if not validate_tc_kimlik_no(self.txt_tc.text().strip()):
+    QMessageBox.warning(self, "Uyarı", "Geçersiz TC Kimlik No!")
+    return
 ```
 
 ---
 
-### 7.5 Drive Klasör Yapısı
-
-Drive klasörleri **ilk upload anında otomatik oluşturulur**. Manuel oluşturma gerekmez,
-Sabitler tablosuna ID girme gerekmez.
-
-```
-My Drive/
-  REPYS/                   ← DokumanService otomatik oluşturur
-    Cihaz_Belgeler/        ← entity_type="cihaz" belgeleri
-    Personel_Belge/        ← entity_type="personel" genel belgeler
-    Personel_Resim/        ← profil fotoğrafları
-    Personel_Diploma/      ← diploma dosyaları
-    RKE_Rapor/             ← muayene raporları
-    Saglik_Raporlari/      ← sağlık muayene raporları
-    Xxx_Belgeler/          ← yeni modül ekleyince burada otomatik açılır
-```
-
-**Klasör ID cache'i:** ID'ler process boyunca memory'de tutulur. Uygulama kapanınca
-sıfırlanır — bir sonraki açılışta Drive'dan tekrar sorgulanır, yoksa oluşturulur.
-Bu bir sorun değil, Drive'a sadece `files.list` isteği gider.
-
-**Eski Sabitler yöntemi:**
-```
-# ❌ Artık gerekmiyor — bunu yapma
-Sabitler: Kod='Sistem_DriveID', MenuEleman='Cihaz_Belgeler', Aciklama='1AbCdEf...'
-
-# ✅ DokumanService hallediyor, Drive'da klasör yoksa kendisi oluşturuyor
-```
-
----
-
-### 7.6 Offline → Online Dosya Senkronizasyonu
-
-Offline modda yüklenen dosyalar `data/offline_uploads/<folder_name>/` klasörüne kaydedilir.
-Online moda geçildiğinde `SyncWorker` çalışır ve **DB sync başlamadan önce** bu dosyaları
-Drive'a yükler:
-
-```
-SyncWorker.run()
-  │
-  ├─ FileSyncService.push_pending_files()   ← ÖNCE: offline dosyaları Drive'a çıkar
-  │    Dokumanlar WHERE LocalPath!='' AND DrivePath=''
-  │    → Drive'a yükle → DrivePath güncelle → sync_status='dirty'
-  │
-  └─ SyncService.sync_all()                 ← SONRA: DrivePath dolu kayıtlar Sheets'e gider
-```
-
-**FileSyncService için DocType → klasör eşlemesi** (`core/services/file_sync_service.py`):
-
-```python
-DOCTYPE_FOLDER_MAP = {
-    "Cihaz_Belge":       "Cihaz_Belgeler",
-    "Personel_Belge":    "Personel_Belge",
-    "RKE_Rapor":         "RKE_Rapor",
-    "Personel_Resim":    "Personel_Resim",
-    "Personel_Diploma":  "Personel_Diploma",
-}
-```
-
-**Yeni DocType ekleyince bu map'i de güncelle.** Yoksa offline kaydedilen dosyalar
-Drive'a çıkamaz.
-
----
-
-### 7.7 Dokumanlar Tablosu Senkronizasyonu
-
-`Dokumanlar` tablosu artık `sync=True` — makineler arası senkronize edilir.
-Google Sheets'te `itf_ortak_vt` spreadsheet'inde `Dokumanlar` sayfası gereklidir.
-
-**Tek seferlik kurulum (her yeni kurulumda):**
-```
-1. Google Drive'da "itf_ortak_vt" adlı spreadsheet oluştur
-2. "Dokumanlar" adlı sheet ekle
-3. Birinci satıra başlıkları yaz (table_config.py'deki columns sırası):
-   EntityType | EntityId | BelgeTuru | Belge | DocType | DisplayName |
-   LocalPath | BelgeAciklama | YuklenmeTarihi | DrivePath |
-   IliskiliBelgeID | IliskiliBelgeTipi
-4. veritabani.json'a ekle:
-   "ortak": {"dosya": "itf_ortak_vt", "sayfalar": ["Dokumanlar"]}
-```
-
-**LocalPath farklı makinelerde geçersizdir** — bu normal. Diğer makine `DrivePath`'ten
-açar, `LocalPath` sadece o dosyanın oluşturulduğu makinede çalışır.
-
----
-
-### 7.8 Eski Upload Pattern'leri — Taşınacak Dosyalar
-
-Aşağıdaki dosyalar hâlâ eski yöntemi kullanıyor. **Fırsatçı** olarak girildiğinde
-`DokumanService` ile değiştir:
-
-| Dosya | Eski yöntem | Yapılacak | Durum |
-|-------|------------|-----------|-------|
-| `personel/saglik_takip.py` | `cloud.upload_file()` direkt + Dokumanlar kaydı YOK | `DokumanService.upload_and_save()` | ✅ Tamamlandı |
-| `rke/rke_muayene.py` | `StorageService` + direkt Dokumanlar insert | `DokumanService.upload_and_save()` | ⏳ Bekliyor |
-| `personel/personel_ekle.py` | `DriveUploadWorker` + direkt Dokumanlar insert | `DokumanService` + `QThread` | ✅ Tamamlandı |
-| `personel/components/personel_overview_panel.py` | `DriveUploadWorker` + direkt Dokumanlar insert | `DokumanService` + `QThread` | ✅ Tamamlandı |
-
-**saglik_takip.py için dikkat:** Şu an Dokumanlar tablosuna kayıt yapmıyor.
-Taşıyınca `iliskili_id=kayit_no`, `iliskili_tip="Personel_Saglik_Takip"` parametrelerini ver.
-
----
-
-### 7.9 Yapma Listesi — Dosyalama
-
-| ❌ Yapma | ✅ Yap |
-|---------|--------|
-| Sabitler'e Drive klasör ID'si gir | `DokumanService` otomatik oluşturur |
-| `StorageService.upload()` direkt çağır | `DokumanService.upload_and_save()` kullan |
-| `RepositoryRegistry.get("Dokumanlar").insert()` direkt yaz | `DokumanService.upload_and_save()` kullan |
-| `DriveUploadWorker` ile yeni upload kodu yaz | `DokumanService` + basit `QThread` (7.3.1'e bak) |
-| `cloud.upload_file()` direkt çağır | `DokumanService` kullan |
-| Yeni `_dokuman_panel.py` sıfırdan yaz | `BaseDokumanPanel` extend et |
-| Drive'da klasörü elle oluştur | İlk upload'da otomatik oluşur |
-| Yeni DocType ekleyip `DOCTYPE_FOLDER_MAP`'i güncelleme | `file_sync_service.py`'deki map'i güncelle |
-| QThread worker'a db instance gönder | db_path gönder, thread içinde yeni connection oluştur (7.3.1) |
-
-
----
-
-## 8. İKON SİSTEMİ — Emoji Yerine `icons.py`
-
-### 8.1 Neden
-
-Emoji'ler platform bağımlıdır — Windows, macOS ve Linux'ta farklı render edilir,
-bazı fontlarda hiç görünmez. `icons.py` SVG tabanlı, renk/boyut kontrol edilebilir,
-önbellekli ve DarkTheme ile uyumludur.
-
-```python
-# ❌ YAPMA — emoji ile etiket/buton
-btn = QPushButton("📁 Dosya Seç")
-lbl = QLabel("⚠  Uyarı")
-title = QLabel("📄  Belge Yükle")
-
-# ✅ YAP — icons.py kullan
-from ui.styles.icons import Icons, IconRenderer, IconColors
-
-btn = QPushButton("Dosya Seç")
-IconRenderer.set_button_icon(btn, "upload", color=IconColors.PRIMARY, size=16)
-```
-
----
-
-### 8.2 Import
-
-```python
-from ui.styles.icons import Icons, IconRenderer, IconColors
-```
-
----
-
-### 8.3 Kullanım Şekilleri
-
-**QPushButton'a ikon:**
-```python
-btn = QPushButton("Kaydet")
-IconRenderer.set_button_icon(btn, "save", color=IconColors.PRIMARY, size=16)
-
-btn_sil = QPushButton("Sil")
-IconRenderer.set_button_icon(btn_sil, "trash", color=IconColors.DANGER, size=16)
-```
-
-**QLabel'a ikon:**
-```python
-lbl = QLabel()
-IconRenderer.set_label_icon(lbl, "users", size=20, color=IconColors.PRIMARY)
-```
-
-**QIcon al (QAction, sekme başlığı vb.):**
-```python
-action.setIcon(Icons.get("refresh", color=IconColors.SYNC, size=16))
-tab_widget.setTabIcon(0, Icons.get("calendar", size=16))
-```
-
-**QPixmap al (özel çizim, QListWidgetItem vb.):**
-```python
-pm = Icons.pixmap("check_circle", size=24, color=IconColors.SUCCESS)
-item.setIcon(QIcon(pm))
-```
-
-**Durum ikonu (personel):**
-```python
-icon = IconRenderer.status_icon("Aktif")   # yeşil
-icon = IconRenderer.status_icon("Pasif")   # kırmızı
-icon = IconRenderer.status_icon("İzinli")  # sarı
-```
-
----
-
-### 8.4 Renk Sabitleri — `IconColors`
-
-| Sabit | Renk | Kullanım |
-|-------|------|----------|
-| `IconColors.PRIMARY` | `#6bd3ff` | Aksiyon butonlar, başlıklar |
-| `IconColors.DANGER` | `#f87171` | Sil, iptal, hata |
-| `IconColors.SUCCESS` | `#4ade80` | Kaydet, onay, başarı |
-| `IconColors.WARNING` | `#facc15` | Uyarı, izin durumu |
-| `IconColors.INFO` | `#60a5fa` | Bilgi, yardım |
-| `IconColors.MUTED` | `#5a5d6e` | Pasif, devre dışı |
-| `IconColors.TEXT` | `#e0e2ea` | Normal metin rengi |
-| `IconColors.SYNC` | `#6bd3ff` | Sync butonu |
-| `IconColors.EXCEL` | `#6ee7b7` | Excel export |
-| `IconColors.PDF` | `#fca5a5` | PDF export |
-
----
-
-### 8.5 Mevcut İkon Listesi (75 ikon)
-
-```
-# Genel aksiyon
-check  check_circle  x  x_circle  plus  plus_circle  edit  trash
-save  download  upload  print  search  filter  refresh  info  eye
-
-# Durum
-status_active  status_passive  status_leave  alert_triangle  shield_alert
-
-# Personel & takvim
-user  user_add  users  id_card  heart_pulse  activity  stethoscope
-calendar  calendar_check  calendar_off  calendar_year
-
-# Cihaz & teknik
-microscope  device_add  circuit_board  cpu  tools  wrench  wrench_list  crosshair  target
-
-# Belge & veri
-file_text  file_chart  file_excel  file_pdf  clipboard  clipboard_list
-bar_chart  pie_chart  database
-
-# Sistem & navigasyon
-settings  settings_sliders  lock  log_out  shield  shield_check  sync  cloud_sync
-bell  bell_dot  building  hospital  home  mail  package  layers  menu
-arrow_left  arrow_right  chevron_right  chevron_down
-```
-
-Tüm listeyi görmek için:
-```python
-from ui.styles.icons import Icons
-print(Icons.available())
-```
-
----
-
-### 8.6 Yeni İkon Eklemek
-
-`ui/styles/icons.py` → `_SVG_PATHS` dict'ine ekle.
-SVG path'ler `viewBox="0 0 24 24"`, `stroke-width="1.75"` formatında olmalı.
-
-```python
-"yeni_ikon": """
-    <circle cx="12" cy="12" r="5"/>
-    <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke-linecap="round"/>
-""",
-```
-
-Kaynak: [lucide.dev](https://lucide.dev) — `stroke` ve `fill` attribute'larını kopyalanan
-SVG'den **kaldır**, render motoru dynamik atar.
-
----
-
-### 8.7 Emoji → İkon Dönüşüm Tablosu
-
-| Emoji | İkon adı | Renk sabiti |
-|-------|----------|-------------|
-| 📄 | `file_text` | `PRIMARY` |
-| 📁 | `upload` | `PRIMARY` |
-| 📋 | `clipboard` | `PRIMARY` |
-| ✅ | `check_circle` | `SUCCESS` |
-| ⚠️ | `alert_triangle` | `WARNING` |
-| ❌ | `x_circle` | `DANGER` |
-| 🔔 | `bell` | `PRIMARY` |
-| 📊 | `bar_chart` | `PRIMARY` |
-| 🔧 | `wrench` | `MUTED` |
-| 🗑️ | `trash` | `DANGER` |
-| ➕ | `plus` | `PRIMARY` |
-| 🔍 | `search` | `MUTED` |
-| 💾 | `save` | `SUCCESS` |
-| 🔄 | `refresh` | `SYNC` |
-
----
-
-### 8.8 Fırsatçı Temizlik — Hâlâ Emoji Kullanan Dosyalar
-
-```
-[ ] base_dokuman_panel.py  — "📄 Belge Yükle", "📁 Dosya Seç", "⚠ Uyarı"
-[ ] bakim_form.py          — "📋 Rapor Yok", "✅ {dosya}", "⚠️ ..."
-[ ] ariza_kayit.py         — "⚠️ Hatalı Giriş", "📋 Yeni Arıza"
-[ ] admin_panel.py         — "📋 Audit Log" (sekme başlığı)
-```
-
-**Logger mesajlarındaki emoji'lere dokunma** — log dosyasında okunabilirlik sağlıyor,
-UI'da değil.
-
----
-
-## 9. HIZLI KONTROL KOMUTU
-
-Bir dosyayı açmadan önce kaç direkt DB çağrısı olduğunu görmek için:
+## 8. LINT & KALİTE KONTROL
 
 ```bash
-# Tek dosya
-grep -c "registry\.get\|RepositoryRegistry" ui/pages/personel/izin_takip.py
+# Commit öncesi çalıştır
+python scripts/lint_theme.py
 
-# Tüm UI
+# Tek dosya syntax
+python -m py_compile ui/pages/xxx/xxx.py
+
+# Tüm dosyalar toplu
 python -c "
-import os, re
-for root, dirs, files in os.walk('ui/'):
-    dirs[:] = [d for d in dirs if d != '__pycache__']
-    for f in files:
+import py_compile, os
+for r,d,fs in os.walk('.'):
+    d[:] = [x for x in d if '__pycache__' not in x]
+    for f in fs:
         if f.endswith('.py'):
-            path = os.path.join(root, f)
-            n = len(re.findall(r'registry\.get\(|RepositoryRegistry', open(path).read()))
-            if n > 0:
-                print(f'{n:3d}  {path}')
-" | sort -rn
-```
----
-
-## 8. METİN FORMATLAMA VE VALİDASYON — Merkezi Modüller
-
-### 8.1 Genel Bakış
-
-Kullanıcı girdilerini standart hale getirmek ve doğrulamak için **3 merkezi modül** kullanılır:
-
-| Modül | Dosya | İçerik |
-|-------|-------|--------|
-| **Text Utils** | `core/text_utils.py` | Türkçe destekli metin formatlama fonksiyonları |
-| **Validators** | `core/validators.py` | TC Kimlik, email, telefon vb. doğrulama fonksiyonları |
-| **Formatted Widgets** | `ui/components/formatted_widgets.py` | Otomatik formatlama özellikli Qt widget'ları |
-
-**Avantajlar:**
-- ✅ Kod tekrarı önlenir
-- ✅ Tüm uygulamada tutarlı format
-- ✅ Türkçe karakter desteği (İ/ı, Ş/ş, Ğ/ğ vb.)
-- ✅ Merkezi bakım ve güncelleme
-- ✅ Test edilebilir
-
----
-
-### 8.2 Text Utilities (`core/text_utils.py`)
-
-#### 8.2.1 turkish_title_case()
-
-Her kelimenin ilk harfini büyük yapar (Türkçe destekli).
-
-```python
-from core.text_utils import turkish_title_case
-
-# Kullanım
-text = turkish_title_case("ahmet cem KARA")
-# → "Ahmet Cem Kara"
-
-text = turkish_title_case("istanbul üniversitesi")
-# → "İstanbul Üniversitesi"
-
-text = turkish_title_case("şükrü özer")
-# → "Şükrü Özer"
+            py_compile.compile(os.path.join(r,f), doraise=True)
+print('Tüm dosyalar temiz')
+"
 ```
 
-**Ne zaman kullanılır:**
-- Ad Soyad alanları
-- Okul/Fakülte isimleri
-- Şehir/İlçe isimleri
-- Görev yeri isimleri
-
----
-
-#### 8.2.2 turkish_upper() / turkish_lower()
-
-Türkçe karakterleri doğru dönüştürür.
-
-```python
-from core.text_utils import turkish_upper, turkish_lower
-
-# Uppercase
-text = turkish_upper("istanbul")
-# → "İSTANBUL" (doğru - "ISTANBUL" değil!)
-
-# Lowercase
-text = turkish_lower("İSTANBUL")
-# → "istanbul" (doğru - "ıstanbul" değil!)
+**Pre-commit hook (`.git/hooks/pre-commit`):**
+```bash
+#!/bin/sh
+python scripts/lint_theme.py || exit 1
 ```
 
 ---
 
-#### 8.2.3 capitalize_first_letter()
+## 9. MEVCUT DOSYAYA GİRERKEN KONTROL LİSTESİ
 
-Sadece ilk harfi büyük yapar (çok satırlı içerik için).
-
-```python
-from core.text_utils import capitalize_first_letter
-
-text = capitalize_first_letter("merhaba dünya. bu bir test.")
-# → "Merhaba dünya. bu bir test."
 ```
-
-**Ne zaman kullanılır:**
-- Açıklama/Not alanları
-- Çok satırlı metin girişleri
-
----
-
-#### 8.2.4 format_phone_number()
-
-Telefon numarasını standart formata çevirir.
-
-```python
-from core.text_utils import format_phone_number
-
-phone = format_phone_number("05551234567")
-# → "0555 123 45 67"
-
-phone = format_phone_number("5551234567")
-# → "0555 123 45 67"
+[ ] setStyleSheet(f"...") var mı?          → setProperty("color-role", "...")
+[ ] _DURUM_COLOR lokal dict var mı?        → self.status_fg() kullan, dict sil
+[ ] def set_rows(self, rows): ... var mı?  → sil (BaseTableModel'de var)
+[ ] to_ui_date import var mı (model içinde)?  → DATE_KEYS veya _fmt_date kullan
+[ ] get_registry() direkt çağrı var mı?    → get_xxx_service(db) kullan
+[ ] QAbstractTableModel'den türeyen model? → BaseTableModel kullan
+[ ] Lokal _C = {...} renk dict var mı?     → from ui.styles.colors import DarkTheme as C
+[ ] STYLES["key"] var mı?                  → setProperty("style-role", "...")
+[ ] Lokal RAW_ROW_ROLE tanımı var mı?      → sil, BaseTableModel.RAW_ROW_ROLE kullan
 ```
 
 ---
 
-#### 8.2.5 normalize_whitespace()
-
-Fazla boşlukları temizler.
-
-```python
-from core.text_utils import normalize_whitespace
-
-text = normalize_whitespace("Ahmet   Cem  KARA")
-# → "Ahmet Cem KARA"
-```
-
----
-
-### 8.3 Validators (`core/validators.py`)
-
-#### 8.3.1 validate_tc_kimlik_no()
-
-TC Kimlik No algoritması ile doğrulama.
-
-```python
-from core.validators import validate_tc_kimlik_no
-
-# Geçerli TC
-is_valid = validate_tc_kimlik_no("10000000146")
-# → True
-
-# Geçersiz TC
-is_valid = validate_tc_kimlik_no("12345678901")
-# → False
-```
-
-**Algoritma:**
-1. 11 rakam olmalı
-2. İlk basamak 0 olamaz
-3. 10. basamak = (tek pozisyonlar * 7 - çift pozisyonlar) % 10
-4. 11. basamak = (tüm basamaklar toplamı) % 10
-
----
-
-#### 8.3.2 validate_email()
-
-Email format doğrulaması.
-
-```python
-from core.validators import validate_email
-
-is_valid = validate_email("test@example.com")
-# → True
-
-is_valid = validate_email("invalid-email")
-# → False
-
-is_valid = validate_email("")
-# → True (opsiyonel alan için)
-```
-
----
-
-#### 8.3.3 validate_phone_number()
-
-Türkiye GSM formatı (05XX XXX XX XX).
-
-```python
-from core.validators import validate_phone_number
-
-is_valid = validate_phone_number("05551234567")
-# → True
-
-is_valid = validate_phone_number("0555 123 45 67")
-# → True
-
-is_valid = validate_phone_number("123456")
-# → False
-```
-
----
-
-#### 8.3.4 Diğer Validatörler
-
-```python
-from core.validators import (
-    validate_not_empty,
-    validate_length,
-    validate_numeric,
-    validate_alphanumeric,
-    validate_date_format
-)
-
-# Boş kontrol
-validate_not_empty("Ahmet")  # → True
-validate_not_empty("   ")    # → False
-
-# Uzunluk kontrol
-validate_length("test", min_len=3, max_len=10)  # → True
-
-# Sadece rakam
-validate_numeric("12345")  # → True
-validate_numeric("12a45")  # → False
-
-# Alfanumerik
-validate_alphanumeric("ABC123")  # → True
-validate_alphanumeric("ABC@123") # → False
-
-# Tarih format
-validate_date_format("01.03.2026")  # → True
-validate_date_format("2026-03-01")  # → False
-```
-
----
-
-### 8.4 Formatted Widgets (`ui/components/formatted_widgets.py`)
-
-Otomatik formatlama özellikli widget'lar oluşturur.
-
-#### 8.4.1 apply_title_case_formatting()
-
-QLineEdit'e gerçek zamanlı Title Case formatlama ekler.
-
-```python
-from PySide6.QtWidgets import QLineEdit
-from ui.components.formatted_widgets import apply_title_case_formatting
-
-# Widget oluştur
-line_edit = QLineEdit()
-
-# Otomatik formatlama ekle
-apply_title_case_formatting(line_edit)
-
-# Kullanıcı "ahmet cem" yazarsa → otomatik "Ahmet Cem" olur
-```
-
-**Özellikler:**
-- Kullanıcı yazarken gerçek zamanlı formatlar
-- Cursor pozisyonunu korur
-- Sonsuz döngü önlenir (signal blocking)
-
----
-
-#### 8.4.2 apply_combo_title_case_formatting()
-
-Editable QComboBox'a Title Case formatlama ekler.
-
-```python
-from PySide6.QtWidgets import QComboBox
-from ui.components.formatted_widgets import apply_combo_title_case_formatting
-
-combo = QComboBox()
-combo.setEditable(True)
-
-# Otomatik formatlama ekle
-apply_combo_title_case_formatting(combo)
-```
-
----
-
-#### 8.4.3 Diğer Formatting Fonksiyonları
-
-```python
-from ui.components.formatted_widgets import (
-    apply_uppercase_formatting,
-    apply_lowercase_formatting,
-    apply_phone_number_formatting,
-    apply_numeric_only
-)
-
-# Uppercase
-line_edit = QLineEdit()
-apply_uppercase_formatting(line_edit)
-# Kullanıcı "istanbul" yazarsa → "İSTANBUL"
-
-# Lowercase
-line_edit = QLineEdit()
-apply_lowercase_formatting(line_edit)
-# Kullanıcı "İSTANBUL" yazarsa → "istanbul"
-
-# Telefon numarası
-line_edit = QLineEdit()
-apply_phone_number_formatting(line_edit)
-# Kullanıcı "5551234567" yazarsa → "0555 123 45 67"
-
-# Sadece rakam
-line_edit = QLineEdit()
-apply_numeric_only(line_edit)
-# Kullanıcı "12a34" yazarsa → "1234" (otomatik temizlenir)
-```
-
----
-
-#### 8.4.4 Widget Factory Fonksiyonları
-
-Hazır formatlanmış widget'lar oluşturur.
-
-```python
-from ui.components.formatted_widgets import (
-    create_title_case_line_edit,
-    create_uppercase_line_edit,
-    create_numeric_line_edit,
-    create_phone_line_edit
-)
-
-# Title Case input
-line_edit = create_title_case_line_edit()
-
-# Uppercase input
-line_edit = create_uppercase_line_edit()
-
-# Sadece rakam input
-line_edit = create_numeric_line_edit()
-
-# Telefon input
-line_edit = create_phone_line_edit()
-```
-
----
-
-### 8.5 Form Oluştururken Best Practices
-
-#### 8.5.1 Standart Form Alanları
-
-```python
-from ui.components.formatted_widgets import apply_title_case_formatting
-
-class MyForm(QWidget):
-    def __init__(self):
-        super().__init__()
-        
-        # Ad Soyad (Title Case)
-        self.txt_ad_soyad = QLineEdit()
-        apply_title_case_formatting(self.txt_ad_soyad)
-        
-        # TC Kimlik (Sadece rakam)
-        self.txt_tc = QLineEdit()
-        self.txt_tc.setMaxLength(11)
-        from ui.components.formatted_widgets import apply_numeric_only
-        apply_numeric_only(self.txt_tc)
-        
-        # Email (Normal - validasyon save'de)
-        self.txt_email = QLineEdit()
-        self.txt_email.setPlaceholderText("ornek@email.com")
-        
-        # Telefon (Otomatik format)
-        self.txt_telefon = QLineEdit()
-        from ui.components.formatted_widgets import apply_phone_number_formatting
-        apply_phone_number_formatting(self.txt_telefon)
-```
-
----
-
-#### 8.5.2 Editable Combo'lar
-
-```python
-from ui.components.formatted_widgets import apply_combo_title_case_formatting
-
-# Doğum Yeri (Editable combo)
-self.cmb_dogum_yeri = QComboBox()
-self.cmb_dogum_yeri.setEditable(True)
-apply_combo_title_case_formatting(self.cmb_dogum_yeri)
-
-# Okul Adı (Editable combo)
-self.cmb_okul = QComboBox()
-self.cmb_okul.setEditable(True)
-apply_combo_title_case_formatting(self.cmb_okul)
-```
-
----
-
-#### 8.5.3 Özel Alanlar (Formatting Hariç)
-
-Bazı alanlar otomatik formatlama **almamalı**:
-
-```python
-# Sicil No, Diploma No, Mezuniyet Tarihi vb.
-self.txt_sicil_no = QLineEdit()
-# ❌ Formatting ekleme! (alfanumerik, özel format olabilir)
-
-self.txt_diploma_no = QLineEdit()
-# ❌ Formatting ekleme!
-
-self.txt_mezuniyet_tarihi = QLineEdit()
-# ❌ Formatting ekleme! (tarih formatı korunmalı)
-```
-
----
-
-#### 8.5.4 Kaydetme Sırasında Validasyon
-
-```python
-from core.validators import (
-    validate_tc_kimlik_no,
-    validate_email,
-    validate_not_empty
-)
-from PySide6.QtWidgets import QMessageBox
-
-def _on_save(self):
-    # TC Kimlik validasyonu
-    tc = self.txt_tc.text().strip()
-    if not validate_tc_kimlik_no(tc):
-        QMessageBox.warning(self, "Uyarı", "Geçersiz TC Kimlik No!")
-        self.txt_tc.setFocus()
-        return
-    
-    # Ad Soyad zorunlu
-    ad_soyad = self.txt_ad_soyad.text().strip()
-    if not validate_not_empty(ad_soyad):
-        QMessageBox.warning(self, "Uyarı", "Ad Soyad boş olamaz!")
-        self.txt_ad_soyad.setFocus()
-        return
-    
-    # Email validasyonu (opsiyonel alan)
-    email = self.txt_email.text().strip()
-    if email and not validate_email(email):
-        QMessageBox.warning(self, "Uyarı", "Geçersiz email formatı!")
-        self.txt_email.setFocus()
-        return
-    
-    # Kaydet
-    # ...
-```
-
----
-
-### 8.6 Gerçek Zamanlı Validasyon ile Visual Feedback
-
-```python
-from PySide6.QtWidgets import QLabel
-from PySide6.QtGui import QPixmap
-from core.validators import validate_tc_kimlik_no
-
-class MyForm(QWidget):
-    def __init__(self):
-        super().__init__()
-        
-        # TC Kimlik + Status Icon
-        self.txt_tc = QLineEdit()
-        self.txt_tc.textChanged.connect(self._validate_tc_on_change)
-        
-        self._tc_status = QLabel()
-        self._tc_status.setFixedWidth(20)
-        
-    def _validate_tc_on_change(self):
-        tc = self.txt_tc.text().strip()
-        
-        if len(tc) == 0:
-            self._tc_status.clear()
-        elif len(tc) == 11:
-            if validate_tc_kimlik_no(tc):
-                # Yeşil onay ikonu
-                self._tc_status.setText("✅")
-            else:
-                # Kırmızı hata ikonu
-                self._tc_status.setText("❌")
-        else:
-            # Sarı uyarı
-            self._tc_status.setText("⚠️")
-```
-
----
-
-### 8.7 Import Kısayolları
-
-`core/__init__.py` ve `ui/components/__init__.py` dosyaları kısayol import sağlar:
-
-```python
-# Kısa yol (önerilen)
-from core import (
-    turkish_title_case,
-    validate_tc_kimlik_no,
-    validate_email
-)
-
-# Tam yol (alternatif)
-from core.text_utils import turkish_title_case
-from core.validators import validate_tc_kimlik_no, validate_email
-```
-
-```python
-# Kısa yol (önerilen)
-from ui.components import (
-    apply_title_case_formatting,
-    create_numeric_line_edit
-)
-
-# Tam yol (alternatif)
-from ui.components.formatted_widgets import (
-    apply_title_case_formatting,
-    create_numeric_line_edit
-)
-```
-
----
-
-### 8.8 Mevcut Form'ları Refactor Ederken
-
-Eski kod:
-
-```python
-# ❌ Eski yöntem - Her dosyada tekrar
-def turkish_title_case(text):
-    # ... 50 satır kod tekrarı
-    pass
-
-line_edit = QLineEdit()
-line_edit.textChanged.connect(lambda: ...)  # Manuel formatlama
-```
-
-Yeni kod:
-
-```python
-# ✅ Yeni yöntem - Merkezi modül
-from ui.components import apply_title_case_formatting
-
-line_edit = QLineEdit()
-apply_title_case_formatting(line_edit)  # Tek satır!
-```
-
-**Refactor kontrol listesi:**
-```
-[ ] Yerel turkish_title_case fonksiyonunu sil
-[ ] Yerel validate_tc_kimlik_no fonksiyonunu sil
-[ ] Manuel text formatting signal'larını sil
-[ ] core.text_utils ve core.validators import et
-[ ] ui.components.formatted_widgets kullan
-[ ] Test et (özellikle Türkçe karakterler: İ, Ş, Ğ vb.)
-```
-
----
-
-### 8.9 Test Örnekleri
-
-```python
-# test_text_utils.py
-from core.text_utils import turkish_title_case, turkish_upper, turkish_lower
-
-def test_turkish_title_case():
-    assert turkish_title_case("istanbul") == "İstanbul"
-    assert turkish_title_case("şükrü") == "Şükrü"
-    assert turkish_title_case("MEHMET ALİ") == "Mehmet Ali"
-
-def test_turkish_upper():
-    assert turkish_upper("istanbul") == "İSTANBUL"
-    assert turkish_upper("şükrü") == "ŞÜKRÜ"
-
-def test_turkish_lower():
-    assert turkish_lower("İSTANBUL") == "istanbul"
-    assert turkish_lower("ŞÜKRÜ") == "şükrü"
-```
-
-```python
-# test_validators.py
-from core.validators import validate_tc_kimlik_no, validate_email
-
-def test_tc_kimlik():
-    assert validate_tc_kimlik_no("10000000146") == True
-    assert validate_tc_kimlik_no("12345678901") == False
-    assert validate_tc_kimlik_no("0123456789") == False
-
-def test_email():
-    assert validate_email("test@example.com") == True
-    assert validate_email("invalid") == False
-    assert validate_email("") == True  # Opsiyonel
-```
-
----
-
-### 8.10 Troubleshooting
-
-**Problem:** Türkçe "i" harfi büyütülünce "I" oluyor (yanlış)
-```python
-# ❌ Python default
-"istanbul".upper()  # → "ISTANBUL" (yanlış!)
-
-# ✅ Bizim fonksiyon
-from core.text_utils import turkish_upper
-turkish_upper("istanbul")  # → "İSTANBUL" (doğru!)
-```
-
-**Problem:** Cursor pozisyonu kayıyor
-```python
-# ✅ apply_title_case_formatting otomatik halleder
-# Cursor pozisyonu korunur, kullanıcı yazmaya devam edebilir
-```
-
-**Problem:** Sonsuz döngü (textChanged signal)
-```python
-# ✅ apply_title_case_formatting içinde blockSignals(True) kullanılır
-# Sonsuz döngü önlenir
-```
-
-**Problem:** Editable combo formatlanmıyor
-```python
-# ❌ Yanlış
-combo = QComboBox()
-combo.setEditable(True)
-apply_title_case_formatting(combo)  # QLineEdit bekliyor!
-
-# ✅ Doğru
-combo = QComboBox()
-combo.setEditable(True)
-apply_combo_title_case_formatting(combo)  # QComboBox için özel
-```
-
----
+*Bu rehber REPYS v3 — Aşama 0–6 refactor sonrası durumu yansıtır (Mart 2026).*  
+*Sonraki büyük adım: DI tamamlama + Personel/RKE servis bağlantısı + Testler.*

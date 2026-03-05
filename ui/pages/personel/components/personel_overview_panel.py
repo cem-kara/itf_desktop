@@ -6,16 +6,14 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QDate, Signal, QThread
 from PySide6.QtGui import QCursor, QPixmap
-from core.di import get_registry
+from core.di import get_personel_service, get_izin_service
 from core.logger import logger
 from core.paths import DB_PATH
 from core.services.dokuman_service import DokumanService
-from core.text_utils import turkish_title_case
-from ui.theme_manager import ThemeManager
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
-from ui.components.formatted_widgets import apply_title_case_formatting, apply_combo_title_case_formatting
+from ui.components.formatted_widgets import apply_combo_title_case_formatting
 import os
 import tempfile
 
@@ -231,7 +229,7 @@ class PersonelOverviewPanel(QWidget):
         hint.style().polish(hint)
         btn_docs = QPushButton("Belgeler")
         btn_docs.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        btn_docs.setStyleSheet(S.get("btn_action", S.get("refresh_btn", "")))
+        btn_docs.setStyleSheet(S.get("btn_action") or S.get("refresh_btn") or "")
         try:
             IconRenderer.set_button_icon(btn_docs, "upload", color=DarkTheme.TEXT_SECONDARY, size=14)
         except Exception:
@@ -693,8 +691,6 @@ class PersonelOverviewPanel(QWidget):
             f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
             f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
         )
-        
-        ThemeManager.setup_calendar_popup(date_edit)
 
         l.addWidget(date_edit)
         layout.addWidget(container, row, col)
@@ -717,8 +713,6 @@ class PersonelOverviewPanel(QWidget):
             f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
             f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px;"
         )
-
-        ThemeManager.setup_calendar_popup(date_edit)
         
         layout.addWidget(date_edit, row, col)
         

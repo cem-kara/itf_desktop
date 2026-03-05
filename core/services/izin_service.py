@@ -29,6 +29,34 @@ class IzinService:
         self._r = registry
     
     # ───────────────────────────────────────────────────────────
+    #  Repository Accessors
+    # ───────────────────────────────────────────────────────────
+    
+    def get_izin_bilgi_repo(self):
+        """İzin Bilgi repository'sine eriş."""
+        return self._r.get("Izin_Bilgi")
+    
+    def get_izin_giris_repo(self):
+        """İzin Giriş repository'sine eriş."""
+        return self._r.get("Izin_Giris")
+
+    def insert_izin_giris(self, data: dict) -> None:
+        """İzin giriş kaydı ekle."""
+        try:
+            self._r.get("Izin_Giris").insert(data)
+        except Exception as e:
+            logger.error(f"İzin giriş ekleme hatası: {e}")
+            raise
+
+    def update_izin_giris(self, izin_id: str, data: dict) -> None:
+        """İzin giriş kaydını güncelle."""
+        try:
+            self._r.get("Izin_Giris").update(izin_id, data)
+        except Exception as e:
+            logger.error(f"İzin giriş güncelleme hatası: {e}")
+            raise
+    
+    # ───────────────────────────────────────────────────────────
     #  İş Kuralları
     # ───────────────────────────────────────────────────────────
     

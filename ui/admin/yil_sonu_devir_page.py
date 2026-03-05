@@ -266,7 +266,7 @@ class YilSonuDevirPage(QWidget):
         layout.addWidget(self.pbar)
         
         # Başlat butonu
-        self.btn_baslat = QPushButton("🚀 DEVİR İŞLEMİNİ BAŞLAT")
+        self.btn_baslat = QPushButton("DEVİR İŞLEMİNİ BAŞLAT")
         self.btn_baslat.setFixedHeight(50)
         self.btn_baslat.setEnabled(False)
         self.btn_baslat.setStyleSheet(f"""

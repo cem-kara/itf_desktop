@@ -14,9 +14,7 @@ from core.logger import logger
 from core.date_utils import parse_date
 from core.paths import DB_PATH
 from core.auth.password_hasher import PasswordHasher
-from core.di import get_registry
-from core.services.dokuman_service import DokumanService
-from core.services.personel_service import PersonelService
+from core.di import get_personel_service, get_izin_service, get_dokuman_service
 from core.validators import validate_tc_kimlik_no, validate_email, validate_phone_number
 from core.text_utils import turkish_title_case
 from database.auth_repository import AuthRepository
@@ -146,12 +144,8 @@ class PersonelEklePage(QWidget):
         self._dokuman_panel = None     # PersonelDokumanPanel instance
         
         # Service layer
-        if db:
-            self._registry = get_registry(db)
-            self._svc = PersonelService(self._registry)
-        else:
-            self._registry = None
-            self._svc = None
+        self._personel_svc = get_personel_service(db)
+        self._dokuman_svc = get_dokuman_service(db) if db else None
 
         self._setup_ui()
         self._populate_combos()
@@ -482,17 +476,7 @@ class PersonelEklePage(QWidget):
         self.progress.setFixedWidth(150)
         self.progress.setFixedHeight(16)
         self.progress.setVisible(False)
-        self.progress.setStyleSheet(f"""
-            QProgressBar {{
-                background-color: rgba(255,255,255,0.05);
-                border: 1px solid rgba(255,255,255,0.08);
-                border-radius: 4px; color: {DarkTheme.TEXT_MUTED}; font-size: 11px;
-            }}
-            QProgressBar::chunk {{
-                background-color: rgba(29, 117, 254, 0.6);
-                border-radius: 3px;
-            }}
-        """)
+        self.progress.setStyleSheet(S["progress"])
         footer.addWidget(self.progress)
         footer.addStretch()
 
@@ -607,8 +591,6 @@ class PersonelEklePage(QWidget):
         de.setDate(QDate.currentDate())
         de.setDisplayFormat("dd.MM.yyyy")
 
-        ThemeManager.setup_calendar_popup(de)
-
         lay.addWidget(de)
         parent_layout.addWidget(container)
         return de
@@ -653,14 +635,14 @@ class PersonelEklePage(QWidget):
 
     def _populate_combos(self):
         """Combobox'ları Sabitler + Personel tablosundan doldurur."""
-        if not self._registry:
+        if not self._personel_svc:
             return
 
         try:
-            registry = self._registry
-
             # ── Sabitler'den ──
-            sabitler = registry.get("Sabitler")
+            sabitler = self._personel_svc.get_sabitler_repo()
+            if not sabitler:
+                return
             all_sabit = sabitler.get_all()
             self._all_sabit = all_sabit
 
@@ -687,7 +669,9 @@ class PersonelEklePage(QWidget):
             self.ui["gorev_yeri"].addItems(get_sabit("Gorev_Yeri"))
 
             # ── Personel'den benzersiz Doğum Yeri ──
-            personeller = registry.get("Personel")
+            personeller = self._personel_svc.get_personel_repo()
+            if not personeller:
+                return
             all_personel = personeller.get_all()
 
             dogum_yerleri = sorted(set(
@@ -913,75 +897,58 @@ class PersonelEklePage(QWidget):
     #  REAL-TIME FORM VALIDASYON
     # ═══════════════════════════════════════════
 
+    def _set_validation_status(self, label_widget, is_valid):
+        """Validasyon statusunu ayarla: ✓ (ok), ✗ (err), ⚠ (muted)."""
+        style = "font-size: 16px;"
+        if is_valid is None:
+            # Boş/kontrol edilmemiş
+            label_widget.setText("⚠")
+            label_widget.setProperty("color-role", "muted")
+        elif is_valid:
+            # Geçerli
+            label_widget.setText("✓")
+            label_widget.setProperty("color-role", "ok")
+        else:
+            # Geçersiz
+            label_widget.setText("✗")
+            label_widget.setProperty("color-role", "err")
+        
+        label_widget.setStyleSheet(style)
+        label_widget.style().unpolish(label_widget)
+        label_widget.style().polish(label_widget)
+
     def _validate_tc_on_change(self):
         """TC Kimlik No real-time validasyonu (merkezi validator kullanır)."""
         tc_text = self.ui["tc"].text().strip()
         
         if not tc_text:
-            # Boş
-            self._tc_status.setText("⚠")
-            self._tc_status.setProperty("color-role", "muted")
-            self._tc_status.setStyleSheet("font-size: 16px;")
-            self._tc_status.style().unpolish(self._tc_status)
-            self._tc_status.style().polish(self._tc_status)
+            self._set_validation_status(self._tc_status, None)
         elif validate_tc_kimlik_no(tc_text):
-            # Geçerli
-            self._tc_status.setText("✓")
-            self._tc_status.setProperty("color-role", "ok")
-            self._tc_status.setStyleSheet("font-size: 16px;")
-            self._tc_status.style().unpolish(self._tc_status)
-            self._tc_status.style().polish(self._tc_status)
+            self._set_validation_status(self._tc_status, True)
         else:
-            # Geçersiz
-            self._tc_status.setText("✗")
-            self._tc_status.setProperty("color-role", "err")
-            self._tc_status.setStyleSheet("font-size: 16px;")
-            self._tc_status.style().unpolish(self._tc_status)
-            self._tc_status.style().polish(self._tc_status)
+            self._set_validation_status(self._tc_status, False)
 
     def _validate_email_on_change(self):
         """E-posta real-time validasyonu (merkezi validator kullanır)."""
         email_text = self.ui["eposta"].text().strip()
+        
         if not email_text:
-            self._email_status.setText("⚠")
-            self._email_status.setProperty("color-role", "muted")
-            self._email_status.setStyleSheet("font-size: 16px;")
-            self._email_status.style().unpolish(self._email_status)
-            self._email_status.style().polish(self._email_status)
+            self._set_validation_status(self._email_status, None)
         elif validate_email(email_text):
-            self._email_status.setText("✓")
-            self._email_status.setProperty("color-role", "ok")
-            self._email_status.setStyleSheet("font-size: 16px;")
-            self._email_status.style().unpolish(self._email_status)
-            self._email_status.style().polish(self._email_status)
+            self._set_validation_status(self._email_status, True)
         else:
-            self._email_status.setText("✗")
-            self._email_status.setProperty("color-role", "err")
-            self._email_status.setStyleSheet("font-size: 16px;")
-            self._email_status.style().unpolish(self._email_status)
-            self._email_status.style().polish(self._email_status)
+            self._set_validation_status(self._email_status, False)
 
     def _validate_phone_on_change(self):
         """Telefon numarası real-time validasyonu (merkezi validator kullanır)."""
         phone_text = self.ui["cep_tel"].text().strip()
+        
         if not phone_text:
-            self._phone_status.setText("⚠")
-            self._phone_status.setProperty("color-role", "muted")
-            self._phone_status.setStyleSheet("font-size: 16px;")
-            self._phone_status.style().unpolish(self._phone_status)
-            self._phone_status.style().polish(self._phone_status)
+            self._set_validation_status(self._phone_status, None)
         elif validate_phone_number(phone_text):
-            self._phone_status.setText("✓")
-            self._phone_status.setProperty("color-role", "ok")
-            self._phone_status.setStyleSheet("font-size: 16px;")
-            self._phone_status.style().unpolish(self._phone_status)
-            self._phone_status.style().polish(self._phone_status)
+            self._set_validation_status(self._phone_status, True)
         else:
-            self._phone_status.setText("✗")
-            self._phone_status.setProperty("color-role", "err")
-            self._phone_status.setStyleSheet("font-size: 16px;")
-            self._phone_status.style().unpolish(self._phone_status)
-            self._phone_status.style().polish(self._phone_status)
+            self._set_validation_status(self._phone_status, False)
 
     # ═══════════════════════════════════════════
     #  KAYDET / İPTAL
@@ -1045,10 +1012,9 @@ class PersonelEklePage(QWidget):
         # Düzenleme değilse aynı TC kontrolü
         if not self._is_edit:
             try:
-                if not self._registry:
+                if not self._personel_svc:
                     return
-                repo = self._registry.get("Personel")
-                existing = repo.get_by_id(tc_no)
+                existing = self._personel_svc.get_personel_by_tc(tc_no)
                 if existing:
                     QMessageBox.warning(
                         self, "Kayıt Mevcut",
@@ -1076,22 +1042,21 @@ class PersonelEklePage(QWidget):
                 data[db_col] = link
 
         try:
-            if not self._registry:
+            if not self._personel_svc:
                 QMessageBox.critical(self, "Hata", "Veritabanı bağlantısı bulunamadı.")
                 return
-            registry = self._registry
-            repo = registry.get("Personel")
 
             if self._is_edit:
-                repo.update(data["KimlikNo"], data)
+                self._personel_svc.guncelle(data["KimlikNo"], data)
                 logger.info(f"Personel güncellendi: {data['KimlikNo']}")
             else:
-                repo.insert(data)
+                self._personel_svc.ekle(data, data["KimlikNo"])
                 logger.info(f"Yeni personel eklendi: {data['KimlikNo']}")
 
                 # Yeni personel için Izin_Bilgi kaydı oluştur
                 try:
-                    repo_izin = registry.get("Izin_Bilgi")
+                    if self._izin_svc:
+                        repo_izin = self._izin_svc.get_izin_bilgi_repo()
                     izin_data = {
                         "TCKimlik": data["KimlikNo"],
                         "AdSoyad": data["AdSoyad"]

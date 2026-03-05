@@ -14,7 +14,6 @@ from PySide6.QtGui import QCursor
 
 from core.logger import logger
 from core.date_utils import parse_date, to_db_date
-from ui.theme_manager import ThemeManager
 from ui.styles.components import STYLES as S
 
 STATUS_OPTIONS = ["", "Uygun", "Şartlı Uygun", "Uygun Değil"]
@@ -47,7 +46,7 @@ class HizliSaglikGirisDialog(QDialog):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(S.get("scroll", ""))
+        scroll.setStyleSheet(S.get("scroll") or "")
         
         form_content = QWidget()
         form_content.setStyleSheet("background: transparent;")
@@ -74,7 +73,7 @@ class HizliSaglikGirisDialog(QDialog):
         g3.setContentsMargins(12, 12, 12, 12)
         g3.setSpacing(8)
         
-        g3.addWidget(QLabel("Not", styleSheet=S.get("label", "")))
+        g3.addWidget(QLabel("Not", styleSheet=S.get("label") or ""))
         self.inp_not = QLineEdit()
         self.inp_not.setStyleSheet(S["input"])
         g3.addWidget(self.inp_not)
@@ -98,7 +97,7 @@ class HizliSaglikGirisDialog(QDialog):
         """Muayene alanlarını sade biçimde ekle."""
         # Başlık
         lbl_title = QLabel(title)
-        lbl_title.setStyleSheet(S.get("section_title", ""))
+        lbl_title.setStyleSheet(S.get("section_title") or "")
         layout.addWidget(lbl_title)
         
         # Grid layout for inputs
@@ -109,11 +108,11 @@ class HizliSaglikGirisDialog(QDialog):
         
         # Row 0: Labels
         lbl_tarih = QLabel("Tarih")
-        lbl_tarih.setStyleSheet(S.get("label", ""))
+        lbl_tarih.setStyleSheet(S.get("label") or "")
         grid.addWidget(lbl_tarih, 0, 0)
         
         lbl_durum = QLabel("Durum")
-        lbl_durum.setStyleSheet(S.get("label", ""))
+        lbl_durum.setStyleSheet(S.get("label") or "")
         grid.addWidget(lbl_durum, 0, 1)
         
         # Row 1: Inputs
@@ -123,7 +122,6 @@ class HizliSaglikGirisDialog(QDialog):
         de.setMinimumWidth(140)
         de.setMinimumHeight(35)
         de.setStyleSheet(S["date"])
-        ThemeManager.setup_calendar_popup(de)
         grid.addWidget(de, 1, 0)
         
         cmb = QComboBox()
@@ -142,7 +140,7 @@ class HizliSaglikGirisDialog(QDialog):
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFrameShadow(QFrame.Shadow.Sunken)
-        sep.setStyleSheet(S.get("separator", ""))
+        sep.setStyleSheet(S.get("separator") or "")
         layout.addWidget(sep)
         
         self._exam_widgets[key] = {"tarih": de, "durum": cmb}
@@ -228,10 +226,10 @@ class HizliSaglikGirisDialog(QDialog):
         }
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            takip_repo = registry.get("Personel_Saglik_Takip")
-            personel_repo = registry.get("Personel")
+            from core.di import get_saglik_service as _sf
+            _svc = _sf(self._db)
+            takip_repo = _svc._r.get("Personel_Saglik_Takip")
+            personel_repo = _svc._r.get("Personel")
             
             takip_repo.insert(payload)
 

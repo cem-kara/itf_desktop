@@ -113,6 +113,18 @@ class BaseRepository:
         row = cur.fetchone()
         return dict(row) if row else None
 
+    def get_by_pk(self, pk_value):
+        """
+        PK'ye göre kayıt getir (get_by_id ile aynı, explicit naming).
+        
+        Args:
+            pk_value: Tekli değer veya dict (composite PK için)
+            
+        Returns:
+            dict: Kayıt veya None
+        """
+        return self.get_by_id(pk_value)
+
     def get_all(self):
         cur = self.db.execute(f"SELECT * FROM {self.table}")
         return [dict(r) for r in cur.fetchall()]
@@ -158,6 +170,48 @@ class BaseRepository:
                 f"tablo={self.table}, kosullar={kosullar}: {exc}"
             )
             return []
+
+    def delete(self, pk_value):
+        """
+        PK'ye göre kayıt sil.
+        
+        has_sync=True ise: Sensorium status 'deleted' olarak işaretlenir
+        has_sync=False ise: Kayıt direkt silinir
+        
+        Args:
+            pk_value: Tekli değer veya dict/list (composite PK için)
+            
+        Returns:
+            bool: Başarı durumu
+        """
+        where_vals = self._resolve_pk_params(pk_value)
+        
+        try:
+            if self.has_sync and "sync_status" in self.columns:
+                # Soft delete: sync_status='deleted' işaretle
+                sql = f"""
+                UPDATE {self.table}
+                SET sync_status='deleted'
+                WHERE {self._pk_where()}
+                """
+                self.db.execute(sql, where_vals)
+                logger.info(f"BaseRepository.delete: {self.table} → soft delete (sync)")
+            else:
+                # Hard delete: direkt kayıt sil
+                sql = f"""
+                DELETE FROM {self.table}
+                WHERE {self._pk_where()}
+                """
+                self.db.execute(sql, where_vals)
+                logger.info(f"BaseRepository.delete: {self.table} → hard delete (no sync)")
+            
+            return True
+        except Exception as exc:
+            logger.error(
+                f"BaseRepository.delete hatası — "
+                f"tablo={self.table}, pk_value={pk_value}: {exc}"
+            )
+            return False
 
     # ════════════════ SYNC ════════════════
 

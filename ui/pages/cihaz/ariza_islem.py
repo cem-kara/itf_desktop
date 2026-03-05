@@ -1,3 +1,4 @@
+from core.di import get_cihaz_service as _get_cihaz_service
 # -*- coding: utf-8 -*-
 """Ariza Islem — ariza üzerinde yapılan işlemleri kaydetme ve görüntüleme."""
 from typing import List, Dict, Any, Optional
@@ -15,7 +16,7 @@ from PySide6.QtGui import QCursor
 from core.date_utils import to_ui_date
 from core.logger import logger
 from core.paths import DATA_DIR
-from database.repository_registry import RepositoryRegistry
+
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
@@ -39,16 +40,13 @@ class ArizaIslemTableModel(BaseTableModel):
     def _display(self, key, row):
         value = row.get(key, "")
         if key == "Tarih":
-            return to_ui_date(value, "")
+            return self._fmt_date(value, "")
         return str(value)
 
     def _align(self, key):
         if key in ("Tarih", "Saat", "YeniDurum"):
             return Qt.AlignmentFlag.AlignCenter
         return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
-
-    def set_rows(self, rows: List[Dict[str, Any]]):
-        self.set_data(rows)
 
 
 class ArizaIslemForm(QWidget):
@@ -247,13 +245,12 @@ class ArizaIslemForm(QWidget):
         }
 
         try:
-            repo_islem = RepositoryRegistry(self._db).get("Ariza_Islem")
-            repo_islem.insert(data)
+            svc = _get_cihaz_service(self._db)
+            svc.insert_ariza_islem(data)
 
             # Ana arızanın durumunu güncelle
             try:
-                repo_ariza = RepositoryRegistry(self._db).get("Cihaz_Ariza")
-                repo_ariza.update(self._ariza_id, {"Durum": yeni_durum})
+                svc.update_cihaz_ariza(self._ariza_id, {"Durum": yeni_durum})
             except Exception as e:
                 logger.error(f"Arıza durumu güncellenemedi: {e}")
             
@@ -273,7 +270,6 @@ class ArizaIslemForm(QWidget):
                         logger.info(f"Arıza işlem rapor belgesi kopyalandı: {dst}")
                         
                         # Cihaz_Belgeler tablosuna kaydet
-                        repo_belge = RepositoryRegistry(self._db).get("Cihaz_Belgeler")
                         belge_data = {
                             "Cihazid": self._cihaz_id,
                             "BelgeTuru": "Arıza İşlem Raporu",
@@ -281,7 +277,7 @@ class ArizaIslemForm(QWidget):
                             "BelgeAciklama": f"İşlem: {islem_turu} ({islem_id})",
                             "YuklenmeTarihi": datetime.now().isoformat(),
                         }
-                        repo_belge.insert(belge_data)
+                        svc.insert_cihaz_belge(belge_data)
                         logger.info(f"Arıza işlem raporu Cihaz_Belgeler tablosuna kaydedildi")
                         
                 except Exception as e:
@@ -349,14 +345,7 @@ class ArizaIslemPenceresi(QWidget):
         self.table.setSortingEnabled(False)
         self.table.setMaximumHeight(180)
 
-        header = self.table.horizontalHeader()
-        header.setStretchLastSection(False)
-        for i, (_, _, w) in enumerate(ISLEM_COLUMNS):
-            if i == len(ISLEM_COLUMNS) - 1:
-                header.setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch)
-            else:
-                header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
-            header.resizeSection(i, w)
+        self._model.setup_columns(self.table)
 
         self.table.selectionModel().currentChanged.connect(self._on_row_selected)
         tl.addWidget(self.table)
@@ -510,7 +499,7 @@ class ArizaIslemPenceresi(QWidget):
             return
 
         try:
-            repo = RepositoryRegistry(self._db).get("Ariza_Islem")
+            repo = _get_cihaz_service(self._db)._r.get("Ariza_Islem")
             rows = repo.get_by_kod(self._ariza_id, "Arizaid")
             # En yeni işlemler altta olacak şekilde ters sırala
             rows.sort(key=lambda r: (r.get("Tarih", "") or "", r.get("Saat", "") or ""), reverse=True)

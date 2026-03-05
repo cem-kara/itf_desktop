@@ -16,7 +16,7 @@ from PySide6.QtGui import (
 )
 
 from core.logger import logger
-from database.repository_registry import RepositoryRegistry
+from core.di import get_cihaz_service as _get_cihaz_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
 from ui.styles.components import ComponentStyles, STYLES
@@ -43,8 +43,6 @@ COL_IDX = {c[0]: i for i, c in enumerate(COLUMNS)}
 # ═══════════════════════════════════════════════════════════
 
 class CihazTableModel(BaseTableModel):
-
-    RAW_ROW_ROLE = Qt.ItemDataRole.UserRole + 1
 
     def __init__(self, data=None, parent=None):
         super().__init__(COLUMNS, data, parent)
@@ -118,7 +116,7 @@ class CihazDelegate(QStyledItemDelegate):
             c.setAlpha(10)
             painter.fillRect(rect, c)
 
-        raw = index.model().data(index, CihazTableModel.RAW_ROW_ROLE)
+        raw = index.model().data(index, BaseTableModel.RAW_ROW_ROLE)
         if raw is None:
             painter.restore()
             return
@@ -230,7 +228,9 @@ class CihazListesiPage(QWidget):
 
     def __init__(self, db=None, action_guard=None, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(STYLES["page"])
+        self.setProperty("bg-role", "page")
+        self.style().unpolish(self)
+        self.style().polish(self)
         self._db = db
         self._action_guard = action_guard
         self._all_data = []
@@ -329,7 +329,7 @@ class CihazListesiPage(QWidget):
         self.search_input.setPlaceholderText("Cihaz, marka, model, seri ara…")
         self.search_input.setClearButtonEnabled(True)
         self.search_input.setFixedWidth(220)
-        self.search_input.setStyleSheet(STYLES["search"])
+        # setStyleSheet kaldırıldı: search — global QSS kuralı geçerli
         lay.addWidget(self.search_input)
 
         lay.addStretch()
@@ -338,13 +338,17 @@ class CihazListesiPage(QWidget):
         self.btn_yenile.setToolTip("Yenile")
         self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_yenile.setFixedSize(32, 28)
-        self.btn_yenile.setStyleSheet(STYLES["refresh_btn"])
+        self.btn_yenile.setProperty("style-role", "refresh")
+        self.btn_yenile.style().unpolish(self.btn_yenile)
+        self.btn_yenile.style().polish(self.btn_yenile)
         IconRenderer.set_button_icon(self.btn_yenile, "refresh", color=C.TEXT_SECONDARY, size=16)
         lay.addWidget(self.btn_yenile)
 
         self.btn_yeni = QPushButton(" Yeni Cihaz")
         self.btn_yeni.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_yeni.setStyleSheet(STYLES["action_btn"])
+        self.btn_yeni.setProperty("style-role", "action")
+        self.btn_yeni.style().unpolish(self.btn_yeni)
+        self.btn_yeni.style().polish(self.btn_yeni)
         IconRenderer.set_button_icon(self.btn_yeni, "plus", color=C.BTN_PRIMARY_TEXT, size=16)
         self.btn_yeni.setIconSize(QSize(16, 16))
         
@@ -386,7 +390,7 @@ class CihazListesiPage(QWidget):
         self.cmb_abd = QComboBox()
         self.cmb_abd.addItem("Tümü")
         self.cmb_abd.setFixedWidth(160)
-        self.cmb_abd.setStyleSheet(STYLES["combo"])
+        # setStyleSheet kaldırıldı: combo — global QSS kuralı geçerli
         lay.addWidget(self.cmb_abd)
 
         lbl_kaynak = QLabel("Kaynak:")
@@ -399,7 +403,7 @@ class CihazListesiPage(QWidget):
         self.cmb_kaynak = QComboBox()
         self.cmb_kaynak.addItem("Tümü")
         self.cmb_kaynak.setFixedWidth(160)
-        self.cmb_kaynak.setStyleSheet(STYLES["combo"])
+        # setStyleSheet kaldırıldı: combo — global QSS kuralı geçerli
         lay.addWidget(self.cmb_kaynak)
 
         lay.addStretch()
@@ -415,7 +419,7 @@ class CihazListesiPage(QWidget):
 
         self.table = QTableView()
         self.table.setModel(self._proxy)
-        self.table.setStyleSheet(STYLES["table"])
+        # setStyleSheet kaldırıldı: table — global QSS kuralı geçerli
         self.table.setAlternatingRowColors(False)
         self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
@@ -428,12 +432,10 @@ class CihazListesiPage(QWidget):
         self._delegate = CihazDelegate(self.table)
         self.table.setItemDelegate(self._delegate)
 
-        hdr = self.table.horizontalHeader()
-        for i, (_, _, w) in enumerate(COLUMNS):
-            hdr.setSectionResizeMode(i, QHeaderView.ResizeMode.Fixed)
-            self.table.setColumnWidth(i, w)
-        hdr.setSectionResizeMode(COL_IDX["_marka_model"], QHeaderView.ResizeMode.Stretch)
-        hdr.setSectionResizeMode(COL_IDX["Birim"], QHeaderView.ResizeMode.Stretch)
+        self._model.setup_columns(
+            self.table,
+            stretch_keys=["_marka_model", "Birim"],
+        )
         return self.table
 
     def _build_footer(self) -> QFrame:
@@ -450,11 +452,15 @@ class CihazListesiPage(QWidget):
         lay.setSpacing(16)
 
         self.lbl_info = QLabel("0 kayıt")
-        self.lbl_info.setStyleSheet(STYLES["footer_label"])
+        self.lbl_info.setProperty("style-role", "footer")
+        self.lbl_info.style().unpolish(self.lbl_info)
+        self.lbl_info.style().polish(self.lbl_info)
         lay.addWidget(self.lbl_info)
 
         self.lbl_detail = QLabel("")
-        self.lbl_detail.setStyleSheet(STYLES["footer_label"])
+        self.lbl_detail.setProperty("style-role", "footer")
+        self.lbl_detail.style().unpolish(self.lbl_detail)
+        self.lbl_detail.style().polish(self.lbl_detail)
         lay.addWidget(self.lbl_detail)
 
         lay.addStretch()
@@ -463,13 +469,15 @@ class CihazListesiPage(QWidget):
         self.progress.setFixedSize(140, 4)
         self.progress.setVisible(False)
         self.progress.setTextVisible(False)
-        self.progress.setStyleSheet(STYLES["progress"])
+        # setStyleSheet kaldırıldı: progress — global QSS kuralı geçerli
         lay.addWidget(self.progress)
 
         self.btn_load_more = QPushButton("Daha Fazla Yükle")
         self.btn_load_more.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_load_more.setFixedHeight(28)
-        self.btn_load_more.setStyleSheet(STYLES["action_btn"])
+        self.btn_load_more.setProperty("style-role", "action")
+        self.btn_load_more.style().unpolish(self.btn_load_more)
+        self.btn_load_more.style().polish(self.btn_load_more)
         self.btn_load_more.setVisible(False)
         lay.addWidget(self.btn_load_more)
 
@@ -502,10 +510,8 @@ class CihazListesiPage(QWidget):
             self._total_count = 0
             self._all_data = []
 
-            registry = RepositoryRegistry(self._db)
-            cihaz_repo = registry.get("Cihazlar")
-
-            page_data, total = cihaz_repo.get_paginated(
+            svc = _get_cihaz_service(self._db)
+            page_data, total = svc.get_cihaz_paginated(
                 page=self._current_page,
                 page_size=self._page_size
             )
@@ -513,7 +519,7 @@ class CihazListesiPage(QWidget):
             self._total_count = total
 
             self._model.set_data(self._all_data)
-            self._populate_combos(registry)
+            self._populate_combos(svc)
             self._apply_filters()
             self._update_load_more_button()
         except Exception as e:
@@ -527,11 +533,9 @@ class CihazListesiPage(QWidget):
             self.btn_load_more.setEnabled(False)
             self.progress.setVisible(True)
 
-            registry = RepositoryRegistry(self._db)
-            cihaz_repo = registry.get("Cihazlar")
-
+            svc = _get_cihaz_service(self._db)
             self._current_page += 1
-            page_data, _ = cihaz_repo.get_paginated(
+            page_data, _ = svc.get_cihaz_paginated(
                 page=self._current_page,
                 page_size=self._page_size
             )
@@ -540,7 +544,7 @@ class CihazListesiPage(QWidget):
                 self._current_page -= 1
             else:
                 self._all_data.extend(page_data)
-                self._model.set_data(self._all_data)
+                self._model.append_rows(page_data)   # beginInsertRows → verimli
                 self._apply_filters()
 
             self._update_load_more_button()
@@ -588,10 +592,10 @@ class CihazListesiPage(QWidget):
         self._model.set_data(filtered)
         self._update_count()
 
-    def _populate_combos(self, registry):
+    def _populate_combos(self, svc):
         sabitler = []
         try:
-            sabitler = registry.get("Sabitler").get_all()
+            sabitler = svc.get_sabitler()
         except Exception as e:
             logger.debug(f"Sabitler okunamadi: {e}")
 

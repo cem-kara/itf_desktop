@@ -22,7 +22,7 @@ from ui.styles import DarkTheme
 from ui.styles.components import STYLES
 from ui.styles.icons import IconRenderer
 from core.logger import logger
-from database.repository_registry import RepositoryRegistry
+from core.di import get_cihaz_service as _get_cihaz_service
 from ui.pages.cihaz.components.uts_parser import scrape_uts
 from ui.pages.cihaz.components.ariza_detail_panel import CihazArizaPanel
 from ui.pages.cihaz.components.kalibrasyon_detail_panel import KalibrasyonDetailPanel
@@ -62,7 +62,9 @@ class CihazMerkezPage(QWidget):
     # ═══════════════════════════════════════════════════
 
     def _setup_ui(self):
-        self.setStyleSheet(STYLES["page"])
+        self.setProperty("bg-role", "page")
+        self.style().unpolish(self)
+        self.style().polish(self)
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
@@ -100,7 +102,9 @@ class CihazMerkezPage(QWidget):
 
         btn_back = QPushButton(" Listeye")
         btn_back.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        btn_back.setStyleSheet(STYLES["back_btn"])
+        btn_back.setProperty("style-role", "secondary")
+        btn_back.style().unpolish(btn_back)
+        btn_back.style().polish(btn_back)
         IconRenderer.set_button_icon(btn_back, "arrow_left", color=C.TEXT_SECONDARY, size=14)
         btn_back.setIconSize(QSize(14, 14))
         btn_back.clicked.connect(self.kapat_istegi.emit)
@@ -115,7 +119,7 @@ class CihazMerkezPage(QWidget):
             f"background:{C.BG_TERTIARY}; border-radius:8px;"
             f"font-size:13px; font-weight:700; color:{C.TEXT_SECONDARY};"
         )
-        self.lbl_avatar.setText("🔧")
+        self.lbl_avatar.setText("")
         top_lay.addWidget(self.lbl_avatar)
 
         # Cihaz ID + detay
@@ -126,7 +130,9 @@ class CihazMerkezPage(QWidget):
             f"font-size:14px; font-weight:600; color:{C.TEXT_PRIMARY}; background:transparent;"
         )
         self.lbl_detay = QLabel("…")
-        self.lbl_detay.setStyleSheet(STYLES["info_label"])
+        self.lbl_detay.setProperty("style-role", "info")
+        self.lbl_detay.style().unpolish(self.lbl_detay)
+        self.lbl_detay.style().polish(self.lbl_detay)
         info_lay.addWidget(self.lbl_cihaz_id)
         info_lay.addWidget(self.lbl_detay)
         top_lay.addLayout(info_lay)
@@ -182,11 +188,9 @@ class CihazMerkezPage(QWidget):
 
     def _load_data(self):
         try:
-            registry = RepositoryRegistry(self.db)
-            cihaz_repo = registry.get("Cihazlar")
-            
+            svc = _get_cihaz_service(self.db)
             # Cihaz verisini çek
-            cihazlar = cihaz_repo.get_by_kod(self.cihaz_id, "Cihazid")
+            cihazlar = [svc.get_cihaz(self.cihaz_id)] if svc.get_cihaz(self.cihaz_id) else []
             if not cihazlar:
                 QMessageBox.warning(self, "Hata", f"Cihaz bulunamadı: {self.cihaz_id}")
                 self.kapat_istegi.emit()

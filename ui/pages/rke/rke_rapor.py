@@ -15,6 +15,7 @@ from PySide6.QtGui import (
 )
 
 from core.logger import logger
+from core.di import get_rke_service as _get_rke_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.colors import DarkTheme
 from ui.styles.components import STYLES
@@ -29,8 +30,8 @@ _RED  = DarkTheme.STATUS_ERROR; _AMBER= DarkTheme.STATUS_WARNING; _GREEN= DarkTh
 _BLUE = DarkTheme.ACCENT; _CYAN = DarkTheme.ACCENT2; _PURP = DarkTheme.RKE_PURP
 _MONO = DarkTheme.MONOSPACE
 
-_S_COMBO = STYLES["input_combo"]
-_S_TABLE = STYLES["table"]
+# _S_COMBO kaldırıldı — global QSS kuralı geçerli
+# _S_TABLE kaldırıldı — global QSS kuralı geçerli
 
 
 # ==================================================================
@@ -260,10 +261,10 @@ class RKERaporPenceresi(QWidget):
         self._muayene_repo = None
         if self._db:
             try:
-                from core.di import get_registry
-                self._registry = get_registry(self._db)
-                self._rke_repo = self._registry.get("RKE_List")
-                self._muayene_repo = self._registry.get("RKE_Muayene")
+
+                self._rke_svc = _get_rke_service(self._db)
+                self._rke_repo = self._rke_svc._r.get("RKE_List")
+                self._muayene_repo = self._rke_svc._r.get("RKE_Muayene")
             except Exception as e:
                 logger.error(f"Repository baŞlatma hatası: {e}")
 

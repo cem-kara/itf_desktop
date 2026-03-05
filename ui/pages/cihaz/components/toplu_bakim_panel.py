@@ -1,3 +1,4 @@
+from core.di import get_cihaz_service as _get_cihaz_service
 # -*- coding: utf-8 -*-
 import time
 from datetime import datetime
@@ -11,7 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.logger import logger
-from database.repository_registry import RepositoryRegistry
+
 from ui.styles.colors import C as _C
 from ui.styles.components import STYLES as S
 
@@ -38,11 +39,17 @@ class TopluBakimPlanPanel(QWidget):
         layout.setContentsMargins(16, 16, 16, 16)
 
         title = QLabel("Toplu Bakım Planı Oluştur")
-        title.setStyleSheet(f"font-size:14px;font-weight:bold;color:{_C['accent']};")
+        title.setProperty("color-role", "accent")
+        title.setStyleSheet("font-size: 14px; font-weight: bold;")
+        title.style().unpolish(title)
+        title.style().polish(title)
         layout.addWidget(title)
 
         lbl_marka = QLabel("Marka Filtresi:")
-        lbl_marka.setStyleSheet(f"font-weight:600;color:{_C['text']};")
+        lbl_marka.setProperty("color-role", "primary")
+        lbl_marka.setStyleSheet("font-weight: 600;")
+        lbl_marka.style().unpolish(lbl_marka)
+        lbl_marka.style().polish(lbl_marka)
         layout.addWidget(lbl_marka)
 
         self.cmb_marka_filter = QComboBox()
@@ -52,7 +59,10 @@ class TopluBakimPlanPanel(QWidget):
         layout.addWidget(self.cmb_marka_filter)
 
         lbl_cihaz = QLabel("Cihazlar Seçin:")
-        lbl_cihaz.setStyleSheet(f"font-weight:600;color:{_C['text']};")
+        lbl_cihaz.setProperty("color-role", "primary")
+        lbl_cihaz.setStyleSheet("font-weight: 600;")
+        lbl_cihaz.style().unpolish(lbl_cihaz)
+        lbl_cihaz.style().polish(lbl_cihaz)
         layout.addWidget(lbl_cihaz)
 
         self.list_cihazlar = QListWidget()
@@ -76,22 +86,28 @@ class TopluBakimPlanPanel(QWidget):
         layout.addLayout(select_row)
 
         lbl_plan = QLabel("Bakım Planı Türü:")
-        lbl_plan.setStyleSheet(f"font-weight:600;color:{_C['text']};")
+        lbl_plan.setProperty("color-role", "primary")
+        lbl_plan.setStyleSheet("font-weight: 600;")
+        lbl_plan.style().unpolish(lbl_plan)
+        lbl_plan.style().polish(lbl_plan)
         layout.addWidget(lbl_plan)
 
         self.cmb_plan_tipi = QComboBox()
         self.cmb_plan_tipi.setStyleSheet(S["combo"])
         self.cmb_plan_tipi.setMinimumHeight(36)
         self.cmb_plan_tipi.addItems([
-            "📌 Tek Seferlik",
-            "🔄 3 Ay (4 Plan)",
-            "⏱️  6 Ay (2 Plan)",
-            "📆 1 Yıl (1 Plan)",
+            "Tek Seferlik",
+            "3 Ay (4 Plan)",
+            "6 Ay (2 Plan)",
+            "1 Yıl (1 Plan)",
         ])
         layout.addWidget(self.cmb_plan_tipi)
 
         lbl_tarih = QLabel("Başlangıç Tarihi:")
-        lbl_tarih.setStyleSheet(f"font-weight:600;color:{_C['text']};")
+        lbl_tarih.setProperty("color-role", "primary")
+        lbl_tarih.setStyleSheet("font-weight: 600;")
+        lbl_tarih.style().unpolish(lbl_tarih)
+        lbl_tarih.style().polish(lbl_tarih)
         layout.addWidget(lbl_tarih)
 
         self.dt_baslangic = QDateEdit(QDate.currentDate())
@@ -102,7 +118,10 @@ class TopluBakimPlanPanel(QWidget):
         layout.addWidget(self.dt_baslangic)
 
         lbl_acik = QLabel("Bakım Açıklaması (isteğe bağlı):")
-        lbl_acik.setStyleSheet(f"font-weight:600;color:{_C['text']};")
+        lbl_acik.setProperty("color-role", "primary")
+        lbl_acik.setStyleSheet("font-weight: 600;")
+        lbl_acik.style().unpolish(lbl_acik)
+        lbl_acik.style().polish(lbl_acik)
         layout.addWidget(lbl_acik)
 
         self.txt_aciklama = QLineEdit()
@@ -114,7 +133,7 @@ class TopluBakimPlanPanel(QWidget):
         layout.addStretch()
 
         btn_layout = QHBoxLayout()
-        btn_iptal = QPushButton("❌ İptal")
+        btn_iptal = QPushButton("İptal")
         btn_iptal.setMinimumHeight(38)
         btn_iptal.setStyleSheet(
             f"QPushButton{{background:{_C['panel']};border:1px solid {_C['border']};"
@@ -125,7 +144,7 @@ class TopluBakimPlanPanel(QWidget):
 
         btn_layout.addStretch()
 
-        btn_olustur = QPushButton("✅ Planları Oluştur")
+        btn_olustur = QPushButton("Planları Oluştur")
         btn_olustur.setMinimumHeight(38)
         btn_olustur.setMinimumWidth(120)
         btn_olustur.setStyleSheet(
@@ -144,7 +163,7 @@ class TopluBakimPlanPanel(QWidget):
         self.cmb_marka_filter.clear()
         self.cmb_marka_filter.addItem("Tüm Markalar", None)
         try:
-            repo = RepositoryRegistry(self._db).get("Cihazlar")
+            repo = _get_cihaz_service(self._db)._r.get("Cihazlar")
             self._all_cihazlar = repo.get_all() or []
         except Exception as e:
             logger.error(f"Cihaz listesi yüklenemedi: {e}")
@@ -229,7 +248,7 @@ class TopluBakimPlanPanel(QWidget):
                 kayitlar.append(kayit)
 
         try:
-            repo = RepositoryRegistry(self._db).get("Periyodik_Bakim")
+            repo = _get_cihaz_service(self._db)._r.get("Periyodik_Bakim")
             for kayit in kayitlar:
                 repo.insert(kayit)
             self.toplam_plan = len(kayitlar)

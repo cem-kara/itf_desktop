@@ -6,23 +6,21 @@ Tüm renkler merkezi ThemeManager / DarkTheme / ComponentStyles üzerinden gelir
 Hardcoded renk yok.
 """
 from PySide6.QtCore import (
-    Qt, QSortFilterProxyModel, QModelIndex, QAbstractTableModel,
+    Qt, QSortFilterProxyModel,
     Signal, QRect, QPoint, QSize, QTimer, QThread,
 )
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QFrame, QProgressBar, QPushButton, QHeaderView,
     QTableView, QComboBox, QLineEdit, QMenu, QMessageBox,
-    QStyledItemDelegate, QApplication, QStyle, QToolTip,
+    QStyledItemDelegate, QStyle, QToolTip,
 )
 from PySide6.QtGui import (
     QColor, QCursor, QPainter, QBrush, QPen, QFont, QFontMetrics, QPixmap,
 )
 
 from core.logger import logger
-from core.services.personel_service import PersonelService
-from core.services.izin_service import IzinService
-from core.di import get_registry
+from core.di import get_personel_service, get_izin_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
 from ui.styles.components import ComponentStyles, STYLES
@@ -384,11 +382,12 @@ class PersonelListesiPage(QWidget):
 
     def __init__(self, db=None, action_guard=None, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(STYLES["page"])
+        self.setProperty("bg-role", "page")
+        self.style().unpolish(self)
+        self.style().polish(self)
         self._db             = db
-        self._registry       = get_registry(db) if db else None
-        self._svc            = PersonelService(self._registry) if self._registry else None
-        self._izin_svc       = IzinService(self._registry) if self._registry else None
+        self._svc            = get_personel_service(db) if db else None
+        self._izin_svc       = get_izin_service(db) if db else None
         self._action_guard   = action_guard
         self._all_data       = []
         self._izin_map       = {}
@@ -515,7 +514,7 @@ class PersonelListesiPage(QWidget):
         self.search_input.setPlaceholderText("Ad, TC, birim ara…")
         self.search_input.setClearButtonEnabled(True)
         self.search_input.setFixedWidth(200)
-        self.search_input.setStyleSheet(STYLES["search"])
+        # setStyleSheet kaldırıldı: search — global QSS kuralı geçerli
         lay.addWidget(self.search_input)
 
         lay.addStretch()
@@ -524,13 +523,17 @@ class PersonelListesiPage(QWidget):
         self.btn_yenile.setToolTip("Yenile")
         self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_yenile.setFixedSize(32, 28)
-        self.btn_yenile.setStyleSheet(STYLES["refresh_btn"])
+        self.btn_yenile.setProperty("style-role", "refresh")
+        self.btn_yenile.style().unpolish(self.btn_yenile)
+        self.btn_yenile.style().polish(self.btn_yenile)
         IconRenderer.set_button_icon(self.btn_yenile, "refresh", color=C.TEXT_SECONDARY, size=16)
         lay.addWidget(self.btn_yenile)
 
         self.btn_yeni = QPushButton(" Yeni Personel")
         self.btn_yeni.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_yeni.setStyleSheet(STYLES["action_btn"])
+        self.btn_yeni.setProperty("style-role", "action")
+        self.btn_yeni.style().unpolish(self.btn_yeni)
+        self.btn_yeni.style().polish(self.btn_yeni)
         IconRenderer.set_button_icon(self.btn_yeni, "user_add", color=C.BTN_PRIMARY_TEXT, size=16)
         self.btn_yeni.setIconSize(QSize(16, 16))
         
@@ -585,20 +588,22 @@ class PersonelListesiPage(QWidget):
         self.cmb_gorev_yeri = QComboBox()
         self.cmb_gorev_yeri.addItem("Tüm Birimler")
         self.cmb_gorev_yeri.setFixedWidth(180)
-        self.cmb_gorev_yeri.setStyleSheet(STYLES["combo"])
+        # setStyleSheet kaldırıldı: combo — global QSS kuralı geçerli
         lay.addWidget(self.cmb_gorev_yeri)
 
         self.cmb_hizmet = QComboBox()
         self.cmb_hizmet.addItem("Tüm Sınıflar")
         self.cmb_hizmet.setFixedWidth(200)
-        self.cmb_hizmet.setStyleSheet(STYLES["combo"])
+        # setStyleSheet kaldırıldı: combo — global QSS kuralı geçerli
         lay.addWidget(self.cmb_hizmet)
 
         lay.addStretch()
 
         self.btn_excel = QPushButton(" Excel")
         self.btn_excel.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_excel.setStyleSheet(STYLES["excel_btn"])
+        self.btn_excel.setProperty("style-role", "success")
+        self.btn_excel.style().unpolish(self.btn_excel)
+        self.btn_excel.style().polish(self.btn_excel)
         IconRenderer.set_button_icon(self.btn_excel, "download", color=C.TEXT_SECONDARY, size=16)
         self.btn_excel.setIconSize(QSize(16, 16))
         lay.addWidget(self.btn_excel)
@@ -613,7 +618,7 @@ class PersonelListesiPage(QWidget):
 
         self.table = QTableView()
         self.table.setModel(self._proxy)
-        self.table.setStyleSheet(STYLES["table"])
+        # setStyleSheet kaldırıldı: table — global QSS kuralı geçerli
         self.table.setAlternatingRowColors(False)
         self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
@@ -627,12 +632,10 @@ class PersonelListesiPage(QWidget):
         self._delegate = PersonelDelegate(self.table)
         self.table.setItemDelegate(self._delegate)
 
-        hdr = self.table.horizontalHeader()
-        for i, (_, _, w) in enumerate(COLUMNS):
-            hdr.setSectionResizeMode(i, QHeaderView.ResizeMode.Fixed)
-            self.table.setColumnWidth(i, w)
-        hdr.setSectionResizeMode(COL_IDX["AdSoyad"], QHeaderView.ResizeMode.Stretch)
-        hdr.setSectionResizeMode(COL_IDX["_birim"],  QHeaderView.ResizeMode.Stretch)
+        self._model.setup_columns(
+            self.table,
+            stretch_keys=["AdSoyad", "_birim"],
+        )
         return self.table
 
     def _build_footer(self) -> QFrame:
@@ -649,11 +652,15 @@ class PersonelListesiPage(QWidget):
         lay.setSpacing(16)
 
         self.lbl_info = QLabel("0 kayıt")
-        self.lbl_info.setStyleSheet(STYLES["footer_label"])
+        self.lbl_info.setProperty("style-role", "footer")
+        self.lbl_info.style().unpolish(self.lbl_info)
+        self.lbl_info.style().polish(self.lbl_info)
         lay.addWidget(self.lbl_info)
 
         self.lbl_detail = QLabel("")
-        self.lbl_detail.setStyleSheet(STYLES["footer_label"])
+        self.lbl_detail.setProperty("style-role", "footer")
+        self.lbl_detail.style().unpolish(self.lbl_detail)
+        self.lbl_detail.style().polish(self.lbl_detail)
         lay.addWidget(self.lbl_detail)
 
         lay.addStretch()
@@ -662,14 +669,16 @@ class PersonelListesiPage(QWidget):
         self.progress.setFixedSize(140, 4)
         self.progress.setVisible(False)
         self.progress.setTextVisible(False)
-        self.progress.setStyleSheet(STYLES["progress"])
+        # setStyleSheet kaldırıldı: progress — global QSS kuralı geçerli
         lay.addWidget(self.progress)
 
         # Lazy-loading: "Daha fazla yükle" butonu
         self.btn_load_more = QPushButton("Daha Fazla Yükle")
         self.btn_load_more.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_load_more.setFixedHeight(28)
-        self.btn_load_more.setStyleSheet(STYLES["action_btn"])
+        self.btn_load_more.setProperty("style-role", "action")
+        self.btn_load_more.style().unpolish(self.btn_load_more)
+        self.btn_load_more.style().polish(self.btn_load_more)
         self.btn_load_more.setVisible(False)  # İlk başta gizle
         lay.addWidget(self.btn_load_more)
         

@@ -16,6 +16,7 @@ from ui.pages.placeholder import WelcomePage, PlaceholderPage
 from ui.styles.colors import DarkTheme
 from database.sync_worker import SyncWorker
 from database.sqlite_manager import SQLiteManager
+from ui.dialogs.about_dialog import HakkindaDialog
 
 
 class MainWindow(QMainWindow):
@@ -110,16 +111,19 @@ class MainWindow(QMainWindow):
 
     def _build_status_bar(self):
         self.status = QStatusBar()
-        self.status.setStyleSheet("""
-            QStatusBar {
-                background-color: %s;
-                border-top: 1px solid %s;
+        # Status bar özel widget - MainWindow'a özgü stil (kabul edilebilir)
+        self.status.setStyleSheet(f"""
+            QStatusBar {{
+                background-color: {DarkTheme.BG_SECONDARY};
+                border-top: 1px solid {DarkTheme.BORDER_PRIMARY};
                 padding: 2px 8px;
-            }
-            QStatusBar QLabel {
-                font-size: 12px; color: %s; padding: 0 8px;
-            }
-        """ % (DarkTheme.BG_SECONDARY, DarkTheme.BORDER_PRIMARY, DarkTheme.TEXT_DISABLED))
+            }}
+            QStatusBar QLabel {{
+                font-size: 12px; 
+                color: {DarkTheme.TEXT_DISABLED}; 
+                padding: 0 8px;
+            }}
+        """)
         self.setStatusBar(self.status)
 
         self.sync_status_label = QLabel("Hazır")
@@ -129,8 +133,20 @@ class MainWindow(QMainWindow):
         self.last_sync_label = QLabel("")
         self.status.addWidget(self.last_sync_label, 1)
 
-        version_label = QLabel(f"v{AppConfig.VERSION}")
+        version_label = QLabel(
+            f'<a href="#" style="color:{DarkTheme.TEXT_MUTED}; '
+            f'text-decoration:none;">v{AppConfig.VERSION}</a>'
+        )
+        version_label.setToolTip("Hakkında — lisans bilgileri için tıklayın")
+        version_label.setCursor(Qt.CursorShape.PointingHandCursor)
+        version_label.linkActivated.connect(self._show_hakkinda)
         self.status.addPermanentWidget(version_label)
+
+    @Slot()
+    def _show_hakkinda(self, *_):
+        """Hakkında dialogunu aç."""
+        dlg = HakkindaDialog(self)
+        dlg.exec()
 
     # ── SAYFA YÖNETİMİ ──
 
@@ -484,9 +500,8 @@ class MainWindow(QMainWindow):
     def _load_sabitler_cache(self):
         """Sabitler tablosunu cache'e yükler (performans için bir kere)."""
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
-            self._sabitler_cache = registry.get("Sabitler").get_all()
+            from core.di import get_cihaz_service as _cs
+            self._sabitler_cache = _cs(self._db).get_sabitler()
             logger.info(f"Sabitler cache yüklendi: {len(self._sabitler_cache)} kayıt")
         except Exception as e:
             logger.error(f"Sabitler cache yükleme hatası: {e}")
@@ -512,7 +527,7 @@ class MainWindow(QMainWindow):
             self.sidebar.set_sync_status("Offline mod", self.STATUS_SYNCING_COLOR)
             self._set_sync_status_label("Offline mod", self.STATUS_SYNCING_COLOR)
             return
-        if AppConfig.AUTO_SYNC:
+        if AppConfig.get_auto_sync():
             QTimer.singleShot(3000, self._start_sync)
             self._sync_timer = QTimer(self)
             self._sync_timer.timeout.connect(self._start_sync)
@@ -661,8 +676,14 @@ class MainWindow(QMainWindow):
                 logger.error(f"Sayfa yenileme hatası: {e}")
 
     def _set_sync_status_label(self, text: str, color: str):
+        """Sync status label metnini ve rengini ayarla (property tabanlı)."""
         self.sync_status_label.setText(text)
+        # Dinamik renk için property tabanlı yaklaşım yerine,
+        # özel durum olarak inline stil kabul edilebilir (MainWindow özel widget)
         self.sync_status_label.setStyleSheet(f"color: {color};")
+        # Not: Alternatif olarak color-role property kullanılabilir ama
+        # bu durumda sınırlı sayıda önceden tanımlı rol olmalı (success/error/warning).
+        # Dinamik hex renk gerektiren durumlar için inline stil uygun.
 
     def _on_personel_saved(self):
         """Personel kaydedildikten sonra listeye dön ve yenile."""
@@ -678,7 +699,7 @@ class MainWindow(QMainWindow):
             if hasattr(self, '_welcome') and self._welcome:
                 self.stack.setCurrentWidget(self._welcome)
                 self.page_title.setText("")
-                self.sidebar.set_active(None)
+                self.sidebar.set_active("")
 
         # Ekle formunu sıfırla (sonraki açılışta taze form)
         if "Personel Ekle" in self._pages:
@@ -794,62 +815,18 @@ class MainWindow(QMainWindow):
     @Slot(str)
     def _on_theme_changed(self, theme_name: str):
         """
-        Tema değiştiğinde tüm sayfaları yıkıp yeniden oluşturmaya hazırlar.
+        Tema değiştiğinde UI'ı günceller.
 
-        Neden unpolish/polish yetmez?
-        Her sayfanın __init__'inde setStyleSheet(f"... {DarkTheme.BG_PRIMARY} ...")
-        satırları string olarak widget'a yazılır. Tema değişse de bu stringler
-        widget içinde saklı kalır — unpolish/polish onları yeniden değerlendirmez.
-
-        Çözüm: Tüm önbelleğe alınmış sayfaları stack'ten kaldır ve sil.
-        Kullanıcı menüden tekrar tıkladığında sayfa yeni tema renkleriyle
-        sıfırdan oluşturulur (_create_page lazy-load yapıyor).
+        Aşama 2 sonrası: Tüm renkler QSS property selector'larından geliyor.
+        app.setStyleSheet() çağrısı (ThemeManager içinde) yeni QSS'i zaten uyguladı.
+        Burada sadece Qt'nin style cache'ini temizlemek yeterli — sayfa yıkmaya gerek yok.
         """
-        logger.info(f"MainWindow tema değişikliği: {theme_name} — sayfalar yeniden oluşturulacak")
-
+        logger.info(f"Tema değiştirildi: {theme_name} — UI yenileniyor")
         try:
-            # 1. Hangi sayfa şu an gösteriliyor? (settings sayfası hariç sıfırla)
-            current = self.stack.currentWidget()
-
-            # 2. Settings sayfası dışındaki tüm önbelleklenmiş sayfaları yıkıyoruz.
-            #    Settings sayfasını koruyoruz — kullanıcı tema seçimini oradan yapıyor,
-            #    kapatırsak uygulama gösterecek sayfa bulamaz.
-            keys_to_remove = []
-            for key, widget in list(self._pages.items()):
-                if widget is current:
-                    continue   # Aktif sayfayı en sona bırak
-                try:
-                    self.stack.removeWidget(widget)
-                    widget.deleteLater()
-                    keys_to_remove.append(key)
-                    logger.debug(f"Sayfa kaldırıldı: {key}")
-                except Exception as e:
-                    logger.debug(f"Sayfa kaldırma hatası [{key}]: {e}")
-
-            for key in keys_to_remove:
-                self._pages.pop(key, None)
-
-            # 3. Aktif sayfa da yeniden oluşturulsun: stack'te welcome ekrana dön,
-            #    aktif sayfayı da kaldır (bir sonraki menü tıklamasında yeniden açılır)
-            if current and current is not self._welcome:
-                # Aktif sayfanın key'ini bul
-                active_key = next((k for k, v in self._pages.items() if v is current), None)
-                try:
-                    self.stack.setCurrentWidget(self._welcome)
-                    self.stack.removeWidget(current)
-                    current.deleteLater()
-                    if active_key:
-                        self._pages.pop(active_key, None)
-                except Exception as e:
-                    logger.debug(f"Aktif sayfa kaldırma hatası: {e}")
-
-            # 4. MainWindow ve sabit bileşenleri (sidebar vb.) yenile
+            # Tüm pencereyi yenile — alt widget'lar otomatik güncellenir
             self.style().unpolish(self)
             self.style().polish(self)
             self.update()
-            self.repaint()
-
-            logger.info(f"Tema '{theme_name}' uygulandı — {len(keys_to_remove)} sayfa sıfırlandı")
-
+            logger.info(f"Tema '{theme_name}' uygulandı")
         except Exception as e:
-            logger.error(f"Tema değişikliği işleme hatası: {e}", exc_info=True)
+            logger.error(f"Tema yenileme hatası: {e}", exc_info=True)

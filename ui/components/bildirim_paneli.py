@@ -7,7 +7,7 @@ Oturum boyunca kapatılabilir (dismiss), bir sonraki sync'te yeniden açılır.
 """
 from PySide6.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton,
-    QFrame, QSizePolicy, QScrollArea
+    QFrame, QSizePolicy
 )
 from PySide6.QtCore import Qt, Signal, QPropertyAnimation, QEasingCurve
 from PySide6.QtGui import QCursor
@@ -115,7 +115,7 @@ class BildirimPaneli(QWidget):
     def _satir_olustur(self, mod: str) -> QFrame:
         border = _KRITIK_BORDER if mod == "kritik" else _UYARI_BORDER
         bg     = _KRITIK_BG     if mod == "kritik" else _UYARI_BG
-        icon   = "🔴" if mod == "kritik" else "🟡"
+        icon   = "●" if mod == "kritik" else "●"
         label  = "KRİTİK" if mod == "kritik" else "UYARI"
 
         frame = QFrame()

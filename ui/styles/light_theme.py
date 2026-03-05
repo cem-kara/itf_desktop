@@ -1,86 +1,82 @@
-# ui/styles/light_theme.py  ─  REPYS v3 · Medikal Light Tema
+# ui/styles/light_theme.py  ─  REPYS v3 · Açık Tema
 # ═══════════════════════════════════════════════════════════════
 #
-#  DarkTheme ile birebir aynı attribute isimleri —
-#  runtime tema değişimi için zorunludur.
+#  v3.1: Renkler artık ui/styles/themes.py LIGHT dict'inden geliyor.
+#  DarkTheme ile birebir aynı attribute isimleri korundu.
 #
-#  Renkler HTML Tema Editörü LIGHT_PRESET ile birebir eşleşir.
-#
-#  ⚠  Yeni attribute eklendiğinde DarkTheme'de de aynı isimle
-#     tanımlanmalıdır (ve tersi).
 # ═══════════════════════════════════════════════════════════════
+
+from ui.styles.themes import LIGHT as _L
 
 
 class LightTheme:
     """
     Medikal açık mavi light tema.
     DarkTheme ile birebir aynı attribute sözleşmesi.
+    Tüm değerler ui/styles/themes.py LIGHT dict'inden gelir.
     """
 
-    # ── Yazı tipi ────────────────────────────────────────────────
-    MONOSPACE = "JetBrains Mono"
+    # Zemin
+    BG_PRIMARY    = _L["BG_PRIMARY"]
+    BG_SECONDARY  = _L["BG_SECONDARY"]
+    BG_TERTIARY   = _L["BG_TERTIARY"]
+    BG_ELEVATED   = _L["BG_ELEVATED"]
+    BG_DARK       = _L["BG_DARK"]
+    BG_HOVER      = _L["BG_HOVER"]
+    BG_SELECTED   = _L["BG_SELECTED"]
 
-    # ── Zemin katmanları ─────────────────────────────────────────
-    BG_PRIMARY   = "#f0f4f8"   # Ana pencere zemini
-    BG_SECONDARY = "#ffffff"   # Panel / kart zemini
-    BG_TERTIARY  = "#e8f0fe"   # Hover efekti zemini
-    BG_ELEVATED  = "#f8fafc"   # Input / popup zemini
-    BG_HOVER     = "#e8f0fe"
-    BG_SELECTED  = "rgba(37,99,235,0.10)"
+    # Kenarlıklar
+    BORDER_PRIMARY    = _L["BORDER_PRIMARY"]
+    BORDER_SECONDARY  = _L["BORDER_SECONDARY"]
+    BORDER_STRONG     = _L["BORDER_STRONG"]
+    BORDER_FOCUS      = _L["BORDER_FOCUS"]
 
-    # ── Kenarlıklar ──────────────────────────────────────────────
-    BORDER_PRIMARY   = "#d1dce8"
-    BORDER_SECONDARY = "#b8c8d9"
-    BORDER_STRONG    = "#b8c8d9"
-    BORDER_FOCUS     = "#2563eb"
+    # Metin
+    TEXT_PRIMARY       = _L["TEXT_PRIMARY"]
+    TEXT_SECONDARY     = _L["TEXT_SECONDARY"]
+    TEXT_MUTED         = _L["TEXT_MUTED"]
+    TEXT_DISABLED      = _L["TEXT_DISABLED"]
+    TEXT_TABLE_HEADER  = _L["TEXT_TABLE_HEADER"]
 
-    # ── Metin ────────────────────────────────────────────────────
-    TEXT_PRIMARY      = "#0f172a"
-    TEXT_SECONDARY    = "#475569"
-    TEXT_MUTED        = "#94a3b8"
-    TEXT_DISABLED     = "#cbd5e1"
-    TEXT_TABLE_HEADER = "#1e293b"
+    # Input
+    INPUT_BG            = _L["INPUT_BG"]
+    INPUT_BORDER        = _L["INPUT_BORDER"]
+    INPUT_BORDER_FOCUS  = _L["INPUT_BORDER_FOCUS"]
 
-    # ── Input alanları ───────────────────────────────────────────
-    INPUT_BG           = "#ffffff"
-    INPUT_BORDER       = "#d1dce8"
-    INPUT_BORDER_FOCUS = "#2563eb"
+    # Vurgu
+    ACCENT    = _L["ACCENT"]
+    ACCENT2   = _L["ACCENT2"]
+    ACCENT_BG = _L["ACCENT_BG"]
 
-    # ── Vurgu (Accent) ───────────────────────────────────────────
-    ACCENT    = "#2563eb"
-    ACCENT2   = "#0891b2"
-    ACCENT_BG = "rgba(37,99,235,0.08)"
+    # Butonlar
+    BTN_PRIMARY_BG       = _L["BTN_PRIMARY_BG"]
+    BTN_PRIMARY_TEXT     = _L["BTN_PRIMARY_TEXT"]
+    BTN_PRIMARY_HOVER    = _L["BTN_PRIMARY_HOVER"]
+    BTN_PRIMARY_BORDER   = _L["BTN_PRIMARY_BORDER"]
+    BTN_SECONDARY_BG     = _L["BTN_SECONDARY_BG"]
+    BTN_SECONDARY_TEXT   = _L["BTN_SECONDARY_TEXT"]
+    BTN_SECONDARY_BORDER = _L["BTN_SECONDARY_BORDER"]
+    BTN_SECONDARY_HOVER  = _L["BTN_SECONDARY_HOVER"]
+    BTN_DANGER_BG        = _L["BTN_DANGER_BG"]
+    BTN_DANGER_TEXT      = _L["BTN_DANGER_TEXT"]
+    BTN_DANGER_BORDER    = _L["BTN_DANGER_BORDER"]
+    BTN_DANGER_HOVER     = _L["BTN_DANGER_HOVER"]
+    BTN_SUCCESS_BG       = _L["BTN_SUCCESS_BG"]
+    BTN_SUCCESS_TEXT     = _L["BTN_SUCCESS_TEXT"]
+    BTN_SUCCESS_BORDER   = _L["BTN_SUCCESS_BORDER"]
+    BTN_SUCCESS_HOVER    = _L["BTN_SUCCESS_HOVER"]
 
-    # ── Butonlar ─────────────────────────────────────────────────
-    BTN_PRIMARY_BG     = "#2563eb"
-    BTN_PRIMARY_TEXT   = "#ffffff"
-    BTN_PRIMARY_HOVER  = "#0891b2"
-    BTN_PRIMARY_BORDER = "#2563eb"
+    # Durum
+    STATUS_SUCCESS = _L["STATUS_SUCCESS"]
+    STATUS_WARNING = _L["STATUS_WARNING"]
+    STATUS_ERROR   = _L["STATUS_ERROR"]
+    STATUS_INFO    = _L["STATUS_INFO"]
 
-    BTN_SECONDARY_BG     = "transparent"
-    BTN_SECONDARY_TEXT   = "#475569"
-    BTN_SECONDARY_BORDER = "#b8c8d9"
-    BTN_SECONDARY_HOVER  = "#f8fafc"
+    # Diğer
+    MONOSPACE = _L["MONOSPACE"]
+    RKE_PURP  = _L["RKE_PURP"]
 
-    BTN_DANGER_BG     = "rgba(220,38,38,0.08)"
-    BTN_DANGER_TEXT   = "#dc2626"
-    BTN_DANGER_BORDER = "rgba(220,38,38,0.30)"
-    BTN_DANGER_HOVER  = "rgba(220,38,38,0.15)"
-
-    BTN_SUCCESS_BG     = "rgba(5,150,105,0.08)"
-    BTN_SUCCESS_TEXT   = "#059669"
-    BTN_SUCCESS_BORDER = "rgba(5,150,105,0.30)"
-    BTN_SUCCESS_HOVER  = "rgba(5,150,105,0.15)"
-
-    # ── Durum token'ları ─────────────────────────────────────────
-    STATUS_SUCCESS = "#059669"
-    STATUS_WARNING = "#d97706"
-    STATUS_ERROR   = "#dc2626"
-    STATUS_INFO    = "#2563eb"
-
-    # ── Badge RGBA (r, g, b, alpha) ──────────────────────────────
-    STATE_ACTIVE  = (5,   150, 105, 30)
-    STATE_PASSIVE = (220, 38,  38,  30)
-    STATE_LEAVE   = (217, 119, 6,   30)
-
-    RKE_PURP = "#7c3aed"
+    # Badge RGBA tuple'ları (DarkTheme ile aynı)
+    STATE_ACTIVE  = (16,  185, 129, 35)
+    STATE_PASSIVE = (239, 68,  68,  35)
+    STATE_LEAVE   = (245, 158, 11,  35)

@@ -1,3 +1,4 @@
+from core.di import get_cihaz_service as _get_cihaz_service
 # -*- coding: utf-8 -*-
 from typing import Dict
 
@@ -8,7 +9,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.logger import logger
-from database.repository_registry import RepositoryRegistry
+
 from ui.styles.components import STYLES as S
 
 
@@ -133,7 +134,7 @@ class ArizaDuzenleForm(QWidget):
         }
 
         try:
-            repo = RepositoryRegistry(self._db).get("Cihaz_Ariza")
+            repo = _get_cihaz_service(self._db)._r.get("Cihaz_Ariza")
             repo.update(self._ariza_id, data)
             logger.info(f"Arıza düzenlemesi kaydedildi: {self._ariza_id}")
             self.saved.emit()

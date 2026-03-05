@@ -68,17 +68,29 @@ def qmessagebox_yakala() -> None:
             @staticmethod
             def critical(parent, title, msg, *args, **kwargs):
                 logger.error(f"[UI ❌] {title}: {msg}")
-                return _Orj.critical(parent, title, msg, *args, **kwargs)
+                try:
+                    from ui.dialogs.mesaj_kutusu import MesajKutusu
+                    MesajKutusu.hata(parent, msg, baslik=title)
+                except Exception:
+                    _Orj.critical(parent, title, msg, *args, **kwargs)
 
             @staticmethod
             def warning(parent, title, msg, *args, **kwargs):
                 logger.warning(f"[UI ⚠️] {title}: {msg}")
-                return _Orj.warning(parent, title, msg, *args, **kwargs)
+                try:
+                    from ui.dialogs.mesaj_kutusu import MesajKutusu
+                    MesajKutusu.uyari(parent, msg, baslik=title)
+                except Exception:
+                    _Orj.warning(parent, title, msg, *args, **kwargs)
 
             @staticmethod
             def information(parent, title, msg, *args, **kwargs):
                 logger.info(f"[UI ℹ️] {title}: {msg}")
-                return _Orj.information(parent, title, msg, *args, **kwargs)
+                try:
+                    from ui.dialogs.mesaj_kutusu import MesajKutusu
+                    MesajKutusu.bilgi(parent, msg, baslik=title)
+                except Exception:
+                    _Orj.information(parent, title, msg, *args, **kwargs)
 
         _qw.QMessageBox = _LoggedQMessageBox
         logger.info("QMessageBox log yakalayıcısı aktif edildi.")
@@ -166,10 +178,31 @@ def hata_goster(parent, mesaj: str, baslik: str = "Hata") -> None:
 
 def uyari_goster(parent, mesaj: str, baslik: str = "Uyarı") -> None:
     """
-    WARNING seviyesinde log yaz + QMessageBox.warning göster.
+    WARNING seviyesinde log yaz + MesajKutusu.uyari göster.
     """
     logger.warning(f"[UI Uyarı] {baslik}: {mesaj}")
     _msgbox_warning(parent, baslik, mesaj)
+
+
+def bilgi_goster(parent, mesaj: str, baslik: str = "Bilgi") -> None:
+    """
+    INFO seviyesinde log yaz + MesajKutusu.bilgi göster.
+
+    Kullanım:
+        from core.hata_yonetici import bilgi_goster
+        bilgi_goster(self, "Kayıt başarıyla eklendi.")
+    """
+    logger.info(f"[UI Bilgi] {baslik}: {mesaj}")
+    try:
+        from ui.dialogs.mesaj_kutusu import MesajKutusu
+        MesajKutusu.bilgi(parent, mesaj, baslik=baslik)
+    except Exception as _e:
+        logger.debug(f"MesajKutusu gösterilemedi — {baslik}: {_e}")
+        try:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.information(parent, baslik, mesaj)
+        except Exception:
+            pass
 
 
 def hata_logla_goster(parent, konum: str, exc: Exception,
@@ -188,15 +221,25 @@ def hata_logla_goster(parent, konum: str, exc: Exception,
 
 def _msgbox_critical(parent, baslik: str, mesaj: str) -> None:
     try:
-        from PySide6.QtWidgets import QMessageBox
-        QMessageBox.critical(parent, baslik, mesaj)
+        from ui.dialogs.mesaj_kutusu import MesajKutusu
+        MesajKutusu.hata(parent, mesaj, baslik=baslik)
     except Exception as _e:
-        logger.debug(f"QMessageBox gösterilemedi — {baslik}: {_e}")
+        logger.debug(f"MesajKutusu gösterilemedi — {baslik}: {_e}")
+        try:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.critical(parent, baslik, mesaj)
+        except Exception:
+            pass
 
 
 def _msgbox_warning(parent, baslik: str, mesaj: str) -> None:
     try:
-        from PySide6.QtWidgets import QMessageBox
-        QMessageBox.warning(parent, baslik, mesaj)
+        from ui.dialogs.mesaj_kutusu import MesajKutusu
+        MesajKutusu.uyari(parent, mesaj, baslik=baslik)
     except Exception as _e:
-        logger.debug(f"QMessageBox gösterilemedi — {baslik}: {_e}")
+        logger.debug(f"MesajKutusu gösterilemedi — {baslik}: {_e}")
+        try:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(parent, baslik, mesaj)
+        except Exception:
+            pass

@@ -21,7 +21,7 @@ from PySide6.QtCore import Qt, QRectF
 from PySide6.QtGui import QColor, QCursor, QFont, QPainter, QBrush, QPen, QPainterPath
 
 from core.logger import logger
-from core.hesaplamalar import sua_hak_edis_hesapla, tr_upper
+from core.hesaplamalar import sua_hak_edis_hesapla
 from ui.styles import Colors, DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
@@ -117,7 +117,7 @@ class PuantajRaporPage(QWidget):
         fp.setSpacing(8)
 
         lbl_t = QLabel("Puantaj Raporlama ve Sua Takip")
-        lbl_t.setStyleSheet(S.get("section_title", ""))
+        lbl_t.setStyleSheet(S.get("section_title") or "")
         fp.addWidget(lbl_t)
 
         self._add_sep(fp)
@@ -165,7 +165,7 @@ class PuantajRaporPage(QWidget):
         self.tablo.verticalHeader().setVisible(False)
         self.tablo.setAlternatingRowColors(True)
         self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.tablo.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.tablo.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tablo.setStyleSheet(S["table"])
 
         h = self.tablo.horizontalHeader()
@@ -448,10 +448,13 @@ class PuantajRaporPage(QWidget):
 
         try:
             import openpyxl
+            from openpyxl.utils.cell import get_column_letter
             from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
             wb = openpyxl.Workbook()
             ws = wb.active
+            if ws is None:
+                raise RuntimeError("Excel çalışma sayfası oluşturulamadı")
             ws.title = "Puantaj Rapor"
 
             # Başlık satırı
@@ -510,7 +513,7 @@ class PuantajRaporPage(QWidget):
             # Kolon genişlikleri
             widths = [14, 25, 8, 12, 10, 10, 14, 16, 18]
             for i, w in enumerate(widths, 1):
-                ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
+                ws.column_dimensions[get_column_letter(i)].width = w
 
             # Filtreler
             ws.auto_filter.ref = ws.dimensions
@@ -574,9 +577,7 @@ class PuantajRaporPage(QWidget):
             styles = getSampleStyleSheet()
 
             # Başlık
-            ay_start_text = self.cmb_ay.currentText()
-            ay_end_text = self.cmb_end_ay.currentText()
-            title_text = f"FHSZ Puantaj Raporu — {yil} ({ay_start_text} - {ay_end_text})"
+            title_text = f"FHSZ Puantaj Raporu — {yil} ({donem})"
             title_style = styles["Title"]
             title_style.fontName = font_bold
             title_style.fontSize = 14

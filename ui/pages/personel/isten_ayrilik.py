@@ -19,10 +19,9 @@ from PySide6.QtGui import QCursor
 
 from core.logger import logger
 from core.hata_yonetici import exc_logla
-from core.di import get_registry
+from core.di import get_izin_service
 from core.date_utils import to_ui_date
-from ui.theme_manager import ThemeManager
-from ui.styles.colors import DarkTheme as C, Colors
+from ui.styles.colors import DarkTheme as C
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 
@@ -304,7 +303,6 @@ class IstenAyrilikPage(QWidget):
         self.dt_tarih.setCalendarPopup(True)
         self.dt_tarih.setDisplayFormat("dd.MM.yyyy")
         self.dt_tarih.setStyleSheet(S["date"])
-        ThemeManager.setup_calendar_popup(self.dt_tarih)
         fg.addWidget(self.dt_tarih, 0, 1)
 
         lbl_n = QLabel("Ayrılma Nedeni")

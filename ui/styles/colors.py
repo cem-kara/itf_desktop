@@ -1,32 +1,30 @@
-# ui/styles/colors.py  ─  REPYS v3 · Medikal Dark-Blue Tema
+# ui/styles/colors.py  ─  REPYS v3 · Tema Renk Sistemi
 # ═══════════════════════════════════════════════════════════════
 #
-#  İKİ KATMANLI PALET SİSTEMİ
-#  ┌─ Colors     ─ Ham hex değerleri, global renk paleti
-#  ├─ DarkTheme  ─ Anlamsal (semantic) tasarım token'ları
-#  └─ ThemeProxy ─ Runtime tema proxy'si (dinamik tema değişimi)
+#  Dışarıdan import arayüzü (değişmedi):
+#     from ui.styles.colors import DarkTheme as C
+#     from ui.styles.colors import DarkTheme, ThemeProxy, Colors
 #
-#  Kullanım (bileşen dosyalarında):
-#     from ui.styles.colors import ThemeProxy as C
-#     # C.TEXT_PRIMARY → her zaman aktif temanın rengini döndürür
+#  Nasıl çalışır (v3.1):
+#     DarkTheme.BG_PRIMARY  →  _LiveThemeMeta devreye girer
+#                            →  ayarlar.json'dan aktif temayı okur
+#                            →  ui/styles/themes.py'den rengi döndürür
 #
-#  ⚠  Sayfa/bileşen kodunda DarkTheme'i doğrudan KULLANMAYIN.
-#     ThemeProxy veya get_current_theme() kullanın.
+#  Artık ThemeRegistry bağımlılığı yok — döngüsel import riski ortadan kalktı.
 # ═══════════════════════════════════════════════════════════════
 
 
 class Colors:
     """
     Ham renk paleti — uygulama genelinde yeniden kullanılabilir
-    referans değerleri. Doğrudan UI bileşenlerinde kullanılmaz;
-    DarkTheme ve LightTheme bu değerlerden token üretir.
+    referans değerleri. DarkTheme ve LightTheme bu değerlerden türetilir.
     """
 
     WHITE = "#ffffff"
     BLACK = "#000000"
 
     # ── Mavi / Lacivert skalası ──────────────────────────────────
-    NAVY_950 = "#060d1a"   # En koyu zemin
+    NAVY_950 = "#060d1a"
     NAVY_900 = "#0b1628"
     NAVY_850 = "#0e1e35"
     NAVY_800 = "#112240"
@@ -40,7 +38,7 @@ class Colors:
     NAVY_100 = "#b8d8f8"
     NAVY_50  = "#e8f2fc"
 
-    # ── Vurgu — Elektrik Mavi (accent) ──────────────────────────
+    # ── Vurgu — Elektrik Mavi ───────────────────────────────────
     CYAN_500 = "#00b4d8"
     CYAN_400 = "#22d3ee"
     CYAN_300 = "#67e8f9"
@@ -83,167 +81,115 @@ class Colors:
 
 
 # ══════════════════════════════════════════════════════════════
-#  _LiveThemeMeta  —  DarkTheme.XXX erişimini aktif temaya yönlendirir
+#  _LiveThemeMeta — DarkTheme.ATTR erişimini aktif temaya yönlendirir
 #
-#  Projedeki 47 dosyada SIFIR değişiklik gerekir.
-#  DarkTheme.BG_PRIMARY, DarkTheme.ACCENT vb. her çağrıldığında
-#  o anki aktif tema (Dark veya Light) kullanılır.
-#
-#  Nasıl çalışır?
-#    • type.__getattribute__ sınıf attribute erişimini yakalar
-#    • ThemeRegistry'den aktif temayı bulur
-#    • Aktif tema DarkTheme'in kendisiyse → normal değerlere döner
-#    • Başka tema (LightTheme) aktifse → o temadan döner
-#    • Herhangi bir hata durumunda → DarkTheme'in gerçek değerine fallback
+#  v3.1 değişikliği: ThemeRegistry yerine core/settings + themes.py
+#  kullanır. Döngüsel import riski ortadan kalktı.
 # ══════════════════════════════════════════════════════════════
 class _LiveThemeMeta(type):
     def __getattribute__(cls, name: str):
-        # Dunder / private isimler → normal class davranışı
-        if name.startswith('_'):
+        # Dunder / private isimler → normal sınıf davranışı
+        if name.startswith("_"):
             return type.__getattribute__(cls, name)
         try:
-            from ui.styles.theme_registry import ThemeRegistry
-            theme_cls = ThemeRegistry.instance().get_active_theme().theme_class
-            # DarkTheme'in kendisi aktifse → sonsuz döngü önleme
-            if theme_cls is cls:
-                return type.__getattribute__(cls, name)
-            return getattr(theme_cls, name)
+            from core.settings import get as _settings_get
+            from ui.styles.themes import get_tokens
+            theme_name = _settings_get("theme", "dark")
+            tokens = get_tokens(theme_name)
+            if name in tokens:
+                return tokens[name]
         except Exception:
-            # Herhangi bir hata → DarkTheme'in gerçek değeri (güvenli)
-            return type.__getattribute__(cls, name)
+            pass
+        # Fallback: sınıf üzerindeki gerçek değer (varsa)
+        return type.__getattribute__(cls, name)
 
 
 class DarkTheme(metaclass=_LiveThemeMeta):
     """
-    Medikal koyu mavi dark tema — anlamsal tasarım token'ları.
+    Tema token'larına dinamik erişim sağlar.
+    Aktif tema dark ise DARK dict, light ise LIGHT dict döner.
 
-    Bu sınıfın attribute isimleri uygulama genelinde kullanılan
-    sözleşmedir (contract). İsim değişikliği tüm sayfaları etkiler.
+    Tüm attribute erişimleri _LiveThemeMeta üzerinden geçer —
+    bu sınıfın kendi body'sini değiştirmeye gerek yok.
 
-    Hiyerarşi (koyu → açık):
-        BG_PRIMARY → BG_SECONDARY → BG_TERTIARY → BG_ELEVATED
+    Geriye dönük uyumluluk için STATE_* tuple'ları burada:
     """
-
-    # ── Yazı tipi ────────────────────────────────────────────────
-    MONOSPACE = "JetBrains Mono"   # Tablolar, input'lar, KPI değerleri
-
-    # ── Zemin katmanları ─────────────────────────────────────────
-    BG_PRIMARY   = "#0d1117"
-    BG_SECONDARY = "#121820"
-    BG_TERTIARY  = "#0d1117"
-    BG_ELEVATED  = "#1a2030"
-    BG_HOVER     = "rgba(61,142,245,0.06)"
-    BG_SELECTED  = "rgba(61,142,245,0.14)"
-
-    # ── Kenarlıklar ──────────────────────────────────────────────
-    BORDER_PRIMARY   = "#1e2d3d"
-    BORDER_SECONDARY = "#253545"
-    BORDER_STRONG    = "#253545"
-    BORDER_FOCUS     = "#3d8ef5"
-
-    # ── Metin ────────────────────────────────────────────────────
-    TEXT_PRIMARY      = "#e8edf5"
-    TEXT_SECONDARY    = "#8fa3b8"
-    TEXT_MUTED        = "#4d6070"
-    TEXT_DISABLED     = "#263850"
-    TEXT_TABLE_HEADER = "#c7dcf1"
-
-    # ── Input alanları ───────────────────────────────────────────
-    INPUT_BG           = "#1a2030"
-    INPUT_BORDER       = "#1e2d3d"
-    INPUT_BORDER_FOCUS = "#3d8ef5"
-
-    # ── Vurgu (Accent) ───────────────────────────────────────────
-    ACCENT    = "#3d8ef5"
-    ACCENT2   = "#20c0d8"
-    ACCENT_BG = "rgba(61,142,245,0.12)"
-
-    # ── Butonlar ─────────────────────────────────────────────────
-    BTN_PRIMARY_BG     = "#3d8ef5"
-    BTN_PRIMARY_TEXT   = "#060d1a"
-    BTN_PRIMARY_HOVER  = "#20c0d8"
-    BTN_PRIMARY_BORDER = "#3d8ef5"
-
-    BTN_SECONDARY_BG     = "#1a2030"
-    BTN_SECONDARY_TEXT   = "#8fa3b8"
-    BTN_SECONDARY_BORDER = "#1e2d3d"
-    BTN_SECONDARY_HOVER  = "#253545"
-
-    BTN_DANGER_BG     = "rgba(232,85,85,0.15)"
-    BTN_DANGER_TEXT   = "#e85555"
-    BTN_DANGER_BORDER = "rgba(232,85,85,0.30)"
-    BTN_DANGER_HOVER  = "rgba(232,85,85,0.25)"
-
-    BTN_SUCCESS_BG     = "rgba(46,201,142,0.15)"
-    BTN_SUCCESS_TEXT   = "#2ec98e"
-    BTN_SUCCESS_BORDER = "rgba(46,201,142,0.30)"
-    BTN_SUCCESS_HOVER  = "rgba(46,201,142,0.25)"
-
-    # ── Durum token'ları ─────────────────────────────────────────
-    STATUS_SUCCESS = "#2ec98e"
-    STATUS_WARNING = "#e8a030"
-    STATUS_ERROR   = "#e85555"
-    STATUS_INFO    = "#3d8ef5"
-
-    # ── Badge RGBA (r, g, b, alpha) ──────────────────────────────
+    # Badge RGBA tuple'ları — QSS'te kullanılamaz, Python kodu için
     STATE_ACTIVE  = (16,  185, 129, 35)
     STATE_PASSIVE = (239, 68,  68,  35)
     STATE_LEAVE   = (245, 158, 11,  35)
 
-    RKE_PURP = "#a855f7"
-
 
 # ══════════════════════════════════════════════════════════════
-#  ThemeProxy — Runtime tema değişimi için dinamik proxy
+#  ThemeProxy — DarkTheme ile aynı, geriye dönük uyumluluk için
 # ══════════════════════════════════════════════════════════════
-
 class _ThemeProxyMeta(type):
-    """
-    ThemeProxy için metaclass.
-    Sınıf üzerinde yapılan attribute erişimlerini (C.BG_PRIMARY gibi)
-    her seferinde aktif temaya yönlendirir.
-    """
     def __getattr__(cls, name: str):
-        # ThemeRegistry import'u döngüsel import'u önlemek için burada
-        from ui.styles.theme_registry import ThemeRegistry
-        theme_def = ThemeRegistry.instance().get_active_theme()
-        theme_cls = theme_def.theme_class
-        try:
-            return getattr(theme_cls, name)
-        except AttributeError:
-            # Fallback: DarkTheme'den dene
-            return getattr(DarkTheme, name)
+        return getattr(DarkTheme, name)
 
 
 class ThemeProxy(metaclass=_ThemeProxyMeta):
     """
-    Aktif temaya dinamik erişim sağlayan proxy sınıfı.
-
-    Kullanım (components.py, page dosyaları):
-        from ui.styles.colors import ThemeProxy as C
-        color = C.TEXT_PRIMARY   # → aktif temanın rengi
-
-    Bu sayede tema değiştiğinde tüm get_styles() çağrıları
-    güncel renkleri döndürür.
+    DarkTheme için alias. Eski kod bozulmasın diye korunuyor.
+    Yeni kodda DarkTheme kullanın.
     """
     pass
 
 
 def get_current_theme():
-    """Aktif tema sınıfını döndür (DarkTheme veya LightTheme)."""
-    from ui.styles.theme_registry import ThemeRegistry
-    return ThemeRegistry.instance().get_active_theme().theme_class
+    """
+    Geriye dönük uyumluluk.
+    Aktif temanın token dict'ini nesne olarak döndürür.
+    """
+    from core.settings import get as _settings_get
+    from ui.styles.themes import get_tokens
+    tokens = get_tokens(_settings_get("theme", "dark"))
+    return type("_ActiveTheme", (), tokens)()
 
 
-# Geriye dönük uyumluluk — eski kod kırmak istemiyorsak:
-C = {
-    "red":     getattr(DarkTheme, "STATUS_ERROR",   "#f75f5f"),
-    "amber":   getattr(DarkTheme, "STATUS_WARNING",  "#f5a623"),
-    "green":   getattr(DarkTheme, "STATUS_SUCCESS",  "#3ecf8e"),
-    "accent":  getattr(DarkTheme, "ACCENT",          "#4f8ef7"),
-    "muted":   getattr(DarkTheme, "TEXT_MUTED",      "#5a6278"),
-    "surface": getattr(DarkTheme, "BG_SECONDARY",    "#13161d"),
-    "panel":   getattr(DarkTheme, "BG_ELEVATED",     "#191d26"),
-    "border":  getattr(DarkTheme, "BORDER_PRIMARY",  "#242938"),
-    "text":    getattr(DarkTheme, "TEXT_PRIMARY",    "#eef0f5"),
-}
+def get_current_theme_name() -> str:
+    """Aktif tema adını döndür: 'dark' veya 'light'."""
+    from core.settings import get as _settings_get
+    return _settings_get("theme", "dark")
+
+
+# ══════════════════════════════════════════════════════════════
+#  _C dict — eski bakim_form.py vb. için geriye dönük uyumluluk
+#  Yeni kodda kullanmayın, STYLES veya setProperty tercih edin.
+# ══════════════════════════════════════════════════════════════
+class _CDictProxy(dict):
+    """_C['muted'] gibi eski erişimleri aktif temaya yönlendirir."""
+    _KEY_MAP = {
+        "red":     "STATUS_ERROR",
+        "amber":   "STATUS_WARNING",
+        "green":   "STATUS_SUCCESS",
+        "accent":  "ACCENT",
+        "muted":   "TEXT_MUTED",
+        "surface": "BG_SECONDARY",
+        "panel":   "BG_ELEVATED",
+        "border":  "BORDER_PRIMARY",
+        "text":    "TEXT_PRIMARY",
+    }
+
+    def __getitem__(self, key):
+        token = self._KEY_MAP.get(key, key.upper())
+        return getattr(DarkTheme, token, super().__getitem__(key))
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except (KeyError, AttributeError):
+            return default
+
+
+C = _CDictProxy({
+    "red":     "#e85555",
+    "amber":   "#e8a030",
+    "green":   "#2ec98e",
+    "accent":  "#3d8ef5",
+    "muted":   "#4d6070",
+    "surface": "#121820",
+    "panel":   "#1a2030",
+    "border":  "#1e2d3d",
+    "text":    "#e8edf5",
+})

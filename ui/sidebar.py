@@ -1,7 +1,7 @@
 # ui/sidebar.py  ─  REPYS v3 · Medikal Dark-Blue Sidebar
 import json, os
 from PySide6.QtCore import Qt, QSize, Signal
-from PySide6.QtGui import QCursor, QColor, QLinearGradient, QPainter
+from PySide6.QtGui import QCursor, QColor
 from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QVBoxLayout, QWidget, QGraphicsDropShadowEffect,
@@ -186,7 +186,7 @@ class Sidebar(QWidget):
             logo_lbl.setFixedSize(22, 22)
             hl.addWidget(logo_lbl)
         except Exception:
-            dot = QLabel("✚")
+            dot = QLabel("+")
             dot.setStyleSheet("font-size: 18px; font-weight: 900; background: transparent;")
             hl.addWidget(dot)
 

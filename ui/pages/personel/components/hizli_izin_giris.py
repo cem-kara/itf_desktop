@@ -14,8 +14,7 @@ from PySide6.QtGui import QCursor
 
 from core.logger import logger
 from core.date_utils import parse_date
-from ui.theme_manager import ThemeManager
-from ui.styles import Colors
+from core.di import get_izin_service
 from ui.styles.components import STYLES as S
 
 class HizliIzinGirisDialog(QDialog):
@@ -60,7 +59,6 @@ class HizliIzinGirisDialog(QDialog):
         # Başlama Tarihi
         form.addWidget(QLabel("Başlama Tarihi", styleSheet=S["label"]), 2, 0)
         self.ui["baslama"] = QDateEdit(QDate.currentDate(), calendarPopup=True, displayFormat="dd.MM.yyyy", styleSheet=S["date"])
-        ThemeManager.setup_calendar_popup(self.ui["baslama"])
         form.addWidget(self.ui["baslama"], 2, 1)
 
         # Süre
