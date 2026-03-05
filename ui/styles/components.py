@@ -18,7 +18,7 @@
 #
 # ═══════════════════════════════════════════════════════════════
 
-from ui.styles.colors import Colors, DarkTheme
+from ui.styles.colors import Colors, DarkTheme, get_current_theme
 from ui.styles.icons  import Icons
 
 

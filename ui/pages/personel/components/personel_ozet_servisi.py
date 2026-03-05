@@ -7,6 +7,7 @@ from datetime import date
 
 from core.date_utils import parse_date, to_ui_date
 from core.logger import logger
+from core.di import get_personel_service, get_izin_service
 
 
 def personel_ozet_getir(db, personel_id: str) -> dict:
@@ -38,20 +39,19 @@ def personel_ozet_getir(db, personel_id: str) -> dict:
         return ozet
 
     try:
-        from core.di import get_registry
-
-        registry = get_registry(db)
         bugun = date.today()
+        
+        personel_svc = get_personel_service(db)
+        izin_svc = get_izin_service(db)
 
         # Personel Temel Bilgisi
-        p_repo = registry.get("Personel")
-        p_kayit = p_repo.get_by_id(tc)
+        p_kayit = personel_svc.get_by_id(tc)
         ozet["personel"] = p_kayit
 
         # Izin ozetleri
         izinler = [
             r
-            for r in registry.get("Izin_Giris").get_all()
+            for r in izin_svc.get_izin_giris_repo().get_all()
             if str(r.get("Personelid", "")).strip() == tc
         ]
         ozet["izin_kayit_sayisi"] = len(izinler)

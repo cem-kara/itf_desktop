@@ -132,7 +132,7 @@ class BaseDokumanPanel(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(S.get("scroll", ""))
+        scroll.setStyleSheet(S.get("scroll") or "")
 
         content = QWidget()
         content.setStyleSheet("background: transparent;")
@@ -171,7 +171,7 @@ class BaseDokumanPanel(QWidget):
         # Belge Türü
         r1.addWidget(self._lbl("Belge Türü:", w=80))
         self._combo_tur = QComboBox()
-        self._combo_tur.setStyleSheet(S.get("input_combo", ""))
+        self._combo_tur.setStyleSheet(S.get("input_combo") or "")
         self._combo_tur.setMinimumHeight(30)
         r1.addWidget(self._combo_tur, 1)
         
@@ -180,13 +180,13 @@ class BaseDokumanPanel(QWidget):
         self._inp_dosya = QLineEdit()
         self._inp_dosya.setPlaceholderText("Dosya seçilmedi...")
         self._inp_dosya.setReadOnly(True)
-        self._inp_dosya.setStyleSheet(S.get("input_field", ""))
+        self._inp_dosya.setStyleSheet(S.get("input_field") or "")
         self._inp_dosya.setMinimumHeight(30)
         r1.addWidget(self._inp_dosya, 2)
         
         # Dosya Seç Butonu
         btn_sec = QPushButton("Dosya Seç")
-        btn_sec.setStyleSheet(S.get("btn_action", ""))
+        btn_sec.setStyleSheet(S.get("btn_action") or "")
         btn_sec.setMinimumHeight(30)
         btn_sec.setMaximumWidth(120)
         btn_sec.clicked.connect(self._browse)
@@ -199,12 +199,12 @@ class BaseDokumanPanel(QWidget):
         r2.addWidget(self._lbl("Açıklama:", w=80))
         self._inp_aciklama = QLineEdit()
         self._inp_aciklama.setPlaceholderText("Belge hakkında notlar...")
-        self._inp_aciklama.setStyleSheet(S.get("input_field", ""))
+        self._inp_aciklama.setStyleSheet(S.get("input_field") or "")
         self._inp_aciklama.setMinimumHeight(30)
         r2.addWidget(self._inp_aciklama, 2)
         
         self._btn_yukle = QPushButton("Belgeyi Yükle")
-        self._btn_yukle.setStyleSheet(S.get("save_btn", ""))
+        self._btn_yukle.setStyleSheet(S.get("save_btn") or "")
         self._btn_yukle.setMinimumHeight(30)
         self._btn_yukle.setMaximumWidth(140)
         self._btn_yukle.clicked.connect(self._upload)
@@ -224,7 +224,7 @@ class BaseDokumanPanel(QWidget):
         self._tablo.setHorizontalHeaderLabels(
             ["Belge Türü", "Dosya Adı", "Açıklama", "Tarih"]
         )
-        self._tablo.setStyleSheet(S.get("table", ""))
+        self._tablo.setStyleSheet(S.get("table") or "")
         self._tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._tablo.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self._tablo.setAlternatingRowColors(True)

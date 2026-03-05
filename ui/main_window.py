@@ -111,16 +111,19 @@ class MainWindow(QMainWindow):
 
     def _build_status_bar(self):
         self.status = QStatusBar()
-        self.status.setStyleSheet("""
-            QStatusBar {
-                background-color: %s;
-                border-top: 1px solid %s;
+        # Status bar özel widget - MainWindow'a özgü stil (kabul edilebilir)
+        self.status.setStyleSheet(f"""
+            QStatusBar {{
+                background-color: {DarkTheme.BG_SECONDARY};
+                border-top: 1px solid {DarkTheme.BORDER_PRIMARY};
                 padding: 2px 8px;
-            }
-            QStatusBar QLabel {
-                font-size: 12px; color: %s; padding: 0 8px;
-            }
-        """ % (DarkTheme.BG_SECONDARY, DarkTheme.BORDER_PRIMARY, DarkTheme.TEXT_DISABLED))
+            }}
+            QStatusBar QLabel {{
+                font-size: 12px; 
+                color: {DarkTheme.TEXT_DISABLED}; 
+                padding: 0 8px;
+            }}
+        """)
         self.setStatusBar(self.status)
 
         self.sync_status_label = QLabel("Hazır")
@@ -673,8 +676,14 @@ class MainWindow(QMainWindow):
                 logger.error(f"Sayfa yenileme hatası: {e}")
 
     def _set_sync_status_label(self, text: str, color: str):
+        """Sync status label metnini ve rengini ayarla (property tabanlı)."""
         self.sync_status_label.setText(text)
+        # Dinamik renk için property tabanlı yaklaşım yerine,
+        # özel durum olarak inline stil kabul edilebilir (MainWindow özel widget)
         self.sync_status_label.setStyleSheet(f"color: {color};")
+        # Not: Alternatif olarak color-role property kullanılabilir ama
+        # bu durumda sınırlı sayıda önceden tanımlı rol olmalı (success/error/warning).
+        # Dinamik hex renk gerektiren durumlar için inline stil uygun.
 
     def _on_personel_saved(self):
         """Personel kaydedildikten sonra listeye dön ve yenile."""
@@ -690,7 +699,7 @@ class MainWindow(QMainWindow):
             if hasattr(self, '_welcome') and self._welcome:
                 self.stack.setCurrentWidget(self._welcome)
                 self.page_title.setText("")
-                self.sidebar.set_active(None)
+                self.sidebar.set_active("")
 
         # Ekle formunu sıfırla (sonraki açılışta taze form)
         if "Personel Ekle" in self._pages:

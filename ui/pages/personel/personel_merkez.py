@@ -318,8 +318,10 @@ class PersonelMerkezPage(QWidget):
                     "İzinli": STYLES["header_durum_izinli"],
                 }
                 self.lbl_durum.setText(durum)
+                # Fallback: hiç durum eşleşmezse boş stil kullan (transparent)
+                fallback_style = f"color:{C.TEXT_SECONDARY}; background:transparent; font-size:11px;"
                 self.lbl_durum.setStyleSheet(
-                    durum_style_map.get(durum, STYLES.get("info_label", ""))
+                    durum_style_map.get(durum, fallback_style)
                 )
 
             # Uyarılar
@@ -447,7 +449,8 @@ class PersonelMerkezPage(QWidget):
             logger.error(f"Modül yükleme hatası ({code}): {e}")
             err = QLabel(f"Modül yüklenemedi: {code}\n{e}")
             err.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            err.setStyleSheet(STYLES.get("stat_red", f"color:{C.STATUS_ERROR};"))
+            # Fallback: stat_red yoksa direkt hata rengi kullan
+            err.setStyleSheet(STYLES.get("stat_red") or f"color:{C.STATUS_ERROR};")
             return err
 
     # ═══════════════════════════════════════════════════

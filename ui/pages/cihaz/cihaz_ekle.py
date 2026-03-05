@@ -28,6 +28,7 @@ class CihazEklePage(QWidget):
     def __init__(self, db=None, on_saved=None, action_guard=None, parent=None):
         super().__init__(parent)
         self._db = db
+        self._svc = _get_cihaz_service(db) if db else None
         self._on_saved = on_saved
         self._action_guard = action_guard
 
@@ -323,11 +324,10 @@ class CihazEklePage(QWidget):
     # ─── Veri yukleme ve cihaz no ──────────────────────
 
     def _load_sabitler(self):
-        if not self._db:
+        if not self._db or not self._svc:
             return
         try:
-            svc = _get_cihaz_service(self._db)
-            sabitler = svc.get_sabitler()
+            sabitler = self._svc.get_sabitler()
             grouped: dict[str, list[str]] = {}
             for row in sabitler:
                 kod = str(row.get("Kod", "")).strip()
@@ -360,8 +360,10 @@ class CihazEklePage(QWidget):
             logger.error(f"CihazEkle sabitler yuklenemedi: {e}")
 
     def _calc_next_sequence(self) -> int:
+        if not self._svc:
+            return 1
         try:
-            return _get_cihaz_service(self._db).get_next_cihaz_sequence()
+            return self._svc.get_next_cihaz_sequence()
         except Exception as e:
             logger.debug(f"Cihaz ID hesaplama hatasi: {e}")
             return 1
@@ -396,9 +398,12 @@ class CihazEklePage(QWidget):
 
         data = self._collect_form_data()
 
+        if not self._svc:
+            QMessageBox.critical(self, "Hata", "Veritabanı bağlantısı yok")
+            return
+
         try:
-            svc = _get_cihaz_service(self._db)
-            svc.cihaz_ekle(data)
+            self._svc.cihaz_ekle(data)
             
             # Cihaz başarıyla kaydedildi - ÜTS paneline cihaz_id ver
             if self._teknik_uts_panel is not None:

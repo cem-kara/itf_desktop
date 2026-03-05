@@ -253,7 +253,7 @@ print(tables)
 | `Izin_Bilgi` | `TCKimlik` | İzin bakiye tablosu |
 | `Cihaz_Ariza` | `Arizaid` | "ArizaId" değil |
 | `Periyodik_Bakim` | `Planid` | |
-| `Kalibrasyon` | `Kalid` | "KalibrasyonId" değil |
+| `Kalibrasyon` | `Kalid` | "Kaid" değil |
 | `Cihazlar` | `Cihazid` | |
 | `Sabitler` | `Rowid` | Dropdown listeleri |
 | `Personel_Saglik_Takip` | `KayitNo` | |

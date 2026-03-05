@@ -15,6 +15,7 @@ from PySide6.QtGui import (
 )
 
 from core.logger import logger
+from core.di import get_rke_service as _get_rke_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.colors import DarkTheme
 from ui.styles.components import STYLES
@@ -260,8 +261,7 @@ class RKERaporPenceresi(QWidget):
         self._muayene_repo = None
         if self._db:
             try:
-                from core.di import get_registry
-                self._registry = get_registry(self._db)
+
                 self._rke_svc = _get_rke_service(self._db)
                 self._rke_repo = self._rke_svc._r.get("RKE_List")
                 self._muayene_repo = self._rke_svc._r.get("RKE_Muayene")

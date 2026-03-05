@@ -219,14 +219,11 @@ class RKEYonetimPenceresi(QWidget):
         self._kpi: Dict[str, QLabel]    = {}
         
         # Repository'leri hazırla
-        self._registry = None
+        self._rke_svc = _get_rke_service(self._db) if self._db else None
         self._rke_repo = None
         self._sabitler_cache = {}
-        if self._db:
+        if self._rke_svc:
             try:
-                from core.di import get_registry
-                self._registry = get_registry(self._db)
-                self._rke_svc = _get_rke_service(self._db)
                 self._rke_repo = self._rke_svc._r.get("RKE_List")
             except Exception as e:
                 from core.logger import logger

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QGridLayout,
-    QGroupBox, QScrollArea, QTableView, QHeaderView
+    QGroupBox, QTableView, QHeaderView
 )
-from PySide6.QtCore import Qt, QDate, QModelIndex
+from PySide6.QtCore import Qt
 from ui.components.base_table_model import BaseTableModel
-from core.di import get_registry
+from core.di import get_izin_service
 from core.logger import logger
 from ui.styles.components import STYLES as S
 # datetime artık BaseTableModel içinde
@@ -117,7 +117,7 @@ class PersonelIzinPanel(QWidget):
         self._leave_table_view.setModel(self._leave_table_model)
         self._leave_table_view.setStyleSheet(S["table"])
         self._leave_table_view.verticalHeader().setVisible(False)
-        self._leave_table_view.setEditTriggers(QTableView.NoEditTriggers)
+        self._leave_table_view.setEditTriggers(QTableView.EditTrigger.NoEditTriggers)
         self._leave_table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self._leave_table_view.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self._leave_table_view.setAlternatingRowColors(True)
@@ -151,15 +151,13 @@ class PersonelIzinPanel(QWidget):
             return
 
         try:
-            registry = get_registry(self.db)
+            izin_svc = get_izin_service(self.db)
 
             # İzin Bilgisi
-            izin_repo = registry.get("Izin_Bilgi")
-            self.izin_data = izin_repo.get_by_id(self.personel_id) or {}
+            self.izin_data = izin_svc.get_izin_bilgi_repo().get_by_id(self.personel_id) or {}
 
             # Tüm İzin Hareketleri
-            izin_giris_repo = registry.get("Izin_Giris")
-            all_leaves = izin_giris_repo.get_all()
+            all_leaves = izin_svc.get_izin_giris_repo().get_all()
             self.recent_leaves = [
                 l for l in all_leaves if str(l.get("Personelid", "")).strip() == self.personel_id
             ]

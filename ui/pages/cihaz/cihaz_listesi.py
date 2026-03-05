@@ -44,8 +44,6 @@ COL_IDX = {c[0]: i for i, c in enumerate(COLUMNS)}
 
 class CihazTableModel(BaseTableModel):
 
-    RAW_ROW_ROLE = Qt.ItemDataRole.UserRole + 1
-
     def __init__(self, data=None, parent=None):
         super().__init__(COLUMNS, data, parent)
 
@@ -118,7 +116,7 @@ class CihazDelegate(QStyledItemDelegate):
             c.setAlpha(10)
             painter.fillRect(rect, c)
 
-        raw = index.model().data(index, CihazTableModel.RAW_ROW_ROLE)
+        raw = index.model().data(index, BaseTableModel.RAW_ROW_ROLE)
         if raw is None:
             painter.restore()
             return

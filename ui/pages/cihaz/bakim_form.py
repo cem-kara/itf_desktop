@@ -29,6 +29,7 @@ from PySide6.QtGui import QColor, QDesktopServices, QPainter, QBrush
 
 from core.date_utils import to_ui_date
 from core.logger import logger
+from core.di import get_cihaz_service
 from core.services.bakim_service import BakimService
 from database.sqlite_manager import SQLiteManager
 from ui.components.base_table_model import BaseTableModel
@@ -38,16 +39,6 @@ from ui.styles.colors import C as _C
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
-
-
-_DURUM_COLOR = {
-    "Planlandi":   _C["accent"],
-    "Planlandı":   _C["accent"],
-    "Yapildi":  _C["green"],
-    "Yapıldı":  _C["green"],
-    "Gecikmis": _C["red"],
-    "Gecikmiş": _C["red"],
-}
 
 
 # ─────────────────────────────────────────────────────────────
@@ -87,14 +78,14 @@ class IslemKaydedici(QThread):
         try:
             # QThread içinde yeni DB bağlantısı oluştur (thread-safe)
             local_db = SQLiteManager(db_path=self._db_path, check_same_thread=False)
-            from core.di import get_cihaz_service as _gcf2; repo = _gcf2(local_db)._r.get("Periyodik_Bakim")
+            svc = get_cihaz_service(local_db)
             if self.tip == "INSERT":
                 # veri: List[Dict] - birden fazla kayıt
                 for kayit in self.veri:
-                    repo.insert(kayit)
+                    svc.insert_periyodik_bakim(kayit)
             elif self.tip == "UPDATE":
                 # veri: Dict - tek kayıt güncelleme
-                repo.update(self.veri)
+                svc.update_periyodik_bakim(self.veri)
             self.islem_tamam.emit()
         except Exception as e:
             logger.error(f"Bakım kaydı işlemi başarısız: {e}")
@@ -190,9 +181,6 @@ class BakimTableModel(BaseTableModel):
             return Qt.AlignmentFlag.AlignCenter
         return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
-    def set_rows(self, rows: List[Dict[str, Any]]):
-        self.set_data(rows)
-
 
 # ─────────────────────────────────────────────────────────────
 #  Ana Form
@@ -214,8 +202,7 @@ class BakimKayitForm(QWidget):
         
         # Service layer
         if db:
-            from core.di import get_cihaz_service as _gcf3
-            self._cihaz_svc = _gcf3(db)
+            self._cihaz_svc = get_cihaz_service(db)
             self._svc = BakimService(self._cihaz_svc._r)
         else:
             self._svc = None
@@ -905,7 +892,8 @@ class BakimKayitForm(QWidget):
 
         # Durum etiketi (pill)
         durum   = row.get("Durum","")
-        dur_c   = _DURUM_COLOR.get(durum, _C["muted"])
+        dur_c_map = {"Planlandi": _C["accent"], "Planlandı": _C["accent"], "Yapildi": _C["green"], "Yapıldı": _C["green"], "Gecikmis": _C["red"], "Gecikmiş": _C["red"]}
+        dur_c   = dur_c_map.get(durum, _C["muted"])
         if durum:
             self.lbl_det_durum.setText(f"● {durum}")
             self.lbl_det_durum.setStyleSheet(

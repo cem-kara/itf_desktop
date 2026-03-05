@@ -82,6 +82,7 @@ class BaseTableModel(QAbstractTableModel):
     _bg(key, row)      → QColor | None
     """
 
+    RAW_ROW_ROLE: int = Qt.ItemDataRole.UserRole + 1
     DATE_KEYS:    frozenset = frozenset()
     ALIGN_CENTER: frozenset = frozenset()
 

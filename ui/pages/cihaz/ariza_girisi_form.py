@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.logger import logger
-
+from core.di import get_cihaz_service as _get_cihaz_service
 from ui.styles.components import STYLES as S
 
 
@@ -22,6 +22,7 @@ class ArizaGirisForm(QWidget):
     def __init__(self, db=None, cihaz_id: str = None, action_guard=None, parent=None):
         super().__init__(parent)
         self._db       = db
+        self._svc      = _get_cihaz_service(db) if db else None
         self._cihaz_id = cihaz_id or ""
         self._action_guard = action_guard
         self._setup_ui()
@@ -179,7 +180,8 @@ class ArizaGirisForm(QWidget):
                 "Durum":           self.cmb_durum.currentText().strip(),
                 "Rapor":           "",
             }
-            _get_cihaz_service(self._db).ariza_ekle(record)
+            if self._svc:
+                self._svc.ariza_ekle(record)
             logger.info(f"Arıza kaydedildi: {ariza_id}")
             self._clear()
             self.saved.emit()

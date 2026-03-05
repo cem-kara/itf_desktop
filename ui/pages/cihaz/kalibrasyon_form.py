@@ -25,6 +25,7 @@ from PySide6.QtGui import QColor, QPainter, QBrush
 
 from core.date_utils import to_ui_date
 from core.logger import logger
+from core.di import get_cihaz_service
 from core.services.kalibrasyon_service import KalibrasyonService
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.colors import C as _C
@@ -90,9 +91,6 @@ class KalibrasyonTableModel(BaseTableModel):
             return Qt.AlignmentFlag.AlignCenter
         return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
-    def set_rows(self, rows: List[Dict[str, Any]]):
-        self.set_data(rows)
-
 
 def _bitis_rengi(bitis_raw: str) -> str:
     if not bitis_raw or len(bitis_raw) < 10:
@@ -126,8 +124,7 @@ class KalibrasyonKayitForm(QWidget):
         
         # Service layer
         if db:
-            from core.di import get_cihaz_service as _gcf
-            self._cihaz_svc = _gcf(db)
+            self._cihaz_svc = get_cihaz_service(db)
             self._svc = KalibrasyonService(self._cihaz_svc._r)
         else:
             self._svc = None
@@ -602,7 +599,8 @@ class KalibrasyonKayitForm(QWidget):
         self.lbl_det_title.setText(f"{cihaz}  —  {firma}" if firma else cihaz or "—")
         self.lbl_det_kalid.setText(f"Kal. No: {kalid}" if kalid else "")
 
-        dur_c = _DURUM_COLOR.get(durum, _C["muted"])
+        dur_c_map = {"Planlandi": _C["accent"], "Planlandı": _C["accent"], "Yapildi": _C["green"], "Yapıldı": _C["green"], "Gecikmis": _C["red"], "Gecikmiş": _C["red"]}
+        dur_c = dur_c_map.get(durum, _C["muted"])
         if durum:
             self.lbl_det_durum.setText(f"● {durum}")
             self.lbl_det_durum.setStyleSheet(

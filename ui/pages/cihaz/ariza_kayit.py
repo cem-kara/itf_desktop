@@ -35,35 +35,7 @@ from ui.styles import DarkTheme
 from ui.pages.cihaz.ariza_islem import ArizaIslemPenceresi, ArizaIslemForm
 
 
-_DURUM_COLOR = {
-    "Açık":           _C["red"],
-    "Acik":           _C["red"],
-    "Devam Ediyor":   _C["amber"],
-    "Kapalı":         _C["green"],
-    "Kapali":         _C["green"],
-}
-
-_DURUM_BG_COLOR = {
-    "Açık":           "rgba(247, 95, 95, 0.20)",      # Düşük opacity kırmızı
-    "Acik":           "rgba(247, 95, 95, 0.20)",
-    "Devam Ediyor":   "rgba(245, 166, 35, 0.20)",     # Düşük opacity sarı
-    "Kapalı":         "rgba(62, 207, 142, 0.20)",     # Düşük opacity yeşil
-    "Kapali":         "rgba(62, 207, 142, 0.20)",
-}
-
-_ONCELIK_COLOR = {
-    "Kritik":  _C["red"],
-    "Yüksek":  _C["amber"],
-    "Orta":    _C["accent"],
-    "Düşük":   _C["muted"],
-}
-
-_ONCELIK_BG_COLOR = {
-    "Kritik":  "rgba(247, 95, 95, 0.20)",          # Düşük opacity kırmızı
-    "Yüksek":  "rgba(245, 166, 35, 0.20)",         # Düşük opacity sarı
-    "Orta":    "rgba(79, 142, 247, 0.20)",         # Düşük opacity mavi
-    "Düşük":   "rgba(90, 98, 120, 0.15)",          # Düşük opacity gri
-}
+# Renk kodları artık C (theme) ve S (styles) tarafından sağlanıyor
 
 
 # ─────────────────────────────────────────────────────────────
@@ -116,9 +88,6 @@ class ArizaTableModel(BaseTableModel):
             return Qt.AlignmentFlag.AlignCenter
         return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
-    def set_rows(self, rows: List[Dict[str, Any]]):
-        self.set_data(rows)
-
     def all_rows(self) -> List[Dict[str, Any]]:
         return self.all_data()
 
@@ -140,8 +109,7 @@ class ArizaKayitForm(QWidget):
         
         # Service layer
         if db:
-            from core.di import get_cihaz_service as _gcf4
-            self._cihaz_svc = _gcf4(db)
+            self._cihaz_svc = get_cihaz_service(db)
             self._svc = ArizaService(self._cihaz_svc._r)
         else:
             self._svc = None
@@ -724,7 +692,8 @@ class ArizaKayitForm(QWidget):
         self.lbl_det_tip.setText(f"{tip}")
 
         oncelik = row.get("Oncelik","")
-        onc_color = _ONCELIK_COLOR.get(oncelik, _C["muted"])
+        onc_color_map = {"Kritik": _C["red"], "Yüksek": _C["amber"], "Orta": _C["accent"], "Düşük": _C["muted"]}
+        onc_color = onc_color_map.get(oncelik, _C["muted"])
         self.lbl_det_onc.setText(oncelik or "—")
         self.lbl_det_onc.setStyleSheet(
             f"font-size:11px; font-weight:700; color:{onc_color};"
@@ -732,7 +701,8 @@ class ArizaKayitForm(QWidget):
         )
 
         durum = row.get("Durum","")
-        dur_color = _DURUM_COLOR.get(durum, _C["muted"])
+        dur_color_map = {"Açık": _C["red"], "Acik": _C["red"], "Devam Ediyor": _C["amber"], "Kapalı": _C["green"], "Kapali": _C["green"]}
+        dur_color = dur_color_map.get(durum, _C["muted"])
         self.lbl_det_durum.setText(f"● {durum}" if durum else "—")
         self.lbl_det_durum.setStyleSheet(
             f"font-size:11px; font-weight:700; color:{dur_color};"

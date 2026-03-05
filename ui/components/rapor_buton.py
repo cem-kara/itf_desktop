@@ -68,11 +68,9 @@ from PySide6.QtGui import QCursor
 
 from core.logger import logger
 from core.rapor_servisi import RaporServisi
-from ui.theme_manager import ThemeManager
 from ui.styles import Colors, DarkTheme
+from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
-
-S = ThemeManager.get_all_component_styles()
 
 
 class RaporButon(QWidget):

@@ -5,9 +5,9 @@
 - Sağ: İzin kayıtları tablosu (Ay/Yıl filtreli + seçili personel filtreli)
 """
 import uuid
-from datetime import datetime, date, timedelta
+from datetime import date, timedelta
 from PySide6.QtCore import (
-    Qt, QDate, QSortFilterProxyModel, QModelIndex, QAbstractTableModel,
+    Qt, QDate, QSortFilterProxyModel,
     QPropertyAnimation, QEasingCurve
 )
 from PySide6.QtWidgets import (
@@ -19,9 +19,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QColor, QCursor
 
 from core.logger import logger
-from core.date_utils import parse_date, to_ui_date
-from core.services.izin_service import IzinService
-from core.di import get_registry
+from core.date_utils import parse_date
+from core.di import get_personel_service, get_izin_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
@@ -108,7 +107,6 @@ class IzinTakipPage(QWidget):
         super().__init__(parent)
         self.setStyleSheet(S["page"])
         self._db = db
-        self._svc = IzinService(get_registry(db))
         self._all_izin = []
         self._all_personel = []
         self._tatiller = []
@@ -140,7 +138,7 @@ class IzinTakipPage(QWidget):
         fp.setSpacing(8)
 
         lbl_title = QLabel("Izin Takip")
-        lbl_title.setStyleSheet(S.get("section_title", ""))
+        lbl_title.setStyleSheet(S.get("section_title") or "")
         fp.addWidget(lbl_title)
 
         self._add_sep(fp)
@@ -291,7 +289,7 @@ class IzinTakipPage(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(S.get("scroll", ""))
+        scroll.setStyleSheet(S.get("scroll") or "")
 
         left = QWidget()
         left.setStyleSheet("background: transparent;")
@@ -327,7 +325,7 @@ class IzinTakipPage(QWidget):
         self.cmb_personel.setEditable(True)
         self.cmb_personel.setStyleSheet(S["combo"])
         self.cmb_personel.lineEdit().setPlaceholderText("İsim yazarak ara...")
-        self.cmb_personel.setInsertPolicy(QComboBox.NoInsert)
+        self.cmb_personel.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         self.cmb_personel.setMinimumWidth(200)
         self.cmb_personel.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         pg.addWidget(self.cmb_personel, 1, 1)
@@ -563,11 +561,11 @@ class IzinTakipPage(QWidget):
         if not self._db:
             return
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
+            personel_svc = get_personel_service(self._db)
+            izin_svc = get_izin_service(self._db)
 
             # ── Personeller ──
-            self._all_personel = registry.get("Personel").get_all()
+            self._all_personel = personel_svc.get_all()
             aktif = [p for p in self._all_personel
                      if str(p.get("Durum", "")).strip() == "Aktif"]
             aktif.sort(key=lambda p: str(p.get("AdSoyad", "")))
@@ -741,9 +739,8 @@ class IzinTakipPage(QWidget):
             self._clear_bakiye()
             return
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            izin = registry.get("Izin_Bilgi").get_by_id(tc)
+            izin_svc = get_izin_service(self._db)
+            izin = izin_svc.get_izin_bilgi_repo().get_by_id(tc)
             if izin:
                 self.lbl_y_devir.setText(str(izin.get("YillikDevir", "0")))
                 self.lbl_y_hak.setText(str(izin.get("YillikHakedis", "0")))
@@ -920,9 +917,8 @@ class IzinTakipPage(QWidget):
         # ═══════════════════════════════════════════════
         if izin_tipi in ["Yıllık İzin", "Şua İzni"]:
             try:
-                from core.di import get_registry
-                registry = get_registry(self._db)
-                izin_bilgi = registry.get("Izin_Bilgi").get_by_id(tc)
+                izin_repo = izin_svc.get_izin_bilgi_repo()
+                izin_bilgi = izin_repo.get_by_id(tc) if izin_repo else None
 
                 if izin_bilgi:
                     if izin_tipi == "Yıllık İzin":

@@ -12,13 +12,11 @@ from PySide6.QtCore import Qt, QDate, QModelIndex, Signal, QUrl
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QDesktopServices
 
-from core.di import get_registry
 from core.logger import logger
 from core.date_utils import to_ui_date, parse_date, to_db_date
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.colors import DarkTheme as C, Colors
 from ui.styles.components import STYLES as S
-from ui.theme_manager import ThemeManager
 
 SAGLIK_COLUMNS = [
     ("MuayeneTarihi", "Muayene Tarihi", 120),
@@ -206,7 +204,6 @@ class PersonelSaglikPanel(QWidget):
             de.setCalendarPopup(True)
             de.setMinimumHeight(32)
             de.setStyleSheet(S["date"])
-            ThemeManager.setup_calendar_popup(de)
             form_grid.addWidget(de, idx, 1)
             
             # Durum

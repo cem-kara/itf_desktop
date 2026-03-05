@@ -5,6 +5,7 @@
 Üç sayfayı tek pencerenin üç sekmesi olarak yönetir.
 PersonelMerkez yapısı aynen kullanılır.
 """
+import traceback
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
@@ -14,7 +15,6 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QCursor
 
 from ui.styles import DarkTheme
-from ui.styles.components import STYLES
 from ui.styles.icons import IconRenderer
 from core.logger import logger
 
@@ -101,6 +101,7 @@ class IzinFHSZPuantajMerkezPage(QWidget):
         btn_kapat.style().polish(btn_kapat)
         btn_kapat.clicked.connect(self.kapat_istegi.emit)
         IconRenderer.set_button_icon(btn_kapat, "x", color=C.TEXT_PRIMARY, size=14)
+        self.btn_kapat = btn_kapat
         top_lay.addWidget(btn_kapat)
 
         lay.addWidget(top)
@@ -205,7 +206,6 @@ class IzinFHSZPuantajMerkezPage(QWidget):
                 self._modules[code] = widget
                 self.content_stack.addWidget(widget)
             except Exception as e:
-                import traceback
                 logger.error(f"Sekme {code} yüklemesi başarısız: {e}\n{traceback.format_exc()}")
                 widget = QWidget()
                 self._modules[code] = widget
@@ -221,7 +221,6 @@ class IzinFHSZPuantajMerkezPage(QWidget):
             try:
                 load_data()
             except Exception as e:
-                import traceback
                 logger.error(f"Sekme {code} load_data hatası: {e}\n{traceback.format_exc()}")
 
     def btn_kapat_clicked(self):

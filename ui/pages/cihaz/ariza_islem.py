@@ -48,9 +48,6 @@ class ArizaIslemTableModel(BaseTableModel):
             return Qt.AlignmentFlag.AlignCenter
         return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
-    def set_rows(self, rows: List[Dict[str, Any]]):
-        self.set_data(rows)
-
 
 class ArizaIslemForm(QWidget):
     saved = Signal()
@@ -248,13 +245,12 @@ class ArizaIslemForm(QWidget):
         }
 
         try:
-            svc = _get_cihaz_service(self._db); repo_islem = svc._r.get("Ariza_Islem")
-            repo_islem.insert(data)
+            svc = _get_cihaz_service(self._db)
+            svc.insert_ariza_islem(data)
 
             # Ana arızanın durumunu güncelle
             try:
-                repo_ariza = svc._r.get("Cihaz_Ariza")
-                repo_ariza.update(self._ariza_id, {"Durum": yeni_durum})
+                svc.update_cihaz_ariza(self._ariza_id, {"Durum": yeni_durum})
             except Exception as e:
                 logger.error(f"Arıza durumu güncellenemedi: {e}")
             
@@ -274,7 +270,6 @@ class ArizaIslemForm(QWidget):
                         logger.info(f"Arıza işlem rapor belgesi kopyalandı: {dst}")
                         
                         # Cihaz_Belgeler tablosuna kaydet
-                        repo_belge = svc._r.get("Cihaz_Belgeler")
                         belge_data = {
                             "Cihazid": self._cihaz_id,
                             "BelgeTuru": "Arıza İşlem Raporu",
@@ -282,7 +277,7 @@ class ArizaIslemForm(QWidget):
                             "BelgeAciklama": f"İşlem: {islem_turu} ({islem_id})",
                             "YuklenmeTarihi": datetime.now().isoformat(),
                         }
-                        repo_belge.insert(belge_data)
+                        svc.insert_cihaz_belge(belge_data)
                         logger.info(f"Arıza işlem raporu Cihaz_Belgeler tablosuna kaydedildi")
                         
                 except Exception as e:

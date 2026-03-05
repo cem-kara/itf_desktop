@@ -282,3 +282,93 @@ class CihazService:
         except Exception as e:
             logger.error(f"Sabitler grouped yükleme hatası: {e}")
             return {}
+
+    # ───────────────────────────────────────────────────────────
+    #  Repository Accessor Methods (Anti-Pattern 1 Bypass Eliminasyonu)
+    # ───────────────────────────────────────────────────────────
+
+    def insert_ariza_islem(self, data: dict) -> None:
+        """Arıza işlem kaydı ekle."""
+        try:
+            self._r.get("Ariza_Islem").insert(data)
+        except Exception as e:
+            logger.error(f"Arıza işlem kaydı hatası: {e}")
+            raise
+
+    def update_cihaz_ariza(self, ariza_id: str, data: dict) -> None:
+        """Cihaz arızasını güncelle."""
+        try:
+            self._r.get("Cihaz_Ariza").update(ariza_id, data)
+        except Exception as e:
+            logger.error(f"Cihaz arızası güncelleme hatası: {e}")
+            raise
+
+    def insert_cihaz_belge(self, data: dict) -> None:
+        """Cihaz belgesi kaydet."""
+        try:
+            self._r.get("Cihaz_Belgeler").insert(data)
+        except Exception as e:
+            logger.error(f"Cihaz belgesi kaydı hatası: {e}")
+            raise
+
+    def get_periyodik_bakim_listesi(self, cihaz_id: str) -> list[dict]:
+        """Cihaz için periyodik bakım listesi."""
+        try:
+            repo = self._r.get("Periyodik_Bakim")
+            if hasattr(repo, 'filter'):
+                return repo.filter({"Cihazid": cihaz_id}) or []
+            return []
+        except Exception as e:
+            logger.error(f"Periyodik bakım listesi hatası: {e}")
+            return []
+
+    def get_cihaz_teknik_listesi(self) -> list[dict]:
+        """Cihaz teknik tablosundan tüm kayıtları al."""
+        try:
+            return self._r.get("Cihaz_Teknik").get_all() or []
+        except Exception as e:
+            logger.error(f"Cihaz teknik listesi hatası: {e}")
+            return []
+
+    def insert_periyodik_bakim(self, data: dict) -> None:
+        """Periyodik bakım kaydı ekle."""
+        try:
+            self._r.get("Periyodik_Bakim").insert(data)
+        except Exception as e:
+            logger.error(f"Periyodik bakım kaydı hatası: {e}")
+            raise
+
+    def update_periyodik_bakim(self, data: dict) -> None:
+        """Periyodik bakım kaydını güncelle."""
+        try:
+            self._r.get("Periyodik_Bakim").update(data)
+        except Exception as e:
+            logger.error(f"Periyodik bakım güncelleme hatası: {e}")
+            raise
+
+    def get_cihaz_teknik(self, cihaz_id: str) -> Optional[dict]:
+        """Cihaz teknik kaydını getir."""
+        try:
+            repo = self._r.get("Cihaz_Teknik")
+            if hasattr(repo, 'get_by_cihaz_id'):
+                return repo.get_by_cihaz_id(cihaz_id)
+            return None
+        except Exception as e:
+            logger.error(f"Cihaz teknik getirme hatası: {e}")
+            return None
+
+    def insert_cihaz_teknik(self, data: dict) -> None:
+        """Cihaz teknik kaydı ekle."""
+        try:
+            self._r.get("Cihaz_Teknik").insert(data)
+        except Exception as e:
+            logger.error(f"Cihaz teknik kaydı hatası: {e}")
+            raise
+
+    def update_cihaz_teknik(self, cihaz_id: str, data: dict) -> None:
+        """Cihaz teknik kaydını güncelle."""
+        try:
+            self._r.get("Cihaz_Teknik").update(cihaz_id, data)
+        except Exception as e:
+            logger.error(f"Cihaz teknik güncelleme hatası: {e}")
+            raise

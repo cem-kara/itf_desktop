@@ -109,11 +109,6 @@ class _BaseTableModel(QAbstractTableModel):
             return self._headers[section]
         return None
 
-    def set_rows(self, rows):
-        self.beginResetModel()
-        self._rows = rows or []
-        self.endResetModel()
-
     def get_row(self, idx: int) -> Optional[Dict]:
         return self._rows[idx] if 0 <= idx < len(self._rows) else None
 

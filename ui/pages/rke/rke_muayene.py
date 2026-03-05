@@ -275,11 +275,11 @@ class VeriYukleyici(QThread):
             muayene_repo = None
             if not self._use_sheets:
                 from database.sqlite_manager import SQLiteManager
-                from core.di import get_registry
+                from core.di import get_rke_service
                 db = SQLiteManager(db_path=self._db_path, check_same_thread=True)
-                registry = get_registry(db)
-                rke_repo = registry.get("RKE_List")
-                muayene_repo = registry.get("RKE_Muayene")
+                rke_svc = get_rke_service(db)
+                rke_repo = rke_svc._r.get("RKE_List")
+                muayene_repo = rke_svc._r.get("RKE_Muayene")
 
             ws_rke = None
             ws_muayene = None
@@ -375,11 +375,11 @@ class KayitWorker(QThread):
             drive_link = "-"
             upload_result = {"mode": "none", "drive_link": "", "local_path": "", "error": ""}
 
-            # Local DB (Dokumanlar iÃ§in) her zaman aÃ§Ä±lÄ±r
+            # Local DB (Dokumanlar için) her zaman açılır
             from database.sqlite_manager import SQLiteManager
-            from core.di import get_registry
+            from core.di import get_rke_service, get_dokuman_service
             db = SQLiteManager(db_path=self._db_path, check_same_thread=True)
-            registry = get_registry(db)
+            rke_svc = get_rke_service(db)
 
             if self.dosya_yolu and os.path.exists(self.dosya_yolu):
                 storage = StorageService(db)
@@ -393,7 +393,7 @@ class KayitWorker(QThread):
                 # Dokumanlar tablosuna kaydet
                 if upload_result.get("mode") != "none":
                     try:
-                        repo_doc = registry.get("Dokumanlar")
+                        repo_doc = rke_svc._r.get("Dokumanlar")
                         repo_doc.insert({
                             "EntityType": "rke",
                             "EntityId": str(self.veri.get("EkipmanNo", "")),
@@ -514,9 +514,9 @@ class TopluKayitWorker(QThread):
             upload_result = {"mode": "none", "drive_link": "", "local_path": "", "error": ""}
 
             from database.sqlite_manager import SQLiteManager
-            from core.di import get_registry
+            from core.di import get_rke_service
             db = SQLiteManager(db_path=self._db_path, check_same_thread=True)
-            registry = get_registry(db)
+            rke_svc = get_rke_service(db)
 
             if self.dosya_yolu and os.path.exists(self.dosya_yolu):
                 storage = StorageService(db)
@@ -530,8 +530,8 @@ class TopluKayitWorker(QThread):
             rke_repo = None
             muayene_repo = None
             if not self._use_sheets:
-                rke_repo = registry.get("RKE_List")
-                muayene_repo = registry.get("RKE_Muayene")
+                rke_repo = rke_svc._r.get("RKE_List")
+                muayene_repo = rke_svc._r.get("RKE_Muayene")
 
             if self._use_sheets:
                 ws_muayene = veritabani_getir('rke', 'rke_muayene')

@@ -37,6 +37,42 @@ def get_dashboard_service(db):
     from core.services.dashboard_service import DashboardService
     return DashboardService(get_registry(db))
 
+def get_izin_service(db):
+    from core.services.izin_service import IzinService
+    return IzinService(get_registry(db))
+
+def get_ariza_service(db):
+    from core.services.ariza_service import ArizaService
+    return ArizaService(get_registry(db))
+
+def get_bakim_service(db):
+    from core.services.bakim_service import BakimService
+    return BakimService(get_registry(db))
+
+def get_kalibrasyon_service(db):
+    from core.services.kalibrasyon_service import KalibrasyonService
+    return KalibrasyonService(get_registry(db))
+
+def get_dokuman_service(db):
+    from core.services.dokuman_service import DokumanService
+    return DokumanService(get_registry(db))
+
+def get_backup_service(db):
+    from core.services.backup_service import BackupService
+    return BackupService()
+
+def get_log_service(db):
+    from core.services.log_service import LogService
+    return LogService()
+
+def get_settings_service(db):
+    from core.services.settings_service import SettingsService
+    return SettingsService()
+
+def get_file_sync_service(db):
+    from core.services.file_sync_service import FileSyncService
+    return FileSyncService(db, get_registry(db))
+
 
 _fallback_registry_cache = {}
 

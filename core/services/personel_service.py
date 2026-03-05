@@ -241,3 +241,41 @@ class PersonelService:
         except Exception as e:
             logger.error(f"Personel silme hatası: {e}")
             return False
+
+    # ───────────────────────────────────────────────────────────
+    #  Repository Accessor Methods
+    # ───────────────────────────────────────────────────────────
+
+    def get_personel_repo(self):
+        """Personel repository'sini döndür (direkt tablo erişimi için)."""
+        try:
+            return self._r.get("Personel")
+        except Exception as e:
+            logger.error(f"Personel repository erişim hatası: {e}")
+            return None
+
+    def get_sabitler_repo(self):
+        """Sabitler repository'sini döndür (combo verisi için)."""
+        try:
+            return self._r.get("Sabitler")
+        except Exception as e:
+            logger.error(f"Sabitler repository erişim hatası: {e}")
+            return None
+
+    def get_personel_by_tc(self, tc: str) -> Optional[Dict]:
+        """TC'ye göre personel kaydını getir."""
+        try:
+            repo = self._r.get("Personel")
+            return repo.get_by_id(tc)
+        except Exception as e:
+            logger.error(f"Personel TC getirme hatası: {e}")
+            return None
+
+    def get_all_sabitler(self) -> list[Dict]:
+        """Tüm Sabitler kaydını getir."""
+        try:
+            repo = self._r.get("Sabitler")
+            return repo.get_all() or []
+        except Exception as e:
+            logger.error(f"Sabitler getirme hatası: {e}")
+            return []

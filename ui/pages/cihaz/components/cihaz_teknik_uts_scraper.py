@@ -20,6 +20,7 @@ from PySide6.QtCore import Qt, Signal, QThread, QObject
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from core.logger import logger
+from core.di import get_cihaz_service
 from database.repository_registry import RepositoryRegistry
 from ui.pages.cihaz.components.uts_parser import (
     scrape_uts,
@@ -412,14 +413,14 @@ class CihazTeknikUtsScraper(QWidget):
         if not self._parsed: return
         self._parsed["Cihazid"] = self.cihaz_id
         try:
-            from core.di import get_cihaz_service as _gcf5; repo = _gcf5(self.db)._r.get("Cihaz_Teknik")
+            svc = get_cihaz_service(self.db)
             
             # Mevcut kaydı kontrol et
-            existing = repo.get_by_cihaz_id(self.cihaz_id)
+            existing = svc.get_cihaz_teknik(self.cihaz_id)
             if existing:
-                repo.update(self.cihaz_id, self._parsed)
+                svc.update_cihaz_teknik(self.cihaz_id, self._parsed)
             else:
-                repo.insert(self._parsed)
+                svc.insert_cihaz_teknik(self._parsed)
             
             filled = sum(1 for v in self._parsed.values() if v)
             self._st("✅ Kaydedildi!", _SUCCESS)

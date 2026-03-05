@@ -6,23 +6,21 @@ Tüm renkler merkezi ThemeManager / DarkTheme / ComponentStyles üzerinden gelir
 Hardcoded renk yok.
 """
 from PySide6.QtCore import (
-    Qt, QSortFilterProxyModel, QModelIndex, QAbstractTableModel,
+    Qt, QSortFilterProxyModel,
     Signal, QRect, QPoint, QSize, QTimer, QThread,
 )
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QFrame, QProgressBar, QPushButton, QHeaderView,
     QTableView, QComboBox, QLineEdit, QMenu, QMessageBox,
-    QStyledItemDelegate, QApplication, QStyle, QToolTip,
+    QStyledItemDelegate, QStyle, QToolTip,
 )
 from PySide6.QtGui import (
     QColor, QCursor, QPainter, QBrush, QPen, QFont, QFontMetrics, QPixmap,
 )
 
 from core.logger import logger
-from core.services.personel_service import PersonelService
-from core.services.izin_service import IzinService
-from core.di import get_registry
+from core.di import get_personel_service, get_izin_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
 from ui.styles.components import ComponentStyles, STYLES
@@ -388,9 +386,8 @@ class PersonelListesiPage(QWidget):
         self.style().unpolish(self)
         self.style().polish(self)
         self._db             = db
-        self._registry       = get_registry(db) if db else None
-        self._svc            = PersonelService(self._registry) if self._registry else None
-        self._izin_svc       = IzinService(self._registry) if self._registry else None
+        self._svc            = get_personel_service(db) if db else None
+        self._izin_svc       = get_izin_service(db) if db else None
         self._action_guard   = action_guard
         self._all_data       = []
         self._izin_map       = {}
