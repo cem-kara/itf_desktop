@@ -118,6 +118,10 @@ def format_report(findings: dict, root: Path) -> str:
 
 
 def main():
+    # UTF-8 çıktı için konsol ayarı (Windows cp1254 emoji sorunu için)
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+    
     # Hedefi belirle
     if len(sys.argv) > 1 and not sys.argv[1].startswith("--"):
         target = Path(sys.argv[1])

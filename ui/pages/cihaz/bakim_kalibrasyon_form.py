@@ -173,14 +173,14 @@ class _BaseListDetailForm(QWidget):
         sep = QFrame()
         sep.setFrameShape(QFrame.HLine)
         sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background:{_C['border']};")
+        sep.setProperty('color-role', 'border')
         return sep
 
     # KPI şeridi
     def _build_kpi_bar(self) -> QWidget:
         bar = QWidget()
         bar.setFixedHeight(68)
-        bar.setStyleSheet(f"background:{_C['surface']};")
+        bar.setProperty('color-role', 'surface')
         layout = QHBoxLayout(bar)
         layout.setContentsMargins(12, 8, 12, 8)
         layout.setSpacing(1)
@@ -492,7 +492,7 @@ class _BaseListDetailForm(QWidget):
 
     def _field_widget(self, title: str, value: str = "—") -> QWidget:
         w = QWidget()
-        w.setStyleSheet(f"background:{_C['surface']};")
+        w.setProperty('color-role', 'surface')
         vl = QVBoxLayout(w)
         vl.setContentsMargins(0, 0, 0, 0)
         vl.setSpacing(1)
@@ -502,7 +502,8 @@ class _BaseListDetailForm(QWidget):
         )
         v = QLabel(value)
         v.setObjectName("val")
-        v.setStyleSheet(f"font-size:12px;color:{_C['text']};")
+        v.setStyleSheet("font-size:12px;")
+        v.setProperty('color-role', 'text')
         v.setWordWrap(True)
         vl.addWidget(t)
         vl.addWidget(v)
