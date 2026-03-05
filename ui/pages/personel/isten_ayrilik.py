@@ -19,8 +19,10 @@ from PySide6.QtGui import QCursor
 
 from core.logger import logger
 from core.hata_yonetici import exc_logla
+from core.di import get_registry
+from core.date_utils import to_ui_date
 from ui.theme_manager import ThemeManager
-from ui.styles import Colors, DarkTheme
+from ui.styles.colors import DarkTheme as C, Colors
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 
@@ -101,10 +103,11 @@ class ArsivWorker(QThread):
             else:
                 self.progress.emit("Arşiv klasörü bulunamadı.")
 
-            # ── 4. Eski dosyaları sil ──
-            for fid in old_ids:
-                self.progress.emit("Eski dosyalar temizleniyor...")
-                drive.delete_file(fid)
+            # ── 4. Eski dosyaları sil (yalnızca arşiv başarıyla yüklendiyse) ──
+            if link:
+                for fid in old_ids:
+                    self.progress.emit("Eski dosyalar temizleniyor...")
+                    drive.delete_file(fid)
 
             self.finished.emit(link)
 
@@ -129,16 +132,25 @@ class ArsivWorker(QThread):
         return '.jpg'
 
     def _merge_to_pdf(self, files, output):
+        rl_page_size = None
+        rl_canvas_mod = None
+        rl_image_reader = None
+        pypdf2_mod = None
+
         try:
-            from reportlab.lib.pagesizes import A4
+            from reportlab.lib.pagesizes import A4 as rl_a4
             from reportlab.pdfgen import canvas as rl_canvas
-            from reportlab.lib.utils import ImageReader
+            from reportlab.lib.utils import ImageReader as rl_img_reader
+            rl_page_size = rl_a4
+            rl_canvas_mod = rl_canvas
+            rl_image_reader = rl_img_reader
             has_rl = True
         except ImportError:
             has_rl = False
 
         try:
-            import PyPDF2
+            import PyPDF2 as pypdf2
+            pypdf2_mod = pypdf2
             has_pypdf = True
         except ImportError:
             has_pypdf = False
@@ -150,12 +162,12 @@ class ArsivWorker(QThread):
             ext = os.path.splitext(f)[1].lower()
             if ext == '.pdf':
                 temp_pdfs.append(f)
-            elif ext in ('.jpg', '.jpeg', '.png', '.bmp') and has_rl:
+            elif ext in ('.jpg', '.jpeg', '.png', '.bmp') and has_rl and rl_canvas_mod and rl_page_size and rl_image_reader:
                 pdf_p = os.path.join(tmp_dir, f"_p{i}.pdf")
                 try:
-                    c = rl_canvas.Canvas(pdf_p, pagesize=A4)
-                    w, h = A4
-                    img = ImageReader(f)
+                    c = rl_canvas_mod.Canvas(pdf_p, pagesize=rl_page_size)
+                    w, h = rl_page_size
+                    img = rl_image_reader(f)
                     iw, ih = img.getSize()
                     ratio = min(w / iw, h / ih) * 0.9
                     nw, nh = iw * ratio, ih * ratio
@@ -167,8 +179,8 @@ class ArsivWorker(QThread):
 
         if not temp_pdfs:
             return
-        if has_pypdf and len(temp_pdfs) > 1:
-            merger = PyPDF2.PdfMerger()
+        if has_pypdf and pypdf2_mod and len(temp_pdfs) > 1:
+            merger = pypdf2_mod.PdfMerger()
             for p in temp_pdfs:
                 try:
                     merger.append(p)
@@ -200,6 +212,8 @@ class IstenAyrilikPage(QWidget):
         self._ek_dosya = ""
         self._drive_folders = {}
         self._arsiv_worker = None
+        self._pending_ayrilis_data = None
+        self._archive_required = False
 
         self._setup_ui()
         self._load_drive_folders()
@@ -237,7 +251,7 @@ class IstenAyrilikPage(QWidget):
         # ── SCROLL ──
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setStyleSheet(S["scroll"])
 
         content = QWidget()
@@ -308,12 +322,12 @@ class IstenAyrilikPage(QWidget):
         dosya_h = QHBoxLayout()
         self.btn_dosya = QPushButton("Dosya Sec")
         self.btn_dosya.setStyleSheet(S["file_btn"])
-        self.btn_dosya.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_dosya.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_dosya.clicked.connect(self._select_file)
-        IconRenderer.set_button_icon(self.btn_dosya, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self.btn_dosya, "upload", color=C.TEXT_PRIMARY, size=14)
         dosya_h.addWidget(self.btn_dosya)
         self.lbl_dosya = QLabel("")
-        self.lbl_dosya.setStyleSheet(f"color: {Colors.GREEN_400}; font-size: 11px; background: transparent;")
+        self.lbl_dosya.setStyleSheet("font-size: 11px; background: transparent;")
         dosya_h.addWidget(self.lbl_dosya, 1)
         fg.addLayout(dosya_h, 2, 1)
 
@@ -338,10 +352,13 @@ class IstenAyrilikPage(QWidget):
             dg.addWidget(l, i, 0)
             if val and str(val).startswith("http"):
                 v = QLabel("Mevcut")
-                v.setStyleSheet(f"color: {Colors.GREEN_400}; font-size: 12px; background: transparent;")
+                v.setStyleSheet("font-size: 12px; background: transparent;")
             else:
                 v = QLabel("—")
-                v.setStyleSheet(f"color: {DarkTheme.TEXT_DISABLED}; font-size: 12px; background: transparent;")
+                v.setProperty("color-role", "disabled")
+                v.setStyleSheet("font-size: 12px; background: transparent;")
+                v.style().unpolish(v)
+                v.style().polish(v)
             dg.addWidget(v, i, 1)
         left_l.addWidget(grp_dosya)
 
@@ -362,7 +379,7 @@ class IstenAyrilikPage(QWidget):
 
         lbl_y = QLabel("YILLIK İZİN")
         lbl_y.setStyleSheet(S["section_title"])
-        ig.addWidget(lbl_y, 0, 0, 1, 2, Qt.AlignCenter)
+        ig.addWidget(lbl_y, 0, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
         self.lbl_y_toplam = self._add_stat(ig, 1, "Toplam Hak", "stat_value")
         self.lbl_y_kul = self._add_stat(ig, 2, "Kullanılan", "stat_red")
         self.lbl_y_kal = self._add_stat(ig, 3, "Kalan", "stat_green")
@@ -372,7 +389,7 @@ class IstenAyrilikPage(QWidget):
 
         lbl_s = QLabel("ŞUA İZNİ")
         lbl_s.setStyleSheet(S["section_title"])
-        ig.addWidget(lbl_s, 5, 0, 1, 2, Qt.AlignCenter)
+        ig.addWidget(lbl_s, 5, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
         self.lbl_s_kul = self._add_stat(ig, 6, "Kullanılan", "stat_red")
         self.lbl_s_kal = self._add_stat(ig, 7, "Kalan", "stat_green")
 
@@ -398,14 +415,14 @@ class IstenAyrilikPage(QWidget):
             "• Eski Drive dosyalarını silecek"
         )
         uyari.setWordWrap(True)
-        uyari.setStyleSheet(f"color: {Colors.RED_400}; font-size: 12px; background: transparent;")
+        uyari.setStyleSheet("font-size: 12px; background: transparent;")
         onay_l.addWidget(uyari)
 
         self.btn_onayla = QPushButton("ONAYLA VE BITIR")
         self.btn_onayla.setStyleSheet(S["danger_btn"])
-        self.btn_onayla.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_onayla.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_onayla.clicked.connect(self._on_confirm)
-        IconRenderer.set_button_icon(self.btn_onayla, "alert_triangle", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self.btn_onayla, "alert_triangle", color=C.TEXT_PRIMARY, size=14)
         onay_l.addWidget(self.btn_onayla)
 
         right_l.addWidget(grp_onay)
@@ -425,7 +442,7 @@ class IstenAyrilikPage(QWidget):
             QProgressBar {{
                 background-color: rgba(255,255,255,0.05);
                 border: 1px solid rgba(255,255,255,0.08);
-                border-radius: 4px; color: {DarkTheme.TEXT_MUTED}; font-size: 11px;
+                border-radius: 4px; color: {C.TEXT_MUTED}; font-size: 11px;
             }}
             QProgressBar::chunk {{
                 background-color: rgba(239, 68, 68, 0.6);
@@ -435,7 +452,10 @@ class IstenAyrilikPage(QWidget):
         main.addWidget(self.progress)
 
         self.lbl_status = QLabel("")
-        self.lbl_status.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 12px; background: transparent;")
+        self.lbl_status.setProperty("color-role", "muted")
+        self.lbl_status.setStyleSheet("font-size: 12px; background: transparent;")
+        self.lbl_status.style().unpolish(self.lbl_status)
+        self.lbl_status.style().polish(self.lbl_status)
         main.addWidget(self.lbl_status)
 
     def _add_stat(self, grid, row, text, style_key):
@@ -443,25 +463,13 @@ class IstenAyrilikPage(QWidget):
         lbl.setStyleSheet(S["stat_label"])
         grid.addWidget(lbl, row, 0)
         val = QLabel("—")
-        val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        val.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         val.setStyleSheet(S[style_key])
         grid.addWidget(val, row, 1)
         return val
 
     def _format_date(self, val):
-        val = str(val).strip()
-        if not val:
-            return "—"
-        try:
-            from datetime import datetime
-            for fmt in ("%Y-%m-%d", "%d.%m.%Y"):
-                try:
-                    return datetime.strptime(val, fmt).strftime("%d.%m.%Y")
-                except ValueError:
-                    continue
-        except Exception:
-            pass
-        return val
+        return to_ui_date(val, "—")
 
     # ═══════════════════════════════════════════
     #  VERİ YÜKLEME
@@ -471,13 +479,14 @@ class IstenAyrilikPage(QWidget):
         if not self._db:
             return
         try:
-            from core.di import get_registry
             registry = get_registry(self._db)
-            all_sabit = registry.get("Sabitler").get_all()
+            all_sabit = registry.get("Sabitler").get_all() or []
             self._drive_folders = {
-                str(r.get("MenuEleman", "")).strip(): str(r.get("Aciklama", "")).strip()
+                str(r.get("MenuEleman") or "").strip(): str(r.get("Aciklama") or "").strip()
                 for r in all_sabit
-                if r.get("Kod") == "Sistem_DriveID" and r.get("Aciklama", "").strip()
+                if isinstance(r, dict)
+                and r.get("Kod") == "Sistem_DriveID"
+                and str(r.get("Aciklama") or "").strip()
             }
         except Exception as e:
             logger.error(f"Drive klasör yükleme hatası: {e}")
@@ -487,7 +496,6 @@ class IstenAyrilikPage(QWidget):
         if not self._db or not tc:
             return
         try:
-            from core.di import get_registry
             registry = get_registry(self._db)
             izin = registry.get("Izin_Bilgi").get_by_id(tc)
             if izin:
@@ -530,29 +538,21 @@ class IstenAyrilikPage(QWidget):
             f"Neden: {neden}\n"
             f"Tarih: {self.dt_tarih.date().toString('dd.MM.yyyy')}\n\n"
             "Devam etmek istiyor musunuz?",
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
         )
-        if cevap != QMessageBox.Yes:
+        if cevap != QMessageBox.StandardButton.Yes:
             return
 
-        tc = self._data.get("KimlikNo", "")
-
-        # 1. DB güncelle
-        ayrilis_data = {
+        self._pending_ayrilis_data = {
             "AyrilisTarihi": self.dt_tarih.date().toString("yyyy-MM-dd"),
             "AyrilmaNedeni": neden,
             "Durum": "Pasif",
         }
-        try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            repo = registry.get("Personel")
-            repo.update(tc, ayrilis_data)
-            self._data.update(ayrilis_data)
-            logger.info(f"Personel pasif: {tc}")
-        except Exception as e:
-            logger.error(f"DB güncelleme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Güncelleme hatası:\n{e}")
+
+        # Güvenli mod: Arşiv gerekiyorsa önce arşiv, sonra pasife alma
+        self._archive_required = self._has_archive_source()
+        if not self._archive_required:
+            self._finalize_departure("")
             return
 
         # 2. Arşivleme başlat
@@ -578,39 +578,78 @@ class IstenAyrilikPage(QWidget):
         self.progress.setVisible(False)
         self.btn_onayla.setEnabled(True)
 
-        tc = self._data.get("KimlikNo", "")
         ad = self._data.get("AdSoyad", "")
 
-        # Arşiv linkini kaydet, eski linkleri temizle
-        if arsiv_link:
-            try:
-                from core.di import get_registry
-                registry = get_registry(self._db)
-                repo = registry.get("Personel")
-                repo.update(tc, {
-                    "OzlukDosyasi": arsiv_link,
-                    "Resim": "",
-                    "Diploma1": "",
-                    "Diploma2": "",
-                })
-                logger.info(f"Arşiv tamamlandı: {tc} → {arsiv_link}")
-            except Exception as e:
-                logger.error(f"Arşiv link kayıt hatası: {e}")
+        if self._archive_required and not arsiv_link:
+            self.lbl_status.setText("Arşiv oluşturulamadı. Personel pasife alınmadı.")
+            QMessageBox.warning(
+                self,
+                "Arşiv Uyarısı",
+                f"{ad} için arşiv yüklenemedi.\n"
+                "Güvenli mod nedeniyle personel pasife alınmadı."
+            )
+            return
 
-        self.lbl_status.setText("Islem tamamlandi.")
-        QMessageBox.information(self, "Tamamlandı",
-            f"{ad} personeli PASİF duruma getirildi.\n"
-            f"{'Dosyaları arşivlendi.' if arsiv_link else 'Arşivlenecek dosya bulunamadı.'}")
-
-        self._go_back()
+        self._finalize_departure(arsiv_link)
 
     def _on_error(self, hata):
         self.progress.setVisible(False)
         self.btn_onayla.setEnabled(True)
         self.lbl_status.setText(f"Arsiv hatasi: {hata}")
         logger.error(f"Arşiv hatası: {hata}")
-        QMessageBox.warning(self, "Arşiv Uyarısı",
-            f"Personel PASİF yapıldı ancak arşivleme hatası:\n{hata}")
+        QMessageBox.warning(
+            self,
+            "Arşiv Uyarısı",
+            f"Arşivleme hatası oluştu:\n{hata}\n\n"
+            "Güvenli mod nedeniyle personel pasife alınmadı."
+        )
+
+    def _has_archive_source(self):
+        if self._ek_dosya and os.path.exists(self._ek_dosya):
+            return True
+        for col in ("Resim", "Diploma1", "Diploma2"):
+            link = str(self._data.get(col, "")).strip()
+            if link.startswith("http"):
+                return True
+        return False
+
+    def _finalize_departure(self, arsiv_link):
+        tc = self._data.get("KimlikNo", "")
+        ad = self._data.get("AdSoyad", "")
+        ayrilis_data = self._pending_ayrilis_data or {
+            "AyrilisTarihi": self.dt_tarih.date().toString("yyyy-MM-dd"),
+            "AyrilmaNedeni": self.cmb_neden.currentText().strip(),
+            "Durum": "Pasif",
+        }
+
+        update_data = dict(ayrilis_data)
+        if arsiv_link:
+            update_data.update({
+                "OzlukDosyasi": arsiv_link,
+                "Resim": "",
+                "Diploma1": "",
+                "Diploma2": "",
+            })
+
+        try:
+            registry = get_registry(self._db)
+            repo = registry.get("Personel")
+            repo.update(tc, update_data)
+            self._data.update(update_data)
+            logger.info(f"Personel pasif (güvenli mod): {tc}")
+        except Exception as e:
+            logger.error(f"Güvenli mod DB güncelleme hatası: {e}")
+            QMessageBox.critical(self, "Hata", f"Güncelleme hatası:\n{e}")
+            return
+
+        self.lbl_status.setText("Islem tamamlandi.")
+        QMessageBox.information(
+            self,
+            "Tamamlandı",
+            f"{ad} personeli PASİF duruma getirildi.\n"
+            f"{'Dosyaları arşivlendi.' if arsiv_link else 'Arşivlenecek dosya bulunamadı.'}"
+        )
+        self._go_back()
 
     # ═══════════════════════════════════════════
     #  GERİ

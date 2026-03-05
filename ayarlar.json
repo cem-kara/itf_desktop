@@ -49,24 +49,18 @@
     ],
     "YÖNETİCİ İŞLEMLERİ": [
       {
-        "baslik": "Yıl Sonu İzin",
-        "implemented": false,
-        "note": "Yıl sonu izin devir işlemleri"
-      },
-      {
-        "baslik": "Log Görüntüleyici",
+        "baslik": "Admin Panel",
         "implemented": true,
-        "note": "Uygulama log dosyalarını incele"
-      },
-      {
-        "baslik": "Yedek Yönetimi",
-        "implemented": true,
-        "note": "Veritabanı yedeklerini listele, al ve geri yükle"
-      },
+        "note": "Kullanıcı ve rol yönetimi"
+      }
+    ],
+    "AYARLAR": [
       {
         "baslik": "Ayarlar",
-        "implemented": false
+        "implemented": true,
+        "note": "Kullanıcı tercihleri ve sistem ayarları"
       }
     ]
-  }
+  },
+  "theme": "dark"
 }

@@ -22,6 +22,12 @@
                 "Cihaz_Belgeler"
             ]
         },
+        "ortak": {
+            "dosya": "itf_ortak_vt",
+            "sayfalar": [
+                "Ortak"
+            ]
+        },
         "rke": {
             "dosya": "itf_rke_vt",
             "sayfalar": [

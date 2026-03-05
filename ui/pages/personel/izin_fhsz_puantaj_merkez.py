@@ -14,7 +14,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QCursor
 
 from ui.styles import DarkTheme
-from ui.styles.components import ComponentStyles, STYLES
+from ui.styles.components import STYLES
 from ui.styles.icons import IconRenderer
 from core.logger import logger
 
@@ -51,7 +51,9 @@ class IzinFHSZPuantajMerkezPage(QWidget):
     # ═══════════════════════════════════════════════════
 
     def _setup_ui(self):
-        self.setStyleSheet(STYLES["page"])
+        self.setProperty("bg-role", "page")
+        self.style().unpolish(self)
+        self.style().polish(self)
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
@@ -92,9 +94,11 @@ class IzinFHSZPuantajMerkezPage(QWidget):
 
         # Kapat
         btn_kapat = QPushButton("Kapat")
-        btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_kapat.setToolTip("Kapat")
-        btn_kapat.setStyleSheet(STYLES["close_btn"])
+        btn_kapat.setProperty("style-role", "danger")
+        btn_kapat.style().unpolish(btn_kapat)
+        btn_kapat.style().polish(btn_kapat)
         btn_kapat.clicked.connect(self.kapat_istegi.emit)
         IconRenderer.set_button_icon(btn_kapat, "x", color=C.TEXT_PRIMARY, size=14)
         top_lay.addWidget(btn_kapat)
@@ -104,14 +108,17 @@ class IzinFHSZPuantajMerkezPage(QWidget):
         # ── Sekme nav ──
         nav = QWidget()
         nav.setFixedHeight(36)
-        nav.setStyleSheet(f"background:transparent; border-top:1px solid {C.BORDER_SECONDARY};")
+        nav.setProperty("border-role", "top-secondary")
+        nav.setStyleSheet("background: transparent;")
+        nav.style().unpolish(nav)
+        nav.style().polish(nav)
         nav_lay = QHBoxLayout(nav)
         nav_lay.setContentsMargins(16, 0, 16, 0)
         nav_lay.setSpacing(0)
 
         for code, label in TABS:
             btn = QPushButton(label)
-            btn.setCursor(QCursor(Qt.PointingHandCursor))
+            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             btn.setStyleSheet(self._tab_btn_qss(active=False))
             btn.clicked.connect(lambda _, c=code: self._switch_tab(c))
             nav_lay.addWidget(btn)
@@ -124,9 +131,11 @@ class IzinFHSZPuantajMerkezPage(QWidget):
     def _sep(self) -> QFrame:
         """Dikey ayırıcı"""
         sep = QFrame()
-        sep.setFrameShape(QFrame.VLine)
+        sep.setFrameShape(QFrame.Shape.VLine)
         sep.setLineWidth(1)
-        sep.setStyleSheet(f"color:{C.BORDER_PRIMARY};")
+        sep.setProperty("bg-role", "separator")
+        sep.style().unpolish(sep)
+        sep.style().polish(sep)
         sep.setMaximumWidth(1)
         return sep
 
@@ -207,9 +216,10 @@ class IzinFHSZPuantajMerkezPage(QWidget):
         self.content_stack.setCurrentWidget(w)
 
         # load_data() çağır (varsa)
-        if hasattr(w, "load_data"):
+        load_data = getattr(w, "load_data", None)
+        if callable(load_data):
             try:
-                w.load_data()
+                load_data()
             except Exception as e:
                 import traceback
                 logger.error(f"Sekme {code} load_data hatası: {e}\n{traceback.format_exc()}")

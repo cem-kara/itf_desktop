@@ -1,108 +1,95 @@
 # -*- coding: utf-8 -*-
 import os
 import re
-from PySide6.QtCore import Qt, QDate, QThread, Signal, QTimer
+from datetime import datetime
+from PySide6.QtCore import Qt, QDate, QTimer, QThread, Signal
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
+    QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton,
     QScrollArea, QProgressBar, QFrame, QComboBox, QLineEdit,
     QDateEdit, QGroupBox, QMessageBox, QFileDialog
 )
 from PySide6.QtGui import QCursor, QPixmap
 
 from core.logger import logger
-from core.hata_yonetici import exc_logla
 from core.date_utils import parse_date
-from database.repository_registry import RepositoryRegistry
+from core.paths import DB_PATH
+from core.auth.password_hasher import PasswordHasher
+from core.di import get_registry
+from core.services.dokuman_service import DokumanService
+from core.services.personel_service import PersonelService
+from core.validators import validate_tc_kimlik_no, validate_email, validate_phone_number
+from core.text_utils import turkish_title_case
+from database.auth_repository import AuthRepository
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 from ui.theme_manager import ThemeManager
+from ui.components.formatted_widgets import apply_title_case_formatting, apply_combo_title_case_formatting
+from ui.pages.personel.components.personel_dokuman_panel import PersonelDokumanPanel
+from ui.styles.colors import get_current_theme
 
+class DokumanUploadWorker(QThread):
+    """Tek bir dosya için DokumanService upload worker'ı."""
+    upload_finished = Signal(str, dict)
+    upload_error = Signal(str, str)
 
-# ─── TC Kimlik No Validatörü ───
-def validate_tc_kimlik_no(tc_str: str) -> bool:
-    """
-    TC Kimlik No algoritması uygulaması.
-    - 11 rakam olmalı
-    - İlk basamak 0 olamaz
-    - Kontrol hanesi kontrol edilir
-    
-    Algoritma:
-    1. Pozisyonlar 1,3,5,7,9 (indices 0,2,4,6,8) topla → S1
-    2. Pozisyonlar 2,4,6,8 (indices 1,3,5,7) topla → S2
-    3. 10.basamak = (S1 * 7 - S2) % 10
-    4. 11.basamak = (S1 + S2 + 10.basamak) % 10
-    """
-    if not tc_str or len(tc_str) != 11 or not tc_str.isdigit():
-        return False
-    if tc_str[0] == '0':
-        return False
-    
-    # Tek pozisyonlar (1, 3, 5, 7, 9) = indices (0, 2, 4, 6, 8)
-    sum_odd = sum(int(tc_str[i]) for i in range(0, 9, 2))
-    # Çift pozisyonlar (2, 4, 6, 8) = indices (1, 3, 5, 7) — NOT 9!
-    sum_even = sum(int(tc_str[i]) for i in range(1, 9, 2))
-    
-    # 10. basamak (index 9) hesaplama
-    expected_10th = (sum_odd * 7 - sum_even) % 10
-    # 11. basamak (index 10) hesaplama
-    expected_11th = (sum_odd + sum_even + expected_10th) % 10
-    
-    actual_10th = int(tc_str[9])
-    actual_11th = int(tc_str[10])
-    
-    is_valid = actual_10th == expected_10th and actual_11th == expected_11th
-    
-    # Debug log (sadece hata durumunda)
-    if not is_valid:
-        logger.debug(f"TC kontrol hatası: {tc_str}")
-        logger.debug(f"  Tek pozisyonlar (1,3,5,7,9): {sum_odd}")
-        logger.debug(f"  Çift pozisyonlar (2,4,6,8,10): {sum_even}")
-        logger.debug(f"  10. basamak: beklenen={expected_10th}, gerçek={actual_10th}")
-        logger.debug(f"  11. basamak: beklenen={expected_11th}, gerçek={actual_11th}")
-    
-    return is_valid
-
-
-def validate_email(email_str: str) -> bool:
-    """Basit email format doğrulaması."""
-    if not email_str:
-        return True  # Opsiyonel alan
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return bool(re.match(pattern, email_str))
-
-
-# ─── Drive Yükleme Worker (UI donmasın) ───
-class DriveUploadWorker(QThread):
-    finished = Signal(str, str)   # (alan_adi, webViewLink)
-    error = Signal(str, str)      # (alan_adi, hata_mesaji)
-    progress = Signal(int)        # Yüzde (0-100)
-
-    def __init__(self, file_path, folder_id, custom_name, alan_adi, offline_folder_name=None):
-        super().__init__()
-        self._file_path = file_path
-        self._folder_id = folder_id
-        self._custom_name = custom_name
-        self._alan_adi = alan_adi
-        self._offline_folder_name = offline_folder_name
+    def __init__(self, db_path: str, job: dict, parent=None):
+        super().__init__(parent)
+        self._db_path = db_path
+        self._job = job
 
     def run(self):
         try:
-            from core.di import get_cloud_adapter
-            cloud = get_cloud_adapter()
-            link = cloud.upload_file(
-                self._file_path,
-                parent_folder_id=self._folder_id,
-                custom_name=self._custom_name,
-                offline_folder_name=self._offline_folder_name
+            # Her thread kendi DB connection'ını oluşturur (SQLite thread güvenliği için)
+            from database.sqlite_manager import SQLiteManager
+            db = SQLiteManager(self._db_path, check_same_thread=False)
+            svc = DokumanService(db)
+            sonuc = svc.upload_and_save(
+                file_path=self._job["file_path"],
+                entity_type="personel",
+                entity_id=str(self._job["tc_no"]),
+                belge_turu=self._job["belge_turu"],
+                folder_name=self._job["folder_name"],
+                doc_type=self._job["doc_type"],
+                custom_name=self._job["custom_name"],
             )
-            if link:
-                self.finished.emit(self._alan_adi, str(link))
+            if sonuc.get("ok"):
+                self.upload_finished.emit(self._job["db_field"], sonuc)
             else:
-                self.error.emit(self._alan_adi, "Yükleme başarısız (Offline modda hedef klasör tanımlı olmayabilir)")
+                self.upload_error.emit(
+                    self._job["db_field"],
+                    sonuc.get("error", "Bilinmeyen yükleme hatası")
+                )
         except Exception as e:
-            exc_logla("PersonelEkle.DosyaYukleyici", e)
-            self.error.emit(self._alan_adi, str(e))
+            self.upload_error.emit(self._job.get("db_field", ""), str(e))
+
+
+def generate_username_from_name(ad_soyad: str) -> str:
+    """
+    Adından kullanıcı adı oluştur.
+    Örnek: "Cem Kara" → "CKara", "Ahmet Cem Kara" → "ACKara"
+    
+    Kural:
+    - Soyadı (son kelime) tamamen yaz
+    - Diğer kelimelerin ilk harfini yaz
+    - Büyük harf yap
+    """
+    if not ad_soyad or not ad_soyad.strip():
+        return ""
+    
+    parts = ad_soyad.strip().split()
+    if len(parts) == 0:
+        return ""
+    
+    # Son kelime soyadı (tamamen)
+    surname = parts[-1]
+    
+    # Diğer kelimelerin ilk harfleri
+    initials = "".join([p[0] for p in parts[:-1]])
+    
+    # Birleştir ve büyük harf yap
+    username = (initials + surname).upper()
+    return username
 
 # DB alan → form widget eşlemesi
 FIELD_MAP = {
@@ -135,13 +122,16 @@ class PersonelEklePage(QWidget):
     edit_data: dict → düzenleme modunda mevcut veri
     on_saved: callback → kayıt sonrası çağrılır
     """
+    # Sinyal: form kapanması istendiğinde emitir (kaydet veya iptal)
+    form_closed = Signal()
 
-    def __init__(self, db=None, edit_data=None, on_saved=None, parent=None):
+    def __init__(self, db=None, edit_data=None, on_saved=None, action_guard=None, parent=None):
         super().__init__(parent)
         self.setStyleSheet(S["page"])
         self._db = db
         self._edit_data = edit_data
         self._on_saved = on_saved
+        self._action_guard = action_guard
         self._is_edit = edit_data is not None
         self.ui = {}
         self._file_paths = {}          # {"Resim": path, "Diploma1": path, ...}
@@ -152,12 +142,27 @@ class PersonelEklePage(QWidget):
         self._pending_uploads = 0
         self._completed_uploads = 0
         self._upload_errors = []
+        self._upload_meta = {}         # alan_adi -> metadata
+        self._dokuman_panel = None     # PersonelDokumanPanel instance
+        
+        # Service layer
+        if db:
+            self._registry = get_registry(db)
+            self._svc = PersonelService(self._registry)
+        else:
+            self._registry = None
+            self._svc = None
 
         self._setup_ui()
         self._populate_combos()
 
         if self._is_edit:
             self._fill_form(edit_data)
+            # Düzenleme modunda form doldurulduktan sonra panel ayarla
+            self._update_dokuman_panel()
+        else:
+            # Yeni ekleme modunda da ilk panel oluştur
+            self._update_dokuman_panel()
 
     # ═══════════════════════════════════════════
     #  UI
@@ -171,7 +176,7 @@ class PersonelEklePage(QWidget):
         # Scroll
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setStyleSheet(S["scroll"])
 
         content = QWidget()
@@ -180,89 +185,123 @@ class PersonelEklePage(QWidget):
         content_layout.setSpacing(20)
         content_layout.setContentsMargins(0, 0, 0, 0)
 
-        # ── SOL SÜTUN ──
-        left = QWidget()
-        left_l = QVBoxLayout(left)
-        left_l.setSpacing(12)
-        left_l.setContentsMargins(0, 0, 0, 0)
+        # Formu ortala
+        content_layout.addStretch()
+
+        # ── SOL GRUP (Fotoğraf ve Kimlik Bilgileri) ──
+        left_grp = QGroupBox("Fotograf ve Kimlik Bilgileri")
+        left_grp.setStyleSheet(S["group"])
+        left_grp.setFixedWidth(250)
+        left_l = QVBoxLayout(left_grp)
+        left_l.setSpacing(8)
+        left_l.setContentsMargins(8, 12, 8, 12)
 
         # Fotoğraf
-        photo_grp = QGroupBox("Fotograf")
-        photo_grp.setStyleSheet(S["group"])
-        photo_lay = QVBoxLayout(photo_grp)
-        photo_lay.setAlignment(Qt.AlignCenter)
-
-        self.lbl_resim = QLabel("Fotoğraf\nYüklenmedi")
-        self.lbl_resim.setFixedSize(160, 200)
-        self.lbl_resim.setAlignment(Qt.AlignCenter)
+        self.lbl_resim = QLabel("foto")
+        self.lbl_resim.setFixedSize(140, 160)
+        self.lbl_resim.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_resim.setStyleSheet(S["photo_area"])
-        photo_lay.addWidget(self.lbl_resim, alignment=Qt.AlignCenter)
+        left_l.addWidget(self.lbl_resim, alignment=Qt.AlignmentFlag.AlignCenter)
 
         btn_resim = QPushButton("Fotograf Sec")
         btn_resim.setStyleSheet(S["photo_btn"])
-        btn_resim.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_resim.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_resim.clicked.connect(self._select_photo)
         IconRenderer.set_button_icon(btn_resim, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
-        photo_lay.addWidget(btn_resim, alignment=Qt.AlignCenter)
-        left_l.addWidget(photo_grp)
+        left_l.addWidget(btn_resim, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        # Kimlik Bilgileri
-        id_grp = QGroupBox("Kimlik Bilgileri")
-        id_grp.setStyleSheet(S["group"])
-        id_lay = QVBoxLayout(id_grp)
-        id_lay.setSpacing(10)
+        # Ayırıcı çizgi
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setFixedHeight(1)
+        sep.setProperty("bg-role", "separator")
+        sep.style().unpolish(sep)
+        sep.style().polish(sep)
+        left_l.addWidget(sep)
 
-        # TC Kimlik No ile validation status
-        tc_container = QWidget()
-        tc_container.setStyleSheet("background: transparent;")
-        tc_lay = QVBoxLayout(tc_container)
-        tc_lay.setContentsMargins(0, 0, 0, 0)
-        tc_lay.setSpacing(4)
-        tc_lbl = QLabel("TC Kimlik No *")
+        # TC Kimlik
+        tc_lbl = QLabel("TC Kimlik No")
         tc_lbl.setStyleSheet(S["required_label"])
-        tc_lay.addWidget(tc_lbl)
+        left_l.addWidget(tc_lbl)
+        
         tc_row = QHBoxLayout()
         tc_row.setSpacing(4)
         self.ui["tc"] = QLineEdit()
         self.ui["tc"].setMaxLength(11)
         self.ui["tc"].setStyleSheet(S["input"])
-        self.ui["tc"].setPlaceholderText("11 haneli rakam")
+        self.ui["tc"].setPlaceholderText("11 haneli")
         self.ui["tc"].textChanged.connect(self._validate_tc_on_change)
+        self.ui["tc"].textChanged.connect(self._update_dokuman_panel)
         tc_row.addWidget(self.ui["tc"])
         self._tc_status = QLabel("")
         self._tc_status.setFixedWidth(20)
         tc_row.addWidget(self._tc_status)
-        tc_lay.addLayout(tc_row)
-        
-        row1 = QHBoxLayout()
-        row1.addWidget(tc_container)
-        self.ui["ad_soyad"] = self._make_input("Ad Soyad *", row1, required=True)
-        id_lay.addLayout(row1)
+        left_l.addLayout(tc_row)
 
-        row2 = QHBoxLayout()
-        self.ui["dogum_yeri"] = self._make_combo("Doğum Yeri", row2, editable=True)
-        self.ui["dogum_tarihi"] = self._make_date("Doğum Tarihi", row2)
-        id_lay.addLayout(row2)
+        # Ad Soyad
+        ad_lbl = QLabel("Ad Soyad")
+        ad_lbl.setStyleSheet(S["required_label"])
+        left_l.addWidget(ad_lbl)
+        self.ui["ad_soyad"] = QLineEdit()
+        self.ui["ad_soyad"].setStyleSheet(S["input"])
+        self.ui["ad_soyad"].setPlaceholderText("Ad Soyad")
+        apply_title_case_formatting(self.ui["ad_soyad"])
+        left_l.addWidget(self.ui["ad_soyad"])
 
-        left_l.addWidget(id_grp)
+        # Doğum Yeri
+        dogum_yeri_lbl = QLabel("Doğum Yeri")
+        dogum_yeri_lbl.setStyleSheet(S["label"])
+        left_l.addWidget(dogum_yeri_lbl)
+        self.ui["dogum_yeri"] = QComboBox()
+        self.ui["dogum_yeri"].setEditable(True)
+        self.ui["dogum_yeri"].setStyleSheet(S["input_combo"])
+        apply_combo_title_case_formatting(self.ui["dogum_yeri"])
+        left_l.addWidget(self.ui["dogum_yeri"])
 
-        # İletişim
-        contact_grp = QGroupBox("Iletisim Bilgileri")
+        # Doğum Tarihi
+        dogum_tarihi_lbl = QLabel("Doğum Tarihi")
+        dogum_tarihi_lbl.setStyleSheet(S["label"])
+        left_l.addWidget(dogum_tarihi_lbl)
+        self.ui["dogum_tarihi"] = QDateEdit()
+        self.ui["dogum_tarihi"].setCalendarPopup(True)
+        self.ui["dogum_tarihi"].setDate(QDate.currentDate().addYears(-30))
+        self.ui["dogum_tarihi"].setStyleSheet(S["date"])
+        left_l.addWidget(self.ui["dogum_tarihi"])
+
+        # ── SAĞ SÜTUN (Grid Form) ──
+        right = QWidget()
+        right.setMaximumWidth(800)
+        right_l = QVBoxLayout(right)
+        right_l.setSpacing(12)
+        right_l.setContentsMargins(0, 0, 0, 0)
+
+        # BÖLÜM 1: İletişim (2 sütun)
+        contact_grp = QGroupBox("İletişim Bilgileri")
         contact_grp.setStyleSheet(S["group"])
-        contact_lay = QVBoxLayout(contact_grp)
+        contact_grid = QGridLayout(contact_grp)
+        contact_grid.setSpacing(12)
+        contact_grid.setContentsMargins(12, 12, 12, 12)
 
-        row_c = QHBoxLayout()
-        self.ui["cep_tel"] = self._make_input("Cep Telefonu", row_c, placeholder="05XX XXX XX XX")
+        cep_lbl = QLabel("Cep Telefonu")
+        cep_lbl.setStyleSheet(S["label"])
+        contact_grid.addWidget(cep_lbl, 0, 0)
         
-        # Email ile validation status
-        email_container = QWidget()
-        email_container.setStyleSheet("background: transparent;")
-        email_lay = QVBoxLayout(email_container)
-        email_lay.setContentsMargins(0, 0, 0, 0)
-        email_lay.setSpacing(4)
-        email_lbl = QLabel("E-posta Adresi")
+        cep_row = QHBoxLayout()
+        cep_row.setSpacing(4)
+        self.ui["cep_tel"] = QLineEdit()
+        self.ui["cep_tel"].setStyleSheet(S["input"])
+        self.ui["cep_tel"].setPlaceholderText("05XX XXX XX XX")
+        self.ui["cep_tel"].textChanged.connect(self._validate_phone_on_change)
+        cep_row.addWidget(self.ui["cep_tel"])
+        self._phone_status = QLabel("")
+        self._phone_status.setFixedWidth(20)
+        cep_row.addWidget(self._phone_status)
+        contact_grid.addLayout(cep_row, 1, 0)
+
+        email_lbl = QLabel("E-posta")
         email_lbl.setStyleSheet(S["label"])
-        email_lay.addWidget(email_lbl)
+        contact_grid.addWidget(email_lbl, 0, 1)
+        
         email_row = QHBoxLayout()
         email_row.setSpacing(4)
         self.ui["eposta"] = QLineEdit()
@@ -273,92 +312,165 @@ class PersonelEklePage(QWidget):
         self._email_status = QLabel("")
         self._email_status.setFixedWidth(20)
         email_row.addWidget(self._email_status)
-        email_lay.addLayout(email_row)
-        
-        row_c.addWidget(email_container)
-        contact_lay.addLayout(row_c)
+        contact_grid.addLayout(email_row, 1, 1)
 
-        left_l.addWidget(contact_grp)
+        right_l.addWidget(contact_grp)
 
-        left_l.addStretch()
-
-        # ── SAĞ SÜTUN ──
-        right = QWidget()
-        right_l = QVBoxLayout(right)
-        right_l.setSpacing(12)
-        right_l.setContentsMargins(0, 0, 0, 0)
-
-        # Kurumsal
-        corp_grp = QGroupBox("Kadro ve Kurumsal Bilgiler")
+        # BÖLÜM 2: Kurumsal (3 sütun üst, 2 sütun alt)
+        corp_grp = QGroupBox("Kurumsal Bilgiler")
         corp_grp.setStyleSheet(S["group"])
-        corp_lay = QVBoxLayout(corp_grp)
-        corp_lay.setSpacing(10)
+        corp_grid = QGridLayout(corp_grp)
+        corp_grid.setSpacing(12)
+        corp_grid.setContentsMargins(12, 12, 12, 12)
 
-        row_k1 = QHBoxLayout()
-        self.ui["hizmet_sinifi"] = self._make_combo("Hizmet Sınıfı *", row_k1, required=True)
-        self.ui["kadro_unvani"] = self._make_combo("Kadro Ünvanı *", row_k1, required=True)
-        corp_lay.addLayout(row_k1)
+        # Üst satır - 3 sütun
+        hizmet_lbl = QLabel("Hizmet Sinifi")
+        hizmet_lbl.setStyleSheet(S["required_label"])
+        corp_grid.addWidget(hizmet_lbl, 0, 0)
+        self.ui["hizmet_sinifi"] = QComboBox()
+        self.ui["hizmet_sinifi"].setStyleSheet(S["input_combo"])
+        apply_combo_title_case_formatting(self.ui["hizmet_sinifi"])
+        corp_grid.addWidget(self.ui["hizmet_sinifi"], 1, 0)
 
-        row_k2 = QHBoxLayout()
-        self.ui["gorev_yeri"] = self._make_combo("Görev Yeri", row_k2)
-        self.ui["sicil_no"] = self._make_input("Kurum Sicil No", row_k2)
-        corp_lay.addLayout(row_k2)
+        kadro_lbl = QLabel("Kadro Ünvanı")
+        kadro_lbl.setStyleSheet(S["required_label"])
+        corp_grid.addWidget(kadro_lbl, 0, 1)
+        self.ui["kadro_unvani"] = QComboBox()
+        self.ui["kadro_unvani"].setStyleSheet(S["input_combo"])
+        apply_combo_title_case_formatting(self.ui["kadro_unvani"])
+        corp_grid.addWidget(self.ui["kadro_unvani"], 1, 1)
 
-        row_k3 = QHBoxLayout()
-        self.ui["baslama_tarihi"] = self._make_date("Memuriyete Başlama Tarihi", row_k3)
-        row_k3.addStretch()
-        corp_lay.addLayout(row_k3)
+        gorev_lbl = QLabel("Görev Yeri")
+        gorev_lbl.setStyleSheet(S["label"])
+        corp_grid.addWidget(gorev_lbl, 0, 2)
+        self.ui["gorev_yeri"] = QComboBox()
+        self.ui["gorev_yeri"].setStyleSheet(S["input_combo"])
+        apply_combo_title_case_formatting(self.ui["gorev_yeri"])
+        corp_grid.addWidget(self.ui["gorev_yeri"], 1, 2)
+
+        # Alt satır - 2 sütun
+        baslama_lbl = QLabel("Başlama Tarihi")
+        baslama_lbl.setStyleSheet(S["label"])
+        corp_grid.addWidget(baslama_lbl, 2, 0)
+        self.ui["baslama_tarihi"] = QDateEdit()
+        self.ui["baslama_tarihi"].setCalendarPopup(True)
+        self.ui["baslama_tarihi"].setDate(QDate.currentDate())
+        self.ui["baslama_tarihi"].setStyleSheet(S["date"])
+        corp_grid.addWidget(self.ui["baslama_tarihi"], 3, 0)
+
+        sicil_lbl = QLabel("Kurum Sicil No")
+        sicil_lbl.setStyleSheet(S["label"])
+        corp_grid.addWidget(sicil_lbl, 2, 1)
+        self.ui["sicil_no"] = QLineEdit()
+        self.ui["sicil_no"].setStyleSheet(S["input"])
+        self.ui["sicil_no"].setPlaceholderText("Kurum Sicil No")
+        corp_grid.addWidget(self.ui["sicil_no"], 3, 1)
 
         right_l.addWidget(corp_grp)
 
-        # Eğitim
-        edu_grp = QGroupBox("Egitim Bilgileri")
+        # BÖLÜM 3: Eğitim Bilgileri (4 sütun × 2 satır)
+        edu_grp = QGroupBox("Eğitim Bilgileri")
         edu_grp.setStyleSheet(S["group"])
-        edu_main = QHBoxLayout(edu_grp)
-        edu_main.setSpacing(16)
+        edu_lay = QVBoxLayout(edu_grp)
+        edu_lay.setSpacing(8)
+        edu_lay.setContentsMargins(12, 12, 12, 12)
 
-        for i in ["1", "2"]:
-            col = QVBoxLayout()
-            col.setSpacing(8)
+        # Başlık
+        edu_header = QLabel("Lise / Önlisans / Lisans")
+        edu_header.setProperty("color-role", "accent")
+        edu_header.setStyleSheet("font-weight: 600; font-size: 12px; background: transparent;")
+        edu_header.style().unpolish(edu_header)
+        edu_header.style().polish(edu_header)
+        edu_lay.addWidget(edu_header)
 
-            header = QLabel(f"{'Lise / Önlisans / Lisans' if i == '1' else 'Lisans / Yüksek Lisans / Lisans Tamamlama'}")
-            header.setStyleSheet(S.get("section_title", ""))
-            col.addWidget(header)
+        edu_grid = QGridLayout()
+        edu_grid.setSpacing(12)
+        edu_grid.setContentsMargins(0, 8, 0, 0)
 
-            self.ui[f"okul{i}"] = self._make_combo_v(f"Okul Adı", col, editable=True)
-            self.ui[f"fakulte{i}"] = self._make_combo_v(f"Bölüm / Fakülte", col, editable=True)
-            self.ui[f"mezun_tarihi{i}"] = self._make_input_v(f"Mezuniyet Tarihi", col)
-            self.ui[f"diploma_no{i}"] = self._make_input_v(f"Diploma No", col)
+        # 1. Satır - Eğitim 1
+        self.ui["okul1"] = QComboBox()
+        self.ui["okul1"].setEditable(True)
+        self.ui["okul1"].setStyleSheet(S["input_combo"])
+        self.ui["okul1"].setPlaceholderText("Okul")
+        apply_combo_title_case_formatting(self.ui["okul1"])
+        edu_grid.addWidget(self.ui["okul1"], 0, 0)
 
-            btn_dip = QPushButton(f"Diploma {i} Sec")
-            btn_dip.setStyleSheet(S["file_btn"])
-            btn_dip.setCursor(QCursor(Qt.PointingHandCursor))
-            btn_dip.clicked.connect(lambda checked, idx=i: self._select_diploma(idx))
-            IconRenderer.set_button_icon(btn_dip, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
-            col.addWidget(btn_dip)
+        self.ui["fakulte1"] = QComboBox()
+        self.ui["fakulte1"].setEditable(True)
+        self.ui["fakulte1"].setStyleSheet(S["input_combo"])
+        self.ui["fakulte1"].setPlaceholderText("Bölüm")
+        apply_combo_title_case_formatting(self.ui["fakulte1"])
+        edu_grid.addWidget(self.ui["fakulte1"], 0, 1)
 
-            # Seçili dosya etiketi
-            lbl_file = QLabel("")
-            lbl_file.setStyleSheet(
-                f"color: {DarkTheme.STATUS_SUCCESS}; font-size: 11px; background: transparent;"
-            )
-            col.addWidget(lbl_file)
-            self.ui[f"diploma_file_lbl{i}"] = lbl_file
+        self.ui["mezun_tarihi1"] = QLineEdit()
+        self.ui["mezun_tarihi1"].setStyleSheet(S["input"])
+        self.ui["mezun_tarihi1"].setPlaceholderText("Mezuniyet Tarihi")
+        edu_grid.addWidget(self.ui["mezun_tarihi1"], 0, 2)
 
-            edu_main.addLayout(col)
+        self.ui["diploma_no1"] = QLineEdit()
+        self.ui["diploma_no1"].setStyleSheet(S["input"])
+        self.ui["diploma_no1"].setPlaceholderText("Diploma No")
+        edu_grid.addWidget(self.ui["diploma_no1"], 0, 3)
 
-            if i == "1":
-                sep = QFrame()
-                sep.setFrameShape(QFrame.VLine)
-                sep.setFixedWidth(1)
-                sep.setStyleSheet(S["separator"])
-                edu_main.addWidget(sep)
+        # Ayırıcı
+        sep_edu = QFrame()
+        sep_edu.setFrameShape(QFrame.Shape.HLine)
+        sep_edu.setFixedHeight(1)
+        sep_edu.setProperty("bg-role", "separator")
+        sep_edu.style().unpolish(sep_edu)
+        sep_edu.style().polish(sep_edu)
+        edu_grid.addWidget(sep_edu, 1, 0, 1, 4)
+
+        # Başlık: 2. Okul
+        header2 = QLabel("Önlisans / Lisans / Yüksek Lisans / Doktora")
+        header2.setProperty("color-role", "accent")
+        header2.setStyleSheet("font-weight: 600; font-size: 12px; background: transparent;")
+        header2.style().unpolish(header2)
+        header2.style().polish(header2)
+        edu_grid.addWidget(header2, 2, 0, 1, 4)
+
+        # 2. Satır - Eğitim 2
+        self.ui["okul2"] = QComboBox()
+        self.ui["okul2"].setEditable(True)
+        self.ui["okul2"].setStyleSheet(S["input_combo"])
+        self.ui["okul2"].setPlaceholderText("Okul")
+        apply_combo_title_case_formatting(self.ui["okul2"])
+        edu_grid.addWidget(self.ui["okul2"], 3, 0)
+
+        self.ui["fakulte2"] = QComboBox()
+        self.ui["fakulte2"].setEditable(True)
+        self.ui["fakulte2"].setStyleSheet(S["input_combo"])
+        self.ui["fakulte2"].setPlaceholderText("Bölüm")
+        apply_combo_title_case_formatting(self.ui["fakulte2"])
+        edu_grid.addWidget(self.ui["fakulte2"], 3, 1)
+
+        self.ui["mezun_tarihi2"] = QLineEdit()
+        self.ui["mezun_tarihi2"].setStyleSheet(S["input"])
+        self.ui["mezun_tarihi2"].setPlaceholderText("Mezuniyet Tarihi")
+        edu_grid.addWidget(self.ui["mezun_tarihi2"], 3, 2)
+
+        self.ui["diploma_no2"] = QLineEdit()
+        self.ui["diploma_no2"].setStyleSheet(S["input"])
+        self.ui["diploma_no2"].setPlaceholderText("Diploma No")
+        edu_grid.addWidget(self.ui["diploma_no2"], 3, 3)
+
+        edu_lay.addLayout(edu_grid)
 
         right_l.addWidget(edu_grp)
+
+        # İlk Başlama Evrakları (PersonelDokumanPanel)
+        self._dokuman_panel_container = QWidget()
+        self._dokuman_panel_container.setStyleSheet("background: transparent;")
+        self._dokuman_panel_layout = QVBoxLayout(self._dokuman_panel_container)
+        self._dokuman_panel_layout.setContentsMargins(0, 0, 0, 0)
+        
+        right_l.addWidget(self._dokuman_panel_container)
         right_l.addStretch()
 
-        content_layout.addWidget(left, stretch=1)
-        content_layout.addWidget(right, stretch=1)
+        content_layout.addWidget(left_grp, alignment=Qt.AlignmentFlag.AlignTop)
+        content_layout.addWidget(right)
+        content_layout.addStretch()
+        
         scroll.setWidget(content)
         main.addWidget(scroll, 1)
 
@@ -386,7 +498,7 @@ class PersonelEklePage(QWidget):
 
         btn_iptal = QPushButton("IPTAL")
         btn_iptal.setStyleSheet(S["cancel_btn"])
-        btn_iptal.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_iptal.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_iptal.clicked.connect(self._on_cancel)
         IconRenderer.set_button_icon(btn_iptal, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         footer.addWidget(btn_iptal)
@@ -394,18 +506,48 @@ class PersonelEklePage(QWidget):
         title = "GÜNCELLE" if self._is_edit else "KAYDET"
         self.btn_kaydet = QPushButton(f"PERSONELI {title}")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
-        self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_kaydet.clicked.connect(self._on_save)
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(self.btn_kaydet, "personel.write")
         footer.addWidget(self.btn_kaydet)
 
         main.addLayout(footer)
 
     # ═══════════════════════════════════════════
+    #  DOKUMAN PANEL YÖNETİMİ
+    # ═══════════════════════════════════════════
+
+    def _update_dokuman_panel(self):
+        """TC No değiştiğinde PersonelDokumanPanel'i güncelle/enable-disable yap."""
+        tc_no = self.ui["tc"].text().strip()
+        
+        # Panel yoksa oluştur (TC fark etmeksizin)
+        if not self._dokuman_panel and self._db:
+            self._dokuman_panel = PersonelDokumanPanel(
+                personel_id="",  # Başlangıçta boş
+                db=self._db,
+                sabitler_cache=self._all_sabit,
+                parent=self
+            )
+            self._dokuman_panel_layout.addWidget(self._dokuman_panel)
+        
+        # TC No durumuna göre panel'ı enable/disable et
+        if self._dokuman_panel:
+            if tc_no:
+                # TC No varsa: panel enabled ve entity id'yi güncelle
+                self._dokuman_panel.setEnabled(True)
+                self._dokuman_panel.set_entity_id(tc_no)
+            else:
+                # TC No yoksa: panel disabled
+                self._dokuman_panel.setEnabled(False)
+
+    # ═══════════════════════════════════════════
     #  YARDIMCI WIDGET FABRİKALARI
     # ═══════════════════════════════════════════
 
-    def _make_input(self, label, parent_layout, required=False, placeholder=""):
+    def _make_input(self, label, parent_layout, required=False, placeholder="", stretch=0, auto_format=True):
         container = QWidget()
         container.setStyleSheet("background: transparent;")
         lay = QVBoxLayout(container)
@@ -419,10 +561,15 @@ class PersonelEklePage(QWidget):
         if placeholder:
             inp.setPlaceholderText(placeholder)
         lay.addWidget(inp)
-        parent_layout.addWidget(container)
+        parent_layout.addWidget(container, stretch)
+        
+        # Otomatik formatting uygula (özel alanlar hariç)
+        if auto_format:
+            apply_title_case_formatting(inp)
+        
         return inp
 
-    def _make_combo(self, label, parent_layout, required=False, editable=False):
+    def _make_combo(self, label, parent_layout, required=False, editable=False, stretch=0, auto_format=True):
         container = QWidget()
         container.setStyleSheet("background: transparent;")
         lay = QVBoxLayout(container)
@@ -435,7 +582,14 @@ class PersonelEklePage(QWidget):
         cmb.setStyleSheet(S["combo"])
         cmb.setEditable(editable)
         lay.addWidget(cmb)
-        parent_layout.addWidget(container)
+        parent_layout.addWidget(container, stretch)
+        
+        # Editable combo'lara otomatik formatting ekle
+        if editable and auto_format:
+            line_edit = cmb.lineEdit()
+            if line_edit:
+                apply_title_case_formatting(line_edit)
+        
         return cmb
 
     def _make_date(self, label, parent_layout, required=False):
@@ -460,7 +614,7 @@ class PersonelEklePage(QWidget):
         return de
 
     # Dikey versiyon (eğitim bölümü için)
-    def _make_input_v(self, label, parent_layout, placeholder=""):
+    def _make_input_v(self, label, parent_layout, placeholder="", auto_format=True):
         lbl = QLabel(label)
         lbl.setStyleSheet(S["label"])
         parent_layout.addWidget(lbl)
@@ -469,9 +623,14 @@ class PersonelEklePage(QWidget):
         if placeholder:
             inp.setPlaceholderText(placeholder)
         parent_layout.addWidget(inp)
+        
+        # Otomatik formatting uygula (özel alanlar hariç)
+        if auto_format:
+            apply_title_case_formatting(inp)
+        
         return inp
 
-    def _make_combo_v(self, label, parent_layout, editable=False):
+    def _make_combo_v(self, label, parent_layout, editable=False, auto_format=True):
         lbl = QLabel(label)
         lbl.setStyleSheet(S["label"])
         parent_layout.addWidget(lbl)
@@ -479,6 +638,13 @@ class PersonelEklePage(QWidget):
         cmb.setStyleSheet(S["combo"])
         cmb.setEditable(editable)
         parent_layout.addWidget(cmb)
+        
+        # Editable combo'lara otomatik formatting ekle
+        if editable and auto_format:
+            line_edit = cmb.lineEdit()
+            if line_edit:
+                apply_title_case_formatting(line_edit)
+        
         return cmb
 
     # ═══════════════════════════════════════════
@@ -487,11 +653,11 @@ class PersonelEklePage(QWidget):
 
     def _populate_combos(self):
         """Combobox'ları Sabitler + Personel tablosundan doldurur."""
-        if not self._db:
+        if not self._registry:
             return
 
         try:
-            registry = RepositoryRegistry(self._db)
+            registry = self._registry
 
             # ── Sabitler'den ──
             sabitler = registry.get("Sabitler")
@@ -638,40 +804,29 @@ class PersonelEklePage(QWidget):
             pixmap = QPixmap(path)
             if not pixmap.isNull():
                 self.lbl_resim.setPixmap(
-                    pixmap.scaled(160, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                    pixmap.scaled(160, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
                 )
             self.lbl_resim.setToolTip(os.path.basename(path))
             logger.info(f"Fotoğraf seçildi: {path}")
-
-    def _select_diploma(self, idx):
-        path, _ = QFileDialog.getOpenFileName(
-            self, f"Diploma {idx} Seç", "",
-            "Dosyalar (*.pdf *.jpg *.jpeg *.png);;Tüm Dosyalar (*)"
-        )
-        if path:
-            key = f"Diploma{idx}"
-            self._file_paths[key] = path
-            lbl = self.ui.get(f"diploma_file_lbl{idx}")
-            if lbl:
-                lbl.setText(os.path.basename(path))
-            logger.info(f"Diploma {idx} seçildi: {path}")
 
     def _get_drive_folder_id(self, folder_name):
         """Sabitler'den Drive klasör ID'sini döndürür."""
         return self._drive_folders.get(folder_name, "")
 
     def _upload_files_to_drive(self, tc_no, callback):
-        """Seçili dosyaları Drive'a yükler, bitince callback çağırır."""
-        from database.google.utils import resolve_storage_target
+        """Seçili dosyaları DokumanService ile yükler, bitince callback çağırır."""
         # Yüklenecek dosya yoksa direkt callback
         if not self._file_paths:
             callback()
             return
 
         upload_map = {
-            "Resim":    ("Personel_Resim",   "Resim"),
-            "Diploma1": ("Personel_Diploma",  "Diploma1"),
-            "Diploma2": ("Personel_Diploma",  "Diploma2"),
+            "Resim": {
+                "folder_name": "Personel_Resim",
+                "doc_type": "Personel_Resim",
+                "db_field": "Resim",
+                "belge_turu": "Resim",
+            },
         }
 
         self._pending_uploads = 0
@@ -681,20 +836,32 @@ class PersonelEklePage(QWidget):
         for file_key, file_path in self._file_paths.items():
             if file_key not in upload_map:
                 continue
-            folder_name, db_field = upload_map[file_key]
-            
-            target = resolve_storage_target(self._all_sabit, folder_name)
-            folder_id = target.get("drive_folder_id")
-            offline_folder_name = target.get("offline_folder_name")
-
-            # Dosya adı: TC_alan.uzantı
+            map_info = upload_map[file_key]
             ext = os.path.splitext(file_path)[1]
-            custom_name = f"{tc_no}_{db_field}{ext}"
+            custom_name = f"{tc_no}_{map_info['db_field']}{ext}"
 
+            self._upload_meta[map_info["db_field"]] = {
+                "tc_no": tc_no,
+                "file_path": file_path,
+                "custom_name": custom_name,
+                "folder_name": map_info["folder_name"],
+                "belge_turu": map_info["belge_turu"],
+                "doc_type": map_info["doc_type"],
+            }
+
+            job = {
+                "tc_no": tc_no,
+                "file_path": file_path,
+                "custom_name": custom_name,
+                "folder_name": map_info["folder_name"],
+                "doc_type": map_info["doc_type"],
+                "db_field": map_info["db_field"],
+                "belge_turu": map_info["belge_turu"],
+            }
             self._pending_uploads += 1
-            worker = DriveUploadWorker(file_path, folder_id, custom_name, db_field, offline_folder_name)
-            worker.finished.connect(self._on_upload_finished)
-            worker.error.connect(self._on_upload_error)
+            worker = DokumanUploadWorker(DB_PATH, job)
+            worker.upload_finished.connect(self._on_upload_finished)
+            worker.upload_error.connect(self._on_upload_error)
             self._upload_workers.append(worker)
             worker.start()
 
@@ -707,10 +874,11 @@ class PersonelEklePage(QWidget):
             self.progress.setValue(0)
             self.btn_kaydet.setEnabled(False)
 
-    def _on_upload_finished(self, alan_adi, link):
+    def _on_upload_finished(self, alan_adi, sonuc):
         """Tek dosya yükleme tamamlandı."""
-        self._drive_links[alan_adi] = link
-        logger.info(f"Drive yükleme OK: {alan_adi} → {link}")
+        kayit_linki = sonuc.get("drive_link") or sonuc.get("local_path") or ""
+        self._drive_links[alan_adi] = kayit_linki
+        logger.info(f"Dosya yükleme OK: {alan_adi} → {kayit_linki}")
         self._completed_uploads += 1
         # Progress bar'ı güncelle
         percent = int((self._completed_uploads / self._pending_uploads) * 100)
@@ -746,32 +914,74 @@ class PersonelEklePage(QWidget):
     # ═══════════════════════════════════════════
 
     def _validate_tc_on_change(self):
-        """TC Kimlik No real-time validasyonu."""
+        """TC Kimlik No real-time validasyonu (merkezi validator kullanır)."""
         tc_text = self.ui["tc"].text().strip()
+        
         if not tc_text:
+            # Boş
             self._tc_status.setText("⚠")
-            self._tc_status.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 16px;")
-        elif len(tc_text) == 11 and tc_text.isdigit():
-            # Format doğru, status göster
+            self._tc_status.setProperty("color-role", "muted")
+            self._tc_status.setStyleSheet("font-size: 16px;")
+            self._tc_status.style().unpolish(self._tc_status)
+            self._tc_status.style().polish(self._tc_status)
+        elif validate_tc_kimlik_no(tc_text):
+            # Geçerli
             self._tc_status.setText("✓")
-            self._tc_status.setStyleSheet(f"color: {DarkTheme.STATUS_SUCCESS}; font-size: 16px;")
+            self._tc_status.setProperty("color-role", "ok")
+            self._tc_status.setStyleSheet("font-size: 16px;")
+            self._tc_status.style().unpolish(self._tc_status)
+            self._tc_status.style().polish(self._tc_status)
         else:
-            # Format yanlış
+            # Geçersiz
             self._tc_status.setText("✗")
-            self._tc_status.setStyleSheet(f"color: {DarkTheme.STATUS_ERROR}; font-size: 16px;")
+            self._tc_status.setProperty("color-role", "err")
+            self._tc_status.setStyleSheet("font-size: 16px;")
+            self._tc_status.style().unpolish(self._tc_status)
+            self._tc_status.style().polish(self._tc_status)
 
     def _validate_email_on_change(self):
-        """E-posta real-time validasyonu."""
+        """E-posta real-time validasyonu (merkezi validator kullanır)."""
         email_text = self.ui["eposta"].text().strip()
         if not email_text:
             self._email_status.setText("⚠")
-            self._email_status.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 16px;")
+            self._email_status.setProperty("color-role", "muted")
+            self._email_status.setStyleSheet("font-size: 16px;")
+            self._email_status.style().unpolish(self._email_status)
+            self._email_status.style().polish(self._email_status)
         elif validate_email(email_text):
             self._email_status.setText("✓")
-            self._email_status.setStyleSheet(f"color: {DarkTheme.STATUS_SUCCESS}; font-size: 16px;")
+            self._email_status.setProperty("color-role", "ok")
+            self._email_status.setStyleSheet("font-size: 16px;")
+            self._email_status.style().unpolish(self._email_status)
+            self._email_status.style().polish(self._email_status)
         else:
             self._email_status.setText("✗")
-            self._email_status.setStyleSheet(f"color: {DarkTheme.STATUS_ERROR}; font-size: 16px;")
+            self._email_status.setProperty("color-role", "err")
+            self._email_status.setStyleSheet("font-size: 16px;")
+            self._email_status.style().unpolish(self._email_status)
+            self._email_status.style().polish(self._email_status)
+
+    def _validate_phone_on_change(self):
+        """Telefon numarası real-time validasyonu (merkezi validator kullanır)."""
+        phone_text = self.ui["cep_tel"].text().strip()
+        if not phone_text:
+            self._phone_status.setText("⚠")
+            self._phone_status.setProperty("color-role", "muted")
+            self._phone_status.setStyleSheet("font-size: 16px;")
+            self._phone_status.style().unpolish(self._phone_status)
+            self._phone_status.style().polish(self._phone_status)
+        elif validate_phone_number(phone_text):
+            self._phone_status.setText("✓")
+            self._phone_status.setProperty("color-role", "ok")
+            self._phone_status.setStyleSheet("font-size: 16px;")
+            self._phone_status.style().unpolish(self._phone_status)
+            self._phone_status.style().polish(self._phone_status)
+        else:
+            self._phone_status.setText("✗")
+            self._phone_status.setProperty("color-role", "err")
+            self._phone_status.setStyleSheet("font-size: 16px;")
+            self._phone_status.style().unpolish(self._phone_status)
+            self._phone_status.style().polish(self._phone_status)
 
     # ═══════════════════════════════════════════
     #  KAYDET / İPTAL
@@ -794,6 +1004,10 @@ class PersonelEklePage(QWidget):
         email = self._get_widget_value("eposta")
         if email and not validate_email(email):
             errors.append("E-posta adresi geçersiz")
+        
+        phone = self._get_widget_value("cep_tel")
+        if phone and not validate_phone_number(phone):
+            errors.append("Telefon numarası geçersiz (05XX XXX XX XX formatında olmalı)")
 
         if not self._get_widget_value("hizmet_sinifi"):
             errors.append("Hizmet Sınıfı seçilmeli")
@@ -804,6 +1018,10 @@ class PersonelEklePage(QWidget):
 
     def _on_save(self):
         """Kaydet: validasyon → Drive yükleme → DB kayıt."""
+        if self._action_guard and not self._action_guard.check_and_warn(
+            self, "personel.write", "Personel Kaydetme"
+        ):
+            return
         errors = self._validate()
         if errors:
             QMessageBox.warning(
@@ -827,8 +1045,9 @@ class PersonelEklePage(QWidget):
         # Düzenleme değilse aynı TC kontrolü
         if not self._is_edit:
             try:
-                registry = RepositoryRegistry(self._db)
-                repo = registry.get("Personel")
+                if not self._registry:
+                    return
+                repo = self._registry.get("Personel")
                 existing = repo.get_by_id(tc_no)
                 if existing:
                     QMessageBox.warning(
@@ -850,8 +1069,6 @@ class PersonelEklePage(QWidget):
         # Drive linklerini data'ya ekle
         link_map = {
             "Resim": "Resim",
-            "Diploma1": "Diploma1",
-            "Diploma2": "Diploma2",
         }
         for drive_key, db_col in link_map.items():
             link = self._drive_links.get(drive_key, "")
@@ -859,7 +1076,10 @@ class PersonelEklePage(QWidget):
                 data[db_col] = link
 
         try:
-            registry = RepositoryRegistry(self._db)
+            if not self._registry:
+                QMessageBox.critical(self, "Hata", "Veritabanı bağlantısı bulunamadı.")
+                return
+            registry = self._registry
             repo = registry.get("Personel")
 
             if self._is_edit:
@@ -880,6 +1100,49 @@ class PersonelEklePage(QWidget):
                     logger.info(f"Izin_Bilgi kaydı oluşturuldu: {data['KimlikNo']}")
                 except Exception as e_izin:
                     logger.error(f"Izin_Bilgi oluşturma hatası: {e_izin}")
+                
+                # Yeni personel için kullanıcı hesabı oluştur
+                try:
+                    ad_soyad = data.get("AdSoyad", "")
+                    username = generate_username_from_name(ad_soyad)
+
+                    if username:
+                        # Şifre: kullanıcı adı + "123" (örn: "CKara123")
+                        password = f"{username}123"
+
+                        # Şifreyi hash'le
+                        hasher = PasswordHasher()
+                        password_hash = hasher.hash(password)
+
+                        # Kullanıcı oluştur (must_change_password=True → ilk girişte değiştirmesi istenir)
+                        auth_repo = AuthRepository(self._db)
+                        user_id = auth_repo.create_user(
+                            username=username,
+                            password_hash=password_hash,
+                            is_active=True,
+                            must_change_password=True
+                        )
+
+                        # Varsayılan rol: operator
+                        try:
+                            roles = auth_repo.get_roles() or []
+                            operator_role = next(
+                                (r for r in roles if str(r.get("name", "")).strip().lower() == "operator"),
+                                None,
+                            )
+                            if operator_role and operator_role.get("id"):
+                                auth_repo.assign_role(user_id=user_id, role_id=int(operator_role["id"]))
+                                logger.info(f"Kullanıcıya operator rolü atandı: {username} (ID: {user_id})")
+                            else:
+                                logger.warning("'operator' rolü bulunamadı, kullanıcı rol ataması yapılmadı")
+                        except Exception as e_role:
+                            logger.error(f"Operator rol atama hatası: {e_role}")
+
+                        logger.info(f"Kullanıcı hesabı oluşturuldu: {username} (ID: {user_id})")
+                    else:
+                        logger.warning(f"Personel adından kullanıcı adı oluşturulamadı: {ad_soyad}")
+                except Exception as e_user:
+                    logger.error(f"Kullanıcı hesabı oluşturma hatası: {e_user}")
 
             QMessageBox.information(
                 self, "Başarılı",
@@ -894,6 +1157,5 @@ class PersonelEklePage(QWidget):
             QMessageBox.critical(self, "Hata", f"Kaydetme sırasında hata:\n{e}")
 
     def _on_cancel(self):
-        """İptal — listeye geri dön."""
-        if self._on_saved:
-            self._on_saved()
+        """İptal — form kapanış sinyali emitir."""
+        self.form_closed.emit()

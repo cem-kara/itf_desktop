@@ -1,52 +1,82 @@
-# ui/styles/light_theme.py  ─  REPYS v3 · Medikal Light Tema
+# ui/styles/light_theme.py  ─  REPYS v3 · Açık Tema
 # ═══════════════════════════════════════════════════════════════
-#  Açık mavi palette (medical-grade).
-#  DarkTheme ile aynı attribute yapısı — runtime tema değiştirme için.
+#
+#  v3.1: Renkler artık ui/styles/themes.py LIGHT dict'inden geliyor.
+#  DarkTheme ile birebir aynı attribute isimleri korundu.
+#
 # ═══════════════════════════════════════════════════════════════
+
+from ui.styles.themes import LIGHT as _L
 
 
 class LightTheme:
     """
     Medikal açık mavi light tema.
-    DarkTheme ile aynı attribute isimleri — tema değiştirmede uyumlu.
+    DarkTheme ile birebir aynı attribute sözleşmesi.
+    Tüm değerler ui/styles/themes.py LIGHT dict'inden gelir.
     """
-    # ── Zemin Katmanları ─────────────────────────────────────────
-    BG_PRIMARY   = "#f8fafc"    # Ana zemin — çok açık gri-mavi
-    BG_SECONDARY = "#f1f5f9"    # Panel / kart
-    BG_TERTIARY  = "#e2e8f0"    # İçe gömülü alan, zebra satır
-    BG_ELEVATED  = "#cbd5e1"    # Yükseltilmiş panel, popup
-    BG_HOVER     = "rgba(15,23,42,0.04)"
-    BG_SELECTED  = "rgba(15,23,42,0.08)"
 
-    # ── Kenarlıklar ──────────────────────────────────────────────
-    BORDER_PRIMARY   = "rgba(15,23,42,0.12)"
-    BORDER_SECONDARY = "rgba(15,23,42,0.06)"
-    BORDER_FOCUS     = "#0284c7"
-    BORDER_STRONG    = "rgba(15,23,42,0.20)"
+    # Zemin
+    BG_PRIMARY    = _L["BG_PRIMARY"]
+    BG_SECONDARY  = _L["BG_SECONDARY"]
+    BG_TERTIARY   = _L["BG_TERTIARY"]
+    BG_ELEVATED   = _L["BG_ELEVATED"]
+    BG_DARK       = _L["BG_DARK"]
+    BG_HOVER      = _L["BG_HOVER"]
+    BG_SELECTED   = _L["BG_SELECTED"]
 
-    # ── Metin ────────────────────────────────────────────────────
-    TEXT_PRIMARY   = "#0f172a"   # Çok koyu — siyaha yakın
-    TEXT_SECONDARY = "#475569"   # Gri
-    TEXT_MUTED     = "#94a3b8"   # Açık gri
-    TEXT_DISABLED  = "#cbd5e1"   # Devre dışı
+    # Kenarlıklar
+    BORDER_PRIMARY    = _L["BORDER_PRIMARY"]
+    BORDER_SECONDARY  = _L["BORDER_SECONDARY"]
+    BORDER_STRONG     = _L["BORDER_STRONG"]
+    BORDER_FOCUS      = _L["BORDER_FOCUS"]
 
-    # ── Input ────────────────────────────────────────────────────
-    INPUT_BG           = "#ffffff"
-    INPUT_BORDER       = "rgba(15,23,42,0.10)"
-    INPUT_BORDER_FOCUS = "#0284c7"
+    # Metin
+    TEXT_PRIMARY       = _L["TEXT_PRIMARY"]
+    TEXT_SECONDARY     = _L["TEXT_SECONDARY"]
+    TEXT_MUTED         = _L["TEXT_MUTED"]
+    TEXT_DISABLED      = _L["TEXT_DISABLED"]
+    TEXT_TABLE_HEADER  = _L["TEXT_TABLE_HEADER"]
 
-    # ── Vurgu (Mavi/Cyan) ────────────────────────────────────────
-    ACCENT    = "#0284c7"        # Sky Blue
-    ACCENT2   = "#0ea5e9"        # Lighter Sky Blue
-    ACCENT_BG = "rgba(2,132,199,0.08)"
+    # Input
+    INPUT_BG            = _L["INPUT_BG"]
+    INPUT_BORDER        = _L["INPUT_BORDER"]
+    INPUT_BORDER_FOCUS  = _L["INPUT_BORDER_FOCUS"]
 
-    # ── Butonlar ─────────────────────────────────────────────────
-    BTN_PRIMARY_BG     = "#0284c7"
-    BTN_PRIMARY_TEXT   = "#ffffff"
-    BTN_PRIMARY_HOVER  = "#0ea5e9"
+    # Vurgu
+    ACCENT    = _L["ACCENT"]
+    ACCENT2   = _L["ACCENT2"]
+    ACCENT_BG = _L["ACCENT_BG"]
 
-    # ── Durum Renkleri ───────────────────────────────────────────
-    SUCCESS_BG   = "rgba(34,197,94,0.08)"
-    WARNING_BG   = "rgba(245,158,11,0.08)"
-    ERROR_BG     = "rgba(239,68,68,0.08)"
-    INFO_BG      = "rgba(168,85,247,0.08)"
+    # Butonlar
+    BTN_PRIMARY_BG       = _L["BTN_PRIMARY_BG"]
+    BTN_PRIMARY_TEXT     = _L["BTN_PRIMARY_TEXT"]
+    BTN_PRIMARY_HOVER    = _L["BTN_PRIMARY_HOVER"]
+    BTN_PRIMARY_BORDER   = _L["BTN_PRIMARY_BORDER"]
+    BTN_SECONDARY_BG     = _L["BTN_SECONDARY_BG"]
+    BTN_SECONDARY_TEXT   = _L["BTN_SECONDARY_TEXT"]
+    BTN_SECONDARY_BORDER = _L["BTN_SECONDARY_BORDER"]
+    BTN_SECONDARY_HOVER  = _L["BTN_SECONDARY_HOVER"]
+    BTN_DANGER_BG        = _L["BTN_DANGER_BG"]
+    BTN_DANGER_TEXT      = _L["BTN_DANGER_TEXT"]
+    BTN_DANGER_BORDER    = _L["BTN_DANGER_BORDER"]
+    BTN_DANGER_HOVER     = _L["BTN_DANGER_HOVER"]
+    BTN_SUCCESS_BG       = _L["BTN_SUCCESS_BG"]
+    BTN_SUCCESS_TEXT     = _L["BTN_SUCCESS_TEXT"]
+    BTN_SUCCESS_BORDER   = _L["BTN_SUCCESS_BORDER"]
+    BTN_SUCCESS_HOVER    = _L["BTN_SUCCESS_HOVER"]
+
+    # Durum
+    STATUS_SUCCESS = _L["STATUS_SUCCESS"]
+    STATUS_WARNING = _L["STATUS_WARNING"]
+    STATUS_ERROR   = _L["STATUS_ERROR"]
+    STATUS_INFO    = _L["STATUS_INFO"]
+
+    # Diğer
+    MONOSPACE = _L["MONOSPACE"]
+    RKE_PURP  = _L["RKE_PURP"]
+
+    # Badge RGBA tuple'ları (DarkTheme ile aynı)
+    STATE_ACTIVE  = (16,  185, 129, 35)
+    STATE_PASSIVE = (239, 68,  68,  35)
+    STATE_LEAVE   = (245, 158, 11,  35)

@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.logger import logger
-from database.repository_registry import RepositoryRegistry
+from core.di import get_cihaz_service as _get_cihaz_service
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
@@ -25,10 +25,11 @@ class CihazEklePage(QWidget):
     saved = Signal(dict)
     canceled = Signal()
 
-    def __init__(self, db=None, on_saved=None, parent=None):
+    def __init__(self, db=None, on_saved=None, action_guard=None, parent=None):
         super().__init__(parent)
         self._db = db
         self._on_saved = on_saved
+        self._action_guard = action_guard
 
         self._fields: dict[str, Any] = {}
         self._abbr_maps = {
@@ -54,12 +55,17 @@ class CihazEklePage(QWidget):
 
         header = QFrame()
         header.setFixedHeight(52)
-        header.setStyleSheet(f"background:{C.BG_SECONDARY}; border-bottom:1px solid {C.BORDER_PRIMARY};")
+        header.setProperty("bg-role", "panel")
+        header.style().unpolish(header)
+        header.style().polish(header)
         hl = QHBoxLayout(header)
         hl.setContentsMargins(16, 0, 16, 0)
 
         title = QLabel("Cihaz Ekle")
-        title.setStyleSheet(f"font-size:14px; font-weight:700; color:{C.TEXT_PRIMARY}; background:transparent;")
+        title.setProperty("color-role", "primary")
+        title.setStyleSheet("font-size: 14px; font-weight: 700; background: transparent;")
+        title.style().unpolish(title)
+        title.style().polish(title)
         hl.addWidget(title)
         hl.addStretch()
         root.addWidget(header)
@@ -153,7 +159,10 @@ class CihazEklePage(QWidget):
         # Tab 1 Footer: Sadece "Kaydet & ÜTS Sorgula"
         footer1 = QFrame()
         footer1.setFixedHeight(64)
-        footer1.setStyleSheet(f"background:{C.BG_SECONDARY}; border-top:1px solid {C.BORDER_PRIMARY};")
+        footer1.setProperty("bg-role", "panel")
+        footer1.setProperty("border-role", "top")
+        footer1.style().unpolish(footer1)
+        footer1.style().polish(footer1)
         fl1 = QHBoxLayout(footer1)
         fl1.setContentsMargins(16, 0, 16, 0)
         fl1.addStretch()
@@ -162,6 +171,8 @@ class CihazEklePage(QWidget):
         self.btn_save.setStyleSheet(S["action_btn"])
         IconRenderer.set_button_icon(self.btn_save, "save", color=C.BTN_PRIMARY_TEXT, size=16)
         self.btn_save.clicked.connect(self._save)
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(self.btn_save, "cihaz.write")
         fl1.addWidget(self.btn_save)
 
         btn_cancel1 = QPushButton("İptal")
@@ -187,7 +198,10 @@ class CihazEklePage(QWidget):
         # Tab 2 Footer: Sadece "İptal"
         footer2 = QFrame()
         footer2.setFixedHeight(64)
-        footer2.setStyleSheet(f"background:{C.BG_SECONDARY}; border-top:1px solid {C.BORDER_PRIMARY};")
+        footer2.setProperty("bg-role", "panel")
+        footer2.setProperty("border-role", "top")
+        footer2.style().unpolish(footer2)
+        footer2.style().polish(footer2)
         fl2 = QHBoxLayout(footer2)
         fl2.setContentsMargins(16, 0, 16, 0)
         fl2.addStretch()
@@ -212,7 +226,10 @@ class CihazEklePage(QWidget):
 
         footer3 = QFrame()
         footer3.setFixedHeight(64)
-        footer3.setStyleSheet(f"background:{C.BG_SECONDARY}; border-top:1px solid {C.BORDER_PRIMARY};")
+        footer3.setProperty("bg-role", "panel")
+        footer3.setProperty("border-role", "top")
+        footer3.style().unpolish(footer3)
+        footer3.style().polish(footer3)
         fl3 = QHBoxLayout(footer3)
         fl3.setContentsMargins(16, 0, 16, 0)
         fl3.addStretch()
@@ -309,9 +326,8 @@ class CihazEklePage(QWidget):
         if not self._db:
             return
         try:
-            registry = RepositoryRegistry(self._db)
-            sabitler = registry.get("Sabitler").get_all()
-
+            svc = _get_cihaz_service(self._db)
+            sabitler = svc.get_sabitler()
             grouped: dict[str, list[str]] = {}
             for row in sabitler:
                 kod = str(row.get("Kod", "")).strip()
@@ -320,7 +336,6 @@ class CihazEklePage(QWidget):
                 if not kod or not eleman:
                     continue
                 grouped.setdefault(kod, []).append(eleman)
-
                 if kod in self._abbr_maps and aciklama:
                     self._abbr_maps[kod][eleman] = aciklama
 
@@ -346,17 +361,7 @@ class CihazEklePage(QWidget):
 
     def _calc_next_sequence(self) -> int:
         try:
-            registry = RepositoryRegistry(self._db)
-            cihazlar = registry.get("Cihazlar").get_all()
-            max_id = 0
-            for row in cihazlar:
-                cid = str(row.get("Cihazid", "")).strip()
-                digits = re.sub(r"\D", "", cid)
-                if digits:
-                    num = int(digits)
-                    if 0 < num < 900000 and num > max_id:
-                        max_id = num
-            return max_id + 1 if max_id else 1
+            return _get_cihaz_service(self._db).get_next_cihaz_sequence()
         except Exception as e:
             logger.debug(f"Cihaz ID hesaplama hatasi: {e}")
             return 1
@@ -377,6 +382,10 @@ class CihazEklePage(QWidget):
     # ─── Save ──────────────────────────────────────────
 
     def _save(self):
+        if self._action_guard and not self._action_guard.check_and_warn(
+            self, "cihaz.write", "Cihaz Kaydetme"
+        ):
+            return
         cihaz_id = self._get_text("Cihazid")
         marka = self._get_text("Marka")
         birim = self._get_text("Birim")
@@ -388,10 +397,8 @@ class CihazEklePage(QWidget):
         data = self._collect_form_data()
 
         try:
-            registry = RepositoryRegistry(self._db)
-            repo = registry.get("Cihazlar")
-
-            repo.insert(data)
+            svc = _get_cihaz_service(self._db)
+            svc.cihaz_ekle(data)
             
             # Cihaz başarıyla kaydedildi - ÜTS paneline cihaz_id ver
             if self._teknik_uts_panel is not None:
@@ -549,10 +556,10 @@ class CihazEklePage(QWidget):
             "Operasyonu İptal Et",
             "Emin misiniz? Kaydedilen cihaz verisi kalmayacak.\n"
             "ÜTS sorgulması iptal edilecek.",
-            QMessageBox.Yes | QMessageBox.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             # Tab 1'e dön
             self._tabs.setCurrentIndex(0)
             

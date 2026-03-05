@@ -1,139 +1,150 @@
-# ui/theme_manager.py  ─  REPYS v3 · Medikal Dark-Blue Tema
-from __future__ import annotations
+# ui/theme_manager.py  ─  REPYS v3.1 · Merkezi Tema Yöneticisi
+# ═══════════════════════════════════════════════════════════════
+#
+#  Tek sorumluluk: QApplication'a QSS + QPalette uygula,
+#  tercihi ayarlar.json'a kaydet.
+#
+#  Kullanım:
+#     ThemeManager.instance().apply_app_theme(app)   # başlangıçta
+#     ThemeManager.instance().set_theme(app, "light")  # değişiklikte
+#
+# ═══════════════════════════════════════════════════════════════
+
 from pathlib import Path
 
-from PySide6.QtCore import QObject
-from PySide6.QtWidgets import QApplication, QWidget, QDateEdit
-from PySide6.QtGui import QColor, QPalette
+from PySide6.QtCore import QObject, Signal
+from PySide6.QtGui import QPalette, QColor
+from PySide6.QtWidgets import QApplication
 
+from core import settings
 from core.logger import logger
-from ui.styles import Colors, DarkTheme, ComponentStyles
-from ui.styles.components import STYLES
+from ui.styles.themes import get_tokens
+
+_QSS_PATH = Path(__file__).parent / "theme_template.qss"
 
 
 class ThemeManager(QObject):
-    """Merkezi Tema Yöneticisi — Medikal Dark-Blue (v3)."""
+    """
+    Tema uygulama ve değiştirme yöneticisi.
 
+    Sinyaller:
+        theme_changed(str) — "dark" veya "light"
+    """
+
+    theme_changed = Signal(str)
     _instance: "ThemeManager | None" = None
 
-    def __init__(self) -> None:
-        super().__init__()
-        self._theme_template_path = Path(__file__).with_name("theme_template.qss")
-        self._stylesheet_cache: str | None = None
-
+    # ── Singleton ────────────────────────────────────────────
     @classmethod
     def instance(cls) -> "ThemeManager":
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
 
-    def _get_color_map(self) -> dict[str, str]:
-        """Tema placeholder'larını gerçek renklerle eşleştirir."""
-        return {
-            "BG_PRIMARY":     DarkTheme.BG_PRIMARY,
-            "BG_SECONDARY":   DarkTheme.BG_SECONDARY,
-            "BG_TERTIARY":    DarkTheme.BG_TERTIARY,
-            "BG_ELEVATED":    DarkTheme.BG_ELEVATED,
-            "BG_DARK":        Colors.NAVY_950,
-            "BORDER_PRIMARY": DarkTheme.BORDER_PRIMARY,
-            "TEXT_PRIMARY":   DarkTheme.TEXT_PRIMARY,
-            "TEXT_SECONDARY": DarkTheme.TEXT_SECONDARY,
-            "TEXT_MUTED":     DarkTheme.TEXT_MUTED,
-            "TEXT_DISABLED":  DarkTheme.TEXT_DISABLED,
-            "ACCENT":         DarkTheme.ACCENT,
-            "ACCENT2":        DarkTheme.ACCENT2,
-        }
+    def __init__(self):
+        super().__init__()
+        self._current = settings.get("theme", "dark")
 
-    def load_stylesheet(self) -> str:
+    # ── Public API ───────────────────────────────────────────
+    def apply_app_theme(self, app: QApplication) -> None:
+        """Başlangıçta çağrılır — ayarlar.json'daki temayı uygular."""
+        app.setStyle("Fusion")
+        self._apply(app, self._current)
+        logger.debug(f"Başlangıç teması uygulandı: {self._current}")
+
+    def set_theme(self, app: QApplication, name: str) -> bool:
         """
-        Şablon dosyasını yükler ve renklerle dinamik olarak doldurur.
-        
-        Şablon syntax: {PLACEHOLDER_NAME}
-        Örnek: color: {TEXT_PRIMARY};
+        Runtime tema değişimi.
+
+        Args:
+            app:  QApplication örneği
+            name: "dark" veya "light"
+
+        Returns:
+            True (başarılı) | False (hata)
         """
-        if self._stylesheet_cache is not None:
-            return self._stylesheet_cache
+        name = name.lower()
+        if name not in ("dark", "light"):
+            logger.error(f"Geçersiz tema adı: {name}")
+            return False
 
         try:
-            template_content = self._theme_template_path.read_text(encoding="utf-8")
+            self._apply(app, name)
+            self._current = name
+            settings.set("theme", name)
+            self.theme_changed.emit(name)
+            logger.info(f"Tema değiştirildi: {name}")
+            return True
+        except Exception as e:
+            logger.error(f"Tema değişikliği hatası: {e}", exc_info=True)
+            return False
+
+    def current_theme(self) -> str:
+        """Aktif tema adını döndür."""
+        return self._current
+
+    # ── İç implementasyon ────────────────────────────────────
+    def _apply(self, app: QApplication, name: str) -> None:
+        """QSS ve QPalette'i uygula."""
+        tokens = get_tokens(name)
+
+        # QSS
+        try:
+            template = _QSS_PATH.read_text(encoding="utf-8")
         except FileNotFoundError:
-            logger.warning("Tema şablonu bulunamadı: %s", self._theme_template_path)
-            self._stylesheet_cache = ""
-            return self._stylesheet_cache
+            logger.error(f"theme_template.qss bulunamadı: {_QSS_PATH}")
+            template = ""
 
-        # Renk haritasını al
-        color_map = self._get_color_map()
+        qss = template
+        for key, val in tokens.items():
+            qss = qss.replace(f"{{{key}}}", val)
+        app.setStyleSheet(qss)
 
-        # Placeholder'ları değiştir
-        stylesheet = template_content
-        for placeholder, color in color_map.items():
-            stylesheet = stylesheet.replace(f"{{{placeholder}}}", color)
-
-        self._stylesheet_cache = stylesheet
-        return self._stylesheet_cache
-
-    def apply_app_theme(self, app: QApplication) -> None:
-        """Uygulamaya medikal dark-blue tema uygular."""
-        app.setStyle("Fusion")
-
-        p = app.palette()
-        p.setColor(QPalette.Window,          QColor(DarkTheme.BG_PRIMARY))
-        p.setColor(QPalette.WindowText,      QColor(DarkTheme.TEXT_PRIMARY))
-        p.setColor(QPalette.Base,            QColor(DarkTheme.BG_TERTIARY))
-        p.setColor(QPalette.AlternateBase,   QColor(DarkTheme.BG_SECONDARY))
-        p.setColor(QPalette.Text,            QColor(DarkTheme.TEXT_PRIMARY))
-        p.setColor(QPalette.Button,          QColor(DarkTheme.BG_SECONDARY))
-        p.setColor(QPalette.ButtonText,      QColor(DarkTheme.TEXT_PRIMARY))
-        p.setColor(QPalette.ToolTipBase,     QColor(DarkTheme.BG_ELEVATED))
-        p.setColor(QPalette.ToolTipText,     QColor(DarkTheme.TEXT_PRIMARY))
-        p.setColor(QPalette.Highlight,       QColor(DarkTheme.ACCENT))
-        p.setColor(QPalette.HighlightedText, QColor(Colors.NAVY_950))
-        p.setColor(QPalette.Link,            QColor(DarkTheme.ACCENT2))
-        p.setColor(QPalette.PlaceholderText, QColor(DarkTheme.TEXT_MUTED))
-        p.setColor(QPalette.Mid,             QColor(DarkTheme.BG_ELEVATED))
-        p.setColor(QPalette.Dark,            QColor(Colors.NAVY_950))
-        p.setColor(QPalette.Light,           QColor(DarkTheme.BG_TERTIARY))
+        # QPalette
+        p = QPalette()
+        p.setColor(QPalette.Window,          QColor(tokens["BG_PRIMARY"]))
+        p.setColor(QPalette.WindowText,      QColor(tokens["TEXT_PRIMARY"]))
+        p.setColor(QPalette.Base,            QColor(tokens["BG_TERTIARY"]))
+        p.setColor(QPalette.AlternateBase,   QColor(tokens["BG_SECONDARY"]))
+        p.setColor(QPalette.Text,            QColor(tokens["TEXT_PRIMARY"]))
+        p.setColor(QPalette.Button,          QColor(tokens["BG_SECONDARY"]))
+        p.setColor(QPalette.ButtonText,      QColor(tokens["TEXT_PRIMARY"]))
+        p.setColor(QPalette.ToolTipBase,     QColor(tokens["BG_ELEVATED"]))
+        p.setColor(QPalette.ToolTipText,     QColor(tokens["TEXT_PRIMARY"]))
+        p.setColor(QPalette.Highlight,       QColor(tokens["ACCENT"]))
+        p.setColor(QPalette.HighlightedText,
+                   QColor("#ffffff" if name == "light" else tokens["BG_DARK"]))
+        p.setColor(QPalette.Link,            QColor(tokens["ACCENT2"]))
+        p.setColor(QPalette.PlaceholderText, QColor(tokens["TEXT_MUTED"]))
+        p.setColor(QPalette.Mid,             QColor(tokens["BG_ELEVATED"]))
+        p.setColor(QPalette.Dark,
+                   QColor(tokens["BORDER_PRIMARY"] if name == "light" else tokens["BG_DARK"]))
+        p.setColor(QPalette.Light,           QColor(tokens["BG_TERTIARY"]))
         app.setPalette(p)
 
-        app.setStyleSheet(self.load_stylesheet())
+    # ── Geriye dönük uyumluluk ────────────────────────────────
+    def load_stylesheet(self, theme_class=None) -> str:
+        """
+        Eski kodlar için — load_stylesheet() çağrıları bozulmasın.
+        theme_class verilmese aktif temayı kullanır.
+        """
+        name = self._current
+        if theme_class is not None:
+            from ui.styles.light_theme import LightTheme
+            name = "light" if theme_class is LightTheme else "dark"
+        tokens = get_tokens(name)
+        try:
+            template = _QSS_PATH.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            return ""
+        for key, val in tokens.items():
+            template = template.replace(f"{{{key}}}", val)
+        return template
 
-    # ── Yardımcı metodlar (mevcut API korundu) ──────────────────
-    @staticmethod
-    def get_component_styles(component_name: str) -> str:
-        return STYLES.get(component_name, "")
-
-    @staticmethod
-    def get_all_component_styles() -> dict:
-        return STYLES.copy()
-
-    @staticmethod
-    def get_color(color_name: str) -> str:
-        return getattr(Colors, color_name, "#ffffff")
-
-    @staticmethod
-    def get_dark_theme_color(color_name: str) -> str:
-        return getattr(DarkTheme, color_name, "#ffffff")
-
-    @staticmethod
-    def get_status_color(status: str) -> QColor:
-        r, g, b, a = ComponentStyles.get_status_color(status)
-        return QColor(r, g, b, a)
-
-    @staticmethod
-    def get_status_text_color(status: str) -> str:
-        return ComponentStyles.get_status_text_color(status)
-
-    @staticmethod
-    def set_variant(widget: QWidget, variant: str) -> None:
-        widget.setProperty("variant", variant)
-        widget.style().unpolish(widget)
-        widget.style().polish(widget)
-
-    @staticmethod
-    def setup_calendar_popup(date_edit: QDateEdit) -> None:
-        cal = date_edit.calendarWidget()
-        cal.setMinimumWidth(300)
-        cal.setMinimumHeight(200)
-        from ui.styles.components import ComponentStyles
-        cal.setStyleSheet(ComponentStyles.CALENDAR)
-        cal.setVerticalHeaderFormat(cal.VerticalHeaderFormat.NoVerticalHeader)
+    def refresh_theme(self, app: QApplication | None = None) -> None:
+        """Mevcut temayı yeniden uygula (cache sıfırlama)."""
+        if app is None:
+            from PySide6.QtWidgets import QApplication
+            app = QApplication.instance()
+        if app:
+            self._apply(app, self._current)

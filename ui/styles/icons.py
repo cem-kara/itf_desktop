@@ -415,6 +415,14 @@ _SVG_PATHS: dict[str, str] = {
         <polyline points="6,9 12,15 18,9" stroke-linecap="round" stroke-linejoin="round"/>
     """,
 
+    "chevron_up": """
+        <polyline points="6,15 12,9 18,15" stroke-linecap="round" stroke-linejoin="round"/>
+    """,
+
+    "chevron_left": """
+        <polyline points="15,18 9,12 15,6" stroke-linecap="round" stroke-linejoin="round"/>
+    """,
+
     "chevron_right": """
         <polyline points="9,18 15,12 9,6" stroke-linecap="round" stroke-linejoin="round"/>
     """,
@@ -642,6 +650,54 @@ class Icons:
     def available(cls) -> list[str]:
         """Kaytl tm ikon isimlerini dndrr."""
         return sorted(_SVG_PATHS.keys())
+
+    # SVG dosya önbelleği — diske yazılan dosya yolları
+    _qss_file_cache: dict[tuple, str] = {}
+
+    @classmethod
+    def qss_url(
+        cls,
+        name:  str,
+        color: str = DEFAULT_COLOR,
+        size:  int = 12,
+    ) -> str:
+        """
+        QSS içinde  image: url(...)  olarak kullanılmak üzere
+        SVG içeriğini diske yazar ve dosya yolunu döndürür.
+
+        Qt QSS motoru data: URI'yi desteklemez; gerçek dosya
+        yolu gerektirir. SVG'ler geçici klasöre yazılır ve
+        uygulama boyunca önbellekte tutulur.
+
+        Kullanım — components.py içinde f-string içinde çağrılır:
+            QComboBox::down-arrow {{
+                image: url("{Icons.qss_url("chevron_down", C.TEXT_SECONDARY, 12)}");
+                width: 12px; height: 12px;
+            }}
+        """
+        import pathlib, tempfile
+        key = (name, color, size)
+        if key in cls._qss_file_cache:
+            return cls._qss_file_cache[key]
+
+        # Geçici dizin — uygulama kapanana kadar kalır
+        icon_dir = pathlib.Path(tempfile.gettempdir()) / "repys_qss_icons"
+        icon_dir.mkdir(parents=True, exist_ok=True)
+
+        # Benzersiz dosya adı: isim + renk hash + boyut
+        safe_color = color.lstrip("#")
+        fname      = f"{name}_{safe_color}_{size}.svg"
+        fpath      = icon_dir / fname
+
+        if not fpath.exists():
+            paths = _SVG_PATHS.get(name, '<circle cx="12" cy="12" r="8"/>')
+            svg   = _build_svg(paths, color, size)
+            fpath.write_text(svg, encoding="utf-8")
+
+        # Qt QSS: forward slash kullan (Windows'ta da çalışır)
+        url = fpath.as_posix()
+        cls._qss_file_cache[key] = url
+        return url
 
     @classmethod
     def clear_cache(cls) -> None:

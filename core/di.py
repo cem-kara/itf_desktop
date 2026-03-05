@@ -1,6 +1,42 @@
 from database.repository_registry import RepositoryRegistry
 from database.cloud_adapter import get_cloud_adapter as _get_cloud_adapter
 
+from core.auth.auth_service import AuthService
+from core.auth.authorization_service import AuthorizationService
+from core.auth.password_hasher import PasswordHasher
+from core.auth.session_context import SessionContext
+
+# ── Service factory'leri ────────────────────────────────────────
+# Her çağrıda registry üzerinden taze servis döner.
+# UI'da:
+#   from core.di import get_cihaz_service
+#   svc = get_cihaz_service(self._db)
+# ────────────────────────────────────────────────────────────────
+
+def get_cihaz_service(db):
+    from core.services.cihaz_service import CihazService
+    return CihazService(get_registry(db))
+
+def get_rke_service(db):
+    from core.services.rke_service import RkeService
+    return RkeService(get_registry(db))
+
+def get_saglik_service(db):
+    from core.services.saglik_service import SaglikService
+    return SaglikService(get_registry(db))
+
+def get_fhsz_service(db):
+    from core.services.fhsz_service import FhszService
+    return FhszService(get_registry(db))
+
+def get_personel_service(db):
+    from core.services.personel_service import PersonelService
+    return PersonelService(get_registry(db))
+
+def get_dashboard_service(db):
+    from core.services.dashboard_service import DashboardService
+    return DashboardService(get_registry(db))
+
 
 _fallback_registry_cache = {}
 
@@ -31,6 +67,17 @@ def get_registry(db):
 
 def get_cloud_adapter(mode=None):
     """
-    Uygulama çalışma moduna göre cloud adapter döndürür.
+    Uygulama calisma moduna gore cloud adapter dondurur.
     """
     return _get_cloud_adapter(mode=mode)
+
+
+def get_auth_services(db):
+    """
+    Auth servislerini ortak sekilde kurar.
+    """
+    session_context = SessionContext()
+    hasher = PasswordHasher()
+    auth_service = AuthService(db=db, hasher=hasher, session=session_context)
+    authorization_service = AuthorizationService(db)
+    return auth_service, authorization_service, session_context

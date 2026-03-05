@@ -3,10 +3,12 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QGridLayout,
     QGroupBox, QScrollArea, QTableView, QHeaderView
 )
-from PySide6.QtCore import Qt, QDate, QAbstractTableModel, QModelIndex
+from PySide6.QtCore import Qt, QDate, QModelIndex
+from ui.components.base_table_model import BaseTableModel
+from core.di import get_registry
 from core.logger import logger
 from ui.styles.components import STYLES as S
-from datetime import datetime, timedelta, date
+# datetime artık BaseTableModel içinde
 
 # İzin Listesi Tablo sütunları
 IZIN_COLUMNS = [
@@ -17,69 +19,20 @@ IZIN_COLUMNS = [
     ("Aciklama",        "Açıklama",         200),
 ]
 
-class RecentLeaveTableModel(QAbstractTableModel):
+class RecentLeaveTableModel(BaseTableModel):
     def __init__(self, data=None, parent=None):
-        super().__init__(parent)
-        self._data = data or []
-        self._keys = [c[0] for c in IZIN_COLUMNS]
-        self._headers = [c[1] for c in IZIN_COLUMNS]
+        super().__init__(IZIN_COLUMNS, data, parent)
 
-    def rowCount(self, parent=QModelIndex()):
-        return len(self._data)
+    def _display(self, key, row):
+        val = row.get(key, "")
+        if "Tarihi" in key:
+            return self._fmt_date(val, "-")
+        return str(val) if val else ""
 
-    def columnCount(self, parent=QModelIndex()):
-        return len(IZIN_COLUMNS)
-
-    def data(self, index, role=Qt.DisplayRole):
-        if not index.isValid():
-            return None
-        row = self._data[index.row()]
-        col_key = self._keys[index.column()]
-        if role == Qt.DisplayRole:
-            value = row.get(col_key, "")
-            # Tarih formatlamasını _fmt_date fonksiyonuna bırakalım.
-            if "Tarihi" in col_key:
-                return self._fmt_date(value)
-            return str(value)
-        if role == Qt.TextAlignmentRole:
-            if col_key == "GunSayisi":
-                return Qt.AlignCenter
-            if "Tarihi" in col_key:
-                return Qt.AlignCenter
-            return Qt.AlignVCenter | Qt.AlignLeft
-        return None
-
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
-            return self._headers[section]
-        return None
-
-    def set_data(self, data):
-        self.beginResetModel()
-        self._data = data or []
-        self.endResetModel()
-
-    def _fmt_date(self, val):
-        if not val: return "-"
-        try:
-            dt = None
-            if isinstance(val, (datetime, date)):
-                dt = val
-            elif isinstance(val, QDate):
-                dt = val.toPython()
-            else:
-                val_str = str(val).strip()
-                if ' ' in val_str:
-                    val_str = val_str.split(' ')[0]
-                if '-' in val_str:
-                    dt = datetime.strptime(val_str, "%Y-%m-%d")
-
-            if dt:
-                return dt.strftime("%d.%m.%Y")
-
-        except Exception as e:
-            logger.warning(f"Tarih formatlama hatası: {val} - {e}")
-        return str(val)
+    def _align(self, key):
+        if key in ("GunSayisi",) or "Tarihi" in key:
+            return Qt.AlignmentFlag.AlignCenter
+        return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
 
 class PersonelIzinPanel(QWidget):
@@ -165,8 +118,8 @@ class PersonelIzinPanel(QWidget):
         self._leave_table_view.setStyleSheet(S["table"])
         self._leave_table_view.verticalHeader().setVisible(False)
         self._leave_table_view.setEditTriggers(QTableView.NoEditTriggers)
-        self._leave_table_view.setSelectionBehavior(QTableView.SelectRows)
-        self._leave_table_view.setSelectionMode(QTableView.SingleSelection)
+        self._leave_table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self._leave_table_view.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self._leave_table_view.setAlternatingRowColors(True)
 
         header = self._leave_table_view.horizontalHeader()
@@ -174,9 +127,9 @@ class PersonelIzinPanel(QWidget):
         # Son sütun (Açıklama) kalan alanı dolduracak şekilde genişler.
         for i, col_info in enumerate(IZIN_COLUMNS):
             width = col_info[2]
-            header.setSectionResizeMode(i, QHeaderView.Interactive)
+            header.setSectionResizeMode(i, QHeaderView.ResizeMode.Interactive)
             self._leave_table_view.setColumnWidth(i, width)
-        header.setSectionResizeMode(len(IZIN_COLUMNS) - 1, QHeaderView.Stretch)
+        header.setSectionResizeMode(len(IZIN_COLUMNS) - 1, QHeaderView.ResizeMode.Stretch)
         
         v_recent_leaves.addWidget(self._leave_table_view)
         main_layout.addWidget(grp_recent_leaves)
@@ -188,7 +141,7 @@ class PersonelIzinPanel(QWidget):
         lbl.setStyleSheet(S["stat_label"])
         grid.addWidget(lbl, row, 0)
         val = QLabel("—")
-        val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        val.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         val.setStyleSheet(S[style_key])
         grid.addWidget(val, row, 1)
         return val
@@ -198,8 +151,7 @@ class PersonelIzinPanel(QWidget):
             return
 
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self.db)
+            registry = get_registry(self.db)
 
             # İzin Bilgisi
             izin_repo = registry.get("Izin_Bilgi")

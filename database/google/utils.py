@@ -134,6 +134,12 @@ TABLE_TO_SHEET_MAP = {
     # sabit vt
     "Sabitler":         ("sabit", "Sabitler"),
     "Tatiller":         ("sabit", "Tatiller"),
+
+    # ortak vt — belgeler/dokümanlar
+    # NOT: Google Sheets'te "itf_ortak_vt" adlı bir spreadsheet ve
+    # içinde "Dokumanlar" adlı bir sayfa oluşturulmalıdır.
+    # DB_FALLBACK_MAP'e de "ortak" → "itf_ortak_vt" ekle.
+    "Dokumanlar":       ("ortak", "Dokumanlar"),
 }
 
 
@@ -143,5 +149,6 @@ DB_FALLBACK_MAP = {
     'sabit':    'itf_sabit_vt',
     'cihaz':    'itf_cihaz_vt',
     'user':     'itf_user_vt',
-    'rke':      'itf_rke_vt'
+    'rke':      'itf_rke_vt',
+    'ortak':    'itf_ortak_vt',   # Dokumanlar tablosu için
 }

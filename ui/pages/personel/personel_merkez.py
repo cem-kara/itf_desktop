@@ -19,10 +19,10 @@ from ui.styles.icons import IconRenderer, Icons
 from ui.pages.personel.components.personel_ozet_servisi import personel_ozet_getir
 from core.logger import logger
 from ui.pages.personel.components.personel_overview_panel import PersonelOverviewPanel
+from ui.pages.personel.components.personel_dokuman_panel import PersonelDokumanPanel
 from ui.pages.personel.components.personel_izin_panel import PersonelIzinPanel
 from ui.pages.personel.components.personel_saglik_panel import PersonelSaglikPanel
 from ui.pages.personel.components.hizli_izin_giris import HizliIzinGirisDialog
-from ui.pages.personel.components.hizli_saglik_giris import HizliSaglikGirisDialog
 
 C = DarkTheme
 
@@ -31,6 +31,7 @@ TABS = [
     ("GENEL",   "Genel Bakış"),
     ("IZIN",    "İzinler"),
     ("SAGLIK",  "Sağlık"),
+    ("DOKUMAN", "Belgeler"),
     ("AYRILIS", "İşten Ayrılış"),
 ]
 
@@ -59,7 +60,9 @@ class PersonelMerkezPage(QWidget):
     # ═══════════════════════════════════════════════════
 
     def _setup_ui(self):
-        self.setStyleSheet(STYLES["page"])
+        self.setProperty("bg-role", "page")
+        self.style().unpolish(self)
+        self.style().polish(self)
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
@@ -98,8 +101,10 @@ class PersonelMerkezPage(QWidget):
         top_lay.setSpacing(10)
 
         btn_back = QPushButton(" Listeye")
-        btn_back.setCursor(QCursor(Qt.PointingHandCursor))
-        btn_back.setStyleSheet(STYLES["back_btn"])
+        btn_back.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        btn_back.setProperty("style-role", "secondary")
+        btn_back.style().unpolish(btn_back)
+        btn_back.style().polish(btn_back)
         IconRenderer.set_button_icon(btn_back, "arrow_left", color=C.TEXT_SECONDARY, size=14)
         btn_back.setIconSize(QSize(14, 14))
         btn_back.clicked.connect(self.kapat_istegi.emit)
@@ -109,7 +114,7 @@ class PersonelMerkezPage(QWidget):
         # Avatar
         self.lbl_avatar = QLabel()
         self.lbl_avatar.setFixedSize(34, 34)
-        self.lbl_avatar.setAlignment(Qt.AlignCenter)
+        self.lbl_avatar.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_avatar.setStyleSheet(
             f"background:{C.BG_TERTIARY}; border-radius:8px;"
             f"font-size:13px; font-weight:700; color:{C.TEXT_SECONDARY};"
@@ -124,7 +129,9 @@ class PersonelMerkezPage(QWidget):
             f"font-size:14px; font-weight:600; color:{C.TEXT_PRIMARY}; background:transparent;"
         )
         self.lbl_detay = QLabel("…")
-        self.lbl_detay.setStyleSheet(STYLES["info_label"])
+        self.lbl_detay.setProperty("style-role", "info")
+        self.lbl_detay.style().unpolish(self.lbl_detay)
+        self.lbl_detay.style().polish(self.lbl_detay)
         info_lay.addWidget(self.lbl_ad)
         info_lay.addWidget(self.lbl_detay)
         top_lay.addLayout(info_lay)
@@ -136,27 +143,21 @@ class PersonelMerkezPage(QWidget):
 
         top_lay.addStretch()
 
-        # İzin / Muayene header butonları
+        # İzin header butonu
         self.btn_izin_ekle = QPushButton(" İzin Gir")
-        self.btn_izin_ekle.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_izin_ekle.setStyleSheet(STYLES["refresh_btn"])
+        self.btn_izin_ekle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_izin_ekle.setProperty("style-role", "refresh")
+        self.btn_izin_ekle.style().unpolish(self.btn_izin_ekle)
+        self.btn_izin_ekle.style().polish(self.btn_izin_ekle)
         IconRenderer.set_button_icon(self.btn_izin_ekle, "calendar", color=C.TEXT_SECONDARY, size=14)
         self.btn_izin_ekle.setIconSize(QSize(14, 14))
         self.btn_izin_ekle.clicked.connect(lambda: self._toggle_form("IZIN"))
         top_lay.addWidget(self.btn_izin_ekle)
 
-        self.btn_muayene_ekle = QPushButton(" Muayene")
-        self.btn_muayene_ekle.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_muayene_ekle.setStyleSheet(STYLES["refresh_btn"])
-        IconRenderer.set_button_icon(self.btn_muayene_ekle, "activity", color=C.TEXT_SECONDARY, size=14)
-        self.btn_muayene_ekle.setIconSize(QSize(14, 14))
-        self.btn_muayene_ekle.clicked.connect(lambda: self._toggle_form("SAGLIK"))
-        top_lay.addWidget(self.btn_muayene_ekle)
-
         # Kapat (X)
         btn_kapat = QPushButton()
         btn_kapat.setFixedSize(28, 28)
-        btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_kapat.setToolTip("Kapat")
         btn_kapat.setStyleSheet("background:transparent; border:none;")
         btn_kapat.clicked.connect(self.kapat_istegi.emit)
@@ -171,14 +172,17 @@ class PersonelMerkezPage(QWidget):
         # ── Sekme nav ──
         nav = QWidget()
         nav.setFixedHeight(36)
-        nav.setStyleSheet(f"background:transparent; border-top:1px solid {C.BORDER_SECONDARY};")
+        nav.setProperty("border-role", "top-secondary")
+        nav.setStyleSheet("background: transparent;")
+        nav.style().unpolish(nav)
+        nav.style().polish(nav)
         nav_lay = QHBoxLayout(nav)
         nav_lay.setContentsMargins(16, 0, 16, 0)
         nav_lay.setSpacing(0)
 
         for code, label in TABS:
             btn = QPushButton(label)
-            btn.setCursor(QCursor(Qt.PointingHandCursor))
+            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             btn.setStyleSheet(self._tab_btn_qss(active=False))
             btn.clicked.connect(lambda _, c=code: self._switch_tab(c))
             nav_lay.addWidget(btn)
@@ -214,13 +218,15 @@ class PersonelMerkezPage(QWidget):
 
         form_hdr = QHBoxLayout()
         self.lbl_form_title = QLabel("İşlem")
-        self.lbl_form_title.setStyleSheet(STYLES["section_label"])
+        self.lbl_form_title.setProperty("style-role", "section")
+        self.lbl_form_title.style().unpolish(self.lbl_form_title)
+        self.lbl_form_title.style().polish(self.lbl_form_title)
         form_hdr.addWidget(self.lbl_form_title)
         form_hdr.addStretch()
         btn_form_kapat = QPushButton()
         btn_form_kapat.setFixedSize(20, 20)
         btn_form_kapat.setStyleSheet("background:transparent; border:none;")
-        btn_form_kapat.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_form_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_form_kapat.clicked.connect(self._hide_form)
         try:
             IconRenderer.set_button_icon(btn_form_kapat, "x", color=C.TEXT_MUTED, size=11)
@@ -237,8 +243,10 @@ class PersonelMerkezPage(QWidget):
         # ── Scroll: uyarılar + aksiyonlar ──
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
-        scroll.setStyleSheet(STYLES["scroll"])
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setProperty("style-role", "plain")
+        scroll.style().unpolish(scroll)
+        scroll.style().polish(scroll)
 
         info_widget = QWidget()
         info_widget.setStyleSheet("background:transparent;")
@@ -256,7 +264,6 @@ class PersonelMerkezPage(QWidget):
         info_lay.addWidget(self._section_lbl("HIZLI İŞLEMLER"))
         for label, icon, cb in [
             ("İzin Gir",        "calendar",     lambda: self._toggle_form("IZIN")),
-            ("Muayene Ekle",    "stethoscope",  lambda: self._toggle_form("SAGLIK")),
             ("FHSZ Görüntüle",  "bar_chart",    None),
             ("Durum Değiştir",  "refresh",      None),
         ]:
@@ -293,8 +300,8 @@ class PersonelMerkezPage(QWidget):
                     px = QPixmap(resim_path)
                     if not px.isNull():
                         self.lbl_avatar.setPixmap(
-                            px.scaled(34, 34, Qt.KeepAspectRatioByExpanding,
-                                      Qt.SmoothTransformation)
+                            px.scaled(34, 34, Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                                      Qt.TransformationMode.SmoothTransformation)
                         )
                         self.lbl_avatar.setText("")
                     else:
@@ -318,8 +325,9 @@ class PersonelMerkezPage(QWidget):
             # Uyarılar
             while self.alert_container.count():
                 item = self.alert_container.takeAt(0)
-                if item.widget():
-                    item.widget().deleteLater()
+                widget = item.widget() if item else None
+                if widget:
+                    widget.deleteLater()
 
             kritikler = self.ozet_data.get("kritikler", [])
             if not kritikler:
@@ -370,13 +378,13 @@ class PersonelMerkezPage(QWidget):
                     )
                     h.addWidget(lbl, 1)
                     self.alert_container.addWidget(container)
-                    self.alert_container.addWidget(lbl)
 
             # Sekme
             if self._initial_load:
                 cur = self.content_stack.currentWidget()
-                if cur and hasattr(cur, "load_data"):
-                    cur.load_data()
+                load_data = getattr(cur, "load_data", None) if cur else None
+                if callable(load_data):
+                    load_data()
             else:
                 self._switch_tab("GENEL")
                 self._initial_load = True
@@ -400,28 +408,45 @@ class PersonelMerkezPage(QWidget):
 
         self.content_stack.setCurrentWidget(self._modules[code])
 
+        # Sekmeye geçince gerekiyorsa veriyi tazele
+        current = self._modules.get(code)
+        if current and hasattr(current, "load_data") and code in {"SAGLIK", "DOKUMAN"}:
+            try:
+                current.load_data()
+            except Exception as e:
+                logger.warning(f"Sekme veri tazeleme hatası ({code}): {e}")
+
     def _create_module(self, code: str) -> QWidget:
         try:
             if code == "GENEL":
                 w = PersonelOverviewPanel(self.ozet_data, self.db, sabitler_cache=self.sabitler_cache)
+                if hasattr(w, "open_documents"):
+                    w.open_documents.connect(lambda: self._switch_tab("DOKUMAN"))
             elif code == "IZIN":
                 w = PersonelIzinPanel(self.db, self.personel_id)
             elif code == "SAGLIK":
                 w = PersonelSaglikPanel(self.db, self.personel_id)
+                if hasattr(w, "open_documents"):
+                    w.open_documents.connect(self._open_documents_for_saglik)
+            elif code == "DOKUMAN":
+                w = PersonelDokumanPanel(self.personel_id, self.db, sabitler_cache=self.sabitler_cache)
+                if hasattr(w, "saved"):
+                    w.saved.connect(self._refresh_saglik_module)
             elif code == "AYRILIS":
                 from ui.pages.personel.isten_ayrilik import IstenAyrilikPage
                 w = IstenAyrilikPage(self.db, personel_data=self.ozet_data.get("personel", {}))
             else:
                 raise ValueError(f"Bilinmeyen sekme: {code}")
 
-            if hasattr(w, "set_embedded_mode"):
-                w.set_embedded_mode(True)
+            set_embedded_mode = getattr(w, "set_embedded_mode", None)
+            if callable(set_embedded_mode):
+                set_embedded_mode(True)
             return w
 
         except Exception as e:
             logger.error(f"Modül yükleme hatası ({code}): {e}")
             err = QLabel(f"Modül yüklenemedi: {code}\n{e}")
-            err.setAlignment(Qt.AlignCenter)
+            err.setAlignment(Qt.AlignmentFlag.AlignCenter)
             err.setStyleSheet(STYLES.get("stat_red", f"color:{C.STATUS_ERROR};"))
             return err
 
@@ -444,8 +469,9 @@ class PersonelMerkezPage(QWidget):
         # Önceki formu temizle
         while self.form_content_lay.count():
             item = self.form_content_lay.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            widget = item.widget() if item else None
+            if widget:
+                widget.deleteLater()
         self._form_widget = None
 
         try:
@@ -454,11 +480,6 @@ class PersonelMerkezPage(QWidget):
                 self.lbl_form_title.setText("İZİN GİRİŞİ")
                 form = HizliIzinGirisDialog(self.db, p, parent=self)
                 form.izin_kaydedildi.connect(self._on_form_saved)
-                form.cancelled.connect(self._hide_form)
-            elif form_type == "SAGLIK":
-                self.lbl_form_title.setText("MUAYENE GİRİŞİ")
-                form = HizliSaglikGirisDialog(self.db, p, parent=self)
-                form.saglik_kaydedildi.connect(self._on_form_saved)
                 form.cancelled.connect(self._hide_form)
             else:
                 return
@@ -476,14 +497,36 @@ class PersonelMerkezPage(QWidget):
         self.form_container.setVisible(False)
         while self.form_content_lay.count():
             item = self.form_content_lay.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            widget = item.widget() if item else None
+            if widget:
+                widget.deleteLater()
         self._form_widget       = None
         self._current_form_type = None
 
     def _on_form_saved(self):
         self._hide_form()
         self._load_data()
+
+    def _open_documents_for_saglik(self, kayit_no: str):
+        self._switch_tab("DOKUMAN")
+        dokuman_modul = self._modules.get("DOKUMAN")
+        if not dokuman_modul:
+            return
+
+        set_related_record = getattr(dokuman_modul, "set_related_record", None)
+        if callable(set_related_record):
+            set_related_record(kayit_no, "Personel_Saglik_Takip")
+
+    def _refresh_saglik_module(self):
+        saglik_modul = self._modules.get("SAGLIK")
+        if not saglik_modul:
+            return
+        load_data = getattr(saglik_modul, "load_data", None)
+        if callable(load_data):
+            try:
+                load_data()
+            except Exception as e:
+                logger.warning(f"Sağlık modülü yenileme hatası: {e}")
 
     # ═══════════════════════════════════════════════════
     #  YARDIMCI OLUŞTURUCULAR
@@ -493,21 +536,27 @@ class PersonelMerkezPage(QWidget):
     def _sep() -> QFrame:
         s = QFrame()
         s.setFixedSize(1, 20)
-        s.setStyleSheet(f"background: {C.BORDER_PRIMARY};")
+        s.setProperty("bg-role", "separator")
+        s.style().unpolish(s)
+        s.style().polish(s)
         return s
 
     @staticmethod
     def _section_lbl(text: str) -> QLabel:
         lbl = QLabel(text)
-        lbl.setStyleSheet(STYLES["section_label"])
+        lbl.setProperty("style-role", "section")
+        lbl.style().unpolish(lbl)
+        lbl.style().polish(lbl)
         return lbl
 
     @staticmethod
     def _action_btn(label: str, icon: str, callback) -> QPushButton:
         btn = QPushButton(label)
-        btn.setCursor(QCursor(Qt.PointingHandCursor))
+        btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn.setFixedHeight(34)
-        btn.setStyleSheet(STYLES["action_btn"])
+        btn.setProperty("style-role", "action")
+        btn.style().unpolish(btn)
+        btn.style().polish(btn)
         try:
             IconRenderer.set_button_icon(btn, icon, color=C.TEXT_SECONDARY, size=13)
         except Exception:

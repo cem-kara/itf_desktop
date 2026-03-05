@@ -128,14 +128,19 @@ QCheckBox, QRadioButton {{
 }}
 QCheckBox::indicator, QRadioButton::indicator {{
     width: 16px; height: 16px;
-    border: 1.5px solid rgba(15,23,42,0.15);
+    border: 2px solid {TEXT_SECONDARY};
     border-radius: 4px;
-    background-color: #ffffff;
+    background-color: {INPUT_BG};
 }}
-QCheckBox::indicator:hover    {{ border-color: {ACCENT}; }}
+QCheckBox::indicator:hover    {{ border-color: {ACCENT}; background-color: {BG_TERTIARY}; }}
 QCheckBox::indicator:checked  {{
     background-color: {ACCENT};
     border-color: {ACCENT};
+    image: url(:checked);
+}}
+QCheckBox::indicator:disabled {{
+    border-color: {TEXT_DISABLED};
+    background-color: {BG_SECONDARY};
 }}
 QRadioButton::indicator       {{ border-radius: 8px; }}
 QRadioButton::indicator:checked {{
@@ -143,17 +148,19 @@ QRadioButton::indicator:checked {{
     border-color: {ACCENT};
 }}
 
-/* ── QSpinBox ────────────────────────────────────────────────── */
-QSpinBox {{
-    background-color: #ffffff;
-    border: 1.5px solid rgba(15,23,42,0.08);
-    border-radius: 8px;
-    padding: 5px 8px;
+/* ── QSpinBox / QDoubleSpinBox ───────────────────────────────── */
+QSpinBox, QDoubleSpinBox {{
+    background-color: {INPUT_BG};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 4px;
+    padding: 5px 9px;
+    min-height: 22px;
     font-size: 13px;
     color: {TEXT_PRIMARY};
 }}
-QSpinBox:focus {{ border-color: {ACCENT}; }}
-QSpinBox::up-button, QSpinBox::down-button {{
+QSpinBox:focus, QDoubleSpinBox:focus {{ border-color: {ACCENT}; }}
+QSpinBox::up-button, QSpinBox::down-button,
+QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {{
     width: 20px;
     background: transparent;
     border: none;
@@ -319,4 +326,41 @@ QFrame[frameShape="4"],   /* HLine */
 QFrame[frameShape="5"] {{  /* VLine */
     color: {BORDER_PRIMARY};
     background-color: {BORDER_PRIMARY};
+}}
+
+/* ── QTableWidget / QTableView ────────────────────────────────– */
+QTableWidget, QTableView {{
+    background-color: {BG_PRIMARY};
+    color: {TEXT_PRIMARY};
+    gridline-color: {BORDER_PRIMARY};
+    border: 1px solid {BORDER_PRIMARY};
+    border-radius: 6px;
+    alternate-background-color: {BG_SECONDARY};
+}}
+
+QTableWidget::item, QTableView::item {{
+    padding: 4px;
+    color: {TEXT_PRIMARY};
+    background-color: {BG_PRIMARY};
+    border: none;
+}}
+
+QTableWidget::item:alternate, QTableView::item:alternate {{
+    background-color: {BG_SECONDARY};
+}}
+
+QTableWidget::item:selected, QTableView::item:selected {{
+    background-color: {ACCENT_BG};
+    color: {ACCENT};
+}}
+
+QHeaderView::section {{
+    background-color: {BG_SECONDARY};
+    color: {TEXT_TABLE_HEADER};
+    padding: 8px 6px;
+    border: none;
+    border-bottom: 1px solid {BORDER_PRIMARY};
+    border-right: 1px solid {BORDER_PRIMARY};
+    font-weight: 600;
+    font-size: 12px;
 }}

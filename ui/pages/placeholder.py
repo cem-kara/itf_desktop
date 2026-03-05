@@ -12,10 +12,10 @@ class PlaceholderPage(QWidget):
         self.setStyleSheet("background-color: transparent;")
 
         layout = QVBoxLayout(self)
-        layout.setAlignment(Qt.AlignCenter)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         icon = QLabel()
-        icon.setAlignment(Qt.AlignCenter)
+        icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Resim yolunu belirle (ui/styles/maintenance.png varsayımıyla)
         base_ui_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -23,7 +23,7 @@ class PlaceholderPage(QWidget):
 
         if os.path.exists(img_path):
             pixmap = QPixmap(img_path)
-            icon.setPixmap(pixmap.scaled(300, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            icon.setPixmap(pixmap.scaled(300, 300, Qt.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
             icon.setStyleSheet("background: transparent;")
         else:
             icon.setPixmap(Icons.pixmap("wrench", size=48, color="#5f6380"))
@@ -35,12 +35,15 @@ class PlaceholderPage(QWidget):
         lbl_title.setStyleSheet(
             "font-size: 20px; font-weight: bold; color: #c8cad0; padding: 8px; background: transparent;"
         )
-        lbl_title.setAlignment(Qt.AlignCenter)
+        lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(lbl_title)
 
         lbl_sub = QLabel(subtitle or "Bu sayfa henüz geliştirme aşamasında.")
-        lbl_sub.setStyleSheet("font-size: 14px; color: #5a5d6e; background: transparent;")
-        lbl_sub.setAlignment(Qt.AlignCenter)
+        lbl_sub.setProperty("color-role", "muted")
+        lbl_sub.setStyleSheet("font-size: 14px; background: transparent;")
+        lbl_sub.style().unpolish(lbl_sub)
+        lbl_sub.style().polish(lbl_sub)
+        lbl_sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(lbl_sub)
 
 
@@ -51,18 +54,18 @@ class WelcomePage(QWidget):
         self.setStyleSheet("background-color: transparent;")
 
         layout = QVBoxLayout(self)
-        layout.setAlignment(Qt.AlignCenter)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.setSpacing(12)
 
         icon = QLabel()
-        icon.setAlignment(Qt.AlignCenter)
+        icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         base_ui_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         img_path = os.path.join(base_ui_dir, "styles/icons", "main.png")
 
         if os.path.exists(img_path):
             pixmap = QPixmap(img_path)
-            icon.setPixmap(pixmap.scaled(800, 800, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            icon.setPixmap(pixmap.scaled(800, 800, Qt.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
             icon.setStyleSheet("background: transparent;")
         else:
             icon.setPixmap(Icons.pixmap("hospital", size=48, color="#4f7ef8"))
@@ -74,5 +77,5 @@ class WelcomePage(QWidget):
         hint.setStyleSheet(
             "font-size: 13px; color: #5a5d6e; padding-top: 24px; background: transparent;"
         )
-        hint.setAlignment(Qt.AlignCenter)
+        hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(hint)

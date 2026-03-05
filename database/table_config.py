@@ -134,6 +134,30 @@ TABLES = {
         "date_fields": ["YuklenmeTarihi"],
     },
 
+    "Dokumanlar": {
+        "pk": ["EntityType", "EntityId", "BelgeTuru", "Belge"],
+        # sync=True: tüm metadata makineler arası Sheets üzerinden senkronize edilir.
+        # LocalPath makineye özgü yolu saklar (diğer makinede geçersiz olabilir ama
+        # DrivePath öncelikli açılır, LocalPath yedek olarak korunur).
+        # ÖNEMLİ: Google Sheets'te "Dokumanlar" sayfasının oluşturulmuş olması gerekir.
+        "sync": True,
+        "columns": [
+            "EntityType",
+            "EntityId",
+            "BelgeTuru",
+            "Belge",
+            "DocType",
+            "DisplayName",
+            "LocalPath",
+            "BelgeAciklama",
+            "YuklenmeTarihi",
+            "DrivePath",
+            "IliskiliBelgeID",
+            "IliskiliBelgeTipi",
+        ],
+        "date_fields": ["YuklenmeTarihi"],
+    },
+
     "Cihaz_Teknik_Belge": {
         "pk": ["Cihazid", "BelgeTuru", "Belge"],
         "sync": False,  # Local-only table (Google Sheets'e eklenmedi)

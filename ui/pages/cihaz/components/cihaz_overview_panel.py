@@ -1,3 +1,4 @@
+from core.di import get_cihaz_service as _get_cihaz_service
 # -*- coding: utf-8 -*-
 """
 Cihaz Overview Panel
@@ -18,7 +19,7 @@ from ui.styles import DarkTheme, Colors
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 from core.logger import logger
-from database.repository_registry import RepositoryRegistry
+
 
 C = DarkTheme
 
@@ -198,7 +199,7 @@ class CihazOverviewPanel(QWidget):
         """İkon butonu oluştur."""
         btn = QPushButton("")
         btn.setToolTip(tooltip)
-        btn.setCursor(QCursor(Qt.PointingHandCursor))
+        btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn.setFixedSize(30, 26)
         btn.setVisible(visible)
         IconRenderer.set_button_icon(btn, icon_name, color=C.TEXT_SECONDARY, size=14)
@@ -219,7 +220,10 @@ class CihazOverviewPanel(QWidget):
         edit = QLineEdit()
         edit.setReadOnly(True)
         edit.setProperty("initial_readonly", read_only)
-        edit.setStyleSheet(f"background: transparent; border: none; color: {C.TEXT_PRIMARY}; font-weight: 500;")
+        edit.setProperty("color-role", "primary")
+        edit.setStyleSheet("background: transparent; border: none; font-weight: 500;")
+        edit.style().unpolish(edit)
+        edit.style().polish(edit)
         self._widgets[key] = edit
         self._groups[group_id]["fields"].append(key)
         grid.addWidget(lbl, row * 2, col, 1, colspan)
@@ -265,7 +269,10 @@ class CihazOverviewPanel(QWidget):
         wrap = QHBoxLayout()
         line = QLineEdit()
         line.setReadOnly(True)
-        line.setStyleSheet(f"background: transparent; border: none; color: {C.TEXT_PRIMARY}; font-weight: 500;")
+        line.setProperty("color-role", "primary")
+        line.setStyleSheet("background: transparent; border: none; font-weight: 500;")
+        line.style().unpolish(line)
+        line.style().polish(line)
         btn = QPushButton("Sec")
         btn.setStyleSheet(S["btn_refresh"])
         btn.setEnabled(False)
@@ -291,7 +298,7 @@ class CihazOverviewPanel(QWidget):
         if not self.db:
             return
         try:
-            registry = RepositoryRegistry(self.db)
+            registry = _get_cihaz_service(self.db)._r
             sabitler = registry.get("Sabitler").get_all()
 
             grouped = {}
@@ -422,7 +429,7 @@ class CihazOverviewPanel(QWidget):
             update_data[key] = val
             
         try:
-            registry = RepositoryRegistry(self.db)
+            registry = _get_cihaz_service(self.db)._r
             repo = registry.get("Cihazlar")
 
             cihaz_id = self.cihaz_data.get("Cihazid")
@@ -453,7 +460,7 @@ class CihazOverviewPanel(QWidget):
         """Veri yenileme (gerekirse)."""
         if self.db and self.cihaz_data.get("Cihazid"):
             try:
-                registry = RepositoryRegistry(self.db)
+                registry = _get_cihaz_service(self.db)._r
                 cihaz_repo = registry.get("Cihazlar")
                 cihazlar = cihaz_repo.get_by_kod(self.cihaz_data.get("Cihazid"), "Cihazid")
                 if cihazlar:

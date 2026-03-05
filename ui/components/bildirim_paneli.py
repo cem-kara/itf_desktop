@@ -51,9 +51,9 @@ class _BildirimChip(QPushButton):
         )
 
         self.setText(f"  {kategori}  {sayi}  ")
-        self.setCursor(QCursor(Qt.PointingHandCursor))
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setToolTip(bildirim["mesaj"])
-        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setStyleSheet(f"""
             QPushButton {{
                 background-color: {chip_bg};
@@ -90,7 +90,7 @@ class BildirimPaneli(QWidget):
 
     def _setup_ui(self):
         self.setObjectName("bildirimPaneli")
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.setMaximumHeight(0)  # başlangıçta gizli (animasyon için)
 
         outer = QVBoxLayout(self)
@@ -115,7 +115,7 @@ class BildirimPaneli(QWidget):
     def _satir_olustur(self, mod: str) -> QFrame:
         border = _KRITIK_BORDER if mod == "kritik" else _UYARI_BORDER
         bg     = _KRITIK_BG     if mod == "kritik" else _UYARI_BG
-        icon   = "🔴" if mod == "kritik" else "🟡"
+        icon   = "●" if mod == "kritik" else "●"
         label  = "KRİTİK" if mod == "kritik" else "UYARI"
 
         frame = QFrame()
@@ -150,7 +150,7 @@ class BildirimPaneli(QWidget):
         chip_layout = QHBoxLayout(chip_widget)
         chip_layout.setContentsMargins(0, 0, 0, 0)
         chip_layout.setSpacing(6)
-        chip_layout.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        chip_layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         row.addWidget(chip_widget, 1)
 
         # Kapat butonu
@@ -169,7 +169,7 @@ class BildirimPaneli(QWidget):
     def _kapat_btn_olustur(self) -> QPushButton:
         btn = QPushButton("✕")
         btn.setFixedSize(22, 22)
-        btn.setCursor(QCursor(Qt.PointingHandCursor))
+        btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn.setToolTip("Bu oturum için kapat")
         btn.setStyleSheet("""
             QPushButton {

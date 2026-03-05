@@ -1,14 +1,29 @@
-# ui/styles/colors.py  ─  REPYS v3 · Medikal Dark-Blue Tema
+# ui/styles/colors.py  ─  REPYS v3 · Tema Renk Sistemi
 # ═══════════════════════════════════════════════════════════════
-#  Koyu mavi (medical-grade) palette.
-#  DarkTheme attribute isimleri KORUNDU — başka dosyada değişiklik yok.
+#
+#  Dışarıdan import arayüzü (değişmedi):
+#     from ui.styles.colors import DarkTheme as C
+#     from ui.styles.colors import DarkTheme, ThemeProxy, Colors
+#
+#  Nasıl çalışır (v3.1):
+#     DarkTheme.BG_PRIMARY  →  _LiveThemeMeta devreye girer
+#                            →  ayarlar.json'dan aktif temayı okur
+#                            →  ui/styles/themes.py'den rengi döndürür
+#
+#  Artık ThemeRegistry bağımlılığı yok — döngüsel import riski ortadan kalktı.
 # ═══════════════════════════════════════════════════════════════
+
 
 class Colors:
-    WHITE   = "#ffffff"
-    BLACK   = "#000000"
+    """
+    Ham renk paleti — uygulama genelinde yeniden kullanılabilir
+    referans değerleri. DarkTheme ve LightTheme bu değerlerden türetilir.
+    """
 
-    # Mavi/Lacivert Skalası
+    WHITE = "#ffffff"
+    BLACK = "#000000"
+
+    # ── Mavi / Lacivert skalası ──────────────────────────────────
     NAVY_950 = "#060d1a"
     NAVY_900 = "#0b1628"
     NAVY_850 = "#0e1e35"
@@ -23,13 +38,13 @@ class Colors:
     NAVY_100 = "#b8d8f8"
     NAVY_50  = "#e8f2fc"
 
-    # Vurgu — Elektrik Mavi (accent)
-    CYAN_500  = "#00b4d8"
-    CYAN_400  = "#22d3ee"
-    CYAN_300  = "#67e8f9"
-    CYAN_BG   = "rgba(0,180,216,0.10)"
+    # ── Vurgu — Elektrik Mavi ───────────────────────────────────
+    CYAN_500 = "#00b4d8"
+    CYAN_400 = "#22d3ee"
+    CYAN_300 = "#67e8f9"
+    CYAN_BG  = "rgba(0,180,216,0.10)"
 
-    # Gri (nötr)
+    # ── Gri (nötr) ───────────────────────────────────────────────
     GRAY_900 = "#111827"
     GRAY_800 = "#1f2937"
     GRAY_700 = "#374151"
@@ -38,92 +53,143 @@ class Colors:
     GRAY_300 = "#d1d5db"
     GRAY_100 = "#f3f4f6"
 
-    # Durum
+    # ── Durum renkleri ───────────────────────────────────────────
     GREEN_600  = "#059669"
     GREEN_500  = "#10b981"
     GREEN_400  = "#34d399"
     GREEN_BG   = "rgba(16,185,129,0.10)"
+
     RED_600    = "#dc2626"
     RED_500    = "#ef4444"
     RED_400    = "#f87171"
     RED_BG     = "rgba(239,68,68,0.10)"
+
     YELLOW_500 = "#f59e0b"
     YELLOW_400 = "#fbbf24"
     YELLOW_BG  = "rgba(245,158,11,0.10)"
+
     ORANGE_500 = "#f97316"
+    ORANGE_400 = "#fb923c"
+
     PURPLE_500 = "#a855f7"
+    PURPLE_400 = "#c084fc"
     PURPLE_BG  = "rgba(168,85,247,0.10)"
 
-    # Menu renkleri
+    # ── Menü renkleri ────────────────────────────────────────────
     MENU_ACTIVE = "#00b4d8"
     MENU_ITEM   = "#8aa8c8"
 
-    SUCCESS = "#10b981"
+
+# ══════════════════════════════════════════════════════════════
+#  _LiveThemeMeta — DarkTheme.ATTR erişimini aktif temaya yönlendirir
+#
+#  v3.1 değişikliği: ThemeRegistry yerine core/settings + themes.py
+#  kullanır. Döngüsel import riski ortadan kalktı.
+# ══════════════════════════════════════════════════════════════
+class _LiveThemeMeta(type):
+    def __getattribute__(cls, name: str):
+        # Dunder / private isimler → normal sınıf davranışı
+        if name.startswith("_"):
+            return type.__getattribute__(cls, name)
+        try:
+            from core.settings import get as _settings_get
+            from ui.styles.themes import get_tokens
+            theme_name = _settings_get("theme", "dark")
+            tokens = get_tokens(theme_name)
+            if name in tokens:
+                return tokens[name]
+        except Exception:
+            pass
+        # Fallback: sınıf üzerindeki gerçek değer (varsa)
+        return type.__getattribute__(cls, name)
 
 
-class DarkTheme:
+class DarkTheme(metaclass=_LiveThemeMeta):
     """
-    Medikal koyu mavi dark tema.
-    Tüm attribute isimleri önceki versiyonla birebir aynı.
+    Tema token'larına dinamik erişim sağlar.
+    Aktif tema dark ise DARK dict, light ise LIGHT dict döner.
+
+    Tüm attribute erişimleri _LiveThemeMeta üzerinden geçer —
+    bu sınıfın kendi body'sini değiştirmeye gerek yok.
+
+    Geriye dönük uyumluluk için STATE_* tuple'ları burada:
     """
-    # ── Zemin Katmanları ─────────────────────────────────────────
-    BG_PRIMARY   = "#0b1628"   # Ana zemin — derin lacivert
-    BG_SECONDARY = "#0e1e35"   # Panel / kart
-    BG_TERTIARY  = "#112240"   # İçe gömülü alan, zebra satır
-    BG_ELEVATED  = "#152b4f"   # Yükseltilmiş panel, popup
-    BG_HOVER     = "rgba(0,180,216,0.06)"
-    BG_SELECTED  = "rgba(0,180,216,0.14)"
-
-    # ── Kenarlıklar ──────────────────────────────────────────────
-    BORDER_PRIMARY   = "rgba(255,255,255,0.07)"
-    BORDER_SECONDARY = "rgba(255,255,255,0.04)"
-    BORDER_FOCUS     = "#00b4d8"
-    BORDER_STRONG    = "rgba(255,255,255,0.12)"
-
-    # ── Metin ────────────────────────────────────────────────────
-    TEXT_PRIMARY   = "#e2eaf4"   # Beyaza yakın, parlak
-    TEXT_SECONDARY = "#8aa8c8"   # Soluk mavi-gri
-    TEXT_MUTED     = "#4e6888"   # Placeholder
-    TEXT_DISABLED  = "#263850"   # Devre dışı
-
-    # ── Input ────────────────────────────────────────────────────
-    INPUT_BG           = "#112240"
-    INPUT_BORDER       = "rgba(255,255,255,0.08)"
-    INPUT_BORDER_FOCUS = "#00b4d8"
-
-    # ── Vurgu (Cyan) ─────────────────────────────────────────────
-    ACCENT    = "#00b4d8"
-    ACCENT2   = "#22d3ee"
-    ACCENT_BG = "rgba(0,180,216,0.10)"
-
-    # ── Butonlar ─────────────────────────────────────────────────
-    BTN_PRIMARY_BG     = "#00b4d8"
-    BTN_PRIMARY_TEXT   = "#060d1a"
-    BTN_PRIMARY_HOVER  = "#22d3ee"
-    BTN_PRIMARY_BORDER = "#00b4d8"
-
-    BTN_SECONDARY_BG     = "rgba(255,255,255,0.05)"
-    BTN_SECONDARY_TEXT   = "#8aa8c8"
-    BTN_SECONDARY_BORDER = "rgba(255,255,255,0.10)"
-    BTN_SECONDARY_HOVER  = "rgba(255,255,255,0.09)"
-
-    BTN_DANGER_BG     = "rgba(239,68,68,0.10)"
-    BTN_DANGER_TEXT   = "#f87171"
-    BTN_DANGER_BORDER = "rgba(239,68,68,0.25)"
-    BTN_DANGER_HOVER  = "rgba(239,68,68,0.18)"
-
-    BTN_SUCCESS_BG     = "rgba(16,185,129,0.10)"
-    BTN_SUCCESS_TEXT   = "#34d399"
-    BTN_SUCCESS_BORDER = "rgba(16,185,129,0.25)"
-    BTN_SUCCESS_HOVER  = "rgba(16,185,129,0.18)"
-
-    # ── Durum ────────────────────────────────────────────────────
-    STATUS_SUCCESS = "#10b981"
-    STATUS_WARNING = "#f59e0b"
-    STATUS_ERROR   = "#ef4444"
-    STATUS_INFO    = "#00b4d8"
-
-    # ── Badge RGBA (r,g,b,alpha) ──────────────────────────────────
+    # Badge RGBA tuple'ları — QSS'te kullanılamaz, Python kodu için
     STATE_ACTIVE  = (16,  185, 129, 35)
     STATE_PASSIVE = (239, 68,  68,  35)
     STATE_LEAVE   = (245, 158, 11,  35)
+
+
+# ══════════════════════════════════════════════════════════════
+#  ThemeProxy — DarkTheme ile aynı, geriye dönük uyumluluk için
+# ══════════════════════════════════════════════════════════════
+class _ThemeProxyMeta(type):
+    def __getattr__(cls, name: str):
+        return getattr(DarkTheme, name)
+
+
+class ThemeProxy(metaclass=_ThemeProxyMeta):
+    """
+    DarkTheme için alias. Eski kod bozulmasın diye korunuyor.
+    Yeni kodda DarkTheme kullanın.
+    """
+    pass
+
+
+def get_current_theme():
+    """
+    Geriye dönük uyumluluk.
+    Aktif temanın token dict'ini nesne olarak döndürür.
+    """
+    from core.settings import get as _settings_get
+    from ui.styles.themes import get_tokens
+    tokens = get_tokens(_settings_get("theme", "dark"))
+    return type("_ActiveTheme", (), tokens)()
+
+
+def get_current_theme_name() -> str:
+    """Aktif tema adını döndür: 'dark' veya 'light'."""
+    from core.settings import get as _settings_get
+    return _settings_get("theme", "dark")
+
+
+# ══════════════════════════════════════════════════════════════
+#  _C dict — eski bakim_form.py vb. için geriye dönük uyumluluk
+#  Yeni kodda kullanmayın, STYLES veya setProperty tercih edin.
+# ══════════════════════════════════════════════════════════════
+class _CDictProxy(dict):
+    """_C['muted'] gibi eski erişimleri aktif temaya yönlendirir."""
+    _KEY_MAP = {
+        "red":     "STATUS_ERROR",
+        "amber":   "STATUS_WARNING",
+        "green":   "STATUS_SUCCESS",
+        "accent":  "ACCENT",
+        "muted":   "TEXT_MUTED",
+        "surface": "BG_SECONDARY",
+        "panel":   "BG_ELEVATED",
+        "border":  "BORDER_PRIMARY",
+        "text":    "TEXT_PRIMARY",
+    }
+
+    def __getitem__(self, key):
+        token = self._KEY_MAP.get(key, key.upper())
+        return getattr(DarkTheme, token, super().__getitem__(key))
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except (KeyError, AttributeError):
+            return default
+
+
+C = _CDictProxy({
+    "red":     "#e85555",
+    "amber":   "#e8a030",
+    "green":   "#2ec98e",
+    "accent":  "#3d8ef5",
+    "muted":   "#4d6070",
+    "surface": "#121820",
+    "panel":   "#1a2030",
+    "border":  "#1e2d3d",
+    "text":    "#e8edf5",
+})

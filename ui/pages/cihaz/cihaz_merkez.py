@@ -22,7 +22,7 @@ from ui.styles import DarkTheme
 from ui.styles.components import STYLES
 from ui.styles.icons import IconRenderer
 from core.logger import logger
-from database.repository_registry import RepositoryRegistry
+from core.di import get_cihaz_service as _get_cihaz_service
 from ui.pages.cihaz.components.uts_parser import scrape_uts
 from ui.pages.cihaz.components.ariza_detail_panel import CihazArizaPanel
 from ui.pages.cihaz.components.kalibrasyon_detail_panel import KalibrasyonDetailPanel
@@ -62,7 +62,9 @@ class CihazMerkezPage(QWidget):
     # ═══════════════════════════════════════════════════
 
     def _setup_ui(self):
-        self.setStyleSheet(STYLES["page"])
+        self.setProperty("bg-role", "page")
+        self.style().unpolish(self)
+        self.style().polish(self)
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
@@ -99,8 +101,10 @@ class CihazMerkezPage(QWidget):
         top_lay.setSpacing(10)
 
         btn_back = QPushButton(" Listeye")
-        btn_back.setCursor(QCursor(Qt.PointingHandCursor))
-        btn_back.setStyleSheet(STYLES["back_btn"])
+        btn_back.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        btn_back.setProperty("style-role", "secondary")
+        btn_back.style().unpolish(btn_back)
+        btn_back.style().polish(btn_back)
         IconRenderer.set_button_icon(btn_back, "arrow_left", color=C.TEXT_SECONDARY, size=14)
         btn_back.setIconSize(QSize(14, 14))
         btn_back.clicked.connect(self.kapat_istegi.emit)
@@ -110,12 +114,12 @@ class CihazMerkezPage(QWidget):
         # Cihaz ikonu (avatar yerine)
         self.lbl_avatar = QLabel()
         self.lbl_avatar.setFixedSize(34, 34)
-        self.lbl_avatar.setAlignment(Qt.AlignCenter)
+        self.lbl_avatar.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_avatar.setStyleSheet(
             f"background:{C.BG_TERTIARY}; border-radius:8px;"
             f"font-size:13px; font-weight:700; color:{C.TEXT_SECONDARY};"
         )
-        self.lbl_avatar.setText("🔧")
+        self.lbl_avatar.setText("")
         top_lay.addWidget(self.lbl_avatar)
 
         # Cihaz ID + detay
@@ -126,7 +130,9 @@ class CihazMerkezPage(QWidget):
             f"font-size:14px; font-weight:600; color:{C.TEXT_PRIMARY}; background:transparent;"
         )
         self.lbl_detay = QLabel("…")
-        self.lbl_detay.setStyleSheet(STYLES["info_label"])
+        self.lbl_detay.setProperty("style-role", "info")
+        self.lbl_detay.style().unpolish(self.lbl_detay)
+        self.lbl_detay.style().polish(self.lbl_detay)
         info_lay.addWidget(self.lbl_cihaz_id)
         info_lay.addWidget(self.lbl_detay)
         top_lay.addLayout(info_lay)
@@ -141,7 +147,7 @@ class CihazMerkezPage(QWidget):
         # Kapat (X)
         btn_kapat = QPushButton()
         btn_kapat.setFixedSize(28, 28)
-        btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_kapat.setToolTip("Kapat")
         btn_kapat.setStyleSheet("background:transparent; border:none;")
         btn_kapat.clicked.connect(self.kapat_istegi.emit)
@@ -156,14 +162,17 @@ class CihazMerkezPage(QWidget):
         # ── Sekme nav ──
         nav = QWidget()
         nav.setFixedHeight(36)
-        nav.setStyleSheet(f"background:transparent; border-top:1px solid {C.BORDER_SECONDARY};")
+        nav.setProperty("border-role", "top-secondary")
+        nav.setStyleSheet("background: transparent;")
+        nav.style().unpolish(nav)
+        nav.style().polish(nav)
         nav_lay = QHBoxLayout(nav)
         nav_lay.setContentsMargins(16, 0, 16, 0)
         nav_lay.setSpacing(0)
 
         for code, label in TABS:
             btn = QPushButton(label)
-            btn.setCursor(QCursor(Qt.PointingHandCursor))
+            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             btn.setStyleSheet(self._tab_btn_qss(active=False))
             btn.clicked.connect(lambda _, c=code: self._switch_tab(c))
             nav_lay.addWidget(btn)
@@ -179,11 +188,9 @@ class CihazMerkezPage(QWidget):
 
     def _load_data(self):
         try:
-            registry = RepositoryRegistry(self.db)
-            cihaz_repo = registry.get("Cihazlar")
-            
+            svc = _get_cihaz_service(self.db)
             # Cihaz verisini çek
-            cihazlar = cihaz_repo.get_by_kod(self.cihaz_id, "Cihazid")
+            cihazlar = [svc.get_cihaz(self.cihaz_id)] if svc.get_cihaz(self.cihaz_id) else []
             if not cihazlar:
                 QMessageBox.warning(self, "Hata", f"Cihaz bulunamadı: {self.cihaz_id}")
                 self.kapat_istegi.emit()
@@ -222,7 +229,7 @@ class CihazMerkezPage(QWidget):
                 if not px.isNull():
                     self.lbl_avatar.setPixmap(
                         px.scaled(34, 34, Qt.KeepAspectRatioByExpanding,
-                                  Qt.SmoothTransformation)
+                                  Qt.TransformationMode.SmoothTransformation)
                     )
                     self.lbl_avatar.setText("")
             
@@ -254,6 +261,27 @@ class CihazMerkezPage(QWidget):
             self.content_stack.addWidget(widget)
 
         self.content_stack.setCurrentWidget(self._modules[code])
+
+    def _switch_tab_and_open_form(self, code: str):
+        """Sekmeye geçip varsa formu otomatik aç."""
+        self._switch_tab(code)
+        widget = self._modules.get(code)
+        if widget is None:
+            return
+        # Formu otomatik açmak için ilgili metodu çağır
+        inner = None
+        if hasattr(widget, "ariza_form"):
+            inner = widget.ariza_form
+        elif hasattr(widget, "bakim_form"):
+            inner = widget.bakim_form
+        elif hasattr(widget, "kalibrasyon_form"):
+            inner = widget.kalibrasyon_form
+        # Her formun kendi "yeni kayıt aç" metod adını dene
+        for method in ("_open_ariza_form", "_open_bakim_form",
+                       "_open_kal_form", "_open_kalibrasyon_form"):
+            if inner and hasattr(inner, method):
+                getattr(inner, method)()
+                break
 
     def _create_module(self, code: str) -> QWidget:
         try:
@@ -294,7 +322,7 @@ class CihazMerkezPage(QWidget):
         except Exception as e:
             logger.error(f"Modül yükleme hatası ({code}): {e}")
             err = QLabel(f"Modül yüklenemedi: {code}\n{e}")
-            err.setAlignment(Qt.AlignCenter)
+            err.setAlignment(Qt.AlignmentFlag.AlignCenter)
             err.setStyleSheet(STYLES.get("stat_red", f"color:{C.STATUS_ERROR};"))
             return err
 
@@ -367,7 +395,9 @@ class CihazMerkezPage(QWidget):
     def _sep() -> QFrame:
         s = QFrame()
         s.setFixedSize(1, 20)
-        s.setStyleSheet(f"background: {C.BORDER_PRIMARY};")
+        s.setProperty("bg-role", "separator")
+        s.style().unpolish(s)
+        s.style().polish(s)
         return s
 
     # ═══════════════════════════════════════════════════

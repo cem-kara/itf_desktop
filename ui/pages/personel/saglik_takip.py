@@ -13,6 +13,8 @@ from PySide6.QtWidgets import (
 
 from core.logger import logger
 from core.date_utils import parse_date, to_db_date, to_ui_date
+from core.services.dokuman_service import DokumanService
+from ui.components.base_table_model import BaseTableModel
 from ui.theme_manager import ThemeManager
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
@@ -55,11 +57,11 @@ class MuayeneTimelineWidget(QWidget):
             p = QPainter(self)
             p.setFont(QFont("", 9))
             p.setPen(QColor(DarkTheme.TEXT_MUTED))
-            p.drawText(self.rect(), Qt.AlignCenter, "Muayene geçmişi boş")
+            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Muayene geçmişi boş")
             return
         
         p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         
         # Padding ve layout
         m = 20  # margin
@@ -96,7 +98,7 @@ class MuayeneTimelineWidget(QWidget):
             sonuc_str = exam.get("Sonuc", "")
             
             # Tarih
-            p.setFont(QFont("", 8, QFont.Bold))
+            p.setFont(QFont("", 8, QFont.Weight.Bold))
             p.setPen(QColor(DarkTheme.TEXT_PRIMARY))
             p.drawText(int(text_x), int(y - 8), f"{tarih_str}")
             
@@ -121,52 +123,23 @@ class MuayeneTimelineWidget(QWidget):
             return QColor(239, 68, 68)  # red-500
 
 
-class SaglikTakipTableModel(QAbstractTableModel):
+class SaglikTakipTableModel(BaseTableModel):
     def __init__(self, rows=None, parent=None):
-        super().__init__(parent)
-        self._rows = rows or []
-        self._keys = [c[0] for c in TABLE_COLUMNS]
-        self._headers = [c[1] for c in TABLE_COLUMNS]
+        super().__init__(TABLE_COLUMNS, rows, parent)
 
-    def rowCount(self, parent=QModelIndex()):
-        return len(self._rows)
+    def _display(self, key, row):
+        value = row.get(key, "")
+        if key in ("MuayeneTarihi", "SonrakiKontrolTarihi"):
+            return self._fmt_date(value, "")
+        return str(value)
 
-    def columnCount(self, parent=QModelIndex()):
-        return len(TABLE_COLUMNS)
-
-    def data(self, index, role=Qt.DisplayRole):
-        if not index.isValid():
-            return None
-        row = self._rows[index.row()]
-        key = self._keys[index.column()]
-
-        if role == Qt.DisplayRole:
-            value = row.get(key, "")
-            if key in ("MuayeneTarihi", "SonrakiKontrolTarihi"):
-                return to_ui_date(value, "")
-            return str(value)
-
-        if role == Qt.TextAlignmentRole:
-            if key in ("MuayeneTarihi", "SonrakiKontrolTarihi", "Sonuc", "Durum"):
-                return Qt.AlignCenter
-            return Qt.AlignVCenter | Qt.AlignLeft
-
-        return None
-
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
-            return self._headers[section]
-        return None
+    def _align(self, key):
+        if key in ("MuayeneTarihi", "SonrakiKontrolTarihi", "Sonuc", "Durum"):
+            return Qt.AlignmentFlag.AlignCenter
+        return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
     def set_rows(self, rows):
-        self.beginResetModel()
-        self._rows = rows or []
-        self.endResetModel()
-
-    def get_row(self, idx):
-        if 0 <= idx < len(self._rows):
-            return self._rows[idx]
-        return None
+        self.set_data(rows)
 
 
 class SaglikTakipPage(QWidget):
@@ -178,7 +151,6 @@ class SaglikTakipPage(QWidget):
         self._personel_rows = []
         self._editing_id = None
         self._selected_report_path = ""
-        self._drive_folders = {}
         self._exam_keys = ["Dermatoloji", "Dahiliye", "Goz", "Goruntuleme"]
         self._exam_widgets = {}
         self._drawer = None  # Sağdan açılan panel
@@ -235,28 +207,28 @@ class SaglikTakipPage(QWidget):
 
         self.btn_toplu = QPushButton("Toplu Yillik Plan")
         self.btn_toplu.setStyleSheet(S["action_btn"])
-        self.btn_toplu.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_toplu.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_toplu, "clipboard_list", color=DarkTheme.TEXT_PRIMARY, size=14)
         fb.addWidget(self.btn_toplu)
 
         self.btn_yeni = QPushButton("Yeni Ekle")
         self.btn_yeni.setStyleSheet(S["save_btn"])
         self.btn_yeni.setFixedSize(110, 36)
-        self.btn_yeni.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_yeni.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_yeni, "plus", color=DarkTheme.TEXT_PRIMARY, size=14)
         fb.addWidget(self.btn_yeni)
 
         self.btn_yenile = QPushButton("Yenile")
         self.btn_yenile.setStyleSheet(S["refresh_btn"])
         self.btn_yenile.setFixedSize(100, 36)
-        self.btn_yenile.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_yenile, "sync", color=DarkTheme.TEXT_PRIMARY, size=14)
         fb.addWidget(self.btn_yenile)
 
         self.btn_kapat = QPushButton("Kapat")
         self.btn_kapat.setStyleSheet(S["close_btn"])
         self.btn_kapat.setFixedSize(100, 36)
-        self.btn_kapat.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         fb.addWidget(self.btn_kapat)
         main_lay.addWidget(filter_frame)
@@ -266,16 +238,16 @@ class SaglikTakipPage(QWidget):
         self.table = QTableView()
         self.table.setModel(self.model)
         self.table.setStyleSheet(S["table"])
-        self.table.setSelectionBehavior(QTableView.SelectRows)
-        self.table.setSelectionMode(QTableView.SingleSelection)
+        self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self.table.setAlternatingRowColors(True)
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
         header = self.table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.Stretch)
-        header.setSectionResizeMode(1, QHeaderView.Stretch)
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         for i in range(2, len(TABLE_COLUMNS)):
-            header.setSectionResizeMode(i, QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
         main_lay.addWidget(self.table, 1)
 
         self.lbl_info = QLabel("0 kayit")
@@ -311,14 +283,17 @@ class SaglikTakipPage(QWidget):
         header_lay.setContentsMargins(12, 12, 12, 12)
         
         lbl_drawer_title = QLabel("Sağlık Kontrolü Detay")
-        lbl_drawer_title.setStyleSheet(f"font-size: 14px; font-weight: 600; color: {DarkTheme.TEXT_PRIMARY};")
+        lbl_drawer_title.setProperty("color-role", "primary")
+        lbl_drawer_title.setStyleSheet("font-size: 14px; font-weight: 600;")
+        lbl_drawer_title.style().unpolish(lbl_drawer_title)
+        lbl_drawer_title.style().polish(lbl_drawer_title)
         header_lay.addWidget(lbl_drawer_title)
         header_lay.addStretch()
 
         btn_drawer_close = QPushButton()
         btn_drawer_close.setFixedSize(32, 32)
         btn_drawer_close.setStyleSheet(S["close_btn"])
-        btn_drawer_close.setCursor(QCursor(Qt.PointingHandCursor))
+        btn_drawer_close.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(btn_drawer_close, "x", color=DarkTheme.TEXT_PRIMARY, size=16)
         btn_drawer_close.clicked.connect(self._close_drawer)
         header_lay.addWidget(btn_drawer_close)
@@ -327,7 +302,7 @@ class SaglikTakipPage(QWidget):
         # Drawer scroll içerik
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setStyleSheet(S.get("scroll", ""))
 
         form_content = QWidget()
@@ -394,7 +369,7 @@ class SaglikTakipPage(QWidget):
         rapor_row.addWidget(self.inp_rapor, 1)
         self.btn_rapor = QPushButton("Sec")
         self.btn_rapor.setStyleSheet(S["action_btn"])
-        self.btn_rapor.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_rapor.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_rapor, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
         rapor_row.addWidget(self.btn_rapor)
         g3.addLayout(rapor_row, 0, 1)
@@ -415,12 +390,12 @@ class SaglikTakipPage(QWidget):
         btn_row.setSpacing(8)
         self.btn_temizle = QPushButton("Temizle / Yeni")
         self.btn_temizle.setStyleSheet(S["action_btn"])
-        self.btn_temizle.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_temizle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_temizle, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         btn_row.addWidget(self.btn_temizle)
         self.btn_kaydet = QPushButton("Kaydet")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
-        self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         btn_row.addWidget(self.btn_kaydet)
         drawer_lay.addLayout(btn_row)
@@ -448,11 +423,10 @@ class SaglikTakipPage(QWidget):
         if not self._db:
             return
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            personel_repo = registry.get("Personel")
-            takip_repo = registry.get("Personel_Saglik_Takip")
-            sabit_repo = registry.get("Sabitler")
+            from core.di import get_saglik_service as _svc_factory
+            _svc = _svc_factory(self._db)
+            personel_repo = _svc._r.get("Personel")
+            takip_repo = _svc._r.get("Personel_Saglik_Takip")
 
             all_personel = personel_repo.get_all()
             self._personel_rows = [
@@ -469,11 +443,6 @@ class SaglikTakipPage(QWidget):
                 self.cmb_personel.addItem(label, {"KimlikNo": kimlik, "AdSoyad": ad, "Birim": birim})
 
             self._takip_rows = takip_repo.get_all()
-            self._drive_folders = {
-                str(r.get("MenuEleman", "")).strip(): str(r.get("Aciklama", "")).strip()
-                for r in sabit_repo.get_all()
-                if r.get("Kod") == "Sistem_DriveID" and r.get("Aciklama", "").strip()
-            }
             self._all_rows = self._build_personel_list_rows(all_personel)
             self._fill_filter_combos()
             self._apply_filters()
@@ -656,19 +625,8 @@ class SaglikTakipPage(QWidget):
             self._selected_report_path = path
             self.inp_rapor.setText(path)
 
-    def _get_report_folder_id(self):
-        """Sabitler/Sistem_DriveID kayitlarindan saglik rapor klasorunu bulur."""
-        keys = [
-            "Saglik_Raporlari",
-                ]
-        for key in keys:
-            folder_id = str(self._drive_folders.get(key, "")).strip()
-            if folder_id:
-                return folder_id
-        return ""
-
-    def _upload_report_to_drive(self, tc_no, kayit_no):
-        """Seçilen raporu Drive'a yükler (veya offline modda yerel klasöre) ve link döndürür."""
+    def _upload_report(self, tc_no, kayit_no):
+        """Seçilen raporu DokumanService ile yükler ve erişim yolunu döndürür."""
         if not self._selected_report_path:
             return self.inp_rapor.text().strip()
         if not os.path.exists(self._selected_report_path):
@@ -676,39 +634,32 @@ class SaglikTakipPage(QWidget):
             return ""
 
         try:
-            from core.di import get_cloud_adapter
-            
-            cloud = get_cloud_adapter()
             ext = os.path.splitext(self._selected_report_path)[1]
             custom_name = f"{tc_no}_{kayit_no}_SaglikRapor{ext}"
-            
-            # Offline modda folder_id gereksiz ama offline_folder_name gerekli
-            folder_id = None
-            if cloud.is_online:
-                folder_id = self._get_report_folder_id()
-                if not folder_id:
-                    QMessageBox.warning(
-                        self,
-                        "Drive Ayari Eksik",
-                        "Sabitler tablosunda Sistem_DriveID icin saglik rapor klasoru bulunamadi."
-                    )
-                    return ""
-            
-            link = cloud.upload_file(
-                self._selected_report_path,
-                parent_folder_id=folder_id,
+            svc = DokumanService(self._db)
+            sonuc = svc.upload_and_save(
+                file_path=self._selected_report_path,
+                entity_type="personel",
+                entity_id=str(tc_no),
+                belge_turu="SaglikRapor",
+                folder_name="Saglik_Raporlari",
+                doc_type="Personel_Belge",
                 custom_name=custom_name,
-                offline_folder_name="Saglik_Raporlari"
+                iliskili_id=str(kayit_no),
+                iliskili_tip="Personel_Saglik_Takip",
             )
-            
-            if not link:
-                if cloud.is_online:
-                    QMessageBox.warning(self, "Drive", "Rapor Drive'a yuklenemedi.")
+
+            if not sonuc.get("ok"):
+                err = str(sonuc.get("error", "Bilinmeyen yükleme hatası"))
+                QMessageBox.warning(self, "Yukleme Hatasi", f"Rapor yüklenemedi:\n{err}")
                 return ""
-            
-            mode_text = "Drive'a yuklendi" if cloud.is_online else "yerel klasore kaydedildi"
-            logger.info(f"Saglik raporu {mode_text}: {custom_name}")
-            return str(link).strip()
+
+            rapor_ref = str(sonuc.get("drive_link") or sonuc.get("local_path") or "").strip()
+            logger.info(
+                f"Saglik raporu yuklendi [{sonuc.get('mode', 'none')}]: "
+                f"{custom_name}"
+            )
+            return rapor_ref
         except Exception as exc:
             logger.error(f"Saglik rapor yukleme hatasi: {exc}")
             QMessageBox.critical(self, "Hata", f"Rapor yuklenemedi:\n{exc}")
@@ -722,7 +673,7 @@ class SaglikTakipPage(QWidget):
         personel_data = self.cmb_personel.currentData()
         muayene_db, sonraki_db, sonuc, durum = self._compute_summary()
         kayit_no = self._editing_id or uuid.uuid4().hex[:12].upper()
-        rapor_link = self._upload_report_to_drive(
+        rapor_link = self._upload_report(
             personel_data.get("KimlikNo", ""),
             kayit_no
         )
@@ -752,10 +703,10 @@ class SaglikTakipPage(QWidget):
         }
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            takip_repo = registry.get("Personel_Saglik_Takip")
-            personel_repo = registry.get("Personel")
+            from core.di import get_saglik_service as _svc_factory
+            _svc = _svc_factory(self._db)
+            takip_repo = _svc._r.get("Personel_Saglik_Takip")
+            personel_repo = _svc._r.get("Personel")
             mevcut = takip_repo.get_by_id(payload["KayitNo"])
             if mevcut:
                 takip_repo.update(payload["KayitNo"], payload)
@@ -883,9 +834,9 @@ class SaglikTakipPage(QWidget):
             return
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            takip_repo = registry.get("Personel_Saglik_Takip")
+            from core.di import get_saglik_service as _svc_factory
+            _svc = _svc_factory(self._db)
+            takip_repo = _svc._r.get("Personel_Saglik_Takip")
             mevcut = takip_repo.get_all()
             mevcut_keys = {(str(r.get("Personelid", "")), int(r.get("Yil") or 0)) for r in mevcut}
 

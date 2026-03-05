@@ -142,7 +142,7 @@ class RaporButon(QWidget):
     ) -> QPushButton:
         btn = QPushButton(metin)
         btn.setObjectName(obj_name)
-        btn.setCursor(QCursor(Qt.PointingHandCursor))
+        btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(btn, icon_name, color=DarkTheme.TEXT_PRIMARY, size=14)
         btn.setStyleSheet(f"""
             QPushButton {{
@@ -205,10 +205,10 @@ class RaporButon(QWidget):
             self, "Rapor Hazır",
             f"{'Excel' if tur == 'excel' else 'PDF'} raporu kaydedildi.\n\n"
             f"{yol}\n\nDosya açılsın mı?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes,
         )
-        if cevap == QMessageBox.Yes:
+        if cevap == QMessageBox.StandardButton.Yes:
             RaporServisi.ac(yol)
 
     # ── Durum kontrolü ───────────────────────────────────────────────────────

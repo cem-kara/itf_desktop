@@ -6,9 +6,18 @@ from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QVBoxLayout, QWidget, QGraphicsDropShadowEffect,
 )
+
+
+class MenuButton(QPushButton):
+    """Custom button with additional attributes for menu items."""
+    def __init__(self, text: str = "", parent=None):
+        super().__init__(text, parent)
+        self._baslik: str = ""
+        self._icon_key: str | None = None
 from core.config import AppConfig
 from core.paths import BASE_DIR
 from ui.styles.colors import DarkTheme as T
+from ui.permissions.page_permissions import PAGE_PERMISSIONS
 from ui.styles.icons import GROUP_ICON_MAP, MENU_ICON_MAP, IconColors, Icons
 
 # ── Renk sabitleri ──────────────────────────────────────────────
@@ -60,9 +69,9 @@ class FlatSection(QWidget):
         self._content_lay.setSpacing(1)
         lay.addWidget(self.content)
 
-    def add_item(self, baslik: str, callback, icon_key: str | None = None) -> QPushButton:
-        btn = QPushButton(f"  {baslik}")
-        btn.setCursor(QCursor(Qt.PointingHandCursor))
+    def add_item(self, baslik: str, callback, icon_key: str | None = None) -> MenuButton:
+        btn = MenuButton(f"  {baslik}")
+        btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn.setCheckable(True)
         btn.setFixedHeight(34)
         btn._baslik = baslik
@@ -135,7 +144,7 @@ class Sidebar(QWidget):
     menu_clicked      = Signal(str, str)
     dashboard_clicked = Signal()
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, page_guard=None):
         super().__init__(parent)
         self.setFixedWidth(230)
         self.setAutoFillBackground(True)
@@ -151,6 +160,7 @@ class Sidebar(QWidget):
         self._groups        = {}
         self._all_buttons   = {}
         self._active_baslik = None
+        self._page_guard = page_guard
         self._build_ui()
 
     def _build_ui(self):
@@ -176,8 +186,8 @@ class Sidebar(QWidget):
             logo_lbl.setFixedSize(22, 22)
             hl.addWidget(logo_lbl)
         except Exception:
-            dot = QLabel("✚")
-            dot.setStyleSheet(f"color:{ACTIVE_TEXT}; font-size:18px; font-weight:900; background:transparent;")
+            dot = QLabel("+")
+            dot.setStyleSheet("font-size: 18px; font-weight: 900; background: transparent;")
             hl.addWidget(dot)
 
         # Başlık sütunu
@@ -189,9 +199,9 @@ class Sidebar(QWidget):
             f"color: #e2eaf4; font-size: 14px; font-weight: 800;"
             f" letter-spacing: -0.01em; background: transparent;"
         )
-        ver_lbl = QLabel(f"Teknik Servis · v{AppConfig.VERSION}")
+        ver_lbl = QLabel(f"Versiyon · v{AppConfig.VERSION}")
         ver_lbl.setStyleSheet(
-            f"color: {GROUP_LBL}; font-size: 10px; background: transparent;"
+            f"color: {GROUP_LBL}; font-size: 11px; background: transparent;"
         )
         name_col.addWidget(name_lbl)
         name_col.addWidget(ver_lbl)
@@ -209,7 +219,7 @@ class Sidebar(QWidget):
         # ── Kaydırılabilir Menü ────────────────────────────────
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setStyleSheet(f"""
             QScrollArea {{ border: none; background: transparent; }}
             QWidget {{ background: transparent; }}
@@ -248,7 +258,7 @@ class Sidebar(QWidget):
 
         # Bildirim butonu
         self.notifications_btn = QPushButton("  Bildirimler")
-        self.notifications_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.notifications_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         try:
             self.notifications_btn.setIcon(
                 Icons.get("bell_dot", size=14, color=NOTIFY_TEXT))
@@ -274,7 +284,7 @@ class Sidebar(QWidget):
 
         # Senkronize Et butonu
         self.sync_btn = QPushButton("  Senkronize Et")
-        self.sync_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.sync_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         try:
             self.sync_btn.setIcon(Icons.get("sync", size=14, color=SYNC_TEXT))
             self.sync_btn.setIconSize(QSize(14, 14))
@@ -332,13 +342,20 @@ class Sidebar(QWidget):
 
         for group_name, items in menu_cfg.items():
             section = FlatSection(group_name)
+            added_any = False
             for item in items:
-                baslik   = item.get("baslik", "?")
+                baslik = item.get("baslik", "?")
+                perm_key = PAGE_PERMISSIONS.get(baslik)
+                if self._page_guard and perm_key:
+                    if not self._page_guard.can_open(perm_key):
+                        continue
                 icon_key = item.get("icon")
                 btn = section.add_item(baslik, self._on_click, icon_key=icon_key)
                 self._all_buttons[baslik] = (section, btn)
-            self._groups[group_name] = section
-            self._menu_layout.addWidget(section)
+                added_any = True
+            if added_any:
+                self._groups[group_name] = section
+                self._menu_layout.addWidget(section)
 
     def _on_click(self, group: str, baslik: str):
         if self._active_baslik and self._active_baslik in self._all_buttons:

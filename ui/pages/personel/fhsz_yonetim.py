@@ -108,23 +108,23 @@ class KosulDelegate(QStyledItemDelegate):
         return editor
 
     def setEditorData(self, editor, index):
-        text = index.data(Qt.EditRole)
+        text = index.data(Qt.ItemDataRole.EditRole)
         if text in self.items:
             editor.setCurrentText(text)
 
     def setModelData(self, editor, model, index):
-        model.setData(index, editor.currentText(), Qt.EditRole)
+        model.setData(index, editor.currentText(), Qt.ItemDataRole.EditRole)
 
     def updateEditorGeometry(self, editor, option, index):
         editor.setGeometry(option.rect)
 
     def paint(self, painter, option, index):
         """Badge çizimi: Koşul A → yeşil, Koşul B → mavi."""
-        bg = QColor(29, 117, 254, 60) if option.state & QStyle.State_Selected \
+        bg = QColor(29, 117, 254, 60) if option.state & QStyle.StateFlag.State_Selected \
             else QColor("transparent")
         painter.fillRect(option.rect, bg)
 
-        text = str(index.data(Qt.DisplayRole) or "")
+        text = str(index.data(Qt.ItemDataRole.DisplayRole) or "")
         if "KOŞULU A" in str(text).upper():
             badge_bg = QColor(46, 125, 50, 140)
             border_c = QColor("#66bb6a")
@@ -133,7 +133,7 @@ class KosulDelegate(QStyledItemDelegate):
             border_c = QColor("#42a5f5")
 
         painter.save()
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = QRectF(option.rect)
         rect.adjust(5, 4, -5, -4)
         path = QPainterPath()
@@ -142,8 +142,8 @@ class KosulDelegate(QStyledItemDelegate):
         painter.setPen(QPen(border_c, 1.5))
         painter.drawPath(path)
         painter.setPen(QColor("#ffffff"))
-        painter.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        painter.drawText(rect, Qt.AlignCenter, text)
+        painter.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
         painter.restore()
 
 
@@ -154,17 +154,17 @@ class KosulDelegate(QStyledItemDelegate):
 class SonucDelegate(QStyledItemDelegate):
     """Orijinaldeki SonucDelegate'in birebir karşılığı."""
     def paint(self, painter, option, index):
-        bg = QColor(29, 117, 254, 60) if option.state & QStyle.State_Selected \
+        bg = QColor(29, 117, 254, 60) if option.state & QStyle.StateFlag.State_Selected \
             else QColor("transparent")
         painter.fillRect(option.rect, bg)
 
         try:
-            deger = float(index.data(Qt.DisplayRole))
+            deger = float(index.data(Qt.ItemDataRole.DisplayRole))
         except (ValueError, TypeError):
             deger = 0
 
         painter.save()
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = QRectF(option.rect)
         rect.adjust(8, 5, -8, -5)
 
@@ -179,8 +179,8 @@ class SonucDelegate(QStyledItemDelegate):
         painter.setPen(QPen(c_border, 1))
         painter.drawPath(path)
         painter.setPen(c_text)
-        painter.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        painter.drawText(rect, Qt.AlignCenter, f"{deger:.0f}")
+        painter.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, f"{deger:.0f}")
         painter.restore()
 
 
@@ -245,14 +245,17 @@ class FHSZYonetimPage(QWidget):
         self._add_sep(fp)
 
         self.lbl_donem = QLabel("Dönem aralığı: ...")
-        self.lbl_donem.setStyleSheet(f"color: {DarkTheme.TEXT_MUTED}; font-size: 11px; font-style: italic;")
+        self.lbl_donem.setProperty("color-role", "muted")
+        self.lbl_donem.setStyleSheet("font-size: 11px;")
+        self.lbl_donem.style().unpolish(self.lbl_donem)
+        self.lbl_donem.style().polish(self.lbl_donem)
         fp.addWidget(self.lbl_donem)
 
         fp.addStretch()
 
         self.btn_hesapla = QPushButton("HESAPLA")
         self.btn_hesapla.setStyleSheet(S["calc_btn"])
-        self.btn_hesapla.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_hesapla.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_hesapla, "bar_chart", color=DarkTheme.TEXT_PRIMARY, size=14)
         fp.addWidget(self.btn_hesapla)
 
@@ -264,16 +267,16 @@ class FHSZYonetimPage(QWidget):
         self.tablo.setHorizontalHeaderLabels(TABLO_KOLONLARI)
         self.tablo.verticalHeader().setVisible(False)
         self.tablo.setAlternatingRowColors(True)
-        self.tablo.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tablo.setStyleSheet(S["table"])
         self.tablo.setEditTriggers(QAbstractItemView.SelectedClicked | QAbstractItemView.DoubleClicked)
 
         h = self.tablo.horizontalHeader()
-        h.setSectionResizeMode(QHeaderView.Stretch)
-        h.setSectionResizeMode(C_KIMLIK, QHeaderView.ResizeToContents)
-        h.setSectionResizeMode(C_KOSUL, QHeaderView.Fixed)
+        h.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        h.setSectionResizeMode(C_KIMLIK, QHeaderView.ResizeMode.ResizeToContents)
+        h.setSectionResizeMode(C_KOSUL, QHeaderView.ResizeMode.Fixed)
         self.tablo.setColumnWidth(C_KOSUL, 170)
-        h.setSectionResizeMode(C_SAAT, QHeaderView.Fixed)
+        h.setSectionResizeMode(C_SAAT, QHeaderView.ResizeMode.Fixed)
         self.tablo.setColumnWidth(C_SAAT, 130)
 
         # AitYıl + Dönem gizli
@@ -319,7 +322,7 @@ class FHSZYonetimPage(QWidget):
 
         self.btn_kaydet = QPushButton("KAYDET / GUNCELLE")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
-        self.btn_kaydet.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         bf.addWidget(self.btn_kaydet)
 
@@ -337,7 +340,9 @@ class FHSZYonetimPage(QWidget):
         sep = QFrame()
         sep.setFixedWidth(1)
         sep.setFixedHeight(20)
-        sep.setStyleSheet(f"background-color: {DarkTheme.BORDER_PRIMARY};")
+        sep.setProperty("bg-role", "separator")
+        sep.style().unpolish(sep)
+        sep.style().polish(sep)
         layout.addWidget(sep)
 
     # ═══════════════════════════════════════════
@@ -386,18 +391,18 @@ class FHSZYonetimPage(QWidget):
         self.progress.setVisible(True)
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
+            from core.di import get_fhsz_service as _fhsz_factory
+            _svc4 = _fhsz_factory(self._db)
 
             # 1. Personeller
             self._all_personel = registry.get("Personel").get_all()
 
             # 2. İzinler
-            self._all_izin = registry.get("Izin_Giris").get_all()
+            self._all_izin = _svc.get_izin_listesi()
 
             # 3. Tatiller → numpy busday_count formatı
             try:
-                tatiller = registry.get("Tatiller").get_all()
+                tatiller = _svc.get_tatil_gunleri()
                 self._tatil_listesi_np = []
                 for r in tatiller:
                     d = parse_date(r.get("Tarih", ""))
@@ -408,7 +413,8 @@ class FHSZYonetimPage(QWidget):
 
             # 4. Sabitler → Kod="Gorev_Yeri"
             #    MenuEleman = birim adı | Aciklama = "Çalışma Koşulu A / B"
-            sabitler = registry.get("Sabitler").get_all()
+            sabitler_raw = _svc._r.get("Sabitler").get_all()
+            sabitler = sabitler_raw
 
             self._birim_kosul_map = {}
 
@@ -456,7 +462,7 @@ class FHSZYonetimPage(QWidget):
     def _set_item(self, row, col, text):
         """Salt-okunur hücre ekle."""
         item = QTableWidgetItem(str(text))
-        item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+        item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
         self.tablo.setItem(row, col, item)
 
     def _satir_hesapla(self, row):
@@ -500,8 +506,8 @@ class FHSZYonetimPage(QWidget):
             if str(iz.get("Durum", "")).strip() == "İptal":
                 continue
 
-            izin_bas = parse_date(iz.get("BaslamaTarihi", ""))
-            izin_bit = parse_date(iz.get("BitisTarihi", ""))
+            izin_bas = _parse_date_as_datetime(iz.get("BaslamaTarihi", ""))
+            izin_bit = _parse_date_as_datetime(iz.get("BitisTarihi", ""))
             if not izin_bas or not izin_bit:
                 continue
 
@@ -543,8 +549,8 @@ class FHSZYonetimPage(QWidget):
         ay_str = self.cmb_ay.currentText()
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
+            from core.di import get_fhsz_service as _fhsz_factory
+            _svc4 = _fhsz_factory(self._db)
 
             # Mevcut kayıtları kontrol et
             tum_puantaj = registry.get("FHSZ_Puantaj").get_all()
@@ -589,7 +595,7 @@ class FHSZYonetimPage(QWidget):
 
             kosul = row_data.get("CalismaKosulu") or "Çalışma Koşulu B"
             item_k = QTableWidgetItem(str(kosul))
-            item_k.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
+            item_k.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)
             self.tablo.setItem(row_idx, C_KOSUL, item_k)
 
             self._set_item(row_idx, C_YIL, self.cmb_yil.currentText())
@@ -656,7 +662,7 @@ class FHSZYonetimPage(QWidget):
                 # Pasif personel kontrolü
                 kisi_bit = donem_bit
                 if durum == "Pasif":
-                    ayrilis = parse_date(p.get("AyrilisTarihi", ""))
+                    ayrilis = _parse_date_as_datetime(p.get("AyrilisTarihi", ""))
                     if ayrilis:
                         if ayrilis < hesap_bas:
                             continue
@@ -677,7 +683,7 @@ class FHSZYonetimPage(QWidget):
                    and self._birim_kosul_map[birim_upper] == "A":
                     kosul = "Çalışma Koşulu A"
                 item_k = QTableWidgetItem(kosul)
-                item_k.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
+                item_k.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)
                 self.tablo.setItem(row_idx, C_KOSUL, item_k)
 
                 self._set_item(row_idx, C_YIL, self.cmb_yil.currentText())
@@ -728,7 +734,7 @@ class FHSZYonetimPage(QWidget):
             durum = str(p.get("Durum", "Aktif")).strip()
             kisi_bit = donem_bit
             if durum == "Pasif":
-                ayrilis = parse_date(p.get("AyrilisTarihi", ""))
+                ayrilis = _parse_date_as_datetime(p.get("AyrilisTarihi", ""))
                 if ayrilis:
                     if ayrilis < hesap_bas:
                         continue
@@ -750,7 +756,7 @@ class FHSZYonetimPage(QWidget):
                and self._birim_kosul_map[birim_upper] == "A":
                 kosul = "Çalışma Koşulu A"
             item_k = QTableWidgetItem(kosul)
-            item_k.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
+            item_k.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)
             self.tablo.setItem(row_idx, C_KOSUL, item_k)
 
             self._set_item(row_idx, C_YIL, self.cmb_yil.currentText())
@@ -792,9 +798,9 @@ class FHSZYonetimPage(QWidget):
         ay_str = self.cmb_ay.currentText()
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            repo = registry.get("FHSZ_Puantaj")
+            from core.di import get_fhsz_service as _fhsz_factory
+            _svc3 = _fhsz_factory(self._db)
+            repo = _svc3._r.get("FHSZ_Puantaj")
 
             # Mevcut kayıt kontrol
             tum = repo.get_all()
@@ -812,9 +818,9 @@ class FHSZYonetimPage(QWidget):
                     f"'Evet' derseniz:\n"
                     f"1. Mevcut kayıtlar silinecek.\n"
                     f"2. Tablodaki GÜNCEL veriler kaydedilecek.",
-                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
                 )
-                if cevap != QMessageBox.Yes:
+                if cevap != QMessageBox.StandardButton.Yes:
                     self.lbl_durum.setText("İptal edildi.")
                     return
 
@@ -885,8 +891,8 @@ class FHSZYonetimPage(QWidget):
         3. sua_hak_edis_hesapla → İzin_Bilgi.SuaCariYilKazanim güncelle
         """
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
+            from core.di import get_fhsz_service as _fhsz_factory
+            _svc4 = _fhsz_factory(self._db)
 
             tum = repo_puantaj.get_all()
             personel_toplam = {}
@@ -900,7 +906,7 @@ class FHSZYonetimPage(QWidget):
                     saat = 0
                 personel_toplam[tc] = personel_toplam.get(tc, 0) + saat
 
-            izin_bilgi = registry.get("Izin_Bilgi")
+            izin_bilgi = _svc4._r.get("Izin_Bilgi")
             for tc, toplam_saat in personel_toplam.items():
                 yeni_hak = sua_hak_edis_hesapla(toplam_saat)
                 try:

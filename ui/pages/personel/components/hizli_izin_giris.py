@@ -79,10 +79,10 @@ class HizliIzinGirisDialog(QDialog):
         # Butonlar
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
-        btn_iptal = QPushButton("İptal", styleSheet=S["cancel_btn"], cursor=QCursor(Qt.PointingHandCursor))
+        btn_iptal = QPushButton("İptal", styleSheet=S["cancel_btn"], cursor=QCursor(Qt.CursorShape.PointingHandCursor))
         btn_iptal.clicked.connect(self.cancelled.emit)
         btn_layout.addWidget(btn_iptal)
-        btn_kaydet = QPushButton("Kaydet", styleSheet=S["save_btn"], cursor=QCursor(Qt.PointingHandCursor))
+        btn_kaydet = QPushButton("Kaydet", styleSheet=S["save_btn"], cursor=QCursor(Qt.CursorShape.PointingHandCursor))
         btn_kaydet.clicked.connect(self._on_save)
         btn_layout.addWidget(btn_kaydet)
         main.addLayout(btn_layout)
@@ -191,8 +191,8 @@ class HizliIzinGirisDialog(QDialog):
                     alan = "YillikKalan" if izin_tipi == "Yıllık İzin" else "SuaKalan"
                     kalan = float(izin_bilgi.get(alan, 0))
                     if gun > kalan:
-                        cevap = QMessageBox.question(self, "Yetersiz Bakiye", f"Kalan bakiye: {kalan} gün. Devam edilsin mi?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                        if cevap != QMessageBox.Yes: return
+                        cevap = QMessageBox.question(self, "Yetersiz Bakiye", f"Kalan bakiye: {kalan} gün. Devam edilsin mi?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+                        if cevap != QMessageBox.StandardButton.Yes: return
 
             # Kaydet
             izin_id = str(uuid.uuid4())[:8].upper()

@@ -1,41 +1,41 @@
-/* ═══════════════════════════════════════════════════════════════
-   REPYS v3 — Medikal Dark-Blue Tema (theme_template.qss)
-   Palette: Deep Navy · Cyan accent
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   REPYS v3 â€” Medikal Dark-Blue Tema (theme_template.qss)
+   Palette: Deep Navy Â· Cyan accent
    
-   ⚠ DİKKAT: Bu dosya şablondur. Sabit renkler {PLACEHOLDER} formatında.
-   LoadTheme() işlevi çalışma zamanında dynamik olarak doldurur.
-   ═══════════════════════════════════════════════════════════════ */
+   âš  DÄ°KKAT: Bu dosya ÅŸablondur. Sabit renkler {PLACEHOLDER} formatÄ±nda.
+   LoadTheme() iÅŸlevi Ã§alÄ±ÅŸma zamanÄ±nda dynamik olarak doldurur.
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-/* ── Global ──────────────────────────────────────────────────── */
-QWidget {{
+/* â”€â”€ Global â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+QWidget {
     font-family: "Segoe UI", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
     font-size: 13px;
     color: {TEXT_PRIMARY};
     background-color: {BG_PRIMARY};
-}}
+}
 
-QMainWindow, QDialog {{
+QMainWindow, QDialog {
     background-color: {BG_PRIMARY};
-}}
+}
 
-/* ── Özel pencere çerçevesi ─────────────────────────────────── */
-QMainWindow {{
+/* â”€â”€ Ã–zel pencere Ã§erÃ§evesi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+QMainWindow {
     border: 1px solid rgba(0,180,216,0.15);
-}}
+}
 
-/* ── MessageBox ──────────────────────────────────────────────── */
-QMessageBox {{
+/* â”€â”€ MessageBox â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+QMessageBox {
     background-color: {BG_SECONDARY};
     border: 1px solid rgba(0,180,216,0.20);
     border-radius: 12px;
-}}
-QMessageBox QLabel {{
+}
+QMessageBox QLabel {
     color: {TEXT_PRIMARY};
     background-color: transparent;
     font-size: 13px;
     line-height: 1.5;
-}}
-QMessageBox QPushButton {{
+}
+QMessageBox QPushButton {
     background-color: {ACCENT};
     color: {BG_DARK};
     border: none;
@@ -44,214 +44,221 @@ QMessageBox QPushButton {{
     font-size: 13px;
     font-weight: 700;
     min-width: 80px;
-}}
-QMessageBox QPushButton:hover {{ background-color: {ACCENT2}; }}
-QMessageBox QPushButton[text="İptal"],
+}
+QMessageBox QPushButton:hover { background-color: {ACCENT2}; }
+QMessageBox QPushButton[text="Ä°ptal"],
 QMessageBox QPushButton[text="Cancel"],
-QMessageBox QPushButton[text="Hayır"],
-QMessageBox QPushButton[text="No"] {{
+QMessageBox QPushButton[text="HayÄ±r"],
+QMessageBox QPushButton[text="No"] {
     background-color: rgba(255,255,255,0.06);
     color: {TEXT_SECONDARY};
     border: 1px solid rgba(255,255,255,0.10);
-}}
-QMessageBox QPushButton[text="İptal"]:hover,
-QMessageBox QPushButton[text="Cancel"]:hover {{
+}
+QMessageBox QPushButton[text="Ä°ptal"]:hover,
+QMessageBox QPushButton[text="Cancel"]:hover {
     background-color: rgba(255,255,255,0.09);
     color: {TEXT_PRIMARY};
-}}
+}
 
-/* ── ToolTip ─────────────────────────────────────────────────── */
-QToolTip {{
+/* â”€â”€ ToolTip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+QToolTip {
     background-color: {BG_ELEVATED};
     color: {TEXT_PRIMARY};
     border: 1px solid rgba(0,180,216,0.30);
     border-radius: 7px;
     padding: 6px 10px;
     font-size: 12px;
-}}
+}
 
-/* ── ScrollBar ───────────────────────────────────────────────── */
-QScrollBar:vertical {{
+/* â”€â”€ ScrollBar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+QScrollBar:vertical {
     background: transparent;
     width: 8px;
     margin: 4px 2px;
-}}
-QScrollBar::handle:vertical {{
+}
+QScrollBar::handle:vertical {
     background: rgba(255,255,255,0.12);
     border-radius: 4px;
     min-height: 32px;
-}}
-QScrollBar::handle:vertical:hover  {{ background: rgba(0,180,216,0.35); }}
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
-QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{ background: transparent; }}
+}
+QScrollBar::handle:vertical:hover  { background: rgba(0,180,216,0.35); }
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }
 
-QScrollBar:horizontal {{
+QScrollBar:horizontal {
     background: transparent;
     height: 8px;
     margin: 2px 4px;
-}}
-QScrollBar::handle:horizontal {{
+}
+QScrollBar::handle:horizontal {
     background: rgba(255,255,255,0.12);
     border-radius: 4px;
     min-width: 32px;
-}}
-QScrollBar::handle:horizontal:hover {{ background: rgba(0,180,216,0.35); }}
-QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0; }}
+}
+QScrollBar::handle:horizontal:hover { background: rgba(0,180,216,0.35); }
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0; }
 
-/* ── Splitter ────────────────────────────────────────────────── */
-QSplitter::handle {{
+/* â”€â”€ Splitter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+QSplitter::handle {
     background-color: {BORDER_PRIMARY};
     width: 1px; height: 1px;
-}}
+}
 
-/* ── QProgressBar ────────────────────────────────────────────── */
-QProgressBar {{
+/* â”€â”€ QProgressBar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+QProgressBar {
     background-color: rgba(255,255,255,0.06);
     border: none;
     border-radius: 5px;
     height: 6px;
     text-align: center;
     color: transparent;
-}}
-QProgressBar::chunk {{
+}
+QProgressBar::chunk {
     background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
         stop:0 {ACCENT}, stop:1 {ACCENT2});
     border-radius: 5px;
-}}
+}
 
-/* ── QCheckBox / QRadioButton ────────────────────────────────── */
-QCheckBox, QRadioButton {{
+/* â”€â”€ QCheckBox / QRadioButton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+QCheckBox, QRadioButton {
     color: {TEXT_SECONDARY};
     spacing: 8px;
     font-size: 13px;
     background: transparent;
-}}
-QCheckBox::indicator, QRadioButton::indicator {{
+}
+QCheckBox::indicator, QRadioButton::indicator {
     width: 16px; height: 16px;
-    border: 1.5px solid rgba(255,255,255,0.15);
+    border: 2px solid {TEXT_SECONDARY};
     border-radius: 4px;
-    background-color: {BG_TERTIARY};
-}}
-QCheckBox::indicator:hover    {{ border-color: {ACCENT}; }}
-QCheckBox::indicator:checked  {{
+    background-color: {INPUT_BG};
+}
+QCheckBox::indicator:hover    { border-color: {ACCENT}; background-color: {BG_TERTIARY}; }
+QCheckBox::indicator:checked  {
     background-color: {ACCENT};
     border-color: {ACCENT};
-}}
-QRadioButton::indicator       {{ border-radius: 8px; }}
-QRadioButton::indicator:checked {{
+    image: url(:checked);
+}
+QCheckBox::indicator:disabled {
+    border-color: {TEXT_DISABLED};
+    background-color: {BG_SECONDARY};
+}
+QRadioButton::indicator       { border-radius: 8px; }
+QRadioButton::indicator:checked {
     background-color: {ACCENT};
     border-color: {ACCENT};
-}}
+}
 
-/* ── QSpinBox ────────────────────────────────────────────────── */
-QSpinBox {{
-    background-color: {BG_TERTIARY};
-    border: 1.5px solid rgba(255,255,255,0.08);
-    border-radius: 8px;
-    padding: 5px 8px;
+/* â”€â”€ QSpinBox / QDoubleSpinBox â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+QSpinBox, QDoubleSpinBox {
+    background-color: {INPUT_BG};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 4px;
+    padding: 5px 9px;
+    min-height: 22px;
     font-size: 13px;
     color: {TEXT_PRIMARY};
-}}
-QSpinBox:focus {{ border-color: {ACCENT}; }}
-QSpinBox::up-button, QSpinBox::down-button {{
+}
+QSpinBox:focus, QDoubleSpinBox:focus { border-color: {ACCENT}; }
+QSpinBox::up-button, QSpinBox::down-button,
+QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
     width: 20px;
     background: transparent;
     border: none;
-}}
+}
 
-/* ── QTextBrowser ────────────────────────────────────────────── */
-QTextBrowser {{
+/* â”€â”€ QTextBrowser â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+QTextBrowser {
     background-color: {BG_SECONDARY};
     border: 1px solid rgba(255,255,255,0.07);
     border-radius: 10px;
     color: {TEXT_PRIMARY};
     padding: 10px;
     font-size: 13px;
-}}
+}
 
-/* ── QMenuBar / QMenu ────────────────────────────────────────── */
-QMenuBar {{
+/* â”€â”€ QMenuBar / QMenu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+QMenuBar {
     background-color: {BG_SECONDARY};
     border-bottom: 1px solid rgba(255,255,255,0.07);
     color: {TEXT_PRIMARY};
     padding: 2px;
-}}
-QMenuBar::item {{ padding: 5px 10px; border-radius: 5px; }}
-QMenuBar::item:selected {{
+}
+QMenuBar::item { padding: 5px 10px; border-radius: 5px; }
+QMenuBar::item:selected {
     background-color: rgba(0,180,216,0.10);
     color: {ACCENT2};
-}}
+}
 
-QMenu {{
+QMenu {
     background-color: {BG_ELEVATED};
     border: 1px solid rgba(0,180,216,0.20);
     border-radius: 10px;
     padding: 4px;
     color: {TEXT_PRIMARY};
-}}
-QMenu::item {{ padding: 7px 16px; border-radius: 6px; font-size: 13px; }}
-QMenu::item:selected {{
+}
+QMenu::item { padding: 7px 16px; border-radius: 6px; font-size: 13px; }
+QMenu::item:selected {
     background-color: rgba(0,180,216,0.12);
     color: {ACCENT2};
-}}
-QMenu::separator {{
+}
+QMenu::separator {
     background-color: rgba(255,255,255,0.07);
     height: 1px;
     margin: 4px 8px;
-}}
+}
 
-/* ── QStatusBar ──────────────────────────────────────────────── */
-QStatusBar {{
+/* â”€â”€ QStatusBar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+QStatusBar {
     background-color: {BG_DARK};
     border-top: 1px solid rgba(0,180,216,0.15);
     color: {TEXT_MUTED};
     font-size: 11px;
-}}
-QStatusBar QLabel {{ color: {TEXT_MUTED}; font-size: 11px; }}
+}
+QStatusBar QLabel { color: {TEXT_MUTED}; font-size: 11px; }
 
-/* ── QCalendarWidget ─────────────────────────────────────────── */
-QCalendarWidget {{
+/* â”€â”€ QCalendarWidget â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+QCalendarWidget {
     background-color: {BG_SECONDARY};
     color: {TEXT_PRIMARY};
     border: 1px solid rgba(0,180,216,0.20);
     border-radius: 10px;
-}}
-QCalendarWidget QToolButton {{
+}
+QCalendarWidget QToolButton {
     background-color: transparent;
     color: {TEXT_PRIMARY};
     border: none;
     padding: 5px 10px;
     font-size: 13px;
     font-weight: 600;
-}}
-QCalendarWidget QToolButton:hover {{
+}
+QCalendarWidget QToolButton:hover {
     background-color: rgba(0,180,216,0.10);
     border-radius: 6px;
     color: {ACCENT2};
-}}
-QCalendarWidget QAbstractItemView {{
+}
+QCalendarWidget QAbstractItemView {
     background-color: {BG_SECONDARY};
     color: {TEXT_SECONDARY};
     selection-background-color: rgba(0,180,216,0.18);
     selection-color: {ACCENT2};
     font-size: 13px;
     outline: none;
-}}
-QCalendarWidget QAbstractItemView:disabled {{ color: {TEXT_DISABLED}; }}
-QCalendarWidget #qt_calendar_navigationbar {{
+}
+QCalendarWidget QAbstractItemView:disabled { color: {TEXT_DISABLED}; }
+QCalendarWidget #qt_calendar_navigationbar {
     background-color: {BG_TERTIARY};
     border-bottom: 1px solid rgba(255,255,255,0.07);
     border-radius: 10px 10px 0 0;
     padding: 4px;
-}}
+}
 
-/* ── QDialog ─────────────────────────────────────────────────── */
-QDialog {{
+/* â”€â”€ QDialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+QDialog {
     background-color: {BG_SECONDARY};
     border: 1px solid rgba(0,180,216,0.20);
     border-radius: 14px;
-}}
-QDialogButtonBox QPushButton {{
+}
+QDialogButtonBox QPushButton {
     background-color: {ACCENT};
     color: {BG_DARK};
     border: none;
@@ -260,14 +267,14 @@ QDialogButtonBox QPushButton {{
     font-size: 13px;
     font-weight: 700;
     min-width: 80px;
-}}
-QDialogButtonBox QPushButton:hover {{ background-color: {ACCENT2}; }}
+}
+QDialogButtonBox QPushButton:hover { background-color: {ACCENT2}; }
 
-/* ── QLabel ──────────────────────────────────────────────────── */
-QLabel {{ background: transparent; color: {TEXT_PRIMARY}; }}
+/* â”€â”€ QLabel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+QLabel { background: transparent; color: {TEXT_PRIMARY}; }
 
-/* ── QGroupBox (fallback) ────────────────────────────────────── */
-QGroupBox {{
+/* â”€â”€ QGroupBox (fallback) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+QGroupBox {
     background-color: {BG_SECONDARY};
     border: 1px solid rgba(255,255,255,0.07);
     border-radius: 10px;
@@ -276,8 +283,8 @@ QGroupBox {{
     font-size: 12px;
     font-weight: 700;
     color: {TEXT_PRIMARY};
-}}
-QGroupBox::title {{
+}
+QGroupBox::title {
     subcontrol-origin: margin;
     left: 12px;
     padding: 2px 10px;
@@ -288,16 +295,16 @@ QGroupBox::title {{
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.05em;
-}}
+}
 
-/* ── QTabWidget ──────────────────────────────────────────────── */
-QTabWidget::pane {{
+/* â”€â”€ QTabWidget â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+QTabWidget::pane {
     background-color: {BG_SECONDARY};
     border: 1px solid rgba(255,255,255,0.07);
     border-radius: 10px;
     top: -1px;
-}}
-QTabBar::tab {{
+}
+QTabBar::tab {
     background-color: transparent;
     color: {TEXT_SECONDARY};
     border: none;
@@ -306,17 +313,317 @@ QTabBar::tab {{
     font-size: 12px;
     font-weight: 500;
     margin-right: 2px;
-}}
-QTabBar::tab:hover {{ color: {TEXT_PRIMARY}; border-bottom-color: rgba(255,255,255,0.15); }}
-QTabBar::tab:selected {{
+}
+QTabBar::tab:hover { color: {TEXT_PRIMARY}; border-bottom-color: rgba(255,255,255,0.15); }
+QTabBar::tab:selected {
     color: {ACCENT2};
     border-bottom-color: {ACCENT};
     font-weight: 700;
-}}
+}
 
-/* ── QFrame ayırıcılar ───────────────────────────────────────── */
+/* â”€â”€ QFrame ayÄ±rÄ±cÄ±lar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 QFrame[frameShape="4"],   /* HLine */
-QFrame[frameShape="5"] {{  /* VLine */
+QFrame[frameShape="5"] {  /* VLine */
     color: {BORDER_PRIMARY};
     background-color: {BORDER_PRIMARY};
-}}
+}
+
+/* Table Widget / View */
+QTableWidget, QTableView {
+    background-color: {BG_PRIMARY};
+    color: {TEXT_PRIMARY};
+    gridline-color: {BORDER_PRIMARY};
+    border: 1px solid {BORDER_PRIMARY};
+    border-radius: 6px;
+    alternate-background-color: {BG_SECONDARY};
+}
+
+QTableWidget::item, QTableView::item {
+    padding: 4px;
+    color: {TEXT_PRIMARY};
+    background-color: {BG_PRIMARY};
+    border: none;
+}
+
+QTableWidget::item:alternate, QTableView::item:alternate {
+    background-color: {BG_SECONDARY};
+}
+
+QTableWidget::item:selected, QTableView::item:selected {
+    background-color: {ACCENT_BG};
+    color: {ACCENT};
+}
+
+QHeaderView::section {
+    background-color: {BG_SECONDARY};
+    color: {TEXT_TABLE_HEADER};
+    padding: 8px 6px;
+    border: none;
+    border-bottom: 1px solid {BORDER_PRIMARY};
+    border-right: 1px solid {BORDER_PRIMARY};
+    font-weight: 600;
+    font-size: 12px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   REPYS v3 — Semantik Rol Sistemi
+   
+   Python'da setProperty("color-role", "muted") çağrısı yapın.
+   Renk ve arka plan tüm tema değişimlerinde otomatik güncellenir.
+   setStyleSheet() ile renk yazmak GEREKMİYOR.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Renk Rolleri (QLabel, QWidget vb.) ─────────────────────── */
+*[color-role="primary"]   { color: {TEXT_PRIMARY};   background: transparent; }
+*[color-role="secondary"] { color: {TEXT_SECONDARY}; background: transparent; }
+*[color-role="muted"]     { color: {TEXT_MUTED};     background: transparent; }
+*[color-role="disabled"]  { color: {TEXT_DISABLED};  background: transparent; }
+*[color-role="accent"]    { color: {ACCENT};         background: transparent; }
+*[color-role="accent2"]   { color: {ACCENT2};        background: transparent; }
+*[color-role="ok"]        { color: {STATUS_SUCCESS}; background: transparent; }
+*[color-role="warn"]      { color: {STATUS_WARNING}; background: transparent; }
+*[color-role="err"]       { color: {STATUS_ERROR};   background: transparent; }
+*[color-role="info"]      { color: {STATUS_INFO};    background: transparent; }
+
+/* ── Arka Plan Rolleri ──────────────────────────────────────── */
+*[bg-role="page"]      { background-color: {BG_PRIMARY};   }
+*[bg-role="panel"]     { background-color: {BG_SECONDARY}; }
+*[bg-role="elevated"]  { background-color: {BG_ELEVATED};  }
+*[bg-role="hover"]     { background-color: {BG_TERTIARY};  }
+*[bg-role="input"]     { background-color: {INPUT_BG};     }
+*[bg-role="separator"] { background-color: {BORDER_PRIMARY}; border: none; max-height: 1px; }
+*[bg-role="separator-secondary"] { background-color: {BORDER_SECONDARY}; border: none; max-height: 1px; }
+*[bg-role="accent"]    { background-color: {ACCENT}; border: none; }
+*[bg-role="transparent"] { background: transparent; border: none; }
+
+/* ── Kenarlık Rolleri ───────────────────────────────────────── */
+*[border-role="top"]    { background: transparent; border-top: 1px solid {BORDER_PRIMARY}; border-left: none; border-right: none; border-bottom: none; }
+*[border-role="top-secondary"] { background: transparent; border-top: 1px solid {BORDER_SECONDARY}; border-left: none; border-right: none; border-bottom: none; }
+*[border-role="bottom"] { background: transparent; border-bottom: 1px solid {BORDER_PRIMARY}; border-left: none; border-right: none; border-top: none; }
+*[border-role="panel"]  { background-color: {BG_SECONDARY}; border: 1px solid {BORDER_PRIMARY}; border-radius: 8px; }
+
+/* ── QGroupBox Rolleri ──────────────────────────────────────── */
+QGroupBox[gb-role="section"] {
+    background-color: {BG_SECONDARY};
+    border: 1px solid {BORDER_PRIMARY};
+    border-radius: 8px;
+    margin-top: 8px;
+    font-weight: bold;
+    color: {TEXT_PRIMARY};
+}
+QGroupBox[gb-role="section"]::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 12px;
+    padding: 0 6px;
+    color: {ACCENT};
+    font-size: 12px;
+    font-weight: 700;
+    background-color: {BG_SECONDARY};
+}
+
+/* ── Nav Bar (sekme altı çizgi) ─────────────────────────────── */
+QWidget[nav-role="bar"] {
+    background: transparent;
+    border-top: 1px solid {BORDER_SECONDARY};
+}
+
+/* ── İkon Buton ─────────────────────────────────────────────── */
+QPushButton[btn-role="icon"] {
+    background: rgba(255,255,255,0.08);
+    border: none;
+    border-radius: 4px;
+}
+QPushButton[btn-role="icon"]:hover {
+    background: rgba(255,255,255,0.18);
+}
+
+/* ── Status badge label ──────────────────────────────────────── */
+QLabel[font-role="xs"]   { font-size: 9px;  }
+QLabel[font-role="sm"]   { font-size: 10px; }
+QLabel[font-role="body"] { font-size: 11px; }
+QLabel[font-role="md"]   { font-size: 12px; }
+QLabel[font-role="lg"]   { font-size: 13px; }
+QLabel[font-role="xl"]   { font-size: 14px; }
+QLabel[font-role="stat"] { font-size: 16px; }
+QLabel[font-role="hero"] { font-size: 18px; font-weight: bold; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   REPYS v3.2 — style-role Sistemi
+   
+   Python'da: widget.setStyleSheet(STYLES["btn_action"])  →  KALDIRILDI
+   Yeni yöntem: btn.setProperty("style-role", "action")
+   
+   Tema değişince app.setStyleSheet() çağrılır — otomatik güncellenir.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Buton Rolleri ──────────────────────────────────────────── */
+QPushButton[style-role="action"] {
+    background-color: {BTN_PRIMARY_BG};
+    color: {BTN_PRIMARY_TEXT};
+    border: none;
+    border-radius: 4px;
+    padding: 4px 14px;
+    font-weight: 700;
+}
+QPushButton[style-role="action"]:hover    { background-color: {BTN_PRIMARY_HOVER}; }
+QPushButton[style-role="action"]:pressed  { opacity: 0.8; }
+QPushButton[style-role="action"]:disabled {
+    background-color: {BORDER_PRIMARY};
+    color: {TEXT_MUTED};
+}
+
+QPushButton[style-role="secondary"] {
+    background-color: transparent;
+    color: {TEXT_SECONDARY};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-weight: 600;
+}
+QPushButton[style-role="secondary"]:hover {
+    background-color: {BG_ELEVATED};
+    color: {TEXT_PRIMARY};
+    border-color: {INPUT_BORDER_FOCUS};
+}
+QPushButton[style-role="secondary"]:disabled {
+    color: {TEXT_MUTED};
+    border-color: {BORDER_PRIMARY};
+}
+
+QPushButton[style-role="success"] {
+    background-color: transparent;
+    color: {TEXT_SECONDARY};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-weight: 600;
+}
+QPushButton[style-role="success"]:hover {
+    background-color: {BTN_SUCCESS_BG};
+    color: {BTN_SUCCESS_TEXT};
+    border-color: {BTN_SUCCESS_BORDER};
+}
+
+QPushButton[style-role="danger"] {
+    background-color: transparent;
+    color: {TEXT_SECONDARY};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-weight: 600;
+}
+QPushButton[style-role="danger"]:hover {
+    background-color: {BTN_DANGER_BG};
+    color: {BTN_DANGER_TEXT};
+    border-color: {BTN_DANGER_BORDER};
+}
+
+QPushButton[style-role="refresh"] {
+    background-color: transparent;
+    color: {TEXT_SECONDARY};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-weight: 600;
+}
+QPushButton[style-role="refresh"]:hover {
+    background-color: {BG_ELEVATED};
+    color: {TEXT_PRIMARY};
+}
+
+/* ── Etiket Rolleri ─────────────────────────────────────────── */
+QLabel[style-role="form"] {
+    color: {TEXT_SECONDARY};
+    font-size: 11px;
+    font-weight: 700;
+    background: transparent;
+    letter-spacing: 0.04em;
+}
+QLabel[style-role="title"] {
+    color: {TEXT_PRIMARY};
+    font-size: 15px;
+    font-weight: 700;
+    background: transparent;
+}
+QLabel[style-role="section"] {
+    color: {TEXT_PRIMARY};
+    font-size: 13px;
+    font-weight: 700;
+    background: transparent;
+    letter-spacing: 0.02em;
+}
+QLabel[style-role="section-title"] {
+    color: {TEXT_PRIMARY};
+    font-size: 14px;
+    font-weight: 700;
+    background: transparent;
+    padding: 6px 0;
+}
+QLabel[style-role="info"] {
+    color: {TEXT_SECONDARY};
+    font-size: 12px;
+    font-weight: 500;
+    background: transparent;
+}
+QLabel[style-role="footer"] {
+    color: {TEXT_MUTED};
+    font-size: 10px;
+    font-weight: 400;
+    background: transparent;
+}
+QLabel[style-role="header-name"] {
+    color: {TEXT_PRIMARY};
+    font-size: 14px;
+    font-weight: 700;
+    background: transparent;
+    letter-spacing: 0.01em;
+}
+QLabel[style-role="required"] {
+    color: {TEXT_SECONDARY};
+    font-size: 11px;
+    font-weight: 700;
+    background: transparent;
+    letter-spacing: 0.04em;
+}
+QLabel[style-role="stat-label"] {
+    color: {TEXT_MUTED};
+    font-size: 12px;
+    font-weight: 500;
+    background: transparent;
+}
+QLabel[style-role="stat-value"] {
+    color: {TEXT_PRIMARY};
+    font-size: 16px;
+    font-weight: 600;
+    background: transparent;
+}
+QLabel[style-role="stat-red"]   { color: {STATUS_ERROR};   font-size: 16px; font-weight: 600; background: transparent; }
+QLabel[style-role="stat-green"] { color: {STATUS_SUCCESS}; font-size: 16px; font-weight: 600; background: transparent; }
+QLabel[style-role="stat-highlight"] {
+    color: {ACCENT};
+    font-size: 16px;
+    font-weight: 700;
+    background: transparent;
+}
+QLabel[style-role="value"] {
+    color: {TEXT_PRIMARY};
+    font-size: 13px;
+    font-weight: 500;
+    background: transparent;
+}
+QLabel[style-role="donem"] {
+    color: {ACCENT};
+    font-size: 13px;
+    font-weight: 600;
+    background: transparent;
+    padding: 4px 8px;
+}
+
+/* ── QScrollArea düz (scroll + scrollbar alias) ─────────────── */
+QScrollArea[style-role="plain"] {
+    background: transparent;
+    border: none;
+}

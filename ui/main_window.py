@@ -5,11 +5,13 @@ from PySide6.QtWidgets import (
     QStackedWidget, QLabel, QStatusBar
 )
 from PySide6.QtCore import Qt, QTimer, Slot
+from PySide6.QtGui import QCloseEvent
 
 from core.config import AppConfig
 from core.logger import logger, log_ui_error
 from core.paths import DB_PATH
-from ui.sidebar import Sidebar 
+from ui.sidebar import Sidebar
+from ui.guards import ActionGuard, PageGuard
 from ui.pages.placeholder import WelcomePage, PlaceholderPage 
 from ui.styles.colors import DarkTheme
 from database.sync_worker import SyncWorker
@@ -21,7 +23,7 @@ class MainWindow(QMainWindow):
     STATUS_SYNCING_COLOR = DarkTheme.STATUS_WARNING
     STATUS_ERROR_COLOR = DarkTheme.STATUS_ERROR
 
-    def __init__(self):
+    def __init__(self, db=None, authorization_service=None, session_context=None):
         super().__init__()
 
         self.setWindowTitle(f"{AppConfig.APP_NAME} v{AppConfig.VERSION}")
@@ -31,13 +33,16 @@ class MainWindow(QMainWindow):
         self._pages = {}
         self._sync_worker = None
         self._bildirim_worker = None
-        self._db = SQLiteManager()
+        self._db = db or SQLiteManager()
+        self._authorization_service = authorization_service
+        self._session_context = session_context
         self._sabitler_cache = None  # Sabitler tablosu cache (performans için)
         self._build_ui()
         self._build_status_bar()
         self._setup_sync()
         self._setup_bildirim()
         self._load_sabitler_cache()  # Uygulama başladığında bir kere yükle
+        self._setup_theme_listener()  # Tema değişikliğini dinle
 
     def _build_ui(self):
         central = QWidget()
@@ -49,22 +54,31 @@ class MainWindow(QMainWindow):
 
         # ── Ana alan (sidebar + içerik) ───────────────────────────
         body = QWidget()
-        body.setStyleSheet(f"background: {DarkTheme.BG_PRIMARY};")
+        body.setProperty("bg-role", "page")
+        body.style().unpolish(body)
+        body.style().polish(body)
         main_layout = QHBoxLayout(body)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # Sidebar
-        self.sidebar = Sidebar()
+        # Sidebar (permission filter)
+        self._page_guard = None
+        self._action_guard = None
+        if self._authorization_service and self._session_context:
+            self._page_guard = PageGuard(self._authorization_service, self._session_context)
+            self._action_guard = ActionGuard(self._authorization_service, self._session_context)
+        self.sidebar = Sidebar(page_guard=self._page_guard)
         self.sidebar.menu_clicked.connect(self._on_menu_clicked)
-        self.sidebar.dashboard_clicked.connect(self._open_dashboard)
+        # self.sidebar.dashboard_clicked.connect(self._open_dashboard)  # TODO: Dashboard sayfası geliştirilirken aktif olacak
         self.sidebar.sync_btn.clicked.connect(self._start_sync)
         main_layout.addWidget(self.sidebar)
 
         # İçerik alanı
         content = QWidget()
         content.setObjectName("content_area")
-        content.setStyleSheet(f"background: {DarkTheme.BG_PRIMARY};")
+        content.setProperty("bg-role", "page")
+        content.style().unpolish(content)
+        content.style().polish(content)
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(0)
@@ -120,9 +134,9 @@ class MainWindow(QMainWindow):
 
     # ── SAYFA YÖNETİMİ ──
 
-    @Slot()
-    def _open_dashboard(self):
-        self._on_menu_clicked("YÖNETİCİ İŞLEMLERİ", "Genel Bakış")
+    # @Slot()
+    # def _open_dashboard(self):
+    #     self._on_menu_clicked("YÖNETİCİ İŞLEMLERİ", "Genel Bakış")
 
     def _on_menu_clicked(self, group, baslik, *args):
         """
@@ -131,6 +145,21 @@ class MainWindow(QMainWindow):
         """
         filters = args[0] if args else {}
         logger.info(f"Menü seçildi: {group} → {baslik} (Filtreler: {filters})")
+
+        # Yetki kontrolü (IP-05: Sayfa Guard)
+        if self._page_guard:
+            from ui.permissions.page_permissions import PAGE_PERMISSIONS
+            perm_key = PAGE_PERMISSIONS.get(baslik)
+            if perm_key and not self._page_guard.can_open(perm_key):
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.warning(
+                    self,
+                    "Yetki Hatası",
+                    f"'{baslik}' sayfasına erişim yetkiniz bulunmamaktadır.\n\n"
+                    f"Gerekli yetki: {perm_key}"
+                )
+                logger.warning(f"Yetkisiz sayfa erişim denemesi: {baslik} (yetki: {perm_key})")
+                return
 
         try:
             if baslik in self._pages:
@@ -151,7 +180,7 @@ class MainWindow(QMainWindow):
 
             if filters and hasattr(page, "apply_filters"):
                 logger.info(f"'{baslik}' sayfasına filtreler uygulanıyor: {filters}")
-                page.apply_filters(filters)
+                page.apply_filters(filters)  # type: ignore[attr-defined]
         except Exception as e:
             log_ui_error("menu_click", e, group=group, page=baslik)
             from PySide6.QtWidgets import QMessageBox
@@ -163,24 +192,25 @@ class MainWindow(QMainWindow):
             )
 
     def _create_page(self, group, baslik):
-        if baslik == "Genel Bakış":
-            from ui.pages.dashboard import DashboardPage
-            page = DashboardPage(db=self._db)
-            page.open_page_requested.connect(self._on_menu_clicked)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Genel Bakış"))
-            page.load_data()
-            return page
+        # if baslik == "Genel Bakış":
+        #     from ui.pages.dashboard import DashboardPage
+        #     page = DashboardPage(db=self._db)
+        #     page.open_page_requested.connect(self._on_menu_clicked)
+        #     page.btn_kapat.clicked.connect(lambda: self._close_page("Genel Bakış"))
+        #     page.load_data()
+        #     return page
 
         if baslik == "Personel Listesi":
             from ui.pages.personel.personel_listesi import PersonelListesiPage
-            page = PersonelListesiPage(db=self._db)
+            page = PersonelListesiPage(db=self._db, action_guard=self._action_guard)
             page.table.doubleClicked.connect(
                 lambda idx: self._open_personel_detay(page, idx)
             )
             page.detay_requested.connect(self._open_personel_merkez)
-            #page.btn_kapat.clicked.connect(lambda: self._close_page("Personel Listesi"))
-            page.btn_yeni.clicked.connect(lambda: self._on_menu_clicked("Personel", "Personel Ekle"))
             page.izin_requested.connect(lambda data: self.open_izin_giris(data))
+            page.btn_yeni.clicked.connect(lambda: self._on_menu_clicked("Personel", "Personel Ekle"))
+            # Kapat butonu signal'ini bağla
+            page.close_requested.connect(lambda: self._close_page("Personel Listesi"))
             page.load_data()
             return page
 
@@ -188,8 +218,11 @@ class MainWindow(QMainWindow):
             from ui.pages.personel.personel_ekle import PersonelEklePage
             page = PersonelEklePage(
                 db=self._db,
-                on_saved=self._on_personel_saved
+                on_saved=self._on_personel_saved,
+                action_guard=self._action_guard
             )
+            # Form kapandığında (iptal/kaydet) personel listesine dön
+            page.form_closed.connect(self._on_personel_saved)
             return page
 
         if baslik in ("İzin Takip ve FHSZ Yönetim"):
@@ -210,13 +243,14 @@ class MainWindow(QMainWindow):
             from ui.pages.cihaz.cihaz_ekle import CihazEklePage
             page = CihazEklePage(
                 db=self._db,
-                on_saved=self._on_cihaz_saved
+                on_saved=self._on_cihaz_saved,
+                action_guard=self._action_guard
             )
             return page
 
         if baslik == "Cihaz Listesi":
             from ui.pages.cihaz.cihaz_listesi import CihazListesiPage
-            page = CihazListesiPage(db=self._db)
+            page = CihazListesiPage(db=self._db, action_guard=self._action_guard)
             page.add_requested.connect(lambda: self._on_menu_clicked("Cihaz", "Cihaz Ekle"))
             page.detay_requested.connect(self._open_cihaz_merkez)
             page.edit_requested.connect(self._open_cihaz_merkez)
@@ -224,64 +258,45 @@ class MainWindow(QMainWindow):
             page.load_data()
             return page
 
-        if baslik == "Arıza Kayıt":
-            from ui.pages.cihaz.ariza_kayit import ArizaKayitPenceresi
-            page = ArizaKayitPenceresi(db=self._db)
-            if hasattr(page, "btn_iptal"):
-                page.btn_iptal.clicked.connect(lambda: self._close_page("Arıza Kayıt"))
-            return page
-
         if baslik == "Teknik Hizmetler":
             from ui.pages.cihaz.teknik_hizmetler import TeknikHizmetlerPage
-            page = TeknikHizmetlerPage(db=self._db)
+            page = TeknikHizmetlerPage(db=self._db, action_guard=self._action_guard)
             return page
         
         if baslik == "RKE Envanter":
-            from ui.pages.rke.rke_yonetim import RKEYonetimPage
-            page = RKEYonetimPage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Envanter"))
+            from ui.pages.rke.rke_yonetim import RKEYonetimPenceresi
+            page = RKEYonetimPenceresi(db=self._db, action_guard=self._action_guard)
+           # page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Envanter"))
             page.load_data()
             return page
 
         if baslik == "RKE Muayene":
             from ui.pages.rke.rke_muayene import RKEMuayenePage
-            page = RKEMuayenePage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Muayene"))
+            page = RKEMuayenePage(db=self._db, action_guard=self._action_guard)
+            if hasattr(page, "btn_kapat") and page.btn_kapat is not None:
+                page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Muayene"))  # type: ignore[attr-defined]
             page.load_data()
             return page
 
         if baslik == "RKE Raporlama":
-            from ui.pages.rke.rke_rapor import RKERaporPage
-            page = RKERaporPage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Raporlama"))
+            from ui.pages.rke.rke_rapor import RKERaporPenceresi
+            page = RKERaporPenceresi(db=self._db, action_guard=self._action_guard)
+            if hasattr(page, "btn_kapat"):
+                page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Raporlama"))  # type: ignore[attr-defined]
             page.load_data()
             return page
 
-        if baslik == "Yıl Sonu İzin":
-            from ui.pages.admin.yil_sonu_islemleri import YilSonuIslemleriPage
-            page = YilSonuIslemleriPage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Yıl Sonu İzin"))
-            page.load_data()
+        if baslik == "Admin Panel":
+            from ui.admin.admin_panel import AdminPanel
+            page = AdminPanel(db=self._db, action_guard=self._action_guard)
+            page.btn_kapat.clicked.connect(lambda: self._close_page("Admin Panel"))
             return page
 
-        if baslik == "Log Görüntüleyici":
-            from ui.pages.admin.log_goruntuleme import LogGoruntuleme
-            page = LogGoruntuleme(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Log Görüntüleyici"))
-            return page
-
-        if baslik == "Yedek Yönetimi":
-            from ui.pages.admin.yedek_yonetimi import YedekYonetimiPage
-            page = YedekYonetimiPage(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Yedek Yönetimi"))
+        if baslik == "Ayarlar":
+            from ui.admin.settings_page import SettingsPage
+            page = SettingsPage(db=self._db)
             return page
         
-        if baslik == "Ayarlar":
-            from ui.pages.admin.yonetim_ayarlar import AyarlarPenceresi
-            page = AyarlarPenceresi(db=self._db)
-            page.btn_kapat.clicked.connect(lambda: self._close_page("Ayarlar"))
-            return page
-                    
         return PlaceholderPage(
             title=baslik,
             subtitle=f"{group} modülü — geliştirme aşamasında"
@@ -412,7 +427,7 @@ class MainWindow(QMainWindow):
             self.stack.removeWidget(old)
             old.deleteLater()
 
-        from ui.pages.personel.izin_giris import IzinGirisPage
+        from ui.pages.personel.izin_giris import IzinGirisPage  # type: ignore[import-untyped]
         page = IzinGirisPage(
             db=self._db,
             personel_data=personel_data,
@@ -452,6 +467,9 @@ class MainWindow(QMainWindow):
         if baslik in self._pages:
             old = self._pages.pop(baslik)
             self.stack.removeWidget(old)
+            # closeEvent'i çağırarak threads'i temizleyelim
+            if hasattr(old, 'closeEvent'):
+                old.closeEvent(QCloseEvent())
             old.deleteLater()
         self.stack.setCurrentWidget(self._welcome)
         self.page_title.setVisible(False)
@@ -466,9 +484,8 @@ class MainWindow(QMainWindow):
     def _load_sabitler_cache(self):
         """Sabitler tablosunu cache'e yükler (performans için bir kere)."""
         try:
-            from database.repository_registry import RepositoryRegistry
-            registry = RepositoryRegistry(self._db)
-            self._sabitler_cache = registry.get("Sabitler").get_all()
+            from core.di import get_cihaz_service as _cs
+            self._sabitler_cache = _cs(self._db).get_sabitler()
             logger.info(f"Sabitler cache yüklendi: {len(self._sabitler_cache)} kayıt")
         except Exception as e:
             logger.error(f"Sabitler cache yükleme hatası: {e}")
@@ -529,11 +546,11 @@ class MainWindow(QMainWindow):
         self.last_sync_label.setText(f"Son sync: {now}")
         self._refresh_active_page()
         # Dashboard açıksa onu da yenile
-        if "Genel Bakış" in self._pages:
-            dashboard_page = self._pages["Genel Bakış"]
-            if hasattr(dashboard_page, "load_data"):
-                logger.info("Dashboard yenileniyor...")
-                dashboard_page.load_data()
+        # if "Genel Bakış" in self._pages:
+        #     dashboard_page = self._pages["Genel Bakış"]
+        #     if hasattr(dashboard_page, "load_data"):
+        #         logger.info("Dashboard yenileniyor...")
+        #         dashboard_page.load_data()
         # Sync sonrası bildirimleri de güncelle
         self._tetikle_bildirim()
 
@@ -571,7 +588,7 @@ class MainWindow(QMainWindow):
         # Opsiyonel: Kullanıcıya bildirim göster
         from PySide6.QtWidgets import QMessageBox
         msg_box = QMessageBox(self)
-        msg_box.setIcon(QMessageBox.Warning)
+        msg_box.setIcon(QMessageBox.Icon.Warning)
         msg_box.setWindowTitle("Senkronizasyon Hatası")
 
         # API 503 (Servis Ulaşılamıyor) hatası için özel mesaj
@@ -607,7 +624,7 @@ class MainWindow(QMainWindow):
                 f"   - logs/errors.log"
             )
 
-        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
         msg_box.exec()
 
     def closeEvent(self, event):
@@ -638,7 +655,7 @@ class MainWindow(QMainWindow):
         current = self.stack.currentWidget()
         if hasattr(current, "load_data"):
             try:
-                current.load_data()
+                current.load_data()  # type: ignore[attr-defined]
             except Exception as e:
                 logger.error(f"Sayfa yenileme hatası: {e}")
 
@@ -649,11 +666,18 @@ class MainWindow(QMainWindow):
     def _on_personel_saved(self):
         """Personel kaydedildikten sonra listeye dön ve yenile."""
         if "Personel Listesi" in self._pages:
+            # Personel Listesi cache'de varsa oraya dön
             page = self._pages["Personel Listesi"]
             page.load_data()
             self.stack.setCurrentWidget(page)
             self.page_title.setText("Personel Listesi")
             self.sidebar.set_active("Personel Listesi")
+        else:
+            # Personel Listesi yoksa welcome sayfasına dön
+            if hasattr(self, '_welcome') and self._welcome:
+                self.stack.setCurrentWidget(self._welcome)
+                self.page_title.setText("")
+                self.sidebar.set_active(None)
 
         # Ekle formunu sıfırla (sonraki açılışta taze form)
         if "Personel Ekle" in self._pages:
@@ -752,6 +776,35 @@ class MainWindow(QMainWindow):
         self._on_menu_clicked("CİHAZ", "Teknik Hizmetler")
         page = self._pages.get("Teknik Hizmetler")
         if page and hasattr(page, "open_tab"):
-            cihaz_id = data.get("Cihazid", "") if isinstance(data, dict) else ""
-            page.open_tab("BAKIM", cihaz_id=cihaz_id)
-        # İleride: page.filter_by_device(device_data['Cihazid']) eklenebilir
+            cihaz_id = device_data.get("Cihazid", "") if isinstance(device_data, dict) else ""
+            if cihaz_id:
+                page.open_tab("BAKIM", cihaz_id=cihaz_id)
+
+    def _setup_theme_listener(self):
+        """Tema değişikliğini dinle"""
+        try:
+            from ui.theme_manager import ThemeManager
+            theme_manager = ThemeManager.instance()
+            theme_manager.theme_changed.connect(self._on_theme_changed)
+            logger.debug("MainWindow tema değişikliği listener'ı bağlandı")
+        except Exception as e:
+            logger.error(f"Tema değişikliği listener kurulumu hatası: {e}")
+
+    @Slot(str)
+    def _on_theme_changed(self, theme_name: str):
+        """
+        Tema değiştiğinde UI'ı günceller.
+
+        Aşama 2 sonrası: Tüm renkler QSS property selector'larından geliyor.
+        app.setStyleSheet() çağrısı (ThemeManager içinde) yeni QSS'i zaten uyguladı.
+        Burada sadece Qt'nin style cache'ini temizlemek yeterli — sayfa yıkmaya gerek yok.
+        """
+        logger.info(f"Tema değiştirildi: {theme_name} — UI yenileniyor")
+        try:
+            # Tüm pencereyi yenile — alt widget'lar otomatik güncellenir
+            self.style().unpolish(self)
+            self.style().polish(self)
+            self.update()
+            logger.info(f"Tema '{theme_name}' uygulandı")
+        except Exception as e:
+            logger.error(f"Tema yenileme hatası: {e}", exc_info=True)

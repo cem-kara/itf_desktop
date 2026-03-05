@@ -1,0 +1,152 @@
+from __future__ import annotations
+
+from PySide6.QtWidgets import (
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QFrame,
+    QMessageBox,
+)
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QFont, QPixmap
+
+
+class LoginDialog(QDialog):
+    """Modern giriş dialog'u - SQLite thread-safety ile"""
+
+    def __init__(self, auth_service, parent=None) -> None:
+        super().__init__(parent)
+        self._auth = auth_service
+
+        self.setWindowTitle("System Login")
+        self.resize(400, 450)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
+        self._setup_ui()
+
+    def _setup_ui(self) -> None:
+        """UI bileşenlerini oluştur"""
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        # Ana frame
+        self.frame = QFrame()
+        self.frame.setStyleSheet(
+            "QFrame { background-color: #2d2d30; border-radius: 15px; border: 1px solid #3e3e42; }"
+        )
+        card_layout = QVBoxLayout(self.frame)
+        card_layout.setContentsMargins(40, 40, 40, 40)
+        card_layout.setSpacing(20)
+
+        # Başlık
+        title_layout = QHBoxLayout()
+        title_layout.setSpacing(15)
+        title_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # Logo
+        logo_label = QLabel()
+        logo_pixmap = QPixmap("ui/styles/icons/Logo.ico").scaledToWidth(50, Qt.TransformationMode.SmoothTransformation)
+        logo_label.setPixmap(logo_pixmap)
+        logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # Başlık metni
+        lbl_title = QLabel("REPYS GİRİŞ")
+        lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lbl_title.setFont(QFont("Arial", 20, QFont.Weight.Bold))
+        lbl_title.setProperty("color-role", "accent")
+        lbl_title.setStyleSheet("border: none;")
+        lbl_title.style().unpolish(lbl_title)
+        lbl_title.style().polish(lbl_title)
+        
+        title_layout.addWidget(logo_label)
+        title_layout.addWidget(lbl_title)
+        card_layout.addLayout(title_layout)
+
+        # Kullanıcı adı alanı
+        self._username = QLineEdit()
+        self._username.setPlaceholderText("Kullanıcı Adı")
+        self._username.setFixedHeight(45)
+        self._username.setStyleSheet(
+            "QLineEdit { background-color: #1e1e1e; border: 1px solid #444; "
+            "border-radius: 5px; color: white; padding-left: 10px; font-size: 14px; }"
+        )
+        card_layout.addWidget(self._username)
+
+        # Şifre alanı
+        self._password = QLineEdit()
+        self._password.setPlaceholderText("Şifre")
+        self._password.setEchoMode(QLineEdit.EchoMode.Password)
+        self._password.setFixedHeight(45)
+        self._password.setStyleSheet(self._username.styleSheet())
+        self._password.returnPressed.connect(self._on_accept)
+        card_layout.addWidget(self._password)
+
+        # Giriş butonu
+        self._button_login = QPushButton("GİRİŞ")
+        self._button_login.setFixedHeight(50)
+        self._button_login.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._button_login.setStyleSheet(
+            "QPushButton { background-color: #0078d4; color: white; font-weight: bold; "
+            "border-radius: 5px; font-size: 15px; } "
+            "QPushButton:hover { background-color: #106ebe; }"
+        )
+        self._button_login.clicked.connect(self._on_accept)
+        card_layout.addWidget(self._button_login)
+
+        # Kapat butonu
+        btn_cancel = QPushButton("İptal")
+        btn_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_cancel.setProperty("color-role", "muted")
+        btn_cancel.setStyleSheet("background: transparent; border: none;")
+        btn_cancel.style().unpolish(btn_cancel)
+        btn_cancel.style().polish(btn_cancel)
+        btn_cancel.clicked.connect(self.reject)
+        card_layout.addWidget(btn_cancel)
+
+        layout.addWidget(self.frame)
+
+    def _on_accept(self) -> None:
+        """Giriş butonuna basıldığında çalışır"""
+        username = self._username.text().strip()
+        password = self._password.text()
+
+        if not username:
+            QMessageBox.warning(self, "Warning", "Username is required.")
+            self._username.setFocus()
+            return
+
+        if not password:
+            QMessageBox.warning(self, "Warning", "Password is required.")
+            self._password.setFocus()
+            return
+
+        # Butonu devre dışı bırak
+        self._button_login.setText("Checking...")
+        self._button_login.setEnabled(False)
+        self._username.setEnabled(False)
+        self._password.setEnabled(False)
+
+        # Sync authentication (ana thread'de veritabanı bağlantısını kullan)
+        try:
+            user = self._auth.authenticate(username, password)
+            if user:
+                self.accept()
+            else:
+                QMessageBox.critical(self, "Login Failed", "Invalid username or password.")
+                self._reset_ui()
+        except Exception as e:
+            QMessageBox.critical(self, "Login Error", f"An error occurred: {str(e)}")
+            self._reset_ui()
+
+    def _reset_ui(self) -> None:
+        """UI alanlarını sıfırla"""
+        self._button_login.setText("LOGIN")
+        self._button_login.setEnabled(True)
+        self._username.setEnabled(True)
+        self._password.setEnabled(True)
+        self._password.clear()
+        self._username.setFocus()
