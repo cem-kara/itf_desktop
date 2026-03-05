@@ -33,6 +33,9 @@ class ThemeManager(QObject):
 
     theme_changed = Signal(str)
     _instance: "ThemeManager | None" = None
+    
+    # Signal: Tema değiştiğinde gönderilir
+    theme_changed = Signal(str)  # tema adı (str)
 
     # ── Singleton ────────────────────────────────────────────
     @classmethod

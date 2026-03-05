@@ -12,6 +12,7 @@ from PySide6.QtCore import Qt, QDate, QModelIndex, Signal, QUrl
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QDesktopServices
 
+from core.di import get_registry
 from core.logger import logger
 from core.date_utils import to_ui_date, parse_date, to_db_date
 from ui.components.base_table_model import BaseTableModel

@@ -37,6 +37,13 @@ from ui.pages.cihaz.ariza_islem import ArizaIslemPenceresi, ArizaIslemForm
 
 # Renk kodları artık C (theme) ve S (styles) tarafından sağlanıyor
 
+_ONCELIK_BG_COLOR = {
+    "Kritik":  "rgba(247, 95, 95, 0.20)",          # Düşük opacity kırmızı
+    "Yüksek":  "rgba(245, 166, 35, 0.20)",         # Düşük opacity sarı
+    "Orta":    "rgba(79, 142, 247, 0.20)",         # Düşük opacity mavi
+    "Düşük":   "rgba(90, 98, 120, 0.15)",          # Düşük opacity gri
+}
+
 
 # ─────────────────────────────────────────────────────────────
 #  Tablo kolonları

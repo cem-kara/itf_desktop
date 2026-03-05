@@ -107,6 +107,7 @@ class IzinTakipPage(QWidget):
         super().__init__(parent)
         self.setStyleSheet(S["page"])
         self._db = db
+        self._svc = IzinService(get_registry(db))
         self._all_izin = []
         self._all_personel = []
         self._tatiller = []

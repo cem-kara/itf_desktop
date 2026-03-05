@@ -797,7 +797,7 @@ class MigrationManager:
                     "INSERT INTO Sabitler (Rowid, Kod, MenuEleman, Aciklama) VALUES (?, ?, ?, ?)",
                     (rowid, kod, menu_eleman, aciklama)
                 )
-                logger.info(f"  ✓ Sabitler: '{menu_eleman}' eklendi")
+                logger.info(f"  âœ“ Sabitler: '{menu_eleman}' eklendi")
 
     # ================================================
     # ACİL RESET (yalnızca manuel çağrı)
