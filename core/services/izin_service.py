@@ -253,3 +253,76 @@ class IzinService:
         except Exception as e:
             logger.error(f"İzin iptal hatası: {e}")
             return False
+
+    def get_sabitler_raw(self) -> list:
+        """Tüm sabitler kayıtlarını döner (ham liste)."""
+        try:
+            return self._r.get("Sabitler").get_all() or []
+        except Exception as e:
+            logger.error(f"Sabitler yükleme hatası: {e}")
+            return []
+
+    def get_tatiller_raw(self) -> list:
+        """Tüm tatil kayıtlarını döner (ham liste)."""
+        try:
+            return self._r.get("Tatiller").get_all() or []
+        except Exception as e:
+            logger.error(f"Tatiller yükleme hatası: {e}")
+            return []
+
+    def get_tum_izin_giris(self) -> list:
+        """Tüm izin giriş kayıtlarını döner."""
+        try:
+            return self._r.get("Izin_Giris").get_all() or []
+        except Exception as e:
+            logger.error(f"İzin giriş listesi hatası: {e}")
+            return []
+
+    def bakiye_dus(self, tc: str, izin_tipi: str, gun: int) -> None:
+        """
+        İzin kaydedilince bakiyeden otomatik düş.
+        Yıllık İzin, Şua İzni, Rapor/Mazeret için çalışır.
+        """
+        try:
+            izin_bilgi = self._r.get("Izin_Bilgi").get_by_id(tc)
+            if not izin_bilgi:
+                return
+
+            if izin_tipi == "Yıllık İzin":
+                yeni_kul = float(izin_bilgi.get("YillikKullanilan", 0)) + gun
+                yeni_kal = float(izin_bilgi.get("YillikKalan", 0)) - gun
+                self._r.get("Izin_Bilgi").update(tc, {
+                    "YillikKullanilan": yeni_kul,
+                    "YillikKalan": yeni_kal,
+                })
+                logger.info(f"Yıllık izin bakiye düştü: {tc} → {gun} gün (Kalan: {yeni_kal})")
+
+            elif izin_tipi == "Şua İzni":
+                yeni_kul = float(izin_bilgi.get("SuaKullanilan", 0)) + gun
+                yeni_kal = float(izin_bilgi.get("SuaKalan", 0)) - gun
+                self._r.get("Izin_Bilgi").update(tc, {
+                    "SuaKullanilan": yeni_kul,
+                    "SuaKalan": yeni_kal,
+                })
+                logger.info(f"Şua izin bakiye düştü: {tc} → {gun} gün (Kalan: {yeni_kal})")
+
+            elif izin_tipi in ("Rapor", "Mazeret İzni"):
+                yeni_top = float(izin_bilgi.get("RaporMazeretTop", 0)) + gun
+                self._r.get("Izin_Bilgi").update(tc, {"RaporMazeretTop": yeni_top})
+                logger.info(f"Rapor/Mazeret toplam arttı: {tc} → +{gun} gün (Toplam: {yeni_top})")
+
+        except Exception as e:
+            logger.error(f"Bakiye düşme hatası: {e}")
+
+    def set_personel_pasif(self, tc: str, izin_tipi: str, gun: int) -> None:
+        """
+        Uzun/ücretsiz izin kaydedilince personeli pasif yap.
+        should_set_pasif() koşulunu kontrol eder.
+        """
+        if not tc or not self.should_set_pasif(izin_tipi, gun):
+            return
+        try:
+            self._r.get("Personel").update(tc, {"Durum": "Pasif"})
+            logger.info(f"Personel pasif yapıldı: {tc} — {izin_tipi} — {gun} gün")
+        except Exception as e:
+            logger.error(f"Personel durum güncelleme hatası: {e}")

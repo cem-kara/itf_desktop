@@ -19,8 +19,9 @@ from core.log_manager import LogStatistics
 from core.paths import DB_PATH
 from ui.theme_manager import ThemeManager
 from ui.styles.colors import Colors, DarkTheme
+from ui.styles.components import STYLES
 
-S = ThemeManager.get_all_component_styles()
+S = STYLES
 
 # ─── Renk sabitleri (açık tema) ──────────────────────────────────
 BG       = DarkTheme.BG_PRIMARY
@@ -99,11 +100,17 @@ class DashboardWorker(QThread):
         }
         try:
             today = datetime.now()
-            month_start = today.replace(day=1).strftime("%Y-%m-%d")
+            month_start_dt = today.replace(day=1)
             if today.month == 12:
-                month_end = datetime(today.year + 1, 1, 1).strftime("%Y-%m-%d")
+                month_end_dt = datetime(today.year + 1, 1, 1)
             else:
-                month_end = datetime(today.year, today.month + 1, 1).strftime("%Y-%m-%d")
+                next_month = today.replace(day=28) + timedelta(days=4)
+                month_end_dt = next_month.replace(day=1)
+
+            month_start = to_db_date(month_start_dt)
+            month_end = to_db_date(month_end_dt)
+            month_start_date = month_start_dt.date()
+            month_end_date = month_end_dt.date()
 
             records = registry.get("Izin_Giris").get_all()
             by_type = {"yillik": set(), "sua": set(), "rapor": set(), "diger": set()}
@@ -115,10 +122,10 @@ class DashboardWorker(QThread):
                     continue
                 personel_id = str(row.get("Personelid", "")).strip()
                 start_date = parse_date(row.get("BaslamaTarihi", ""))
-                end_date = parse_date(row.get("BitisTarihi", "")) or start_date
                 if not personel_id or not start_date:
                     continue
-                if start_date < month_end and end_date >= month_start:
+                end_date = parse_date(row.get("BitisTarihi", "")) or start_date
+                if start_date < month_end_date and end_date >= month_start_date:
                     leave_type = self._classify_leave_type(row.get("IzinTipi", ""))
                     by_type[leave_type].add(personel_id)
                     all_personnel.add(personel_id)
@@ -312,7 +319,7 @@ def _section_header(title: str, icon: str = "") -> QWidget:
 def _divider() -> QFrame:
     line = QFrame()
     line.setFrameShape(QFrame.Shape.HLine)
-    line.setStyleSheet(f"color: {BORDER}; background: {BORDER}; max-height: 1px;")
+    line.setStyleSheet("color: {}; background: {}; max-height: 1px;".format(BORDER, BORDER))
     return line
 
 
@@ -332,7 +339,7 @@ class DashboardPage(QWidget):
 
     def _setup_ui(self):
         self.setObjectName("dashboardPage")
-        self.setStyleSheet(f"QWidget#dashboardPage {{ background-color: {BG}; }}")
+        self.setStyleSheet("QWidget#dashboardPage {{ background-color: {}; }}".format(BG))
 
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(28, 20, 28, 16)
@@ -363,7 +370,7 @@ class DashboardPage(QWidget):
             pass
         self.refresh_button.setFixedHeight(34)
         self.refresh_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.refresh_button.setStyleSheet(S.get("btn_refresh", ""))
+        self.refresh_button.setStyleSheet(str(S.get("btn_refresh") or ""))
         self.refresh_button.clicked.connect(self.load_data)
 
         header.addLayout(greet_col)
@@ -504,7 +511,7 @@ class DashboardPage(QWidget):
     # ── Uyarı Çerçevesi ───────────────────────────────────────
     def _create_reminder_box(self, title: str, text: str) -> QFrame:
         frame = QFrame()
-        frame.setStyleSheet(f"""
+        frame.setStyleSheet("""
             QFrame {{
                 background-color: #fffbeb;
                 border: 1.5px solid #fde68a;

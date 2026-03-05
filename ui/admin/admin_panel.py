@@ -36,30 +36,36 @@ class AdminPanel(QWidget):
         
         # Tabs
         self._tabs = QTabWidget()
-        self._tabs.setStyleSheet(f"""
+        self._tabs.setStyleSheet("""
             QTabWidget::pane {{
-                border: 1px solid {DarkTheme.BORDER_PRIMARY};
-                background: {DarkTheme.BG_PRIMARY};
+                border: 1px solid {};
+                background: {};
             }}
             QTabBar::tab {{
-                background: {DarkTheme.BG_SECONDARY};
-                color: {DarkTheme.TEXT_SECONDARY};
+                background: {};
+                color: {};
                 padding: 8px 20px;
-                border: 1px solid {DarkTheme.BORDER_PRIMARY};
+                border: 1px solid {};
                 border-bottom: none;
                 border-top-left-radius: 4px;
                 border-top-right-radius: 4px;
                 margin-right: 2px;
             }}
             QTabBar::tab:selected {{
-                background: {DarkTheme.BG_PRIMARY};
-                color: {DarkTheme.TEXT_PRIMARY};
-                border-bottom: 1px solid {DarkTheme.BG_PRIMARY};
+                background: {};
+                color: {};
+                border-bottom: 1px solid {};
             }}
             QTabBar::tab:hover {{
-                background: {DarkTheme.BG_HOVER};
+                background: {};
             }}
-        """)
+        """.format(
+            DarkTheme.BORDER_PRIMARY, DarkTheme.BG_PRIMARY,
+            DarkTheme.BG_SECONDARY, DarkTheme.TEXT_SECONDARY,
+            DarkTheme.BORDER_PRIMARY, DarkTheme.BG_PRIMARY,
+            DarkTheme.TEXT_PRIMARY, DarkTheme.BG_PRIMARY,
+            DarkTheme.BG_HOVER
+        ))
         
         # Kullanıcılar sekmesi
         self.users_view = UsersView(self._db, action_guard=self._action_guard)
@@ -101,13 +107,13 @@ class AdminPanel(QWidget):
     def _build_header(self):
         """Sayfa başlığı"""
         header = QFrame()
-        header.setStyleSheet(f"""
+        header.setStyleSheet("""
             QFrame {{
-                background: {DarkTheme.BG_SECONDARY};
-                border-bottom: 2px solid {DarkTheme.BORDER_PRIMARY};
+                background: {};
+                border-bottom: 2px solid {};
                 padding: 8px;
             }}
-        """)
+        """.format(DarkTheme.BG_SECONDARY, DarkTheme.BORDER_PRIMARY))
         
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(20, 8, 20, 8)
@@ -129,21 +135,25 @@ class AdminPanel(QWidget):
         self.btn_kapat = QPushButton("Kapat")
         IconRenderer.set_button_icon(self.btn_kapat, "x", size=14)
         self.btn_kapat.setFixedHeight(32)
-        self.btn_kapat.setStyleSheet(f"""
+        self.btn_kapat.setStyleSheet("""
             QPushButton {{
-                background: {DarkTheme.BG_TERTIARY};
-                color: {DarkTheme.TEXT_SECONDARY};
-                border: 1px solid {DarkTheme.BORDER_PRIMARY};
+                background: {};
+                color: {};
+                border: 1px solid {};
                 border-radius: 6px;
                 padding: 0 16px;
                 font-weight: 500;
             }}
             QPushButton:hover {{
-                background: {DarkTheme.BG_HOVER};
-                color: {DarkTheme.TEXT_PRIMARY};
-                border-color: {DarkTheme.BORDER_STRONG};
+                background: {};
+                color: {};
+                border-color: {};
             }}
-        """)
+        """.format(
+            DarkTheme.BG_TERTIARY, DarkTheme.TEXT_SECONDARY,
+            DarkTheme.BORDER_PRIMARY, DarkTheme.BG_HOVER,
+            DarkTheme.TEXT_PRIMARY, DarkTheme.BORDER_STRONG
+        ))
         header_layout.addWidget(self.btn_kapat)
         
         return header
@@ -155,13 +165,13 @@ class AdminPanel(QWidget):
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         label = QLabel(f"{name}")
-        label.setStyleSheet(f"""
+        label.setStyleSheet("""
             QLabel {{
-                color: {DarkTheme.TEXT_DISABLED};
+                color: {};
                 font-size: 16px;
                 padding: 40px;
             }}
-        """)
+        """.format(DarkTheme.TEXT_DISABLED))
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(label)
         

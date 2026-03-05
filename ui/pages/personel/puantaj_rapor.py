@@ -197,16 +197,16 @@ class PuantajRaporPage(QWidget):
         self.progress.setRange(0, 0)
         self.progress.setFixedWidth(160)
         self.progress.setFixedHeight(14)
-        self.progress.setStyleSheet(f"""
+        self.progress.setStyleSheet("""
             QProgressBar {{
                 background-color: rgba(255,255,255,0.05);
                 border: 1px solid rgba(255,255,255,0.08);
-                border-radius: 3px; font-size: 10px; color: {DarkTheme.TEXT_MUTED};
+                border-radius: 3px; font-size: 10px; color: {};
             }}
             QProgressBar::chunk {{
                 background-color: rgba(29,117,254,0.5); border-radius: 2px;
             }}
-        """)
+        """.format(DarkTheme.TEXT_MUTED))
         bf.addWidget(self.progress)
 
 
@@ -281,11 +281,10 @@ class PuantajRaporPage(QWidget):
         self.lbl_durum.setText("Rapor hazırlanıyor...")
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            repo = registry.get("FHSZ_Puantaj")
-
-            tum = repo.get_all()
+            from core.di import get_fhsz_service
+            fhsz_svc = get_fhsz_service(self._db)
+            
+            tum = fhsz_svc.get_puantaj_listesi()
 
             # Yıla ait kayıtları filtrele
             yil_kayitlar = [

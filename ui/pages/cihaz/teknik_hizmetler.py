@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Teknik Hizmetler — Arıza, Bakım, Kalibrasyon yönetimi."""
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QTabWidget
-from ui.styles.components import STYLES
 from ui.pages.cihaz.ariza_kayit import ArizaKayitForm
 from ui.pages.cihaz.bakim_form import BakimKayitForm
 from ui.pages.cihaz.kalibrasyon_form import KalibrasyonKayitForm
@@ -22,7 +21,6 @@ class TeknikHizmetlerPage(QWidget):
         
         # Tab widget oluştur
         self.tab_widget = QTabWidget()
-        self.tab_widget.setStyleSheet(STYLES.get("tab", ""))
         
         # Arıza Kayıt tab
         self.ariza_form = ArizaKayitForm(db=self._db, action_guard=self._action_guard)

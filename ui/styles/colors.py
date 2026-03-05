@@ -98,6 +98,19 @@ class _LiveThemeMeta(type):
             tokens = get_tokens(theme_name)
             if name in tokens:
                 return tokens[name]
+
+            # Geriye donuk token adlari
+            legacy_alias = {
+                "PANEL": "BG_ELEVATED",
+                "SURFACE": "BG_SECONDARY",
+                "SUCCESS": "STATUS_SUCCESS",
+                "WARNING": "STATUS_WARNING",
+                "DANGER": "STATUS_ERROR",
+                "ERROR": "STATUS_ERROR",
+                "INFO": "STATUS_INFO",
+            }
+            if name in legacy_alias and legacy_alias[name] in tokens:
+                return tokens[legacy_alias[name]]
         except Exception:
             pass
         # Fallback: sınıf üzerindeki gerçek değer (varsa)

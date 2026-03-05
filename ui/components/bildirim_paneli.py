@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton,
     QFrame, QSizePolicy
 )
-from PySide6.QtCore import Qt, Signal, QPropertyAnimation, QEasingCurve
+from PySide6.QtCore import Qt, Signal, QPropertyAnimation, QEasingCurve, QAbstractAnimation
 from PySide6.QtGui import QCursor
 
 from core.logger import logger
@@ -54,20 +54,20 @@ class _BildirimChip(QPushButton):
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setToolTip(bildirim["mesaj"])
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.setStyleSheet(f"""
+        self.setStyleSheet("""
             QPushButton {{
-                background-color: {chip_bg};
-                color: {text_c};
-                border: 1px solid {text_c};
+                background-color: {};
+                color: {};
+                border: 1px solid {};
                 border-radius: 10px;
                 font-size: 12px;
                 font-weight: 600;
                 padding: 3px 10px;
             }}
             QPushButton:hover {{
-                background-color: {chip_h};
+                background-color: {};
             }}
-        """)
+        """.format(chip_bg, text_c, text_c, chip_h))
 
 
 class BildirimPaneli(QWidget):
@@ -105,12 +105,12 @@ class BildirimPaneli(QWidget):
         self._uyari_frame = self._satir_olustur("uyari")
         outer.addWidget(self._uyari_frame)
 
-        self.setStyleSheet(f"""
+        self.setStyleSheet("""
             QWidget#bildirimPaneli {{
-                background-color: {_PANEL_BG};
+                background-color: {};
                 border-bottom: 1px solid rgba(255,255,255,0.06);
             }}
-        """)
+        """.format(_PANEL_BG))
 
     def _satir_olustur(self, mod: str) -> QFrame:
         border = _KRITIK_BORDER if mod == "kritik" else _UYARI_BORDER
@@ -120,13 +120,13 @@ class BildirimPaneli(QWidget):
 
         frame = QFrame()
         frame.setVisible(False)
-        frame.setStyleSheet(f"""
+        frame.setStyleSheet("""
             QFrame {{
-                background-color: {bg};
-                border: 1px solid {border};
+                background-color: {};
+                border: 1px solid {};
                 border-radius: 6px;
             }}
-        """)
+        """.format(bg, border))
 
         row = QHBoxLayout(frame)
         row.setContentsMargins(10, 4, 10, 4)
@@ -134,14 +134,14 @@ class BildirimPaneli(QWidget):
 
         # İkon + etiket
         lbl_icon = QLabel(f"{icon} {label}")
-        lbl_icon.setStyleSheet(f"""
-            color: {border};
+        lbl_icon.setStyleSheet("""
+            color: {};
             font-size: 11px;
             font-weight: 700;
             background: transparent;
             border: none;
             min-width: 64px;
-        """)
+        """.format(border))
         row.addWidget(lbl_icon)
 
         # Chip alanı (scroll olmadan, flex-wrap gibi yatay)
@@ -224,8 +224,9 @@ class BildirimPaneli(QWidget):
         """Mevcut chipleri temizle ve yenilerini ekle."""
         while layout.count():
             item = layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            widget = item.widget() if item else None
+            if widget:
+                widget.deleteLater()
 
         for bildirim in liste:
             chip = _BildirimChip(bildirim, mod)
@@ -246,8 +247,8 @@ class BildirimPaneli(QWidget):
         anim.setDuration(200)
         anim.setStartValue(0)
         anim.setEndValue(120)
-        anim.setEasingCurve(QEasingCurve.OutCubic)
-        anim.start(QPropertyAnimation.DeleteWhenStopped)
+        anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
     def _animasyonlu_kapat(self):
         if not self.isVisible():
@@ -256,9 +257,9 @@ class BildirimPaneli(QWidget):
         anim.setDuration(180)
         anim.setStartValue(self.height())
         anim.setEndValue(0)
-        anim.setEasingCurve(QEasingCurve.InCubic)
+        anim.setEasingCurve(QEasingCurve.Type.InCubic)
         anim.finished.connect(self.hide)
-        anim.start(QPropertyAnimation.DeleteWhenStopped)
+        anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
     def _dismiss(self):
         """Oturum boyunca paneli kapat."""

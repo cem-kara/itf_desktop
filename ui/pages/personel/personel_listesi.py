@@ -20,7 +20,7 @@ from PySide6.QtGui import (
 )
 
 from core.logger import logger
-from core.di import get_personel_service, get_izin_service, get_registry
+from core.di import get_personel_service, get_izin_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
 from ui.styles.components import ComponentStyles, STYLES
@@ -386,7 +386,6 @@ class PersonelListesiPage(QWidget):
         self.style().unpolish(self)
         self.style().polish(self)
         self._db             = db
-        self._registry       = get_registry(db) if db else None
         self._svc            = get_personel_service(db) if db else None
         self._izin_svc       = get_izin_service(db) if db else None
         self._action_guard   = action_guard
@@ -432,12 +431,12 @@ class PersonelListesiPage(QWidget):
     def _build_toolbar(self) -> QFrame:
         frame = QFrame()
         frame.setFixedHeight(48)
-        frame.setStyleSheet(f"""
+        frame.setStyleSheet("""
             QFrame {{
-                background-color: {C.BG_SECONDARY};
-                border-bottom: 1px solid {C.BORDER_PRIMARY};
+                background-color: {};
+                border-bottom: 1px solid {};
             }}
-        """)
+        """.format(C.BG_SECONDARY, C.BORDER_PRIMARY))
         lay = QHBoxLayout(frame)
         lay.setContentsMargins(16, 0, 16, 0)
         lay.setSpacing(8)
@@ -548,17 +547,17 @@ class PersonelListesiPage(QWidget):
         self.btn_close = QPushButton("✕")
         self.btn_close.setFixedSize(28, 28)
         self.btn_close.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_close.setStyleSheet(f"""
+        self.btn_close.setStyleSheet("""
             QPushButton {{
                 background-color: transparent;
-                color: {C.TEXT_MUTED};
+                color: {};
                 border: none;
                 border-radius: 4px;
                 font-size: 16px;
                 font-weight: bold;
             }}
             QPushButton:hover {{
-                background-color: {C.STATUS_ERROR};
+                background-color: {};
                 color: {C.TEXT_PRIMARY};
             }}
         """)
@@ -569,12 +568,12 @@ class PersonelListesiPage(QWidget):
     def _build_subtoolbar(self) -> QFrame:
         frame = QFrame()
         frame.setFixedHeight(36)
-        frame.setStyleSheet(f"""
+        frame.setStyleSheet("""
             QFrame {{
-                background-color: {C.BG_PRIMARY};
-                border-bottom: 1px solid {C.BORDER_PRIMARY};
+                background-color: {};
+                border-bottom: 1px solid {};
             }}
-        """)
+        """.format(C.BG_PRIMARY, C.BORDER_PRIMARY))
         lay = QHBoxLayout(frame)
         lay.setContentsMargins(16, 0, 16, 0)
         lay.setSpacing(8)
@@ -642,12 +641,12 @@ class PersonelListesiPage(QWidget):
     def _build_footer(self) -> QFrame:
         frame = QFrame()
         frame.setFixedHeight(40)
-        frame.setStyleSheet(f"""
+        frame.setStyleSheet("""
             QFrame {{
-                background-color: {C.BG_SECONDARY};
-                border-top: 1px solid {C.BORDER_PRIMARY};
+                background-color: {};
+                border-top: 1px solid {};
             }}
-        """)
+        """.format(C.BG_SECONDARY, C.BORDER_PRIMARY))
         lay = QHBoxLayout(frame)
         lay.setContentsMargins(16, 0, 16, 0)
         lay.setSpacing(16)
@@ -707,7 +706,7 @@ class PersonelListesiPage(QWidget):
 
     def load_data(self):
         """İlk kez veri yükle (Sayfa 1, Pagination ile)"""
-        if not self._db or not self._registry:
+        if not self._db or not self._svc:
             logger.warning("Personel listesi: DB yok")
             return
         try:
@@ -716,7 +715,7 @@ class PersonelListesiPage(QWidget):
             self._total_count = 0
             self._all_data = []
             
-            personel_repo = self._registry.get("Personel")
+            personel_repo = self._svc.get_personel_repo()
             
             # ✅ LAZY-LOADING: İlk sayfayı yükle (sayfa boyutu: 100 kayıt)
             page_data, total_count = personel_repo.get_paginated_with_bakiye(
@@ -747,7 +746,7 @@ class PersonelListesiPage(QWidget):
 
     def _load_more_data(self):
         """Sonraki sayfayı yükle ve tabloya ekle"""
-        if self._is_loading or not self._db or not self._registry:
+        if self._is_loading or not self._db or not self._svc:
             return
         
         try:
@@ -755,7 +754,7 @@ class PersonelListesiPage(QWidget):
             self.btn_load_more.setEnabled(False)
             self.progress.setVisible(True)
             
-            personel_repo = self._registry.get("Personel")
+            personel_repo = self._svc.get_personel_repo()
             
             # Sonraki sayfa
             self._current_page += 1
@@ -1042,12 +1041,12 @@ class PersonelListesiPage(QWidget):
 
     def _get_all_filtered_data(self):
         """Pagination olmadan TÜM personel verilerini çek ve filtrele (Excel export için)."""
-        if not self._db or not self._registry:
+        if not self._db or not self._svc:
             return []
         
         try:
             # TÜM personel verilerini çek (pagination olmadan)
-            personel_repo = self._registry.get("Personel")
+            personel_repo = self._svc.get_personel_repo()
             all_data = personel_repo.get_all_with_bakiye() or []
             
             # Mevcut filtreleri uygula

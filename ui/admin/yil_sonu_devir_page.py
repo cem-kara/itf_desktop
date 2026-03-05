@@ -234,51 +234,51 @@ class YilSonuDevirPage(QWidget):
         layout.addWidget(QLabel("İşlem Logları:"))
         self.txt_log = QTextEdit()
         self.txt_log.setReadOnly(True)
-        self.txt_log.setStyleSheet(f"""
+        self.txt_log.setStyleSheet("""
             QTextEdit {{
-                background-color: {C.BG_SECONDARY};
-                color: {C.STATUS_SUCCESS};
+                background-color: {};
+                color: {};
                 font-family: 'Consolas', 'Courier New', monospace;
                 font-size: 12px;
-                border: 1px solid {C.INPUT_BORDER};
+                border: 1px solid {};
                 border-radius: 4px;
                 padding: 8px;
             }}
-        """)
+        """.format(C.BG_SECONDARY, C.STATUS_SUCCESS, C.INPUT_BORDER))
         layout.addWidget(self.txt_log)
         
         # Progress bar
         self.pbar = QProgressBar()
         self.pbar.setValue(0)
         self.pbar.setVisible(False)
-        self.pbar.setStyleSheet(f"""
+        self.pbar.setStyleSheet("""
             QProgressBar {{
-                border: 1px solid {C.INPUT_BORDER};
+                border: 1px solid {};
                 border-radius: 4px;
                 text-align: center;
                 height: 24px;
             }}
             QProgressBar::chunk {{
-                background-color: {C.STATUS_ERROR};
+                background-color: {};
                 border-radius: 3px;
             }}
-        """)
+        """.format(C.INPUT_BORDER, C.STATUS_ERROR))
         layout.addWidget(self.pbar)
         
         # Başlat butonu
         self.btn_baslat = QPushButton("DEVİR İŞLEMİNİ BAŞLAT")
         self.btn_baslat.setFixedHeight(50)
         self.btn_baslat.setEnabled(False)
-        self.btn_baslat.setStyleSheet(f"""
+        self.btn_baslat.setStyleSheet("""
             QPushButton {{
-                background-color: {C.BG_TERTIARY};
-                color: {C.TEXT_DISABLED};
+                background-color: {};
+                color: {};
                 font-weight: bold;
                 font-size: 14px;
-                border: 1px solid {C.INPUT_BORDER};
+                border: 1px solid {};
                 border-radius: 6px;
             }}
-        """)
+        """.format(C.BG_TERTIARY, C.TEXT_DISABLED, C.INPUT_BORDER))
         self.btn_baslat.clicked.connect(self._islemi_baslat)
         layout.addWidget(self.btn_baslat)
 
@@ -286,31 +286,31 @@ class YilSonuDevirPage(QWidget):
         """Onay checkbox değiştiğinde buton durumunu ayarla"""
         if self.chk_onay.isChecked():
             self.btn_baslat.setEnabled(True)
-            self.btn_baslat.setStyleSheet(f"""
+            self.btn_baslat.setStyleSheet("""
                 QPushButton {{
-                    background-color: {C.STATUS_ERROR};
-                    color: {C.TEXT_PRIMARY};
+                    background-color: {};
+                    color: {};
                     font-weight: bold;
                     font-size: 14px;
                     border: none;
                     border-radius: 6px;
                 }}
                 QPushButton:hover {{
-                    background-color: {C.BTN_DANGER_HOVER};
+                    background-color: {};
                 }}
-            """)
+            """.format(C.STATUS_ERROR, C.TEXT_PRIMARY, C.BTN_DANGER_HOVER))
         else:
             self.btn_baslat.setEnabled(False)
-            self.btn_baslat.setStyleSheet(f"""
+            self.btn_baslat.setStyleSheet("""
                 QPushButton {{
-                    background-color: {C.BG_TERTIARY};
-                    color: {C.TEXT_DISABLED};
+                    background-color: {};
+                    color: {};
                     font-weight: bold;
                     font-size: 14px;
-                    border: 1px solid {C.INPUT_BORDER};
+                    border: 1px solid {};
                     border-radius: 6px;
                 }}
-            """)
+            """.format(C.BG_TERTIARY, C.TEXT_DISABLED, C.INPUT_BORDER))
 
     def _islemi_baslat(self):
         """Devir işlemini başlat"""

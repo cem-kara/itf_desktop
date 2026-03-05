@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""RKE Muayene GiriÅi Ã¢â‚¬â€ rke_yonetim tasarÄ±mÄ±yla uyumlu."""
+"""RKE Muayene Girisi - rke_yonetim tasarimiyla uyumlu."""
 import sys
 import os
 import time
@@ -17,8 +17,9 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QColor, QCursor, QDesktopServices, QStandardItemModel, QStandardItem, QPalette
 
-from ui.styles.colors import DarkTheme, C as _C
+from ui.styles.colors import C as _C
 from ui.styles.components import STYLES
+from ui.styles.icons import IconRenderer
 from ui.components.base_table_model import BaseTableModel
 from ui.pages.rke.components.toplu_muayene_dialog import TopluMuayeneDialog
 from core.paths import DB_PATH
@@ -30,54 +31,73 @@ parent_dir  = os.path.dirname(current_dir)
 if parent_dir not in sys.path:
     sys.path.append(parent_dir)
 
+def show_info(title, message, parent):
+    if "Uyar" in str(title):
+        QMessageBox.warning(parent, title, message)
+    else:
+        QMessageBox.information(parent, title, message)
+
+def show_error(title, message, parent):
+    QMessageBox.critical(parent, title, message)
+
+def veritabani_getir(vt, sayfa):
+    return None
+
 try:
-    from dateutil.relativedelta import relativedelta
     from core.logger import logger
-    from database.google import GoogleDriveService, veritabani_getir
-
-    def show_info(title, message, parent):
-        if "Uyar" in str(title):
-            QMessageBox.warning(parent, title, message)
-        else:
-            QMessageBox.information(parent, title, message)
-
-    def show_error(title, message, parent):
-        QMessageBox.critical(parent, title, message)
-
 except ImportError:
     import logging
     logger = logging.getLogger("RKEMuayene")
-    def veritabani_getir(vt, sayfa): return None
-    def show_info(t, m, p): print(m)
-    def show_error(t, m, p): print(m)
-    class GoogleDriveService:
+
+try:
+    from database.google import GoogleDriveService  # type: ignore
+except ImportError:  # type: ignore
+    class GoogleDriveService:  # type: ignore
         def upload_file(self, a, b): return None
-    class relativedelta:
+
+try:
+    from dateutil.relativedelta import relativedelta  # type: ignore
+except ImportError:  # type: ignore
+    class relativedelta:  # type: ignore
         def __init__(self, **kw): self.years = kw.get("years", 0)
         def __radd__(self, dt): return dt.replace(year=dt.year + self.years)
-    class YetkiYoneticisi:
+
+try:
+    from core.auth.authorization_service import YetkiYoneticisi  # type: ignore
+except (ImportError, ModuleNotFoundError):  # type: ignore
+    class YetkiYoneticisi:  # type: ignore
         @staticmethod
         def uygula(w, key): pass
-    class DarkTheme:
+
+try:
+    from ui.styles.colors import DarkTheme  # type: ignore
+except ImportError:  # type: ignore
+    class DarkTheme:  # type: ignore
         BG_PRIMARY = "#0f1117"; BG_SECONDARY = "#13161d"; SURFACE = "#13161d"
         PANEL = "#191d26"; BORDER_PRIMARY = "#242938"
         TEXT_PRIMARY = "#eef0f5"; TEXT_SECONDARY = "#8b90a0"; TEXT_MUTED = "#5a6278"
-        ACCENT = "#4f8ef7"; DANGER = "#f75f5f"; WARNING = "#f5a623"; SUCCESS = "#3ecf8e"
-    class _S(dict):
-        def __missing__(self, k): return ""
-    S = _S({
-        "page":         f"background:{DarkTheme.BG_PRIMARY};color:{DarkTheme.TEXT_PRIMARY};",
-        "group":        f"QGroupBox{{background:{DarkTheme.PANEL};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:6px;color:{DarkTheme.ACCENT};font-weight:600;padding-top:4px;margin-top:12px;}}QGroupBox::title{{subcontrol-origin:margin;left:10px;padding:0 4px;}}",
-        "table":        f"QTableView{{background:{DarkTheme.PANEL};alternate-background-color:{DarkTheme.BG_SECONDARY};border:none;gridline-color:{DarkTheme.BORDER_PRIMARY};}}QHeaderView::section{{background:{DarkTheme.BG_SECONDARY};color:{DarkTheme.TEXT_SECONDARY};padding:6px;border:none;font-weight:600;}}",
-        "input":        f"QLineEdit,QDateEdit{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;padding:0 8px;color:{DarkTheme.TEXT_PRIMARY};}}",
-        "combo":        f"QComboBox{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;padding:0 8px;color:{DarkTheme.TEXT_PRIMARY};}}",
-        "label":        f"color:{DarkTheme.TEXT_SECONDARY};font-size:11px;font-weight:600;",
-        "footer_label": f"color:{DarkTheme.TEXT_MUTED};font-size:11px;",
-        "refresh_btn":  f"QPushButton{{background:{DarkTheme.PANEL};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;color:{DarkTheme.TEXT_SECONDARY};padding:0 12px;}}QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};}}",
-        "success_btn":  f"QPushButton{{background:{DarkTheme.SUCCESS};border:none;border-radius:4px;color:#0f1117;font-weight:700;}}",
-        "cancel_btn":   f"QPushButton{{background:transparent;border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;color:{DarkTheme.TEXT_SECONDARY};}}",
-        "info_label":   f"color:{DarkTheme.TEXT_MUTED};font-size:11px;",
-    })
+        ACCENT = "#4f8ef7"; ACCENT2 = "#20c0d8"
+        DANGER = "#f75f5f"; WARNING = "#f5a623"; SUCCESS = "#3ecf8e"
+        STATUS_SUCCESS = "#2ec98e"; STATUS_WARNING = "#e8a030"; STATUS_ERROR = "#e85555"; STATUS_INFO = "#3d8ef5"
+        MONOSPACE = "\"JetBrains Mono\", \"Consolas\", monospace"
+        RKE_PURP = "#a855f7"
+
+class _S(dict):  # type: ignore
+    def __missing__(self, k: str) -> str: return ""
+
+S = _S({
+    "page":         f"background:{DarkTheme.BG_PRIMARY};color:{DarkTheme.TEXT_PRIMARY};",
+    "group":        f"QGroupBox{{background:{DarkTheme.PANEL};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:6px;color:{DarkTheme.ACCENT};font-weight:600;padding-top:4px;margin-top:12px;}}QGroupBox::title{{subcontrol-origin:margin;left:10px;padding:0 4px;}}",
+    "table":        f"QTableView{{background:{DarkTheme.PANEL};alternate-background-color:{DarkTheme.BG_SECONDARY};border:none;gridline-color:{DarkTheme.BORDER_PRIMARY};}}QHeaderView::section{{background:{DarkTheme.BG_SECONDARY};color:{DarkTheme.TEXT_SECONDARY};padding:6px;border:none;font-weight:600;}}",
+    "input":        f"QLineEdit,QDateEdit{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;padding:0 8px;color:{DarkTheme.TEXT_PRIMARY};}}",
+    "combo":        f"QComboBox{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;padding:0 8px;color:{DarkTheme.TEXT_PRIMARY};}}",
+    "label":        f"color:{DarkTheme.TEXT_SECONDARY};font-size:11px;font-weight:600;",
+    "footer_label": f"color:{DarkTheme.TEXT_MUTED};font-size:11px;",
+    "refresh_btn":  f"QPushButton{{background:{DarkTheme.PANEL};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;color:{DarkTheme.TEXT_SECONDARY};padding:0 12px;}}QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};}}",
+    "success_btn":  f"QPushButton{{background:{DarkTheme.STATUS_SUCCESS};border:none;border-radius:4px;color:#0f1117;font-weight:700;}}",
+    "cancel_btn":   f"QPushButton{{background:transparent;border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;color:{DarkTheme.TEXT_SECONDARY};}}",
+    "info_label":   f"color:{DarkTheme.TEXT_MUTED};font-size:11px;",
+})
 
 # 
 # _S_PAGE kaldırıldı — global QSS kuralı geçerli
@@ -90,7 +110,7 @@ except ImportError:
 # _S_PBAR kaldırıldı — global QSS kuralı geçerli
 
 
-# RKE envanter tablo kolonlarÄ±
+# RKE envanter tablo kolonlari
 _RKE_COLS = [
     ("EkipmanNo",        "EKIPMAN NO",  120),
     ("KoruyucuNumarasi", "KORUYUCU NO", 140),
@@ -109,13 +129,13 @@ _RKE_WIDTHS = [c[2] for c in _RKE_COLS]
 
 
 # ==================================================================
-#  FieldGroup Ã¢â‚¬â€ mockup'Ä±n fgroup bileÅeni
+#  FieldGroup - mockup'in fgroup bileseni
 # ==================================================================
 class FieldGroup(QWidget):
-    """Renkli sol Åerit + monospace baÅlÄ±k + iÃ§erik kartÄ±."""
+    """Renkli sol serit + monospace baslik + icerik karti."""
     def __init__(self, title: str, color: str, parent=None):
         super().__init__(parent)
-        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setStyleSheet(
             f"FieldGroup{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:6px;}}"
         )
@@ -123,10 +143,10 @@ class FieldGroup(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        # Ã¢â€â‚¬Ã¢â€â‚¬ header Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        # Header
         hdr = QWidget()
         hdr.setFixedHeight(30)
-        hdr.setAttribute(Qt.WA_StyledBackground, True)
+        hdr.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         hdr.setStyleSheet(
             f"QWidget{{background:rgba(255,255,255,12);border-bottom:1px solid {DarkTheme.BORDER_PRIMARY};"
             f"border-top-left-radius:6px;border-top-right-radius:6px;}}"
@@ -149,7 +169,7 @@ class FieldGroup(QWidget):
         hh.addStretch()
         root.addWidget(hdr)
 
-        # Ã¢â€â‚¬Ã¢â€â‚¬ body Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        # Body
         self._body = QWidget()
         self._body.setStyleSheet("background:transparent;")
         self._bl = QVBoxLayout(self._body)
@@ -162,19 +182,19 @@ class FieldGroup(QWidget):
     def body_layout(self) -> QVBoxLayout: return self._bl
 
 
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
-#  YARDIMCI FONKSÄ°YONLAR
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+# ----------------------------------------------------------------
+# YARDIMCI FONKSIYONLAR
+# ----------------------------------------------------------------
 
 def envanter_durumunu_belirle(fiziksel: str, skopi: str) -> str:
-    fiz_ok = (fiziksel == "KullanÄ±ma Uygun")
-    sko_ok = (skopi in ("KullanÄ±ma Uygun", "YapÄ±lmadÄ±"))
-    return "KullanÄ±ma Uygun" if fiz_ok and sko_ok else "KullanÄ±ma Uygun DeÄŸil"
+    fiz_ok = (fiziksel == "Kullanima Uygun")
+    sko_ok = (skopi in ("Kullanima Uygun", "Yapilmadi"))
+    return "Kullanima Uygun" if fiz_ok and sko_ok else "Kullanima Uygun Degil"
 
 
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
-#  CHECKABLE COMBOBOX (deÄŸiÅmedi)
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+# ----------------------------------------------------------------
+# CHECKABLE COMBOBOX (degismedi)
+# ----------------------------------------------------------------
 
 class CheckableComboBox(QComboBox):
     def __init__(self, parent=None):
@@ -182,18 +202,18 @@ class CheckableComboBox(QComboBox):
         self.view().pressed.connect(self.handleItemPressed)
         self.setModel(QStandardItemModel(self))
         self.setEditable(True)
-        self.lineEdit().setReadOnly(True)
+        self.lineEdit().setReadOnly(True)  # type: ignore
 
     def handleItemPressed(self, index):
-        item = self.model().itemFromIndex(index)
+        item = self.model().itemFromIndex(index)  # type: ignore
         item.setCheckState(Qt.CheckState.Unchecked if item.checkState() == Qt.CheckState.Checked else Qt.CheckState.Checked)
         QTimer.singleShot(10, self.updateText)
 
     def updateText(self):
-        items = [self.model().item(i).text()
+        items = [self.model().item(i).text()  # type: ignore
                  for i in range(self.count())
-                 if self.model().item(i).checkState() == Qt.CheckState.Checked]
-        self.lineEdit().setText(", ".join(items))
+                 if self.model().item(i).checkState() == Qt.CheckState.Checked]  # type: ignore
+        self.lineEdit().setText(", ".join(items))  # type: ignore
 
     def setCheckedItems(self, text_list):
         if isinstance(text_list, str):
@@ -201,25 +221,25 @@ class CheckableComboBox(QComboBox):
         elif not text_list:
             text_list = []
         for i in range(self.count()):
-            item = self.model().item(i)
+            item = self.model().item(i)  # type: ignore
             item.setCheckState(Qt.CheckState.Checked if item.text() in text_list else Qt.CheckState.Unchecked)
         self.updateText()
 
-    def getCheckedItems(self): return self.lineEdit().text()
+    def getCheckedItems(self): return self.lineEdit().text()  # type: ignore
 
-    def addItem(self, text, data=None):
+    def addItem(self, text, *, userData=None):  # type: ignore
         item = QStandardItem(text)
-        item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
+        item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)  # type: ignore
         item.setData(Qt.CheckState.Unchecked, Qt.ItemDataRole.CheckStateRole)
-        self.model().appendRow(item)
+        self.model().appendRow(item)  # type: ignore
 
     def addItems(self, texts):
         for t in texts: self.addItem(t)
 
 
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
-#  WORKER THREADS (deÄŸiÅmedi)
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+# ==========================================================================================================================
+#  WORKER THREADS (degismedi)
+# ==========================================================================================================================
 
 class VeriYukleyici(QThread):
     veri_hazir  = Signal(list, list, dict, list, list, list, list, list)
@@ -311,11 +331,11 @@ class VeriYukleyici(QThread):
                     rke_combo.append(display)
                     rke_dict[display] = ekipman_no
 
-            if ws_muayene:
+            if ws_muayene:  # type: ignore
                 raw = ws_muayene.get_all_values()
                 if raw:
-                    headers = [str(h).strip() for h in raw[0]]
-                    muayene_listesi = raw[1:]
+                    headers = [str(h).strip() for h in raw[0]]  # type: ignore
+                    muayene_listesi = raw[1:]  # type: ignore
             elif muayene_repo:
                 headers, muayene_listesi = self._repo_muayene_to_table(muayene_repo.get_all())
 
@@ -330,14 +350,14 @@ class VeriYukleyici(QThread):
                         val = str(row[idx_s]).strip()
                         if val: birim_sorumlulari.add(val)
 
-            if ws_sabit:
-                for s in ws_sabit.get_all_records():
+            if ws_sabit:  # type: ignore
+                for s in ws_sabit.get_all_records():  # type: ignore
                     if str(s.get('Kod', '')).strip() == "RKE_Teknik":
                         eleman = str(s.get('MenuEleman', '')).strip()
                         if eleman: teknik_aciklamalar.append(eleman)
             elif db:
                 try:
-                    rows = db.execute("SELECT Kod, MenuEleman FROM Sabitler").fetchall()
+                    rows = db.execute("SELECT Kod, MenuEleman FROM Sabitler").fetchall()  # type: ignore
                     for s in rows:
                         if str(s["Kod"]).strip() == "RKE_Teknik":
                             eleman = str(s["MenuEleman"]).strip()
@@ -346,7 +366,7 @@ class VeriYukleyici(QThread):
                     pass
 
             if not teknik_aciklamalar:
-                teknik_aciklamalar = ["YÄ±rtÄ±k Yok", "KurÅun BÃ¼tÃ¼nlÃ¼ÄŸÃ¼ Tam", "AskÄ±lar SaÄŸlam", "Temiz"]
+                teknik_aciklamalar = ["Yirtik Yok", "Kursun Butunlugu Tam", "Askilar Saglam", "Temiz"]
 
             self.veri_hazir.emit(
                 rke_data, sorted(rke_combo), rke_dict,
@@ -394,7 +414,7 @@ class KayitWorker(QThread):
                 if upload_result.get("mode") != "none":
                     try:
                         repo_doc = rke_svc.get_dokuman_repo()
-                        repo_doc.insert({
+                        repo_doc.insert({  # type: ignore
                             "EntityType": "rke",
                             "EntityId": str(self.veri.get("EkipmanNo", "")),
                             "BelgeTuru": "Rapor",
@@ -409,7 +429,7 @@ class KayitWorker(QThread):
                             "IliskiliBelgeTipi": "RKE_Muayene",
                         })
                     except Exception as e:
-                        logger.warning(f"Dokumanlar kaydÄ± eklenemedi: {e}")
+                        logger.warning(f"Dokumanlar kaydi eklenemedi: {e}")
 
             rke_repo = None
             muayene_repo = None
@@ -419,7 +439,7 @@ class KayitWorker(QThread):
 
             if self._use_sheets:
                 ws_muayene = veritabani_getir('rke', 'rke_muayene')
-                if not ws_muayene: raise Exception("VeritabanÄ± baÄŸlantÄ±sÄ± yok.")
+                if not ws_muayene: raise Exception("Veritabani baglantisi yok.")
 
                 satir = [
                     self.veri['KayitNo'], self.veri['EkipmanNo'],
@@ -452,11 +472,11 @@ class KayitWorker(QThread):
                             ws_list.update_cell(cell.row, c, gelecek)
                         if (c := ci("Durum")) > 0:
                             ws_list.update_cell(cell.row, c, yeni_durum)
-                        if (c := ci("AÃ§iklama")) > 0:
+                        if (c := ci("Aciklama")) > 0:
                             ws_list.update_cell(cell.row, c, self.veri['Aciklamalar'])
             else:
                 if not muayene_repo:
-                    raise Exception("VeritabanÄ± baÄŸlantÄ±sÄ± yok.")
+                    raise Exception("Veritabani baglantisi yok.")
                 muayene_data = {
                     "KayitNo": self.veri.get("KayitNo"),
                     "EkipmanNo": self.veri.get("EkipmanNo"),
@@ -487,7 +507,7 @@ class KayitWorker(QThread):
                         update_data["KontrolTarihi"] = gelecek
                     rke_repo.update(self.veri["EkipmanNo"], update_data)
 
-            self.finished.emit("KayÄ±t ve gÃ¼ncelleme baÅŸarÄ±lÄ±.")
+            self.finished.emit("Kayit ve guncelleme basarili.")
             if db:
                 db.close()
         except Exception as e:
@@ -537,7 +557,7 @@ class TopluKayitWorker(QThread):
                 ws_muayene = veritabani_getir('rke', 'rke_muayene')
                 ws_list    = veritabani_getir('rke', 'rke_list')
                 if not ws_muayene or not ws_list:
-                    raise Exception("VeritabanÄ± baÄŸlantÄ±sÄ± yok.")
+                    raise Exception("Veritabani baglantisi yok.")
 
                 hdrs = ws_list.row_values(1)
                 def ci(name):
@@ -545,7 +565,7 @@ class TopluKayitWorker(QThread):
                     except: return -1
                 col_tarih   = ci("KontrolTarihi")
                 col_durum   = ci("Durum")
-                col_aciklama = ci("AÃ§iklama")
+                col_aciklama = ci("Aciklama")
                 try: col_ekipman = hdrs.index("EkipmanNo") + 1
                 except: col_ekipman = 2
                 all_ekipman = ws_list.col_values(col_ekipman)
@@ -590,7 +610,7 @@ class TopluKayitWorker(QThread):
                 self.finished.emit()
             else:
                 if not muayene_repo:
-                    raise Exception("VeritabanÄ± baÄŸlantÄ±sÄ± yok.")
+                    raise Exception("Veritabani baglantisi yok.")
                 base_time = int(time.time())
                 for idx, ekipman_no in enumerate(self.ekipman_listesi):
                     unique_id = f"M-{base_time}-{idx}"
@@ -630,7 +650,7 @@ class TopluKayitWorker(QThread):
                     if upload_result.get("mode") != "none":
                         try:
                             repo_doc = rke_svc.get_dokuman_repo()
-                            repo_doc.insert({
+                            repo_doc.insert({  # type: ignore
                                 "EntityType": "rke",
                                 "EntityId": str(ekipman_no),
                                 "BelgeTuru": "Rapor",
@@ -645,7 +665,7 @@ class TopluKayitWorker(QThread):
                                 "IliskiliBelgeTipi": "RKE_Muayene",
                             })
                         except Exception as e:
-                            logger.warning(f"Dokumanlar kaydÄ± eklenemedi: {e}")
+                            logger.warning(f"Dokumanlar kaydi eklenemedi: {e}")
 
                 self.finished.emit()
             if db:
@@ -663,7 +683,7 @@ class RKEEnvanterModel(BaseTableModel):
     def _fg(self, key, row):
         if key == "Durum":
             v = row.get(key, "")
-            if "DeÄŸil" in v or "Hurda" in v:
+            if "Degil" in v or "Hurda" in v:
                 return QColor(_C["red"])
             if "Uygun" in v:
                 return QColor(_C["green"])
@@ -684,7 +704,7 @@ class RKEEnvanterModel(BaseTableModel):
 _GECMIS_COLS = [
     ("F_MuayeneTarihi", "Fiz. Tarih"),
     ("S_MuayeneTarihi", "Skopi Tarih"),
-    ("Aciklamalar",     "AÃ§Ä±klama"),
+    ("Aciklamalar",     "Aciklama"),
     ("Rapor",           "Rapor"),
 ]
 
@@ -695,7 +715,7 @@ class GecmisModel(BaseTableModel):
     def _display(self, key, row):
         val = str(row.get(key, ""))
         if key == "Rapor":
-            return "Link" if "http" in val else "Ã¢â‚¬â€"
+            return "Link" if "http" in val else "-"
         return val
 
     def _fg(self, key, row):
@@ -710,9 +730,9 @@ class GecmisModel(BaseTableModel):
         return self._data[idx] if 0 <= idx < len(self._data) else None
 
 
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
-#  TOPLU MUAYENE DÄ°ALOG
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+# ----------------------------------------------------------------
+# TOPLU MUAYENE DIALOG
+# ----------------------------------------------------------------
 
 class RKEMuayenePage(QWidget):
     def __init__(self, db=None, action_guard=None, parent=None, yetki="viewer", kullanici_adi=None):
@@ -723,7 +743,7 @@ class RKEMuayenePage(QWidget):
         self._use_sheets = False if self._db else True
         self.yetki         = yetki
         self.kullanici_adi = kullanici_adi
-        self.setWindowTitle("RKE Muayene GiriÅi")
+        self.setWindowTitle("RKE Muayene Girisi")
         self.resize(1200, 820)
         # setStyleSheet kaldırıldı (_S_PAGE) — global QSS
 
@@ -736,15 +756,15 @@ class RKEMuayenePage(QWidget):
         self.secilen_dosya          = None
         self.header_map: Dict       = {}
         self._kpi_labels: Dict[str, QLabel] = {}
-        self.btn_kapat = None  # KapÄ±yÄ± kapat dÃ¼ÄŸmesi iÃ§in yer tutucu
+        self.btn_kapat = None  # Kapiyi kapat dugmesi icin yer tutucu
 
 
         self._setup_ui()
         # YetkiYoneticisi.uygula(self, "rke_muayene")  # TODO: Yetki sistemi entegrasyonu
 
-    # Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    # ==================================================================
     #  UI KURULUM
-    # Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    # ==================================================================
 
     def _setup_ui(self):
         root = QVBoxLayout(self)
@@ -764,9 +784,9 @@ class RKEMuayenePage(QWidget):
         hl.setSpacing(1)
         
         specs = [
-            ("toplam",  "TOPLAM EKÄ°PMAN",  "0", DarkTheme.ACCENT),
+            ("toplam",  "TOPLAM EKIPMAN",  "0", DarkTheme.ACCENT),
             ("uygun",   "KULLANIMA UYGUN", "0", DarkTheme.STATUS_SUCCESS),
-            ("uygun_d", "UYGUN DEÄÄ°L",     "0", DarkTheme.STATUS_ERROR),
+            ("uygun_d", "UYGUN DEGIL",     "0", DarkTheme.STATUS_ERROR),
             ("bekleyen","KONTROL BEKLEYEN","0", DarkTheme.STATUS_WARNING),
         ]
         for key, title, val, color in specs:
@@ -843,7 +863,7 @@ class RKEMuayenePage(QWidget):
         vl.setContentsMargins(0, 0, 0, 0)
         vl.setSpacing(0)
 
-        # Panel baÅlÄ±k
+        # Panel baslik
         hdr = QWidget()
         hdr.setFixedHeight(36)
         hdr.setProperty("bg-role", "page")
@@ -853,7 +873,7 @@ class RKEMuayenePage(QWidget):
         hh.setContentsMargins(14, 0, 14, 0)
         t1 = QLabel("MUAYENE FORMU")
         t1.setProperty("color-role", "muted")
-        t1.setStyleSheet("font-family: {DarkTheme.MONOSPACE}; font-size: 9px; font-weight: 700; letter-spacing: 2px;")
+        t1.setStyleSheet("font-family: {}; font-size: 9px; font-weight: 700; letter-spacing: 2px;".format(DarkTheme.MONOSPACE))
         t1.style().unpolish(t1)
         t1.style().polish(t1)
         hh.addWidget(t1)
@@ -862,7 +882,7 @@ class RKEMuayenePage(QWidget):
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         # setStyleSheet kaldırıldı (_S_SCROLL) — global QSS
 
         inner = QWidget()
@@ -871,18 +891,18 @@ class RKEMuayenePage(QWidget):
         il.setContentsMargins(12, 12, 12, 16)
         il.setSpacing(10)
 
-        # 1. Ekipman SeÃ§imi
-        grp_ekipman = FieldGroup("Ekipman SeÃ§imi", DarkTheme.STATUS_WARNING)
+        # 1. Ekipman Secimi
+        grp_ekipman = FieldGroup("Ekipman Secimi", DarkTheme.STATUS_WARNING)
         g = QGridLayout()
         g.setContentsMargins(0, 0, 0, 0)
         g.setHorizontalSpacing(10)
         g.setVerticalSpacing(6)
-        g.addWidget(self._lbl("EKÄ°PMAN NO"), 0, 0, 1, 2)
+        g.addWidget(self._lbl("EKIPMAN NO"), 0, 0, 1, 2)
         self.cmb_rke = QComboBox()
         self.cmb_rke.setEditable(True)
         # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_rke.setFixedHeight(28)
-        self.cmb_rke.setPlaceholderText("Ara veya seÃ§in...")
+        self.cmb_rke.setPlaceholderText("Ara veya secin...")
         self.cmb_rke.currentIndexChanged.connect(self.ekipman_secildi)
         g.addWidget(self.cmb_rke, 1, 0, 1, 2)
         grp_ekipman.add_layout(g)
@@ -894,7 +914,7 @@ class RKEMuayenePage(QWidget):
         gf.setContentsMargins(0, 0, 0, 0)
         gf.setHorizontalSpacing(10)
         gf.setVerticalSpacing(6)
-        gf.addWidget(self._lbl("MUAYENE TARÄ°HÄ°"), 0, 0)
+        gf.addWidget(self._lbl("MUAYENE TARIHI"), 0, 0)
         gf.addWidget(self._lbl("DURUM"), 0, 1)
         self.dt_fiziksel = QDateEdit(QDate.currentDate())
         self.dt_fiziksel.setCalendarPopup(True)
@@ -903,7 +923,7 @@ class RKEMuayenePage(QWidget):
         self.cmb_fiziksel = QComboBox()
         # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_fiziksel.setFixedHeight(28)
-        self.cmb_fiziksel.addItems(["KullanÄ±ma Uygun", "KullanÄ±ma Uygun DeÄŸil"])
+        self.cmb_fiziksel.addItems(["Kullanima Uygun", "Kullanima Uygun Degil"])
         gf.addWidget(self.dt_fiziksel, 1, 0)
         gf.addWidget(self.cmb_fiziksel, 1, 1)
         grp_fiz.add_layout(gf)
@@ -915,7 +935,7 @@ class RKEMuayenePage(QWidget):
         gs.setContentsMargins(0, 0, 0, 0)
         gs.setHorizontalSpacing(10)
         gs.setVerticalSpacing(6)
-        gs.addWidget(self._lbl("MUAYENE TARÄ°HÄ°"), 0, 0)
+        gs.addWidget(self._lbl("MUAYENE TARIHI"), 0, 0)
         gs.addWidget(self._lbl("DURUM"), 0, 1)
         self.dt_skopi = QDateEdit(QDate.currentDate())
         self.dt_skopi.setCalendarPopup(True)
@@ -924,20 +944,20 @@ class RKEMuayenePage(QWidget):
         self.cmb_skopi = QComboBox()
         # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_skopi.setFixedHeight(28)
-        self.cmb_skopi.addItems(["KullanÄ±ma Uygun", "KullanÄ±ma Uygun DeÄŸil", "YapÄ±lmadÄ±"])
+        self.cmb_skopi.addItems(["Kullanima Uygun", "Kullanima Uygun Degil", "Yapilmadi"])
         gs.addWidget(self.dt_skopi, 1, 0)
         gs.addWidget(self.cmb_skopi, 1, 1)
         grp_sko.add_layout(gs)
         il.addWidget(grp_sko)
 
-        # 4. SonuÃ§ ve Raporlama
-        grp_sonuc = FieldGroup("SonuÃ§ ve Raporlama", DarkTheme.ACCENT)
+        # 4. Sonuc ve Raporlama
+        grp_sonuc = FieldGroup("Sonuc ve Raporlama", DarkTheme.ACCENT)
         go = QGridLayout()
         go.setContentsMargins(0, 0, 0, 0)
         go.setHorizontalSpacing(10)
         go.setVerticalSpacing(6)
         go.addWidget(self._lbl("KONTROL EDEN"), 0, 0)
-        go.addWidget(self._lbl("BÄ°RÄ°M SORUMLUSU"), 0, 1)
+        go.addWidget(self._lbl("BIRIM SORUMLUSU"), 0, 1)
         self.cmb_kontrol = QComboBox()
         self.cmb_kontrol.setEditable(True)
         # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
@@ -950,26 +970,27 @@ class RKEMuayenePage(QWidget):
         self.cmb_sorumlu.setFixedHeight(28)
         go.addWidget(self.cmb_kontrol, 1, 0)
         go.addWidget(self.cmb_sorumlu, 1, 1)
-        go.addWidget(self._lbl("TEKNÄ°K AÃƒâ€¡IKLAMA (Ãƒâ€¡oklu SeÃ§im)"), 2, 0, 1, 2)
+        go.addWidget(self._lbl("TEKNIK ACIKLAMA (Çoklu Seçim)"), 2, 0, 1, 2)
         self.cmb_aciklama = CheckableComboBox()
         # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_aciklama.setFixedHeight(28)
         go.addWidget(self.cmb_aciklama, 3, 0, 1, 2)
 
-        # Dosya satÄ±rÄ±
+        # Dosya satiri
         file_row = QHBoxLayout()
-        self.lbl_dosya = QLabel("Rapor seÃ§ilmedi")
+        self.lbl_dosya = QLabel("Rapor secilmedi")
         self.lbl_dosya.setProperty("color-role", "muted")
         self.lbl_dosya.setStyleSheet("font-size: 10px;")
         self.lbl_dosya.style().unpolish(self.lbl_dosya)
         self.lbl_dosya.style().polish(self.lbl_dosya)
-        btn_dosya = QPushButton("ÄŸÅ¸â€œâ€š Rapor YÃ¼kle")
+        btn_dosya = QPushButton("Rapor Yukle")
         btn_dosya.setStyleSheet(
             f"QPushButton{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;"
             f"color:{DarkTheme.TEXT_SECONDARY};padding:0 12px;}}QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};}}"
         )
         btn_dosya.setFixedHeight(28)
         btn_dosya.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        IconRenderer.set_button_icon(btn_dosya, "upload", color=DarkTheme.TEXT_SECONDARY, size=14)
         btn_dosya.clicked.connect(self.dosya_sec)
         file_row.addWidget(self.lbl_dosya, 1)
         file_row.addWidget(btn_dosya)
@@ -977,14 +998,14 @@ class RKEMuayenePage(QWidget):
         grp_sonuc.add_layout(go)
         il.addWidget(grp_sonuc)
 
-        # 5. GeÃ§miÅ
-        grp_gecmis = FieldGroup("SeÃ§ili EkipmanÄ±n GeÃ§miÅi", DarkTheme.RKE_PURP)
+        # 5. Gecmis
+        grp_gecmis = FieldGroup("Secili Ekipmanin Gecmisi", DarkTheme.RKE_PURP)
         self._gecmis_model = GecmisModel()
         self.tbl_gecmis = QTableView()
         self.tbl_gecmis.setModel(self._gecmis_model)
         # setStyleSheet kaldırıldı (_S_TABLE) — global QSS
         self.tbl_gecmis.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.tbl_gecmis.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.tbl_gecmis.setEditTriggers(QAbstractItemView.EditTriggers.NoEditTriggers)  # type: ignore
         self.tbl_gecmis.verticalHeader().setVisible(False)
         self.tbl_gecmis.setShowGrid(False)
         self.tbl_gecmis.setAlternatingRowColors(True)
@@ -1009,7 +1030,7 @@ class RKEMuayenePage(QWidget):
         btn_row = QHBoxLayout()
         btn_row.setContentsMargins(12, 8, 12, 12)
         btn_row.setSpacing(8)
-        self.btn_temizle = QPushButton("Ã¢â€ Âº  TEMÄ°ZLE")
+        self.btn_temizle = QPushButton("TEMIZLE")
         self.btn_temizle.setFixedHeight(34)
         self.btn_temizle.setStyleSheet(
             f"QPushButton{{background:transparent;border:1px solid {DarkTheme.BORDER_PRIMARY};"
@@ -1018,8 +1039,9 @@ class RKEMuayenePage(QWidget):
             f"QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};border-color:{DarkTheme.TEXT_SECONDARY};}}"
         )
         self.btn_temizle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_temizle, "x", color=DarkTheme.TEXT_MUTED, size=14)
         self.btn_temizle.clicked.connect(self.temizle)
-        self.btn_kaydet = QPushButton("Ã¢Å“â€œ  KAYDET")
+        self.btn_kaydet = QPushButton("KAYDET")
         self.btn_kaydet.setFixedHeight(34)
         self.btn_kaydet.setStyleSheet(
             f"QPushButton{{background:{DarkTheme.STATUS_SUCCESS};border:none;border-radius:5px;"
@@ -1027,6 +1049,7 @@ class RKEMuayenePage(QWidget):
             f"letter-spacing:1px;}}"
         )
         self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_kaydet, "save", color="#051a10", size=14)
         self.btn_kaydet.clicked.connect(self.kaydet)
         if self._action_guard:
             self._action_guard.disable_if_unauthorized(self.btn_kaydet, "cihaz.write")
@@ -1044,7 +1067,7 @@ class RKEMuayenePage(QWidget):
         vl.setContentsMargins(0, 0, 0, 0)
         vl.setSpacing(0)
 
-        # Filtre Ã§ubuÄŸu
+        # Filtre cubugu
         fbar = QWidget()
         fbar.setFixedHeight(52)
         fbar.setProperty("bg-role", "page")
@@ -1058,7 +1081,7 @@ class RKEMuayenePage(QWidget):
         # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_filtre_abd.setFixedHeight(28)
         self.cmb_filtre_abd.setMinimumWidth(160)
-        self.cmb_filtre_abd.addItem("TÃ¼m ABD")
+        self.cmb_filtre_abd.addItem("Tum ABD")
         self.cmb_filtre_abd.currentIndexChanged.connect(self.tabloyu_filtrele)
 
         self.txt_ara = QLineEdit()
@@ -1067,22 +1090,24 @@ class RKEMuayenePage(QWidget):
         self.txt_ara.setPlaceholderText("Ara...")
         self.txt_ara.textChanged.connect(self.tabloyu_filtrele)
 
-        btn_yenile = QPushButton("Ã¢Å¸Â³")
+        btn_yenile = QPushButton("")
         btn_yenile.setFixedSize(28, 28)
         btn_yenile.setStyleSheet(
             f"QPushButton{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;"
             f"color:{DarkTheme.TEXT_SECONDARY};}}QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};}}"
         )
         btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        IconRenderer.set_button_icon(btn_yenile, "refresh", color=DarkTheme.TEXT_SECONDARY, size=14)
         btn_yenile.clicked.connect(self.verileri_yukle)
 
-        btn_toplu = QPushButton("Ã¢â€“Â¶ Toplu Muayene")
+        btn_toplu = QPushButton("Toplu Muayene")
         btn_toplu.setFixedHeight(28)
         btn_toplu.setStyleSheet(
             f"QPushButton{{background:{DarkTheme.ACCENT};border:none;border-radius:4px;"
             f"color:#0a1420;font-family:{DarkTheme.MONOSPACE};font-size:9px;font-weight:700;padding:0 12px;}}"
         )
         btn_toplu.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        IconRenderer.set_button_icon(btn_toplu, "clipboard_list", color="#0a1420", size=14)
         btn_toplu.clicked.connect(self.ac_toplu_dialog)
 
         fl.addWidget(self.cmb_filtre_abd)
@@ -1098,8 +1123,8 @@ class RKEMuayenePage(QWidget):
         # setStyleSheet kaldırıldı (_S_TABLE) — global QSS
         self.tablo.setAlternatingRowColors(True)
         self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.tablo.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.tablo.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.tablo.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)  # type: ignore
+        self.tablo.setEditTriggers(QAbstractItemView.EditTriggers.NoEditTriggers)  # type: ignore
         self.tablo.verticalHeader().setVisible(False)
         self.tablo.setShowGrid(False)
         hdr = self.tablo.horizontalHeader()
@@ -1123,7 +1148,7 @@ class RKEMuayenePage(QWidget):
         fl.setContentsMargins(12, 8, 12, 8)
         fl.setSpacing(8)
         
-        self.lbl_sayi = QLabel("0 kayÄ±t")
+        self.lbl_sayi = QLabel("0 kayit")
         self.lbl_sayi.setStyleSheet(
             f"color:{DarkTheme.TEXT_MUTED};font-family:{DarkTheme.MONOSPACE};font-size:10px;font-weight:500;"
         )
@@ -1132,9 +1157,9 @@ class RKEMuayenePage(QWidget):
         vl.addWidget(footer)
         return panel
 
-    # Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    # ==================================================================
     #  YARDIMCI UI
-    # Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    # ==================================================================
 
     @staticmethod
     def _lbl(text: str) -> QLabel:
@@ -1145,16 +1170,16 @@ class RKEMuayenePage(QWidget):
         )
         return lbl
 
-    # Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    # ==================================================================
     #  KPI
-    # Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    # ==================================================================
 
     def _update_kpi(self, rows: List[Dict]):
         toplam, uygun, uygun_d, bekleyen = len(rows), 0, 0, 0
         today = datetime.date.today()
         for r in rows:
             d = str(r.get("Durum", ""))
-            if "DeÄŸil" in d: uygun_d += 1
+            if "Degil" in d: uygun_d += 1
             elif "Uygun" in d: uygun  += 1
             kt = str(r.get("KontrolTarihi", ""))
             if kt and len(kt) >= 10:
@@ -1167,9 +1192,9 @@ class RKEMuayenePage(QWidget):
             if k in self._kpi_labels:
                 self._kpi_labels[k].setText(str(v))
 
-    # Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    # ==================================================================
     #  MANTIK
-    # Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    # ==================================================================
 
     def dosya_sec(self):
         yol, _ = QFileDialog.getOpenFileName(self, "Rapor", "", "PDF/Resim (*.pdf *.jpg)")
@@ -1215,7 +1240,7 @@ class RKEMuayenePage(QWidget):
                       if str(r.get("AnaBilimDali", "")).strip()})
         self.cmb_filtre_abd.blockSignals(True)
         self.cmb_filtre_abd.clear()
-        self.cmb_filtre_abd.addItem("TÃ¼m ABD")
+        self.cmb_filtre_abd.addItem("Tum ABD")
         self.cmb_filtre_abd.addItems(abd)
         self.cmb_filtre_abd.blockSignals(False)
 
@@ -1227,18 +1252,18 @@ class RKEMuayenePage(QWidget):
         filtered    = []
         for row in self.rke_data:
             abd = str(row.get("AnaBilimDali", "")).strip()
-            if secilen_abd != "TÃ¼m ABD" and abd != secilen_abd: continue
+            if secilen_abd != "Tum ABD" and abd != secilen_abd: continue
             if ara and ara not in " ".join([str(v) for v in row.values()]).lower(): continue
             filtered.append(row)
         self._model.set_rows(filtered)
-        self.lbl_sayi.setText(f"{len(filtered)} kayÄ±t")
+        self.lbl_sayi.setText(f"{len(filtered)} kayit")
         self._update_kpi(filtered)
 
     def _sag_tablo_tiklandi(self, index: QModelIndex):
         row_data = self._model.get_row(index.row())
         if not row_data: return
         ekipman_no = str(row_data.get("EkipmanNo", ""))
-        idx = self.cmb_rke.findText(ekipman_no, Qt.MatchContains)
+        idx = self.cmb_rke.findText(ekipman_no, Qt.MatchFlag.MatchContains)  # type: ignore
         if idx >= 0: self.cmb_rke.setCurrentIndex(idx)
 
     def ekipman_secildi(self):
@@ -1278,7 +1303,7 @@ class RKEMuayenePage(QWidget):
         self.cmb_fiziksel.setCurrentIndex(0)
         self.cmb_skopi.setCurrentIndex(0)
         self.cmb_aciklama.setCheckedItems([])
-        self.lbl_dosya.setText("Rapor seÃ§ilmedi")
+        self.lbl_dosya.setText("Rapor secilmedi")
         self.secilen_dosya = None
         self._gecmis_model.set_rows([])
 
@@ -1289,7 +1314,7 @@ class RKEMuayenePage(QWidget):
             return
         rke_text = self.cmb_rke.currentText()
         if not rke_text:
-            QMessageBox.warning(self, "UyarÄ±", "Ekipman seÃ§in."); return
+            QMessageBox.warning(self, "Uyari", "Ekipman secin."); return
         ekipman_no = self.rke_dict.get(rke_text, rke_text.split('|')[0].strip())
         unique_id  = f"M-{int(time.time())}"
         veri = {
@@ -1315,16 +1340,16 @@ class RKEMuayenePage(QWidget):
     def islem_basarili(self, msg: str):
         self.pbar.setVisible(False)
         self.btn_kaydet.setEnabled(True)
-        QMessageBox.information(self, "BaÅarÄ±lÄ±", msg)
+        QMessageBox.information(self, "Basarili", msg)
         self.temizle()
         self.verileri_yukle()
 
     def ac_toplu_dialog(self):
         secili = self.tablo.selectionModel().selectedRows()
         if not secili:
-            QMessageBox.warning(self, "UyarÄ±", "Tabloda satÄ±r seÃ§in."); return
+            QMessageBox.warning(self, "Uyari", "Tabloda satir secin."); return
         ekipmanlar = sorted({
-            str(self._model.get_row(i.row()).get("EkipmanNo", ""))
+            str(self._model.get_row(i.row()).get("EkipmanNo", ""))  # type: ignore
             for i in secili
             if self._model.get_row(i.row())
         })
@@ -1341,11 +1366,11 @@ class RKEMuayenePage(QWidget):
             worker_cls=TopluKayitWorker,
         )
         if dlg.exec() == QDialog.DialogCode.Accepted:
-            QMessageBox.information(self, "Bilgi", "Toplu kayÄ±t baÅarÄ±lÄ±.")
+            QMessageBox.information(self, "Bilgi", "Toplu kayit basarili.")
             self.verileri_yukle()
 
     def load_data(self):
-        """main_window.py'den Ã§aÄŸrÄ±lan yÃ¼kleme metodu."""
+        """main_window.py'den cagrilan yukleme metodu."""
         self.verileri_yukle()
 
     def closeEvent(self, event):

@@ -20,6 +20,14 @@ class FhszService:
         self._r = registry
 
     # ───────────────────────────────────────────────────────────
+    #  Repository Accessors
+    # ───────────────────────────────────────────────────────────
+    
+    def get_sabitler_repo(self):
+        """Sabitler repository'sine eriş."""
+        return self._r.get("Sabitler")
+
+    # ───────────────────────────────────────────────────────────
     #  Puantaj Kayıtları
     # ───────────────────────────────────────────────────────────
 

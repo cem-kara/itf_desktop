@@ -65,12 +65,12 @@ class IzinFHSZPuantajMerkezPage(QWidget):
     def _build_header(self) -> QFrame:
         """Header (52px) + sekme nav (36px)."""
         outer = QFrame()
-        outer.setStyleSheet(f"""
+        outer.setStyleSheet("""
             QFrame {{
-                background-color: {C.BG_SECONDARY};
-                border-bottom: 1px solid {C.BORDER_PRIMARY};
+                background-color: {};
+                border-bottom: 1px solid {};
             }}
-        """)
+        """.format(C.BG_SECONDARY, C.BORDER_PRIMARY))
         lay = QVBoxLayout(outer)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)

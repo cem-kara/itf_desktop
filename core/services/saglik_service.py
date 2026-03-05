@@ -20,6 +20,14 @@ class SaglikService:
         self._r = registry
 
     # ───────────────────────────────────────────────────────────
+    #  Repository Accessors
+    # ───────────────────────────────────────────────────────────
+    
+    def get_saglik_takip_repo(self):
+        """Personel Sağlık Takip repository'sine eriş."""
+        return self._r.get("Personel_Saglik_Takip")
+
+    # ───────────────────────────────────────────────────────────
     #  Sağlık Kayıtları
     # ───────────────────────────────────────────────────────────
 

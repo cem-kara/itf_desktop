@@ -3,7 +3,7 @@ import os
 import uuid
 from datetime import date, datetime
 
-from PySide6.QtCore import Qt, QDate, QPropertyAnimation, QEasingCurve
+from PySide6.QtCore import Qt, QDate, QPropertyAnimation, QEasingCurve, QAbstractAnimation
 from PySide6.QtGui import QCursor, QPainter, QColor, QBrush, QFont, QPen
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QFrame, QScrollArea,
@@ -205,27 +205,27 @@ class SaglikTakipPage(QWidget):
         fb.addStretch()
 
         self.btn_toplu = QPushButton("Toplu Yillik Plan")
-        self.btn_toplu.setStyleSheet(S["action_btn"])
+        self.btn_toplu.setProperty("style-role", "action")
         self.btn_toplu.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_toplu, "clipboard_list", color=DarkTheme.TEXT_PRIMARY, size=14)
         fb.addWidget(self.btn_toplu)
 
         self.btn_yeni = QPushButton("Yeni Ekle")
-        self.btn_yeni.setStyleSheet(S["save_btn"])
+        self.btn_yeni.setProperty("style-role", "action")
         self.btn_yeni.setFixedSize(110, 36)
         self.btn_yeni.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_yeni, "plus", color=DarkTheme.TEXT_PRIMARY, size=14)
         fb.addWidget(self.btn_yeni)
 
         self.btn_yenile = QPushButton("Yenile")
-        self.btn_yenile.setStyleSheet(S["refresh_btn"])
+        self.btn_yenile.setProperty("style-role", "refresh")
         self.btn_yenile.setFixedSize(100, 36)
         self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_yenile, "sync", color=DarkTheme.TEXT_PRIMARY, size=14)
         fb.addWidget(self.btn_yenile)
 
         self.btn_kapat = QPushButton("Kapat")
-        self.btn_kapat.setStyleSheet(S["close_btn"])
+        self.btn_kapat.setProperty("style-role", "danger")
         self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
@@ -250,19 +250,19 @@ class SaglikTakipPage(QWidget):
         main_lay.addWidget(self.table, 1)
 
         self.lbl_info = QLabel("0 kayit")
-        self.lbl_info.setStyleSheet(S["footer_label"])
+        self.lbl_info.setProperty("style-role", "footer")
         main_lay.addWidget(self.lbl_info)
 
         root.addWidget(main_container, 1)
 
         # ── Sağdan Açılan Drawer (Form) ──
         self._drawer = QFrame()
-        self._drawer.setStyleSheet(f"""
+        self._drawer.setStyleSheet("""
             QFrame {{
-                background-color: {DarkTheme.BG_SECONDARY};
-                border-left: 1px solid {DarkTheme.BORDER_PRIMARY};
+                background-color: {};
+                border-left: 1px solid {};
             }}
-        """)
+        """.format(DarkTheme.BG_SECONDARY, DarkTheme.BORDER_PRIMARY))
         self._drawer.setFixedWidth(0)  # Başlangıçta gizli
 
         drawer_lay = QVBoxLayout(self._drawer)
@@ -271,13 +271,13 @@ class SaglikTakipPage(QWidget):
 
         # Drawer başlık
         drawer_header = QFrame()
-        drawer_header.setStyleSheet(f"""
+        drawer_header.setStyleSheet("""
             QFrame {{
-                background-color: {DarkTheme.BG_PRIMARY};
-                border-bottom: 1px solid {DarkTheme.BORDER_PRIMARY};
+                background-color: {};
+                border-bottom: 1px solid {};
                 padding: 12px;
             }}
-        """)
+        """.format(DarkTheme.BG_PRIMARY, DarkTheme.BORDER_PRIMARY))
         header_lay = QHBoxLayout(drawer_header)
         header_lay.setContentsMargins(12, 12, 12, 12)
         
@@ -291,7 +291,7 @@ class SaglikTakipPage(QWidget):
 
         btn_drawer_close = QPushButton()
         btn_drawer_close.setFixedSize(32, 32)
-        btn_drawer_close.setStyleSheet(S["close_btn"])
+        btn_drawer_close.setProperty("style-role", "danger")
         btn_drawer_close.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(btn_drawer_close, "x", color=DarkTheme.TEXT_PRIMARY, size=16)
         btn_drawer_close.clicked.connect(self._close_drawer)
@@ -367,7 +367,7 @@ class SaglikTakipPage(QWidget):
         self.inp_rapor.setReadOnly(True)
         rapor_row.addWidget(self.inp_rapor, 1)
         self.btn_rapor = QPushButton("Sec")
-        self.btn_rapor.setStyleSheet(S["action_btn"])
+        self.btn_rapor.setProperty("style-role", "action")
         self.btn_rapor.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_rapor, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
         rapor_row.addWidget(self.btn_rapor)
@@ -388,12 +388,12 @@ class SaglikTakipPage(QWidget):
         btn_row.setContentsMargins(12, 8, 12, 12)
         btn_row.setSpacing(8)
         self.btn_temizle = QPushButton("Temizle / Yeni")
-        self.btn_temizle.setStyleSheet(S["action_btn"])
+        self.btn_temizle.setProperty("style-role", "action")
         self.btn_temizle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_temizle, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         btn_row.addWidget(self.btn_temizle)
         self.btn_kaydet = QPushButton("Kaydet")
-        self.btn_kaydet.setStyleSheet(S["save_btn"])
+        self.btn_kaydet.setProperty("style-role", "success")
         self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         btn_row.addWidget(self.btn_kaydet)
@@ -542,7 +542,7 @@ class SaglikTakipPage(QWidget):
         gl.setVerticalSpacing(6)
 
         lbl_tarih = QLabel("Muayene Tarihi")
-        lbl_tarih.setStyleSheet(S.get("label") or "")
+        lbl_tarih.setProperty("style-role", "form")
         gl.addWidget(lbl_tarih, 0, 0)
 
         de = QDateEdit(QDate.currentDate())
@@ -552,7 +552,7 @@ class SaglikTakipPage(QWidget):
         gl.addWidget(de, 0, 1)
 
         lbl_durum = QLabel("Durum")
-        lbl_durum.setStyleSheet(S.get("label") or "")
+        lbl_durum.setProperty("style-role", "form")
         gl.addWidget(lbl_durum, 0, 2)
 
         cmb = QComboBox()
@@ -882,8 +882,8 @@ class SaglikTakipPage(QWidget):
         anim.setDuration(250)
         anim.setStartValue(0)
         anim.setEndValue(self._drawer_width)
-        anim.setEasingCurve(QEasingCurve.OutCubic)
-        anim.start(QPropertyAnimation.DeleteWhenStopped)
+        anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
         
         # Minimum genişliği de ayarla
         self._drawer.setMinimumWidth(self._drawer_width)
@@ -897,6 +897,6 @@ class SaglikTakipPage(QWidget):
         anim.setDuration(200)
         anim.setStartValue(self._drawer.width())
         anim.setEndValue(0)
-        anim.setEasingCurve(QEasingCurve.InCubic)
+        anim.setEasingCurve(QEasingCurve.Type.InCubic)
         anim.finished.connect(lambda: self._drawer.setMinimumWidth(0))
-        anim.start(QPropertyAnimation.DeleteWhenStopped)
+        anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)

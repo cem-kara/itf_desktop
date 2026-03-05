@@ -83,7 +83,7 @@ def _yn(val) -> str:
     return str(val)
 
 
-async def scrape_uts(urun_no: str) -> Dict[str, str]:
+async def scrape_uts(urun_no: str) -> Dict[str, str]:  # type: ignore
     """
     Playwright ile ÜTS web sayfasından ürün verisi çeker.
     Network API call'larını intercept ederek JSON response'ı yakalar.
@@ -969,7 +969,7 @@ def _parse_uts_modal(soup: BeautifulSoup, urun_no: str) -> Dict[str, str]:
 
     modal = soup.find("div", {"role": "dialog"})
     if not modal:
-        modal = soup.find(class_=lambda x: x and "modal" in str(x).lower())
+        modal = soup.find(class_=lambda x: x and "modal" in str(x).lower())  # type: ignore
     if not modal:
         modal = soup
 
@@ -1141,9 +1141,9 @@ def _parse_uts_detail(soup: BeautifulSoup, urun_no: str) -> Dict[str, str]:
         pass
 
     if "Firma" not in r:
-        firma_text = soup.find(text=lambda t: t and "HEALTHCARE" in str(t).upper())
+        firma_text = soup.find(text=lambda t: t and "HEALTHCARE" in str(t).upper())  # type: ignore
         if firma_text:
-            parent = firma_text.parent.find_next(["div", "span", "td"])
+            parent = firma_text.parent.find_next(["div", "span", "td"])  # type: ignore
             if parent:
                 firma = parent.get_text(strip=True)
                 r["Firma"] = firma
@@ -1167,14 +1167,14 @@ def _parse_uts_html(soup: BeautifulSoup, urun_no: str) -> Dict[str, str]:
                 value = cols[1].get_text(strip=True)
 
                 if value and label:
-                    _map_label_to_db(r, label, value)
+                    _map_label_to_db(r, label, value)  # type: ignore
 
     inputs = soup.find_all(["input", "select", "textarea"])
     for inp in inputs:
         name = inp.get("name", "")
         value = inp.get("value", "") or inp.get_text(strip=True)
         if name and value:
-            _map_label_to_db(r, name, value)
+            _map_label_to_db(r, name, value)  # type: ignore
 
     if urun_no:
         r["UrunNo"] = urun_no

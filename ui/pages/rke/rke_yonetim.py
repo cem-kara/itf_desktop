@@ -353,7 +353,7 @@ class RKEYonetimPenceresi(QWidget):
         # Scroll form
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         # setStyleSheet kaldırıldı (_S_SCROLL) — global QSS
 
         inner = QWidget(); inner.setStyleSheet("background:transparent;")

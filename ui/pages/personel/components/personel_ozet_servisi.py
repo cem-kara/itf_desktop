@@ -7,7 +7,8 @@ from datetime import date
 
 from core.date_utils import parse_date, to_ui_date
 from core.logger import logger
-from core.di import get_personel_service, get_izin_service, get_registry
+from core.di import get_personel_service, get_izin_service
+from database.repository_registry import RepositoryRegistry
 
 
 def personel_ozet_getir(db, personel_id: str) -> dict:
@@ -43,7 +44,8 @@ def personel_ozet_getir(db, personel_id: str) -> dict:
         
         personel_svc = get_personel_service(db)
         izin_svc = get_izin_service(db)
-        registry = get_registry(db)
+        from core.di import get_saglik_service
+        saglik_svc = get_saglik_service(db)
 
         # Personel Temel Bilgisi
         p_kayit = personel_svc.get_personel(tc)
@@ -78,7 +80,7 @@ def personel_ozet_getir(db, personel_id: str) -> dict:
         # Saglik takip ozeti
         saglik_kayitlari = [
             r
-            for r in registry.get("Personel_Saglik_Takip").get_all()
+            for r in saglik_svc.get_saglik_takip_repo().get_all()
             if str(r.get("Personelid", "")).strip() == tc
         ]
         en_yakin = None
@@ -101,6 +103,7 @@ def personel_ozet_getir(db, personel_id: str) -> dict:
                 ozet["kritikler"].append("Saglik kontrol tarihi yaklasiyor.")
 
         # FHSZ kayit adedi
+        registry = RepositoryRegistry(db)
         fhsz_kayitlari = [
             r
             for r in registry.get("FHSZ_Puantaj").get_all()

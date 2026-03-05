@@ -36,17 +36,17 @@ class UserDialog(QDialog):
         self.username_edit = QLineEdit()
         # setStyleSheet kaldırıldı: input_field — global QSS kuralı geçerli
         self.username_edit.setPlaceholderText("İnsan kullanıcı adı")
-        if self._is_edit:
+        if self._is_edit and user_data:
             self.username_edit.setText(user_data.username)
             self.username_edit.setEnabled(False)  # Username değiştirilmez
         
         self.password_edit = QLineEdit()
         # setStyleSheet kaldırıldı: input_field — global QSS kuralı geçerli
-        self.password_edit.setEchoMode(QLineEdit.Password)
+        self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_edit.setPlaceholderText("Şifre" if not self._is_edit else "Boş bırakılırsa değişmez")
         
         self.is_active_check = QCheckBox("Aktif")
-        self.is_active_check.setChecked(True if not self._is_edit else user_data.is_active)
+        self.is_active_check.setChecked(True if not self._is_edit or not user_data else user_data.is_active)
         
         form.addRow("Kullanıcı Adı:", self.username_edit)
         form.addRow("Şifre:", self.password_edit)
@@ -55,7 +55,7 @@ class UserDialog(QDialog):
         layout.addLayout(form)
         
         # Buttons
-        buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -111,8 +111,9 @@ class UsersView(QWidget):
         self.table.setHorizontalHeaderLabels(["ID", "Kullanıcı Adı", "Durum", "Roller"])
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        self.table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
+        from PySide6.QtWidgets import QAbstractItemView
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setAlternatingRowColors(True)
         layout.addWidget(self.table)
         
@@ -235,8 +236,13 @@ class UsersView(QWidget):
             QMessageBox.warning(self, "Uyarı", "Lütfen bir kullanıcı seçin!")
             return
         
-        user_id = int(self.table.item(row, 0).text())
+        item_0 = self.table.item(row, 0)
+        if not item_0:
+            return
+        user_id = int(item_0.text())
         user = self._auth_repo.get_user_by_id(user_id)
+        if not user:
+            return
         
         dialog = UserDialog(self._db, user, parent=self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -255,7 +261,8 @@ class UsersView(QWidget):
                 # Aktiflik durumunu güncelle
                 self._auth_repo.update_user_status(user_id, data["is_active"])
                 
-                logger.info(f"Kullanıcı güncellendi: {user.username}")
+                if user:
+                    logger.info(f"Kullanıcı güncellendi: {user.username}")
                 QMessageBox.information(self, "Başarılı", "Kullanıcı başarıyla güncellendi!")
                 self.load_users()
                 self.user_changed.emit()
@@ -274,8 +281,12 @@ class UsersView(QWidget):
             QMessageBox.warning(self, "Uyarı", "Lütfen bir kullanıcı seçin!")
             return
         
-        user_id = int(self.table.item(row, 0).text())
-        username = self.table.item(row, 1).text()
+        item_0 = self.table.item(row, 0)
+        item_1 = self.table.item(row, 1)
+        if not item_0 or not item_1:
+            return
+        user_id = int(item_0.text())
+        username = item_1.text()
         
         reply = QMessageBox.question(
             self,
@@ -306,8 +317,12 @@ class UsersView(QWidget):
             QMessageBox.warning(self, "Uyarı", "Lütfen bir kullanıcı seçin!")
             return
 
-        user_id = int(self.table.item(row, 0).text())
-        username = self.table.item(row, 1).text()
+        item_0 = self.table.item(row, 0)
+        item_1 = self.table.item(row, 1)
+        if not item_0 or not item_1:
+            return
+        user_id = int(item_0.text())
+        username = item_1.text()
 
         roles = self._auth_repo.get_roles()
         selected_roles = {r.id for r in self._auth_repo.get_user_roles(user_id)}
@@ -341,14 +356,15 @@ class RoleSelectDialog(QDialog):
         self._table.setColumnCount(1)
         self._table.setHorizontalHeaderLabels(["Roller"])
         self._table.horizontalHeader().setStretchLastSection(True)
-        self._table.setSelectionBehavior(QTableWidget.SelectRows)
-        self._table.setEditTriggers(QTableWidget.NoEditTriggers)
+        from PySide6.QtWidgets import QAbstractItemView
+        self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._table.setAlternatingRowColors(True)
         layout.addWidget(self._table)
 
         self._load_rows()
 
-        buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -359,7 +375,7 @@ class RoleSelectDialog(QDialog):
             row = self._table.rowCount()
             self._table.insertRow(row)
             item = QTableWidgetItem(role["name"])
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
             item.setCheckState(Qt.CheckState.Checked if role["id"] in self._selected else Qt.CheckState.Unchecked)
             self._table.setItem(row, 0, item)
 

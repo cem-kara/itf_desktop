@@ -22,7 +22,7 @@ Alt sınıflar sadece değişen şeyi override eder.
 """
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, QSize
+from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, QSize, QPersistentModelIndex
 from PySide6.QtGui import QColor
 
 from core.date_utils import to_ui_date
@@ -94,13 +94,13 @@ class BaseTableModel(QAbstractTableModel):
 
     # ── Qt zorunlu ───────────────────────────────────────────────
 
-    def rowCount(self, parent=QModelIndex()) -> int:
+    def rowCount(self, parent: QModelIndex | QPersistentModelIndex | None = None) -> int:
         return len(self._data)
 
-    def columnCount(self, parent=QModelIndex()) -> int:
+    def columnCount(self, parent: QModelIndex | QPersistentModelIndex | None = None) -> int:
         return len(self._columns)
 
-    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
+    def data(self, index: QModelIndex | QPersistentModelIndex, role: int = 0):
         if not index.isValid():
             return None
         row = self._data[index.row()]
@@ -118,7 +118,7 @@ class BaseTableModel(QAbstractTableModel):
             return row
         return None
 
-    def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int = 0):
         if orientation != Qt.Orientation.Horizontal:
             return None
         if role == Qt.ItemDataRole.DisplayRole:
@@ -146,10 +146,10 @@ class BaseTableModel(QAbstractTableModel):
             return to_ui_date(val, "")
         return str(val) if val is not None else ""
 
-    def _fg(self, key: str, row: dict):
+    def _fg(self, key: str, row: dict) -> QColor | None:
         return None
 
-    def _bg(self, key: str, row: dict):
+    def _bg(self, key: str, row: dict) -> QColor | None:
         return None
 
     def _align(self, key: str):

@@ -83,12 +83,12 @@ class PersonelMerkezPage(QWidget):
     def _build_header(self) -> QFrame:
         """Header (52px) + sekme nav (36px)."""
         outer = QFrame()
-        outer.setStyleSheet(f"""
+        outer.setStyleSheet("""
             QFrame {{
-                background-color: {C.BG_SECONDARY};
-                border-bottom: 1px solid {C.BORDER_PRIMARY};
+                background-color: {};
+                border-bottom: 1px solid {};
             }}
-        """)
+        """.format(C.BG_SECONDARY, C.BORDER_PRIMARY))
         lay = QVBoxLayout(outer)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)
@@ -196,12 +196,12 @@ class PersonelMerkezPage(QWidget):
         """360px sabit sağ panel."""
         panel = QFrame()
         panel.setFixedWidth(400)
-        panel.setStyleSheet(f"""
+        panel.setStyleSheet("""
             QFrame {{
-                background-color: {C.BG_SECONDARY};
-                border-left: 1px solid {C.BORDER_PRIMARY};
+                background-color: {};
+                border-left: 1px solid {};
             }}
-        """)
+        """.format(C.BG_SECONDARY, C.BORDER_PRIMARY))
         lay = QVBoxLayout(panel)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)
@@ -450,7 +450,7 @@ class PersonelMerkezPage(QWidget):
             err = QLabel(f"Modül yüklenemedi: {code}\n{e}")
             err.setAlignment(Qt.AlignmentFlag.AlignCenter)
             # Fallback: stat_red yoksa direkt hata rengi kullan
-            err.setStyleSheet(STYLES.get("stat_red") or f"color:{C.STATUS_ERROR};")
+            err.setStyleSheet(STYLES.get("stat_red") or "color:{};".format(C.STATUS_ERROR))
             return err
 
     # ═══════════════════════════════════════════════════

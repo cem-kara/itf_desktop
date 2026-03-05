@@ -45,11 +45,6 @@ from ui.styles.colors import DarkTheme, get_current_theme
 from ui.styles.components import STYLES, refresh_styles
 from ui.styles.icons import Icons, IconRenderer
 
-# C her zaman modül düzeyinde değil — _get_C() ile anlık tema alınır
-def _get_C():
-    """Aktif temanın renk sınıfını döndür."""
-    return get_current_theme()
-
 
 class SabitEditDialog(QDialog):
     """Sabit Düzenleme Dialogu"""
@@ -197,7 +192,10 @@ class TatilEditDialog(QDialog):
         self._cmb_resmi_tatil.setEditable(True)
         self._cmb_resmi_tatil.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         # setStyleSheet kaldırıldı: input_combo — global QSS kuralı geçerli
-        self._cmb_resmi_tatil.lineEdit().setPlaceholderText("Örn: Yeni Yıl")
+        # Placeholder text ayarla
+        line_edit = self._cmb_resmi_tatil.lineEdit()
+        if line_edit:
+            line_edit.setPlaceholderText("Örn: Yeni Yıl")
 
         unique_adlar = sorted({(ad or "").strip() for ad in (tatil_adlari or []) if (ad or "").strip()})
         self._cmb_resmi_tatil.addItems(unique_adlar)
@@ -283,24 +281,29 @@ class SettingsPage(QWidget):
         
         # Tab widget
         tabs = QTabWidget()
-        tabs.setStyleSheet(f"""
+        tabs.setStyleSheet("""
             QTabWidget::pane {{
-                border: 1px solid {_get_C().BORDER_PRIMARY};
-                background-color: {_get_C().BG_PRIMARY};
+                border: 1px solid {};
+                background-color: {};
             }}
             QTabBar::tab {{
-                background-color: {_get_C().BG_SECONDARY};
-                color: {_get_C().TEXT_SECONDARY};
+                background-color: {};
+                color: {};
                 padding: 8px 20px;
-                border: 1px solid {_get_C().BORDER_PRIMARY};
+                border: 1px solid {};
                 border-bottom: none;
             }}
             QTabBar::tab:selected {{
-                background-color: {_get_C().BG_PRIMARY};
-                color: {_get_C().TEXT_PRIMARY};
-                border-bottom: 1px solid {_get_C().BG_PRIMARY};
+                background-color: {};
+                color: {};
+                border-bottom: 1px solid {};
             }}
-        """)
+        """.format(
+            DarkTheme.BORDER_PRIMARY, DarkTheme.BG_PRIMARY,
+            DarkTheme.BG_SECONDARY, DarkTheme.TEXT_SECONDARY,
+            DarkTheme.BORDER_PRIMARY, DarkTheme.BG_PRIMARY,
+            DarkTheme.TEXT_PRIMARY, DarkTheme.BG_PRIMARY
+        ))
         
         # ======== SABİTLER TAB ========
         sabitler_widget = QWidget()
@@ -348,8 +351,8 @@ class SettingsPage(QWidget):
         self._table_menu_elemanlari.setHorizontalHeaderLabels(["Seçenek (MenuEleman)", "Açıklama"])
         self._table_menu_elemanlari.setColumnWidth(0, 350)  # MenuEleman sütununu genişlet
         self._table_menu_elemanlari.horizontalHeader().setStretchLastSection(True)
-        self._table_menu_elemanlari.setSelectionBehavior(QTableWidget.SelectRows)
-        self._table_menu_elemanlari.setSelectionMode(QTableWidget.SingleSelection)
+        self._table_menu_elemanlari.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self._table_menu_elemanlari.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
         self._table_menu_elemanlari.setAlternatingRowColors(True)
         # setStyleSheet kaldırıldı: table — global QSS kuralı geçerli
         right_panel.addWidget(self._table_menu_elemanlari)
@@ -423,8 +426,8 @@ class SettingsPage(QWidget):
         self._table_tatiller.setColumnCount(2)
         self._table_tatiller.setHorizontalHeaderLabels(["Tarih", "Tatil Adı"])
         self._table_tatiller.horizontalHeader().setStretchLastSection(True)
-        self._table_tatiller.setSelectionBehavior(QTableWidget.SelectRows)
-        self._table_tatiller.setSelectionMode(QTableWidget.SingleSelection)
+        self._table_tatiller.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self._table_tatiller.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
         self._table_tatiller.setAlternatingRowColors(True)
         # setStyleSheet kaldırıldı: table — global QSS kuralı geçerli
         tatiller_layout.addWidget(self._table_tatiller)
@@ -675,7 +678,7 @@ class SettingsPage(QWidget):
             else:
                 QMessageBox.critical(self, "Hata", result["message"])
     
-    def _load_menu_elemanlari(self, kod: str = None):
+    def _load_menu_elemanlari(self, kod: str | None = None):
         """Seçilen Kod'un MenuElemanlarını sağ tarafta göster"""
         try:
             self._table_menu_elemanlari.setRowCount(0)
@@ -729,7 +732,7 @@ class SettingsPage(QWidget):
                 self._cmb_tatil_yil.addItem(year, year)
 
             if selected_year in years:
-                self._cmb_tatil_yil.setCurrentText(selected_year)
+                self._cmb_tatil_yil.setCurrentText(str(selected_year))
             else:
                 self._cmb_tatil_yil.setCurrentIndex(0)
             self._cmb_tatil_yil.blockSignals(False)
@@ -828,10 +831,15 @@ class SettingsPage(QWidget):
             QMessageBox.warning(self, "Uyarı", "Lütfen düzenlemek için bir seçenek seçin")
             return
         
-        rowid = self._table_menu_elemanlari.item(row, 0).data(Qt.ItemDataRole.UserRole)
-        kod = self._table_menu_elemanlari.item(row, 0).data(Qt.ItemDataRole.UserRole + 1)
-        menu_eleman = self._table_menu_elemanlari.item(row, 0).text()
-        aciklama = self._table_menu_elemanlari.item(row, 1).text()
+        item_0 = self._table_menu_elemanlari.item(row, 0)
+        item_1 = self._table_menu_elemanlari.item(row, 1)
+        if not item_0 or not item_1:
+            return
+        
+        rowid = item_0.data(Qt.ItemDataRole.UserRole)
+        kod = item_0.data(Qt.ItemDataRole.UserRole + 1)
+        menu_eleman = item_0.text()
+        aciklama = item_1.text()
         
         dialog = SabitEditDialog(kod, menu_eleman, aciklama, parent=self)
         # Kod alanını devre dışı bırak
@@ -861,9 +869,14 @@ class SettingsPage(QWidget):
             QMessageBox.warning(self, "Uyarı", "Lütfen silinecek seçeneği seçin")
             return
         
-        rowid = self._table_menu_elemanlari.item(row, 0).data(Qt.ItemDataRole.UserRole)
-        menu_eleman = self._table_menu_elemanlari.item(row, 0).text()
-        aciklama = self._table_menu_elemanlari.item(row, 1).text()
+        item_0 = self._table_menu_elemanlari.item(row, 0)
+        item_1 = self._table_menu_elemanlari.item(row, 1)
+        if not item_0 or not item_1:
+            return
+        
+        rowid = item_0.data(Qt.ItemDataRole.UserRole)
+        menu_eleman = item_0.text()
+        aciklama = item_1.text()
         
         reply = QMessageBox.question(
             self,
@@ -908,8 +921,13 @@ class SettingsPage(QWidget):
             QMessageBox.warning(self, "Uyarı", "Lütfen düzenlemek için bir tatil seçin")
             return
         
-        tarih = self._table_tatiller.item(row, 0).text()
-        resmi_tatil = self._table_tatiller.item(row, 1).text()
+        item_0 = self._table_tatiller.item(row, 0)
+        item_1 = self._table_tatiller.item(row, 1)
+        if not item_0 or not item_1:
+            return
+        
+        tarih = item_0.text()
+        resmi_tatil = item_1.text()
         
         dialog = TatilEditDialog(
             tarih=tarih,
@@ -944,8 +962,13 @@ class SettingsPage(QWidget):
             QMessageBox.warning(self, "Uyarı", "Lütfen silinecek tatili seçin")
             return
         
-        tarih = self._table_tatiller.item(row, 0).text()
-        resmi_tatil = self._table_tatiller.item(row, 1).text()
+        item_0 = self._table_tatiller.item(row, 0)
+        item_1 = self._table_tatiller.item(row, 1)
+        if not item_0 or not item_1:
+            return
+        
+        tarih = item_0.text()
+        resmi_tatil = item_1.text()
         
         reply = QMessageBox.question(
             self,
@@ -986,8 +1009,9 @@ class SettingsPage(QWidget):
                 return
             
             # ThemeManager ile tema değiştir
+            from typing import cast
             theme_manager = ThemeManager.instance()
-            success = theme_manager.set_theme(app, tema)
+            success = theme_manager.set_theme(cast(QApplication, app), tema)
             logger.info(f"Tema değişimi sonucu: {success}")
             
             if success:
@@ -1013,31 +1037,39 @@ class SettingsPage(QWidget):
         Tema değişikliği sonrası bu sayfanın tüm inline stillerini yenile.
         ThemeManager, açık tüm sayfalarda bu metodu çağırmalıdır.
         """
-        C = _get_C()
+        C = DarkTheme
         
         # Ana widget arkaplan
         self.setProperty("bg-role", "page"); self.style().unpolish(self); self.style().polish(self)
         
         # Tab widget
-        if hasattr(self, '_tabs'):
-            self._tabs.setStyleSheet(f"""
+        tabs_widget = getattr(self, '_tabs', None)
+        if tabs_widget:
+            from typing import cast
+            tabs_cast = cast(QTabWidget, tabs_widget)
+            tabs_cast.setStyleSheet("""
                 QTabWidget::pane {{
-                    border: 1px solid {C.BORDER_PRIMARY};
-                    background-color: {C.BG_PRIMARY};
+                    border: 1px solid {};
+                    background-color: {};
                 }}
                 QTabBar::tab {{
-                    background-color: {C.BG_SECONDARY};
-                    color: {C.TEXT_SECONDARY};
+                    background-color: {};
+                    color: {};
                     padding: 8px 20px;
-                    border: 1px solid {C.BORDER_PRIMARY};
+                    border: 1px solid {};
                     border-bottom: none;
                 }}
                 QTabBar::tab:selected {{
-                    background-color: {C.BG_PRIMARY};
-                    color: {C.TEXT_PRIMARY};
-                    border-bottom: 1px solid {C.BG_PRIMARY};
+                    background-color: {};
+                    color: {};
+                    border-bottom: 1px solid {};
                 }}
-            """)
+            """.format(
+                C.BORDER_PRIMARY, C.BG_PRIMARY,
+                C.BG_SECONDARY, C.TEXT_SECONDARY,
+                C.BORDER_PRIMARY, C.BG_PRIMARY,
+                C.TEXT_PRIMARY, C.BG_PRIMARY
+            ))
         
         # RadioButton'lar
         if hasattr(self, '_radio_dark'):

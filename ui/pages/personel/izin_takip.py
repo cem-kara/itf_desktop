@@ -8,7 +8,7 @@ import uuid
 from datetime import date, timedelta
 from PySide6.QtCore import (
     Qt, QDate, QSortFilterProxyModel,
-    QPropertyAnimation, QEasingCurve
+    QPropertyAnimation, QEasingCurve, QAbstractAnimation
 )
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QColor, QCursor
 
+from typing import cast
 from core.logger import logger
 from core.date_utils import parse_date
 from core.di import get_personel_service, get_izin_service
@@ -76,7 +77,7 @@ class IzinTableModel(BaseTableModel):
 
     def _fg(self, key, row):
         if key == "Durum":
-            return self._status_fg(row.get("Durum", ""))
+            return self.status_fg(row.get("Durum", ""))
         return None
 
     def _align(self, key):
@@ -325,7 +326,8 @@ class IzinTakipPage(QWidget):
         self.cmb_personel = QComboBox()
         self.cmb_personel.setEditable(True)
         self.cmb_personel.setStyleSheet(S["combo"])
-        self.cmb_personel.lineEdit().setPlaceholderText("İsim yazarak ara...")
+        if _le := self.cmb_personel.lineEdit():
+            _le.setPlaceholderText("İsim yazarak ara...")
         self.cmb_personel.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         self.cmb_personel.setMinimumWidth(200)
         self.cmb_personel.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -399,7 +401,7 @@ class IzinTakipPage(QWidget):
         self.dt_bitis = QDateEdit()
         self.dt_bitis.setReadOnly(True)
         self.dt_bitis.setDisplayFormat("dd.MM.yyyy")
-        self.dt_bitis.setButtonSymbols(QAbstractSpinBox.NoButtons)
+        self.dt_bitis.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
         self.dt_bitis.setStyleSheet(S["date"])
         self.dt_bitis.setMinimumWidth(160)
         self.dt_bitis.setMaximumWidth(240)
@@ -476,8 +478,8 @@ class IzinTakipPage(QWidget):
             anim.setDuration(180)
             anim.setStartValue(self._drawer.maximumWidth())
             anim.setEndValue(self._drawer_width)
-            anim.setEasingCurve(QEasingCurve.OutCubic)
-            anim.start(QPropertyAnimation.DeleteWhenStopped)
+            anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+            anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
         else:
             self._drawer.setMaximumWidth(self._drawer_width)
 
@@ -491,8 +493,8 @@ class IzinTakipPage(QWidget):
         anim.setDuration(240)
         anim.setStartValue(0)
         anim.setEndValue(target_width)
-        anim.setEasingCurve(QEasingCurve.OutCubic)
-        anim.start(QPropertyAnimation.DeleteWhenStopped)
+        anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
     def _close_drawer(self):
         if not self._drawer or self._drawer.maximumWidth() == 0:
@@ -501,8 +503,8 @@ class IzinTakipPage(QWidget):
         anim.setDuration(200)
         anim.setStartValue(self._drawer.maximumWidth())
         anim.setEndValue(0)
-        anim.setEasingCurve(QEasingCurve.InCubic)
-        anim.start(QPropertyAnimation.DeleteWhenStopped)
+        anim.setEasingCurve(QEasingCurve.Type.InCubic)
+        anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -563,10 +565,9 @@ class IzinTakipPage(QWidget):
             return
         try:
             personel_svc = get_personel_service(self._db)
-            izin_svc = get_izin_service(self._db)
 
             # ── Personeller ──
-            self._all_personel = personel_svc.get_all()
+            self._all_personel = personel_svc.get_personel_listesi()
             aktif = [p for p in self._all_personel
                      if str(p.get("Durum", "")).strip() == "Aktif"]
             aktif.sort(key=lambda p: str(p.get("AdSoyad", "")))
@@ -591,7 +592,7 @@ class IzinTakipPage(QWidget):
             self._fill_personel_combo(aktif)
 
             # ── İzin Tipleri: Sabitler → Kod = "İzin_Tipi" ──
-            sabitler = registry.get("Sabitler").get_all()
+            sabitler = self._svc.get_sabitler_raw() if self._svc else []
             self._izin_max_gun = {}
             tip_adlari = []
 
@@ -627,7 +628,7 @@ class IzinTakipPage(QWidget):
 
             # ── Tatiller ──
             try:
-                tatiller = registry.get("Tatiller").get_all()
+                tatiller = self._svc.get_tatiller_raw() if self._svc else []
                 self._tatiller = []
                 for r in tatiller:
                     t = str(r.get("Tarih", "")).strip()
@@ -638,7 +639,7 @@ class IzinTakipPage(QWidget):
                 self._tatiller = []
 
             # ── İzin Kayıtları ──
-            self._all_izin = registry.get("Izin_Giris").get_all()
+            self._all_izin = self._svc.get_tum_izin_giris() if self._svc else []
 
             # Yeniden eskiye sırala (çoklu tarih formatı)
             self._all_izin.sort(
@@ -815,7 +816,7 @@ class IzinTakipPage(QWidget):
     # ═══════════════════════════════════════════
 
     def _calculate_bitis(self):
-        baslama = self.dt_baslama.date().toPython()
+        baslama: date = cast(date, self.dt_baslama.date().toPython())
         gun = self.spn_gun.value()
 
         kalan = gun
@@ -834,14 +835,7 @@ class IzinTakipPage(QWidget):
         tip = str(izin_tipi or "").strip().lower()
         return gun > 30 or "aylıksız" in tip or "ucretsiz" in tip or "ücretsiz" in tip
 
-    def _set_personel_pasif(self, registry, tc: str, izin_tipi: str, gun: int) -> None:
-        if not tc or not self._should_set_pasif(izin_tipi, gun):
-            return
-        try:
-            registry.get("Personel").update(tc, {"Durum": "Pasif"})
-            logger.info(f"Personel pasif yapıldı: {tc} — {izin_tipi} — {gun} gün")
-        except Exception as e:
-            logger.error(f"Personel durum güncelleme hatası: {e}")
+
 
     # ═══════════════════════════════════════════
     #  KAYDET
@@ -918,7 +912,7 @@ class IzinTakipPage(QWidget):
         # ═══════════════════════════════════════════════
         if izin_tipi in ["Yıllık İzin", "Şua İzni"]:
             try:
-                izin_repo = izin_svc.get_izin_bilgi_repo()
+                izin_repo = self._svc.get_izin_bilgi_repo() if self._svc else None
                 izin_bilgi = izin_repo.get_by_id(tc) if izin_repo else None
 
                 if izin_bilgi:
@@ -969,21 +963,21 @@ class IzinTakipPage(QWidget):
             "Durum": "Onaylandı",
         }
 
+        if not self._svc:
+            return
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            registry.get("Izin_Giris").insert(kayit)
+            self._svc.insert_izin_giris(kayit)
             logger.info(f"İzin kaydedildi: {izin_id} — {ad} — {izin_tipi} — {gun} gün")
 
             # ═══════════════════════════════════════════════
             # 🔧 BAKİYE DÜŞME (Otomatik)
             # ═══════════════════════════════════════════════
-            self._bakiye_dus(registry, tc, izin_tipi, gun)
+            self._svc.bakiye_dus(tc, izin_tipi, gun)
 
             # ═══════════════════════════════════════════════
             # 🔧 UZUN / AYLIKSIZ İZİN → PERSONEL PASİF
             # ═══════════════════════════════════════════════
-            self._set_personel_pasif(registry, tc, izin_tipi, gun)
+            self._svc.set_personel_pasif(tc, izin_tipi, gun)
 
             QMessageBox.information(
                 self, "Başarılı",
@@ -1000,47 +994,7 @@ class IzinTakipPage(QWidget):
             logger.error(f"İzin kaydetme hatası: {e}")
             QMessageBox.critical(self, "Hata", f"İzin kaydedilemedi:\n{e}")
 
-    def _bakiye_dus(self, registry, tc, izin_tipi, gun):
-        """Bakiyeden otomatik düş (Yıllık İzin / Şua İzni / Rapor-Mazeret)."""
-        try:
-            izin_bilgi = registry.get("Izin_Bilgi").get_by_id(tc)
-            if not izin_bilgi:
-                return
 
-            if izin_tipi == "Yıllık İzin":
-                mevcut_kul = float(izin_bilgi.get("YillikKullanilan", 0))
-                yeni_kul = mevcut_kul + gun
-                mevcut_kal = float(izin_bilgi.get("YillikKalan", 0))
-                yeni_kal = mevcut_kal - gun
-
-                registry.get("Izin_Bilgi").update(tc, {
-                    "YillikKullanilan": yeni_kul,
-                    "YillikKalan": yeni_kal
-                })
-                logger.info(f"Yıllık izin bakiye düştü: {tc} → {gun} gün (Kalan: {yeni_kal})")
-
-            elif izin_tipi == "Şua İzni":
-                mevcut_kul = float(izin_bilgi.get("SuaKullanilan", 0))
-                yeni_kul = mevcut_kul + gun
-                mevcut_kal = float(izin_bilgi.get("SuaKalan", 0))
-                yeni_kal = mevcut_kal - gun
-
-                registry.get("Izin_Bilgi").update(tc, {
-                    "SuaKullanilan": yeni_kul,
-                    "SuaKalan": yeni_kal
-                })
-                logger.info(f"Şua izin bakiye düştü: {tc} → {gun} gün (Kalan: {yeni_kal})")
-
-            elif izin_tipi in ["Rapor", "Mazeret İzni"]:
-                mevcut_top = float(izin_bilgi.get("RaporMazeretTop", 0))
-                yeni_top = mevcut_top + gun
-                registry.get("Izin_Bilgi").update(tc, {
-                    "RaporMazeretTop": yeni_top
-                })
-                logger.info(f"Rapor/Mazeret toplam arttı: {tc} → +{gun} gün (Toplam: {yeni_top})")
-
-        except Exception as e:
-            logger.error(f"Bakiye düşme hatası: {e}")
 
     # ═══════════════════════════════════════════
     #  SAĞ TIKLAMA MENÜSÜ
@@ -1082,10 +1036,10 @@ class IzinTakipPage(QWidget):
             self._durum_degistir(izin_id, ad, "İptal")
 
     def _durum_degistir(self, izin_id, ad, yeni_durum):
+        if not self._svc:
+            return
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            registry.get("Izin_Giris").update(izin_id, {"Durum": yeni_durum})
+            self._svc.update_izin_giris(izin_id, {"Durum": yeni_durum})
             logger.info(f"İzin durum değişti: {izin_id} → {yeni_durum}")
             self.load_data()
         except Exception as e:

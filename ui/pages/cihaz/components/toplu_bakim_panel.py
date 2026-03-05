@@ -2,7 +2,7 @@ from core.di import get_cihaz_service as _get_cihaz_service
 # -*- coding: utf-8 -*-
 import time
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, cast
 
 from dateutil.relativedelta import relativedelta
 from PySide6.QtCore import QDate, Qt
@@ -66,19 +66,19 @@ class TopluBakimPlanPanel(QWidget):
         layout.addWidget(lbl_cihaz)
 
         self.list_cihazlar = QListWidget()
-        self.list_cihazlar.setStyleSheet(S.get("list", ""))
+        self.list_cihazlar.setStyleSheet(cast(str, S.get("list", "") or ""))
         self.list_cihazlar.setMaximumHeight(200)
-        self.list_cihazlar.setSelectionMode(QListWidget.MultiSelection)
+        self.list_cihazlar.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
         layout.addWidget(self.list_cihazlar)
 
         select_row = QHBoxLayout()
         btn_tumunu_sec = QPushButton("Tümünü Seç")
-        btn_tumunu_sec.setStyleSheet(S.get("btn_secondary", ""))
+        btn_tumunu_sec.setStyleSheet(cast(str, S.get("btn_secondary", "") or ""))
         btn_tumunu_sec.clicked.connect(self._select_all_visible)
         select_row.addWidget(btn_tumunu_sec)
 
         btn_temizle = QPushButton("Seçimi Temizle")
-        btn_temizle.setStyleSheet(S.get("btn_secondary", ""))
+        btn_temizle.setStyleSheet(cast(str, S.get("btn_secondary", "") or ""))
         btn_temizle.clicked.connect(self._clear_selection)
         select_row.addWidget(btn_temizle)
 
@@ -163,8 +163,8 @@ class TopluBakimPlanPanel(QWidget):
         self.cmb_marka_filter.clear()
         self.cmb_marka_filter.addItem("Tüm Markalar", None)
         try:
-            repo = _get_cihaz_service(self._db)._r.get("Cihazlar")
-            self._all_cihazlar = repo.get_all() or []
+            svc = _get_cihaz_service(self._db)
+            self._all_cihazlar = svc.get_cihaz_listesi()
         except Exception as e:
             logger.error(f"Cihaz listesi yüklenemedi: {e}")
             self._all_cihazlar = []
@@ -210,7 +210,8 @@ class TopluBakimPlanPanel(QWidget):
             return
 
         plan_tipi = self.cmb_plan_tipi.currentText()
-        baslangic_tarih = self.dt_baslangic.date().toPython()
+        baslangic_date = self.dt_baslangic.date().toPython()
+        baslangic_tarih = cast(datetime, baslangic_date) if baslangic_date else datetime.now()
         aciklama = self.txt_aciklama.text().strip() or "Periyodik Bakım"
 
         tekrar = 1
@@ -248,9 +249,9 @@ class TopluBakimPlanPanel(QWidget):
                 kayitlar.append(kayit)
 
         try:
-            repo = _get_cihaz_service(self._db)._r.get("Periyodik_Bakim")
+            svc = _get_cihaz_service(self._db)
             for kayit in kayitlar:
-                repo.insert(kayit)
+                svc.bakim_ekle(kayit)
             self.toplam_plan = len(kayitlar)
             if self._on_success:
                 self._on_success(self.toplam_plan)

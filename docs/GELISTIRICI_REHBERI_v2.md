@@ -940,11 +940,16 @@ def get_file_sync_service(db):
 
 ---
 
-### ✅ TODO-3 — Personel UI → Servis Katmanına Bağla
+### ⚠️ TODO-3 — Personel UI → Servis Katmanına Bağla
 **Neden:** 13 get_registry doğrudan çağrısı — servis katmanı bypass ediliyor  
-**Tahmini süre:** 2–3 saat
 
-✅ **DÜZELTME YAPILDI** — 10 dosya refactor edildi:
+✅ **BÜYÜK ÖLÇÜDE TAMAMLANDI** — 10 dosya refactor edildi, **2 çağrı kaldı:**
+
+| Dosya | Satır | Yapılacak |
+|---|---|---|
+| `personel_overview_panel.py` | 67 | `self._registry` → `get_personel_service(db)` |
+| `components/personel_overview_panel.py` | 71–72 | lazy `get_registry` → `get_personel_service` |
+
 
 | Dosya | Durum | Yöntem |
 |---|---|---|
@@ -1006,7 +1011,7 @@ rows = izin_svc.get_izin_giris_repo().get_all()
 **Doğrulama:** ✅ 0 errors  
 **Rapor:** `/docs/TODO-4_COZUM_RAPORU.md`
 
-### ✅ TODO-4b — Cihaz UI Anti-Pattern Temizliği [TAMAMLANDI]
+### ✅ TODO-4b — Cihaz UI Anti-Pattern Temizliği [TAMAMLANDI — KOD ONAYLANDI]
 **Neden:** Cihaz UI servise bağlı ama içinde 3 kritik kötü pattern var  
 **Tahmini süre:** 2 saat
 

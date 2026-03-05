@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Cihaz Ekle — v3 (Personel modulu mimarisi ile uyumlu)."""
 import re
-from typing import Any
+from typing import Any, cast
 
 from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtWidgets import (
@@ -72,7 +72,7 @@ class CihazEklePage(QWidget):
         root.addWidget(header)
 
         self._tabs = QTabWidget()
-        self._tabs.setStyleSheet(S.get("tabs", ""))
+        self._tabs.setStyleSheet(cast(str, S.get("tabs", "") or ""))
         root.addWidget(self._tabs, 1)
 
         # ── Tab 1: Cihaz bilgileri formu ──
@@ -83,7 +83,7 @@ class CihazEklePage(QWidget):
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setStyleSheet(S["scroll"])
         tab_form_lay.addWidget(scroll, 1)
 
@@ -266,7 +266,7 @@ class CihazEklePage(QWidget):
     def _add_line(self, grid, row, col, label, key, read_only=False):
         lbl = QLabel(label)
         lbl.setStyleSheet(S["label_form"])
-        lbl.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         edit = QLineEdit()
         edit.setStyleSheet(S["input"])
         edit.setReadOnly(read_only)
@@ -277,7 +277,7 @@ class CihazEklePage(QWidget):
     def _add_combo(self, grid, row, col, label, key, db_kodu):
         lbl = QLabel(label)
         lbl.setStyleSheet(S["label_form"])
-        lbl.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         combo = QComboBox()
         combo.setStyleSheet(S["combo"])
         combo.setProperty("db_kodu", db_kodu)
@@ -288,7 +288,7 @@ class CihazEklePage(QWidget):
     def _add_date(self, grid, row, col, label, key, colspan=1):
         lbl = QLabel(label)
         lbl.setStyleSheet(S["label_form"])
-        lbl.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         date = QDateEdit()
         date.setStyleSheet(S["date"])
         date.setCalendarPopup(True)
@@ -301,7 +301,7 @@ class CihazEklePage(QWidget):
     def _add_file(self, grid, row, col, label, key, colspan=1):
         lbl = QLabel(label)
         lbl.setStyleSheet(S["label_form"])
-        lbl.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         wrap = QHBoxLayout()
         line = QLineEdit()
         line.setStyleSheet(S["input"])

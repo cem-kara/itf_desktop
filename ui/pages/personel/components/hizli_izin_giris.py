@@ -15,6 +15,7 @@ from PySide6.QtGui import QCursor
 from core.logger import logger
 from core.date_utils import parse_date
 from core.di import get_izin_service
+from database.repository_registry import RepositoryRegistry
 from ui.styles.components import STYLES as S
 
 class HizliIzinGirisDialog(QDialog):
@@ -48,27 +49,49 @@ class HizliIzinGirisDialog(QDialog):
         form.setSpacing(10)
 
         # İzin Tipi
-        form.addWidget(QLabel("İzin Tipi", styleSheet=S["label"]), 0, 0)
-        self.ui["izin_tipi"] = QComboBox(styleSheet=S["combo"])
+        lbl_izin = QLabel("İzin Tipi")
+        lbl_izin.setStyleSheet(S["label"])
+        form.addWidget(lbl_izin, 0, 0)
+        self.ui["izin_tipi"] = QComboBox()
+        self.ui["izin_tipi"].setStyleSheet(S["combo"])
         form.addWidget(self.ui["izin_tipi"], 0, 1)
 
         # Max gün uyarı
-        self.ui["max_gun_label"] = QLabel("", styleSheet=S["max_label"])
+        self.ui["max_gun_label"] = QLabel("")
+        self.ui["max_gun_label"].setStyleSheet(S["max_label"])
         form.addWidget(self.ui["max_gun_label"], 1, 1)
 
         # Başlama Tarihi
-        form.addWidget(QLabel("Başlama Tarihi", styleSheet=S["label"]), 2, 0)
-        self.ui["baslama"] = QDateEdit(QDate.currentDate(), calendarPopup=True, displayFormat="dd.MM.yyyy", styleSheet=S["date"])
+        lbl_baslama = QLabel("Başlama Tarihi")
+        lbl_baslama.setStyleSheet(S["label"])
+        form.addWidget(lbl_baslama, 2, 0)
+        self.ui["baslama"] = QDateEdit()
+        self.ui["baslama"].setDate(QDate.currentDate())
+        self.ui["baslama"].setCalendarPopup(True)
+        self.ui["baslama"].setDisplayFormat("dd.MM.yyyy")
+        self.ui["baslama"].setStyleSheet(S["date"])
         form.addWidget(self.ui["baslama"], 2, 1)
 
         # Süre
-        form.addWidget(QLabel("Süre (Gün)", styleSheet=S["label"]), 3, 0)
-        self.ui["gun"] = QSpinBox(minimum=1, maximum=365, value=1, styleSheet=S["spin"])
+        lbl_gun = QLabel("Süre (Gün)")
+        lbl_gun.setStyleSheet(S["label"])
+        form.addWidget(lbl_gun, 3, 0)
+        self.ui["gun"] = QSpinBox()
+        self.ui["gun"].setMinimum(1)
+        self.ui["gun"].setMaximum(365)
+        self.ui["gun"].setValue(1)
+        self.ui["gun"].setStyleSheet(S["spin"])
         form.addWidget(self.ui["gun"], 3, 1)
 
         # Bitiş Tarihi
-        form.addWidget(QLabel("İşe Dönüş Tarihi", styleSheet=S["label"]), 4, 0)
-        self.ui["bitis"] = QDateEdit(readOnly=True, displayFormat="dd.MM.yyyy", buttonSymbols=QAbstractSpinBox.NoButtons, styleSheet=S["date"])
+        lbl_bitis = QLabel("İşe Dönüş Tarihi")
+        lbl_bitis.setStyleSheet(S["label"])
+        form.addWidget(lbl_bitis, 4, 0)
+        self.ui["bitis"] = QDateEdit()
+        self.ui["bitis"].setReadOnly(True)
+        self.ui["bitis"].setDisplayFormat("dd.MM.yyyy")
+        self.ui["bitis"].setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+        self.ui["bitis"].setStyleSheet(S["date"])
         form.addWidget(self.ui["bitis"], 4, 1)
 
         main.addLayout(form)
@@ -77,10 +100,14 @@ class HizliIzinGirisDialog(QDialog):
         # Butonlar
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
-        btn_iptal = QPushButton("İptal", styleSheet=S["cancel_btn"], cursor=QCursor(Qt.CursorShape.PointingHandCursor))
+        btn_iptal = QPushButton("İptal")
+        btn_iptal.setStyleSheet(S["cancel_btn"])
+        btn_iptal.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_iptal.clicked.connect(self.cancelled.emit)
         btn_layout.addWidget(btn_iptal)
-        btn_kaydet = QPushButton("Kaydet", styleSheet=S["save_btn"], cursor=QCursor(Qt.CursorShape.PointingHandCursor))
+        btn_kaydet = QPushButton("Kaydet")
+        btn_kaydet.setStyleSheet(S["save_btn"])
+        btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_kaydet.clicked.connect(self._on_save)
         btn_layout.addWidget(btn_kaydet)
         main.addLayout(btn_layout)
@@ -92,9 +119,9 @@ class HizliIzinGirisDialog(QDialog):
 
     def _load_sabitler(self):
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            sabitler = registry.get("Sabitler").get_all()
+            from core.di import get_fhsz_service
+            fhsz_svc = get_fhsz_service(self._db)
+            sabitler = fhsz_svc.get_sabitler_repo().get_all()
             self._izin_max_gun = {}
             tip_adlari = []
             for r in sabitler:
@@ -111,11 +138,13 @@ class HizliIzinGirisDialog(QDialog):
             self.ui["izin_tipi"].clear()
             self.ui["izin_tipi"].addItems(self._izin_tipleri)
             
+            registry = RepositoryRegistry(self._db)
             tatiller = registry.get("Tatiller").get_all()
-            self._tatiller = [
-                parse_date(r.get("Tarih", "")).isoformat()
-                for r in tatiller if parse_date(r.get("Tarih", ""))
-            ]
+            self._tatiller = []
+            for r in tatiller:
+                date_obj = parse_date(r.get("Tarih", ""))
+                if date_obj:
+                    self._tatiller.append(date_obj.isoformat())
         except Exception as e:
             logger.error(f"Hızlı izin sabitleri yükleme hatası: {e}")
 
@@ -166,11 +195,11 @@ class HizliIzinGirisDialog(QDialog):
         gun = self.ui["gun"].value()
 
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
+            izin_svc = get_izin_service(self._db)
+            registry = RepositoryRegistry(self._db)
             
             # Çakışma kontrolü
-            all_izin = registry.get("Izin_Giris").get_all()
+            all_izin = izin_svc.get_izin_giris_repo().get_all()
             yeni_bas = parse_date(baslama_str)
             yeni_bit = parse_date(bitis_str)
             for kayit in all_izin:
@@ -178,13 +207,13 @@ class HizliIzinGirisDialog(QDialog):
                 if str(kayit.get("Personelid", "")) != tc: continue
                 vt_bas = parse_date(kayit.get("BaslamaTarihi", ""))
                 vt_bit = parse_date(kayit.get("BitisTarihi", ""))
-                if vt_bas and vt_bit and (yeni_bas <= vt_bit) and (yeni_bit >= vt_bas):
+                if vt_bas and vt_bit and yeni_bas and yeni_bit and (yeni_bas <= vt_bit) and (yeni_bit >= vt_bas):
                     QMessageBox.warning(self, "Çakışma", "Bu tarihlerde zaten bir izin kaydı mevcut.")
                     return
 
             # Bakiye kontrolü
             if izin_tipi in ["Yıllık İzin", "Şua İzni"]:
-                izin_bilgi = registry.get("Izin_Bilgi").get_by_id(tc)
+                izin_bilgi = registry.get("Izin_Bilgi").get_by_id(tc or "")
                 if izin_bilgi:
                     alan = "YillikKalan" if izin_tipi == "Yıllık İzin" else "SuaKalan"
                     kalan = float(izin_bilgi.get(alan, 0))
@@ -201,8 +230,9 @@ class HizliIzinGirisDialog(QDialog):
             }
             registry.get("Izin_Giris").insert(yeni_kayit)
             
-            self._bakiye_dus(registry, tc, izin_tipi, gun)
-            self._set_personel_pasif(registry, tc, izin_tipi, gun)
+            if tc:
+                self._bakiye_dus(registry, tc, izin_tipi, gun)
+                self._set_personel_pasif(registry, tc, izin_tipi, gun)
 
             QMessageBox.information(self, "Başarılı", "İzin başarıyla kaydedildi.")
             self.izin_kaydedildi.emit()

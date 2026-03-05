@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QDate, Signal, QThread
 from PySide6.QtGui import QCursor, QPixmap
-from core.di import get_personel_service, get_izin_service, get_registry
+from core.di import get_personel_service, get_izin_service
 from core.logger import logger
 from core.paths import DB_PATH
 from core.services.dokuman_service import DokumanService
@@ -67,9 +67,11 @@ class PersonelOverviewPanel(QWidget):
         
         # Service enjeksiyonu (geliştirici rehberi: db parametresi)
         if db:
-            self._registry = get_registry(db)
+            self._personel_svc = get_personel_service(db)
+            self._izin_svc = get_izin_service(db)
         else:
-            self._registry = None
+            self._personel_svc = None
+            self._izin_svc = None
             
         self.sabitler_cache = sabitler_cache  # Cache'den gelen Sabitler listesi
         self.personel_data = self.data.get("personel", {})
@@ -346,7 +348,7 @@ class PersonelOverviewPanel(QWidget):
 
     def _populate_combos(self):
         """Combo box'ları Sabitler ve Personel tablosundan doldur"""
-        if not self._registry:
+        if not self._personel_svc:
             return
         
         try:
@@ -354,7 +356,7 @@ class PersonelOverviewPanel(QWidget):
             if self.sabitler_cache:
                 all_sabit = self.sabitler_cache
             else:
-                sabitler_repo = self._registry.get("Sabitler")
+                sabitler_repo = self._personel_svc.get_sabitler_repo()
                 if not sabitler_repo:
                     logger.warning("Sabitler repository bulunamadı")
                     return
@@ -388,7 +390,7 @@ class PersonelOverviewPanel(QWidget):
                     apply_combo_title_case_formatting(combo)
 
             # Populate Eğitim combos (Okul ve Fakülte listeleri)
-            personel_repo = self._registry.get("Personel")
+            personel_repo = self._personel_svc.get_personel_repo()
             if personel_repo:
                 all_personel = personel_repo.get_all() or []
 
@@ -434,14 +436,14 @@ class PersonelOverviewPanel(QWidget):
 
     def _create_editable_group(self, title, group_id):
         grp = QGroupBox(title)
-        grp.setStyleSheet(f"""
+        grp.setStyleSheet("""
             QGroupBox {{
-                background-color: {DarkTheme.BG_SECONDARY};
-                border: 1px solid {DarkTheme.BORDER_PRIMARY};
+                background-color: {};
+                border: 1px solid {};
                 border-radius: 8px;
                 margin-top: 8px;
                 font-weight: bold;
-                color: {DarkTheme.TEXT_PRIMARY};
+                color: {};
             }}
             QGroupBox::title {{
                 subcontrol-origin: margin;
@@ -776,8 +778,8 @@ class PersonelOverviewPanel(QWidget):
 
     def _save_group(self, group_id):
         """Grup verilerini kaydet"""
-        if not self._registry:
-            logger.error("Registry yok, veri kaydı başarısız")
+        if not self._personel_svc:
+            logger.error("Service yok, veri kaydı başarısız")
             QMessageBox.critical(self, "Hata", "Veritabanı bağlantısı yoktur.")
             return
 
@@ -810,8 +812,8 @@ class PersonelOverviewPanel(QWidget):
             return
             
         try:
-            # Registry'den Personel repository'sini al
-            repo = self._registry.get("Personel")
+            # Service üzerinden Personel repository'sini al
+            repo = self._personel_svc.get_personel_repo()
             if not repo:
                 raise RuntimeError("Personel repository bulunamadı.")
 
@@ -891,10 +893,10 @@ class PersonelOverviewPanel(QWidget):
     def _save_photo_to_db(self, photo_path):
         """Resmi Drive'a yükleyip veritabanına kaydeder."""
         try:
-            if not self._registry:
-                raise RuntimeError("Registry başlatılmamış, fotoğraf kaydedilemez")
+            if not self._personel_svc:
+                raise RuntimeError("Service başlatılmamış, fotoğraf kaydedilemez")
             
-            repo = self._registry.get("Personel")
+            repo = self._personel_svc.get_personel_repo()
             if not repo:
                 raise RuntimeError("Personel repository bulunamadı")
             

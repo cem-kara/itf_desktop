@@ -25,6 +25,14 @@ class PersonelService:
         self._r = registry
     
     # ───────────────────────────────────────────────────────────
+    #  Repository Accessors
+    # ───────────────────────────────────────────────────────────
+    
+    def get_personel_repo(self):
+        """Personel repository'sine eriş."""
+        return self._r.get("Personel")
+    
+    # ───────────────────────────────────────────────────────────
     #  İş Kuralları
     # ───────────────────────────────────────────────────────────
     

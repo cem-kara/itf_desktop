@@ -7,11 +7,11 @@ Yeni tasarım (ariza_kayit.py ile aynı desen):
   • Sol: filtreler + renk kodlu liste tablosu
   • Sağ: her zaman görünür detay paneli → kayıt formu kaydırılabilir alanda açılır
 """
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, cast
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from PySide6.QtCore import Qt, QDate, QAbstractTableModel, QModelIndex, Signal
+from PySide6.QtCore import Qt, QDate, QAbstractTableModel, QModelIndex, QPersistentModelIndex, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame,
     QTableView, QSplitter, QHeaderView,
@@ -76,36 +76,43 @@ class _BaseTableModel(QAbstractTableModel):
         self._headers   = [c[1] for c in columns]
         self._rows: List[Dict] = rows or []
 
-    def rowCount(self, parent=QModelIndex()):    return len(self._rows)
-    def columnCount(self, parent=QModelIndex()): return len(self._cols)
+    def rowCount(self, parent: QModelIndex | QPersistentModelIndex | None = None) -> int:
+        return len(self._rows)
+    def columnCount(self, parent: QModelIndex | QPersistentModelIndex | None = None) -> int:
+        return len(self._cols)
+    
+    def set_rows(self, rows: List[Dict]):
+        """Update model rows and refresh display."""
+        self._rows = rows
+        self.layoutChanged.emit()
 
-    def data(self, index, role=Qt.DisplayRole):
+    def data(self, index: QModelIndex | QPersistentModelIndex, role: int = 0):
         if not index.isValid():
             return None
         row = self._rows[index.row()]
         key = self._keys[index.column()]
 
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             val = row.get(key, "")
             if key.endswith("Tarih") or key.endswith("Tarihi"):
                 return to_ui_date(val, "")
             return str(val) if val else ""
 
-        if role == Qt.TextAlignmentRole:
+        if role == Qt.ItemDataRole.TextAlignmentRole:
             if key in ("Durum", "PlanlananTarih", "BakimTarihi",
                        "YapilanTarih", "BitisTarihi"):
-                return Qt.AlignCenter
-            return Qt.AlignVCenter | Qt.AlignLeft
+                return Qt.AlignmentFlag.AlignCenter
+            return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
-        if role == Qt.ForegroundRole and key in self._color_map:
+        if role == Qt.ItemDataRole.ForegroundRole and key in self._color_map:
             val = row.get(key, "")
             c = self._color_map[key].get(val)
             return QColor(c) if c else None
 
         return None
 
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int = 0):
+        if role == Qt.ItemDataRole.DisplayRole and orientation == Qt.Orientation.Horizontal:
             return self._headers[section]
         return None
 
@@ -160,8 +167,8 @@ class _BaseListDetailForm(QWidget):
         root.addWidget(self._build_kpi_bar())
         root.addWidget(self._make_hsep())
 
-        splitter = QSplitter(Qt.Horizontal)
-        splitter.setStyleSheet(S.get("splitter", ""))
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter.setStyleSheet(S.get("splitter") or "")
         splitter.addWidget(self._build_left_panel())
         splitter.addWidget(self._build_right_panel())
         splitter.setStretchFactor(0, 3)
@@ -171,7 +178,7 @@ class _BaseListDetailForm(QWidget):
 
     def _make_hsep(self) -> QFrame:
         sep = QFrame()
-        sep.setFrameShape(QFrame.HLine)
+        sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
         sep.setProperty('color-role', 'border')
         return sep
@@ -252,7 +259,7 @@ class _BaseListDetailForm(QWidget):
         fb_l.addStretch()
 
         self.btn_yeni = QPushButton(self._new_btn_label())
-        self.btn_yeni.setStyleSheet(S.get("btn_primary", ""))
+        self.btn_yeni.setStyleSheet(S.get("btn_primary") or "")
         self.btn_yeni.clicked.connect(self._open_entry_form)
         fb_l.addWidget(self.btn_yeni)
         layout.addWidget(fb)
@@ -260,18 +267,19 @@ class _BaseListDetailForm(QWidget):
         # Tablo
         self.table = QTableView()
         self.table.setModel(self._model)
-        self.table.setSelectionBehavior(QTableView.SelectRows)
-        self.table.setSelectionMode(QTableView.SingleSelection)
+        from PySide6.QtWidgets import QAbstractItemView
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.table.setStyleSheet(S["table"])
-        self.table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         cols = self._columns()
         for i, (_, _, w) in enumerate(cols):
             self.table.setColumnWidth(i, w)
         hdr = self.table.horizontalHeader()
         hdr.setStretchLastSection(False)
-        hdr.setSectionResizeMode(QHeaderView.Stretch)
+        hdr.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.selectionModel().currentChanged.connect(self._on_row_selected)
-        self.table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._show_context_menu)
         layout.addWidget(self.table, 1)
 
@@ -317,19 +325,20 @@ class _BaseListDetailForm(QWidget):
         bb_l.addWidget(lbl)
         bb_l.addStretch()
         self.btn_duzenle = QPushButton("Düzenle / Yeni")
-        self.btn_duzenle.setStyleSheet(S.get("btn_secondary", S.get("btn_primary", "")))
+        btn_sec_style = S.get("btn_secondary") or S.get("btn_primary") or ""
+        self.btn_duzenle.setStyleSheet(btn_sec_style)
         self.btn_duzenle.setEnabled(False)
         self.btn_duzenle.clicked.connect(self._open_entry_form)
         bb_l.addWidget(self.btn_duzenle)
         layout.addWidget(btn_bar)
 
         # Dikey splitter: detay alanları + form
-        self._v_splitter = QSplitter(Qt.Vertical)
-        self._v_splitter.setStyleSheet(S.get("splitter", ""))
+        self._v_splitter = QSplitter(Qt.Orientation.Vertical)
+        self._v_splitter.setStyleSheet(S.get("splitter") or "")
 
         detail_scroll = QScrollArea()
         detail_scroll.setWidgetResizable(True)
-        detail_scroll.setStyleSheet(S.get("scroll", ""))
+        detail_scroll.setStyleSheet(S.get("scroll") or "")
         self._detail_widget = QWidget()
         self._detail_layout = QVBoxLayout(self._detail_widget)
         self._detail_layout.setContentsMargins(12, 10, 12, 10)
@@ -341,7 +350,7 @@ class _BaseListDetailForm(QWidget):
         # Form container
         self.form_container = QScrollArea()
         self.form_container.setWidgetResizable(True)
-        self.form_container.setStyleSheet(S.get("scroll", ""))
+        self.form_container.setStyleSheet(S.get("scroll") or "")
         self.form_container.setVisible(False)
         self._form_inner = QWidget()
         self._form_layout = QVBoxLayout(self._form_inner)
@@ -445,9 +454,9 @@ class _BaseListDetailForm(QWidget):
     def _clear_form_container(self):
         while self._form_layout.count():
             item = self._form_layout.takeAt(0)
-            w = item.widget()
-            if w:
-                w.setParent(None)
+            widget = item.widget() if item else None
+            if widget:
+                widget.setParent(None)
         if self._active_form:
             self._active_form.setParent(None)
             self._active_form = None
@@ -455,8 +464,9 @@ class _BaseListDetailForm(QWidget):
 
     def _open_entry_form(self):
         self._clear_form_container()
-        form = self._build_entry_form()
-        form.saved.connect(self._on_saved)
+        form: QWidget = self._build_entry_form()
+        if hasattr(form, 'saved'):
+            cast(Any, form).saved.connect(self._on_saved)
         self._active_form = form
         self._form_layout.insertWidget(0, form)
         self.form_container.setVisible(True)
@@ -482,7 +492,7 @@ class _BaseListDetailForm(QWidget):
             self._open_entry_form()
 
     # ── Yardımcı widget üreticileri ─────────────────────
-    def _meta_label(self, text: str, color: str = None) -> QLabel:
+    def _meta_label(self, text: str, color: str | None = None) -> QLabel:
         lbl = QLabel(text)
         lbl.setStyleSheet(
             f"font-size:11px;color:{color or _C['muted']};"
@@ -686,6 +696,13 @@ class _BakimGirisForm(QWidget):
         grid.setHorizontalSpacing(10)
         grid.setVerticalSpacing(8)
 
+        grp = QGroupBox("Bakım Kaydı")
+        grp.setStyleSheet(S["group"])
+        grid = QGridLayout(grp)
+        grid.setContentsMargins(12, 12, 12, 12)
+        grid.setHorizontalSpacing(10)
+        grid.setVerticalSpacing(8)
+
         self.txt_periyot = QLineEdit(); self.txt_periyot.setStyleSheet(S["input"])
         self._r(grid, 0, "Bakım Periyodu", self.txt_periyot)
 
@@ -737,7 +754,8 @@ class _BakimGirisForm(QWidget):
         btns.addWidget(btn_temizle)
 
         btn_kaydet = QPushButton("Kaydet")
-        btn_kaydet.setStyleSheet(S.get("action_btn", S.get("btn_primary","")))
+        action_style = S.get("action_btn") or S.get("btn_primary") or ""
+        btn_kaydet.setStyleSheet(action_style)
         try:
             IconRenderer.set_button_icon(btn_kaydet, "save",
                                          color=DarkTheme.BTN_PRIMARY_TEXT, size=14)
@@ -1029,7 +1047,8 @@ class _KalibrasyonGirisForm(QWidget):
         btns.addWidget(btn_temizle)
 
         btn_kaydet = QPushButton("Kaydet")
-        btn_kaydet.setStyleSheet(S.get("action_btn", S.get("btn_primary","")))
+        action_style = S.get("action_btn") or S.get("btn_primary") or ""
+        btn_kaydet.setStyleSheet(action_style)
         try:
             IconRenderer.set_button_icon(btn_kaydet, "save",
                                          color=DarkTheme.BTN_PRIMARY_TEXT, size=14)

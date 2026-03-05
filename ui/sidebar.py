@@ -148,7 +148,7 @@ class Sidebar(QWidget):
         super().__init__(parent)
         self.setFixedWidth(230)
         self.setAutoFillBackground(True)
-        self.setStyleSheet(f"background-color: {BG};")
+        self.setStyleSheet("background-color: {};".format(BG))
 
         # Sağ kenar ince çizgi + gölge
         shadow = QGraphicsDropShadowEffect(self)
@@ -172,8 +172,7 @@ class Sidebar(QWidget):
         header = QWidget()
         header.setFixedHeight(58)
         header.setStyleSheet(
-            f"background: {HEADER_BG};"
-            f"border-bottom: 1px solid rgba(0,180,216,0.15);"
+            "background: {};border-bottom: 1px solid rgba(0,180,216,0.15);".format(HEADER_BG)
         )
         hl = QHBoxLayout(header)
         hl.setContentsMargins(16, 0, 14, 0)
@@ -220,21 +219,21 @@ class Sidebar(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setStyleSheet(f"""
-            QScrollArea {{ border: none; background: transparent; }}
-            QWidget {{ background: transparent; }}
-            QScrollBar:vertical {{
+        scroll.setStyleSheet("""
+            QScrollArea { border: none; background: transparent; }
+            QWidget { background: transparent; }
+            QScrollBar:vertical {
                 background: transparent; width: 4px; margin: 0;
-            }}
-            QScrollBar::handle:vertical {{
+            }
+            QScrollBar::handle:vertical {
                 background: rgba(0,180,216,0.20);
                 border-radius: 2px; min-height: 24px;
-            }}
-            QScrollBar::handle:vertical:hover {{
+            }
+            QScrollBar::handle:vertical:hover {
                 background: rgba(0,180,216,0.40);
-            }}
+            }
             QScrollBar::add-line:vertical,
-            QScrollBar::sub-line:vertical {{ height: 0; }}
+            QScrollBar::sub-line:vertical { height: 0; }
         """)
         menu_w = QWidget()
         menu_w.setStyleSheet("background: transparent;")
@@ -249,8 +248,7 @@ class Sidebar(QWidget):
         # ── Alt Bölüm ─────────────────────────────────────────
         bottom = QWidget()
         bottom.setStyleSheet(
-            f"background: {HEADER_BG};"
-            f"border-top: 1px solid rgba(0,180,216,0.12);"
+            "background: {};border-top: 1px solid rgba(0,180,216,0.12);".format(HEADER_BG)
         )
         bl = QVBoxLayout(bottom)
         bl.setContentsMargins(12, 10, 12, 12)
@@ -265,20 +263,20 @@ class Sidebar(QWidget):
             self.notifications_btn.setIconSize(QSize(14, 14))
         except Exception:
             pass
-        self.notifications_btn.setStyleSheet(f"""
+        self.notifications_btn.setStyleSheet("""
             QPushButton {{
-                background: {NOTIFY_BG};
-                color: {NOTIFY_TEXT};
-                border: 1px solid {NOTIFY_BORDER};
+                background: {};
+                color: {};
+                border: 1px solid {};
                 border-radius: 8px;
                 font-size: 12px; font-weight: 600;
                 padding: 7px 10px; text-align: left;
             }}
             QPushButton:hover {{
-                background: {NOTIFY_HOVER};
+                background: {};
                 border-color: rgba(245,158,11,0.45);
             }}
-        """)
+        """.format(NOTIFY_BG, NOTIFY_TEXT, NOTIFY_BORDER, NOTIFY_HOVER))
         self.notifications_btn.clicked.connect(self.dashboard_clicked.emit)
         bl.addWidget(self.notifications_btn)
 
@@ -290,21 +288,21 @@ class Sidebar(QWidget):
             self.sync_btn.setIconSize(QSize(14, 14))
         except Exception:
             pass
-        self.sync_btn.setStyleSheet(f"""
+        self.sync_btn.setStyleSheet("""
             QPushButton {{
-                background: {SYNC_BG};
-                color: {SYNC_TEXT};
+                background: {};
+                color: {};
                 border: none;
                 border-radius: 8px;
                 font-size: 12px; font-weight: 700;
                 padding: 7px 10px; text-align: left;
             }}
-            QPushButton:hover {{ background: {SYNC_HOVER}; }}
+            QPushButton:hover {{ background: {}; }}
             QPushButton:disabled {{
                 background: rgba(0,180,216,0.15);
                 color: rgba(6,13,26,0.4);
             }}
-        """)
+        """.format(SYNC_BG, SYNC_TEXT, SYNC_HOVER))
         bl.addWidget(self.sync_btn)
 
         # Durum satırı

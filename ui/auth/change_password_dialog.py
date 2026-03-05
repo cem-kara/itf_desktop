@@ -26,16 +26,16 @@ class ChangePasswordDialog(QDialog):
         info.setWordWrap(True)
 
         self._new_password = QLineEdit()
-        self._new_password.setEchoMode(QLineEdit.Password)
+        self._new_password.setEchoMode(QLineEdit.EchoMode.Password)
 
         self._confirm_password = QLineEdit()
-        self._confirm_password.setEchoMode(QLineEdit.Password)
+        self._confirm_password.setEchoMode(QLineEdit.EchoMode.Password)
 
         form = QFormLayout()
         form.addRow("Yeni sifre", self._new_password)
         form.addRow("Yeni sifre tekrar", self._confirm_password)
 
-        self._buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        self._buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         self._buttons.accepted.connect(self._on_accept)
         self._buttons.rejected.connect(self.reject)
 

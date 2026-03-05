@@ -9,7 +9,7 @@ import os
 import threading
 import asyncio
 from pathlib import Path
-from typing import Optional
+from typing import Optional, cast, Any
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QFrame, QStackedWidget, QMessageBox,
@@ -83,12 +83,12 @@ class CihazMerkezPage(QWidget):
     def _build_header(self) -> QFrame:
         """Header (52px) + sekme nav (36px)."""
         outer = QFrame()
-        outer.setStyleSheet(f"""
+        outer.setStyleSheet("""
             QFrame {{
-                background-color: {C.BG_SECONDARY};
-                border-bottom: 1px solid {C.BORDER_PRIMARY};
+                background-color: {};
+                border-bottom: 1px solid {};
             }}
-        """)
+        """.format(C.BG_SECONDARY, C.BORDER_PRIMARY))
         lay = QVBoxLayout(outer)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)
@@ -199,12 +199,13 @@ class CihazMerkezPage(QWidget):
             self.cihaz_data = cihazlar[0]
             
             # Header bilgileri
-            cihaz_id = str(self.cihaz_data.get("Cihazid", ""))
-            marka    = str(self.cihaz_data.get("Marka", ""))
-            model    = str(self.cihaz_data.get("Model", ""))
-            seri     = str(self.cihaz_data.get("SeriNo", ""))
-            birim    = str(self.cihaz_data.get("Birim", ""))
-            durum    = str(self.cihaz_data.get("Durum", ""))
+            data = cast(dict, self.cihaz_data) or {}
+            cihaz_id = str(data.get("Cihazid", ""))
+            marka    = str(data.get("Marka", ""))
+            model    = str(data.get("Model", ""))
+            seri     = str(data.get("SeriNo", ""))
+            birim    = str(data.get("Birim", ""))
+            durum    = str(data.get("Durum", ""))
             
             self.lbl_cihaz_id.setText(cihaz_id)
             marka_model = f"{marka} {model}".strip()
@@ -219,16 +220,16 @@ class CihazMerkezPage(QWidget):
             }
             self.lbl_durum.setText(durum)
             self.lbl_durum.setStyleSheet(
-                durum_style_map.get(durum, STYLES.get("info_label", ""))
+                cast(str, durum_style_map.get(durum, cast(str, STYLES.get("info_label", "") or "")))
             )
             
             # Cihaz resmi varsa göster
-            img_path = str(self.cihaz_data.get("Img", "")).strip()
+            img_path = str(data.get("Img", "")).strip()
             if img_path and os.path.exists(img_path):
                 px = QPixmap(img_path)
                 if not px.isNull():
                     self.lbl_avatar.setPixmap(
-                        px.scaled(34, 34, Qt.KeepAspectRatioByExpanding,
+                        px.scaled(34, 34, Qt.AspectRatioMode.KeepAspectRatioByExpanding,
                                   Qt.TransformationMode.SmoothTransformation)
                     )
                     self.lbl_avatar.setText("")
@@ -237,7 +238,7 @@ class CihazMerkezPage(QWidget):
             if self._initial_load:
                 cur = self.content_stack.currentWidget()
                 if cur and hasattr(cur, "load_data"):
-                    cur.load_data()
+                    cast(Any, cur).load_data()
             else:
                 self._switch_tab("GENEL")
                 self._initial_load = True
@@ -316,14 +317,14 @@ class CihazMerkezPage(QWidget):
                 raise ValueError(f"Bilinmeyen sekme: {code}")
 
             if hasattr(w, "set_embedded_mode"):
-                w.set_embedded_mode(True)
+                cast(Any, w).set_embedded_mode(True)
             return w
 
         except Exception as e:
             logger.error(f"Modül yükleme hatası ({code}): {e}")
             err = QLabel(f"Modül yüklenemedi: {code}\n{e}")
             err.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            err.setStyleSheet(STYLES.get("stat_red", f"color:{C.STATUS_ERROR};"))
+            err.setStyleSheet(cast(str, STYLES.get("stat_red", "color:{}".format(C.STATUS_ERROR)) or ""))
             return err
 
     # ═══════════════════════════════════════════════════

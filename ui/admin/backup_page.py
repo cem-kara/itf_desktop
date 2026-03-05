@@ -125,19 +125,19 @@ class BackupPage(QWidget):
         self._btn_create_backup = QPushButton("Yedek Oluştur")
         IconRenderer.set_button_icon(self._btn_create_backup, "save", size=14)
         self._btn_create_backup.clicked.connect(self._create_backup)
-        self._btn_create_backup.setStyleSheet(f"""
+        self._btn_create_backup.setStyleSheet("""
             QPushButton {{
-                background-color: {C.BTN_PRIMARY_BG};
-                color: {C.BTN_PRIMARY_TEXT};
+                background-color: {};
+                color: {};
                 font-weight: bold;
                 padding: 8px 16px;
                 border-radius: 4px;
                 border: none;
             }}
             QPushButton:hover {{
-                background-color: {C.BTN_PRIMARY_HOVER};
+                background-color: {};
             }}
-        """)
+        """.format(C.BTN_PRIMARY_BG, C.BTN_PRIMARY_TEXT, C.BTN_PRIMARY_HOVER))
         create_layout.addWidget(self._btn_create_backup)
         create_layout.addStretch()
 
@@ -169,19 +169,19 @@ class BackupPage(QWidget):
         self._btn_create_full_backup = QPushButton("Tam Yedek Oluştur")
         IconRenderer.set_button_icon(self._btn_create_full_backup, "package", size=14)
         self._btn_create_full_backup.clicked.connect(self._create_full_backup)
-        self._btn_create_full_backup.setStyleSheet(f"""
+        self._btn_create_full_backup.setStyleSheet("""
             QPushButton {{
-                background-color: {C.STATUS_SUCCESS};
-                color: {C.BTN_PRIMARY_TEXT};
+                background-color: {};
+                color: {};
                 font-weight: bold;
                 padding: 8px 16px;
                 border-radius: 4px;
                 border: none;
             }}
             QPushButton:hover {{
-                background-color: {C.ACCENT2};
+                background-color: {};
             }}
-        """)
+        """.format(C.STATUS_SUCCESS, C.BTN_PRIMARY_TEXT, C.ACCENT2))
         full_backup_layout.addWidget(self._btn_create_full_backup)
         
         # İki grubu yan yana al
@@ -208,19 +208,19 @@ class BackupPage(QWidget):
         IconRenderer.set_button_icon(self._btn_delete, "trash", size=14)
         self._btn_delete.clicked.connect(self._delete_backup)
         self._btn_delete.setEnabled(False)
-        self._btn_delete.setStyleSheet(f"""
+        self._btn_delete.setStyleSheet("""
             QPushButton {{
-                background-color: {C.BTN_DANGER_BG};
-                color: {C.BTN_DANGER_TEXT};
+                background-color: {};
+                color: {};
             }}
             QPushButton:hover {{
-                background-color: {C.BTN_DANGER_HOVER};
+                background-color: {};
             }}
             QPushButton:disabled {{
-                background-color: {C.BG_SECONDARY};
-                color: {C.TEXT_DISABLED};
+                background-color: {};
+                color: {};
             }}
-        """)
+        """.format(C.BTN_DANGER_BG, C.BTN_DANGER_TEXT, C.BTN_DANGER_HOVER, C.BG_SECONDARY, C.TEXT_DISABLED))
         btn_layout.addWidget(self._btn_delete)
         
         btn_layout.addSpacing(20)

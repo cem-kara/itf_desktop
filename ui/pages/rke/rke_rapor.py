@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-"""RKE Raporlama Merkezi â€” mockup tasarım dili."""
+"""RKE Raporlama Merkezi - mockup tasarim dili."""
 import datetime
 from typing import List, Dict, Optional
 
-from PySide6.QtCore  import Qt, QThread, Signal, QAbstractTableModel, QModelIndex, QMarginsF
+from PySide6.QtCore  import Qt, QThread, Signal, QMarginsF
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QAbstractItemView,
     QTableView, QHeaderView, QLabel, QPushButton, QComboBox,
-    QRadioButton, QButtonGroup, QFrame, QSizePolicy, QApplication, QMessageBox,
+    QRadioButton, QButtonGroup, QFrame, QApplication, QMessageBox,
 )
 from PySide6.QtGui import (
     QColor, QCursor, QTextDocument, QPdfWriter,
@@ -16,9 +16,10 @@ from PySide6.QtGui import (
 
 from core.logger import logger
 from core.di import get_rke_service as _get_rke_service
+from core.paths import DB_PATH
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.colors import DarkTheme
-from ui.styles.components import STYLES
+from ui.styles.icons import IconRenderer
 
 # ==================================================================
 #  PALETTE
@@ -35,7 +36,7 @@ _MONO = DarkTheme.MONOSPACE
 
 
 # ==================================================================
-#  PDF ŞABLONLARI  (değiŞmedi)
+#  PDF SABLONLARI (degismedi)
 # ==================================================================
 def _css():
     return ("body{font-family:'Times New Roman',serif;font-size:11pt;color:#000;}"
@@ -87,13 +88,13 @@ def html_hurda_rapor(veriler: List[Dict], filtre_ozeti: str) -> str:
             f"<div class='c'>Tarih: {tarih}</div>"
             f"<h2>A. İMHA EDİLECEK EKİPMAN LİSTESİ</h2>"
             f"<table><thead><tr>"
-            f"<th width='5%'>Sıra</th><th width='20%'>Malzeme Adı</th>"
-            f"<th width='15%'>Barkod/DemirbaŞ</th><th width='15%'>Bölüm</th>"
+            f"<th width='5%'>Sira</th><th width='20%'>Malzeme Adi</th>"
+            f"<th width='15%'>Barkod/Demirbas</th><th width='15%'>Bolum</th>"
             f"<th width='10%'>Pb (mm)</th><th width='35%'>Uygunsuzluk</th>"
             f"</tr></thead><tbody>{rows}</tbody></table>"
             f"<h2>B. TEKNİK RAPOR</h2>"
             f"<div class='legal'>Yukarıdaki ekipmanların fiziksel veya radyolojik bütünlüklerini "
-            f"yitirdikleri tespit edilmiŞtir. HEK kaydına alınması arz olunur.</div>"
+            f"yitirdikleri tespit edilmistir. HEK kaydina alinmasi arz olunur.</div>"
             f"<table class='sig'><tr>"
             f"<td><b>Kontrol Eden</b><div class='line'>İmza</div></td>"
             f"<td><b>Birim Sorumlusu</b><div class='line'>İmza</div></td>"
@@ -104,9 +105,9 @@ def html_hurda_rapor(veriler: List[Dict], filtre_ozeti: str) -> str:
 def pdf_olustur(html: str, dosya: str) -> bool:
     try:
         doc = QTextDocument(); doc.setHtml(html)
-        w = QPdfWriter(dosya); w.setPageSize(QPageSize(QPageSize.A4)); w.setResolution(300)
+        w = QPdfWriter(dosya); w.setPageSize(QPageSize(QPageSize.PageSizeId.A4)); w.setResolution(300)
         lay = QPageLayout()
-        lay.setPageSize(QPageSize(QPageSize.A4)); lay.setOrientation(QPageLayout.Portrait)
+        lay.setPageSize(QPageSize(QPageSize.PageSizeId.A4)); lay.setOrientation(QPageLayout.Orientation.Portrait)
         lay.setMargins(QMarginsF(15,15,15,15)); w.setPageLayout(lay)
         doc.print_(w); return True
     except Exception as e:
@@ -114,22 +115,29 @@ def pdf_olustur(html: str, dosya: str) -> bool:
 
 
 # ==================================================================
-#  WORKER THREADS  (iŞ mantığı değiŞmedi)
+#  WORKER THREADS (is mantigi degismedi)
 # ==================================================================
 class RaporVeriYukleyici(QThread):
     veri_hazir  = Signal(list, list, list, list, list)
     hata_olustu = Signal(str)
 
-    def __init__(self, rke_repo=None, muayene_repo=None, parent=None):
+    def __init__(self, db_path=None, parent=None):
         super().__init__(parent)
-        self.rke_repo = rke_repo
-        self.muayene_repo = muayene_repo
+        self.db_path = db_path or DB_PATH
 
     def run(self):
+        db = None
         try:
             env={}; abd_s=set(); birim_s=set(); tarih_s=set()
-            if self.rke_repo:
-                for r in self.rke_repo.get_all():
+            from database.sqlite_manager import SQLiteManager
+
+            db = SQLiteManager(db_path=self.db_path, check_same_thread=True)
+            rke_svc = _get_rke_service(db)
+            rke_repo = rke_svc.get_rke_repo()
+            muayene_repo = rke_svc.get_muayene_repo()
+
+            if rke_repo:
+                for r in rke_repo.get_all():
                     en=str(r.get('EkipmanNo','')).strip()
                     if en:
                         env[en]={'ABD':str(r.get('AnaBilimDali','')).strip(),
@@ -140,7 +148,7 @@ class RaporVeriYukleyici(QThread):
                         if env[en]['Birim']: birim_s.add(env[en]['Birim'])
 
             birlesik=[]
-            ws2_data = self.muayene_repo.get_all() if self.muayene_repo else []
+            ws2_data = muayene_repo.get_all() if muayene_repo else []
             if ws2_data:
                 for r in ws2_data:
                     en=str(r.get('EkipmanNo','')).strip()
@@ -161,6 +169,9 @@ class RaporVeriYukleyici(QThread):
             self.veri_hazir.emit(birlesik,headers,sorted(abd_s),sorted(birim_s),st)
         except Exception as e:
             self.hata_olustu.emit(str(e))
+        finally:
+            if db:
+                db.conn.close()
 
 class RaporOlusturucuWorker(QThread):
     log_mesaji  = Signal(str)
@@ -174,30 +185,30 @@ class RaporOlusturucuWorker(QThread):
             ozet=self.filtreler.get('ozet','')
             if self.mod==1:
                 f=f"RKE_Genel_{datetime.datetime.now().strftime('%Y%m%d')}.pdf"
-                if not self.veriler: self.log_mesaji.emit("âš  Veri yok."); return
+                if not self.veriler: self.log_mesaji.emit("Uyari: Veri yok."); return
                 if pdf_olustur(html_genel_rapor(self.veriler,ozet),f):
-                    self.log_mesaji.emit(f"âœ“  Genel rapor oluŞturuldu: {f}")
-                else: self.log_mesaji.emit("âœ—  PDF oluŞturulamadı.")
+                    self.log_mesaji.emit(f"OK - Genel rapor olusturuldu: {f}")
+                else: self.log_mesaji.emit("Hata: PDF olusturulamadi.")
 
             elif self.mod==2:
                 f=f"RKE_Hurda_{datetime.datetime.now().strftime('%Y%m%d')}.pdf"
                 hv=[v for v in self.veriler if "Değil" in v.get('Sonuc','')]
-                if not hv: self.log_mesaji.emit("âš  Hurda kaydı yok."); return
+                if not hv: self.log_mesaji.emit("Uyari: Hurda kaydi yok."); return
                 if pdf_olustur(html_hurda_rapor(hv,ozet),f):
-                    self.log_mesaji.emit(f"âœ“  Hurda raporu oluŞturuldu: {f}")
+                    self.log_mesaji.emit(f"OK - Hurda raporu olusturuldu: {f}")
 
             elif self.mod==3:
                 gruplar:Dict={}
                 for item in self.veriler:
                     gruplar.setdefault((item.get('KontrolEden',''),item.get('Tarih','')),
                                       []).append(item)
-                self.log_mesaji.emit(f"{len(gruplar)} rapor oluŞturuluyor...")
+                self.log_mesaji.emit(f"{len(gruplar)} rapor olusturuluyor...")
                 for (kisi,tarih),liste in gruplar.items():
                     f=f"Rapor_{kisi}_{tarih}.pdf".replace(" ","_")
-                    if pdf_olustur(html_genel_rapor(liste,f"Kontrolör: {kisi} â€” {tarih}"),f):
-                        self.log_mesaji.emit(f"âœ“  {f}")
+                    if pdf_olustur(html_genel_rapor(liste,f"Kontrolor: {kisi} - {tarih}"),f):
+                        self.log_mesaji.emit(f"OK - {f}")
         except Exception as e:
-            self.log_mesaji.emit(f"âœ—  HATA: {e}")
+            self.log_mesaji.emit(f"HATA: {e}")
         finally:
             self.islem_bitti.emit()
 
@@ -209,8 +220,8 @@ _RCOLS = [
     ("Pb",       "Pb",         70),
     ("Birim",    "BİRİM",    110),
     ("Tarih",    "TARİH",    100),
-    ("Sonuc",    "SONUÃ‡",    130),
-    ("Aciklama", "AÃ‡IKLAMA", 160),
+    ("Sonuc",    "SONUC",    130),
+    ("Aciklama", "ACIKLAMA", 160),
 ]
 _RK=[c[0] for c in _RCOLS]; _RH=[c[1] for c in _RCOLS]; _RW=[c[2] for c in _RCOLS]
 
@@ -235,8 +246,8 @@ class RaporTableModel(BaseTableModel):
     def set_rows(self, rows):
         self.set_data(rows)
 
-    def get_row(self, i):
-        return self._data[i] if 0 <= i < len(self._data) else None
+    def get_row(self, idx):
+        return self._data[idx] if 0 <= idx < len(self._data) else None
 
 
 # ==================================================================
@@ -249,16 +260,22 @@ class RKERaporPenceresi(QWidget):
         self._action_guard = action_guard
         self.setWindowTitle("RKE Raporlama Merkezi")
         self.resize(1200, 820)
-        self.setStyleSheet(f"background:{_BG1};color:{_TX0};")
+        self.setStyleSheet("background:{};color:{};".format(_BG1, _TX0))
 
         self.ham_veriler:       List[Dict]=[]
         self.filtrelenmis_veri: List[Dict]=[]
         self._kpi:              Dict[str,QLabel]={}
         
+        # Filtre widget'ları için tip tanımları
+        self.cmb_abd: QComboBox
+        self.cmb_birim: QComboBox
+        self.cmb_tarih: QComboBox
+        
         # Repository'leri hazırla
         self._registry = None
         self._rke_repo = None
         self._muayene_repo = None
+        self._db_path = getattr(self._db, "db_path", DB_PATH)
         if self._db:
             try:
 
@@ -266,22 +283,22 @@ class RKERaporPenceresi(QWidget):
                 self._rke_repo = self._rke_svc.get_rke_repo()
                 self._muayene_repo = self._rke_svc.get_muayene_repo()
             except Exception as e:
-                logger.error(f"Repository baŞlatma hatası: {e}")
+                logger.error(f"Repository baslatma hatasi: {e}")
 
         self._setup_ui()
         # YetkiYoneticisi.uygula(self,"rke_rapor")  # TODO: Yetki sistemi entegrasyonu
 
-    # â”€â”€ LAYOUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # LAYOUT
     def _setup_ui(self):
         root=QVBoxLayout(self); root.setContentsMargins(0,0,0,0); root.setSpacing(0)
         root.addWidget(self._mk_kpi_bar())
         root.addWidget(self._mk_control_panel())
         root.addWidget(self._mk_table_panel(),1)
 
-    # â”€â”€ KPI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # KPI
     def _mk_kpi_bar(self) -> QWidget:
         bar=QWidget(); bar.setFixedHeight(68)
-        bar.setStyleSheet("border-bottom: 1px solid {_BD};")
+        bar.setStyleSheet("border-bottom: 1px solid {};".format(_BD))
         hl=QHBoxLayout(bar); hl.setContentsMargins(0,0,0,0); hl.setSpacing(1)
         for key,title,val,color in [
             ("toplam","TOPLAM KAYIT","0",_BLUE),
@@ -294,35 +311,35 @@ class RKERaporPenceresi(QWidget):
         return bar
 
     def _mk_kpi_card(self,key,title,val,color) -> QWidget:
-        w=QWidget(); w.setStyleSheet(f"background:{_BG1};")
+        w=QWidget(); w.setStyleSheet("background:{};".format(_BG1))
         hl=QHBoxLayout(w); hl.setContentsMargins(0,0,0,0); hl.setSpacing(0)
         accent=QFrame(); accent.setFixedWidth(3)
         accent.setStyleSheet("border: none;")
-        content=QWidget(); content.setStyleSheet(f"background:{_BG1};")
+        content=QWidget(); content.setStyleSheet("background:{};".format(_BG1))
         vl=QVBoxLayout(content); vl.setContentsMargins(14,8,14,8); vl.setSpacing(2)
         lt=QLabel(title)
-        lt.setStyleSheet(f"color:{_TX2};background:transparent;font-family:{_MONO};"
-                         f"font-size:8px;font-weight:700;letter-spacing:2px;")
+        lt.setStyleSheet("color:{};background:transparent;font-family:{};"
+                         "font-size:8px;font-weight:700;letter-spacing:2px;".format(_TX2, _MONO))
         lv=QLabel(val)
-        lv.setStyleSheet(f"color:{color};background:transparent;font-family:{_MONO};"
-                         f"font-size:20px;font-weight:700;")
+        lv.setStyleSheet("color:{};background:transparent;font-family:{};"
+                         "font-size:20px;font-weight:700;".format(color, _MONO))
         vl.addWidget(lt); vl.addWidget(lv)
         hl.addWidget(accent); hl.addWidget(content,1)
         self._kpi[key]=lv; return w
 
-    # â”€â”€ KONTROL PANELİ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # KONTROL PANELI
     def _mk_control_panel(self) -> QWidget:
         outer=QWidget(); outer.setFixedHeight(110)
-        outer.setStyleSheet("border-bottom: 1px solid {_BD};")
+        outer.setStyleSheet("border-bottom: 1px solid {};".format(_BD))
         hl=QHBoxLayout(outer); hl.setContentsMargins(16,10,16,10); hl.setSpacing(20)
 
-        # â”€â”€ Rapor Türü â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # Rapor Turu
         sec_widget=QWidget(); sec_widget.setStyleSheet("background:transparent;")
         sec_widget.setFixedWidth(280)
         sv=QVBoxLayout(sec_widget); sv.setContentsMargins(0,0,0,0); sv.setSpacing(6)
-        sec_lbl=QLabel("RAPOR TÃœRÃœ")
-        sec_lbl.setStyleSheet(f"color:{_TX2};font-family:{_MONO};font-size:8px;"
-                              f"font-weight:700;letter-spacing:2px;")
+        sec_lbl=QLabel("RAPOR TURU")
+        sec_lbl.setStyleSheet("color:{};font-family:{};font-size:8px;"
+                              "font-weight:700;letter-spacing:2px;".format(_TX2, _MONO))
         sv.addWidget(sec_lbl)
 
         rb_ss=(f"QRadioButton{{color:{_TX1};font-family:{_MONO};font-size:11px;padding:3px;}}"
@@ -341,22 +358,22 @@ class RKERaporPenceresi(QWidget):
 
         # dikey ayraç
         sep=QFrame(); sep.setFrameShape(QFrame.Shape.VLine)
-        sep.setStyleSheet(f"background:{_BD};width:1px;")
+        sep.setStyleSheet("background:{};width:1px;".format(_BD))
         hl.addWidget(sep)
 
-        # â”€â”€ Filtreler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # Filtreler
         fil_widget=QWidget(); fil_widget.setStyleSheet("background:transparent;")
         fv=QVBoxLayout(fil_widget); fv.setContentsMargins(0,0,0,0); fv.setSpacing(6)
         fil_lbl=QLabel("FİLTRELER")
-        fil_lbl.setStyleSheet(f"color:{_TX2};font-family:{_MONO};font-size:8px;"
-                              f"font-weight:700;letter-spacing:2px;")
+        fil_lbl.setStyleSheet("color:{};font-family:{};font-size:8px;"
+                              "font-weight:700;letter-spacing:2px;".format(_TX2, _MONO))
         fv.addWidget(fil_lbl)
         fh=QHBoxLayout(); fh.setSpacing(10); fh.setContentsMargins(0,0,0,0)
         for attr,title,mw in [("cmb_abd","ANA BİLİM DALI",170),
                                ("cmb_birim","BİRİM",160),("cmb_tarih","İŞLEM TARİHİ",150)]:
             col=QVBoxLayout(); col.setSpacing(4); col.setContentsMargins(0,0,0,0)
             l=QLabel(title)
-            l.setStyleSheet("font-family: {_MONO}; font-size: 8px; font-weight: 700; letter-spacing: 1px;")
+            l.setStyleSheet("font-family: {}; font-size: 8px; font-weight: 700; letter-spacing: 1px;".format(_MONO))
             w=QComboBox(); w.setFixedHeight(28); w.setMinimumWidth(mw)
             col.addWidget(l); col.addWidget(w); fh.addLayout(col)
             setattr(self,attr,w)
@@ -368,18 +385,18 @@ class RKERaporPenceresi(QWidget):
 
         # ayraç
         sep2=QFrame(); sep2.setFrameShape(QFrame.Shape.VLine)
-        sep2.setStyleSheet(f"background:{_BD};width:1px;")
+        sep2.setStyleSheet("background:{};width:1px;".format(_BD))
         hl.addWidget(sep2)
 
-        # â”€â”€ Butonlar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # Butonlar
         btn_widget=QWidget(); btn_widget.setStyleSheet("background:transparent;")
         bv=QVBoxLayout(btn_widget); bv.setContentsMargins(0,0,0,0); bv.setSpacing(6)
         btn_lbl=QLabel("İŞLEMLER")
-        btn_lbl.setStyleSheet(f"color:{_TX2};font-family:{_MONO};font-size:8px;"
-                              f"font-weight:700;letter-spacing:2px;")
+        btn_lbl.setStyleSheet("color:{};font-family:{};font-size:8px;"
+                              "font-weight:700;letter-spacing:2px;".format(_TX2, _MONO))
         bv.addWidget(btn_lbl)
 
-        self.btn_yenile=QPushButton("âŸ³  VERİLERİ YENİLE")
+        self.btn_yenile=QPushButton("VERILERI YENILE")
         self.btn_yenile.setFixedHeight(30); self.btn_yenile.setMinimumWidth(180)
         self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_yenile.setStyleSheet(
@@ -387,8 +404,9 @@ class RKERaporPenceresi(QWidget):
             f"color:{_TX1};font-family:{_MONO};font-size:9px;letter-spacing:1px;}}"
             f"QPushButton:hover{{color:{_TX0};border-color:{_TX1};}}")
         self.btn_yenile.clicked.connect(self.load_data)
+        IconRenderer.set_button_icon(self.btn_yenile, "refresh", size=16, color=_TX1)
 
-        self.btn_olustur=QPushButton("ğŸ“„  PDF RAPOR OLUŞTUR")
+        self.btn_olustur=QPushButton("PDF RAPOR OLUSTUR")
         self.btn_olustur.setObjectName("btn_kaydet")
         self.btn_olustur.setFixedHeight(30); self.btn_olustur.setMinimumWidth(180)
         self.btn_olustur.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -398,6 +416,7 @@ class RKERaporPenceresi(QWidget):
             f"QPushButton:hover{{background:#f06060;}}"
             f"QPushButton:disabled{{background:{_BD};color:{_TX2};}}")
         self.btn_olustur.clicked.connect(self.rapor_baslat)
+        IconRenderer.set_button_icon(self.btn_olustur, "save", size=16, color="#FFFFFF")
         if self._action_guard:
             self._action_guard.disable_if_unauthorized(self.btn_olustur, "cihaz.write")
 
@@ -405,16 +424,16 @@ class RKERaporPenceresi(QWidget):
         hl.addWidget(btn_widget)
         return outer
 
-    # â”€â”€ TABLO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # TABLO
     def _mk_table_panel(self) -> QWidget:
-        panel=QWidget(); panel.setStyleSheet(f"background:{_BG0};")
+        panel=QWidget(); panel.setStyleSheet("background:{};".format(_BG0))
         vl=QVBoxLayout(panel); vl.setContentsMargins(0,0,0,0); vl.setSpacing(0)
 
         self._rapor_model=RaporTableModel(); self.tablo=QTableView()
         self.tablo.setModel(self._rapor_model)
         self.tablo.setAlternatingRowColors(True)
         self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.tablo.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.tablo.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tablo.verticalHeader().setVisible(False); self.tablo.setShowGrid(False)
         self.tablo.setSortingEnabled(True)
         hdr=self.tablo.horizontalHeader()
@@ -424,17 +443,17 @@ class RKERaporPenceresi(QWidget):
         vl.addWidget(self.tablo,1)
 
         foot=QWidget(); foot.setFixedHeight(30)
-        foot.setStyleSheet("border-top: 1px solid {_BD};")
+        foot.setStyleSheet("border-top: 1px solid {};".format(_BD))
         fl=QHBoxLayout(foot); fl.setContentsMargins(12,0,12,0)
         self.lbl_durum=QLabel("")
-        self.lbl_durum.setStyleSheet("font-family: {_MONO}; font-size: 9px;")
+        self.lbl_durum.setStyleSheet("font-family: {}; font-size: 9px;".format(_MONO))
         self.lbl_sayi=QLabel("0 kayıt")
-        self.lbl_sayi.setStyleSheet("font-family: {_MONO}; font-size: 9px;")
+        self.lbl_sayi.setStyleSheet("font-family: {}; font-size: 9px;".format(_MONO))
         fl.addWidget(self.lbl_durum); fl.addStretch(); fl.addWidget(self.lbl_sayi)
         vl.addWidget(foot)
         return panel
 
-    # â”€â”€ KPI GÃœNCELLEME â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # KPI GUNCELLEME
     def _update_kpi(self, rows:List[Dict]):
         toplam=len(rows)
         uygun=sum(1 for r in rows if "Değil" not in r.get("Sonuc","") and r.get("Sonuc",""))
@@ -444,7 +463,7 @@ class RKERaporPenceresi(QWidget):
                     ("hurda_a",uygun_d),("kaynak",kaynak)]:
             if k in self._kpi: self._kpi[k].setText(str(v))
 
-    # â”€â”€ MANTIK â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # MANTIK
     def _tc(self, s:str) -> Optional[datetime.date]:
         if not s: return None
         for fmt in ("%Y-%m-%d","%d.%m.%Y","%d/%m/%Y"):
@@ -460,11 +479,11 @@ class RKERaporPenceresi(QWidget):
         
         try:
             self.btn_olustur.setEnabled(False)
-            self.btn_yenile.setText("âŸ³  YÃœKLENİYOR...")
+            self.btn_yenile.setText("YUKLENIYOR...")
             self.lbl_durum.setText("Veriler yükleniyor...")
             QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
 
-            self.loader = RaporVeriYukleyici(self._rke_repo, self._muayene_repo)
+            self.loader = RaporVeriYukleyici(self._db_path)
             self.loader.veri_hazir.connect(self.veriler_geldi)
             self.loader.hata_olustu.connect(self._yukleme_hata)
             self.loader.finished.connect(self._yukle_bitti)
@@ -511,7 +530,7 @@ class RKERaporPenceresi(QWidget):
     def _yukle_bitti(self):
         QApplication.restoreOverrideCursor()
         self.btn_olustur.setEnabled(True)
-        self.btn_yenile.setText("âŸ³  VERİLERİ YENİLE")
+        self.btn_yenile.setText("VERILERI YENILE")
         self.lbl_durum.setText("")
 
     def _yukleme_hata(self, msg: str):
@@ -567,10 +586,10 @@ class RKERaporPenceresi(QWidget):
         mod=1
         if self.rb_hurda.isChecked(): mod=2
         elif self.rb_kisi.isChecked(): mod=3
-        ozet=f"{self.cmb_abd.currentText()} â€” {self.cmb_birim.currentText()}"
+        ozet=f"{self.cmb_abd.currentText()} - {self.cmb_birim.currentText()}"
         self.btn_olustur.setEnabled(False)
-        self.btn_olustur.setText("İŞleniyor...")
-        self.lbl_durum.setText("PDF oluŞturuluyor...")
+        self.btn_olustur.setText("ISLENIYOR...")
+        self.lbl_durum.setText("PDF olusturuluyor...")
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         self.worker=RaporOlusturucuWorker(mod,self.filtrelenmis_veri,{"ozet":ozet})
         self.worker.log_mesaji.connect(self.lbl_durum.setText)
@@ -580,8 +599,8 @@ class RKERaporPenceresi(QWidget):
     def _rapor_tamam(self):
         QApplication.restoreOverrideCursor()
         self.btn_olustur.setEnabled(True)
-        self.btn_olustur.setText("ğŸ“„  PDF RAPOR OLUŞTUR")
-        QMessageBox.information(self, "Tamamlandı", "Rapor iŞlemleri tamamlandı.")
+        self.btn_olustur.setText("PDF RAPOR OLUSTUR")
+        QMessageBox.information(self, "Tamamlandi", "Rapor islemleri tamamlandi.")
         self.lbl_durum.setText("Hazır.")
 
     def closeEvent(self,event):
@@ -591,7 +610,7 @@ class RKERaporPenceresi(QWidget):
         event.accept()
 
 
-# â”€â”€ main_window uyumluluk alias'ları â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# main_window uyumluluk alias'lari
 RKERaporPage = RKERaporPenceresi
 
 

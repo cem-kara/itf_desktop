@@ -112,18 +112,18 @@ class MainWindow(QMainWindow):
     def _build_status_bar(self):
         self.status = QStatusBar()
         # Status bar özel widget - MainWindow'a özgü stil (kabul edilebilir)
-        self.status.setStyleSheet(f"""
+        self.status.setStyleSheet("""
             QStatusBar {{
-                background-color: {DarkTheme.BG_SECONDARY};
-                border-top: 1px solid {DarkTheme.BORDER_PRIMARY};
+                background-color: {};
+                border-top: 1px solid {};
                 padding: 2px 8px;
             }}
             QStatusBar QLabel {{
                 font-size: 12px; 
-                color: {DarkTheme.TEXT_DISABLED}; 
+                color: {}; 
                 padding: 0 8px;
             }}
-        """)
+        """.format(DarkTheme.BG_SECONDARY, DarkTheme.BORDER_PRIMARY, DarkTheme.TEXT_DISABLED))
         self.setStatusBar(self.status)
 
         self.sync_status_label = QLabel("Hazır")
@@ -680,7 +680,7 @@ class MainWindow(QMainWindow):
         self.sync_status_label.setText(text)
         # Dinamik renk için property tabanlı yaklaşım yerine,
         # özel durum olarak inline stil kabul edilebilir (MainWindow özel widget)
-        self.sync_status_label.setStyleSheet(f"color: {color};")
+        self.sync_status_label.setStyleSheet("color: {};".format(color))
         # Not: Alternatif olarak color-role property kullanılabilir ama
         # bu durumda sınırlı sayıda önceden tanımlı rol olmalı (success/error/warning).
         # Dinamik hex renk gerektiren durumlar için inline stil uygun.

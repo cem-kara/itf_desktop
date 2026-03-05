@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QCursor
 
 from ui.styles.colors import DarkTheme
-from ui.styles.components import STYLES
 
 
 # _S_PAGE kaldırıldı — global QSS kuralı geçerli
@@ -59,9 +58,14 @@ class TopluMuayeneDialog(QDialog):
 
         grp_list = QGroupBox(f"Seçili Ekipmanlar ({len(self.ekipmanlar)})")
         grp_list.setStyleSheet(
-            f"QGroupBox{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};"
-            f"border-radius:5px;padding-top:16px;}}"
-            f"QGroupBox::title{{color:{DarkTheme.TEXT_SECONDARY};font-family:{DarkTheme.MONOSPACE};font-size:10px;}}"
+            "QGroupBox{{background:{bg};border:1px solid {bd};"
+            "border-radius:5px;padding-top:16px;}}"
+            "QGroupBox::title{{color:{tx};font-family:{mono};font-size:10px;}}".format(
+                bg=DarkTheme.BG_SECONDARY,
+                bd=DarkTheme.BORDER_PRIMARY,
+                tx=DarkTheme.TEXT_SECONDARY,
+                mono=DarkTheme.MONOSPACE,
+            )
         )
         gl = QVBoxLayout(grp_list)
         lst = QListWidget()
@@ -75,9 +79,14 @@ class TopluMuayeneDialog(QDialog):
         self.grp_fiz.setCheckable(True)
         self.grp_fiz.setChecked(True)
         self.grp_fiz.setStyleSheet(
-            f"QGroupBox{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};"
-            f"border-radius:5px;padding-top:16px;}}"
-            f"QGroupBox::title{{color:{DarkTheme.TEXT_SECONDARY};font-family:{DarkTheme.MONOSPACE};font-size:10px;}}"
+            "QGroupBox{{background:{bg};border:1px solid {bd};"
+            "border-radius:5px;padding-top:16px;}}"
+            "QGroupBox::title{{color:{tx};font-family:{mono};font-size:10px;}}".format(
+                bg=DarkTheme.BG_SECONDARY,
+                bd=DarkTheme.BORDER_PRIMARY,
+                tx=DarkTheme.TEXT_SECONDARY,
+                mono=DarkTheme.MONOSPACE,
+            )
         )
         hf = QHBoxLayout(self.grp_fiz)
         hf.setSpacing(12)
@@ -91,12 +100,12 @@ class TopluMuayeneDialog(QDialog):
         self.cmb_fiz.addItems(["Kullanıma Uygun", "Kullanıma Uygun Değil"])
         lbl_t = QLabel("Tarih:")
         lbl_t.setProperty("color-role", "muted")
-        lbl_t.setStyleSheet("font-family: {DarkTheme.MONOSPACE}; font-size: 10px;")
+        lbl_t.setStyleSheet("font-family: {mono}; font-size: 10px;".format(mono=DarkTheme.MONOSPACE))
         lbl_t.style().unpolish(lbl_t)
         lbl_t.style().polish(lbl_t)
         lbl_d = QLabel("Durum:")
         lbl_d.setProperty("color-role", "muted")
-        lbl_d.setStyleSheet("font-family: {DarkTheme.MONOSPACE}; font-size: 10px;")
+        lbl_d.setStyleSheet("font-family: {mono}; font-size: 10px;".format(mono=DarkTheme.MONOSPACE))
         lbl_d.style().unpolish(lbl_d)
         lbl_d.style().polish(lbl_d)
         hf.addWidget(lbl_t)
@@ -110,9 +119,14 @@ class TopluMuayeneDialog(QDialog):
         self.grp_sko.setCheckable(True)
         self.grp_sko.setChecked(False)
         self.grp_sko.setStyleSheet(
-            f"QGroupBox{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};"
-            f"border-radius:5px;padding-top:16px;}}"
-            f"QGroupBox::title{{color:{DarkTheme.TEXT_SECONDARY};font-family:{DarkTheme.MONOSPACE};font-size:10px;}}"
+            "QGroupBox{{background:{bg};border:1px solid {bd};"
+            "border-radius:5px;padding-top:16px;}}"
+            "QGroupBox::title{{color:{tx};font-family:{mono};font-size:10px;}}".format(
+                bg=DarkTheme.BG_SECONDARY,
+                bd=DarkTheme.BORDER_PRIMARY,
+                tx=DarkTheme.TEXT_SECONDARY,
+                mono=DarkTheme.MONOSPACE,
+            )
         )
         hs = QHBoxLayout(self.grp_sko)
         hs.setSpacing(12)
@@ -126,12 +140,12 @@ class TopluMuayeneDialog(QDialog):
         self.cmb_sko.addItems(["Kullanıma Uygun", "Kullanıma Uygun Değil", "Yapılmadı"])
         lbl_t2 = QLabel("Tarih:")
         lbl_t2.setProperty("color-role", "muted")
-        lbl_t2.setStyleSheet("font-family: {DarkTheme.MONOSPACE}; font-size: 10px;")
+        lbl_t2.setStyleSheet("font-family: {mono}; font-size: 10px;".format(mono=DarkTheme.MONOSPACE))
         lbl_t2.style().unpolish(lbl_t2)
         lbl_t2.style().polish(lbl_t2)
         lbl_d2 = QLabel("Durum:")
         lbl_d2.setProperty("color-role", "muted")
-        lbl_d2.setStyleSheet("font-family: {DarkTheme.MONOSPACE}; font-size: 10px;")
+        lbl_d2.setStyleSheet("font-family: {mono}; font-size: 10px;".format(mono=DarkTheme.MONOSPACE))
         lbl_d2.style().unpolish(lbl_d2)
         lbl_d2.style().polish(lbl_d2)
         hs.addWidget(lbl_t2)
@@ -143,9 +157,14 @@ class TopluMuayeneDialog(QDialog):
 
         grp_ortak = QGroupBox("Ortak Bilgiler")
         grp_ortak.setStyleSheet(
-            f"QGroupBox{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};"
-            f"border-radius:5px;padding-top:16px;}}"
-            f"QGroupBox::title{{color:{DarkTheme.TEXT_SECONDARY};font-family:{DarkTheme.MONOSPACE};font-size:10px;}}"
+            "QGroupBox{{background:{bg};border:1px solid {bd};"
+            "border-radius:5px;padding-top:16px;}}"
+            "QGroupBox::title{{color:{tx};font-family:{mono};font-size:10px;}}".format(
+                bg=DarkTheme.BG_SECONDARY,
+                bd=DarkTheme.BORDER_PRIMARY,
+                tx=DarkTheme.TEXT_SECONDARY,
+                mono=DarkTheme.MONOSPACE,
+            )
         )
         og = QGridLayout(grp_ortak)
         og.setContentsMargins(8, 8, 8, 8)
@@ -153,7 +172,7 @@ class TopluMuayeneDialog(QDialog):
 
         lbl_ke = QLabel("Kontrol Eden:")
         lbl_ke.setProperty("color-role", "muted")
-        lbl_ke.setStyleSheet("font-family: {DarkTheme.MONOSPACE}; font-size: 10px;")
+        lbl_ke.setStyleSheet("font-family: {mono}; font-size: 10px;".format(mono=DarkTheme.MONOSPACE))
         lbl_ke.style().unpolish(lbl_ke)
         lbl_ke.style().polish(lbl_ke)
         self.cmb_kontrol = QComboBox()
@@ -166,7 +185,7 @@ class TopluMuayeneDialog(QDialog):
 
         lbl_bs = QLabel("Birim Sorumlusu:")
         lbl_bs.setProperty("color-role", "muted")
-        lbl_bs.setStyleSheet("font-family: {DarkTheme.MONOSPACE}; font-size: 10px;")
+        lbl_bs.setStyleSheet("font-family: {mono}; font-size: 10px;".format(mono=DarkTheme.MONOSPACE))
         lbl_bs.style().unpolish(lbl_bs)
         lbl_bs.style().polish(lbl_bs)
         self.cmb_sorumlu = QComboBox()
@@ -182,7 +201,7 @@ class TopluMuayeneDialog(QDialog):
 
         lbl_acik = QLabel("Teknik Açıklama:")
         lbl_acik.setProperty("color-role", "muted")
-        lbl_acik.setStyleSheet("font-family: {DarkTheme.MONOSPACE}; font-size: 10px;")
+        lbl_acik.setStyleSheet("font-family: {mono}; font-size: 10px;".format(mono=DarkTheme.MONOSPACE))
         lbl_acik.style().unpolish(lbl_acik)
         lbl_acik.style().polish(lbl_acik)
 
@@ -206,8 +225,13 @@ class TopluMuayeneDialog(QDialog):
         self.lbl_file.style().polish(self.lbl_file)
         btn_file = QPushButton("Ortak Rapor")
         btn_file.setStyleSheet(
-            f"QPushButton{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;"
-            f"color:{DarkTheme.TEXT_SECONDARY};padding:0 12px;}}QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};}}"
+            "QPushButton{{background:{bg};border:1px solid {bd};border-radius:4px;"
+            "color:{tx};padding:0 12px;}}QPushButton:hover{{color:{tx_hover};}}".format(
+                bg=DarkTheme.BG_SECONDARY,
+                bd=DarkTheme.BORDER_PRIMARY,
+                tx=DarkTheme.TEXT_SECONDARY,
+                tx_hover=DarkTheme.TEXT_PRIMARY,
+            )
         )
         btn_file.setFixedHeight(28)
         btn_file.clicked.connect(self._dosya_sec)
@@ -226,9 +250,14 @@ class TopluMuayeneDialog(QDialog):
         btn_row.addStretch()
         btn_iptal = QPushButton("İptal")
         btn_iptal.setStyleSheet(
-            f"QPushButton{{background:transparent;border:1px solid {DarkTheme.BORDER_PRIMARY2};"
-            f"border-radius:5px;color:{DarkTheme.TEXT_MUTED};font-family:{DarkTheme.MONOSPACE};"
-            f"font-size:10px;padding:0 16px;}}QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};}}"
+            "QPushButton{{background:transparent;border:1px solid {bd};"
+            "border-radius:5px;color:{tx};font-family:{mono};"
+            "font-size:10px;padding:0 16px;}}QPushButton:hover{{color:{tx_hover};}}".format(
+                bd=DarkTheme.BORDER_PRIMARY2,
+                tx=DarkTheme.TEXT_MUTED,
+                mono=DarkTheme.MONOSPACE,
+                tx_hover=DarkTheme.TEXT_PRIMARY,
+            )
         )
         btn_iptal.setFixedHeight(36)
         btn_iptal.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -236,8 +265,11 @@ class TopluMuayeneDialog(QDialog):
 
         self.btn_kaydet = QPushButton("▶ Başlat")
         self.btn_kaydet.setStyleSheet(
-            f"QPushButton{{background:{DarkTheme.STATUS_SUCCESS};border:none;border-radius:5px;"
-            f"color:#051a10;font-family:{DarkTheme.MONOSPACE};font-size:10px;font-weight:800;padding:0 16px;}}"
+            "QPushButton{{background:{bg};border:none;border-radius:5px;"
+            "color:#051a10;font-family:{mono};font-size:10px;font-weight:800;padding:0 16px;}}".format(
+                bg=DarkTheme.STATUS_SUCCESS,
+                mono=DarkTheme.MONOSPACE,
+            )
         )
         self.btn_kaydet.setFixedHeight(36)
         self.btn_kaydet.setFixedWidth(120)

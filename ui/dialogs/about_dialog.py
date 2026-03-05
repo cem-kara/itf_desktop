@@ -250,79 +250,90 @@ class HakkindaDialog(QDialog):
     # ── Stil ───────────────────────────────────────────────────
 
     def _apply_style(self):
-        self.setStyleSheet(f"""
+        self.setStyleSheet("""
             QDialog {{
-                background-color: {C.BG_PRIMARY};
+                background-color: {};
             }}
             QScrollArea, QScrollArea > QWidget > QWidget {{
-                background-color: {C.BG_PRIMARY};
+                background-color: {};
             }}
 
             QFrame#about_header {{
-                background-color: {C.BG_SECONDARY};
-                border-bottom: 1px solid {C.BORDER_PRIMARY};
+                background-color: {};
+                border-bottom: 1px solid {};
             }}
             QLabel#about_app_name {{
                 font-size: 15px;
                 font-weight: 600;
-                color: {C.TEXT_PRIMARY};
+                color: {};
             }}
             QLabel#about_version {{
                 font-size: 12px;
-                color: {C.TEXT_MUTED};
+                color: {};
             }}
 
             QLabel#about_section_title {{
                 font-size: 11px;
                 font-weight: 700;
-                color: {C.ACCENT};
+                color: {};
                 letter-spacing: 1px;
             }}
 
             QLabel#about_key {{
                 font-size: 12px;
-                color: {C.TEXT_MUTED};
+                color: {};
             }}
             QLabel#about_value {{
                 font-size: 12px;
-                color: {C.TEXT_PRIMARY};
+                color: {};
             }}
 
             QFrame#about_card {{
-                background-color: {C.BG_SECONDARY};
-                border: 1px solid {C.BORDER_PRIMARY};
+                background-color: {};
+                border: 1px solid {};
                 border-radius: 6px;
             }}
             QLabel#about_card_name {{
                 font-size: 13px;
                 font-weight: 600;
-                color: {C.TEXT_PRIMARY};
+                color: {};
             }}
             QLabel#about_card_license {{
                 font-size: 11px;
-                color: {C.STATUS_SUCCESS};
+                color: {};
             }}
             QLabel#about_card_link {{
                 font-size: 11px;
-                color: {C.ACCENT};
+                color: {};
             }}
             QLabel#about_card_note {{
                 font-size: 11px;
-                color: {C.TEXT_MUTED};
+                color: {};
                 margin-top: 4px;
             }}
 
             QFrame#about_divider {{
                 border: none;
-                border-top: 1px solid {C.BORDER_PRIMARY};
+                border-top: 1px solid {};
             }}
 
             QFrame#about_footer {{
-                background-color: {C.BG_SECONDARY};
-                border-top: 1px solid {C.BORDER_PRIMARY};
+                background-color: {};
+                border-top: 1px solid {};
             }}
             QLabel#about_copy {{
                 font-size: 11px;
-                color: {C.TEXT_DISABLED};
+                color: {};
             }}
-        """)
+        """.format(
+            C.BG_PRIMARY, C.BG_PRIMARY,
+            C.BG_SECONDARY, C.BORDER_PRIMARY,
+            C.TEXT_PRIMARY, C.TEXT_MUTED,
+            C.ACCENT, C.TEXT_MUTED,
+            C.TEXT_PRIMARY, C.BG_SECONDARY,
+            C.BORDER_PRIMARY, C.TEXT_PRIMARY,
+            C.STATUS_SUCCESS, C.ACCENT,
+            C.TEXT_MUTED, C.BORDER_PRIMARY,
+            C.BG_SECONDARY, C.BORDER_PRIMARY,
+            C.TEXT_DISABLED
+        ))

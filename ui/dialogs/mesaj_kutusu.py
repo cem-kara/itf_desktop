@@ -249,18 +249,18 @@ class _MesajDialog(QDialog):
         sol   = self._meta["sol_renk"]
         ikon  = self._meta["ikon_renk"]
 
-        self.setStyleSheet(f"""
+        self.setStyleSheet("""
             QDialog {{
-                background-color: {c['bg']};
+                background-color: {};
             }}
 
             /* Başlık şeridi */
             QFrame#mk_header {{
-                background-color: {c['bg2']};
-                border-bottom: 1px solid {c['border']};
+                background-color: {};
+                border-bottom: 1px solid {};
             }}
             QFrame#mk_sol_bar {{
-                background-color: {sol};
+                background-color: {};
                 border: none;
             }}
             QLabel#mk_ikon {{
@@ -270,31 +270,31 @@ class _MesajDialog(QDialog):
             QLabel#mk_baslik {{
                 font-size: 13px;
                 font-weight: 700;
-                color: {c['text']};
+                color: {};
                 background: transparent;
                 padding-left: 4px;
             }}
 
             /* Mesaj alanı */
             QFrame#mk_icerik {{
-                background-color: {c['bg']};
+                background-color: {};
             }}
             QLabel#mk_mesaj {{
                 font-size: 13px;
-                color: {c['text']};
+                color: {};
                 background: transparent;
                 line-height: 1.5;
             }}
 
             /* Buton alanı */
             QFrame#mk_buton_frame {{
-                background-color: {c['bg2']};
-                border-top: 1px solid {c['border']};
+                background-color: {};
+                border-top: 1px solid {};
             }}
 
             /* Tamam / Evet butonu */
             QPushButton#mk_btn_primary {{
-                background-color: {sol};
+                background-color: {};
                 color: #ffffff;
                 border: none;
                 border-radius: 5px;
@@ -303,30 +303,42 @@ class _MesajDialog(QDialog):
                 padding: 0 18px;
             }}
             QPushButton#mk_btn_primary:hover {{
-                background-color: {sol}cc;
+                background-color: {}cc;
             }}
             QPushButton#mk_btn_primary:pressed {{
-                background-color: {sol}99;
+                background-color: {}99;
             }}
 
             /* Hayır / İptal butonu */
             QPushButton#mk_btn_secondary {{
                 background-color: transparent;
-                color: {c['text_muted']};
-                border: 1px solid {c['border']};
+                color: {};
+                border: 1px solid {};
                 border-radius: 5px;
                 font-size: 13px;
                 font-weight: 500;
                 padding: 0 18px;
             }}
             QPushButton#mk_btn_secondary:hover {{
-                background-color: {c['border']};
-                color: {c['text']};
+                background-color: {};
+                color: {};
             }}
             QPushButton#mk_btn_secondary:pressed {{
-                background-color: {c['bg']};
+                background-color: {};
             }}
-        """)
+        """.format(
+            c['bg'],
+            c['bg2'], c['border'],
+            sol,
+            c['text'],
+            c['bg'],
+            c['text'],
+            c['bg2'], c['border'],
+            sol, sol, sol,
+            c['text_muted'], c['border'],
+            c['border'], c['text'],
+            c['bg']
+        ))
 
     # ── Sonuç ──────────────────────────────────────────────────
 

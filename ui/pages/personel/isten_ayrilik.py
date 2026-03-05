@@ -19,7 +19,7 @@ from PySide6.QtGui import QCursor
 
 from core.logger import logger
 from core.hata_yonetici import exc_logla
-from core.di import get_izin_service, get_registry
+from core.di import get_izin_service
 from core.date_utils import to_ui_date
 from ui.styles.colors import DarkTheme as C
 from ui.styles.components import STYLES as S
@@ -436,17 +436,17 @@ class IstenAyrilikPage(QWidget):
         self.progress.setFixedHeight(16)
         self.progress.setVisible(False)
         self.progress.setRange(0, 0)
-        self.progress.setStyleSheet(f"""
+        self.progress.setStyleSheet("""
             QProgressBar {{
                 background-color: rgba(255,255,255,0.05);
                 border: 1px solid rgba(255,255,255,0.08);
-                border-radius: 4px; color: {C.TEXT_MUTED}; font-size: 11px;
+                border-radius: 4px; color: {}; font-size: 11px;
             }}
             QProgressBar::chunk {{
                 background-color: rgba(239, 68, 68, 0.6);
                 border-radius: 3px;
             }}
-        """)
+        """.format(C.TEXT_MUTED))
         main.addWidget(self.progress)
 
         self.lbl_status = QLabel("")
@@ -477,8 +477,9 @@ class IstenAyrilikPage(QWidget):
         if not self._db:
             return
         try:
-            registry = get_registry(self._db)
-            all_sabit = registry.get("Sabitler").get_all() or []
+            from core.di import get_fhsz_service
+            fhsz_svc = get_fhsz_service(self._db)
+            all_sabit = fhsz_svc.get_sabitler_repo().get_all() or []
             self._drive_folders = {
                 str(r.get("MenuEleman") or "").strip(): str(r.get("Aciklama") or "").strip()
                 for r in all_sabit
@@ -494,8 +495,8 @@ class IstenAyrilikPage(QWidget):
         if not self._db or not tc:
             return
         try:
-            registry = get_registry(self._db)
-            izin = registry.get("Izin_Bilgi").get_by_id(tc)
+            izin_svc = get_izin_service(self._db)
+            izin = izin_svc.get_izin_bilgi_repo().get_by_id(tc)
             if izin:
                 self.lbl_y_toplam.setText(str(izin.get("YillikToplamHak", "0")))
                 self.lbl_y_kul.setText(str(izin.get("YillikKullanilan", "0")))
@@ -630,9 +631,9 @@ class IstenAyrilikPage(QWidget):
             })
 
         try:
-            registry = get_registry(self._db)
-            repo = registry.get("Personel")
-            repo.update(tc, update_data)
+            from core.di import get_personel_service
+            personel_svc = get_personel_service(self._db)
+            personel_svc.get_personel_repo().update(tc, update_data)
             self._data.update(update_data)
             logger.info(f"Personel pasif (güvenli mod): {tc}")
         except Exception as e:

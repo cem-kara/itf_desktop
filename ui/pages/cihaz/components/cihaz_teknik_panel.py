@@ -7,6 +7,7 @@ Teknik Bilgiler sekmesi icin cihaz teknik verilerini gosterir.
 v2 tablo temasi + 2-cift-per-row duzeni, duzgun hizalama.
 """
 from pathlib import Path
+from typing import cast
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
@@ -72,7 +73,7 @@ def _make_pair_widget(lbl_text: str, val_widget: QLabel, bg: str) -> QWidget:
     Sol: kucuk etiket | Sag: deger.
     """
     w = QWidget()
-    w.setStyleSheet(f"background: {bg};")
+    w.setStyleSheet("background: {};".format(bg))
     w.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
     hbox = QHBoxLayout(w)
@@ -80,13 +81,13 @@ def _make_pair_widget(lbl_text: str, val_widget: QLabel, bg: str) -> QWidget:
     hbox.setSpacing(6)
 
     lbl = QLabel(lbl_text)
-    lbl.setStyleSheet(_LBL_CSS + f" background: {bg};")
+    lbl.setStyleSheet(_LBL_CSS + " background: {};".format(bg))
     lbl.setWordWrap(True)
     lbl.setMinimumWidth(160)
     lbl.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
     lbl.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
-    val_widget.setStyleSheet(val_widget.styleSheet() + f" background: {bg};")
+    val_widget.setStyleSheet(val_widget.styleSheet() + " background: {};".format(bg))
     val_widget.setWordWrap(True)
     val_widget.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
@@ -145,7 +146,7 @@ class _TableSection(QWidget):
 
     def add_row(self,
                 lbl1: str, val1: QLabel,
-                lbl2: str = "", val2: QLabel = None):
+                lbl2: str = "", val2: QLabel | None = None):
         """
         Iki ciftli bir satir ekler: (Label1 | Value1) | (Label2 | Value2).
         Zebra arkaplani otomatik uygulanir.
@@ -156,7 +157,7 @@ class _TableSection(QWidget):
         # Satir container
         row_w = QWidget()
         row_w.setStyleSheet(
-            f"background: {bg}; border-bottom: {_BORDER_CSS};"
+            "background: {}; border-bottom: {};".format(bg, _BORDER_CSS)
         )
         row_w.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
@@ -178,7 +179,7 @@ class _TableSection(QWidget):
             hbox.addWidget(_make_pair_widget(lbl2, val2, bg), 1)
         else:
             ph = QWidget()
-            ph.setStyleSheet(f"background: {bg};")
+            ph.setStyleSheet("background: {};".format(bg))
             ph.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
             hbox.addWidget(ph, 1)
 
@@ -214,8 +215,8 @@ class CihazTeknikPanel(QWidget):
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
-        scroll.setStyleSheet(S.get("scroll", ""))
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setStyleSheet(cast(str, S.get("scroll", "") or ""))
 
         content = QWidget()
         content.setStyleSheet("background: transparent;")
@@ -237,7 +238,7 @@ class CihazTeknikPanel(QWidget):
         # TextBox
         self._search_box = QLineEdit()
         self._search_box.setPlaceholderText("UTS Ürün Numarası...")
-        self._search_box.setStyleSheet(S.get("input_search", ""))
+        self._search_box.setStyleSheet(cast(str, S.get("input_search", "") or ""))
         self._search_box.setMinimumHeight(32)
         action_lay.addWidget(self._search_box, 1)
 
@@ -245,7 +246,7 @@ class CihazTeknikPanel(QWidget):
         btn_search = QPushButton("Sorgula")
         btn_search.setMinimumWidth(80)
         btn_search.setMinimumHeight(32)
-        btn_search.setStyleSheet(S.get("btn_action", ""))
+        btn_search.setStyleSheet(cast(str, S.get("btn_action", "") or ""))
         btn_search.clicked.connect(self._on_search)
         action_lay.addWidget(btn_search)
 
@@ -253,7 +254,7 @@ class CihazTeknikPanel(QWidget):
         btn_clear = QPushButton("Temizle")
         btn_clear.setMinimumWidth(80)
         btn_clear.setMinimumHeight(32)
-        btn_clear.setStyleSheet(S.get("btn_refresh", ""))
+        btn_clear.setStyleSheet(cast(str, S.get("btn_refresh", "") or ""))
         btn_clear.clicked.connect(self._on_clear)
         action_lay.addWidget(btn_clear)
 
@@ -261,7 +262,7 @@ class CihazTeknikPanel(QWidget):
         btn_save = QPushButton("Kaydet")
         btn_save.setMinimumWidth(80)
         btn_save.setMinimumHeight(32)
-        btn_save.setStyleSheet(S.get("save_btn", ""))
+        btn_save.setStyleSheet(cast(str, S.get("save_btn", "") or ""))
         btn_save.clicked.connect(self._on_save)
         action_lay.addWidget(btn_save)
 
@@ -333,12 +334,12 @@ class CihazTeknikPanel(QWidget):
     def _w(self, key: str, is_link=False) -> QLabel:
         """Deger QLabel olustur ve kaydet."""
         val = QLabel("")
-        val.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        val.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         val.setWordWrap(True)
         val.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         if is_link:
             val.setOpenExternalLinks(True)
-            val.setTextFormat(Qt.RichText)
+            val.setTextFormat(Qt.TextFormat.RichText)
             val.setStyleSheet(_VAL_LINK_CSS)
             self._link_fields.add(key)
         else:
@@ -413,8 +414,8 @@ class CihazTeknikPanel(QWidget):
             return
 
         try:
-            repo = _get_cihaz_service(self.db)._r.get("Cihaz_Teknik")
-            repo.insert(payload)
+            svc = _get_cihaz_service(self.db)
+            svc.insert_cihaz_teknik(payload)
             self.teknik_data.update(payload)
             QMessageBox.information(self, "Başarılı", "Teknik bilgiler kaydedildi.")
             self.saved.emit()

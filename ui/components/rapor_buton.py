@@ -118,14 +118,14 @@ class RaporButon(QWidget):
         if self._mod in ("her_ikisi", "excel"):
             self._btn_excel = self._buton(
                 "Excel", "export_excel_btn",
-                Colors.GREEN_700, Colors.GREEN_600, self._excel_al, "file_excel"
+                Colors.GREEN_600, Colors.GREEN_500, self._excel_al, "file_excel"
             )
             lay.addWidget(self._btn_excel)
 
         if self._mod in ("her_ikisi", "pdf"):
             self._btn_pdf = self._buton(
                 "PDF", "export_pdf_btn",
-                Colors.RED_700, Colors.RED_600, self._pdf_al, "file_pdf"
+                Colors.RED_600, Colors.RED_500, self._pdf_al, "file_pdf"
             )
             lay.addWidget(self._btn_pdf)
 
@@ -142,9 +142,9 @@ class RaporButon(QWidget):
         btn.setObjectName(obj_name)
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(btn, icon_name, color=DarkTheme.TEXT_PRIMARY, size=14)
-        btn.setStyleSheet(f"""
+        btn.setStyleSheet("""
             QPushButton {{
-                background: {renk1};
+                background: {};
                 color: #ffffff;
                 border: none;
                 border-radius: 6px;
@@ -152,10 +152,10 @@ class RaporButon(QWidget):
                 font-size: 12px;
                 font-weight: 600;
             }}
-            QPushButton:hover  {{ background: {renk2}; }}
-            QPushButton:pressed{{ background: {renk1}; opacity: 0.85; }}
-            QPushButton:disabled {{ background: {DarkTheme.BG_TERTIARY}; color: {DarkTheme.TEXT_DISABLED}; }}
-        """)
+            QPushButton:hover  {{ background: {}; }}
+            QPushButton:pressed{{ background: {}; opacity: 0.85; }}
+            QPushButton:disabled {{ background: {}; color: {}; }}
+        """.format(renk1, renk2, renk1, DarkTheme.BG_TERTIARY, DarkTheme.TEXT_DISABLED))
         btn.clicked.connect(slot)
         return btn
 

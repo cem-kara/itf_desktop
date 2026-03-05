@@ -69,7 +69,7 @@ class AuditView(QWidget):
         self._table.setHorizontalHeaderLabels(
             ["Created At", "Username", "Result", "Reason"]
         )
-        self._table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._table.setAlternatingRowColors(True)
         self._table.horizontalHeader().setStretchLastSection(True)

@@ -82,10 +82,10 @@ class KosulDelegate(QStyledItemDelegate):
     def createEditor(self, parent, option, index):
         editor = QComboBox(parent)
         editor.addItems(self.items)
-        editor.setStyleSheet(f"""
+        editor.setStyleSheet("""
             QComboBox {{
-                background-color: {DarkTheme.INPUT_BG}; color: {DarkTheme.TEXT_PRIMARY};
-                border: 2px solid {DarkTheme.INPUT_BORDER_FOCUS}; border-radius: 4px;
+                background-color: {}; color: {};
+                border: 2px solid {}; border-radius: 4px;
                 padding: 4px 8px; font-size: 12px; min-height: 24px;
             }}
             QComboBox::drop-down {{ border: none; width: 26px; }}
@@ -93,16 +93,20 @@ class KosulDelegate(QStyledItemDelegate):
                 image: none;
                 border-left: 5px solid transparent;
                 border-right: 5px solid transparent;
-                border-top: 6px solid {DarkTheme.INPUT_BORDER_FOCUS};
+                border-top: 6px solid {};
                 margin-right: 8px;
             }}
             QComboBox QAbstractItemView {{
-                background-color: {DarkTheme.INPUT_BG}; color: {DarkTheme.TEXT_SECONDARY};
+                background-color: {}; color: {};
                 selection-background-color: rgba(29,117,254,0.4);
-                selection-color: {Colors.WHITE}; border: 1px solid {DarkTheme.INPUT_BORDER_FOCUS};
+                selection-color: {}; border: 1px solid {};
             }}
             QComboBox QAbstractItemView::item {{ min-height: 28px; padding: 4px; }}
-        """)
+        """.format(
+            DarkTheme.INPUT_BG, DarkTheme.TEXT_PRIMARY, DarkTheme.INPUT_BORDER_FOCUS,
+            DarkTheme.INPUT_BORDER_FOCUS, DarkTheme.INPUT_BG, DarkTheme.TEXT_SECONDARY,
+            Colors.WHITE, DarkTheme.INPUT_BORDER_FOCUS
+        ))
         # Editor konumlandiktan sonra listeyi ac (tek tikta, flash olmadan)
         QTimer.singleShot(0, editor.showPopup)
         return editor
@@ -310,16 +314,16 @@ class FHSZYonetimPage(QWidget):
         self.progress.setRange(0, 0)
         self.progress.setFixedWidth(160)
         self.progress.setFixedHeight(14)
-        self.progress.setStyleSheet(f"""
+        self.progress.setStyleSheet("""
             QProgressBar {{
                 background-color: rgba(255,255,255,0.05);
                 border: 1px solid rgba(255,255,255,0.08);
-                border-radius: 3px; font-size: 10px; color: {DarkTheme.TEXT_MUTED};
+                border-radius: 3px; font-size: 10px; color: {};
             }}
             QProgressBar::chunk {{
                 background-color: rgba(29,117,254,0.5); border-radius: 2px;
             }}
-        """)
+        """.format(DarkTheme.TEXT_MUTED))
         bf.addWidget(self.progress)
 
 

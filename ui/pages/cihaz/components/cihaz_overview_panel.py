@@ -51,7 +51,7 @@ class CihazOverviewPanel(QWidget):
         # Scroll Area
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setStyleSheet(S["scroll"])
 
         content = QWidget()
@@ -137,16 +137,16 @@ class CihazOverviewPanel(QWidget):
     def _create_editable_group(self, title, group_id):
         """Düzenlenebilir grup kutusu oluştur."""
         grp = QGroupBox()
-        grp.setStyleSheet(f"""
+        grp.setStyleSheet("""
             QGroupBox {{
-                background-color: {C.BG_SECONDARY};
-                border: 1px solid {C.BORDER_PRIMARY};
+                background-color: {};
+                border: 1px solid {};
                 border-radius: 8px;
                 margin-top: 0px;
                 font-weight: bold;
-                color: {C.TEXT_PRIMARY};
+                color: {};
             }}
-        """)
+        """.format(C.BG_SECONDARY, C.BORDER_PRIMARY, C.TEXT_PRIMARY))
         
         vbox = QVBoxLayout(grp)
         vbox.setContentsMargins(10, 10, 10, 10)

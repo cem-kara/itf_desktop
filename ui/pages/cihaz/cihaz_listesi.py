@@ -70,11 +70,6 @@ class CihazTableModel(BaseTableModel):
     def set_data(self, data: list):
         super().set_data(data)
 
-    def get_row(self, row: int) -> dict | None:
-        if 0 <= row < len(self._data):
-            return self._data[row]
-        return None
-
 
 # ═══════════════════════════════════════════════════════════
 #  DELEGATE
@@ -268,12 +263,12 @@ class CihazListesiPage(QWidget):
     def _build_toolbar(self) -> QFrame:
         frame = QFrame()
         frame.setFixedHeight(48)
-        frame.setStyleSheet(f"""
+        frame.setStyleSheet("""
             QFrame {{
-                background-color: {C.BG_SECONDARY};
-                border-bottom: 1px solid {C.BORDER_PRIMARY};
+                background-color: {};
+                border-bottom: 1px solid {};
             }}
-        """)
+        """.format(C.BG_SECONDARY, C.BORDER_PRIMARY))
         lay = QHBoxLayout(frame)
         lay.setContentsMargins(16, 0, 16, 0)
         lay.setSpacing(8)
@@ -363,12 +358,12 @@ class CihazListesiPage(QWidget):
     def _build_subtoolbar(self) -> QFrame:
         frame = QFrame()
         frame.setFixedHeight(36)
-        frame.setStyleSheet(f"""
+        frame.setStyleSheet("""
             QFrame {{
-                background-color: {C.BG_PRIMARY};
-                border-bottom: 1px solid {C.BORDER_PRIMARY};
+                background-color: {};
+                border-bottom: 1px solid {};
             }}
-        """)
+        """.format(C.BG_PRIMARY, C.BORDER_PRIMARY))
         lay = QHBoxLayout(frame)
         lay.setContentsMargins(16, 0, 16, 0)
         lay.setSpacing(8)
@@ -441,12 +436,12 @@ class CihazListesiPage(QWidget):
     def _build_footer(self) -> QFrame:
         frame = QFrame()
         frame.setFixedHeight(40)
-        frame.setStyleSheet(f"""
+        frame.setStyleSheet("""
             QFrame {{
-                background-color: {C.BG_SECONDARY};
-                border-top: 1px solid {C.BORDER_PRIMARY};
+                background-color: {};
+                border-top: 1px solid {};
             }}
-        """)
+        """.format(C.BG_SECONDARY, C.BORDER_PRIMARY))
         lay = QHBoxLayout(frame)
         lay.setContentsMargins(16, 0, 16, 0)
         lay.setSpacing(16)

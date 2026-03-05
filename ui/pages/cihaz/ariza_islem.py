@@ -146,13 +146,11 @@ class ArizaIslemForm(QWidget):
         belge_lay.addWidget(self.lbl_rapor_belge, 1)
         
         self.btn_belge_sec = QPushButton("Belge Seç")
-        self.btn_belge_sec.setStyleSheet(S.get("btn_refresh", ""))
         self.btn_belge_sec.setFixedWidth(100)
         self.btn_belge_sec.clicked.connect(self._select_rapor_belge)
         belge_lay.addWidget(self.btn_belge_sec)
         
         self.btn_belge_temizle = QPushButton("✕")
-        self.btn_belge_temizle.setStyleSheet(S.get("btn_refresh", ""))
         self.btn_belge_temizle.setFixedWidth(30)
         self.btn_belge_temizle.clicked.connect(self._clear_rapor_belge)
         belge_lay.addWidget(self.btn_belge_temizle)
@@ -370,9 +368,9 @@ class ArizaIslemPenceresi(QWidget):
         frame = QFrame()
         frame.setVisible(False)
         frame.setStyleSheet(
-            f"QFrame{{background:{panel_bg};"
-            f"border:1px solid {border};border-radius:6px;"
-            f"margin-top:6px;}}"
+            "QFrame{{background:{};"
+            "border:1px solid {};border-radius:6px;"
+            "margin-top:6px;}}".format(panel_bg, border)
         )
         fl = QVBoxLayout(frame)
         fl.setContentsMargins(12, 10, 12, 10)
@@ -382,17 +380,17 @@ class ArizaIslemPenceresi(QWidget):
         hdr = QHBoxLayout()
         lbl_title = QLabel("İŞLEM DETAYI")
         lbl_title.setStyleSheet(
-            f"font-size:10px;font-weight:700;letter-spacing:0.08em;"
-            f"color:{muted};background:transparent;"
+            "font-size:10px;font-weight:700;letter-spacing:0.08em;"
+            "color:{};background:transparent;".format(muted)
         )
         hdr.addWidget(lbl_title)
         hdr.addStretch()
         btn_kapat = QPushButton("✕")
         btn_kapat.setFixedSize(18, 18)
         btn_kapat.setStyleSheet(
-            f"QPushButton{{background:transparent;border:none;"
-            f"color:{muted};font-size:11px;}}"
-            f"QPushButton:hover{{color:{text_pr};}}"
+            "QPushButton{{background:transparent;border:none;"
+            "color:{};font-size:11px;}}"
+            "QPushButton:hover{{color:{};}}".format(muted, text_pr)
         )
         btn_kapat.clicked.connect(lambda: frame.setVisible(False))
         hdr.addWidget(btn_kapat)
@@ -401,7 +399,7 @@ class ArizaIslemPenceresi(QWidget):
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background:{border};")
+        sep.setStyleSheet("background:{};".format(border))
         fl.addWidget(sep)
 
         # Meta satırı: Tarih · Saat · İşlem Yapan · İşlem Türü · Yeni Durum
@@ -421,25 +419,23 @@ class ArizaIslemPenceresi(QWidget):
         # Yapılan İşlem
         lbl_yi = QLabel("Yapılan İşlem")
         lbl_yi.setStyleSheet(
-            f"font-size:10px;font-weight:600;color:{muted};background:transparent;"
+            "font-size:10px;font-weight:600;color:{};background:transparent;".format(muted)
         )
         fl.addWidget(lbl_yi)
         self._det_yapilan = QTextEdit()
         self._det_yapilan.setReadOnly(True)
         self._det_yapilan.setFixedHeight(64)
-        self._det_yapilan.setStyleSheet(S.get("input_text", ""))
         fl.addWidget(self._det_yapilan)
 
         # Rapor
         lbl_r = QLabel("Rapor")
         lbl_r.setStyleSheet(
-            f"font-size:10px;font-weight:600;color:{muted};background:transparent;"
+            "font-size:10px;font-weight:600;color:{};background:transparent;".format(muted)
         )
         fl.addWidget(lbl_r)
         self._det_rapor = QTextEdit()
         self._det_rapor.setReadOnly(True)
         self._det_rapor.setFixedHeight(52)
-        self._det_rapor.setStyleSheet(S.get("input_text", ""))
         fl.addWidget(self._det_rapor)
 
         return frame
@@ -454,8 +450,8 @@ class ArizaIslemPenceresi(QWidget):
         vl.setSpacing(1)
         t = QLabel(title.upper())
         t.setStyleSheet(
-            f"font-size:8px;letter-spacing:0.06em;font-weight:600;"
-            f"color:{muted};background:transparent;"
+            "font-size:8px;letter-spacing:0.06em;font-weight:600;"
+            "color:{};background:transparent;".format(muted)
         )
         v = QLabel("—")
         v.setObjectName("val")
@@ -499,8 +495,8 @@ class ArizaIslemPenceresi(QWidget):
             return
 
         try:
-            repo = _get_cihaz_service(self._db)._r.get("Ariza_Islem")
-            rows = repo.get_by_kod(self._ariza_id, "Arizaid")
+            svc = _get_cihaz_service(self._db)
+            rows = svc.get_ariza_islemler(self._ariza_id)
             # En yeni işlemler altta olacak şekilde ters sırala
             rows.sort(key=lambda r: (r.get("Tarih", "") or "", r.get("Saat", "") or ""), reverse=True)
             self._model.set_rows(rows)

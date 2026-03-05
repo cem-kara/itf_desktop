@@ -1,6 +1,6 @@
 from core.di import get_cihaz_service as _get_cihaz_service
 # -*- coding: utf-8 -*-
-from typing import Dict
+from typing import Dict, cast, Any
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
@@ -17,7 +17,7 @@ class ArizaDuzenleForm(QWidget):
     """Mevcut arızayı düzenleme formu."""
     saved = Signal()
 
-    def __init__(self, db=None, ariza_data: Dict = None, parent=None):
+    def __init__(self, db=None, ariza_data: Dict | None = None, parent=None):
         super().__init__(parent)
         self._db = db
         self._ariza_data = ariza_data or {}
@@ -88,12 +88,12 @@ class ArizaDuzenleForm(QWidget):
         btn_lay.setSpacing(8)
 
         btn_kaydet = QPushButton("Kaydet")
-        btn_kaydet.setStyleSheet(S["success_btn"] if "success_btn" in S else S["refresh_btn"])
+        btn_kaydet.setStyleSheet(cast(str, S.get("success_btn") or S.get("refresh_btn", "")))
         btn_kaydet.clicked.connect(self._save)
         btn_lay.addWidget(btn_kaydet)
 
         btn_iptal = QPushButton("İptal")
-        btn_iptal.setStyleSheet(S["cancel_btn"] if "cancel_btn" in S else "")
+        btn_iptal.setStyleSheet(cast(str, S.get("cancel_btn", "") or ""))
         btn_iptal.clicked.connect(self._cancel)
         btn_lay.addWidget(btn_iptal)
 
@@ -134,8 +134,8 @@ class ArizaDuzenleForm(QWidget):
         }
 
         try:
-            repo = _get_cihaz_service(self._db)._r.get("Cihaz_Ariza")
-            repo.update(self._ariza_id, data)
+            svc = _get_cihaz_service(self._db)
+            svc.ariza_guncelle(self._ariza_id, data)
             logger.info(f"Arıza düzenlemesi kaydedildi: {self._ariza_id}")
             self.saved.emit()
         except Exception as e:
@@ -145,4 +145,4 @@ class ArizaDuzenleForm(QWidget):
     def _cancel(self):
         parent = self.parentWidget()
         if parent and hasattr(parent, "_close_form"):
-            parent._close_form()
+            cast(Any, parent)._close_form()

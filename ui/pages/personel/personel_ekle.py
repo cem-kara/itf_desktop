@@ -17,6 +17,7 @@ from core.auth.password_hasher import PasswordHasher
 from core.di import get_personel_service, get_izin_service, get_dokuman_service
 from core.validators import validate_tc_kimlik_no, validate_email, validate_phone_number
 from core.text_utils import turkish_title_case
+from core.services.dokuman_service import DokumanService
 from database.auth_repository import AuthRepository
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
@@ -145,6 +146,7 @@ class PersonelEklePage(QWidget):
         
         # Service layer
         self._personel_svc = get_personel_service(db)
+        self._izin_svc = get_izin_service(db) if db else None
         self._dokuman_svc = get_dokuman_service(db) if db else None
 
         self._setup_ui()
@@ -1050,19 +1052,19 @@ class PersonelEklePage(QWidget):
                 self._personel_svc.guncelle(data["KimlikNo"], data)
                 logger.info(f"Personel güncellendi: {data['KimlikNo']}")
             else:
-                self._personel_svc.ekle(data, data["KimlikNo"])
+                self._personel_svc.ekle(data)
                 logger.info(f"Yeni personel eklendi: {data['KimlikNo']}")
 
                 # Yeni personel için Izin_Bilgi kaydı oluştur
                 try:
                     if self._izin_svc:
                         repo_izin = self._izin_svc.get_izin_bilgi_repo()
-                    izin_data = {
-                        "TCKimlik": data["KimlikNo"],
-                        "AdSoyad": data["AdSoyad"]
-                    }
-                    repo_izin.insert(izin_data)
-                    logger.info(f"Izin_Bilgi kaydı oluşturuldu: {data['KimlikNo']}")
+                        izin_data = {
+                            "TCKimlik": data["KimlikNo"],
+                            "AdSoyad": data["AdSoyad"]
+                        }
+                        repo_izin.insert(izin_data)
+                        logger.info(f"Izin_Bilgi kaydı oluşturuldu: {data['KimlikNo']}")
                 except Exception as e_izin:
                     logger.error(f"Izin_Bilgi oluşturma hatası: {e_izin}")
                 

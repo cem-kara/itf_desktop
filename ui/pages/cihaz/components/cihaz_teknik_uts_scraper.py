@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import asyncio
 import sys
-from typing import Dict, Optional
+from typing import Dict, Optional, cast
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
     QPushButton, QScrollArea, QSizePolicy, QLineEdit,
@@ -19,6 +19,7 @@ from PySide6.QtCore import Qt, Signal, QThread, QObject
 
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
+from ui.styles.icons import IconRenderer
 from core.logger import logger
 from core.di import get_cihaz_service
 from database.repository_registry import RepositoryRegistry
@@ -97,7 +98,7 @@ class _Worker(QObject):
         try:
             # Windows'ta Playwright subprocess desteği için ProactorEventLoop gerekli
             if sys.platform == "win32":
-                asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+                asyncio.set_event_loop_policy(cast(object, asyncio.WindowsProactorEventLoopPolicy()))  # type: ignore
             
             # Event loop oluştur ve async fonksiyon çalıştır
             loop = asyncio.new_event_loop()
@@ -116,14 +117,14 @@ class _Worker(QObject):
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _mk_pair(lbl_txt, val, bg):
-    w = QWidget(); w.setStyleSheet(f"background:{bg};")
+    w = QWidget(); w.setStyleSheet("background:{};".format(bg))
     w.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
     h = QHBoxLayout(w); h.setContentsMargins(0,0,0,0); h.setSpacing(6)
     l = QLabel(lbl_txt)
-    l.setStyleSheet(_LBL_CSS + f"background:{bg};")
+    l.setStyleSheet(_LBL_CSS + "background:{};".format(bg))
     l.setWordWrap(True); l.setMinimumWidth(160)
     l.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
-    val.setStyleSheet(val.styleSheet() + f"background:{bg};")
+    val.setStyleSheet(val.styleSheet() + "background:{};".format(bg))
     val.setWordWrap(True)
     h.addWidget(l); h.addWidget(val, stretch=1)
     return w
@@ -156,11 +157,11 @@ class _Sec(QWidget):
         rh = QHBoxLayout(rw); rh.setContentsMargins(0,0,0,0); rh.setSpacing(0)
         rh.addWidget(_mk_pair(l1, v1, bg), stretch=1)
         sep = QFrame(); sep.setFrameShape(QFrame.Shape.VLine); sep.setFixedWidth(1)
-        sep.setStyleSheet(f"background:{_BORDER};border:none;"); rh.addWidget(sep)
+        sep.setStyleSheet("background:{};border:none;".format(_BORDER)); rh.addWidget(sep)
         if l2 and v2:
             rh.addWidget(_mk_pair(l2, v2, bg), stretch=1)
         else:
-            ph = QWidget(); ph.setStyleSheet(f"background:{bg};")
+            ph = QWidget(); ph.setStyleSheet("background:{};".format(bg))
             ph.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
             rh.addWidget(ph, stretch=1)
         self._vb.addWidget(rw)
@@ -199,7 +200,7 @@ class CihazTeknikUtsScraper(QWidget):
     def _build(self):
         main = QVBoxLayout(self); main.setContentsMargins(0,0,0,0); main.setSpacing(0)
         scroll = QScrollArea(); scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame); scroll.setStyleSheet(S.get("scroll",""))
+        scroll.setFrameShape(QFrame.Shape.NoFrame); scroll.setStyleSheet(cast(str, S.get("scroll","") or ""))
         cnt = QWidget(); cnt.setStyleSheet("background:transparent;")
         root = QVBoxLayout(cnt); root.setContentsMargins(20,20,20,20); root.setSpacing(14)
 
@@ -349,15 +350,18 @@ class CihazTeknikUtsScraper(QWidget):
     def _build_preview(self, data: dict):
         while self._pvb.count():
             it = self._pvb.takeAt(0)
-            if it.widget(): it.widget().deleteLater()
+            if it:
+                widget = it.widget()
+                if widget:
+                    widget.deleteLater()
 
         def W(key: str) -> QLabel:
             val = data.get(key) or ""
             lb = QLabel(val if val else "—")
-            lb.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            lb.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
             lb.setWordWrap(True)
             lb.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-            lb.setStyleSheet(_VAL_CSS + (f"color:{_WARNING};" if not val else ""))
+            lb.setStyleSheet(_VAL_CSS + ("color:{};".format(_WARNING) if not val else ""))
             return lb
 
          # ── 1. Tanimlayici ────────────────────────────────────────────────────
@@ -440,5 +444,5 @@ class CihazTeknikUtsScraper(QWidget):
 
     def _st(self, msg, color=""):
         self._stat.setText(msg)
-        if color: self._stat.setStyleSheet(f"color:{color};font-size:11px;")
+        if color: self._stat.setStyleSheet("color:{};font-size:11px;".format(color))
         self._stat.show()

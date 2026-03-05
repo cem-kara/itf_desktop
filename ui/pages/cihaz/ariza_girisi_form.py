@@ -1,7 +1,9 @@
-from core.di import get_cihaz_service as _get_cihaz_service
 # -*- coding: utf-8 -*-
 """Ariza Girisi Form — Yeni arıza kaydı."""
+from __future__ import annotations
+
 from datetime import datetime
+from core.di import get_cihaz_service as _get_cihaz_service
 
 from PySide6.QtCore import QDate, Signal
 from PySide6.QtWidgets import (
@@ -19,7 +21,7 @@ class ArizaGirisForm(QWidget):
     """Yeni arıza girişi formu."""
     saved = Signal()
 
-    def __init__(self, db=None, cihaz_id: str = None, action_guard=None, parent=None):
+    def __init__(self, db=None, cihaz_id: str | None = None, action_guard=None, parent=None):
         super().__init__(parent)
         self._db       = db
         self._svc      = _get_cihaz_service(db) if db else None
@@ -123,13 +125,15 @@ class ArizaGirisForm(QWidget):
         btn_layout = QVBoxLayout()
         btn_layout.setSpacing(8)
         btn_kaydet = QPushButton("Kaydet")
-        btn_kaydet.setStyleSheet(S.get("success_btn", S["refresh_btn"]))
+        success_style = S.get("success_btn") or S["refresh_btn"]
+        btn_kaydet.setStyleSheet(str(success_style) if success_style else "")
         btn_kaydet.clicked.connect(self._save)
         if self._action_guard:
             self._action_guard.disable_if_unauthorized(btn_kaydet, "cihaz.write")
         btn_layout.addWidget(btn_kaydet)
         btn_temizle = QPushButton("Temizle")
-        btn_temizle.setStyleSheet(S.get("cancel_btn", ""))
+        cancel_style = S.get("cancel_btn") or ""
+        btn_temizle.setStyleSheet(str(cancel_style) if cancel_style else "")
         btn_temizle.clicked.connect(self._clear)
         btn_layout.addWidget(btn_temizle)
         root.addLayout(btn_layout)

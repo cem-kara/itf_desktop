@@ -13,7 +13,7 @@ class ShutdownSyncDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Senkronizasyon devam ediyor")
         self.setModal(True)
-        self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
+        self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
         self.sync_worker = sync_worker
 
         self._label = QLabel("Senkronizasyon uygulanıyor. Lütfen bekleyin")

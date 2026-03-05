@@ -72,7 +72,7 @@ class KalibrasyonTableModel(BaseTableModel):
 
     def _fg(self, key, row):
         if key == "Durum":
-            return self._status_fg(row.get("Durum", ""))
+            return self.status_fg(row.get("Durum", ""))
         if key == "BitisTarihi":
             return QColor(_bitis_rengi(row.get("BitisTarihi", "")))
         return None
@@ -170,7 +170,6 @@ class KalibrasyonKayitForm(QWidget):
         root.addWidget(sep)
 
         self._tabs = QTabWidget()
-        self._tabs.setStyleSheet(S.get("tab", ""))
         self._tabs.currentChanged.connect(self._on_tab_changed)
 
         # Tab 0 — Kalibrasyon Listesi
@@ -179,7 +178,6 @@ class KalibrasyonKayitForm(QWidget):
         lt_layout.setContentsMargins(0, 0, 0, 0)
         lt_layout.setSpacing(0)
         self._h_splitter = QSplitter(Qt.Orientation.Horizontal)
-        self._h_splitter.setStyleSheet(S.get("splitter", ""))
         self._h_splitter.addWidget(self._build_left_panel())
         self._h_splitter.addWidget(self._build_right_panel())
         self._h_splitter.setHandleWidth(0)
@@ -219,18 +217,23 @@ class KalibrasyonKayitForm(QWidget):
 
     def _make_kpi_card(self, key, title, default, color) -> QWidget:
         card = QWidget()
+        card.setProperty("bg-role", "panel")
         card.setStyleSheet(
-            f"QWidget{{background:{_C['panel']};border-radius:6px;margin:0 2px;}}"
-            f"QWidget:hover{{background:{_C['border']};}}"
+            "QWidget{{border-radius:6px;margin:0 2px;}}"
+            "QWidget:hover{{background:{};}}" .format(_C['border'])
         )
+        card.style().unpolish(card)
+        card.style().polish(card)
         vl = QVBoxLayout(card)
         vl.setContentsMargins(10, 6, 10, 6)
         vl.setSpacing(2)
         t = QLabel(title)
+        t.setProperty("color-role", "muted")
         t.setStyleSheet(
-            f"font-size:9px;font-weight:600;letter-spacing:0.06em;"
-            f"color:{_C['muted']};background:transparent;"
+            "font-size:9px;font-weight:600;letter-spacing:0.06em;background:transparent;"
         )
+        t.style().unpolish(t)
+        t.style().polish(t)
         v = QLabel(default)
         v.setStyleSheet("font-size: 18px; font-weight: 700; background: transparent;")
         vl.addWidget(t); vl.addWidget(v)
@@ -275,9 +278,12 @@ class KalibrasyonKayitForm(QWidget):
         layout.setSpacing(0)
 
         filter_bar = QWidget()
+        filter_bar.setProperty("bg-role", "surface")
         filter_bar.setStyleSheet(
-            f"background:{_C['surface']};border-bottom:1px solid {_C['border']};"
+            "border-bottom:1px solid {};" .format(_C['border'])
         )
+        filter_bar.style().unpolish(filter_bar)
+        filter_bar.style().polish(filter_bar)
         fb_l = QHBoxLayout(filter_bar)
         fb_l.setContentsMargins(10, 6, 10, 6)
         fb_l.setSpacing(8)
@@ -308,7 +314,6 @@ class KalibrasyonKayitForm(QWidget):
 
         fb_l.addStretch()
         self.btn_yeni = QPushButton("+ Yeni Kalibrasyon")
-        self.btn_yeni.setStyleSheet(S.get("btn_primary", ""))
         self.btn_yeni.clicked.connect(self._open_kal_form)
         fb_l.addWidget(self.btn_yeni)
         layout.addWidget(filter_bar)
@@ -328,10 +333,13 @@ class KalibrasyonKayitForm(QWidget):
         layout.addWidget(self.table, 1)
 
         self.lbl_count = QLabel("0 kayıt")
+        self.lbl_count.setProperty("color-role", "muted")
+        self.lbl_count.setProperty("bg-role", "surface")
         self.lbl_count.setStyleSheet(
-            f"font-size:11px;color:{_C['muted']};padding:4px 10px;"
-            f"background:{_C['surface']};border-top:1px solid {_C['border']};"
+            "font-size:11px;padding:4px 10px;border-top:1px solid {};" .format(_C['border'])
         )
+        self.lbl_count.style().unpolish(self.lbl_count)
+        self.lbl_count.style().polish(self.lbl_count)
         layout.addWidget(self.lbl_count)
         return panel
 
@@ -344,24 +352,32 @@ class KalibrasyonKayitForm(QWidget):
         text_sec = getattr(DarkTheme, "TEXT_SECONDARY", "#c8cdd8")
 
         self._right_stack = QStackedWidget()
+        self._right_stack.setProperty("bg-role", "surface")
         self._right_stack.setStyleSheet(
-            f"background:{surface};border-left:1px solid {border};"
+            "border-left:1px solid {};" .format(border)
         )
+        self._right_stack.style().unpolish(self._right_stack)
+        self._right_stack.style().polish(self._right_stack)
 
         # ════════════════════════════
         #  SAYFA 0 — Detay + Form
         # ════════════════════════════
         detail_page = QWidget()
-        detail_page.setStyleSheet(f"background:{surface};")
+        detail_page.setProperty("bg-role", "surface")
+        detail_page.style().unpolish(detail_page)
+        detail_page.style().polish(detail_page)
         dp_l = QVBoxLayout(detail_page)
         dp_l.setContentsMargins(0, 0, 0, 0)
         dp_l.setSpacing(0)
 
         # ── Detay Bilgi Kartı ──────────────────────────
         self._det_header = QWidget()
+        self._det_header.setProperty("bg-role", "panel")
         self._det_header.setStyleSheet(
-            f"background:{panel_bg};border-bottom:1px solid {border};"
+            "border-bottom:1px solid {};" .format(border)
         )
+        self._det_header.style().unpolish(self._det_header)
+        self._det_header.style().polish(self._det_header)
         dh_l = QVBoxLayout(self._det_header)
         dh_l.setContentsMargins(14, 12, 14, 12)
         dh_l.setSpacing(10)
@@ -370,32 +386,43 @@ class KalibrasyonKayitForm(QWidget):
         top_row = QHBoxLayout()
         top_row.setSpacing(8)
         self.lbl_det_title = QLabel("— Bir kayıt seçin —")
+        self.lbl_det_title.setProperty("color-role", "primary")
         self.lbl_det_title.setStyleSheet(
-            f"font-size:13px;font-weight:700;color:{text_pr};"
+            "font-size:13px;font-weight:700;"
         )
+        self.lbl_det_title.style().unpolish(self.lbl_det_title)
+        self.lbl_det_title.style().polish(self.lbl_det_title)
         self.lbl_det_title.setWordWrap(True)
         top_row.addWidget(self.lbl_det_title, 1)
         self.lbl_det_durum = QLabel("")
+        self.lbl_det_durum.setProperty("color-role", "muted")
+        self.lbl_det_durum.setProperty("bg-role", "separator")
         self.lbl_det_durum.setStyleSheet(
-            f"font-size:10px;font-weight:700;color:{_C['muted']};"
-            f"padding:2px 8px;border-radius:10px;background:{_C['border']};"
+            "font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;"
         )
+        self.lbl_det_durum.style().unpolish(self.lbl_det_durum)
+        self.lbl_det_durum.style().polish(self.lbl_det_durum)
         self.lbl_det_durum.setAlignment(Qt.AlignmentFlag.AlignCenter)
         top_row.addWidget(self.lbl_det_durum)
         dh_l.addLayout(top_row)
 
         # Kal No
         self.lbl_det_kalid = QLabel("")
+        self.lbl_det_kalid.setProperty("color-role", "muted")
         self.lbl_det_kalid.setStyleSheet(
-            f"font-size:10px;color:{_C['muted']};letter-spacing:0.04em;"
+            "font-size:10px;letter-spacing:0.04em;"
         )
+        self.lbl_det_kalid.style().unpolish(self.lbl_det_kalid)
+        self.lbl_det_kalid.style().polish(self.lbl_det_kalid)
         dh_l.addWidget(self.lbl_det_kalid)
 
         # Ayırıcı
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background:{border};")
+        sep.setProperty("bg-role", "separator")
+        sep.style().unpolish(sep)
+        sep.style().polish(sep)
         dh_l.addWidget(sep)
 
         # Grid satır 1: Yapılan / Bitiş / Geçerlilik
@@ -420,26 +447,31 @@ class KalibrasyonKayitForm(QWidget):
         self.lbl_det_aciklama = QLabel("")
         self.lbl_det_aciklama.setWordWrap(True)
         self.lbl_det_aciklama.setVisible(False)
+        self.lbl_det_aciklama.setProperty("color-role", "muted")
+        self.lbl_det_aciklama.setProperty("bg-role", "surface")
         self.lbl_det_aciklama.setStyleSheet(
-            f"font-size:11px;color:{_C['muted']};"
-            f"padding:6px 8px;background:{surface};"
-            f"border-radius:4px;border:1px solid {border};"
+            "font-size:11px;padding:6px 8px;border-radius:4px;border:1px solid {};" .format(border)
         )
+        self.lbl_det_aciklama.style().unpolish(self.lbl_det_aciklama)
+        self.lbl_det_aciklama.style().polish(self.lbl_det_aciklama)
         dh_l.addWidget(self.lbl_det_aciklama)
         dp_l.addWidget(self._det_header)
 
         # ── Buton Bar ──────────────────────────────────
         btn_bar = QWidget()
+        btn_bar.setProperty("bg-role", "surface")
         btn_bar.setStyleSheet(
-            f"background:{surface};border-bottom:1px solid {border};"
+            "border-bottom:1px solid {};" .format(border)
         )
+        btn_bar.style().unpolish(btn_bar)
+        btn_bar.style().polish(btn_bar)
         bb_l = QHBoxLayout(btn_bar)
         bb_l.setContentsMargins(10, 6, 10, 6)
         bb_l.setSpacing(8)
         bb_l.addStretch()
         self.btn_kayit_ekle = QPushButton("+ Kayıt Ekle")
         self.btn_kayit_ekle.setStyleSheet(
-            S.get("btn_secondary", S.get("btn_primary", ""))
+            S.get("btn_secondary", S.get("btn_primary", "") or "") or ""
         )
         self.btn_kayit_ekle.setEnabled(False)
         self.btn_kayit_ekle.clicked.connect(self._open_kal_form)
@@ -450,11 +482,15 @@ class KalibrasyonKayitForm(QWidget):
 
         # ── Exec Form Alanı ────────────────────────────
         self._exec_content_stack = QStackedWidget()
-        self._exec_content_stack.setStyleSheet(f"background:{surface};")
+        self._exec_content_stack.setProperty("bg-role", "surface")
+        self._exec_content_stack.style().unpolish(self._exec_content_stack)
+        self._exec_content_stack.style().polish(self._exec_content_stack)
 
         # index 0: placeholder
         ph = QWidget()
-        ph.setStyleSheet(f"background:{surface};")
+        ph.setProperty("bg-role", "surface")
+        ph.style().unpolish(ph)
+        ph.style().polish(ph)
         ph_l = QVBoxLayout(ph)
         ph_l.addStretch()
         ph_lbl = QLabel('Yeni kayıt için "+ Kayıt Ekle" veya çift tıklayın.')
@@ -471,10 +507,12 @@ class KalibrasyonKayitForm(QWidget):
         self._exec_form_scroll = QScrollArea()
         self._exec_form_scroll.setWidgetResizable(True)
         self._exec_form_scroll.setStyleSheet(
-            S.get("scroll", f"background:{surface};border:none;")
+            S.get("scroll", "background:{};border:none;".format(surface)) or "background:{};border:none;".format(surface)
         )
         self._exec_form_inner = QWidget()
-        self._exec_form_inner.setStyleSheet(f"background:{surface};")
+        self._exec_form_inner.setProperty("bg-role", "surface")
+        self._exec_form_inner.style().unpolish(self._exec_form_inner)
+        self._exec_form_inner.style().polish(self._exec_form_inner)
         self._exec_form_layout = QVBoxLayout(self._exec_form_inner)
         self._exec_form_layout.setContentsMargins(10, 10, 10, 10)
         self._exec_form_layout.setSpacing(0)
@@ -497,10 +535,12 @@ class KalibrasyonKayitForm(QWidget):
         vl.setContentsMargins(0, 4, 8, 4)
         vl.setSpacing(2)
         t = QLabel(title.upper())
+        t.setProperty("color-role", "muted")
         t.setStyleSheet(
-            f"font-size:9px;letter-spacing:0.06em;color:{_C['muted']};"
-            f"font-weight:600;background:transparent;"
+            "font-size:9px;letter-spacing:0.06em;font-weight:600;background:transparent;"
         )
+        t.style().unpolish(t)
+        t.style().polish(t)
         v = QLabel(value)
         v.setObjectName("val")
         v.setProperty("color-role", "primary")
@@ -604,8 +644,7 @@ class KalibrasyonKayitForm(QWidget):
         if durum:
             self.lbl_det_durum.setText(f"● {durum}")
             self.lbl_det_durum.setStyleSheet(
-                f"font-size:10px;font-weight:700;color:{dur_c};"
-                f"padding:2px 8px;border-radius:10px;background:{dur_c}22;"
+                "font-size:10px;font-weight:700;color:{};padding:2px 8px;border-radius:10px;background:{}22;" .format(dur_c, dur_c)
             )
         else:
             self.lbl_det_durum.setText("")
@@ -616,7 +655,7 @@ class KalibrasyonKayitForm(QWidget):
         if bitis_lbl:
             bitis_lbl.setText(to_ui_date(bitis_raw, "—"))
             bitis_lbl.setStyleSheet(
-                f"font-size:12px;font-weight:600;color:{bitis_c};background:transparent;"
+                "font-size:12px;font-weight:600;color:{};background:transparent;" .format(bitis_c)
             )
         self._set_field(self.fw_gecerlilik, row.get("Gecerlilik","") or "—")
         self._set_field(self.fw_firma,      row.get("Firma","") or "—")
@@ -637,6 +676,8 @@ class KalibrasyonKayitForm(QWidget):
     def _clear_form_container(self):
         while self._exec_form_layout.count() > 1:
             item = self._exec_form_layout.takeAt(0)
+            if not item:
+                continue
             w = item.widget()
             if w:
                 w.setParent(None)
@@ -691,7 +732,9 @@ class KalibrasyonKayitForm(QWidget):
     def _build_perf_tab(self) -> QWidget:
         outer = QScrollArea()
         outer.setWidgetResizable(True)
-        outer.setStyleSheet(S.get("scroll", f"background:{_C['surface']};border:none;"))
+        outer.setStyleSheet(
+            S.get("scroll", "background:{};border:none;".format(_C['surface'])) or "background:{};border:none;".format(_C['surface'])
+        )
         self._perf_inner = QWidget()
         self._perf_inner.setProperty("bg-role", "elevated")
         self._perf_inner.style().unpolish(self._perf_inner)
@@ -705,16 +748,20 @@ class KalibrasyonKayitForm(QWidget):
 
     def _section_title(self, text: str) -> QLabel:
         lbl = QLabel(text)
+        lbl.setProperty("color-role", "muted")
         lbl.setStyleSheet(
-            f"font-size:11px;font-weight:700;letter-spacing:0.08em;"
-            f"color:{_C['muted']};padding-bottom:4px;"
-            f"border-bottom:1px solid {_C['border']};"
+            "font-size:11px;font-weight:700;letter-spacing:0.08em;"
+            "padding-bottom:4px;border-bottom:1px solid {};" .format(_C['border'])
         )
+        lbl.style().unpolish(lbl)
+        lbl.style().polish(lbl)
         return lbl
 
     def _refresh_perf_tab(self):
         while self._perf_layout.count():
             item = self._perf_layout.takeAt(0)
+            if not item:
+                continue
             w = item.widget()
             if w:
                 w.setParent(None)
@@ -789,20 +836,25 @@ class KalibrasyonKayitForm(QWidget):
             ("Geçersizlik",    gecersiz_pct,    _C["red"]),
         ]:
             card = QWidget()
+            card.setProperty("bg-role", "panel")
             card.setStyleSheet(
-                f"background:{_C['panel']};border:1px solid {_C['border']};border-radius:6px;"
+                "border:1px solid {};border-radius:6px;" .format(_C['border'])
             )
+            card.style().unpolish(card)
+            card.style().polish(card)
             cl = QVBoxLayout(card)
             cl.setContentsMargins(10, 8, 10, 8)
             cl.setSpacing(2)
             t = QLabel(title.upper())
+            t.setProperty("color-role", "muted")
             t.setStyleSheet(
-                f"font-size:9px;font-weight:600;letter-spacing:0.06em;"
-                f"color:{_C['muted']};background:transparent;"
+                "font-size:9px;font-weight:600;letter-spacing:0.06em;background:transparent;"
             )
+            t.style().unpolish(t)
+            t.style().polish(t)
             v = QLabel(value)
             v.setStyleSheet(
-                f"font-size:16px;font-weight:700;color:{color};background:transparent;"
+                "font-size:16px;font-weight:700;color:{};background:transparent;" .format(color)
             )
             cl.addWidget(t); cl.addWidget(v)
             hl.addWidget(card, 1)
@@ -904,40 +956,46 @@ class KalibrasyonKayitForm(QWidget):
         for idx, d in enumerate(marka_data):
             row_i, col_i = divmod(idx, cols)
             card = QWidget()
+            card.setProperty("bg-role", "panel")
             card.setStyleSheet(
-                f"QWidget{{background:{_C['panel']};border:1px solid {_C['border']};"
-                f"border-radius:8px;}}"
+                "border:1px solid {};border-radius:8px;" .format(_C['border'])
             )
+            card.style().unpolish(card)
+            card.style().polish(card)
             cl = QVBoxLayout(card)
             cl.setContentsMargins(14, 12, 14, 12)
             cl.setSpacing(8)
 
             hdr = QHBoxLayout()
             lbl_m = QLabel(d["marka"])
+            lbl_m.setProperty("color-role", "primary")
             lbl_m.setStyleSheet(
-                f"font-size:13px;font-weight:700;color:{_C['text']};background:transparent;"
+                "font-size:13px;font-weight:700;"
             )
+            lbl_m.style().unpolish(lbl_m)
+            lbl_m.style().polish(lbl_m)
             hdr.addWidget(lbl_m)
             hdr.addStretch()
             lbl_cs = QLabel(f"{d['cihaz_sayi']} cihaz")
+            lbl_cs.setProperty("color-role", "muted")
+            lbl_cs.setProperty("bg-role", "separator")
             lbl_cs.setStyleSheet(
-                f"font-size:10px;color:{_C['muted']};"
-                f"background:{_C['border']};border-radius:4px;padding:1px 6px;"
+                "font-size:10px;border-radius:4px;padding:1px 6px;"
             )
+            lbl_cs.style().unpolish(lbl_cs)
+            lbl_cs.style().polish(lbl_cs)
             hdr.addWidget(lbl_cs)
             oran_color = (_C["green"] if d["oran"] >= 80 else
                           _C["amber"] if d["oran"] >= 50 else _C["red"])
             badge = QLabel(f"%{d['oran']} geçerli")
             badge.setStyleSheet(
-                f"font-size:10px;font-weight:600;color:{oran_color};"
-                f"background:{oran_color}22;border-radius:4px;padding:1px 6px;"
+                "font-size:10px;font-weight:600;color:{};background:{}22;border-radius:4px;padding:1px 6px;" .format(oran_color, oran_color)
             )
             hdr.addWidget(badge)
             if d["yaklasan"] > 0:
                 badge2 = QLabel(f"{d['yaklasan']} yaklaşan")
                 badge2.setStyleSheet(
-                    f"font-size:10px;font-weight:600;color:{_C['amber']};"
-                    f"background:{_C['amber']}22;border-radius:4px;padding:1px 6px;"
+                    "font-size:10px;font-weight:600;color:{};background:{}22;border-radius:4px;padding:1px 6px;" .format(_C['amber'], _C['amber'])
                 )
                 hdr.addWidget(badge2)
             cl.addLayout(hdr)
@@ -966,12 +1024,12 @@ class KalibrasyonKayitForm(QWidget):
 
     def _build_no_kal_card(self, kalsiz: List[Dict]) -> QWidget:
         card = QWidget()
+        card.setProperty("bg-role", "panel")
         card.setStyleSheet(
-            f"background:{_C['panel']};"
-            f"border:1px solid {_C['amber']}44;"
-            f"border-left:3px solid {_C['amber']};"
-            f"border-radius:8px;"
+            "border:1px solid {};border-left:3px solid {};border-radius:8px;" .format(_C['amber'] + "44", _C['amber'])
         )
+        card.style().unpolish(card)
+        card.style().polish(card)
         cl = QVBoxLayout(card)
         cl.setContentsMargins(16, 12, 16, 12)
         cl.setSpacing(10)
@@ -979,14 +1037,13 @@ class KalibrasyonKayitForm(QWidget):
         hdr = QHBoxLayout()
         lbl_t = QLabel("Kalibrasyonu Olmayan Markalar")
         lbl_t.setStyleSheet(
-            f"font-size:12px;font-weight:700;color:{_C['amber']};background:transparent;"
+            "font-size:12px;font-weight:700;color:{};background:transparent;" .format(_C['amber'])
         )
         hdr.addWidget(lbl_t)
         hdr.addStretch()
         lbl_s = QLabel(f"{len(kalsiz)} marka")
         lbl_s.setStyleSheet(
-            f"font-size:11px;font-weight:600;color:{_C['amber']};"
-            f"background:{_C['amber']}22;border-radius:4px;padding:2px 8px;"
+            "font-size:11px;font-weight:600;color:{};background:{}22;border-radius:4px;padding:2px 8px;" .format(_C['amber'], _C['amber'])
         )
         hdr.addWidget(lbl_s)
         cl.addLayout(hdr)
@@ -998,16 +1055,22 @@ class KalibrasyonKayitForm(QWidget):
         wrap_l.setSpacing(8)
         for d in kalsiz:
             chip = QWidget()
+            chip.setProperty("bg-role", "surface")
             chip.setStyleSheet(
-                f"background:{_C['surface']};border:1px solid {_C['border']};border-radius:6px;"
+                "border:1px solid {};border-radius:6px;" .format(_C['border'])
             )
+            chip.style().unpolish(chip)
+            chip.style().polish(chip)
             chip_l = QVBoxLayout(chip)
             chip_l.setContentsMargins(10, 6, 10, 6)
             chip_l.setSpacing(2)
             lm = QLabel(d["marka"])
+            lm.setProperty("color-role", "primary")
             lm.setStyleSheet(
-                f"font-size:12px;font-weight:600;color:{_C['text']};background:transparent;"
+                "font-size:12px;font-weight:600;"
             )
+            lm.style().unpolish(lm)
+            lm.style().polish(lm)
             chip_l.addWidget(lm)
             lc = QLabel(f"{d['cihaz_sayi']} cihaz")
             lc.setProperty("color-role", "muted")
@@ -1042,14 +1105,16 @@ class KalibrasyonKayitForm(QWidget):
         bar_bg.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         bar_fill = QWidget(bar_bg)
         bar_fill.setFixedHeight(6)
-        bar_fill.setStyleSheet(f"background:{fill_color};border-radius:3px;")
+        bar_fill.setStyleSheet(
+            "background:{};border-radius:3px;" .format(fill_color)
+        )
         bar_fill.setFixedWidth(max(4, int(pct * 1.5)))
         hl.addWidget(bar_bg)
         cnt = QLabel(str(value))
         cnt.setFixedWidth(24)
         cnt.setAlignment(Qt.AlignmentFlag.AlignRight)
         cnt.setStyleSheet(
-            f"font-size:10px;font-weight:600;color:{fill_color};background:transparent;"
+            "font-size:10px;font-weight:600;color:{};background:transparent;" .format(fill_color)
         )
         hl.addWidget(cnt)
         return w
@@ -1080,9 +1145,12 @@ class KalibrasyonKayitForm(QWidget):
         max_val   = max(degerler) if any(degerler) else 1
 
         container = QWidget()
+        container.setProperty("bg-role", "panel")
         container.setStyleSheet(
-            f"background:{_C['panel']};border:1px solid {_C['border']};border-radius:8px;"
+            "border:1px solid {};border-radius:8px;" .format(_C['border'])
         )
+        container.style().unpolish(container)
+        container.style().polish(container)
         cl = QVBoxLayout(container)
         cl.setContentsMargins(16, 14, 16, 14)
         cl.setSpacing(6)
@@ -1105,7 +1173,9 @@ class KalibrasyonKayitForm(QWidget):
             bar_h = max(4, int((val / max_val) * 60)) if max_val else 4
             bar = QWidget()
             bar.setFixedSize(16, bar_h)
-            bar.setStyleSheet(f"background:{bar_color};border-radius:3px 3px 0 0;")
+            bar.setStyleSheet(
+                "background:{};border-radius:3px 3px 0 0;" .format(bar_color)
+            )
             col.addWidget(bar, 0, Qt.AlignmentFlag.AlignHCenter)
             bar_row_l.addLayout(col)
         cl.addLayout(bar_row_l)
@@ -1161,18 +1231,19 @@ class KalibrasyonKayitForm(QWidget):
             kalan     = (bt - bugun).days
 
             row_w = QWidget()
+            row_w.setProperty("bg-role", "panel")
             row_w.setStyleSheet(
-                f"background:{_C['panel']};border:1px solid {_C['border']};"
-                f"border-left:3px solid {bitis_c};border-radius:6px;"
+                "border:1px solid {};border-left:3px solid {};border-radius:6px;" .format(_C['border'], bitis_c)
             )
+            row_w.style().unpolish(row_w)
+            row_w.style().polish(row_w)
             rl = QHBoxLayout(row_w)
             rl.setContentsMargins(12, 8, 12, 8)
             rl.setSpacing(12)
 
             chip = QLabel(str(r.get("Cihazid","")) or "—")
             chip.setStyleSheet(
-                f"font-size:11px;font-weight:600;color:{_C['accent']};"
-                f"background:{_C['accent']}22;border-radius:4px;padding:2px 8px;"
+                "font-size:11px;font-weight:600;color:{};background:{}22;border-radius:4px;padding:2px 8px;" .format(_C['accent'], _C['accent'])
             )
             chip.setFixedWidth(90)
             rl.addWidget(chip)
@@ -1182,7 +1253,7 @@ class KalibrasyonKayitForm(QWidget):
             firma.setStyleSheet("font-size: 12px;")
             firma.style().unpolish(firma)
             firma.style().polish(firma)
-            firma.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Preferred)
+            firma.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
             rl.addWidget(firma)
 
             sert = QLabel(str(r.get("SertifikaNo","")) or "—")
@@ -1200,7 +1271,7 @@ class KalibrasyonKayitForm(QWidget):
             )
             zaman_lbl = QLabel(zaman_str)
             zaman_lbl.setStyleSheet(
-                f"font-size:11px;font-weight:600;color:{bitis_c};background:transparent;"
+                "font-size:11px;font-weight:600;color:{};background:transparent;" .format(bitis_c)
             )
             rl.addWidget(zaman_lbl)
             cl.addWidget(row_w)
@@ -1248,6 +1319,11 @@ class _KalibrasyonGirisForm(QWidget):
         self._db       = db
         self._cihaz_id = cihaz_id
         self._action_guard = action_guard
+        if db:
+            from core.di import get_cihaz_service
+            self._svc = KalibrasyonService(get_cihaz_service(db)._r)
+        else:
+            self._svc = None
         self._setup_ui()
 
     def _setup_ui(self):
@@ -1265,18 +1341,20 @@ class _KalibrasyonGirisForm(QWidget):
         hdr_l.setContentsMargins(12, 8, 8, 8)
         hdr_l.setSpacing(0)
         lbl_title = QLabel("Yeni Kalibrasyon Kaydı")
+        lbl_title.setProperty("color-role", "primary")
         lbl_title.setStyleSheet(
-            f"font-size:12px;font-weight:700;color:{_C['text']};background:transparent;"
+            "font-size:12px;font-weight:700;"
         )
+        lbl_title.style().unpolish(lbl_title)
+        lbl_title.style().polish(lbl_title)
         hdr_l.addWidget(lbl_title)
         hdr_l.addStretch()
         text_sec = getattr(DarkTheme, "TEXT_SECONDARY", "#c8cdd8")
         btn_kapat = QPushButton("✕")
         btn_kapat.setFixedSize(22, 22)
         btn_kapat.setStyleSheet(
-            f"QPushButton{{background:transparent;border:none;"
-            f"color:{text_sec};font-size:12px;border-radius:4px;}}"
-            f"QPushButton:hover{{background:{_C['border']};color:{_C['text']};}}"
+            "QPushButton{{background:transparent;border:none;color:{};font-size:12px;border-radius:4px;}}"
+            "QPushButton:hover{{background:{};color:{};}}" .format(text_sec, _C['border'], _C['text'])
         )
         btn_kapat.clicked.connect(self._close_self)
         hdr_l.addWidget(btn_kapat)
@@ -1284,7 +1362,6 @@ class _KalibrasyonGirisForm(QWidget):
 
         # Form alanları
         grp = QGroupBox()
-        grp.setStyleSheet(S.get("group", ""))
         grid = QGridLayout(grp)
         grid.setContentsMargins(12, 12, 12, 12)
         grid.setHorizontalSpacing(10)
@@ -1339,11 +1416,9 @@ class _KalibrasyonGirisForm(QWidget):
         btns = QHBoxLayout()
         btns.addStretch()
         btn_temizle = QPushButton("Temizle")
-        btn_temizle.setStyleSheet(S.get("btn_refresh", ""))
         btn_temizle.clicked.connect(self._clear)
         btns.addWidget(btn_temizle)
         btn_kaydet = QPushButton("Kaydet")
-        btn_kaydet.setStyleSheet(S.get("action_btn", S.get("btn_primary", "")))
         try:
             IconRenderer.set_button_icon(
                 btn_kaydet, "save", color=DarkTheme.BTN_PRIMARY_TEXT, size=14
@@ -1365,8 +1440,8 @@ class _KalibrasyonGirisForm(QWidget):
     def _close_self(self):
         parent = self.parentWidget()
         while parent:
-            if hasattr(parent, "_close_form"):
-                parent._close_form()
+            if hasattr(parent, "_close_form") and callable(getattr(parent, "_close_form", None)):
+                parent._close_form()  # type: ignore
                 return
             parent = parent.parentWidget()
 

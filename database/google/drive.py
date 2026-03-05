@@ -83,7 +83,7 @@ class GoogleDriveService:
             # Metadata hazırla
             file_metadata = {'name': dosya_adi}
             if parent_folder_id:
-                file_metadata['parents'] = [parent_folder_id]
+                file_metadata['parents'] = [parent_folder_id]  # type: ignore
             
             # Dosyayı yükle
             media = MediaFileUpload(str(path_obj), resumable=True)
@@ -235,7 +235,7 @@ class GoogleDriveService:
                 "mimeType": "application/vnd.google-apps.folder",
             }
             if parent_folder_id:
-                metadata["parents"] = [parent_folder_id]
+                metadata["parents"] = [parent_folder_id]  # type: ignore
 
             folder = self.service.files().create(
                 body=metadata,
