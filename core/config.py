@@ -56,11 +56,12 @@ class AppConfig:
             return cls.APP_MODE
 
         try:
-            file_mode = cls._normalize_mode(_app_settings.get("app_mode"))
-            if file_mode:
-                cls.APP_MODE = file_mode
-                cls.APP_MODE_SOURCE = "settings"
-                return cls.APP_MODE
+            if _app_settings:
+                file_mode = cls._normalize_mode(_app_settings.get("app_mode"))
+                if file_mode:
+                    cls.APP_MODE = file_mode
+                    cls.APP_MODE_SOURCE = "settings"
+                    return cls.APP_MODE
         except Exception:
             pass
 

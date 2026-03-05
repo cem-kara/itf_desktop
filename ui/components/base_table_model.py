@@ -175,6 +175,13 @@ class BaseTableModel(QAbstractTableModel):
         self._data = data or []
         self.endResetModel()
 
+    def set_rows(self, rows: list) -> None:
+        """set_data() alias — geriye uyumluluk."""
+        self.set_data(rows)
+
+    def clear(self) -> None:
+        self.set_data([])
+
     def append_rows(self, rows: list) -> None:
         """Sayfalama için veri ekle — resetlemeden."""
         if not rows:
@@ -193,3 +200,59 @@ class BaseTableModel(QAbstractTableModel):
 
     def __len__(self) -> int:
         return len(self._data)
+
+    # ── QTableView entegrasyonu ──────────────────────────────────
+
+    def setup_columns(self, view, stretch_keys: list | None = None) -> None:
+        """
+        columns içindeki genişlik bilgisini QTableView'a uygular.
+
+        Args:
+            view:         Hedef QTableView
+            stretch_keys: Stretch modunda olacak kolon key listesi.
+                          Belirtilmezse son kolon stretch olur.
+        """
+        from PySide6.QtWidgets import QHeaderView
+        hdr = view.horizontalHeader()
+        for i, col in enumerate(self._columns):
+            w = col[2] if len(col) > 2 else None
+            if w is not None:
+                hdr.setSectionResizeMode(i, QHeaderView.ResizeMode.Fixed)
+                view.setColumnWidth(i, w)
+            else:
+                hdr.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
+
+        if stretch_keys:
+            for key in stretch_keys:
+                if key in self._keys:
+                    idx = self._keys.index(key)
+                    hdr.setSectionResizeMode(idx, QHeaderView.ResizeMode.Stretch)
+        else:
+            last = len(self._columns) - 1
+            if last >= 0:
+                hdr.setSectionResizeMode(last, QHeaderView.ResizeMode.Stretch)
+
+    # ── Tarih formatlama yardımcısı ──────────────────────────────
+
+    @staticmethod
+    def _fmt_date(val, fallback: str = "") -> str:
+        """Çeşitli tarih formatlarını 'GG.AA.YYYY' biçimine çevirir."""
+        if not val:
+            return fallback
+        from datetime import datetime, date as date_type
+        try:
+            from PySide6.QtCore import QDate
+            if isinstance(val, datetime):
+                return val.strftime("%d.%m.%Y")
+            if isinstance(val, date_type):
+                return val.strftime("%d.%m.%Y")
+            if isinstance(val, QDate):
+                return val.toString("dd.MM.yyyy")
+            s = str(val).strip().split(" ")[0]
+            if "-" in s:
+                return datetime.strptime(s, "%Y-%m-%d").strftime("%d.%m.%Y")
+            if "." in s and len(s) == 10:
+                return s
+        except (ValueError, TypeError):
+            pass
+        return fallback or str(val)
