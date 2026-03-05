@@ -16,6 +16,7 @@ from ui.pages.placeholder import WelcomePage, PlaceholderPage
 from ui.styles.colors import DarkTheme
 from database.sync_worker import SyncWorker
 from database.sqlite_manager import SQLiteManager
+from ui.dialogs.about_dialog import HakkindaDialog
 
 
 class MainWindow(QMainWindow):
@@ -129,8 +130,20 @@ class MainWindow(QMainWindow):
         self.last_sync_label = QLabel("")
         self.status.addWidget(self.last_sync_label, 1)
 
-        version_label = QLabel(f"v{AppConfig.VERSION}")
+        version_label = QLabel(
+            f'<a href="#" style="color:{DarkTheme.TEXT_MUTED}; '
+            f'text-decoration:none;">v{AppConfig.VERSION}</a>'
+        )
+        version_label.setToolTip("Hakkında — lisans bilgileri için tıklayın")
+        version_label.setCursor(Qt.CursorShape.PointingHandCursor)
+        version_label.linkActivated.connect(self._show_hakkinda)
         self.status.addPermanentWidget(version_label)
+
+    @Slot()
+    def _show_hakkinda(self, *_):
+        """Hakkında dialogunu aç."""
+        dlg = HakkindaDialog(self)
+        dlg.exec()
 
     # ── SAYFA YÖNETİMİ ──
 

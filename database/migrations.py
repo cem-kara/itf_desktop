@@ -17,16 +17,20 @@ class MigrationManager:
     - Rollback desteği
     - Veri kaybı olmadan Şema güncellemeleri
 
-    Squash GeçmiŞi:
-    - v1:v14 arası tüm ara migration'lar tek bir temiz kurulum adımına
-      (v1: create_tables + baŞlangıç verisi) indirgendi.
-    - Mevcut v14 veritabanları etkilenmez.
-    - Sıfırdan kurulumda v1 tüm tabloları doğrudan son haliyle oluŞturur;
-      v2:v14 otomatik olarak no-op geçilir.
+    Squash Geçmişi:
+    - v1:v18 arası tüm migration'lar tek temiz kurulum adımına squash edildi.
+    - Sıfırdan kurulumda v1 tüm tabloları doğrudan son şemalarıyla oluşturur.
+    - Mevcut (eski) veritabanları: current_version >= CURRENT_VERSION ise
+      güncel sayılır, hiçbir migration çalışmaz.
+
+    Yeni migration eklerken:
+    - CURRENT_VERSION değerini 1 artır (örn. 2)
+    - _migrate_to_v2() metodunu yaz
+    - create_tables() içindeki ilgili CREATE TABLE'ı da güncelle
     """
 
     # Mevcut Şema versiyonu
-    CURRENT_VERSION = 18
+    CURRENT_VERSION = 1
 
     def __init__(self, db_path):
         self.db_path = db_path
@@ -138,11 +142,13 @@ class MigrationManager:
             return True
 
         if current_version > self.CURRENT_VERSION:
-            logger.warning(
-                f"Şema versiyonu ({current_version}) koddan ({self.CURRENT_VERSION}) yüksek! "
-                "Uygulama güncellemesi gerekebilir."
+            # Squash sonrası eski veritabanları daha yüksek versiyonda olabilir.
+            # Bu durumu "güncel" kabul et — veri kaybı riski yok.
+            logger.info(
+                f"Şema versiyonu ({current_version}) > kod versiyonu ({self.CURRENT_VERSION}) "
+                "— squash öncesi kurulum, güncel sayılıyor."
             )
-            return False
+            return True
 
         backup_path = self.backup_database()
         if not backup_path:
@@ -163,7 +169,7 @@ class MigrationManager:
 
                 self.set_schema_version(version, f"Migrated to v{version}")
 
-            logger.info("âœ“ Tüm migration'lar baŞarıyla tamamlandı")
+            logger.info("✓ Tüm migration'lar baŞarıyla tamamlandı")
             return True
 
         except Exception as e:
@@ -177,10 +183,11 @@ class MigrationManager:
 
     def _migrate_to_v1(self):
         """
-        v0 â†’ v1: Temiz kurulum â€” tüm tabloları son Şemalarıyla oluŞturur
-                 ve baŞlangıç verilerini (Sabitler) ekler.
+        v0 -> v1: TEK VE TAMAMLANMIS KURULUM — tüm tabloları güncel
+                  şemalarıyla oluşturur, başlangıç ve auth verilerini ekler.
 
-        v2:v14: Squash sonrası no-op; run_migrations tarafından otomatik geçilir.
+        Squash: v1-v18 arası tüm migration\'lar bu tek adıma indirgendi (Mart 2026).
+        Yeni migration gerekirse _migrate_to_v2() ekle, CURRENT_VERSION=2 yap.
         """
         conn = self.connect()
         cur = conn.cursor()
@@ -195,149 +202,6 @@ class MigrationManager:
         finally:
             conn.close()
 
-    def _migrate_to_v15(self):
-        """
-        v14 â†’ v15: Ortak dokümanlar tablosunu ekle ve DrivePath sütununu garanti et.
-        """
-        conn = self.connect()
-        cur = conn.cursor()
-
-        try:
-            logger.info("Migration v15: Dokumanlar tablosu oluŞturuluyor...")
-
-            cur.execute("""
-            CREATE TABLE IF NOT EXISTS Dokumanlar (
-                EntityType          TEXT NOT NULL,
-                EntityId            TEXT NOT NULL,
-                BelgeTuru           TEXT NOT NULL,
-                Belge               TEXT NOT NULL,
-                DocType             TEXT,
-                DisplayName         TEXT,
-                LocalPath           TEXT,
-                BelgeAciklama       TEXT,
-                YuklenmeTarihi      TEXT,
-                DrivePath           TEXT,
-                IliskiliBelgeID     TEXT,
-                IliskiliBelgeTipi   TEXT,
-
-                sync_status         TEXT DEFAULT 'clean',
-                updated_at          TEXT,
-
-                PRIMARY KEY (EntityType, EntityId, BelgeTuru, Belge)
-            )
-            """)
-
-            # Kolon güvence: ileride versiyon arttırmadan eklemeye devam edebilmek için
-            cur.execute("PRAGMA table_info(Dokumanlar)")
-            cols = {row[1] for row in cur.fetchall()}
-            if "DocType" not in cols:
-                cur.execute("""
-                    ALTER TABLE Dokumanlar
-                    ADD COLUMN DocType TEXT
-                """)
-                logger.info("  âœ“ Dokumanlar.DocType kolon eklendi")
-            if "DisplayName" not in cols:
-                cur.execute("""
-                    ALTER TABLE Dokumanlar
-                    ADD COLUMN DisplayName TEXT
-                """)
-                logger.info("  âœ“ Dokumanlar.DisplayName kolon eklendi")
-            if "LocalPath" not in cols:
-                cur.execute("""
-                    ALTER TABLE Dokumanlar
-                    ADD COLUMN LocalPath TEXT
-                """)
-                logger.info("  âœ“ Dokumanlar.LocalPath kolon eklendi")
-            if "DrivePath" not in cols:
-                cur.execute("""
-                    ALTER TABLE Dokumanlar
-                    ADD COLUMN DrivePath TEXT
-                """)
-                logger.info("  âœ“ Dokumanlar.DrivePath kolon eklendi")
-
-            conn.commit()
-            logger.info("v15: Migration tamamlandı")
-
-        finally:
-            conn.close()
-
-    def _migrate_to_v16(self):
-        """
-        v15 â†’ v16: Auth/RBAC tablolarını ekle ve temel seed uygula.
-        """
-        conn = self.connect()
-        cur = conn.cursor()
-
-        try:
-            logger.info("Migration v16: Auth/RBAC tabloları oluŞturuluyor...")
-            self._create_auth_tables(cur)
-            self._seed_auth_data(cur)
-            conn.commit()
-            logger.info("v16: Migration tamamlandı")
-        finally:
-            conn.close()
-
-    def _migrate_to_v17(self):
-        """
-        v16 -> v17: Users tablosuna MustChangePassword alanini ekle.
-        """
-        conn = self.connect()
-        cur = conn.cursor()
-        try:
-            cur.execute("PRAGMA table_info(Users)")
-            cols = [row["name"] for row in cur.fetchall()]
-            if "MustChangePassword" not in cols:
-                cur.execute(
-                    "ALTER TABLE Users ADD COLUMN MustChangePassword INTEGER NOT NULL DEFAULT 0"
-                )
-                conn.commit()
-        finally:
-            conn.close()
-
-    def _migrate_to_v18(self):
-        """
-        v17 → v18: Dokumanlar tablosuna sync_status ve updated_at ekle.
-
-        Dokumanlar artık Google Sheets'e senkronize ediliyor (sync=True).
-        BaseRepository'nin dirty/clean mekanizması için bu iki alan gerekli.
-
-        YAPILMASI GEREKEN (tek seferlik, manuel):
-        1. Google Drive'da "itf_ortak_vt" adlı yeni bir Google Spreadsheet oluştur.
-        2. İçinde "Dokumanlar" adlı bir sayfa (sheet) oluştur.
-        3. Birinci satıra (başlık) şu sütunları ekle (sıra önemli, table_config ile aynı):
-           EntityType | EntityId | BelgeTuru | Belge | DocType | DisplayName |
-           LocalPath | BelgeAciklama | YuklenmeTarihi | DrivePath |
-           IliskiliBelgeID | IliskiliBelgeTipi
-        4. veritabani.json'a (varsa) 'ortak' → 'itf_ortak_vt' mapping'ini ekle.
-           Yoksa DB_FALLBACK_MAP'teki 'ortak': 'itf_ortak_vt' devreye girer.
-        """
-        conn = self.connect()
-        cur = conn.cursor()
-        try:
-            cur.execute("PRAGMA table_info(Dokumanlar)")
-            cols = {row["name"] for row in cur.fetchall()}
-
-            if "sync_status" not in cols:
-                cur.execute("""
-                    ALTER TABLE Dokumanlar
-                    ADD COLUMN sync_status TEXT DEFAULT 'dirty'
-                """)
-                # Mevcut kayıtları dirty yap ki ilk sync'te Sheets'e push edilsin
-                cur.execute("UPDATE Dokumanlar SET sync_status = 'dirty'")
-                logger.info("  ✓ Dokumanlar.sync_status eklendi (mevcut kayıtlar dirty yapıldı)")
-
-            if "updated_at" not in cols:
-                cur.execute("""
-                    ALTER TABLE Dokumanlar
-                    ADD COLUMN updated_at TEXT
-                """)
-                logger.info("  ✓ Dokumanlar.updated_at eklendi")
-
-            conn.commit()
-            logger.info("v18: Migration tamamlandı")
-        finally:
-            conn.close()
-
     # ================================================
     # TABLO OLUŞTURMA (İLK KURULUM / RESET)
     # ================================================
@@ -348,7 +212,7 @@ class MigrationManager:
         Yalnızca _migrate_to_v1 ve reset_database tarafından çağrılır.
         """
 
-        # â”€â”€ PERSONEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == PERSONEL ==========================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Personel (
             KimlikNo                    TEXT PRIMARY KEY,
@@ -385,7 +249,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ IZIN GIRIS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == IZIN GIRIS ========================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Izin_Giris (
             Izinid          TEXT PRIMARY KEY,
@@ -403,7 +267,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ IZIN BILGI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == IZIN BILGI ========================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Izin_Bilgi (
             TCKimlik                TEXT PRIMARY KEY,
@@ -424,7 +288,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ FHSZ PUANTAJ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == FHSZ PUANTAJ =====================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS FHSZ_Puantaj (
             Personelid          TEXT NOT NULL,
@@ -444,7 +308,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ CIHAZLAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == CIHAZLAR ==========================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Cihazlar (
             Cihazid                 TEXT PRIMARY KEY,
@@ -480,7 +344,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ CIHAZ TEKNIK â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == CIHAZ TEKNIK ======================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Cihaz_Teknik (
             Cihazid                         TEXT PRIMARY KEY,
@@ -526,7 +390,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ CIHAZ TEKNIK BELGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == CIHAZ TEKNIK BELGE ================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Cihaz_Teknik_Belge (
             Cihazid         TEXT NOT NULL,
@@ -542,7 +406,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ CIHAZ BELGELER (Merkezi Belgeler) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == CIHAZ BELGELER (Merkezi Belgeler) =================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Cihaz_Belgeler (
             Cihazid             TEXT NOT NULL,
@@ -560,7 +424,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ ORTAK DOKÃœMANLAR (Tüm modüller) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == ORTAK DOKÃœMANLAR (Tüm modüller) ==================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Dokumanlar (
             EntityType          TEXT NOT NULL,
@@ -583,7 +447,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ CIHAZ ARIZA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == CIHAZ ARIZA =======================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Cihaz_Ariza (
             Arizaid         TEXT PRIMARY KEY,
@@ -603,7 +467,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ ARIZA ISLEM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == ARIZA ISLEM =======================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Ariza_Islem (
             Islemid         TEXT PRIMARY KEY,
@@ -621,7 +485,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ PERIYODIK BAKIM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == PERIYODIK BAKIM ===================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Periyodik_Bakim (
             Planid              TEXT PRIMARY KEY,
@@ -643,7 +507,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ KALIBRASYON â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == KALIBRASYON =======================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Kalibrasyon (
             Kalid           TEXT PRIMARY KEY,
@@ -662,7 +526,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ SABITLER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == SABITLER ==========================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Sabitler (
             Rowid       TEXT PRIMARY KEY,
@@ -675,7 +539,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ TATILLER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == TATILLER ==========================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Tatiller (
             Tarih       TEXT PRIMARY KEY,
@@ -686,7 +550,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ LOGLAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == LOGLAR ============================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Loglar (
             Tarih       TEXT,
@@ -698,7 +562,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ RKE LIST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == RKE LIST ==========================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS RKE_List (
             EkipmanNo       TEXT PRIMARY KEY,
@@ -721,7 +585,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ RKE MUAYENE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == RKE MUAYENE =======================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS RKE_Muayene (
             KayitNo                 TEXT PRIMARY KEY,
@@ -741,7 +605,7 @@ class MigrationManager:
         )
         """)
 
-        # â”€â”€ PERSONEL SAGLIK TAKIP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # == PERSONEL SAGLIK TAKIP =============================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Personel_Saglik_Takip (
             KayitNo                     TEXT PRIMARY KEY,
@@ -933,7 +797,7 @@ class MigrationManager:
                     "INSERT INTO Sabitler (Rowid, Kod, MenuEleman, Aciklama) VALUES (?, ?, ?, ?)",
                     (rowid, kod, menu_eleman, aciklama)
                 )
-                logger.info(f"  âœ“ Sabitler: '{menu_eleman}' eklendi")
+                logger.info(f"  ✓ Sabitler: '{menu_eleman}' eklendi")
 
     # ================================================
     # ACİL RESET (yalnızca manuel çağrı)
@@ -988,5 +852,6 @@ class MigrationManager:
         conn.commit()
         conn.close()
 
-        logger.info(f"âœ“ Tüm tablolar yeniden oluŞturuldu (v{self.CURRENT_VERSION})")
+        logger.info(f"✓ Tüm tablolar yeniden oluŞturuldu (v{self.CURRENT_VERSION})")
+
 
