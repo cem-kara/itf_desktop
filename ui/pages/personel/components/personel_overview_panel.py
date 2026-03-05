@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QDate, Signal, QThread
 from PySide6.QtGui import QCursor, QPixmap
-from core.di import get_personel_service, get_izin_service
+from core.di import get_personel_service, get_izin_service, get_registry
 from core.logger import logger
 from core.paths import DB_PATH
 from core.services.dokuman_service import DokumanService

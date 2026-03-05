@@ -19,7 +19,7 @@ from PySide6.QtGui import QCursor
 
 from core.logger import logger
 from core.hata_yonetici import exc_logla
-from core.di import get_izin_service
+from core.di import get_izin_service, get_registry
 from core.date_utils import to_ui_date
 from ui.styles.colors import DarkTheme as C
 from ui.styles.components import STYLES as S
