@@ -769,25 +769,162 @@ class MigrationManager:
 
     def _seed_initial_data(self, cur):
         """
-        Sabitler tablosuna baŞlangıç / sistem verilerini ekler.
+        Sabitler tablosuna başlangıç / sistem verilerini ekler.
+        Tatiller tablosuna tatil tarihlerini ekler.
         Yalnızca yeni kurulumda çağrılır; mevcut kayıtların üzerine yazmaz.
         """
-        belge_turleri = [
-            ("1",   "Cihaz_Belge_Tur",   "NDK Lisansı",         "Cihazın NDK (Uygunluk Beyanı) Lisansı"),
-            ("2",   "Cihaz_Belge_Tur",   "RKS Belgesi",          "Cihazın RKS (Radyasyon Koruma) Belgesi"),
-            ("3",   "Cihaz_Belge_Tur",   "Sorumlu Diploması",    "Sorumlu kiŞinin diploması"),
-            ("4",   "Cihaz_Belge_Tur",   "Kullanım Klavuzu",     "Cihaz kullanım kılavuzu"),
-            ("5",   "Cihaz_Belge_Tur",   "Cihaz Sertifikası",    "Cihaz sertifikası/belgelendirmesi"),
-            ("6",   "Cihaz_Belge_Tur",   "Teknik Veri Sayfası",  "Cihazın teknik özellikleri"),
-            ("7",   "Cihaz_Belge_Tur",   "Garantı Belgesi",      "Cihaz garanti belgesi"),
-
-            ("101", "Personel_Belge_Tur", "Diploma",             "Personel diploması"),
-            ("102", "Personel_Belge_Tur", "Sertifika",           "Personel sertifikası"),
-            ("103", "Personel_Belge_Tur", "Ehliyet",             "Personel ehliyet belgesi"),
-            ("104", "Personel_Belge_Tur", "Kimlik",              "Personel kimlik belgesi"),
-            ("105", "Personel_Belge_Tur", "Diğer",               "Personel diğer belgeler"),
+        # === SİSTEM SABİTLERİ ===
+        # Sabitler.csv baz alınarak seed listesi
+        sistem_sabitler = [
+            ("1", "İzin_Tipi", "Aylıksız İzin - Askerlik Nedeniyle", ""),
+            ("2", "İzin_Tipi", "Aylıksız İzin - Doğum Nedeniyle", ""),
+            ("3", "İzin_Tipi", "Doğum İzni (Eşinin)", "10"),
+            ("4", "İzin_Tipi", "Doğum Öncesi İzin", "42"),
+            ("5", "İzin_Tipi", "Doğum Sonrası İzin", "42"),
+            ("6", "İzin_Tipi", "Evlenme-Ölüm İzni", ""),
+            ("7", "İzin_Tipi", "Evlilik İzni", ""),
+            ("8", "İzin_Tipi", "Heyet Raporu", ""),
+            ("9", "İzin_Tipi", "İdari İzin", ""),
+            ("11", "İzin_Tipi", "Kongre izni: 3 aya kadar", ""),
+            ("12", "İzin_Tipi", "Mazeret", ""),
+            ("13", "İzin_Tipi", "Rapor İzni", ""),
+            ("14", "İzin_Tipi", "Refakatçı İzni", ""),
+            ("15", "İzin_Tipi", "Şua İzni", "30"),
+            ("16", "İzin_Tipi", "Tedavi İzni (Yatış Ve Ayaktan)", ""),
+            ("17", "İzin_Tipi", "Yıllık İzin", "30"),
+            ("18", "Amac", "Defibrilator", ""),
+            ("19", "Amac", "EKG Cihazı", ""),
+            ("20", "Amac", "Grafi", ""),
+            ("21", "Amac", "Kaset Okuyucu", ""),
+            ("22", "Amac", "Manyetik Rezonans", ""),
+            ("23", "Amac", "Skopi", ""),
+            ("24", "Amac", "Skopi (Ercp)", ""),
+            ("25", "Amac", "Skopi (Eswl)", ""),
+            ("26", "Amac", "Ultrasonografi", ""),
+            ("27", "AnaBilimDali", "Beyin ve Sinir Cerrahisi ABD", "NRŞ"),
+            ("32", "AnaBilimDali", "Göğüs Hastalıkları ABD", "GHA"),
+            ("33", "AnaBilimDali", "İç Hastalıkları ABD", "DHL"),
+            ("34", "AnaBilimDali", "Kalp ve Damar Cerrahisi ABD", "KDC"),
+            ("35", "AnaBilimDali", "Kardiyoloji ABD", "KRD"),
+            ("38", "AnaBilimDali", "Ortopedi ve Travmatoloji ABD", "ORT"),
+            ("39", "AnaBilimDali", "Radyoloji ABD", "RAD"),
+            ("40", "AnaBilimDali", "Üroloji ABD", "URO"),
+            ("41", "Ariza_Durum", "İşlemde", ""),
+            ("42", "Ariza_Durum", "Parça Bekliyor", ""),
+            ("43", "Ariza_Durum", "Dış Serviste", ""),
+            ("44", "Ariza_Durum", "Kapalı (Çözüldü)", ""),
+            ("45", "Ariza_Durum", "Kapalı (İptal)", ""),
+            ("46", "Ariza_Islem_Turu", "Arıza Tespiti / İnceleme", ""),
+            ("47", "Ariza_Islem_Turu", "Onarım / Tamirat", ""),
+            ("48", "Ariza_Islem_Turu", "Parça Değişimi", ""),
+            ("49", "Ariza_Islem_Turu", "Yazılım Güncelleme", ""),
+            ("50", "Ariza_Islem_Turu", "Kalibrasyon", ""),
+            ("51", "Ariza_Islem_Turu", "Dış Servis Gönderimi", ""),
+            ("52", "Ariza_Islem_Turu", "Kapatma / Sonlandırma", ""),
+            ("53", "Bedeni", "L", ""),
+            ("54", "Bedeni", "M", ""),
+            ("55", "Bedeni", "Pediatrik", ""),
+            ("56", "Bedeni", "S", ""),
+            ("57", "Bedeni", "STN", ""),
+            ("58", "Bedeni", "XL", ""),
+            ("59", "Bedeni", "XS", ""),
+            ("60", "Bedeni", "Yetişkin", ""),
+            ("61", "Birim", "Acil Radyoloji", "ARAD"),
+            ("63", "Birim", "Ameliyathane", "AML"),
+            ("64", "Birim", "Anjiografi", "ANJ"),
+            ("65", "Birim", "Endoskopi Ünitesi", "ENU"),
+            ("66", "Birim", "Girişimsel Radyoloji Anjiografi", "RANJ"),
+            ("67", "Birim", "Koroner Anjiografi", "KANJ"),
+            ("68", "Birim", "Mamografi", "MAM"),
+            ("69", "Birim", "Manyetik Rezonans Ünitesi", "MRI"),
+            ("70", "Birim", "Nöroradyoloji Anjiografi", "NANJ"),
+            ("71", "Birim", "Poliklinik", "POL"),
+            ("72", "Birim", "Radyoloji USG", "USG"),
+            ("73", "Birim", "Yoğun Bakım Ünitesi", "YBÜ"),
+            ("74", "Cihaz_Belge_Tur", "NDK Lisansı", "Cihazın NDK (Uygunluk Beyanı) Lisansı"),
+            ("75", "Cihaz_Belge_Tur", "RKS Belgesi", "Cihazın RKS (Radyasyon Koruma) Belgesi"),
+            ("76", "Cihaz_Belge_Tur", "Sorumlu Diploması", "Sorumlu kişinin diploması"),
+            ("77", "Cihaz_Belge_Tur", "Kullanım Klavuzu", "Cihaz kullanım kılavuzu"),
+            ("78", "Cihaz_Belge_Tur", "Cihaz Sertifikası", "Cihaz sertifikası/belgelendirmesi"),
+            ("79", "Cihaz_Belge_Tur", "Teknik Veri Sayfası", "Cihazın teknik özellikleri"),
+            ("80", "Cihaz_Belge_Tur", "Garantı Belgesi", "Cihaz garanti belgesi"),
+            ("81", "Cihaz_Tipi", "Görüntüleme (Diğer)", "GOR"),
+            ("82", "Cihaz_Tipi", "Görüntüleme (Radyasyon Kaynaklı)", "XRY"),
+            ("83", "Cihaz_Tipi", "Medikal Cihazlar", "MED"),
+            ("84", "Gorev_Yeri", "Acil Radyoloji", "Çalışma Koşulu A"),
+            ("85", "Gorev_Yeri", "Esnaf Has. Yerleşkesi", "Çalışma Koşulu B"),
+            ("86", "Gorev_Yeri", "Girişimsel Radyoloji", "Çalışma Koşulu A"),
+            ("87", "Gorev_Yeri", "Gögüs Hastalıkları", "Çalışma Koşulu B"),
+            ("99", "Hizmet_Sinifi", "Akademik Personel", ""),
+            ("100", "Hizmet_Sinifi", "Asistan Doktor", ""),
+            ("101", "Hizmet_Sinifi", "Hemşire", ""),
+            ("102", "Hizmet_Sinifi", "Radyasyon Görevlisi", ""),
+            ("103", "Kadro_Unvani", "Araştırma Görevlisi", ""),
+            ("104", "Kadro_Unvani", "Doçent Doktor", ""),
+            ("105", "Kadro_Unvani", "Doktor", ""),
+            ("106", "Kadro_Unvani", "Doktor Öğretim Üyesi", ""),
+            ("107", "Kadro_Unvani", "Ebe", ""),
+            ("108", "Kadro_Unvani", "Hasta Bakıcı", ""),
+            ("109", "Kadro_Unvani", "Hemşire", ""),
+            ("112", "Kadro_Unvani", "Profesör Doktor", ""),
+            ("114", "Kadro_Unvani", "Radyoloji Teknikeri", ""),
+            ("115", "Kadro_Unvani", "Radyoloji Teknisyeni", ""),
+            ("116", "Kadro_Unvani", "Sağlık Memuru", ""),
+            ("117", "Kadro_Unvani", "Sağlık Teknikeri", ""),
+            ("118", "Kadro_Unvani", "Sağlık Teknisyeni", ""),
+            ("121", "Kadro_Unvani", "Teknisyen", ""),
+            ("123", "Kadro_Unvani", "Uzman Doktor", ""),
+            ("125", "Kaynak", "Anjiyo", "ANJ"),
+            ("126", "Kaynak", "C-Kollu", "CKL"),
+            ("127", "Kaynak", "CR Cihazı", "CRC"),
+            ("128", "Kaynak", "Mamografi", "MAM"),
+            ("129", "Kaynak", "Manyetik Rezonans", "MRI"),
+            ("130", "Kaynak", "Medikal Cihaz", "MED"),
+            ("131", "Kaynak", "Mobil Bilgisayarlı Tomografi", "MCT"),
+            ("132", "Kaynak", "Mobil Tek Tüplü Röntgen", "MTTR"),
+            ("133", "Kaynak", "Tek Tüplü Röntgen", "TTR"),
+            ("134", "Kaynak", "Tomografi", "CT"),
+            ("135", "Kaynak", "Ultrasonografi", "USG"),
+            ("136", "Koruyucu_Cinsi", "Gonad Koruyucu", "GK"),
+            ("137", "Koruyucu_Cinsi", "Kurşun Başlık", "KB"),
+            ("138", "Koruyucu_Cinsi", "Kurşun Eldiven", "KE"),
+            ("139", "Koruyucu_Cinsi", "Kurşun Gözlük", "KG"),
+            ("140", "Koruyucu_Cinsi", "Kurşun Paravan", "KP"),
+            ("141", "Koruyucu_Cinsi", "Palto (Önlük)", "O"),
+            ("142", "Koruyucu_Cinsi", "Tiroid Koruyucu", "TK"),
+            ("143", "Koruyucu_Cinsi", "Uyarı İşaretleri", "UI"),
+            ("144", "Koruyucu_Cinsi", "Yelek - Etek", "YE"),
+            ("145", "Lisans_Durum", "Devir", ""),
+            ("146", "Lisans_Durum", "Eksik Husus", ""),
+            ("147", "Lisans_Durum", "Kullanım Dışı (Depo)", ""),
+            ("148", "Lisans_Durum", "Kullanım Dışı (HEK)", ""),
+            ("149", "Lisans_Durum", "Lisans Gerekli Değil", ""),
+            ("150", "Lisans_Durum", "Lisansız", ""),
+            ("151", "Lisans_Durum", "Lisanslı", ""),
+            ("152", "Marka", "", ""),
+            ("153", "RKE_Teknik", "Dikiş yerlerinde hasar var", ""),
+            ("154", "RKE_Teknik", "Kullanım Ömrünü Doldurmuş", ""),
+            ("155", "RKE_Teknik", "Kullanım ve bakım koşullarına uyulmamış", ""),
+            ("156", "RKE_Teknik", "Kurşun, etek kısımlarında (aşağıya) toplanmış", ""),
+            ("157", "RKE_Teknik", "Sabitleyici bantlar ve/veya tokalar deforme", ""),
+            ("158", "RKE_Teknik", "Skopi altında kırık tespit edildi", ""),
+            ("159", "RKE_Teknik", "Tüm testler normal ekipman kullanıma uygun", ""),
+            ("160", "Sistem_DriveID", "Ariza_Raporlari", ""),
+            ("161", "Sistem_DriveID", "Cihaz_Kunye", ""),
+            ("162", "Sistem_DriveID", "Cihaz_Resim", ""),
+            ("163", "Sistem_DriveID", "Kalibrasyon_Raporlari", ""),
+            ("164", "Sistem_DriveID", "Cihaz_Lisanslar", ""),
+            ("165", "Sistem_DriveID", "Personel_Diploma", ""),
+            ("166", "Sistem_DriveID", "Personel_Dosya", ""),
+            ("167", "Sistem_DriveID", "Personel_Resim", ""),
+            ("168", "Sistem_DriveID", "RKE_Raporlari", ""),
+            ("169", "Sistem_DriveID", "Eski_Personel_Dosyalari", ""),
+            ("170", "Sistem_DriveID", "RKE_Muayene", ""),
+            ("171", "Sistem_DriveID", "Saglik_Raporlari", ""),
         ]
-        for rowid, kod, menu_eleman, aciklama in belge_turleri:
+        
+        added_count = 0
+        for rowid, kod, menu_eleman, aciklama in sistem_sabitler:
             cur.execute(
                 "SELECT COUNT(*) FROM Sabitler WHERE Kod = ? AND MenuEleman = ?",
                 (kod, menu_eleman)
@@ -797,11 +934,41 @@ class MigrationManager:
                     "INSERT INTO Sabitler (Rowid, Kod, MenuEleman, Aciklama) VALUES (?, ?, ?, ?)",
                     (rowid, kod, menu_eleman, aciklama)
                 )
-                logger.info(f"  âœ“ Sabitler: '{menu_eleman}' eklendi")
+                added_count += 1
+        
+        if added_count > 0:
+            logger.info(f"  ✓ Sabitler: {added_count} kayıt eklendi")
+        
+        # === TATİLLER ===
+        # Tatiller.csv baz alınarak YYYY-MM-DD formatında seed listesi
+        tatiller = [
+            ("2026-01-01", "Yılbaşı"),
+            ("2026-04-23", "Ulusal Egemenlik ve Çocuk Bayramı"),
+            ("2026-05-01", "Emek ve Dayanışma Günü"),
+            ("2026-05-19", "Atatürk’ü Anma Gençlik ve Spor Bayramı"),
+            ("2026-07-15", "Demokrasi ve Millî Birlik Günü"),
+            ("2026-08-30", "Zafer Bayramı"),
+            ("2026-10-28", "Cumhuriyet Bayramı Arifesi"),
+            ("2026-10-29", "Cumhuriyet Bayramı"),
+            ("2026-12-31", "Yılbaşı gecesi"),
+        ]
+        
+        added_tatil = 0
+        for tarih, ad in tatiller:
+            cur.execute(
+                "SELECT COUNT(*) FROM Tatiller WHERE Tarih = ?",
+                (tarih,)
+            )
+            if cur.fetchone()[0] == 0:
+                cur.execute(
+                    "INSERT INTO Tatiller (Tarih, ResmiTatil) VALUES (?, ?)",
+                    (tarih, ad)
+                )
+                added_tatil += 1
+        
+        if added_tatil > 0:
+            logger.info(f"  ✓ Tatillər: {added_tatil} kayıt eklendi")
 
-    # ================================================
-    # ACİL RESET (yalnızca manuel çağrı)
-    # ================================================
 
     def reset_database(self):
         """

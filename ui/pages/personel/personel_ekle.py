@@ -489,6 +489,19 @@ class PersonelEklePage(QWidget):
         IconRenderer.set_button_icon(btn_iptal, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
         footer.addWidget(btn_iptal)
 
+        # Yeni Personel Ekle butonu (sadece edit mode'da görünür)
+        self.btn_yeni_personel = QPushButton("YENİ PERSONEL")
+        self.btn_yeni_personel.setProperty("style-role", "secondary")
+        self.btn_yeni_personel.style().unpolish(self.btn_yeni_personel)
+        self.btn_yeni_personel.style().polish(self.btn_yeni_personel)
+        self.btn_yeni_personel.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_yeni_personel.clicked.connect(self._reset_form_for_new_personel)
+        IconRenderer.set_button_icon(self.btn_yeni_personel, "plus", color=DarkTheme.TEXT_PRIMARY, size=14)
+        self.btn_yeni_personel.setVisible(self._is_edit)  # Sadece edit mode'da görünür
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(self.btn_yeni_personel, "personel.write")
+        footer.addWidget(self.btn_yeni_personel)
+
         title = "GÜNCELLE" if self._is_edit else "KAYDET"
         self.btn_kaydet = QPushButton(f"PERSONELI {title}")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
@@ -1049,22 +1062,40 @@ class PersonelEklePage(QWidget):
                 return
 
             if self._is_edit:
-                self._personel_svc.guncelle(data["KimlikNo"], data)
+                ok = self._personel_svc.guncelle(data["KimlikNo"], data)
+                if not ok:
+                    QMessageBox.critical(self, "Hata", "Personel kaydı güncellenemedi.")
+                    return
                 logger.info(f"Personel güncellendi: {data['KimlikNo']}")
+                
+                QMessageBox.information(
+                    self, "Başarılı",
+                    "Personel kaydı başarıyla güncellendi."
+                )
+
+                if self._on_saved:
+                    self._on_saved()
             else:
-                self._personel_svc.ekle(data)
+                ok = self._personel_svc.ekle(data)
+                if not ok:
+                    QMessageBox.critical(
+                        self,
+                        "Hata",
+                        "Personel kaydı eklenemedi.\nTC Kimlik No ve zorunlu alanları kontrol edin.",
+                    )
+                    return
                 logger.info(f"Yeni personel eklendi: {data['KimlikNo']}")
 
                 # Yeni personel için Izin_Bilgi kaydı oluştur
                 try:
                     if self._izin_svc:
-                        repo_izin = self._izin_svc.get_izin_bilgi_repo()
-                        izin_data = {
-                            "TCKimlik": data["KimlikNo"],
-                            "AdSoyad": data["AdSoyad"]
-                        }
-                        repo_izin.insert(izin_data)
-                        logger.info(f"Izin_Bilgi kaydı oluşturuldu: {data['KimlikNo']}")
+                        ok_izin = self._izin_svc.create_or_update_izin_bilgi(
+                            tc=data.get("KimlikNo", ""),
+                            ad_soyad=data.get("AdSoyad", ""),
+                            baslama_tarihi=data.get("MemuriyeteBaslamaTarihi", ""),
+                        )
+                        if not ok_izin:
+                            logger.warning(f"Izin_Bilgi kaydı oluşturulamadı: {data.get('KimlikNo', '')}")
                 except Exception as e_izin:
                     logger.error(f"Izin_Bilgi oluşturma hatası: {e_izin}")
                 
@@ -1111,13 +1142,45 @@ class PersonelEklePage(QWidget):
                 except Exception as e_user:
                     logger.error(f"Kullanıcı hesabı oluşturma hatası: {e_user}")
 
-            QMessageBox.information(
-                self, "Başarılı",
-                "Personel kaydı başarıyla " + ("güncellendi" if self._is_edit else "eklendi") + "."
-            )
+                # Yeni ekleme: kullanıcıya belge yükleme seçeneği sun
+                yanit = QMessageBox.question(
+                    self,
+                    "Başarılı",
+                    "Personel kaydı başarıyla eklendi.\n\nBelge yüklemek istiyor musunuz?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.Yes
+                )
 
-            if self._on_saved:
-                self._on_saved()
+                if yanit == QMessageBox.StandardButton.Yes:
+                    # Form'u edit mode'a geçir ve açık tut
+                    self._is_edit = True
+                    self._edit_data = data
+                    
+                    # Form başlığını güncelle
+                    if hasattr(self, 'lbl_baslik') and self.lbl_baslik:
+                        self.lbl_baslik.setText(f"Personel Düzenle — {data.get('AdSoyad', '')}")
+                    
+                    # Kaydet butonunu güncelle
+                    if hasattr(self, 'btn_kaydet') and self.btn_kaydet:
+                        self.btn_kaydet.setText("PERSONELI GÜNCELLE")
+                    
+                    # Yeni Personel butonu göster
+                    if hasattr(self, 'btn_yeni_personel') and self.btn_yeni_personel:
+                        self.btn_yeni_personel.setVisible(True)
+                    
+                    # Belge panelini göster (varsa)
+                    if hasattr(self, '_dokuman_panel') and self._dokuman_panel:
+                        self._dokuman_panel.set_entity_id(data["KimlikNo"])
+                    
+                    QMessageBox.information(
+                        self,
+                        "Bilgi",
+                        "Artık belge yükleyebilirsiniz.\n\nİşlemler bittiğinde:\n- 'YENİ PERSONEL' → Başka personel ekleyin\n- 'İptal' → Listeye dönün"
+                    )
+                else:
+                    # Hayır dedi, normal akış devam etsin
+                    if self._on_saved:
+                        self._on_saved()
 
         except Exception as e:
             logger.error(f"Kaydetme hatası: {e}")
@@ -1126,3 +1189,61 @@ class PersonelEklePage(QWidget):
     def _on_cancel(self):
         """İptal — form kapanış sinyali emitir."""
         self.form_closed.emit()
+
+    def _reset_form_for_new_personel(self):
+        """Formu temizle ve yeni personel eklemek için hazırla."""
+        try:
+            # Mod değiştir
+            self._is_edit = False
+            self._edit_data = None
+
+            # Form başlığını güncelle
+            if hasattr(self, 'lbl_baslik') and self.lbl_baslik:
+                self.lbl_baslik.setText("Personel Ekle")
+
+            # Kaydet butonu metnini güncelle
+            if hasattr(self, 'btn_kaydet') and self.btn_kaydet:
+                self.btn_kaydet.setText("PERSONELI KAYDET")
+
+            # Yeni Personel butonunu gizle
+            if hasattr(self, 'btn_yeni_personel') and self.btn_yeni_personel:
+                self.btn_yeni_personel.setVisible(False)
+
+            # Tüm text input'ları temizle
+            for key, widget in self.ui.items():
+                if isinstance(widget, QLineEdit):
+                    widget.clear()
+                elif isinstance(widget, QComboBox):
+                    widget.setCurrentIndex(0)
+                elif isinstance(widget, QDateEdit):
+                    widget.setDate(QDate.currentDate())
+
+            # Fotoğrafı temizle
+            if hasattr(self, 'lbl_resim') and self.lbl_resim:
+                self.lbl_resim.clear()
+                self.lbl_resim.setText("Fotoğraf Yok")
+
+            # TC status icon'u temizle
+            if hasattr(self, '_tc_status') and self._tc_status:
+                self._tc_status.clear()
+
+            # Drive links ve file paths temizle
+            self._drive_links = {}
+            self._file_paths = {}
+
+            # Belge panelini temizle
+            if hasattr(self, '_dokuman_panel') and self._dokuman_panel:
+                self._dokuman_panel.set_entity_id("")
+                if hasattr(self._dokuman_panel, 'clear_all'):
+                    self._dokuman_panel.clear_all()
+
+            logger.info("Form yeni personel için temizlendi")
+            QMessageBox.information(
+                self,
+                "Form Hazır",
+                "Form yeni personel eklemek için temizlendi."
+            )
+
+        except Exception as e:
+            logger.error(f"Form temizleme hatası: {e}")
+            QMessageBox.warning(self, "Uyarı", f"Form temizlenirken hata oluştu: {e}")

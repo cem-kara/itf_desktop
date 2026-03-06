@@ -2,11 +2,12 @@
 PersonelService — Personel yönetimi işlemleri için service katmanı
 Sorumluluklar:
 - Personel verisi yükleme ve filtreleme
-- TC Kimlik No doğrulama (Luhn algoritması)
+- TC Kimlik No doğrulama (resmi T.C. algoritması)
 - Personel kaydı (INSERT/UPDATE/DELETE)
 """
 from typing import Optional, List, Dict
 from core.logger import logger
+from core.validators import validate_tc_kimlik_no
 from database.repository_registry import RepositoryRegistry
 
 
@@ -38,46 +39,13 @@ class PersonelService:
     
     def validate_tc(self, tc: str) -> bool:
         """
-        TC Kimlik No doğrulaması (Luhn algoritması).
+        TC Kimlik No doğrulaması.
         
-        - 11 haneli sayı olmalı
-        - İlk hane 0 olamaz
-        - Luhn checksum geçmeli
-        
-        Args:
-            tc: TC Kimlik No
-        
-        Returns:
-            Geçerli ise True
+        Merkezi validator kullanır (core.validators.validate_tc_kimlik_no)
         """
         try:
-            # String temizle
             tc = str(tc).strip()
-            
-            # 11 hane kontrol
-            if len(tc) != 11:
-                return False
-            
-            # Sadece rakam içermelidir
-            if not tc.isdigit():
-                return False
-            
-            # İlk hane 0 olamaz
-            if tc[0] == "0":
-                return False
-            
-            # Luhn algoritması
-            toplam = 0
-            for i in range(10):
-                digit = int(tc[i])
-                if i % 2 == 0:  # Tek konumlar (1, 3, 5, 7, 9)
-                    digit *= 3
-                toplam += digit
-            
-            checksum_hesaplandi = (10 - (toplam % 10)) % 10
-            checksum_gereken = int(tc[10])
-            
-            return checksum_hesaplandi == checksum_gereken
+            return validate_tc_kimlik_no(tc)
         except Exception as e:
             logger.error(f"TC doğrulama hatası: {e}")
             return False
@@ -200,8 +168,8 @@ class PersonelService:
             Başarılı ise True
         """
         try:
-            # TC doğrula
-            tc = veri.get("TC", "")
+            # KimlikNo (yeni akış) veya TC (geri uyumluluk) doğrula
+            tc = str(veri.get("KimlikNo") or veri.get("TC") or "").strip()
             if not self.validate_tc(tc):
                 logger.error(f"Geçersiz TC Kimlik No: {tc}")
                 return False

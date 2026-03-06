@@ -39,38 +39,89 @@ def _on_save(self):
 ## DOSYA HARİTASI
 
 ```
-core/
-  di.py                  ← 15 DI fabrikası — buradan import et
-  services/              ← Tüm iş mantığı
-    izin_service.py      ← IzinService
-    personel_service.py  ← PersonelService
-    cihaz_service.py     ← CihazService
-    rke_service.py       ← RkeService
-    saglik_service.py    ← SaglikService
-    fhsz_service.py      ← FhszService
-    dashboard_service.py ← DashboardService
-    ariza_service.py | bakim_service.py | kalibrasyon_service.py
-    dokuman_service.py | backup_service.py | log_service.py
-    settings_service.py | file_sync_service.py
-
-database/
-  base_repository.py     ← insert, update, get_by_id, get_by_pk, get_all,
-                            get_by_kod, get_where, get_dirty, delete, mark_clean
-  table_config.py        ← Tablo adları ve PK'lar — buradan kopyala, yazma
-  migrations.py          ← CURRENT_VERSION = 1
-
-ui/
-  theme_template.qss     ← Tüm stil tanımları burada
-  styles/
-    colors.py            ← DarkTheme
-    components.py        ← STYLES dict (geçiş dönemi, kullanımı azalıyor)
-    icons.py             ← IconRenderer, IconColors
-  components/
-    base_table_model.py  ← Tüm TableModel'lerin ebeveyni
-    mesaj_kutusu.py      ← MesajKutusu (QMessageBox yerine kullan)
-  dialogs/
-    mesaj_kutusu.py      ← Merkezi dialog — bilgi/uyarı/hata/soru
-    about_dialog.py      ← HakkindaDialog (LGPL bildirimi içerir)
+REPYS/
+│
+├── main.pyw                     ← Giriş, log yönetimi, migration, auth akışı
+│
+├── core/
+│   ├── config.py                ← AppConfig: app_mode, auto_sync, log ayarları
+│   ├── settings.py              ← ayarlar.json okuma/yazma (get/set)
+│   ├── paths.py                 ← BASE_DIR, LOG_DIR, DATA_DIR, TEMP_DIR
+│   ├── di.py                    ← 15 DI fabrikası — buradan import et
+│   ├── date_utils.py            ← parse_date, to_db_date, to_ui_date
+│   ├── validators.py            ← TC, email, telefon, boş alan validasyonu
+│   ├── text_utils.py            ← turkish_title_case, turkish_upper/lower
+│   ├── logger.py                ← Çoklu handler, structured formatter
+│   ├── log_manager.py           ← Log cleanup ve health check
+│   ├── auth/
+│   │   ├── auth_service.py      ← Giriş/çıkış, şifre değiştirme
+│   │   ├── authorization_service.py  ← Yetki kontrol (RBAC)
+│   │   ├── password_hasher.py   ← bcrypt hash
+│   │   └── session_context.py   ← Aktif kullanıcı bilgisi
+│   └── services/                ← TÜM iş mantığı (UI buraya erişir)
+│       ├── cihaz_service.py         → CihazService
+│       ├── personel_service.py      → PersonelService
+│       ├── rke_service.py           → RkeService
+│       ├── saglik_service.py        → SaglikService
+│       ├── fhsz_service.py          → FhszService
+│       ├── izin_service.py          → IzinService
+│       ├── ariza_service.py         → ArizaService
+│       ├── bakim_service.py         → BakimService
+│       ├── kalibrasyon_service.py   → KalibrasyonService
+│       ├── dashboard_service.py     → DashboardService
+│       ├── dokuman_service.py       → DokumanService
+│       ├── backup_service.py        → BackupService
+│       ├── log_service.py           → LogService
+│       ├── settings_service.py      → SettingsService
+│       └── file_sync_service.py     → FileSyncService
+│
+├── database/
+│   ├── sqlite_manager.py        ← Bağlantı, execute/executemany
+│   ├── base_repository.py       ← insert, update, get_by_id, get_by_pk, get_all,
+│   │                               get_by_kod, get_where, get_dirty, delete, mark_clean
+│   ├── repository_registry.py   ← Tablo adı → repo eşlemesi (singleton)
+│   ├── table_config.py          ← Tablo şemaları, PK'lar, sync ayarları — buradan kopyala
+│   ├── migrations.py            ← CURRENT_VERSION = 1
+│   ├── cloud_adapter.py         ← Online/offline adaptör
+│   ├── gsheet_manager.py        ← Google Sheets batch okuma/yazma
+│   ├── sync_service.py          ← Push/pull akışı
+│   ├── sync_worker.py           ← QThread tabanlı sync
+│   └── repositories/            ← Özel sorgular (BaseRepository extend eder)
+│       ├── personel_repository.py   → PersonelRepository
+│       ├── cihaz_repository.py      → CihazRepository
+│       ├── rke_repository.py        → RKERepository
+│       ├── cihaz_teknik_repository.py
+│       ├── cihaz_teknik_belge_repository.py
+│       ├── cihaz_belgeler_repository.py
+│       └── dokumanlar_repository.py
+│
+└── ui/
+    ├── theme_template.qss       ← Tüm renkler token tabanlı
+    ├── theme_manager.py         ← ThemeManager.instance()
+    ├── main_window.py           ← Ana pencere
+    ├── sidebar.py               ← Menü
+    ├── styles/
+    │   ├── colors.py            ← DarkTheme / C alias
+    │   ├── themes.py            ← DARK / LIGHT token dict
+    │   ├── components.py        ← STYLES dict (geçiş dönemi, kullanımı azalıyor)
+    │   └── icons.py             ← Icons, IconRenderer, IconColors
+    ├── components/
+    │   ├── base_table_model.py  ← Tüm model sınıflarının ebeveyni
+    │   └── formatted_widgets.py ← apply_title_case_formatting vb.
+    ├── dialogs/
+    │   ├── mesaj_kutusu.py      ← Merkezi dialog — bilgi/uyarı/hata/soru
+    │   └── about_dialog.py      ← HakkindaDialog (LGPL bildirimi içerir)
+    ├── pages/
+    │   ├── dashboard.py
+    │   ├── cihaz/
+    │   ├── personel/
+    │   ├── rke/
+    │   └── placeholder.py
+    └── admin/
+        ├── admin_panel.py
+        ├── settings_page.py
+        ├── backup_page.py
+        └── yil_sonu_devir_page.py
 ```
 
 ---
@@ -490,7 +541,7 @@ Enum grubunu her zaman açıkça belirt:
 
 ---
 
-## TEKRAR EDEN HATA KALIPLARl
+## TEKRAR EDEN HATA KALIPLARI
 
 ### 1. `self._svc` None guard eksik
 ```python
@@ -570,13 +621,7 @@ personel_svc.get_personel_listesi()
 
 | # | Dosya | Satır | Yapılacak |
 |---|---|---|---|
-| TODO-3 | `personel/personel_overview_panel.py` | 67 | `self._registry` → `get_personel_service(db)` |
-| TODO-3 | `personel/components/personel_overview_panel.py` | 71-72 | lazy `get_registry` → `get_personel_service` |
-| TODO-6b | `cihaz/teknik_hizmetler.py` | 26 | `STYLES.get("tab","")` satırını sil |
 | TODO-6 | Tüm UI | — | 193 adet `setStyleSheet(f-string)` — fırsatçı |
-| TODO-6c | `personel/saglik_takip.py` | 886, 902 | `QPropertyAnimation.DeleteWhenStopped` düzelt |
-| TODO-7 | `core/cihaz_ozet_servisi.py` | — | `git rm` ile sil |
-| TODO-7 | `ui/components/data_table.py` | — | `git rm` ile sil |
 | TODO-8 | `tests/services/` | — | Test klasörü henüz yok |
 
 ---
@@ -691,6 +736,12 @@ EOF
 2026-03-06  TODO-7 tamamlandı (obselete dosyalar git rm ile silindi)
 2026-03-06  CHANGELOG.md + .gitmessage + copilot-instructions.md v2 deployed
 2026-03-06  İlk standardize commit: "refactor(core,ui,database): Achieve project-wide type-safety" (v0.3.0) 
+2026-03-07  personel_ekle.py + base_dokuman_panel.py — kayıt sonrası belge yükleme akışı ve form reset (Yeni Personel) düzeltildi
+2026-03-07  izin_service.py — yıllık hakediş/izin limit motoru + çakışma kontrolü + Izin_Bilgi None→0 normalize eklendi
+2026-03-07  izin_takip.py + hizli_izin_giris.py — limit kuralı servis katmanından ortak kullanılacak şekilde standardize edildi
+2026-03-07  izin_takip.py — açılış filtreleri (Ay/Yıl) Tümü varsayılanına alındı
+2026-03-07  tests/test_izin_service.py — hakediş, limit, normalize, çakışma senaryoları eklendi (59 passed)
+2026-03-07  README.md + CHANGELOG.md — v0.3.0 WIP dokümantasyon güncellendi
 ── İLERİ AGENDA: TODO-6 (193× setStyleSheet refactor) ve TODO-8 (test infrastructure) ──
 ```
 

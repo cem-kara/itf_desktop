@@ -12,12 +12,17 @@ Radyoloji Teknikeri Odası (RTO) için geliştirilmiş, modern ve tip-güvenli m
 - **PySide6 Uyumluluğu** — Tüm enum'lar modern `.Type` formatına güncellendi
 - **BaseTableModel Standardizasyonu** — Tüm tablolar merkezi model üzerinden
 - **Development Workflow** — CHANGELOG.md + .gitmessage + conventional commits
+- **İzin Kural Motoru** — Yıllık/Şua/diğer izinler için merkezi max gün doğrulaması (servis katmanı)
+- **İzin Çakışma Kontrolü** — Personel bazlı tarih overlap kontrolü (iptal kayıtları hariç)
+- **Yeni Personelde İzin Bootstrap** — `Izin_Bilgi` otomatik oluşturma + `None -> 0.0` normalize
+- **Test Kapsamı** — `tests/test_izin_service.py` içinde 59 geçen test (hakediş, limit, çakışma, normalize)
 
 ## 📋 Özellikler
 
 ### 👥 Personel Yönetimi
 - **Personel Listesi** — Tüm personel kaydını merkezi database'de takip edin
 - **Personel Ekleme** — Yeni personel bilgilerini sisteme kaydedin
+- **Belge Yükleme Akışı** — Kayıt sonrası belge yükleme ve "Yeni Personel" ile hızlı form sıfırlama
 - **İzin Takibi** — İzin giriş-çıkış işlemlerini ve izin bilgilerini yönetin
 - **Sağlık Takibi** — Sağlık muayene takvimini tutun
 - **FHSZ Yönetimi** — Fiili Hizmet Süresi Zammı hak ediş hesabı
@@ -63,8 +68,8 @@ Radyoloji Teknikeri Odası (RTO) için geliştirilmiş, modern ve tip-güvenli m
 
 1. **Repository klonla:**
    ```bash
-   git clone https://github.com/[username]/itf_desktop.git
-   cd itf_desktop
+    git clone https://github.com/<kullanici-veya-organizasyon>/REPYS.git
+    cd REPYS
    ```
 
 2. **Virtual Environment oluştur:**
@@ -94,7 +99,7 @@ Radyoloji Teknikeri Odası (RTO) için geliştirilmiş, modern ve tip-güvenli m
 ## 📂 Proje Yapısı
 
 ```
-itf_desktop/
+REPYS v3 Projesi/
 ├── main.pyw                    # Ana giriş noktası
 ├── ayarlar.json               # Menü yapılandırması
 ├── CHANGELOG.md               # Versiyon geçmişi (Keep a Changelog)
@@ -270,6 +275,14 @@ logger.error("Hata mesajı")
 python main.pyw
 ```
 
+### İzin Kural Seti (v0.3.0)
+
+- **Yıllık İzin**: tek seferde maksimum `min(30, YillikKalan)`
+- **Şua İzni**: maksimum `SuaKullanilabilirHak`
+- **Diğer İzinler**: `Sabitler (Kod=İzin_Tipi)` tablosunda `Aciklama` sayısal ise limit, boşsa limitsiz
+- **Limit ihlali**: kayıt kesin olarak engellenir
+- **Çakışma**: aynı personelde tarih kesişimi varsa (iptal hariç) kayıt engellenir
+
 ## 🌐 Google Sheets Entegrasyonu
 
 `.credentials.json` aracılığıyla Google Sheets ve Drive'a bağlanır.
@@ -311,6 +324,7 @@ Katkılarınız hoşlanır! Lütfen:
 | ⚙️ Tema Yönetimi | ✅ Tamamlandı |
 | 🧪 Type-Safety (Pylance) | ✅ 0 Hata |
 | 📝 CHANGELOG + Conventional Commits | ✅ Tamamlandı |
+| ✅ İzin Servis Testleri (`test_izin_service.py`) | ✅ 59 Passed |
 | 📱 Runtime Tema Değiştirme | 🔄 Planlı |
 | 🔄 setStyleSheet Refactor (193 adet) | 🔄 Planlı |
 

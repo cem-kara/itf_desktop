@@ -9,6 +9,7 @@ Sorumluluklar:
 """
 from typing import Optional, List, Dict, Tuple
 from datetime import date
+import re
 from core.logger import logger
 from core.date_utils import parse_date, to_ui_date
 from database.repository_registry import RepositoryRegistry
@@ -43,6 +44,18 @@ class IzinService:
     def insert_izin_giris(self, data: dict) -> None:
         """İzin giriş kaydı ekle."""
         try:
+            tc = str(data.get("Personelid", "")).strip()
+            izin_tipi = str(data.get("IzinTipi", "")).strip()
+            try:
+                gun = int(data.get("Gun", 0))
+            except (TypeError, ValueError):
+                gun = 0
+
+            if tc and izin_tipi and gun > 0:
+                ok, msg = self.validate_izin_sure_limit(tc=tc, izin_tipi=izin_tipi, gun=gun)
+                if not ok:
+                    raise ValueError(msg)
+
             self._r.get("Izin_Giris").insert(data)
         except Exception as e:
             logger.error(f"İzin giriş ekleme hatası: {e}")
@@ -83,6 +96,181 @@ class IzinService:
             return True
         
         return False
+
+    def _to_float(self, value, default: float = 0.0) -> float:
+        """None/boş/string değerleri güvenli şekilde float'a çevir."""
+        try:
+            if value is None:
+                return default
+            if isinstance(value, str):
+                s = value.strip().replace(",", ".")
+                if not s:
+                    return default
+                return float(s)
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    def _normalize_izin_bilgi_payload(self, payload: Dict) -> Dict:
+        """Izin_Bilgi sayısal alanlarında None değerleri 0.0'a normalize eder."""
+        numeric_fields = (
+            "YillikDevir",
+            "YillikHakedis",
+            "YillikToplamHak",
+            "YillikKullanilan",
+            "YillikKalan",
+            "SuaKullanilabilirHak",
+            "SuaKullanilan",
+            "SuaKalan",
+            "SuaCariYilKazanim",
+            "RaporMazeretTop",
+        )
+        normalized = dict(payload)
+        for key in numeric_fields:
+            normalized[key] = self._to_float(normalized.get(key), 0.0)
+        return normalized
+
+    def _parse_max_from_aciklama(self, aciklama: str) -> Optional[int]:
+        """Sabitler.Aciklama içinden sayısal max gün değerini çıkar."""
+        text = str(aciklama or "").strip()
+        if not text:
+            return None
+
+        # "10", "10 gün", "max: 15" gibi formatları destekle
+        m = re.search(r"\d+(?:[.,]\d+)?", text)
+        if not m:
+            return None
+
+        try:
+            return max(0, int(float(m.group(0).replace(",", "."))))
+        except (TypeError, ValueError):
+            return None
+
+    def get_izin_max_gun(self, tc: str, izin_tipi: str) -> Optional[int]:
+        """
+        İzin tipi + personel bazlı max gün sınırını döndürür.
+
+        Returns:
+            int: max gün sınırı
+            None: limitsiz
+        """
+        tip = str(izin_tipi or "").strip()
+        tc_str = str(tc or "").strip()
+        if not tip:
+            return None
+
+        try:
+            izin_bilgi = self._r.get("Izin_Bilgi").get_by_id(tc_str) if tc_str else None
+
+            if tip == "Yıllık İzin":
+                # Tek seferde 30'u geçemez, ayrıca toplamda YillikKalan'ı geçemez.
+                kalan = self._to_float((izin_bilgi or {}).get("YillikKalan"), 0.0)
+                return max(0, min(30, int(kalan)))
+
+            if tip == "Şua İzni":
+                # Şua sınırı SuaKullanilabilirHak alanından gelir.
+                sua_hak = self._to_float((izin_bilgi or {}).get("SuaKullanilabilirHak"), 0.0)
+                return max(0, int(sua_hak))
+
+            # Diğer izinler: Sabitler.Aciklama sayısal ise limit, boşsa limitsiz.
+            sabitler = self._r.get("Sabitler").get_all() or []
+            for row in sabitler:
+                if str(row.get("Kod", "")).strip() != "İzin_Tipi":
+                    continue
+                if str(row.get("MenuEleman", "")).strip() != tip:
+                    continue
+                return self._parse_max_from_aciklama(str(row.get("Aciklama", "")))
+
+            return None
+        except Exception as e:
+            logger.error(f"Max izin gün hesaplama hatası: {e}")
+            return None
+
+    def validate_izin_sure_limit(self, tc: str, izin_tipi: str, gun: int) -> tuple[bool, str]:
+        """İzin süresi limitini doğrular; limit aşımı varsa kaydı engeller."""
+        try:
+            if gun <= 0:
+                return False, "İzin gün sayısı 0'dan büyük olmalıdır."
+
+            max_gun = self.get_izin_max_gun(tc=tc, izin_tipi=izin_tipi)
+            if max_gun is None:
+                return True, ""
+
+            if gun > max_gun:
+                return False, f"{izin_tipi} için maksimum {max_gun} gün girilebilir."
+
+            return True, ""
+        except Exception as e:
+            logger.error(f"İzin limit doğrulama hatası: {e}")
+            return False, "İzin limit doğrulama sırasında hata oluştu."
+
+    def hesapla_yillik_hak(self, baslama_tarihi: str) -> float:
+        """
+        Memuriyete başlama tarihine göre yıllık izin hakkını hesapla.
+
+        Kural:
+        - 1 yıldan az hizmet: 0 gün
+        - 1-10 yıl (10 dahil): 20 gün
+        - 10 yıldan fazla: 30 gün
+        """
+        try:
+            baslama = parse_date(baslama_tarihi or "")
+            if not baslama:
+                return 0.0
+
+            bugun = date.today()
+            hizmet_yili = bugun.year - baslama.year
+            if (bugun.month, bugun.day) < (baslama.month, baslama.day):
+                hizmet_yili -= 1
+
+            if hizmet_yili < 1:
+                return 0.0
+            if hizmet_yili <= 10:
+                return 20.0
+            return 30.0
+        except Exception as e:
+            logger.error(f"Yıllık hak hesaplama hatası: {e}")
+            return 0.0
+
+    def create_or_update_izin_bilgi(self, tc: str, ad_soyad: str, baslama_tarihi: str) -> bool:
+        """
+        Personel için Izin_Bilgi kaydını oluşturur/günceller.
+        Yıllık hak ve kalan alanlarını hizmet süresine göre set eder.
+        """
+        try:
+            tc = str(tc or "").strip()
+            if not tc:
+                return False
+
+            yillik_hak = self._to_float(self.hesapla_yillik_hak(baslama_tarihi), 0.0)
+            payload = {
+                "TCKimlik": tc,
+                "AdSoyad": str(ad_soyad or "").strip(),
+                "YillikDevir": 0.0,
+                "YillikHakedis": yillik_hak,
+                "YillikToplamHak": yillik_hak,
+                "YillikKullanilan": 0.0,
+                "YillikKalan": yillik_hak,
+                "SuaKullanilabilirHak": 0.0,
+                "SuaKullanilan": 0.0,
+                "SuaKalan": 0.0,
+                "SuaCariYilKazanim": 0.0,
+                "RaporMazeretTop": 0.0,
+            }
+            payload = self._normalize_izin_bilgi_payload(payload)
+
+            repo = self._r.get("Izin_Bilgi")
+            mevcut = repo.get_by_id(tc)
+            if mevcut:
+                repo.update(tc, payload)
+                logger.info(f"Izin_Bilgi güncellendi: {tc} (Yıllık Hak: {yillik_hak})")
+            else:
+                repo.insert(payload)
+                logger.info(f"Izin_Bilgi oluşturuldu: {tc} (Yıllık Hak: {yillik_hak})")
+            return True
+        except Exception as e:
+            logger.error(f"Izin_Bilgi oluşturma/güncelleme hatası: {e}")
+            return False
     
     # ───────────────────────────────────────────────────────────
     #  Veri Yükleme
@@ -277,6 +465,58 @@ class IzinService:
         except Exception as e:
             logger.error(f"İzin giriş listesi hatası: {e}")
             return []
+
+    def has_izin_cakisma(
+        self,
+        tc: str,
+        baslama_tarihi: str,
+        bitis_tarihi: str,
+        ignore_izin_id: Optional[str] = None,
+    ) -> bool:
+        """
+        Verilen tarih aralığı için personelde izin çakışması var mı?
+
+        Kural:
+        - Durum "İptal" olanlar dikkate alınmaz.
+        - Farklı personel kayıtları dikkate alınmaz.
+        - Çakışma formülü: (yeni_bas <= vt_bit) and (yeni_bit >= vt_bas)
+        - vt_bit boşsa vt_bas ile aynı kabul edilir.
+        """
+        try:
+            tc_str = str(tc or "").strip()
+            if not tc_str:
+                return False
+
+            yeni_bas = parse_date(baslama_tarihi or "")
+            yeni_bit = parse_date(bitis_tarihi or "")
+            if not yeni_bas or not yeni_bit:
+                return False
+
+            all_izin = self._r.get("Izin_Giris").get_all() or []
+            for kayit in all_izin:
+                if str(kayit.get("Durum", "")).strip() == "İptal":
+                    continue
+
+                if str(kayit.get("Personelid", "")).strip() != tc_str:
+                    continue
+
+                if ignore_izin_id and str(kayit.get("Izinid", "")).strip() == str(ignore_izin_id).strip():
+                    continue
+
+                vt_bas = parse_date(kayit.get("BaslamaTarihi", ""))
+                vt_bit = parse_date(kayit.get("BitisTarihi", ""))
+                if not vt_bas:
+                    continue
+                if not vt_bit:
+                    vt_bit = vt_bas
+
+                if (yeni_bas <= vt_bit) and (yeni_bit >= vt_bas):
+                    return True
+
+            return False
+        except Exception as e:
+            logger.error(f"İzin çakışma kontrolü hatası: {e}")
+            return False
 
     def bakiye_dus(self, tc: str, izin_tipi: str, gun: int) -> None:
         """

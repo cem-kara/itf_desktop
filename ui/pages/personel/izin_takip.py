@@ -158,8 +158,8 @@ class IzinTakipPage(QWidget):
         self.cmb_ay.addItem("Tümü", 0)
         for i in range(1, 13):
             self.cmb_ay.addItem(AY_ISIMLERI[i], i)
-        # Mevcut ayı seç
-        self.cmb_ay.setCurrentIndex(date.today().month)
+        # Varsayılan: Tüm aylar (kayıtlar ilk açılışta görünür)
+        self.cmb_ay.setCurrentIndex(0)
         fp.addWidget(self.cmb_ay)
 
         lbl_yil = QLabel("Yıl:")
@@ -176,8 +176,8 @@ class IzinTakipPage(QWidget):
         self.cmb_yil.addItem("Tümü", 0)
         for y in range(current_year, current_year - 6, -1):
             self.cmb_yil.addItem(str(y), y)
-        # Mevcut yılı seç (index 1)
-        self.cmb_yil.setCurrentIndex(1)
+        # Varsayılan: Tüm yıllar (kayıtlar ilk açılışta görünür)
+        self.cmb_yil.setCurrentIndex(0)
         fp.addWidget(self.cmb_yil)
 
         fp.addStretch()
@@ -711,6 +711,9 @@ class IzinTakipPage(QWidget):
                 self.lbl_personel_info.setText(f"TC: {tc}  |  {sinif}  |  {gorev}")
             self._load_bakiye(tc)
 
+        # Personel değişince izin tipi limitini yeniden hesapla
+        self._on_izin_tipi_changed(self.cmb_izin_tipi.currentText())
+
         # Tablo filtresi de yenile (personel seçimi dahil)
         self._apply_filters()
 
@@ -721,14 +724,29 @@ class IzinTakipPage(QWidget):
     def _on_izin_tipi_changed(self, tip_text):
         """Seçili izin tipinin max gün sınırını uygula."""
         tip_text = str(tip_text).strip()
-        max_gun = self._izin_max_gun.get(tip_text, 0)
+        tc = str(self.cmb_personel.currentData() or "")
 
-        if max_gun and max_gun > 0:
-            self.spn_gun.setMaximum(max_gun)
-            if self.spn_gun.value() > max_gun:
-                self.spn_gun.setValue(max_gun)
-            self.lbl_max_gun.setText(f"Bu izin tipi maks. {max_gun} gun")
+        max_gun = None
+        if self._svc and tip_text and tc:
+            max_gun = self._svc.get_izin_max_gun(tc=tc, izin_tipi=tip_text)
+
+        # Personel seçili değilse veya servis yoksa sabit limit fallback
+        if max_gun is None:
+            fallback = self._izin_max_gun.get(tip_text, 0)
+            max_gun = fallback if fallback > 0 else None
+
+        if max_gun is not None:
+            if max_gun > 0:
+                self.spn_gun.setMaximum(max_gun)
+                if self.spn_gun.value() > max_gun:
+                    self.spn_gun.setValue(max_gun)
+                self.lbl_max_gun.setText(f"Bu izin tipi maks. {max_gun} gün")
+            else:
+                # 0 ise limit var ama kullanılabilir gün yok
+                self.spn_gun.setMaximum(365)
+                self.lbl_max_gun.setText("Bu izin tipi için kullanılabilir gün yok")
         else:
+            # None => limitsiz
             self.spn_gun.setMaximum(365)
             self.lbl_max_gun.setText("")
 
@@ -861,12 +879,14 @@ class IzinTakipPage(QWidget):
         bitis = self.dt_bitis.date().toString("yyyy-MM-dd")
         gun = self.spn_gun.value()
 
-        # Max gün kontrolü
-        max_gun = self._izin_max_gun.get(izin_tipi, 0)
-        if max_gun and gun > max_gun:
-            QMessageBox.warning(self, "Limit Aşımı",
-                f"{izin_tipi} için maksimum {max_gun} gün girilebilir.")
-            return
+        # Max gün kontrolü (servis bazlı, kesin engelleme)
+        if self._svc:
+            ok_limit, limit_msg = self._svc.validate_izin_sure_limit(
+                tc=str(tc), izin_tipi=izin_tipi, gun=gun
+            )
+            if not ok_limit:
+                QMessageBox.warning(self, "Limit Aşımı", limit_msg)
+                return
 
         # ═══════════════════════════════════════════════
         # 🔧 TARİH ÇAKIŞMA KONTROLÜ
@@ -906,45 +926,6 @@ class IzinTakipPage(QWidget):
                         f"Lütfen farklı bir tarih seçiniz."
                     )
                     return
-
-        # ═══════════════════════════════════════════════
-        # 🔧 BAKİYE KONTROLÜ (Yıllık İzin ve Şua için)
-        # ═══════════════════════════════════════════════
-        if izin_tipi in ["Yıllık İzin", "Şua İzni"]:
-            try:
-                izin_repo = self._svc.get_izin_bilgi_repo() if self._svc else None
-                izin_bilgi = izin_repo.get_by_id(tc) if izin_repo else None
-
-                if izin_bilgi:
-                    if izin_tipi == "Yıllık İzin":
-                        kalan = float(izin_bilgi.get("YillikKalan", 0))
-                        if gun > kalan:
-                            cevap = QMessageBox.question(
-                                self, "Bakiye Yetersiz",
-                                f"{ad} personelinin yıllık izin bakiyesi: {kalan} gün\n"
-                                f"Girilen gün sayısı: {gun} gün\n\n"
-                                f"Eksik: {gun - kalan} gün\n\n"
-                                f"Yine de kaydetmek istiyor musunuz?",
-                                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
-                            )
-                            if cevap != QMessageBox.StandardButton.Yes:
-                                return
-
-                    elif izin_tipi == "Şua İzni":
-                        kalan = float(izin_bilgi.get("SuaKalan", 0))
-                        if gun > kalan:
-                            cevap = QMessageBox.question(
-                                self, "Bakiye Yetersiz",
-                                f"{ad} personelinin şua izin bakiyesi: {kalan} gün\n"
-                                f"Girilen gün sayısı: {gun} gün\n\n"
-                                f"Eksik: {gun - kalan} gün\n\n"
-                                f"Yine de kaydetmek istiyor musunuz?",
-                                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
-                            )
-                            if cevap != QMessageBox.StandardButton.Yes:
-                                return
-            except Exception as e:
-                logger.error(f"Bakiye kontrolü hatası: {e}")
 
         # ═══════════════════════════════════════════════
         # KAYDET

@@ -100,8 +100,14 @@ class BaseDokumanPanel(QWidget):
         self._svc = DokumanService(self._db) if self._db else None
         if self._entity_id:
             self.setEnabled(True)
+            # Form kontrollerini enable et
+            if hasattr(self, '_form') and self._form:
+                self._form.setEnabled(True)
             self._load_dokumanlari()
         else:
+            # Form kontrollerini disable et
+            if hasattr(self, '_form') and self._form:
+                self._form.setEnabled(False)
             self._tablo.setRowCount(0)
 
     def load_data(self):
@@ -152,13 +158,13 @@ class BaseDokumanPanel(QWidget):
             root.addWidget(warn)
 
         # ── Yükleme formu ──────────────────────────────────────
-        form = QFrame()
-        form.setStyleSheet(
+        self._form = QFrame()
+        self._form.setStyleSheet(
             "background:rgba(255,255,255,0.03);"
             "border:1px solid rgba(255,255,255,0.07);"
             "border-radius:8px;"
         )
-        fl = QVBoxLayout(form)
+        fl = QVBoxLayout(self._form)
         fl.setContentsMargins(14, 12, 14, 12)
         fl.setSpacing(10)
 
@@ -212,9 +218,9 @@ class BaseDokumanPanel(QWidget):
         fl.addLayout(r2)
 
         if not self._entity_id:
-            form.setEnabled(False)
+            self._form.setEnabled(False)
 
-        root.addWidget(form)
+        root.addWidget(self._form)
 
         # ── Belgeler listesi ───────────────────────────────────
         root.addWidget(self._lbl("Yüklü Belgeler", bold=True, color=_ACCENT, size=12))

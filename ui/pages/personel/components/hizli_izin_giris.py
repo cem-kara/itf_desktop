@@ -150,12 +150,30 @@ class HizliIzinGirisDialog(QDialog):
 
     def _on_izin_tipi_changed(self, tip_text):
         tip_text = str(tip_text).strip()
-        max_gun = self._izin_max_gun.get(tip_text, 0)
-        if max_gun and max_gun > 0:
-            self.ui["gun"].setMaximum(max_gun)
-            if self.ui["gun"].value() > max_gun:
-                self.ui["gun"].setValue(max_gun)
-            self.ui["max_gun_label"].setText(f"Bu izin tipi için en fazla {max_gun} gün girilebilir.")
+        tc = str(self._personel.get("KimlikNo", "") or "")
+
+        max_gun = None
+        try:
+            izin_svc = get_izin_service(self._db)
+            if izin_svc and tip_text and tc:
+                max_gun = izin_svc.get_izin_max_gun(tc=tc, izin_tipi=tip_text)
+        except Exception as e:
+            logger.error(f"Hızlı izin max gün hesaplama hatası: {e}")
+
+        # fallback: sabit tanım
+        if max_gun is None:
+            fallback = self._izin_max_gun.get(tip_text, 0)
+            max_gun = fallback if fallback > 0 else None
+
+        if max_gun is not None:
+            if max_gun > 0:
+                self.ui["gun"].setMaximum(max_gun)
+                if self.ui["gun"].value() > max_gun:
+                    self.ui["gun"].setValue(max_gun)
+                self.ui["max_gun_label"].setText(f"Bu izin tipi için en fazla {max_gun} gün girilebilir.")
+            else:
+                self.ui["gun"].setMaximum(365)
+                self.ui["max_gun_label"].setText("Bu izin tipi için kullanılabilir gün yok.")
         else:
             self.ui["gun"].setMaximum(365)
             self.ui["max_gun_label"].setText("")
@@ -197,6 +215,14 @@ class HizliIzinGirisDialog(QDialog):
         try:
             izin_svc = get_izin_service(self._db)
             registry = RepositoryRegistry(self._db)
+
+            # Max gün kontrolü (kesin engelleme)
+            ok_limit, limit_msg = izin_svc.validate_izin_sure_limit(
+                tc=str(tc or ""), izin_tipi=izin_tipi, gun=gun
+            )
+            if not ok_limit:
+                QMessageBox.warning(self, "Limit Aşımı", limit_msg)
+                return
             
             # Çakışma kontrolü
             all_izin = izin_svc.get_izin_giris_repo().get_all()
@@ -210,16 +236,6 @@ class HizliIzinGirisDialog(QDialog):
                 if vt_bas and vt_bit and yeni_bas and yeni_bit and (yeni_bas <= vt_bit) and (yeni_bit >= vt_bas):
                     QMessageBox.warning(self, "Çakışma", "Bu tarihlerde zaten bir izin kaydı mevcut.")
                     return
-
-            # Bakiye kontrolü
-            if izin_tipi in ["Yıllık İzin", "Şua İzni"]:
-                izin_bilgi = registry.get("Izin_Bilgi").get_by_id(tc or "")
-                if izin_bilgi:
-                    alan = "YillikKalan" if izin_tipi == "Yıllık İzin" else "SuaKalan"
-                    kalan = float(izin_bilgi.get(alan, 0))
-                    if gun > kalan:
-                        cevap = QMessageBox.question(self, "Yetersiz Bakiye", f"Kalan bakiye: {kalan} gün. Devam edilsin mi?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
-                        if cevap != QMessageBox.StandardButton.Yes: return
 
             # Kaydet
             izin_id = str(uuid.uuid4())[:8].upper()
@@ -247,15 +263,15 @@ class HizliIzinGirisDialog(QDialog):
             izin_bilgi = registry.get("Izin_Bilgi").get_by_id(tc)
             if not izin_bilgi: return
             if izin_tipi == "Yıllık İzin":
-                yeni_kul = float(izin_bilgi.get("YillikKullanilan", 0)) + gun
-                yeni_kal = float(izin_bilgi.get("YillikKalan", 0)) - gun
+                yeni_kul = float(izin_bilgi.get("YillikKullanilan") or 0) + gun
+                yeni_kal = float(izin_bilgi.get("YillikKalan") or 0) - gun
                 registry.get("Izin_Bilgi").update(tc, {"YillikKullanilan": yeni_kul, "YillikKalan": yeni_kal})
             elif izin_tipi == "Şua İzni":
-                yeni_kul = float(izin_bilgi.get("SuaKullanilan", 0)) + gun
-                yeni_kal = float(izin_bilgi.get("SuaKalan", 0)) - gun
+                yeni_kul = float(izin_bilgi.get("SuaKullanilan") or 0) + gun
+                yeni_kal = float(izin_bilgi.get("SuaKalan") or 0) - gun
                 registry.get("Izin_Bilgi").update(tc, {"SuaKullanilan": yeni_kul, "SuaKalan": yeni_kal})
             elif izin_tipi in ["Rapor", "Mazeret İzni", "Sağlık Raporu"]:
-                yeni_top = float(izin_bilgi.get("RaporMazeretTop", 0)) + gun
+                yeni_top = float(izin_bilgi.get("RaporMazeretTop") or 0) + gun
                 registry.get("Izin_Bilgi").update(tc, {"RaporMazeretTop": yeni_top})
         except Exception as e:
             logger.error(f"Bakiye düşme hatası: {e}")
