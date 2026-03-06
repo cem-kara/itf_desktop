@@ -684,6 +684,13 @@ EOF
 2026-03-05  cloud_adapter.py — Abstract method get_folder_id implementation (Online+Offline)
 2026-03-05  sqlite_manager.py — execute() return type + lastrowid guards
 2026-03-06  UI katmanı toplu Pylance temizliği — theme/colors/components + personel/cihaz/rke sayfalarında Optional guard, enum ve override düzeltmeleri; proje yeniden hatasız
-── buraya yeni satır ekle ──
+2026-03-06  settings_service.add_tatil() — UNIQUE constraint önlemek için duplicate tarih kontrolü
+2026-03-06  TODO-3 tamamlandı (get_registry → DI)
+2026-03-06  TODO-6b tamamlandı (STYLES.get import temizleme)
+2026-03-06  TODO-6c tamamlandı (QPropertyAnimation enum dosyası zaten doğru)
+2026-03-06  TODO-7 tamamlandı (obselete dosyalar git rm ile silindi)
+2026-03-06  CHANGELOG.md + .gitmessage + copilot-instructions.md v2 deployed
+2026-03-06  İlk standardize commit: "refactor(core,ui,database): Achieve project-wide type-safety" (v0.3.0) 
+── İLERİ AGENDA: TODO-6 (193× setStyleSheet refactor) ve TODO-8 (test infrastructure) ──
 ```
 

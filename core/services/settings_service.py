@@ -207,6 +207,14 @@ class SettingsService:
                     "message": "Geçersiz tarih formatı (YYYY-MM-DD)"
                 }
             
+            # Duplicate tarih kontrolü
+            check_query = "SELECT 1 FROM Tatiller WHERE Tarih = ?"
+            if self._db and self._db.fetchone(check_query, (tarih,)):
+                return {
+                    "success": False,
+                    "message": f"Bu tarih zaten tatil olarak kaydedilmiş: {tarih}"
+                }
+            
             query = """
                 INSERT INTO Tatiller (Tarih, ResmiTatil, sync_status, updated_at)
                 VALUES (?, ?, 'dirty', ?)

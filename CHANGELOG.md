@@ -21,6 +21,10 @@ Format şu kurallara uyar: [Keep a Changelog](https://keepachangelog.com/tr/1.0.
   - `ui/pages/personel/saglik_takip.py`: lineEdit() None guard, parse_date daraltma
   - `ui/pages/personel/components/hizli_saglik_giris.py`: Optional date karşılaştırma
 
+- **Tatil Yönetimi**
+  - `core/services/settings_service.py` - `add_tatil()`: UNIQUE constraint hatası için duplicate tarih kontrolü eklendi
+  - Aynı tarihte iki tatil eklemeyi önlemek için ON INSERT kontrol (fetchone pattern)
+
 ### 🔧 Changed
 - **BaseTableModel Integration**
   - `set_rows()` → `set_data()` standardizasyonu (ariza_islem, fhsz_yonetim)
