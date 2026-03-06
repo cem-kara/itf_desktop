@@ -25,6 +25,14 @@ Format şu kurallara uyar: [Keep a Changelog](https://keepachangelog.com/tr/1.0.
   - `core/services/settings_service.py` - `add_tatil()`: UNIQUE constraint hatası için duplicate tarih kontrolü eklendi
   - Aynı tarihte iki tatil eklemeyi önlemek için ON INSERT kontrol (fetchone pattern)
 
+### ✨ Added
+- **Modern Message Dialog System**
+  - `ui/dialogs/mesaj_kutusu.py`: Yeni temalı mesaj kutusu (native QMessageBox yerine)
+  - QMessageBox global hook (`qmessagebox_yakala`) — tüm mevcut çağrılar otomatik temalı dialoga düşer
+  - Classic modal tasarım: yarı saydam overlay + elevation/shadow + kart layout
+  - Frameless + transparan arka plan ile modern yarı modal deneyimi
+  - Windows sistem temasından bağımsız (dark/light uyumluluk sorunu çözüldü)
+
 ### 🔧 Changed
 - **BaseTableModel Integration**
   - `set_rows()` → `set_data()` standardizasyonu (ariza_islem, fhsz_yonetim)

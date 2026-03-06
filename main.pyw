@@ -19,6 +19,7 @@ from core.di import get_auth_services
 from ui.auth.login_dialog import LoginDialog
 from ui.auth.change_password_dialog import ChangePasswordDialog
 from ui.theme_manager import ThemeManager
+from ui.dialogs.mesaj_kutusu import qmessagebox_yakala
 
 
 def ensure_database():
@@ -68,6 +69,7 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName(AppConfig.APP_NAME)
     ThemeManager.instance().apply_app_theme(app)
+    qmessagebox_yakala()
     app_icon_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "ui",

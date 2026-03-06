@@ -171,7 +171,7 @@ class IzinTakipPage(QWidget):
 
         self.cmb_yil = QComboBox()
         self.cmb_yil.setStyleSheet(S["combo_filter"])
-        self.cmb_yil.setFixedWidth(80)
+        self.cmb_yil.setFixedWidth(100)
         current_year = date.today().year
         self.cmb_yil.addItem("Tümü", 0)
         for y in range(current_year, current_year - 6, -1):

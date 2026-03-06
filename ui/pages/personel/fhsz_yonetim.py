@@ -239,7 +239,7 @@ class FHSZYonetimPage(QWidget):
         
         self.cmb_yil = QComboBox()
         self.cmb_yil.setStyleSheet(S["combo"])
-        self.cmb_yil.setFixedWidth(90)
+        self.cmb_yil.setFixedWidth(100)
         by = datetime.now().year
         for y in range(by - 5, by + 5):
             self.cmb_yil.addItem(str(y))

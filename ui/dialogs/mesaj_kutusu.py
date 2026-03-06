@@ -31,10 +31,11 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QFrame, QSizePolicy,
+    QLabel, QPushButton, QFrame, QSizePolicy, QMessageBox,
+    QGraphicsDropShadowEffect,
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QColor
 
 from ui.styles.icons import Icons, IconColors
 
@@ -136,8 +137,10 @@ class _MesajDialog(QDialog):
         self.setWindowTitle(self._baslik)
         self.setWindowFlags(
             Qt.WindowType.Dialog |
-            Qt.WindowType.WindowCloseButtonHint
+            Qt.WindowType.FramelessWindowHint
         )
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.setMinimumWidth(380)
         self.setMaximumWidth(560)
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
@@ -149,16 +152,27 @@ class _MesajDialog(QDialog):
 
     def _build_ui(self):
         root = QVBoxLayout(self)
-        root.setContentsMargins(0, 0, 0, 0)
+        root.setContentsMargins(24, 20, 24, 20)
         root.setSpacing(0)
+
+        card = QFrame()
+        card.setObjectName("mk_card")
+        shadow = QGraphicsDropShadowEffect(card)
+        shadow.setBlurRadius(40)
+        shadow.setOffset(0, 10)
+        shadow.setColor(QColor(0, 0, 0, 190))
+        card.setGraphicsEffect(shadow)
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(0, 0, 0, 0)
+        card_layout.setSpacing(0)
 
         # Üst şerit: renkli sol bar + ikon + başlık
         header = QFrame()
         header.setObjectName("mk_header")
-        header.setFixedHeight(56)
+        header.setFixedHeight(60)
         h_layout = QHBoxLayout(header)
-        h_layout.setContentsMargins(0, 0, 16, 0)
-        h_layout.setSpacing(0)
+        h_layout.setContentsMargins(0, 0, 18, 0)
+        h_layout.setSpacing(10)
 
         # Renkli sol bar
         sol_bar = QFrame()
@@ -169,7 +183,7 @@ class _MesajDialog(QDialog):
         # İkon
         ikon_lbl = QLabel()
         ikon_lbl.setObjectName("mk_ikon")
-        ikon_lbl.setFixedSize(44, 44)
+        ikon_lbl.setFixedSize(34, 34)
         ikon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         try:
             pm = Icons.pixmap(
@@ -187,13 +201,13 @@ class _MesajDialog(QDialog):
         baslik_lbl.setObjectName("mk_baslik")
         h_layout.addWidget(baslik_lbl, 1)
 
-        root.addWidget(header)
+        card_layout.addWidget(header)
 
         # Mesaj alanı
         icerik = QFrame()
         icerik.setObjectName("mk_icerik")
         i_layout = QVBoxLayout(icerik)
-        i_layout.setContentsMargins(20, 16, 20, 16)
+        i_layout.setContentsMargins(22, 18, 22, 18)
 
         mesaj_lbl = QLabel(self._mesaj)
         mesaj_lbl.setObjectName("mk_mesaj")
@@ -202,41 +216,42 @@ class _MesajDialog(QDialog):
             Qt.TextInteractionFlag.TextSelectableByMouse
         )
         i_layout.addWidget(mesaj_lbl)
-        root.addWidget(icerik)
+        card_layout.addWidget(icerik)
 
         # Buton alanı
         buton_frame = QFrame()
         buton_frame.setObjectName("mk_buton_frame")
         b_layout = QHBoxLayout(buton_frame)
-        b_layout.setContentsMargins(16, 10, 16, 14)
-        b_layout.setSpacing(8)
+        b_layout.setContentsMargins(16, 12, 16, 14)
+        b_layout.setSpacing(10)
         b_layout.addStretch()
 
         if self._tur == _Tur.SORU:
             btn_hayir = QPushButton("Hayır")
             btn_hayir.setObjectName("mk_btn_secondary")
-            btn_hayir.setFixedHeight(34)
-            btn_hayir.setMinimumWidth(80)
+            btn_hayir.setFixedHeight(36)
+            btn_hayir.setMinimumWidth(86)
             btn_hayir.clicked.connect(self.reject)
             b_layout.addWidget(btn_hayir)
 
             btn_evet = QPushButton("Evet")
             btn_evet.setObjectName("mk_btn_primary")
-            btn_evet.setFixedHeight(34)
-            btn_evet.setMinimumWidth(80)
+            btn_evet.setFixedHeight(36)
+            btn_evet.setMinimumWidth(86)
             btn_evet.clicked.connect(self._on_evet)
             btn_evet.setDefault(True)
             b_layout.addWidget(btn_evet)
         else:
             btn_tamam = QPushButton("Tamam")
             btn_tamam.setObjectName("mk_btn_primary")
-            btn_tamam.setFixedHeight(34)
-            btn_tamam.setMinimumWidth(80)
+            btn_tamam.setFixedHeight(36)
+            btn_tamam.setMinimumWidth(86)
             btn_tamam.clicked.connect(self.accept)
             btn_tamam.setDefault(True)
             b_layout.addWidget(btn_tamam)
 
-        root.addWidget(buton_frame)
+        card_layout.addWidget(buton_frame)
+        root.addWidget(card)
 
     def _on_evet(self):
         self._onaylandi = True
@@ -251,33 +266,43 @@ class _MesajDialog(QDialog):
 
         self.setStyleSheet("""
             QDialog {{
+                background-color: rgba(5, 10, 18, 190);
+            }}
+
+            QFrame#mk_card {{
                 background-color: {};
+                border: 2px solid {};
+                border-radius: 16px;
             }}
 
             /* Başlık şeridi */
             QFrame#mk_header {{
                 background-color: {};
                 border-bottom: 1px solid {};
+                border-top-left-radius: 16px;
+                border-top-right-radius: 16px;
             }}
             QFrame#mk_sol_bar {{
                 background-color: {};
                 border: none;
             }}
             QLabel#mk_ikon {{
-                background: transparent;
+                background-color: {};
+                border: 1px solid {};
+                border-radius: 17px;
                 padding: 0px;
             }}
             QLabel#mk_baslik {{
-                font-size: 13px;
+                font-size: 14px;
                 font-weight: 700;
                 color: {};
                 background: transparent;
-                padding-left: 4px;
+                padding-left: 2px;
             }}
 
             /* Mesaj alanı */
             QFrame#mk_icerik {{
-                background-color: {};
+                background-color: transparent;
             }}
             QLabel#mk_mesaj {{
                 font-size: 13px;
@@ -290,6 +315,8 @@ class _MesajDialog(QDialog):
             QFrame#mk_buton_frame {{
                 background-color: {};
                 border-top: 1px solid {};
+                border-bottom-left-radius: 16px;
+                border-bottom-right-radius: 16px;
             }}
 
             /* Tamam / Evet butonu */
@@ -297,10 +324,10 @@ class _MesajDialog(QDialog):
                 background-color: {};
                 color: #ffffff;
                 border: none;
-                border-radius: 5px;
+                border-radius: 7px;
                 font-size: 13px;
                 font-weight: 600;
-                padding: 0 18px;
+                padding: 0 20px;
             }}
             QPushButton#mk_btn_primary:hover {{
                 background-color: {}cc;
@@ -314,10 +341,10 @@ class _MesajDialog(QDialog):
                 background-color: transparent;
                 color: {};
                 border: 1px solid {};
-                border-radius: 5px;
+                border-radius: 7px;
                 font-size: 13px;
                 font-weight: 500;
-                padding: 0 18px;
+                padding: 0 20px;
             }}
             QPushButton#mk_btn_secondary:hover {{
                 background-color: {};
@@ -327,11 +354,11 @@ class _MesajDialog(QDialog):
                 background-color: {};
             }}
         """.format(
-            c['bg'],
+            c['bg2'], c['border'],
             c['bg2'], c['border'],
             sol,
+            c['bg'], ikon,
             c['text'],
-            c['bg'],
             c['text'],
             c['bg2'], c['border'],
             sol, sol, sol,
@@ -383,3 +410,44 @@ class MesajKutusu:
         d = _MesajDialog(parent, _Tur.SORU, mesaj, baslik)
         d.exec()
         return d.onaylandi
+
+
+_QMESSAGEBOX_PATCHED = False
+
+
+def qmessagebox_yakala() -> None:
+    """QMessageBox çağrılarını MesajKutusu'na yönlendirir."""
+    global _QMESSAGEBOX_PATCHED
+    if _QMESSAGEBOX_PATCHED:
+        return
+
+    def _information(parent, title, text, *args, **kwargs):
+        MesajKutusu.bilgi(parent, str(text), baslik=str(title) if title else "Bilgi")
+        return QMessageBox.StandardButton.Ok
+
+    def _warning(parent, title, text, *args, **kwargs):
+        MesajKutusu.uyari(parent, str(text), baslik=str(title) if title else "Uyarı")
+        return QMessageBox.StandardButton.Ok
+
+    def _critical(parent, title, text, *args, **kwargs):
+        MesajKutusu.hata(parent, str(text), baslik=str(title) if title else "Hata")
+        return QMessageBox.StandardButton.Ok
+
+    def _question(
+        parent,
+        title,
+        text,
+        buttons=QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        defaultButton=QMessageBox.StandardButton.No,
+        *args,
+        **kwargs,
+    ):
+        del buttons, defaultButton, args, kwargs
+        onay = MesajKutusu.soru(parent, str(text), baslik=str(title) if title else "Onay")
+        return QMessageBox.StandardButton.Yes if onay else QMessageBox.StandardButton.No
+
+    QMessageBox.information = staticmethod(_information)
+    QMessageBox.warning = staticmethod(_warning)
+    QMessageBox.critical = staticmethod(_critical)
+    QMessageBox.question = staticmethod(_question)
+    _QMESSAGEBOX_PATCHED = True
