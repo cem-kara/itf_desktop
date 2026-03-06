@@ -33,6 +33,8 @@ class SettingsService:
         try:
             query = "SELECT Rowid, Kod, MenuEleman, Aciklama FROM Sabitler ORDER BY MenuEleman"
             cur = self._db.execute(query)
+            if not cur:
+                return []
             rows = cur.fetchall()
             return [dict(row) for row in rows] if rows else []
         except Exception as e:
@@ -170,6 +172,8 @@ class SettingsService:
         try:
             query = "SELECT Tarih, ResmiTatil FROM Tatiller ORDER BY Tarih"
             cur = self._db.execute(query)
+            if not cur:
+                return []
             rows = cur.fetchall()
             return [dict(row) for row in rows] if rows else []
         except Exception as e:

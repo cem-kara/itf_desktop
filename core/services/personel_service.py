@@ -254,14 +254,6 @@ class PersonelService:
     #  Repository Accessor Methods
     # ───────────────────────────────────────────────────────────
 
-    def get_personel_repo(self):
-        """Personel repository'sini döndür (direkt tablo erişimi için)."""
-        try:
-            return self._r.get("Personel")
-        except Exception as e:
-            logger.error(f"Personel repository erişim hatası: {e}")
-            return None
-
     def get_sabitler_repo(self):
         """Sabitler repository'sini döndür (combo verisi için)."""
         try:

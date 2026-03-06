@@ -82,8 +82,8 @@ class OnlineCloudAdapter(CloudAdapter):
         return drive.find_or_create_folder(folder_name, parent_folder_id)
 
     def get_folder_id(self, folder_name):
-        drive = self._get_drive()
-        return drive.get_folder_id(folder_name)
+        """Klasör ID'sini getir (find_or_create_folder ile aynı)."""
+        return self.find_or_create_folder(folder_name)
 
     def get_worksheet(self, table_name):
         from database.google import get_worksheet

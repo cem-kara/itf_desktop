@@ -182,7 +182,8 @@ class HizliSaglikGirisDialog(QDialog):
             durum = "Gecerli"
         elif "Uygun" in statuses:
             sonuc = "Uygun"
-            if parse_date(sonraki) and parse_date(sonraki) < date.today():
+            sonraki_tarih = parse_date(sonraki)
+            if sonraki_tarih and sonraki_tarih < date.today():
                 durum = "Gecikmis"
             else:
                 durum = "Gecerli"

@@ -18,11 +18,13 @@
 #
 # ═══════════════════════════════════════════════════════════════
 
+from typing import Any, cast
+
 from ui.styles.colors import Colors, DarkTheme, get_current_theme
 from ui.styles.icons  import Icons
 
 
-def _build_component_styles(C=None):
+def _build_component_styles(C: Any = None):
     """
     Aktif tema token'larıyla tüm QSS string'lerini üretir.
     Her tema değişikliğinde taze çağrılır — renkleri baked-in etmez.
@@ -31,8 +33,10 @@ def _build_component_styles(C=None):
     # Aktif temayı themes.py'den al — f-string'ler C.ATTR olarak erişir
     from core.settings import get as _settings_get
     from ui.styles.themes import get_tokens
-    _tokens = get_tokens(_settings_get("theme", "dark"))
-    C = type("_C", (), _tokens)()  # dict → attribute erişimine çevir
+    theme_value = _settings_get("theme", "dark")
+    theme_name = theme_value if isinstance(theme_value, str) and theme_value else "dark"
+    _tokens = get_tokens(theme_name)
+    C = cast(Any, type("_C", (), _tokens)())  # dict → attribute erişimine çevir
     class ComponentStyles:
 
         # ── Sayfa / Çerçeve ──────────────────────────────────────────

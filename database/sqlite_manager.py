@@ -24,7 +24,7 @@ class SQLiteManager:
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.row_factory = sqlite3.Row
 
-    def execute(self, query, params=()):
+    def execute(self, query, params=()) -> sqlite3.Cursor:
         for attempt in range(5):
             try:
                 cur = self.conn.cursor()
@@ -36,6 +36,8 @@ class SQLiteManager:
                     time.sleep(0.1 * (attempt + 1))
                     continue
                 raise
+        # Tüm denemeler tükendiyse (teorik olarak ulaşılmaz)
+        raise sqlite3.OperationalError("Database execution failed after 5 attempts")
 
     def executemany(self, query, params_list):
         cur = self.conn.cursor()
@@ -92,21 +94,21 @@ class SQLiteManager:
                 datetime.now().isoformat(),
             )
         )
-        return cur.lastrowid
+        return cur.lastrowid or 0
 
     def create_role(self, name: str) -> int:
         cur = self.execute(
             "INSERT INTO Roles (RoleName) VALUES (?)",
             (name,)
         )
-        return cur.lastrowid
+        return cur.lastrowid or 0
 
     def create_permission(self, key: str, description: str = "") -> int:
         cur = self.execute(
             "INSERT INTO Permissions (PermissionKey, Description) VALUES (?, ?)",
             (key, description)
         )
-        return cur.lastrowid
+        return cur.lastrowid or 0
 
     def assign_role(self, user_id: int, role_id: int) -> None:
         self.execute(

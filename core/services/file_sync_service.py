@@ -47,7 +47,7 @@ class FileSyncService:
     def __init__(self, db, registry):
         self._db = db
         self._registry = registry
-        self._sabitler_cache: Optional[list] = None
+        self._sabitler_cache: Optional[list[dict]] = None
 
     # ──────────────────────────────────────────────────────────
     #  Public API
@@ -193,7 +193,7 @@ class FileSyncService:
         target = resolve_storage_target(sabitler, folder_name)
         return target.get("drive_folder_id", "")
 
-    def _get_sabitler(self) -> list:
+    def _get_sabitler(self) -> list[dict]:
         """Sabitler'i lazy yükler, cache'ler (sync boyunca bir kez)."""
         if self._sabitler_cache is None:
             try:
@@ -201,6 +201,8 @@ class FileSyncService:
             except Exception as e:
                 logger.warning(f"FileSyncService: Sabitler yüklenemedi: {e}")
                 self._sabitler_cache = []
+        # Type narrowing: if bloğundan sonra kesinlikle list[dict]
+        assert self._sabitler_cache is not None
         return self._sabitler_cache
 
     def _update_drive_path(self, record: dict, drive_link: str) -> bool:

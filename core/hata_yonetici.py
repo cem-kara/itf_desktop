@@ -72,7 +72,8 @@ def qmessagebox_yakala() -> None:
                     from ui.dialogs.mesaj_kutusu import MesajKutusu
                     MesajKutusu.hata(parent, msg, baslik=title)
                 except Exception:
-                    _Orj.critical(parent, title, msg, *args, **kwargs)
+                    pass
+                return _Orj.critical(parent, title, msg, *args, **kwargs)
 
             @staticmethod
             def warning(parent, title, msg, *args, **kwargs):
@@ -81,7 +82,8 @@ def qmessagebox_yakala() -> None:
                     from ui.dialogs.mesaj_kutusu import MesajKutusu
                     MesajKutusu.uyari(parent, msg, baslik=title)
                 except Exception:
-                    _Orj.warning(parent, title, msg, *args, **kwargs)
+                    pass
+                return _Orj.warning(parent, title, msg, *args, **kwargs)
 
             @staticmethod
             def information(parent, title, msg, *args, **kwargs):
@@ -90,7 +92,8 @@ def qmessagebox_yakala() -> None:
                     from ui.dialogs.mesaj_kutusu import MesajKutusu
                     MesajKutusu.bilgi(parent, msg, baslik=title)
                 except Exception:
-                    _Orj.information(parent, title, msg, *args, **kwargs)
+                    pass
+                return _Orj.information(parent, title, msg, *args, **kwargs)
 
         _qw.QMessageBox = _LoggedQMessageBox
         logger.info("QMessageBox log yakalayıcısı aktif edildi.")
@@ -134,7 +137,7 @@ def threading_exception_hook_kur() -> None:
         if args.exc_type is SystemExit:
             return
         tb_str = "".join(
-            traceback.format_exception(args.exc_type, args.exc_value, args.exc_tb)
+            traceback.format_exception(args.exc_type, args.exc_value, args.exc_traceback)
         )
         thread_adi = getattr(args.thread, "name", "Bilinmeyen Thread")
         logger.error(

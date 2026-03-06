@@ -94,7 +94,8 @@ class _LiveThemeMeta(type):
         try:
             from core.settings import get as _settings_get
             from ui.styles.themes import get_tokens
-            theme_name = _settings_get("theme", "dark")
+            theme_value = _settings_get("theme", "dark")
+            theme_name = theme_value if isinstance(theme_value, str) and theme_value else "dark"
             tokens = get_tokens(theme_name)
             if name in tokens:
                 return tokens[name]
@@ -115,6 +116,12 @@ class _LiveThemeMeta(type):
             pass
         # Fallback: sınıf üzerindeki gerçek değer (varsa)
         return type.__getattribute__(cls, name)
+
+
+def _safe_theme_name() -> str:
+    from core.settings import get as _settings_get
+    value = _settings_get("theme", "dark")
+    return value if isinstance(value, str) and value else "dark"
 
 
 class DarkTheme(metaclass=_LiveThemeMeta):
@@ -154,16 +161,14 @@ def get_current_theme():
     Geriye dönük uyumluluk.
     Aktif temanın token dict'ini nesne olarak döndürür.
     """
-    from core.settings import get as _settings_get
     from ui.styles.themes import get_tokens
-    tokens = get_tokens(_settings_get("theme", "dark"))
+    tokens = get_tokens(_safe_theme_name())
     return type("_ActiveTheme", (), tokens)()
 
 
 def get_current_theme_name() -> str:
     """Aktif tema adını döndür: 'dark' veya 'light'."""
-    from core.settings import get as _settings_get
-    return _settings_get("theme", "dark")
+    return _safe_theme_name()
 
 
 # ══════════════════════════════════════════════════════════════
@@ -185,7 +190,8 @@ class _CDictProxy(dict):
     }
 
     def __getitem__(self, key):
-        token = self._KEY_MAP.get(key, key.upper())
+        key_text = str(key)
+        token = self._KEY_MAP.get(key_text, key_text.upper())
         return getattr(DarkTheme, token, super().__getitem__(key))
 
     def get(self, key, default=None):

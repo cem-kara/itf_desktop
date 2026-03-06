@@ -26,7 +26,7 @@ class PersonelOzetServisi:
         try:
             self.db = SQLiteManager(db_path)
             self.registry = RepositoryRegistry(self.db)
-            self.personel_repo = self.registry.personel
+            self.personel_repo = self.registry.get("Personel")
         except Exception as e:
             logger.error(f"PersonelOzetServisi başlatılırken hata: {e}")
             self.db = None
@@ -73,6 +73,8 @@ class PersonelOzetServisi:
         Returns:
             {'toplam_hak': int, 'kullanilan': int, 'kalan': int, ...}
         """
+        if not self.db:
+            return {}
         try:
             sql = """
             SELECT 
@@ -81,7 +83,10 @@ class PersonelOzetServisi:
             FROM Izin_Giris
             WHERE YEAR(BaslamaTarihi) = YEAR(CURRENT_DATE)
             """
-            result = self.db.execute(sql).fetchone()
+            cur = self.db.execute(sql)
+            if not cur:
+                return {}
+            result = cur.fetchone()
             
             return {
                 "toplam_kayit": result["toplam_kayit"] if result else 0,
@@ -101,6 +106,8 @@ class PersonelOzetServisi:
         Returns:
             Muayenesi yaklaşan personel sayısı
         """
+        if not self.db:
+            return 0
         try:
             sql = """
             SELECT COUNT(*) as cnt
@@ -110,7 +117,10 @@ class PersonelOzetServisi:
                 BETWEEN DATE('now') 
                 AND DATE('now', '+? days')
             """
-            result = self.db.execute(sql, [gun]).fetchone()
+            cur = self.db.execute(sql, [gun])
+            if not cur:
+                return 0
+            result = cur.fetchone()
             return result["cnt"] if result else 0
         except Exception as e:
             logger.warning(f"Yakın muayene sorgusu hatası: {e}")
@@ -125,6 +135,8 @@ class PersonelOzetServisi:
         Returns:
             {'toplam_personel': int, 'hak_edecek_personel': int, ...}
         """
+        if not self.db:
+            return {}
         try:
             sql = """
             SELECT 
@@ -133,7 +145,10 @@ class PersonelOzetServisi:
             FROM FHSZ_Puantaj
             WHERE AitYil = YEAR(CURRENT_DATE)
             """
-            result = self.db.execute(sql).fetchone()
+            cur = self.db.execute(sql)
+            if not cur:
+                return {}
+            result = cur.fetchone()
             
             return {
                 "toplam_personel": result["toplam_personel"] if result else 0,
@@ -184,6 +199,8 @@ class PersonelOzetServisi:
         Returns:
             {"yeni_eklemeleri": int, "degisen": int, ...}
         """
+        if not self.db:
+            return {}
         try:
             simdi = datetime.now()
             bugün_basında = simdi.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -195,7 +212,10 @@ class PersonelOzetServisi:
             FROM Personel
             WHERE updated_at >= DATE('now', '-7 days')
             """
-            result = self.db.execute(sql, [bugün_basında.isoformat()]).fetchone()
+            cur = self.db.execute(sql, [bugün_basında.isoformat()])
+            if not cur:
+                return {}
+            result = cur.fetchone()
             
             return {
                 "toplam_degisiklik_haftada": result["toplam_degisiklik"] if result else 0,
@@ -212,6 +232,8 @@ class PersonelOzetServisi:
         Returns:
             {"Görev Yeri": sayı, ...}
         """
+        if not self.db:
+            return {}
         try:
             sql = """
             SELECT GorevYeri, COUNT(*) as cnt
@@ -220,7 +242,10 @@ class PersonelOzetServisi:
             GROUP BY GorevYeri
             ORDER BY cnt DESC
             """
-            rows = self.db.execute(sql).fetchall()
+            cur = self.db.execute(sql)
+            if not cur:
+                return {}
+            rows = cur.fetchall()
             
             dagilim = {}
             for row in rows:
@@ -238,6 +263,8 @@ class PersonelOzetServisi:
         Returns:
             {"Unvan": sayı, ...}
         """
+        if not self.db:
+            return {}
         try:
             sql = """
             SELECT KadroUnvani, COUNT(*) as cnt
@@ -246,7 +273,10 @@ class PersonelOzetServisi:
             GROUP BY KadroUnvani
             ORDER BY cnt DESC
             """
-            rows = self.db.execute(sql).fetchall()
+            cur = self.db.execute(sql)
+            if not cur:
+                return {}
+            rows = cur.fetchall()
             
             dagilim = {}
             for row in rows:

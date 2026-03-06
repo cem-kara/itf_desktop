@@ -38,6 +38,14 @@ class ThemeManager(QObject):
     theme_changed = Signal(str)  # tema adı (str)
 
     # ── Singleton ────────────────────────────────────────────
+    @staticmethod
+    def _normalize_theme_name(value: object) -> str:
+        if isinstance(value, str):
+            name = value.lower()
+            if name in ("dark", "light"):
+                return name
+        return "dark"
+
     @classmethod
     def instance(cls) -> "ThemeManager":
         if cls._instance is None:
@@ -46,7 +54,7 @@ class ThemeManager(QObject):
 
     def __init__(self):
         super().__init__()
-        self._current = settings.get("theme", "dark")
+        self._current: str = self._normalize_theme_name(settings.get("theme", "dark"))
 
     # ── Public API ───────────────────────────────────────────
     def apply_app_theme(self, app: QApplication) -> None:
@@ -105,24 +113,24 @@ class ThemeManager(QObject):
 
         # QPalette
         p = QPalette()
-        p.setColor(QPalette.Window,          QColor(tokens["BG_PRIMARY"]))
-        p.setColor(QPalette.WindowText,      QColor(tokens["TEXT_PRIMARY"]))
-        p.setColor(QPalette.Base,            QColor(tokens["BG_TERTIARY"]))
-        p.setColor(QPalette.AlternateBase,   QColor(tokens["BG_SECONDARY"]))
-        p.setColor(QPalette.Text,            QColor(tokens["TEXT_PRIMARY"]))
-        p.setColor(QPalette.Button,          QColor(tokens["BG_SECONDARY"]))
-        p.setColor(QPalette.ButtonText,      QColor(tokens["TEXT_PRIMARY"]))
-        p.setColor(QPalette.ToolTipBase,     QColor(tokens["BG_ELEVATED"]))
-        p.setColor(QPalette.ToolTipText,     QColor(tokens["TEXT_PRIMARY"]))
-        p.setColor(QPalette.Highlight,       QColor(tokens["ACCENT"]))
-        p.setColor(QPalette.HighlightedText,
+        p.setColor(QPalette.ColorRole.Window,          QColor(tokens["BG_PRIMARY"]))
+        p.setColor(QPalette.ColorRole.WindowText,      QColor(tokens["TEXT_PRIMARY"]))
+        p.setColor(QPalette.ColorRole.Base,            QColor(tokens["BG_TERTIARY"]))
+        p.setColor(QPalette.ColorRole.AlternateBase,   QColor(tokens["BG_SECONDARY"]))
+        p.setColor(QPalette.ColorRole.Text,            QColor(tokens["TEXT_PRIMARY"]))
+        p.setColor(QPalette.ColorRole.Button,          QColor(tokens["BG_SECONDARY"]))
+        p.setColor(QPalette.ColorRole.ButtonText,      QColor(tokens["TEXT_PRIMARY"]))
+        p.setColor(QPalette.ColorRole.ToolTipBase,     QColor(tokens["BG_ELEVATED"]))
+        p.setColor(QPalette.ColorRole.ToolTipText,     QColor(tokens["TEXT_PRIMARY"]))
+        p.setColor(QPalette.ColorRole.Highlight,       QColor(tokens["ACCENT"]))
+        p.setColor(QPalette.ColorRole.HighlightedText,
                    QColor("#ffffff" if name == "light" else tokens["BG_DARK"]))
-        p.setColor(QPalette.Link,            QColor(tokens["ACCENT2"]))
-        p.setColor(QPalette.PlaceholderText, QColor(tokens["TEXT_MUTED"]))
-        p.setColor(QPalette.Mid,             QColor(tokens["BG_ELEVATED"]))
-        p.setColor(QPalette.Dark,
+        p.setColor(QPalette.ColorRole.Link,            QColor(tokens["ACCENT2"]))
+        p.setColor(QPalette.ColorRole.PlaceholderText, QColor(tokens["TEXT_MUTED"]))
+        p.setColor(QPalette.ColorRole.Mid,             QColor(tokens["BG_ELEVATED"]))
+        p.setColor(QPalette.ColorRole.Dark,
                    QColor(tokens["BORDER_PRIMARY"] if name == "light" else tokens["BG_DARK"]))
-        p.setColor(QPalette.Light,           QColor(tokens["BG_TERTIARY"]))
+        p.setColor(QPalette.ColorRole.Light,           QColor(tokens["BG_TERTIARY"]))
         app.setPalette(p)
 
     # ── Geriye dönük uyumluluk ────────────────────────────────
@@ -148,6 +156,7 @@ class ThemeManager(QObject):
         """Mevcut temayı yeniden uygula (cache sıfırlama)."""
         if app is None:
             from PySide6.QtWidgets import QApplication
-            app = QApplication.instance()
+            qapp = QApplication.instance()
+            app = qapp if isinstance(qapp, QApplication) else None
         if app:
             self._apply(app, self._current)

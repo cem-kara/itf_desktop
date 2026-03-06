@@ -2,7 +2,7 @@
 """RKE Envanter Yönetimi — merkezi temaya göre tasarım."""
 import sys
 import time
-from typing import List, Dict, Optional
+from typing import Any, List, Dict, Optional
 from datetime import datetime
 
 from PySide6.QtCore  import Qt, QDate, QThread, Signal, QAbstractTableModel, QModelIndex
@@ -39,7 +39,7 @@ class FieldGroup(QWidget):
     """Renkli sol şerit + monospace başlık + içerik kartı."""
     def __init__(self, title: str, color: str, parent=None):
         super().__init__(parent)
-        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setStyleSheet(
             f"FieldGroup{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:6px;}}"
         )
@@ -50,7 +50,7 @@ class FieldGroup(QWidget):
         # ── header ───────────────────────────────────────────────
         hdr = QWidget()
         hdr.setFixedHeight(30)
-        hdr.setAttribute(Qt.WA_StyledBackground, True)
+        hdr.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         hdr.setStyleSheet(
             f"QWidget{{background:rgba(255,255,255,12);border-bottom:1px solid {DarkTheme.BORDER_PRIMARY};"
             f"border-top-left-radius:6px;border-top-right-radius:6px;}}"
@@ -171,8 +171,8 @@ class RKETableModel(BaseTableModel):
     def set_rows(self, rows):
         self.set_data(rows)
 
-    def get_row(self, i) -> Optional[Dict]:
-        return self._data[i] if 0 <= i < len(self._data) else None
+    def get_row(self, idx) -> Optional[Dict]:
+        return self._data[idx] if 0 <= idx < len(self._data) else None
 
 
 class _GecmisModel(BaseTableModel):
@@ -215,7 +215,7 @@ class RKEYonetimPenceresi(QWidget):
         self.rke_listesi: List[Dict] = []
         self.muayene_listesi: List[Dict] = []
         self.secili_ekipman_no       = None
-        self.inputs: Dict[str, QWidget] = {}
+        self.inputs: Dict[str, Any] = {}
         self._kpi: Dict[str, QLabel]    = {}
         
         # Repository'leri hazırla
@@ -449,7 +449,7 @@ class RKEYonetimPenceresi(QWidget):
         tbl.setModel(self._gecmis_model)
         # setStyleSheet kaldırıldı (_S_TABLE) — global QSS
         tbl.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        tbl.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        tbl.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         tbl.verticalHeader().setVisible(False)
         tbl.setShowGrid(False); tbl.setAlternatingRowColors(True)
         tbl.setFixedHeight(120)
@@ -524,7 +524,7 @@ class RKEYonetimPenceresi(QWidget):
         self.tablo.setAlternatingRowColors(True)
         self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tablo.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        self.tablo.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.tablo.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tablo.verticalHeader().setVisible(False)
         self.tablo.setShowGrid(False)
         self.tablo.setSortingEnabled(True)
@@ -625,7 +625,8 @@ class RKEYonetimPenceresi(QWidget):
             grid.addWidget(self._lbl(label2), row*2, 1)
             w2 = self._date() if _date2 else self._input()
             grid.addWidget(w2, row*2+1, 1)
-            self.inputs[key2] = w2
+            if key2:
+                self.inputs[key2] = w2
 
     def _add_combo_row(self, grid, row, label, key):
         grid.addWidget(self._lbl(label), row*2, 0, 1, 2)

@@ -1,0 +1,13 @@
+[v0.3.0] fix(module): Açıklama yazınız
+
+# Tür: fix | feat | refactor | docs | test | chore | perf
+# Kapsam: ui | core | database | auth | vb
+# Başlık: En fazla 50 karakter, BÜYÜK HARF İLE BAŞLA
+
+# BODY (opsiyonel, 72 karakter sınırı):
+# Daha detaylı açıklamalar burada yazılabilir.
+# Neden yapıldığını ve nasıl yapıldığını açıkla.
+
+# FOOTER (opsiyonel):
+# Closes #123
+# Relates to #456

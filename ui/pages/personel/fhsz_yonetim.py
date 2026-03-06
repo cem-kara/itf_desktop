@@ -472,6 +472,10 @@ class FHSZYonetimPage(QWidget):
         item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
         self.tablo.setItem(row, col, item)
 
+    def _item_text(self, row, col, default: str = "") -> str:
+        item = self.tablo.item(row, col)
+        return item.text() if item else default
+
     def _satir_hesapla(self, row):
         """
         Orijinaldeki _satir_hesapla — Koşul değişince puanı yeniden hesapla.
@@ -479,9 +483,14 @@ class FHSZYonetimPage(QWidget):
         Koşul B → 0
         """
         try:
-            kosul = self.tablo.item(row, C_KOSUL).text()
-            is_gunu = int(self.tablo.item(row, C_GUN).text())
-            izin = int(self.tablo.item(row, C_IZIN).text())
+            kosul_item = self.tablo.item(row, C_KOSUL)
+            is_gunu_item = self.tablo.item(row, C_GUN)
+            izin_item = self.tablo.item(row, C_IZIN)
+            if not kosul_item or not is_gunu_item or not izin_item:
+                return
+            kosul = kosul_item.text()
+            is_gunu = int(is_gunu_item.text())
+            izin = int(izin_item.text())
             puan = 0
             if "KOŞULU A" in tr_upper(kosul):
                 net = max(0, is_gunu - izin)
@@ -614,6 +623,9 @@ class FHSZYonetimPage(QWidget):
         # ── EKSİK PERSONEL SENKRONİZASYONU ──
         try:
             donem_bas, donem_bit = self._get_donem_aralik()
+            if not donem_bas or not donem_bit:
+                self.tablo.blockSignals(False)
+                return
             hesap_bas = donem_bas if donem_bas >= FHSZ_ESIK else FHSZ_ESIK
 
             yeni_sayi = self._eksik_personel_ekle(
@@ -641,6 +653,9 @@ class FHSZYonetimPage(QWidget):
 
         try:
             donem_bas, donem_bit = self._get_donem_aralik()
+            if not donem_bas or not donem_bit:
+                self.tablo.blockSignals(False)
+                return
             if donem_bit < FHSZ_ESIK:
                 self.tablo.blockSignals(False)
                 return
@@ -855,15 +870,15 @@ class FHSZYonetimPage(QWidget):
             kayit_sayisi = 0
             for r in range(self.tablo.rowCount()):
                 data = {
-                    "Personelid": self.tablo.item(r, C_KIMLIK).text() if self.tablo.item(r, C_KIMLIK) else "",
-                    "AdSoyad": self.tablo.item(r, C_AD).text() if self.tablo.item(r, C_AD) else "",
-                    "Birim": self.tablo.item(r, C_BIRIM).text() if self.tablo.item(r, C_BIRIM) else "",
-                    "CalismaKosulu": self.tablo.item(r, C_KOSUL).text() if self.tablo.item(r, C_KOSUL) else "",
-                    "AitYil": self.tablo.item(r, C_YIL).text() if self.tablo.item(r, C_YIL) else yil_str,
-                    "Donem": self.tablo.item(r, C_DONEM).text() if self.tablo.item(r, C_DONEM) else ay_str,
-                    "AylikGun": self.tablo.item(r, C_GUN).text() if self.tablo.item(r, C_GUN) else "0",
-                    "KullanilanIzin": self.tablo.item(r, C_IZIN).text() if self.tablo.item(r, C_IZIN) else "0",
-                    "FiiliCalismaSaat": self.tablo.item(r, C_SAAT).text() if self.tablo.item(r, C_SAAT) else "0",
+                    "Personelid": self._item_text(r, C_KIMLIK, ""),
+                    "AdSoyad": self._item_text(r, C_AD, ""),
+                    "Birim": self._item_text(r, C_BIRIM, ""),
+                    "CalismaKosulu": self._item_text(r, C_KOSUL, ""),
+                    "AitYil": self._item_text(r, C_YIL, yil_str),
+                    "Donem": self._item_text(r, C_DONEM, ay_str),
+                    "AylikGun": self._item_text(r, C_GUN, "0"),
+                    "KullanilanIzin": self._item_text(r, C_IZIN, "0"),
+                    "FiiliCalismaSaat": self._item_text(r, C_SAAT, "0"),
                 }
                 repo.insert(data)
                 kayit_sayisi += 1

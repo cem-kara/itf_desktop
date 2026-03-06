@@ -46,7 +46,7 @@ class StructuredFormatter(logging.Formatter):
         
         # Ek bağlam bilgisi varsa ekle
         if hasattr(record, 'sync_context'):
-            ctx = record.sync_context
+            ctx = getattr(record, 'sync_context', {})
             extra = f" | Tablo: {ctx.get('table', 'N/A')}"
             if 'step' in ctx:
                 extra += f" | Adım: {ctx['step']}"
@@ -56,7 +56,7 @@ class StructuredFormatter(logging.Formatter):
 
         # UI bağlam bilgisi varsa ekle
         if hasattr(record, "ui_context"):
-            ctx = record.ui_context
+            ctx = getattr(record, "ui_context", {})
             extra = f" | UI: {ctx.get('action', 'N/A')}"
             if "group" in ctx:
                 extra += f" | Grup: {ctx['group']}"

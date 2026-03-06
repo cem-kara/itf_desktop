@@ -164,14 +164,14 @@ class ArizaIslemForm(QWidget):
         btn_lay.setSpacing(8)
 
         btn_kaydet = QPushButton("Kaydet")
-        btn_kaydet.setStyleSheet(S["success_btn"] if "success_btn" in S else S["refresh_btn"])
+        btn_kaydet.setStyleSheet((S.get("success_btn", S["refresh_btn"]) or ""))
         btn_kaydet.clicked.connect(self._save)
         if self._action_guard:
             self._action_guard.disable_if_unauthorized(btn_kaydet, "cihaz.write")
         btn_lay.addWidget(btn_kaydet)
 
         btn_temizle = QPushButton("Temizle")
-        btn_temizle.setStyleSheet(S["cancel_btn"] if "cancel_btn" in S else "")
+        btn_temizle.setStyleSheet((S.get("cancel_btn", "") or ""))
         btn_temizle.clicked.connect(self._clear)
         btn_lay.addWidget(btn_temizle)
 
@@ -308,7 +308,7 @@ class ArizaIslemPenceresi(QWidget):
         super().__init__(parent)
         self._db = db
         self._ariza_id = None
-        self._model = None
+        self._model = ArizaIslemTableModel()
         self._setup_ui()
 
     def set_ariza_id(self, ariza_id: Optional[str]):
@@ -316,7 +316,7 @@ class ArizaIslemPenceresi(QWidget):
         self._ariza_id = ariza_id
         self.load_data()
         # İlk işlemi seç
-        if self._model.rowCount() > 0:
+        if self._model and self._model.rowCount() > 0:
             self.table.selectRow(0)
 
     def _setup_ui(self):
@@ -331,7 +331,6 @@ class ArizaIslemPenceresi(QWidget):
         tl.setContentsMargins(10, 10, 10, 10)
         tl.setSpacing(6)
 
-        self._model = ArizaIslemTableModel()
         self.table = QTableView()
         self.table.setModel(self._model)
         self.table.setStyleSheet(S["table"])
@@ -469,7 +468,7 @@ class ArizaIslemPenceresi(QWidget):
 
     def _on_row_selected(self, current: QModelIndex, previous: QModelIndex):
         """Tablo satırı seçildiğinde detay panelini doldur ve göster."""
-        if not current.isValid():
+        if not current.isValid() or not self._model:
             return
         row_data = self._model.get_row(current.row())
         if not row_data:
@@ -490,7 +489,7 @@ class ArizaIslemPenceresi(QWidget):
     def load_data(self):
         """Seçili arızanın işlemlerini yükle."""
         if not self._db or not self._ariza_id:
-            self._model.set_rows([])
+            self._model.set_data([])
             self.lbl_count.setText("0 kayit")
             return
 
@@ -499,7 +498,7 @@ class ArizaIslemPenceresi(QWidget):
             rows = svc.get_ariza_islemler(self._ariza_id)
             # En yeni işlemler altta olacak şekilde ters sırala
             rows.sort(key=lambda r: (r.get("Tarih", "") or "", r.get("Saat", "") or ""), reverse=True)
-            self._model.set_rows(rows)
+            self._model.set_data(rows)
 
             count = len(rows)
             self.lbl_count.setText(f"{count} kayit")
@@ -507,5 +506,5 @@ class ArizaIslemPenceresi(QWidget):
 
         except Exception as e:
             logger.error(f"Ariza islemi yüklenirken hata: {e}")
-            self._model.set_rows([])
+            self._model.set_data([])
             self.lbl_count.setText("0 kayit")

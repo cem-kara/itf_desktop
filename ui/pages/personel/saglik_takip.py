@@ -332,7 +332,8 @@ class SaglikTakipPage(QWidget):
         self.cmb_personel.setStyleSheet(S["combo"])
         self.cmb_personel.setEditable(True)
         self.cmb_personel.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
-        self.cmb_personel.lineEdit().setPlaceholderText("Personel seciniz...")
+        if _le := self.cmb_personel.lineEdit():
+            _le.setPlaceholderText("Personel seciniz...")
         g1.addWidget(self.cmb_personel, 0, 1)
 
         form_lay.addWidget(grp_kimlik)
@@ -472,7 +473,8 @@ class SaglikTakipPage(QWidget):
             elif s_low == "sartli uygun":
                 durum = "Gecerli"
             elif s_low == "uygun":
-                durum = "Gecikmis" if (parse_date(sonraki) and parse_date(sonraki) < date.today()) else "Gecerli"
+                sonraki_tarih = parse_date(sonraki)
+                durum = "Gecikmis" if (sonraki_tarih and sonraki_tarih < date.today()) else "Gecerli"
             else:
                 durum = "Planlandi"
 
@@ -605,7 +607,8 @@ class SaglikTakipPage(QWidget):
             durum = "Gecerli"
         elif "Uygun" in statuses:
             sonuc = "Uygun"
-            if parse_date(sonraki) and parse_date(sonraki) < date.today():
+            sonraki_tarih = parse_date(sonraki)
+            if sonraki_tarih and sonraki_tarih < date.today():
                 durum = "Gecikmis"
             else:
                 durum = "Gecerli"
@@ -892,11 +895,12 @@ class SaglikTakipPage(QWidget):
         """Drawer'ı animasyonlu kapat."""
         if not self._drawer or self._drawer.width() == 0:
             return
+        drawer = self._drawer
         
-        anim = QPropertyAnimation(self._drawer, b"maximumWidth", self)
+        anim = QPropertyAnimation(drawer, b"maximumWidth", self)
         anim.setDuration(200)
-        anim.setStartValue(self._drawer.width())
+        anim.setStartValue(drawer.width())
         anim.setEndValue(0)
         anim.setEasingCurve(QEasingCurve.Type.InCubic)
-        anim.finished.connect(lambda: self._drawer.setMinimumWidth(0))
+        anim.finished.connect(lambda: drawer.setMinimumWidth(0))
         anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)

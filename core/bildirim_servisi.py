@@ -5,6 +5,7 @@ Uygulama açılışında ve sync sonrasında çalışır; süresi yaklaşan veya
 geçmiş kayıtları kategorize ederek BildirimPaneli'ne iletir.
 """
 from datetime import datetime, timedelta
+from typing import Optional
 
 from PySide6.QtCore import QThread, Signal
 
@@ -35,7 +36,7 @@ class BildirimWorker(QThread):
     """
     sonuc_hazir = Signal(dict)
 
-    def __init__(self, db_path: str = None):
+    def __init__(self, db_path: Optional[str] = None):
         super().__init__()
         self._db_path = db_path or DB_PATH
 
