@@ -152,7 +152,7 @@ Büyük liste sorgularında yavaşlık buradan kaynaklanıyor. Kısa vadede doku
 ## BÖLÜM 1 — MİMARİ KATMANLAR VE DOSYA HARİTASI
 
 ```
-itf_desktop/
+REPYS/
 │
 ├── main.pyw                     ← Giriş, log yönetimi, migration, auth akışı
 │
