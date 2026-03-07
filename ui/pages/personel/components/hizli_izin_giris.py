@@ -150,6 +150,8 @@ class HizliIzinGirisDialog(QDialog):
 
     def _on_izin_tipi_changed(self, tip_text):
         tip_text = str(tip_text).strip()
+        tip_lower = tip_text.lower()
+        is_yillik_izin = ("yıllık" in tip_lower) or ("yillik" in tip_lower)
         tc = str(self._personel.get("KimlikNo", "") or "")
 
         max_gun = None
@@ -168,7 +170,10 @@ class HizliIzinGirisDialog(QDialog):
         if max_gun is not None:
             if max_gun > 0:
                 self.ui["gun"].setMaximum(max_gun)
-                if self.ui["gun"].value() > max_gun:
+                if not is_yillik_izin:
+                    # Yıllık izin dışındaki tiplerde gün otomatik olarak max seçilsin.
+                    self.ui["gun"].setValue(max_gun)
+                elif self.ui["gun"].value() > max_gun:
                     self.ui["gun"].setValue(max_gun)
                 self.ui["max_gun_label"].setText(f"Bu izin tipi için en fazla {max_gun} gün girilebilir.")
             else:
@@ -189,19 +194,6 @@ class HizliIzinGirisDialog(QDialog):
             if current.isoformat() in self._tatiller: continue
             kalan -= 1
         self.ui["bitis"].setDate(QDate(current.year, current.month, current.day))
-
-    def _should_set_pasif(self, izin_tipi: str, gun: int) -> bool:
-        tip = str(izin_tipi or "").strip().lower()
-        return gun > 30 or "aylıksız" in tip or "ucretsiz" in tip or "ücretsiz" in tip
-
-    def _set_personel_pasif(self, registry, tc: str, izin_tipi: str, gun: int) -> None:
-        if not tc or not self._should_set_pasif(izin_tipi, gun):
-            return
-        try:
-            registry.get("Personel").update(tc, {"Durum": "Pasif"})
-            logger.info(f"Personel pasif yapıldı: {tc} — {izin_tipi} — {gun} gün")
-        except Exception as e:
-            logger.error(f"Personel durum güncelleme hatası: {e}")
 
     def _on_save(self):
         tc = self._personel.get("KimlikNo")
@@ -248,7 +240,7 @@ class HizliIzinGirisDialog(QDialog):
             
             if tc:
                 self._bakiye_dus(registry, tc, izin_tipi, gun)
-                self._set_personel_pasif(registry, tc, izin_tipi, gun)
+                izin_svc.set_personel_pasif(str(tc), izin_tipi, gun)
 
             QMessageBox.information(self, "Başarılı", "İzin başarıyla kaydedildi.")
             self.izin_kaydedildi.emit()

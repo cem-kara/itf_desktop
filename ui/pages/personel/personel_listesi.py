@@ -36,7 +36,7 @@ COLUMNS = [
     ("_birim",      "Birim · Ünvan", 100),
     ("CepTelefonu", "Telefon",       120),
     ("_izin_bar",   "İzin Bakiye",   160),
-    ("Durum",       "Durum",          100),
+    ("Durum",       "Durum",          320),
 ]
 COL_IDX = {c[0]: i for i, c in enumerate(COLUMNS)}
 
@@ -257,7 +257,7 @@ class PersonelDelegate(QStyledItemDelegate):
             txt = index.model().data(index, PersonelTableModel.IZIN_TXT_ROLE)
             self._draw_izin_bar(painter, rect, pct, txt)
         elif key == "Durum":
-            self._draw_status_pill(painter, rect, str(raw.get("Durum", "")))
+            self._draw_status_pill(painter, rect, raw)
 
         painter.restore()
 
@@ -349,24 +349,33 @@ class PersonelDelegate(QStyledItemDelegate):
             p.setBrush(QBrush(fc))
             p.drawRoundedRect(bx, by, fw, bh, 2, 2)
 
-    def _draw_status_pill(self, p, rect, durum):
-        """Tema renklerini kullanan durum pill."""
+    def _draw_status_pill(self, p, rect, row: dict):
+        """Tema renklerini kullanan durum pill. Varsa DurumDetay metnini gösterir."""
+        durum = str(row.get("Durum", "")).strip()
+        text = str(row.get("DurumDetay", "")).strip() or durum
+
         r_val, g_val, b_val, a_val = ComponentStyles.get_status_color(durum)
         fg_hex = ComponentStyles.get_status_text_color(durum)
 
         font = QFont("", 8, QFont.Weight.Medium)
         p.setFont(font)
         fm   = QFontMetrics(font)
-        tw   = fm.horizontalAdvance(durum)
-        pw, ph = tw + 20, fm.height() + 8
-        px   = rect.center().x() - pw // 2
+        max_pw = max(60, rect.width() - 12)
+        elided = fm.elidedText(text, Qt.TextElideMode.ElideRight, max_pw - 20)
+        tw = fm.horizontalAdvance(elided)
+        pw, ph = min(max_pw, tw + 20), fm.height() + 8
+        px = rect.x() + 6
         py   = rect.center().y() - ph // 2
 
         p.setBrush(QBrush(QColor(r_val, g_val, b_val, a_val)))
         p.setPen(QPen(QColor(r_val, g_val, b_val, min(a_val + 80, 255)), 1))
         p.drawRoundedRect(px, py, pw, ph, 4, 4)
         p.setPen(QColor(fg_hex))
-        p.drawText(QRect(px, py, pw, ph), Qt.AlignmentFlag.AlignCenter, durum)
+        p.drawText(
+            QRect(px + 8, py, pw - 12, ph),
+            Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+            elided,
+        )
 
 
 # ═══════════════════════════════════════════════════════════
@@ -859,6 +868,7 @@ class PersonelListesiPage(QWidget):
 
     def _apply_filters(self):
         filtered = self._all_data
+        self._refresh_izinli_bugun()
 
         if self._active_filter != "Tümü":
             if self._active_filter == "İzinli":
@@ -881,7 +891,23 @@ class PersonelListesiPage(QWidget):
             filtered = [r for r in filtered
                         if str(r.get("HizmetSinifi", "")).strip() == sinif]
 
-        self._model.set_data(filtered)
+        # Tooltip metnini Durum sütununda da göster (bugün izinli personeller).
+        render_rows = []
+        for row in filtered:
+            row_view = dict(row)
+            tc = str(row_view.get("KimlikNo", "")).strip()
+            izinler = self._izinli_bugun.get(tc, [])
+            if izinler:
+                bitisler = [str(bit).strip() for _, bit in izinler if str(bit).strip()]
+                bitis = max(bitisler) if bitisler else ""
+                row_view["DurumDetay"] = (
+                    f"Personel bugün izinli izin bitiş tarih: {bitis}"
+                    if bitis else
+                    "Personel bugün izinli"
+                )
+            render_rows.append(row_view)
+
+        self._model.set_data(render_rows)
         self._update_count()
         self._update_pill_counts()
         self._filtered_data = filtered  # Excel export için sakla

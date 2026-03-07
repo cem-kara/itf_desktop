@@ -724,6 +724,8 @@ class IzinTakipPage(QWidget):
     def _on_izin_tipi_changed(self, tip_text):
         """Seçili izin tipinin max gün sınırını uygula."""
         tip_text = str(tip_text).strip()
+        tip_lower = tip_text.lower()
+        is_yillik_izin = ("yıllık" in tip_lower) or ("yillik" in tip_lower)
         tc = str(self.cmb_personel.currentData() or "")
 
         max_gun = None
@@ -738,7 +740,10 @@ class IzinTakipPage(QWidget):
         if max_gun is not None:
             if max_gun > 0:
                 self.spn_gun.setMaximum(max_gun)
-                if self.spn_gun.value() > max_gun:
+                if not is_yillik_izin:
+                    # Yıllık izin dışındaki tiplerde gün otomatik olarak max seçilsin.
+                    self.spn_gun.setValue(max_gun)
+                elif self.spn_gun.value() > max_gun:
                     self.spn_gun.setValue(max_gun)
                 self.lbl_max_gun.setText(f"Bu izin tipi maks. {max_gun} gün")
             else:

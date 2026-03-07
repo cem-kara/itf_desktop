@@ -23,11 +23,12 @@ from datetime import datetime
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
     QPushButton, QScrollArea, QComboBox, QLineEdit,
-    QMessageBox, QFileDialog, QTableWidget, QTableWidgetItem, QHeaderView,
+    QFileDialog, QTableWidget, QTableWidgetItem, QHeaderView,
     QAbstractItemView,
 )
 from PySide6.QtCore import Qt, QUrl, Signal
 from PySide6.QtGui import QDesktopServices, QColor
+from ui.dialogs.mesaj_kutusu import MesajKutusu
 
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
@@ -327,7 +328,7 @@ class BaseDokumanPanel(QWidget):
 
     def _upload(self):
         if not self._svc:
-            QMessageBox.warning(self, "Hata", "Veritabanı bağlantısı yok.")
+            MesajKutusu.uyari(self, "Hata", "Veritabanı bağlantısı yok.")
             return
 
         file_path = self._inp_dosya.text().strip()
@@ -335,10 +336,10 @@ class BaseDokumanPanel(QWidget):
         aciklama  = self._inp_aciklama.text().strip()
 
         if not file_path:
-            QMessageBox.warning(self, "Hata", "Lütfen bir dosya seçin.")
+            MesajKutusu.uyari(self, "Hata", "Lütfen bir dosya seçin.")
             return
         if not belge_tur or belge_tur == "Belge türü yok":
-            QMessageBox.warning(self, "Hata", "Lütfen belge türü seçin.")
+            MesajKutusu.uyari(self, "Hata", "Lütfen belge türü seçin.")
             return
 
         # ⚠️ DB'de entity gerçekten var mı kontrol et
@@ -356,7 +357,7 @@ class BaseDokumanPanel(QWidget):
                 if repo:
                     existing = repo.get_by_id(self._entity_id)
                     if not existing:
-                        QMessageBox.warning(
+                        MesajKutusu.uyari(
                             self, "Hata",
                             f"Bu {self._entity_type} kaydı henüz oluşturulmamış.\n\n"
                             f"Lütfen önce kaydı kaydediniz, sonra belge yükleyiniz."
@@ -383,7 +384,7 @@ class BaseDokumanPanel(QWidget):
             )
 
             if not sonuc["ok"]:
-                QMessageBox.critical(self, "Hata", f"Yükleme başarısız:\n{sonuc['error']}")
+                MesajKutusu.hata(self, "Hata", f"Yükleme başarısız:\n{sonuc['error']}")
                 return
 
             mod_text = "Drive'a yüklendi" if sonuc["mode"] == "drive" else "Yerel klasöre kaydedildi"
@@ -401,12 +402,12 @@ class BaseDokumanPanel(QWidget):
                 except Exception as upd_err:
                     logger.warning(f"BaseDokumanPanel: RaporDosya güncellenemedi: {upd_err}")
 
-            QMessageBox.information(self, "Başarılı", f"{belge_tur}\n{mod_text}.")
+            MesajKutusu.bilgi(self, "Başarılı", f"{belge_tur}\n{mod_text}.")
             self.saved.emit()
 
         except Exception as e:
             logger.error(f"BaseDokumanPanel: upload hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Yükleme başarısız:\n{e}")
+            MesajKutusu.hata(self, "Hata", f"Yükleme başarısız:\n{e}")
         finally:
             self._btn_yukle.setEnabled(True)
             self._btn_yukle.setText("Belgeyi Yükle")
@@ -429,7 +430,7 @@ class BaseDokumanPanel(QWidget):
                 return
 
             if not local_path or not os.path.exists(local_path):
-                QMessageBox.warning(
+                MesajKutusu.uyari(
                     self, "Dosya Bulunamadı",
                     f"Dosya bulunamadı:\n{local_path}\n\nDosya silinmiş veya taşınmış olabilir."
                 )
@@ -444,7 +445,7 @@ class BaseDokumanPanel(QWidget):
 
         except Exception as e:
             logger.error(f"BaseDokumanPanel: dosya açma hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Dosya açılamadı:\n{e}")
+            MesajKutusu.hata(self, "Hata", f"Dosya açılamadı:\n{e}")
 
     # ──────────────────────────────────────────────────────────
     #  Yardımcı

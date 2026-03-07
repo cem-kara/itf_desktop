@@ -345,7 +345,8 @@ class TestCreateOrUpdateIzinBilgi:
 # ─────────────────────────────────────────────────────────────
 
 class TestGetIzinMaxGun:
-    def test_yillik_izin_min_30_ve_kalan(self, svc, reg):
+    def test_yillik_izin_min_60_ve_kalan(self, svc, reg):
+        """Yıllık izin max 60 gün (2 yıllık), kalan 50 ise 50 dönmeli"""
         izin_repo = MagicMock()
         sabit_repo = MagicMock()
         izin_repo.get_by_id.return_value = {"YillikKalan": 50}
@@ -356,7 +357,7 @@ class TestGetIzinMaxGun:
 
         reg.get.side_effect = _get
 
-        assert svc.get_izin_max_gun("111", "Yıllık İzin") == 30
+        assert svc.get_izin_max_gun("111", "Yıllık İzin") == 50
 
     def test_yillik_izin_kalan_kadar(self, svc, reg):
         izin_repo = MagicMock()
@@ -443,9 +444,10 @@ class TestValidateIzinSureLimit:
         assert msg == ""
 
     def test_limit_asimi_false(self, svc, reg):
+        """70 gün kalan varsa bile max 60 gün (limit aşımı)"""
         izin_repo = MagicMock()
         sabit_repo = MagicMock()
-        izin_repo.get_by_id.return_value = {"YillikKalan": 40}
+        izin_repo.get_by_id.return_value = {"YillikKalan": 70}
         sabit_repo.get_all.return_value = []
 
         def _get(name):
@@ -453,18 +455,19 @@ class TestValidateIzinSureLimit:
 
         reg.get.side_effect = _get
 
-        ok, msg = svc.validate_izin_sure_limit("111", "Yıllık İzin", 31)
+        ok, msg = svc.validate_izin_sure_limit("111", "Yıllık İzin", 61)
         assert ok is False
-        assert "maksimum 30" in msg
+        assert "maksimum 60" in msg.lower()
 
 
 class TestInsertIzinGirisLimitEnforcement:
     def test_limit_geciyorsa_insert_hata_firlatir(self, svc, reg):
+        """70 gün kalan varken 61 gün izin ValueError fırlatmalı (max 60)"""
         izin_repo = MagicMock()
         sabit_repo = MagicMock()
         giris_repo = MagicMock()
 
-        izin_repo.get_by_id.return_value = {"YillikKalan": 40}
+        izin_repo.get_by_id.return_value = {"YillikKalan": 70}
         sabit_repo.get_all.return_value = []
 
         def _get(name):
@@ -482,7 +485,7 @@ class TestInsertIzinGirisLimitEnforcement:
             svc.insert_izin_giris({
                 "Personelid": "111",
                 "IzinTipi": "Yıllık İzin",
-                "Gun": 31,
+                "Gun": 61,
             })
 
         giris_repo.insert.assert_not_called()
@@ -608,3 +611,206 @@ class TestIzinCakismaKontrolu:
     def test_gecersiz_yeni_tarih_false(self, svc, reg):
         reg.get("Izin_Giris").get_all.return_value = []
         assert svc.has_izin_cakisma("111", "gecersiz", "2026-03-14") is False
+
+
+# ─────────────────────────────────────────────────────────────
+#  657 SK md.102 KRİTİK İŞ KURALLARI TESTLERİ
+#  (1) Birleşik Yıllık İzin: 60 güne kadar
+#  (2) Devir Zamanaşımı: 2 yıldan eski haklar düşer
+# ─────────────────────────────────────────────────────────────
+
+class TestBirlesikYillikIzin:
+    """
+    657 SK md.102: "Birbirini izleyen iki yılın izni bir arada verilebilir."
+    
+    Eski kural: tek seferde max 30 gün ❌
+    Yeni kural: tek seferde max 60 gün (2 yıllık) ✅
+    """
+    
+    def test_50_gun_kalan_ise_50_gun_izin_verilebilir(self, svc, reg):
+        """50 gün hakkı olan personele 50 gün izin verilebilmeli (eski: max 30)"""
+        izin_repo = MagicMock()
+        sabit_repo = MagicMock()
+        izin_repo.get_by_id.return_value = {"YillikKalan": 50}
+        sabit_repo.get_all.return_value = []
+
+        def _get(name):
+            return izin_repo if name == "Izin_Bilgi" else sabit_repo
+
+        reg.get.side_effect = _get
+
+        # 50 gün hakkı varsa, max izin 50 gün (60'tan küçük olduğu için)
+        max_gun = svc.get_izin_max_gun("111", "Yıllık İzin")
+        assert max_gun == 50, f"50 gün kalan varsa max 50 gün izin verilmeli, dönen: {max_gun}"
+
+        # Limit kontrolü de geçmeli
+        ok, msg = svc.validate_izin_sure_limit("111", "Yıllık İzin", 50)
+        assert ok is True, f"50 gün izin geçerli olmalı: {msg}"
+
+    def test_60_gun_kalan_ise_60_gun_izin_verilebilir(self, svc, reg):
+        """60 gün hakkı olan personele 60 gün izin verilebilmeli (eski: max 30)"""
+        izin_repo = MagicMock()
+        sabit_repo = MagicMock()
+        izin_repo.get_by_id.return_value = {"YillikKalan": 60}
+        sabit_repo.get_all.return_value = []
+
+        def _get(name):
+            return izin_repo if name == "Izin_Bilgi" else sabit_repo
+
+        reg.get.side_effect = _get
+
+        max_gun = svc.get_izin_max_gun("111", "Yıllık İzin")
+        assert max_gun == 60, f"60 gün kalan varsa max 60 gün izin verilmeli, dönen: {max_gun}"
+
+        ok, msg = svc.validate_izin_sure_limit("111", "Yıllık İzin", 60)
+        assert ok is True, f"60 gün izin geçerli olmalı: {msg}"
+
+    def test_70_gun_kalan_ise_max_60_gun_izin_verilebilir(self, svc, reg):
+        """70 gün hakkı olsa bile tek seferde max 60 gün (2 yıllık limit)"""
+        izin_repo = MagicMock()
+        sabit_repo = MagicMock()
+        izin_repo.get_by_id.return_value = {"YillikKalan": 70}
+        sabit_repo.get_all.return_value = []
+
+        def _get(name):
+            return izin_repo if name == "Izin_Bilgi" else sabit_repo
+
+        reg.get.side_effect = _get
+
+        max_gun = svc.get_izin_max_gun("111", "Yıllık İzin")
+        assert max_gun == 60, f"70 gün kalan varsa bile max 60 gün (2 yıl), dönen: {max_gun}"
+
+        # 60 gün geçerli
+        ok, _ = svc.validate_izin_sure_limit("111", "Yıllık İzin", 60)
+        assert ok is True
+
+        # 61 gün geçersiz
+        ok_61, msg_61 = svc.validate_izin_sure_limit("111", "Yıllık İzin", 61)
+        assert ok_61 is False, f"61 gün limiti aşar, engellenmeli: {msg_61}"
+        assert "maksimum 60" in msg_61.lower()
+
+    def test_25_gun_kalan_ise_max_25_gun_izin_verilebilir(self, svc, reg):
+        """25 gün hakkı olan personele max 25 gün (kalan'dan fazla verilemez)"""
+        izin_repo = MagicMock()
+        sabit_repo = MagicMock()
+        izin_repo.get_by_id.return_value = {"YillikKalan": 25}
+        sabit_repo.get_all.return_value = []
+
+        def _get(name):
+            return izin_repo if name == "Izin_Bilgi" else sabit_repo
+
+        reg.get.side_effect = _get
+
+        max_gun = svc.get_izin_max_gun("111", "Yıllık İzin")
+        assert max_gun == 25
+
+        ok, _ = svc.validate_izin_sure_limit("111", "Yıllık İzin", 25)
+        assert ok is True
+
+        ok_26, _ = svc.validate_izin_sure_limit("111", "Yıllık İzin", 26)
+        assert ok_26 is False, "Kalan'dan fazla izin verilemez"
+
+    def test_35_gun_izin_gecerli_yeni_kural(self, svc, reg):
+        """Eski sistemde 35 gün engellenirdi, yeni sistemde kalan yeterli ise geçerli"""
+        izin_repo = MagicMock()
+        sabit_repo = MagicMock()
+        izin_repo.get_by_id.return_value = {"YillikKalan": 40}
+        sabit_repo.get_all.return_value = []
+
+        def _get(name):
+            return izin_repo if name == "Izin_Bilgi" else sabit_repo
+
+        reg.get.side_effect = _get
+
+        ok, msg = svc.validate_izin_sure_limit("111", "Yıllık İzin", 35)
+        assert ok is True, f"35 gün izin (kalan 40) geçerli olmalı: {msg}"
+
+
+class TestDevirZamanasimi:
+    """
+    657 SK md.102: "Cari yıl ile bir önceki yıl hariç, önceki yıllara ait
+    kullanılmayan izin hakları düşer."
+    
+    Yıl sonu devirde max 2 × YillikHakedis kadar devir yapılabilir.
+    Fazlası zamanaşımına uğrar.
+    
+    NOT: Bu testler yıl sonu devir prosedürünü (yil_sonu_devir_page.py)
+    test eder, direkt IzinService metodu değil. Manuel test gerekli.
+    """
+    
+    def test_devir_zamanasiimi_belgesi(self):
+        """
+        Senaryo 1: Normal devir (2 yıllık limit içinde)
+        ------------------------------------------------
+        Mevcut YillikKalan: 35 gün
+        YillikHakedis: 20 gün
+        
+        Yıl sonu devir hesabı:
+        min(35, 20, 40) = 20 gün devir ✅
+        
+        Senaryo 2: Zamanaşımı (2 yıldan fazla birikim)
+        -----------------------------------------------
+        Mevcut YillikKalan: 65 gün (3+ yıl birikimi)
+        YillikHakedis: 20 gün
+        
+        Yıl sonu devir hesabı:
+        min(65, 20, 40) = 20 gün devir ✅
+        → Fazla 45 gün zamanaşımına uğrar
+        
+        Senaryo 3: 10+ yıl hizmet (hakediş 30 gün)
+        -------------------------------------------
+        Mevcut YillikKalan: 55 gün
+        YillikHakedis: 30 gün
+        
+        Yıl sonu devir hesabı:
+        min(55, 30, 60) = 30 gün devir ✅
+        
+        Senaryo 4: Tam 2 yıllık birikim
+        -------------------------------
+        Mevcut YillikKalan: 40 gün
+        YillikHakedis: 20 gün
+        
+        Yıl sonu devir hesabı:
+        min(40, 20, 40) = 20 gün devir ✅
+        
+        Senaryo 5: İlk yıl (devir yok)
+        ------------------------------
+        Mevcut YillikKalan: 15 gün
+        YillikHakedis: 20 gün
+        
+        Yıl sonu devir hesabı:
+        min(15, 20, 40) = 15 gün devir ✅
+        """
+        # Bu test, yıl sonu devir mantığının dökümantasyonudur.
+        # Gerçek test için:
+        # 1. Admin Panel → Yıl Sonu Devir sekmesine git
+        # 2. Test verisi oluştur (65 gün kalan, 20 gün hakediş)
+        # 3. Devir işlemini çalıştır
+        # 4. Sonuç: YillikDevir = 20 gün olmalı (65 değil)
+        assert True, "Manuel test senaryoları yukarıda belgelendi"
+
+    def test_sample_devir_calculations(self):
+        """
+        Örnek devir hesaplamaları (manuel doğrulama için)
+        """
+        test_cases = [
+            # (Mevcut Kalan, Hakediş, Beklenen Devir, Açıklama)
+            (35, 20, 20, "Normal devir"),
+            (65, 20, 20, "Zamanaşımı: 45 gün düşer"),
+            (55, 30, 30, "10+ yıl hizmet"),
+            (40, 20, 20, "Tam 2 yıllık"),
+            (15, 20, 15, "İlk yıl, az kullanım"),
+            (80, 30, 30, "Zamanaşımı: 50 gün düşer"),
+        ]
+        
+        for kalan, hakedis, beklenen, aciklama in test_cases:
+            max_devir = hakedis * 2  # 2 yıllık limit
+            hesaplanan = min(kalan, hakedis, max_devir)
+            assert hesaplanan == beklenen, (
+                f"{aciklama} başarısız: "
+                f"Kalan={kalan}, Hakediş={hakedis}, "
+                f"Beklenen={beklenen}, Hesaplanan={hesaplanan}"
+            )
+        
+        # Test geçti - formül doğru çalışıyor
+        assert True

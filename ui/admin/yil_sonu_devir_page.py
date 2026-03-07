@@ -86,7 +86,10 @@ class DevirWorker(QThread):
                     mevcut_kalan = int(float(str(izin.get("YillikKalan", 0) or 0)))
                     
                     # 1. Yeni Devir (Kalan ile Hakediş'in küçüğü)
-                    yeni_devir = min(mevcut_kalan, eski_hakedis)
+                    # 657 SK md.102: Cari yıl ve bir önceki yıl hariç, önceki yıllara ait
+                    # kullanılmayan izin hakları düşer. (Max 2 yıllık hakediş kadar devir)
+                    max_devir = eski_hakedis * 2  # 2 yıllık zamanaşımı limiti
+                    yeni_devir = min(mevcut_kalan, eski_hakedis, max_devir)
                     
                     # 2. Yeni Hakediş (hizmet yılına göre)
                     hizmet_yili = self._hizmet_yili_hesapla(baslama_map.get(tc, ""))

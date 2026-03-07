@@ -163,9 +163,10 @@ class IzinService:
             izin_bilgi = self._r.get("Izin_Bilgi").get_by_id(tc_str) if tc_str else None
 
             if tip == "Yıllık İzin":
-                # Tek seferde 30'u geçemez, ayrıca toplamda YillikKalan'ı geçemez.
+                # 657 SK md.102: Birbirini izleyen iki yılın izni bir arada verilebilir.
+                # Tek seferde max 60 gün (2 yıl), ayrıca toplamda YillikKalan'ı geçemez.
                 kalan = self._to_float((izin_bilgi or {}).get("YillikKalan"), 0.0)
-                return max(0, min(30, int(kalan)))
+                return max(0, min(60, int(kalan)))
 
             if tip == "Şua İzni":
                 # Şua sınırı SuaKullanilabilirHak alanından gelir.
@@ -517,6 +518,43 @@ class IzinService:
         except Exception as e:
             logger.error(f"İzin çakışma kontrolü hatası: {e}")
             return False
+
+    def calculate_carryover(self, mevcut_kalan: float, yillik_hakedis: float) -> float:
+        """
+        657 SK md.102 devir hesaplaması.
+        
+        Yıl sonu devir: Önceki yıllardaki kalan izinler ilk günleri (2 yıl limiti) kadar devredilebilir.
+        Hesaplama: min(mevcut_kalan, yillik_hakedis, yillik_hakedis × 2)
+        
+        Args:
+            mevcut_kalan: Bu yıl başındaki toplam kalan izin (gün)
+            yillik_hakedis: Bu yıl için hak edilen izin (gün) — veya önceki yıl hakediş
+        
+        Returns:
+            Devrine uygun izin miktarı (gün)
+        
+        Örnekler:
+            • (35 gün kalan, 20 gün hakediş) → min(35, 20, 40) = 20 gün devir
+            • (65 gün kalan, 20 gün hakediş) → min(65, 20, 40) = 20 gün devir (45 gün sona eriyor)
+            • (55 gün kalan, 30 gün hakediş) → min(55, 30, 60) = 30 gün devir
+        """
+        try:
+            kalan = float(mevcut_kalan or 0)
+            hakediş = float(yillik_hakedis or 0)
+            
+            if kalan < 0 or hakediş < 0:
+                return 0.0
+            
+            # 2 yıllık zamanaşımı limiti
+            max_devir = hakediş * 2
+            
+            # Devir miktarı hesapla
+            devir = min(kalan, hakediş, max_devir)
+            
+            return max(0.0, devir)
+        except (ValueError, TypeError) as e:
+            logger.error(f"IzinService.calculate_carryover: {e}")
+            return 0.0
 
     def bakiye_dus(self, tc: str, izin_tipi: str, gun: int) -> None:
         """

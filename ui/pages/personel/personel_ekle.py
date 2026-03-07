@@ -26,6 +26,7 @@ from ui.theme_manager import ThemeManager
 from ui.components.formatted_widgets import apply_title_case_formatting, apply_combo_title_case_formatting
 from ui.pages.personel.components.personel_dokuman_panel import PersonelDokumanPanel
 from ui.styles.colors import get_current_theme
+from ui.dialogs.mesaj_kutusu import MesajKutusu
 
 class DokumanUploadWorker(QThread):
     """Tek bir dosya için DokumanService upload worker'ı."""
@@ -143,6 +144,7 @@ class PersonelEklePage(QWidget):
         self._upload_errors = []
         self._upload_meta = {}         # alan_adi -> metadata
         self._dokuman_panel = None     # PersonelDokumanPanel instance
+        self.lbl_baslik: QLabel | None = None
         
         # Service layer
         self._personel_svc = get_personel_service(db)
@@ -168,6 +170,13 @@ class PersonelEklePage(QWidget):
         main = QVBoxLayout(self)
         main.setContentsMargins(20, 12, 20, 12)
         main.setSpacing(12)
+
+        title_text = "Personel Düzenle" if self._is_edit else "Personel Ekle"
+        self.lbl_baslik = QLabel(title_text)
+        self.lbl_baslik.setProperty("style-role", "title")
+        self.lbl_baslik.style().unpolish(self.lbl_baslik)
+        self.lbl_baslik.style().polish(self.lbl_baslik)
+        main.addWidget(self.lbl_baslik)
 
         # Scroll
         scroll = QScrollArea()
@@ -266,7 +275,7 @@ class PersonelEklePage(QWidget):
 
         # ── SAĞ SÜTUN (Grid Form) ──
         right = QWidget()
-        right.setMaximumWidth(800)
+        right.setMaximumWidth(980)
         right_l = QVBoxLayout(right)
         right_l.setSpacing(12)
         right_l.setContentsMargins(0, 0, 0, 0)
@@ -382,6 +391,13 @@ class PersonelEklePage(QWidget):
         edu_grid = QGridLayout()
         edu_grid.setSpacing(12)
         edu_grid.setContentsMargins(0, 8, 0, 0)
+        # Mezuniyet ve diploma alanlari daralmamasi icin kolon dagilimini dengele.
+        edu_grid.setColumnStretch(0, 3)
+        edu_grid.setColumnStretch(1, 3)
+        edu_grid.setColumnStretch(2, 2)
+        edu_grid.setColumnStretch(3, 2)
+        edu_grid.setColumnMinimumWidth(2, 150)
+        edu_grid.setColumnMinimumWidth(3, 140)
 
         # 1. Satır - Eğitim 1
         self.ui["okul1"] = QComboBox()
@@ -398,14 +414,20 @@ class PersonelEklePage(QWidget):
         apply_combo_title_case_formatting(self.ui["fakulte1"])
         edu_grid.addWidget(self.ui["fakulte1"], 0, 1)
 
-        self.ui["mezun_tarihi1"] = QLineEdit()
-        self.ui["mezun_tarihi1"].setStyleSheet(S["input"])
-        self.ui["mezun_tarihi1"].setPlaceholderText("Mezuniyet Tarihi")
+        self.ui["mezun_tarihi1"] = QDateEdit()
+        self.ui["mezun_tarihi1"].setStyleSheet(S["date"])
+        self.ui["mezun_tarihi1"].setCalendarPopup(True)
+        self.ui["mezun_tarihi1"].setDisplayFormat("dd.MM.yyyy")
+        self.ui["mezun_tarihi1"].setToolTip("Mezuniyet tarihi (Gün.Ay.Yıl) — Takvim simgesi veya el ile girin")
+        if _le := self.ui["mezun_tarihi1"].lineEdit():
+            _le.setPlaceholderText("gg.aa.yyyy")
+        self.ui["mezun_tarihi1"].setMinimumWidth(150)
         edu_grid.addWidget(self.ui["mezun_tarihi1"], 0, 2)
 
         self.ui["diploma_no1"] = QLineEdit()
         self.ui["diploma_no1"].setStyleSheet(S["input"])
         self.ui["diploma_no1"].setPlaceholderText("Diploma No")
+        self.ui["diploma_no1"].setMinimumWidth(140)
         edu_grid.addWidget(self.ui["diploma_no1"], 0, 3)
 
         # Ayırıcı
@@ -440,14 +462,20 @@ class PersonelEklePage(QWidget):
         apply_combo_title_case_formatting(self.ui["fakulte2"])
         edu_grid.addWidget(self.ui["fakulte2"], 3, 1)
 
-        self.ui["mezun_tarihi2"] = QLineEdit()
-        self.ui["mezun_tarihi2"].setStyleSheet(S["input"])
-        self.ui["mezun_tarihi2"].setPlaceholderText("Mezuniyet Tarihi")
+        self.ui["mezun_tarihi2"] = QDateEdit()
+        self.ui["mezun_tarihi2"].setStyleSheet(S["date"])
+        self.ui["mezun_tarihi2"].setCalendarPopup(True)
+        self.ui["mezun_tarihi2"].setDisplayFormat("dd.MM.yyyy")
+        self.ui["mezun_tarihi2"].setToolTip("Mezuniyet tarihi (Gün.Ay.Yıl) — Takvim simgesi veya el ile girin")
+        if _le := self.ui["mezun_tarihi2"].lineEdit():
+            _le.setPlaceholderText("gg.aa.yyyy")
+        self.ui["mezun_tarihi2"].setMinimumWidth(150)
         edu_grid.addWidget(self.ui["mezun_tarihi2"], 3, 2)
 
         self.ui["diploma_no2"] = QLineEdit()
         self.ui["diploma_no2"].setStyleSheet(S["input"])
         self.ui["diploma_no2"].setPlaceholderText("Diploma No")
+        self.ui["diploma_no2"].setMinimumWidth(140)
         edu_grid.addWidget(self.ui["diploma_no2"], 3, 3)
 
         edu_lay.addLayout(edu_grid)
@@ -503,7 +531,7 @@ class PersonelEklePage(QWidget):
         footer.addWidget(self.btn_yeni_personel)
 
         title = "GÜNCELLE" if self._is_edit else "KAYDET"
-        self.btn_kaydet = QPushButton(f"PERSONELI {title}")
+        self.btn_kaydet = QPushButton(f"KİŞİYİ {title}")
         self.btn_kaydet.setStyleSheet(S["save_btn"])
         self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_kaydet.clicked.connect(self._on_save)
@@ -901,7 +929,7 @@ class PersonelEklePage(QWidget):
         self._upload_workers.clear()
 
         if self._upload_errors:
-            QMessageBox.warning(
+            MesajKutusu.uyari(
                 self, "Drive Yükleme Uyarısı",
                 "Bazı dosyalar yüklenemedi:\n" + "\n".join(self._upload_errors)
             )
@@ -1000,16 +1028,21 @@ class PersonelEklePage(QWidget):
 
     def _on_save(self):
         """Kaydet: validasyon → Drive yükleme → DB kayıt."""
+        # Çift tıklama koruması
+        self.btn_kaydet.setEnabled(False)
+        
         if self._action_guard and not self._action_guard.check_and_warn(
             self, "personel.write", "Personel Kaydetme"
         ):
+            self.btn_kaydet.setEnabled(True)
             return
         errors = self._validate()
         if errors:
-            QMessageBox.warning(
+            MesajKutusu.uyari(
                 self, "Eksik Bilgi",
                 "\n".join(f"• {e}" for e in errors)
             )
+            self.btn_kaydet.setEnabled(True)
             return
 
         data = self._collect_data()
@@ -1031,10 +1064,11 @@ class PersonelEklePage(QWidget):
                     return
                 existing = self._personel_svc.get_personel_by_tc(tc_no)
                 if existing:
-                    QMessageBox.warning(
+                    MesajKutusu.uyari(
                         self, "Kayıt Mevcut",
                         f"TC {tc_no} ile kayıtlı personel zaten var."
                     )
+                    self.btn_kaydet.setEnabled(True)
                     return
             except Exception as e:
                 logger.error(f"TC kontrol hatası: {e}")
@@ -1058,31 +1092,36 @@ class PersonelEklePage(QWidget):
 
         try:
             if not self._personel_svc:
-                QMessageBox.critical(self, "Hata", "Veritabanı bağlantısı bulunamadı.")
+                MesajKutusu.hata(self, "Hata", "Veritabanı bağlantısı bulunamadı.")
+                self.btn_kaydet.setEnabled(True)
                 return
 
             if self._is_edit:
                 ok = self._personel_svc.guncelle(data["KimlikNo"], data)
                 if not ok:
-                    QMessageBox.critical(self, "Hata", "Personel kaydı güncellenemedi.")
+                    MesajKutusu.hata(self, "Hata", "Personel kaydı güncellenemedi.")
+                    self.btn_kaydet.setEnabled(True)
                     return
                 logger.info(f"Personel güncellendi: {data['KimlikNo']}")
                 
-                QMessageBox.information(
+                MesajKutusu.bilgi(
                     self, "Başarılı",
                     "Personel kaydı başarıyla güncellendi."
                 )
 
                 if self._on_saved:
                     self._on_saved()
+                
+                self.btn_kaydet.setEnabled(True)
             else:
                 ok = self._personel_svc.ekle(data)
                 if not ok:
-                    QMessageBox.critical(
+                    MesajKutusu.hata(
                         self,
                         "Hata",
                         "Personel kaydı eklenemedi.\nTC Kimlik No ve zorunlu alanları kontrol edin.",
                     )
+                    self.btn_kaydet.setEnabled(True)
                     return
                 logger.info(f"Yeni personel eklendi: {data['KimlikNo']}")
 
@@ -1143,26 +1182,24 @@ class PersonelEklePage(QWidget):
                     logger.error(f"Kullanıcı hesabı oluşturma hatası: {e_user}")
 
                 # Yeni ekleme: kullanıcıya belge yükleme seçeneği sun
-                yanit = QMessageBox.question(
+                yanit = MesajKutusu.soru(
                     self,
                     "Başarılı",
-                    "Personel kaydı başarıyla eklendi.\n\nBelge yüklemek istiyor musunuz?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                    QMessageBox.StandardButton.Yes
+                    "Personel kaydı başarıyla eklendi.\n\nBelge yüklemek istiyor musunuz?"
                 )
 
-                if yanit == QMessageBox.StandardButton.Yes:
+                if yanit:
                     # Form'u edit mode'a geçir ve açık tut
                     self._is_edit = True
                     self._edit_data = data
                     
                     # Form başlığını güncelle
-                    if hasattr(self, 'lbl_baslik') and self.lbl_baslik:
+                    if self.lbl_baslik:
                         self.lbl_baslik.setText(f"Personel Düzenle — {data.get('AdSoyad', '')}")
                     
                     # Kaydet butonunu güncelle
                     if hasattr(self, 'btn_kaydet') and self.btn_kaydet:
-                        self.btn_kaydet.setText("PERSONELI GÜNCELLE")
+                        self.btn_kaydet.setText("KİŞİYİ GÜNCELLE")
                     
                     # Yeni Personel butonu göster
                     if hasattr(self, 'btn_yeni_personel') and self.btn_yeni_personel:
@@ -1172,7 +1209,7 @@ class PersonelEklePage(QWidget):
                     if hasattr(self, '_dokuman_panel') and self._dokuman_panel:
                         self._dokuman_panel.set_entity_id(data["KimlikNo"])
                     
-                    QMessageBox.information(
+                    MesajKutusu.bilgi(
                         self,
                         "Bilgi",
                         "Artık belge yükleyebilirsiniz.\n\nİşlemler bittiğinde:\n- 'YENİ PERSONEL' → Başka personel ekleyin\n- 'İptal' → Listeye dönün"
@@ -1181,10 +1218,13 @@ class PersonelEklePage(QWidget):
                     # Hayır dedi, normal akış devam etsin
                     if self._on_saved:
                         self._on_saved()
+                    
+                    self.btn_kaydet.setEnabled(True)
 
         except Exception as e:
             logger.error(f"Kaydetme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Kaydetme sırasında hata:\n{e}")
+            MesajKutusu.hata(self, "Hata", f"Kaydetme sırasında hata:\n{e}")
+            self.btn_kaydet.setEnabled(True)
 
     def _on_cancel(self):
         """İptal — form kapanış sinyali emitir."""
@@ -1198,12 +1238,12 @@ class PersonelEklePage(QWidget):
             self._edit_data = None
 
             # Form başlığını güncelle
-            if hasattr(self, 'lbl_baslik') and self.lbl_baslik:
+            if self.lbl_baslik:
                 self.lbl_baslik.setText("Personel Ekle")
 
             # Kaydet butonu metnini güncelle
             if hasattr(self, 'btn_kaydet') and self.btn_kaydet:
-                self.btn_kaydet.setText("PERSONELI KAYDET")
+                self.btn_kaydet.setText("KİŞİYİ KAYDET")
 
             # Yeni Personel butonunu gizle
             if hasattr(self, 'btn_yeni_personel') and self.btn_yeni_personel:
@@ -1234,11 +1274,9 @@ class PersonelEklePage(QWidget):
             # Belge panelini temizle
             if hasattr(self, '_dokuman_panel') and self._dokuman_panel:
                 self._dokuman_panel.set_entity_id("")
-                if hasattr(self._dokuman_panel, 'clear_all'):
-                    self._dokuman_panel.clear_all()
 
             logger.info("Form yeni personel için temizlendi")
-            QMessageBox.information(
+            MesajKutusu.bilgi(
                 self,
                 "Form Hazır",
                 "Form yeni personel eklemek için temizlendi."
@@ -1246,4 +1284,4 @@ class PersonelEklePage(QWidget):
 
         except Exception as e:
             logger.error(f"Form temizleme hatası: {e}")
-            QMessageBox.warning(self, "Uyarı", f"Form temizlenirken hata oluştu: {e}")
+            MesajKutusu.uyari(self, "Uyarı", f"Form temizlenirken hata oluştu: {e}")

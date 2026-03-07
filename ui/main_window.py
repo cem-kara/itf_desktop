@@ -433,26 +433,30 @@ class MainWindow(QMainWindow):
             old.deleteLater()
 
     def open_izin_giris(self, personel_data, from_key=None):
-        """İzin giriş sayfasını aç."""
-        tc = personel_data.get("KimlikNo", "")
-        ad = personel_data.get("AdSoyad", "")
-        izin_key = f"__izin_{tc}"
+        """İzin giriş dialogunu aç."""
+        try:
+            from ui.pages.personel.components.hizli_izin_giris import HizliIzinGirisDialog
 
-        if izin_key in self._pages:
-            old = self._pages.pop(izin_key)
-            self.stack.removeWidget(old)
-            old.deleteLater()
+            dialog = HizliIzinGirisDialog(self._db, personel_data or {}, parent=self)
+            dialog.exec()
 
-        from ui.pages.personel.izin_giris import IzinGirisPage  # type: ignore[import-untyped]
-        page = IzinGirisPage(
-            db=self._db,
-            personel_data=personel_data,
-            on_back=lambda: self._back_from_izin(izin_key, from_key)
-        )
-        self._pages[izin_key] = page
-        self.stack.addWidget(page)
-        self.stack.setCurrentWidget(page)
-        self.page_title.setText(f"İzin Takip — {ad}")
+            # Kayıt sonrası liste görünümü güncel kalsın.
+            if "Personel Listesi" in self._pages:
+                page = self._pages["Personel Listesi"]
+                if hasattr(page, "load_data"):
+                    page.load_data()
+
+            if from_key and from_key in self._pages:
+                self.stack.setCurrentWidget(self._pages[from_key])
+
+        except Exception as e:
+            log_ui_error("open_izin_giris", e)
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.critical(
+                self,
+                "İzin Girişi Hatası",
+                f"İzin girişi ekranı açılırken bir hata oluştu.\n\n{type(e).__name__}: {e}",
+            )
 
     def _back_from_izin(self, izin_key, from_key=None):
         """İzin sayfasından geri dön."""
