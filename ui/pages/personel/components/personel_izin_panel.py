@@ -76,8 +76,9 @@ class PersonelIzinPanel(QWidget):
         g.addWidget(sep2, 5, 0, 1, 2)
 
         self.lbl_y_kalan = self._add_stat(g, 6, "KALAN YILLIK İZİN", "stat_green")
+        self.lbl_diger_kullanilan = self._add_stat(g, 7, "Kullanılan Diğer İzinler", "stat_highlight")
 
-        g.setRowStretch(7, 1)
+        g.setRowStretch(8, 1)
         summary_layout.addWidget(grp_yillik)
 
         # Şua ve Diğer
@@ -100,9 +101,8 @@ class PersonelIzinPanel(QWidget):
         g2.addWidget(sep4, 4, 0, 1, 2)
 
         self.lbl_s_cari = self._add_stat(g2, 5, "Cari Yıl Şua Kazanım", "stat_value")
-        self.lbl_diger = self._add_stat(g2, 6, "Toplam Rapor/Mazeret", "stat_value")
 
-        g2.setRowStretch(7, 1)
+        g2.setRowStretch(6, 1)
         summary_layout.addWidget(grp_diger)
 
         main_layout.addLayout(summary_layout)
@@ -181,7 +181,13 @@ class PersonelIzinPanel(QWidget):
         self.lbl_s_kul.setText(str(self.izin_data.get("SuaKullanilan", "0")))
         self.lbl_s_kalan.setText(str(self.izin_data.get("SuaKalan", "0")))
         self.lbl_s_cari.setText(str(self.izin_data.get("SuaCariYilKazanim", "0")))
-        self.lbl_diger.setText(str(self.izin_data.get("RaporMazeretTop", "0")))
+
+        # Kullanılan Diğer İzinler (yıllık ve şua dışındaki)
+        diger_kullanilan = sum(
+            float(l.get("Gun", 0)) for l in self.recent_leaves
+            if l.get("IzinTipi", "").strip() not in ("Yıllık İzin", "Şua İzin", "Şua İzni")
+        )
+        self.lbl_diger_kullanilan.setText(f"{diger_kullanilan:.0f}")
 
         # Son İzinler Tablosu
         self._leave_table_model.set_data(self.recent_leaves)
@@ -190,7 +196,8 @@ class PersonelIzinPanel(QWidget):
     def _clear_ui(self):
         for lbl in [self.lbl_y_devir, self.lbl_y_hak, self.lbl_y_toplam,
                     self.lbl_y_kullanilan, self.lbl_y_kalan, self.lbl_s_hak,
-                    self.lbl_s_kul, self.lbl_s_kalan, self.lbl_s_cari, self.lbl_diger]:
+                    self.lbl_s_kul, self.lbl_s_kalan, self.lbl_s_cari,
+                    self.lbl_diger_kullanilan]:
             lbl.setText("—")
         self._leave_table_model.set_data([])
 

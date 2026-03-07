@@ -25,6 +25,7 @@ from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
 from ui.styles.components import ComponentStyles, STYLES
 from ui.styles.icons import IconRenderer
+from ui.theme_manager import ThemeManager
 
 C = DarkTheme  # kısayol
 
@@ -425,6 +426,9 @@ class PersonelListesiPage(QWidget):
         
         self._setup_ui()
         self._connect_signals()
+        self._theme_manager = ThemeManager.instance()
+        self._theme_manager.theme_changed.connect(self._on_theme_changed)
+        self._apply_runtime_styles()
 
     # ─── UI Kurulum ──────────────────────────────────────
 
@@ -439,13 +443,8 @@ class PersonelListesiPage(QWidget):
 
     def _build_toolbar(self) -> QFrame:
         frame = QFrame()
+        self._toolbar_frame = frame
         frame.setFixedHeight(48)
-        frame.setStyleSheet("""
-            QFrame {{
-                background-color: {};
-                border-bottom: 1px solid {};
-            }}
-        """.format(C.BG_SECONDARY, C.BORDER_PRIMARY))
         lay = QHBoxLayout(frame)
         lay.setContentsMargins(16, 0, 16, 0)
         lay.setSpacing(8)
@@ -556,33 +555,14 @@ class PersonelListesiPage(QWidget):
         self.btn_close = QPushButton("✕")
         self.btn_close.setFixedSize(28, 28)
         self.btn_close.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_close.setStyleSheet("""
-            QPushButton {{
-                background-color: transparent;
-                color: {};
-                border: none;
-                border-radius: 4px;
-                font-size: 16px;
-                font-weight: bold;
-            }}
-            QPushButton:hover {{
-                background-color: {};
-                color: {C.TEXT_PRIMARY};
-            }}
-        """)
         self.btn_close.setToolTip("Kapat")
         lay.addWidget(self.btn_close)
         return frame
 
     def _build_subtoolbar(self) -> QFrame:
         frame = QFrame()
+        self._subtoolbar_frame = frame
         frame.setFixedHeight(36)
-        frame.setStyleSheet("""
-            QFrame {{
-                background-color: {};
-                border-bottom: 1px solid {};
-            }}
-        """.format(C.BG_PRIMARY, C.BORDER_PRIMARY))
         lay = QHBoxLayout(frame)
         lay.setContentsMargins(16, 0, 16, 0)
         lay.setSpacing(8)
@@ -649,13 +629,8 @@ class PersonelListesiPage(QWidget):
 
     def _build_footer(self) -> QFrame:
         frame = QFrame()
+        self._footer_frame = frame
         frame.setFixedHeight(40)
-        frame.setStyleSheet("""
-            QFrame {{
-                background-color: {};
-                border-top: 1px solid {};
-            }}
-        """.format(C.BG_SECONDARY, C.BORDER_PRIMARY))
         lay = QHBoxLayout(frame)
         lay.setContentsMargins(16, 0, 16, 0)
         lay.setSpacing(16)
@@ -710,6 +685,95 @@ class PersonelListesiPage(QWidget):
         self.table.customContextMenuRequested.connect(self._show_context_menu)
         self.table.mouseMoveEvent  = self._tbl_mouse_move
         self.table.mousePressEvent = self._tbl_mouse_press
+
+    def _on_theme_changed(self, _theme_name: str):
+        """Tema değiştiğinde runtime stilleri yeniden uygula."""
+        self._apply_runtime_styles()
+        self.table.viewport().update()
+
+    def _apply_runtime_styles(self):
+        """Tema token'larına bağlı stilleri yeniden uygular."""
+        if hasattr(self, "_toolbar_frame"):
+            self._toolbar_frame.setStyleSheet(
+                "QFrame { background-color: %s; border-bottom: 1px solid %s; }"
+                % (C.BG_SECONDARY, C.BORDER_PRIMARY)
+            )
+        if hasattr(self, "_subtoolbar_frame"):
+            self._subtoolbar_frame.setStyleSheet(
+                "QFrame { background-color: %s; border-bottom: 1px solid %s; }"
+                % (C.BG_PRIMARY, C.BORDER_PRIMARY)
+            )
+        if hasattr(self, "_footer_frame"):
+            self._footer_frame.setStyleSheet(
+                "QFrame { background-color: %s; border-top: 1px solid %s; }"
+                % (C.BG_SECONDARY, C.BORDER_PRIMARY)
+            )
+
+        # Durum filtre butonlarını aktif tema renkleriyle yeniden boya.
+        filter_styles = {
+            "Aktif": {
+                "bg": ComponentStyles.get_status_color("Aktif"),
+                "text": ComponentStyles.get_status_text_color("Aktif")
+            },
+            "Pasif": {
+                "bg": ComponentStyles.get_status_color("Pasif"),
+                "text": ComponentStyles.get_status_text_color("Pasif")
+            },
+            "İzinli": {
+                "bg": ComponentStyles.get_status_color("İzinli"),
+                "text": ComponentStyles.get_status_text_color("İzinli")
+            },
+            "Tümü": {
+                "bg": (30, 180, 216, 35),
+                "text": C.ACCENT
+            }
+        }
+        for lbl, btn in self._filter_btns.items():
+            style_info = filter_styles.get(lbl)
+            if not style_info:
+                continue
+            r, g, b, a = style_info["bg"]
+            text_color = style_info["text"]
+            btn.setStyleSheet(
+                f"""
+                QPushButton {{
+                    background: rgba({r}, {g}, {b}, {a});
+                    color: {text_color};
+                    border: 1px solid rgba({r}, {g}, {b}, {min(a + 80, 255)});
+                    border-radius: 4px;
+                    padding: 4px 12px;
+                    font-size: 11px;
+                    font-weight: 500;
+                }}
+                QPushButton:hover {{
+                    background: rgba({r}, {g}, {b}, {min(a + 30, 255)});
+                    border: 1px solid rgba({r}, {g}, {b}, {min(a + 100, 255)});
+                }}
+                QPushButton:checked {{
+                    background: rgba({r}, {g}, {b}, {min(a + 60, 255)});
+                    border: 1px solid {text_color};
+                    font-weight: 600;
+                }}
+                """
+            )
+
+        if hasattr(self, "btn_close"):
+            self.btn_close.setStyleSheet(
+                f"""
+                QPushButton {{
+                    background-color: transparent;
+                    color: {C.TEXT_MUTED};
+                    border: none;
+                    border-radius: 4px;
+                    font-size: 16px;
+                    font-weight: bold;
+                }}
+                QPushButton:hover {{
+                    background-color: {C.BG_TERTIARY};
+                    color: {C.TEXT_PRIMARY};
+                }}
+                """
+            )
 
     # ─── Veri Yükleme ────────────────────────────────────
 

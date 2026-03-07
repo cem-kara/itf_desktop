@@ -37,7 +37,7 @@ DARK: dict[str, str] = {
     "TEXT_SECONDARY":     "#8fa3b8",
     "TEXT_MUTED":         "#4d6070",
     "TEXT_DISABLED":      "#263850",
-    "TEXT_TABLE_HEADER":  "#c7dcf1",
+    "TEXT_TABLE_HEADER":  "#ffffff",
 
     # Input
     "INPUT_BG":            "#1a2030",
@@ -103,7 +103,7 @@ LIGHT: dict[str, str] = {
     "TEXT_SECONDARY":     "#475569",
     "TEXT_MUTED":         "#94a3b8",
     "TEXT_DISABLED":      "#cbd5e1",
-    "TEXT_TABLE_HEADER":  "#1e293b",
+    "TEXT_TABLE_HEADER":  "#0f172a",
 
     # Input
     "INPUT_BG":            "#ffffff",

@@ -355,12 +355,12 @@ QTableWidget::item:selected, QTableView::item:selected {{
 }}
 
 QHeaderView::section {{
-    background-color: {BG_SECONDARY};
+    background-color: {BG_ELEVATED};
     color: {TEXT_TABLE_HEADER};
-    padding: 8px 6px;
+    padding: 4px 8px;
     border: none;
     border-bottom: 1px solid {BORDER_PRIMARY};
     border-right: 1px solid {BORDER_PRIMARY};
-    font-weight: 600;
+    font-weight: 700;
     font-size: 12px;
 }}

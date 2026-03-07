@@ -1199,12 +1199,12 @@ except Exception as txn_error:
 
 ---
 
-### 🟡 TODO-6 — Kod İçi Temizlik (Fırsatçı)
+### 🟡 TODO-6 — Kod İçi Temizlik (Fırsatçı, setStyleSheet kısmı tamamlandı)
 
 Bir dosyaya girdiğinde gördüklerini düzelt:
 
 ```
-[ ] setStyleSheet(f"...C.TOKEN") → setProperty("color-role", "...")
+[x] setStyleSheet(f"...C.TOKEN") → setProperty("color-role", "...")  (kalan: 0)
 [ ] _DURUM_COLOR lokal dict     → self.status_fg() kullan, dict'i sil
 [ ] def set_rows(self, rows)... → sil (BaseTableModel'de var)
 [ ] from core.date_utils import to_ui_date (model içinde) → DATE_KEYS veya _fmt_date

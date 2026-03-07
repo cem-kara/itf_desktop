@@ -326,7 +326,7 @@ Katkılarınız hoşlanır! Lütfen:
 | 📝 CHANGELOG + Conventional Commits | ✅ Tamamlandı |
 | ✅ İzin Servis Testleri (`test_izin_service.py`) | ✅ 59 Passed |
 | 📱 Runtime Tema Değiştirme | 🔄 Planlı |
-| 🔄 setStyleSheet Refactor (193 adet) | 🔄 Planlı |
+| 🔄 setStyleSheet Refactor (0 adet) | ✅ Tamamlandı |
 
 ## 📚 Referanslar
 

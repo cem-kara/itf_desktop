@@ -188,6 +188,7 @@ class PersonelOverviewPanel(QWidget):
 
         # İletişim Grubu
         grp_iletisim = self._create_editable_group("İletişim Bilgileri", "iletisim")
+        grp_iletisim.setStyleSheet(S["group"])
         iletisim_content_widget = self._groups["iletisim"]["widget"]
         g2 = QGridLayout(iletisim_content_widget)
         g2.setSpacing(12)
@@ -199,6 +200,7 @@ class PersonelOverviewPanel(QWidget):
 
         # Kadro Grubu
         grp_kurum = self._create_editable_group("Kadro ve Kurumsal Bilgiler", "kadro")
+        grp_kurum.setStyleSheet(S["group"])
         kadro_content_widget = self._groups["kadro"]["widget"]
         g3 = QGridLayout(kadro_content_widget)
         g3.setSpacing(12)
@@ -214,6 +216,7 @@ class PersonelOverviewPanel(QWidget):
 
         # Eğitim Grubu
         grp_egitim = self._create_editable_group("Eğitim Bilgileri", "egitim")
+        grp_egitim.setStyleSheet(S["group"])
         egitim_content_widget = self._groups["egitim"]["widget"]
         g4 = QGridLayout(egitim_content_widget)
         g4.setSpacing(15)
@@ -432,26 +435,8 @@ class PersonelOverviewPanel(QWidget):
 
     def _create_editable_group(self, title, group_id):
         grp = QGroupBox(title)
-        grp.setStyleSheet("""
-            QGroupBox {{
-                background-color: {};
-                border: 1px solid {};
-                border-radius: 8px;
-                margin-top: 8px;
-                font-weight: bold;
-                color: {};
-            }}
-            QGroupBox::title {{
-                subcontrol-origin: margin;
-                subcontrol-position: top left;
-                left: 12px;
-                padding: 0 6px;
-                color: {C.ACCENT};
-                font-size: 12px;
-                font-weight: 700;
-                background-color: {C.BG_SECONDARY};
-            }}
-        """)
+        # Sol sütundaki grup kutusu ile birebir aynı tema stili kullanılır.
+        grp.setStyleSheet(S["group"])
         
         # Başlık ve Butonlar için Layout
         # QGroupBox layout'u yerine içine bir layout koyup en üste butonları ekliyoruz

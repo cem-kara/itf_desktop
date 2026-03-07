@@ -30,6 +30,9 @@ class AppConfig:
     LOG_ROTATION_WHEN = "midnight"
     LOG_ROTATION_INTERVAL = 1
 
+    # Auth audit kayıt saklama süresi (gün)
+    AUTH_AUDIT_RETENTION_DAYS = 90
+
     APP_MODE = DEFAULT_MODE
     APP_MODE_SOURCE = "default"
 

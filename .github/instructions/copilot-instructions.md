@@ -621,7 +621,7 @@ personel_svc.get_personel_listesi()
 
 | # | Dosya | Satır | Yapılacak |
 |---|---|---|---|
-| TODO-6 | Tüm UI | — | 193 adet `setStyleSheet(f-string)` — fırsatçı |
+| TODO-6 | Tüm UI | — | ✅ `setStyleSheet(f-string)` kalan: 0 (tamamlandı) |
 | TODO-8 | `tests/services/` | — | Test klasörü henüz yok |
 
 ---
@@ -717,7 +717,7 @@ EOF
 2026-03-05  HakkindaDialog + LGPL/MIT attributions
 2026-03-05  izin_takip.py — 16 Pylance hatası düzeltildi
 2026-03-05  izin_service.py — 5 yeni metod eklendi
-2026-03-05  setStyleSheet(f-string) 352 → 193 (devam ediyor)
+2026-03-07  setStyleSheet(f-string) 352 → 0 (TODO-6 tamamlandı)
 2026-03-05  Tüm proje Pylance hatasız — 20+ type-checker hatası düzeltildi
 2026-03-05  file_sync_service.py — Optional[list[dict]] cache type hints
 2026-03-05  personel_service.py — reportRedeclaration (get_personel_repo duplicate)
@@ -742,6 +742,6 @@ EOF
 2026-03-07  izin_takip.py — açılış filtreleri (Ay/Yıl) Tümü varsayılanına alındı
 2026-03-07  tests/test_izin_service.py — hakediş, limit, normalize, çakışma senaryoları eklendi (59 passed)
 2026-03-07  README.md + CHANGELOG.md — v0.3.0 WIP dokümantasyon güncellendi
-── İLERİ AGENDA: TODO-6 (193× setStyleSheet refactor) ve TODO-8 (test infrastructure) ──
+── İLERİ AGENDA: TODO-8 (test infrastructure) ──
 ```
 

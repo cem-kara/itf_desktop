@@ -16,12 +16,14 @@ from PySide6.QtGui import QCursor, QPixmap
 from ui.styles import DarkTheme
 from ui.styles.components import ComponentStyles, STYLES
 from ui.styles.icons import IconRenderer, Icons
+from ui.theme_manager import ThemeManager
 from ui.pages.personel.components.personel_ozet_servisi import personel_ozet_getir
 from core.logger import logger
 from ui.pages.personel.components.personel_overview_panel import PersonelOverviewPanel
 from ui.pages.personel.components.personel_dokuman_panel import PersonelDokumanPanel
 from ui.pages.personel.components.personel_izin_panel import PersonelIzinPanel
 from ui.pages.personel.components.personel_saglik_panel import PersonelSaglikPanel
+from ui.pages.personel.components.personel_fhsz_panel import PersonelFhszPanel
 from ui.pages.personel.components.hizli_izin_giris import HizliIzinGirisDialog
 
 C = DarkTheme
@@ -31,6 +33,7 @@ TABS = [
     ("GENEL",   "Genel Bakış"),
     ("IZIN",    "İzinler"),
     ("SAGLIK",  "Sağlık"),
+    ("FHSZ",    "FHSZ Bilgileri"),
     ("DOKUMAN", "Belgeler"),
     ("AYRILIS", "İşten Ayrılış"),
 ]
@@ -51,8 +54,12 @@ class PersonelMerkezPage(QWidget):
         self._form_widget    = None
         self._current_form_type = None
         self._initial_load   = False
+        self._quick_action_buttons = []
 
         self._setup_ui()
+        self._theme_manager = ThemeManager.instance()
+        self._theme_manager.theme_changed.connect(self._on_theme_changed)
+        self._apply_runtime_styles()
         self._load_data()
 
     # ═══════════════════════════════════════════════════
@@ -81,8 +88,9 @@ class PersonelMerkezPage(QWidget):
         root.addWidget(body_widget, 1)
 
     def _build_header(self) -> QFrame:
-        """Header (52px) + sekme nav (36px)."""
+        """Header (64px) + sekme nav (36px)."""
         outer = QFrame()
+        self._header_outer = outer
         outer.setStyleSheet("""
             QFrame {{
                 background-color: {};
@@ -95,7 +103,7 @@ class PersonelMerkezPage(QWidget):
 
         # ── Üst şerit ──
         top = QWidget()
-        top.setFixedHeight(52)
+        top.setFixedHeight(64)
         top_lay = QHBoxLayout(top)
         top_lay.setContentsMargins(16, 0, 16, 0)
         top_lay.setSpacing(10)
@@ -143,19 +151,9 @@ class PersonelMerkezPage(QWidget):
 
         top_lay.addStretch()
 
-        # İzin header butonu
-        self.btn_izin_ekle = QPushButton(" İzin Gir")
-        self.btn_izin_ekle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_izin_ekle.setProperty("style-role", "refresh")
-        self.btn_izin_ekle.style().unpolish(self.btn_izin_ekle)
-        self.btn_izin_ekle.style().polish(self.btn_izin_ekle)
-        IconRenderer.set_button_icon(self.btn_izin_ekle, "calendar", color=C.TEXT_SECONDARY, size=14)
-        self.btn_izin_ekle.setIconSize(QSize(14, 14))
-        self.btn_izin_ekle.clicked.connect(lambda: self._toggle_form("IZIN"))
-        top_lay.addWidget(self.btn_izin_ekle)
-
         # Kapat (X)
         btn_kapat = QPushButton()
+        self._btn_kapat = btn_kapat
         btn_kapat.setFixedSize(28, 28)
         btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_kapat.setToolTip("Kapat")
@@ -171,6 +169,7 @@ class PersonelMerkezPage(QWidget):
 
         # ── Sekme nav ──
         nav = QWidget()
+        self._nav_widget = nav
         nav.setFixedHeight(36)
         nav.setProperty("border-role", "top-secondary")
         nav.setStyleSheet("background: transparent;")
@@ -195,6 +194,7 @@ class PersonelMerkezPage(QWidget):
     def _build_right_panel(self) -> QFrame:
         """360px sabit sağ panel."""
         panel = QFrame()
+        self._right_panel = panel
         panel.setFixedWidth(400)
         panel.setStyleSheet("""
             QFrame {{
@@ -224,6 +224,7 @@ class PersonelMerkezPage(QWidget):
         form_hdr.addWidget(self.lbl_form_title)
         form_hdr.addStretch()
         btn_form_kapat = QPushButton()
+        self._btn_form_kapat = btn_form_kapat
         btn_form_kapat.setFixedSize(20, 20)
         btn_form_kapat.setStyleSheet("background:transparent; border:none;")
         btn_form_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -311,18 +312,8 @@ class PersonelMerkezPage(QWidget):
                     self.lbl_avatar.setText(initials)
                     self.lbl_avatar.setPixmap(QPixmap())
 
-                # Durum badge — tema sabitleri
-                durum_style_map = {
-                    "Aktif":  STYLES["header_durum_aktif"],
-                    "Pasif":  STYLES["header_durum_pasif"],
-                    "İzinli": STYLES["header_durum_izinli"],
-                }
                 self.lbl_durum.setText(durum)
-                # Fallback: hiç durum eşleşmezse boş stil kullan (transparent)
-                fallback_style = f"color:{C.TEXT_SECONDARY}; background:transparent; font-size:11px;"
-                self.lbl_durum.setStyleSheet(
-                    durum_style_map.get(durum, fallback_style)
-                )
+                self._apply_durum_style(durum)
 
             # Uyarılar
             while self.alert_container.count():
@@ -412,7 +403,7 @@ class PersonelMerkezPage(QWidget):
 
         # Sekmeye geçince gerekiyorsa veriyi tazele
         current = self._modules.get(code)
-        if current and hasattr(current, "load_data") and code in {"SAGLIK", "DOKUMAN"}:
+        if current and hasattr(current, "load_data") and code in {"SAGLIK", "FHSZ", "DOKUMAN"}:
             try:
                 current.load_data()
             except Exception as e:
@@ -430,6 +421,8 @@ class PersonelMerkezPage(QWidget):
                 w = PersonelSaglikPanel(self.db, self.personel_id)
                 if hasattr(w, "open_documents"):
                     w.open_documents.connect(self._open_documents_for_saglik)
+            elif code == "FHSZ":
+                w = PersonelFhszPanel(self.db, self.personel_id)
             elif code == "DOKUMAN":
                 w = PersonelDokumanPanel(self.personel_id, self.db, sabitler_cache=self.sabitler_cache)
                 if hasattr(w, "saved"):
@@ -531,6 +524,66 @@ class PersonelMerkezPage(QWidget):
             except Exception as e:
                 logger.warning(f"Sağlık modülü yenileme hatası: {e}")
 
+    def _apply_durum_style(self, durum: str):
+        durum_style_map = {
+            "Aktif": STYLES["header_durum_aktif"],
+            "Pasif": STYLES["header_durum_pasif"],
+            "İzinli": STYLES["header_durum_izinli"],
+        }
+        fallback_style = f"color:{C.TEXT_SECONDARY}; background:transparent; font-size:11px;"
+        self.lbl_durum.setStyleSheet(durum_style_map.get(durum, fallback_style))
+
+    def _on_theme_changed(self, _theme_name: str):
+        """Tema değişince runtime setStyleSheet alanlarını yeniler."""
+        self._apply_runtime_styles()
+
+    def _apply_runtime_styles(self):
+        if hasattr(self, "_header_outer"):
+            self._header_outer.setStyleSheet(
+                "QFrame { background-color: %s; border-bottom: 1px solid %s; }"
+                % (C.BG_SECONDARY, C.BORDER_PRIMARY)
+            )
+        if hasattr(self, "_right_panel"):
+            self._right_panel.setStyleSheet(
+                "QFrame { background-color: %s; border-left: 1px solid %s; }"
+                % (C.BG_SECONDARY, C.BORDER_PRIMARY)
+            )
+        if hasattr(self, "form_container"):
+            self.form_container.setStyleSheet(
+                f"background:{C.BG_TERTIARY}; border-bottom:1px solid {C.BORDER_PRIMARY};"
+            )
+        if hasattr(self, "_nav_widget"):
+            self._nav_widget.setStyleSheet("background: transparent;")
+
+        # Hızlı işlem butonlarını tema sonrası yeniden boya
+        for btn in getattr(self, "_quick_action_buttons", []):
+            btn.setStyleSheet(self._quick_action_btn_qss())
+
+        # Başlık yazılarının renkleri
+        if hasattr(self, "lbl_avatar"):
+            self.lbl_avatar.setStyleSheet(
+                f"background:{C.BG_TERTIARY}; border-radius:8px;"
+                f"font-size:13px; font-weight:700; color:{C.TEXT_SECONDARY};"
+            )
+        if hasattr(self, "lbl_ad"):
+            self.lbl_ad.setStyleSheet(
+                f"font-size:14px; font-weight:600; color:{C.TEXT_PRIMARY}; background:transparent;"
+            )
+
+        # Tab butonlarını aktif sekmeye göre yeniden boya
+        for code, btn in self._nav_btns.items():
+            btn.setStyleSheet(self._tab_btn_qss(active=(code == self._active_tab)))
+
+        # İkon renkleri
+        if hasattr(self, "_btn_kapat"):
+            IconRenderer.set_button_icon(self._btn_kapat, "x", color=C.TEXT_MUTED, size=14)
+        if hasattr(self, "_btn_form_kapat"):
+            IconRenderer.set_button_icon(self._btn_form_kapat, "x", color=C.TEXT_MUTED, size=11)
+
+        # Durum badge güncel tema stiline geçsin
+        if hasattr(self, "lbl_durum"):
+            self._apply_durum_style(self.lbl_durum.text())
+
     # ═══════════════════════════════════════════════════
     #  YARDIMCI OLUŞTURUCULAR
     # ═══════════════════════════════════════════════════
@@ -552,14 +605,11 @@ class PersonelMerkezPage(QWidget):
         lbl.style().polish(lbl)
         return lbl
 
-    @staticmethod
-    def _action_btn(label: str, icon: str, callback) -> QPushButton:
+    def _action_btn(self, label: str, icon: str, callback) -> QPushButton:
         btn = QPushButton(label)
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn.setFixedHeight(34)
-        btn.setProperty("style-role", "action")
-        btn.style().unpolish(btn)
-        btn.style().polish(btn)
+        btn.setStyleSheet(self._quick_action_btn_qss())
         try:
             IconRenderer.set_button_icon(btn, icon, color=C.TEXT_SECONDARY, size=13)
         except Exception:
@@ -568,6 +618,7 @@ class PersonelMerkezPage(QWidget):
             btn.clicked.connect(callback)
         else:
             btn.setEnabled(False)
+        self._quick_action_buttons.append(btn)
         return btn
 
     # ═══════════════════════════════════════════════════
@@ -593,4 +644,28 @@ class PersonelMerkezPage(QWidget):
                 f"font-size:13px; font-weight:600; padding:0 14px;"
             f"}}"
             f"QPushButton:hover{{color:{C.TEXT_PRIMARY};}}"
+        )
+
+    @staticmethod
+    def _quick_action_btn_qss() -> str:
+        return (
+            f"QPushButton{{"
+            f"text-align:left;"
+            f"padding:0 10px;"
+            f"background:transparent;"
+            f"border:1px solid transparent;"
+            f"border-radius:8px;"
+            f"color:{C.TEXT_PRIMARY};"
+            f"font-size:13px; font-weight:600;"
+            f"}}"
+            f"QPushButton:hover{{"
+            f"background:{C.BG_TERTIARY};"
+            f"border:1px solid {C.BORDER_PRIMARY};"
+            f"color:{C.TEXT_PRIMARY};"
+            f"}}"
+            f"QPushButton:disabled{{"
+            f"background:transparent;"
+            f"border:1px dashed {C.BORDER_PRIMARY};"
+            f"color:{C.TEXT_SECONDARY};"
+            f"}}"
         )

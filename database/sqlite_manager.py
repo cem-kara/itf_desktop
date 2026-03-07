@@ -254,6 +254,25 @@ class SQLiteManager:
             for row in cur.fetchall()
         ]
 
+    def prune_auth_audit(self, retention_days: int) -> int:
+        """AuthAudit tablosunda belirtilen günden eski kayıtları siler."""
+        try:
+            days = int(retention_days)
+        except (TypeError, ValueError):
+            days = 0
+
+        if days <= 0:
+            return 0
+
+        cur = self.execute(
+            """
+            DELETE FROM AuthAudit
+            WHERE datetime(CreatedAt) < datetime('now', ?)
+            """,
+            (f"-{days} days",),
+        )
+        return int(cur.rowcount or 0)
+
     def get_all_users(self):
         """Tüm kullanıcıları getir"""
         cur = self.conn.cursor()

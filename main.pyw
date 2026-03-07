@@ -90,6 +90,15 @@ def main():
 
     # 3 Login gate
     db = SQLiteManager()
+
+    # AuthAudit bakım temizliği (retention)
+    try:
+        deleted = db.prune_auth_audit(AppConfig.AUTH_AUDIT_RETENTION_DAYS)
+        if deleted > 0:
+            logger.info(f"AuthAudit bakım temizliği: {deleted} kayıt silindi")
+    except Exception as e:
+        logger.warning(f"AuthAudit bakım temizliği yapılamadı: {e}")
+
     auth_service, authorization_service, session_context = get_auth_services(db)
 
     login_dialog = LoginDialog(auth_service)

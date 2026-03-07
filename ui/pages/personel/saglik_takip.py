@@ -1,412 +1,315 @@
 # -*- coding: utf-8 -*-
 import os
 import uuid
+import platform
+import subprocess
 from datetime import date, datetime
+from typing import Optional
 
-from PySide6.QtCore import Qt, QDate, QPropertyAnimation, QEasingCurve, QAbstractAnimation
-from PySide6.QtGui import QCursor, QPainter, QColor, QBrush, QFont, QPen
+from PySide6.QtCore import Qt, QDate, QUrl
+from PySide6.QtGui import QCursor, QDesktopServices
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QFrame, QScrollArea,
-    QLabel, QComboBox, QLineEdit, QPushButton, QTableView, QHeaderView,
-    QDateEdit, QMessageBox, QFileDialog, QGroupBox
+    QWidget, QVBoxLayout, QHBoxLayout, QFrame,
+    QLabel, QComboBox, QLineEdit, QPushButton, QTableView,
+    QDateEdit, QMessageBox, QFileDialog, QSizePolicy,
 )
 
 from core.logger import logger
 from core.date_utils import parse_date, to_db_date, to_ui_date
 from core.services.dokuman_service import DokumanService
 from ui.components.base_table_model import BaseTableModel
-from ui.styles import DarkTheme
-from ui.styles.components import STYLES as S
-from ui.styles.icons import IconRenderer
-STATUS_OPTIONS = ["Uygun", "Sartli Uygun", "Uygun Degil"]
+from ui.styles.icons import IconRenderer, IconColors
+
+STATUS_OPTIONS = ["Uygun", "Şartlı Uygun", "Uygun Değil"]
 
 TABLE_COLUMNS = [
-    ("AdSoyad", "Ad Soyad"),
-    ("Birim", "Birim"),
-    ("MuayeneTarihi", "Muayene"),
-    ("SonrakiKontrolTarihi", "Sonraki Kontrol"),
-    ("Sonuc", "Sonuc"),
-    ("Durum", "Durum"),
+    ("AdSoyad",              "Ad Soyad",         200),
+    ("Birim",                "Birim",             200),
+    ("MuayeneTarihi",        "Muayene",         150),
+    ("SonrakiKontrolTarihi", "Sonraki Kontrol", 150),
+    ("Sonuc",                "Sonuç",           150),
+    ("Durum",                "Durum",           100),
+    ("Rapor",                "Rapor",            80),
 ]
 
 
-# ─── Muayene Timeline Widget ───────────────────────────────
-class MuayeneTimelineWidget(QWidget):
-    """
-    Personelin muayene geçmişini dikey timeline olarak gösteren widget.
-    - Tarih noktaları: Dikey çizgi üzerinde
-    - Renk kodu: Uygun (yeşil), Şartlı (sarı), Uygun Değil (kırmızı)
-    - Hover: Muayene detaylarını göster
-    """
-    
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self._exams: list[dict] = []  # [{"tarih": "2026-01-15", "sonuc": "Uygun", "notlar": "..."}, ...]
-        self.setMinimumHeight(300)
-        self.setStyleSheet("background: transparent;")
-    
-    def set_exams(self, exams: list[dict]):
-        """Muayene liste ekle ve timeline'ı redraw et."""
-        # Tarihe göre sırala (en eski → en yeni)
-        self._exams = sorted(exams, key=lambda x: x.get("MuayeneTarihi", ""))
-        self.update()
-    
-    def paintEvent(self, event):
-        if not self._exams:
-            p = QPainter(self)
-            p.setFont(QFont("", 9))
-            p.setPen(QColor(DarkTheme.TEXT_MUTED))
-            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Muayene geçmişi boş")
-            return
-        
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        
-        # Padding ve layout
-        m = 20  # margin
-        cx = m + 20  # Timeline merkezine x
-        top_y = m
-        bot_y = self.height() - m
-        
-        if len(self._exams) > 1:
-            item_height = (bot_y - top_y) / (len(self._exams) - 1) if len(self._exams) > 1 else 40
-        else:
-            item_height = 40
-            top_y = self.height() // 2 - 20
-        
-        # Ana çizgi (timeline)
-        p.setPen(QPen(QColor(DarkTheme.BG_TERTIARY), 2))
-        p.drawLine(cx, top_y, cx, bot_y)
-        
-        # Her muayene noktası
-        for i, exam in enumerate(self._exams):
-            y = top_y + i * item_height
-            
-            # Status rengine göre renk seç
-            status_color = self._get_status_color(exam.get("Durum", "Uygun"))
-            
-            # Nokta çiz (daire)
-            p.setBrush(QBrush(status_color))
-            p.setPen(QPen(QColor(DarkTheme.BG_PRIMARY), 2))
-            radius = 6
-            p.drawEllipse(int(cx - radius), int(y - radius), radius * 2, radius * 2)
-            
-            # Tarih ve sonuç yazı (nodeun sağında)
-            text_x = cx + 16
-            tarih_str = to_ui_date(exam.get("MuayeneTarihi", ""), "—")
-            sonuc_str = exam.get("Sonuc", "")
-            
-            # Tarih
-            p.setFont(QFont("", 8, QFont.Weight.Bold))
-            p.setPen(QColor(DarkTheme.TEXT_PRIMARY))
-            p.drawText(int(text_x), int(y - 8), f"{tarih_str}")
-            
-            # Sonuç/Durum
-            p.setFont(QFont("", 7))
-            p.setPen(QColor(DarkTheme.TEXT_MUTED))
-            p.drawText(int(text_x), int(y + 6), f"{sonuc_str}")
-        
-        p.end()
-    
-    def _get_status_color(self, status: str) -> QColor:
-        """Status'a göre renk döndür."""
-        s = str(status).strip().lower()
-        if "uygun" in s and "değil" not in s and "şartlı" not in s:
-            # Uygun → yeşil
-            return QColor(34, 197, 94)  # green-500
-        elif "şartlı" in s:
-            # Şartlı Uygun → sarı
-            return QColor(234, 179, 8)  # yellow-500
-        else:
-            # Uygun Değil → kırmızı
-            return QColor(239, 68, 68)  # red-500
-
+# =============================================================================
+# Model
+# =============================================================================
 
 class SaglikTakipTableModel(BaseTableModel):
+    DATE_KEYS    = frozenset({"MuayeneTarihi", "SonrakiKontrolTarihi"})
+    ALIGN_CENTER = frozenset({"MuayeneTarihi", "SonrakiKontrolTarihi", "Sonuc", "Durum", "Rapor"})
+
     def __init__(self, rows=None, parent=None):
         super().__init__(TABLE_COLUMNS, rows, parent)
 
     def _display(self, key, row):
-        value = row.get(key, "")
-        if key in ("MuayeneTarihi", "SonrakiKontrolTarihi"):
-            return self._fmt_date(value, "")
-        return str(value)
+        if key == "Rapor":
+            return "A\u00e7" if row.get("_RaporPath") else "-"
+        return super()._display(key, row)
 
-    def _align(self, key):
-        if key in ("MuayeneTarihi", "SonrakiKontrolTarihi", "Sonuc", "Durum"):
-            return Qt.AlignmentFlag.AlignCenter
-        return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
+    def _fg(self, key, row):
+        if key == "Durum":
+            return self.status_fg(row.get("Durum", ""))
+        return None
 
-    def set_rows(self, rows):
-        self.set_data(rows)
+    def _bg(self, key, row):
+        if key == "Durum":
+            return self.status_bg(row.get("Durum", ""))
+        return None
 
+
+# =============================================================================
+# Sayfa
+# =============================================================================
 
 class SaglikTakipPage(QWidget):
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self._db = db
-        self._all_rows = []
-        self._takip_rows = []
-        self._personel_rows = []
-        self._editing_id = None
+        self._db   = db
+        self._all_rows:      list[dict] = []
+        self._takip_rows:    list[dict] = []
+        self._personel_rows: list[dict] = []
+        self._editing_id:    Optional[str] = None
         self._selected_report_path = ""
-        self._exam_keys = ["Dermatoloji", "Dahiliye", "Goz", "Goruntuleme"]
-        self._exam_widgets = {}
-        self._drawer = None  # Sağdan açılan panel
-        self._drawer_width = 450  # Drawer genişliği
-        self._timeline_widget = None  # Muayene timeline
+        self._exam_keys    = ["Dermatoloji", "Dahiliye", "Goz", "Goruntuleme"]
+        self._exam_widgets: dict = {}
         self._setup_ui()
         self._connect_signals()
 
-    def _setup_ui(self):
-        root = QHBoxLayout(self)
-        root.setContentsMargins(10, 10, 10, 10)
-        root.setSpacing(0)
+    # -------------------------------------------------------------------------
+    # UI Kurulum
+    # -------------------------------------------------------------------------
 
-        # ── Ana İçerik: Filtre + Tablo (Sol) ──
-        main_container = QWidget()
-        main_lay = QVBoxLayout(main_container)
-        main_lay.setContentsMargins(0, 0, 0, 0)
+    def _setup_ui(self):
+        main_lay = QVBoxLayout(self)
+        main_lay.setContentsMargins(10, 10, 10, 10)
         main_lay.setSpacing(8)
 
-        # Filtre paneli
-        filter_frame = QFrame()
-        filter_frame.setStyleSheet(S["filter_panel"])
-        fb = QHBoxLayout(filter_frame)
-        fb.setContentsMargins(12, 8, 12, 8)
-        fb.setSpacing(8)
+        # 1. Filtre çubuğu
+        main_lay.addWidget(self._build_filter_bar())
+
+        # 2. Form paneli — filtre ile tablo arasında, gizli başlar
+        self.form_panel = self._build_form_panel()
+        self.form_panel.setVisible(False)
+        main_lay.addWidget(self.form_panel)
+
+        # 3. Tablo
+        self._build_table_widget()
+        main_lay.addWidget(self.table, 1)
+
+        # 4. Durum satırı
+        self.lbl_info = QLabel("")
+        self.lbl_info.setProperty("style-role", "footer")
+        main_lay.addWidget(self.lbl_info)
+
+    # -- Filtre \u00e7ubu\u011fu -------------------------------------------------------
+
+    def _build_filter_bar(self) -> QFrame:
+        frame = QFrame()
+        lay = QHBoxLayout(frame)
+        lay.setContentsMargins(12, 8, 12, 8)
+        lay.setSpacing(8)
 
         self.cmb_yil = QComboBox()
-        self.cmb_yil.setStyleSheet(S["combo"])
         self.cmb_yil.addItem("Tum Yillar", 0)
         this_year = date.today().year
         for y in range(this_year + 1, this_year - 4, -1):
             self.cmb_yil.addItem(str(y), y)
         self.cmb_yil.setCurrentIndex(1)
-        fb.addWidget(self.cmb_yil)
+        lay.addWidget(self.cmb_yil)
 
         self.cmb_birim_filter = QComboBox()
-        self.cmb_birim_filter.setStyleSheet(S["combo"])
         self.cmb_birim_filter.addItem("Tum Birimler")
-        fb.addWidget(self.cmb_birim_filter)
+        lay.addWidget(self.cmb_birim_filter)
 
         self.cmb_durum_filter = QComboBox()
-        self.cmb_durum_filter.setStyleSheet(S["combo"])
-        self.cmb_durum_filter.addItems(["Tum Durumlar", "Planlandi", "Gecerli", "Gecikmis", "Riskli"])
-        fb.addWidget(self.cmb_durum_filter)
+        self.cmb_durum_filter.addItems(
+            ["Tum Durumlar", "Planlandi", "Gecerli", "Gecikmis", "Riskli"]
+        )
+        lay.addWidget(self.cmb_durum_filter)
 
         self.search = QLineEdit()
         self.search.setPlaceholderText("Ad soyad ara...")
-        self.search.setStyleSheet(S["search"])
         self.search.setClearButtonEnabled(True)
         self.search.setFixedWidth(220)
-        fb.addWidget(self.search)
+        lay.addWidget(self.search)
 
-        fb.addStretch()
+        lay.addStretch()
 
         self.btn_toplu = QPushButton("Toplu Yillik Plan")
         self.btn_toplu.setProperty("style-role", "action")
         self.btn_toplu.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_toplu, "clipboard_list", color=DarkTheme.TEXT_PRIMARY, size=14)
-        fb.addWidget(self.btn_toplu)
+        IconRenderer.set_button_icon(self.btn_toplu, "clipboard_list", color=IconColors.PRIMARY, size=14)
+        lay.addWidget(self.btn_toplu)
 
         self.btn_yeni = QPushButton("Yeni Ekle")
         self.btn_yeni.setProperty("style-role", "action")
         self.btn_yeni.setFixedSize(110, 36)
         self.btn_yeni.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_yeni, "plus", color=DarkTheme.TEXT_PRIMARY, size=14)
-        fb.addWidget(self.btn_yeni)
+        IconRenderer.set_button_icon(self.btn_yeni, "plus", color=IconColors.PRIMARY, size=14)
+        lay.addWidget(self.btn_yeni)
 
         self.btn_yenile = QPushButton("Yenile")
         self.btn_yenile.setProperty("style-role", "refresh")
         self.btn_yenile.setFixedSize(100, 36)
         self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_yenile, "sync", color=DarkTheme.TEXT_PRIMARY, size=14)
-        fb.addWidget(self.btn_yenile)
+        IconRenderer.set_button_icon(self.btn_yenile, "sync", color=IconColors.PRIMARY, size=14)
+        lay.addWidget(self.btn_yenile)
 
         self.btn_kapat = QPushButton("Kapat")
         self.btn_kapat.setProperty("style-role", "danger")
         self.btn_kapat.setFixedSize(100, 36)
         self.btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
-        fb.addWidget(self.btn_kapat)
-        main_lay.addWidget(filter_frame)
+        IconRenderer.set_button_icon(self.btn_kapat, "x", color=IconColors.DANGER, size=14)
+        lay.addWidget(self.btn_kapat)
 
-        # Tablo
-        self.model = SaglikTakipTableModel()
+        return frame
+
+    # -- Form paneli ----------------------------------------------------------
+
+    def _build_form_panel(self) -> QFrame:
+        panel = QFrame()
+        panel.setFrameShape(QFrame.Shape.StyledPanel)
+        form_lay = QVBoxLayout(panel)
+        form_lay.setContentsMargins(12, 10, 12, 10)
+        form_lay.setSpacing(10)
+
+        # \u00dcst: personel se\u00e7imi + kapat
+        top_row = QHBoxLayout()
+        lbl_personel = QLabel("Personel ad\u0131")
+        lbl_personel.setProperty("style-role", "section-title")
+        top_row.addWidget(lbl_personel)
+
+        self.cmb_personel = QComboBox()
+        self.cmb_personel.setMinimumWidth(200)
+        top_row.addWidget(self.cmb_personel, 1)
+
+        self.btn_form_kapat = QPushButton()
+        self.btn_form_kapat.setProperty("style-role", "danger")
+        self.btn_form_kapat.setFixedSize(28, 28)
+        self.btn_form_kapat.setToolTip("Kapat")
+        self.btn_form_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_form_kapat, "x", color=IconColors.DANGER, size=12)
+        top_row.addWidget(self.btn_form_kapat)
+        form_lay.addLayout(top_row)
+
+        # 4 muayene kutusu \u2014 yatayda
+        exam_row = QHBoxLayout()
+        exam_row.setSpacing(12)
+        exam_labels = {
+            "Dermatoloji": "Dermatoloji",
+            "Dahiliye":    "Dahiliye",
+            "Goz":         "G\u00f6z",
+            "Goruntuleme": "G\u00f6r\u00fcntüleme",
+        }
+        for key in self._exam_keys:
+            exam_row.addWidget(self._create_exam_box(key, exam_labels[key]))
+        form_lay.addLayout(exam_row)
+
+        # Rapor dosyas\u0131 sat\u0131r\u0131
+        rapor_row = QHBoxLayout()
+        rapor_row.setSpacing(8)
+
+        self.btn_rapor = QPushButton("Rapor Se\u00e7")
+        self.btn_rapor.setProperty("style-role", "secondary")
+        self.btn_rapor.setFixedWidth(100)
+        self.btn_rapor.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_rapor, "upload", color=IconColors.PRIMARY, size=13)
+        rapor_row.addWidget(self.btn_rapor)
+
+        self.inp_rapor = QLineEdit()
+        self.inp_rapor.setReadOnly(True)
+        self.inp_rapor.setPlaceholderText("Dosya se\u00e7ilmedi...")
+        rapor_row.addWidget(self.inp_rapor, 1)
+        form_lay.addLayout(rapor_row)
+
+        # Notlar sat\u0131r\u0131
+        not_row = QHBoxLayout()
+        lbl_not = QLabel("Notlar")
+        lbl_not.setProperty("style-role", "form")
+        not_row.addWidget(lbl_not)
+        self.inp_not = QLineEdit()
+        self.inp_not.setPlaceholderText("A\u00e7\u0131klama veya not...")
+        not_row.addWidget(self.inp_not, 1)
+        form_lay.addLayout(not_row)
+
+        # Kaydet / \u0130ptal
+        btn_row = QHBoxLayout()
+        btn_row.setSpacing(8)
+
+        self.btn_kaydet = QPushButton("Kaydet")
+        self.btn_kaydet.setProperty("style-role", "action")
+        self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_kaydet.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=IconColors.PRIMARY, size=14)
+        btn_row.addWidget(self.btn_kaydet)
+
+        self.btn_temizle = QPushButton("\u0130ptal")
+        self.btn_temizle.setProperty("style-role", "secondary")
+        self.btn_temizle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_temizle.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        IconRenderer.set_button_icon(self.btn_temizle, "x", color=IconColors.MUTED, size=14)
+        btn_row.addWidget(self.btn_temizle)
+        form_lay.addLayout(btn_row)
+
+        return panel
+
+    def _create_exam_box(self, key: str, label: str) -> QFrame:
+        box = QFrame()
+        box.setFrameShape(QFrame.Shape.StyledPanel)
+        vlay = QVBoxLayout(box)
+        vlay.setContentsMargins(10, 8, 10, 10)
+        vlay.setSpacing(4)
+
+        title = QLabel(label)
+        title.setProperty("style-role", "section-title")
+        vlay.addWidget(title)
+
+        lbl_tarih = QLabel("Muayene Tarihi")
+        lbl_tarih.setProperty("style-role", "form")
+        vlay.addWidget(lbl_tarih)
+
+        de = QDateEdit(QDate.currentDate())
+        de.setDisplayFormat("dd.MM.yyyy")
+        de.setCalendarPopup(True)
+        vlay.addWidget(de)
+
+        lbl_durum = QLabel("Durum")
+        lbl_durum.setProperty("style-role", "form")
+        vlay.addWidget(lbl_durum)
+
+        cmb = QComboBox()
+        cmb.addItems([""] + STATUS_OPTIONS)
+        vlay.addWidget(cmb)
+
+        self._exam_widgets[key] = {"tarih": de, "durum": cmb}
+        return box
+
+    # -- Tablo ----------------------------------------------------------------
+
+    def _build_table_widget(self):
         self.table = QTableView()
+        self.model = SaglikTakipTableModel([])
         self.table.setModel(self.model)
-        self.table.setStyleSheet(S["table"])
         self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self.table.setAlternatingRowColors(True)
+        self.table.setSortingEnabled(True)
         self.table.verticalHeader().setVisible(False)
-        self.table.setShowGrid(False)
-        header = self.table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        for i in range(2, len(TABLE_COLUMNS)):
-            header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
-        main_lay.addWidget(self.table, 1)
+        self.model.setup_columns(self.table)
 
-        self.lbl_info = QLabel("0 kayit")
-        self.lbl_info.setProperty("style-role", "footer")
-        main_lay.addWidget(self.lbl_info)
-
-        root.addWidget(main_container, 1)
-
-        # ── Sağdan Açılan Drawer (Form) ──
-        self._drawer = QFrame()
-        self._drawer.setStyleSheet("""
-            QFrame {{
-                background-color: {};
-                border-left: 1px solid {};
-            }}
-        """.format(DarkTheme.BG_SECONDARY, DarkTheme.BORDER_PRIMARY))
-        self._drawer.setFixedWidth(0)  # Başlangıçta gizli
-
-        drawer_lay = QVBoxLayout(self._drawer)
-        drawer_lay.setContentsMargins(0, 0, 0, 0)
-        drawer_lay.setSpacing(0)
-
-        # Drawer başlık
-        drawer_header = QFrame()
-        drawer_header.setStyleSheet("""
-            QFrame {{
-                background-color: {};
-                border-bottom: 1px solid {};
-                padding: 12px;
-            }}
-        """.format(DarkTheme.BG_PRIMARY, DarkTheme.BORDER_PRIMARY))
-        header_lay = QHBoxLayout(drawer_header)
-        header_lay.setContentsMargins(12, 12, 12, 12)
-        
-        lbl_drawer_title = QLabel("Sağlık Kontrolü Detay")
-        lbl_drawer_title.setProperty("color-role", "primary")
-        lbl_drawer_title.setStyleSheet("font-size: 14px; font-weight: 600;")
-        lbl_drawer_title.style().unpolish(lbl_drawer_title)
-        lbl_drawer_title.style().polish(lbl_drawer_title)
-        header_lay.addWidget(lbl_drawer_title)
-        header_lay.addStretch()
-
-        btn_drawer_close = QPushButton()
-        btn_drawer_close.setFixedSize(32, 32)
-        btn_drawer_close.setProperty("style-role", "danger")
-        btn_drawer_close.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(btn_drawer_close, "x", color=DarkTheme.TEXT_PRIMARY, size=16)
-        btn_drawer_close.clicked.connect(self._close_drawer)
-        header_lay.addWidget(btn_drawer_close)
-        drawer_lay.addWidget(drawer_header)
-
-        # Drawer scroll içerik
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(S.get("scroll") or "")
-
-        form_content = QWidget()
-        form_content.setStyleSheet("background: transparent;")
-        form_lay = QVBoxLayout(form_content)
-        form_lay.setContentsMargins(12, 12, 12, 12)
-        form_lay.setSpacing(12)
-
-        # Muayene Geçmişi Timeline
-        grp_timeline = QGroupBox("Muayene Geçmişi")
-        grp_timeline.setStyleSheet(S["group"])
-        timeline_lay = QVBoxLayout(grp_timeline)
-        timeline_lay.setContentsMargins(12, 12, 12, 12)
-        self._timeline_widget = MuayeneTimelineWidget()
-        timeline_lay.addWidget(self._timeline_widget)
-        form_lay.addWidget(grp_timeline)
-
-        # Kimlik ve Muayene
-        grp_kimlik = QGroupBox("Kimlik ve Muayene")
-        grp_kimlik.setStyleSheet(S["group"])
-        g1 = QGridLayout(grp_kimlik)
-        g1.setContentsMargins(12, 12, 12, 12)
-        g1.setHorizontalSpacing(10)
-        g1.setVerticalSpacing(8)
-
-        g1.addWidget(QLabel("Personel"), 0, 0)
-        self.cmb_personel = QComboBox()
-        self.cmb_personel.setStyleSheet(S["combo"])
-        self.cmb_personel.setEditable(True)
-        self.cmb_personel.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
-        if _le := self.cmb_personel.lineEdit():
-            _le.setPlaceholderText("Personel seciniz...")
-        g1.addWidget(self.cmb_personel, 0, 1)
-
-        form_lay.addWidget(grp_kimlik)
-
-        # Muayene durumları
-        grp_durum = QGroupBox("Durum Bilgileri")
-        grp_durum.setStyleSheet(S["group"])
-        g2 = QGridLayout(grp_durum)
-        g2.setContentsMargins(12, 12, 12, 12)
-        g2.setHorizontalSpacing(10)
-        g2.setVerticalSpacing(8)
-
-        self._add_exam_fields(g2, 0, "Dermatoloji", "Dermatoloji Muayenesi")
-        self._add_exam_fields(g2, 1, "Dahiliye", "Dahiliye Muayenesi")
-        self._add_exam_fields(g2, 2, "Goz", "Goz Muayenesi")
-        self._add_exam_fields(g2, 3, "Goruntuleme", "Goruntuleme Teknikleri (Varsa)")
-
-        form_lay.addWidget(grp_durum)
-
-        # Ek Bilgiler
-        grp_ek = QGroupBox("Ek Bilgiler")
-        grp_ek.setStyleSheet(S["group"])
-        g3 = QGridLayout(grp_ek)
-        g3.setContentsMargins(12, 12, 12, 12)
-        g3.setHorizontalSpacing(10)
-        g3.setVerticalSpacing(8)
-
-        g3.addWidget(QLabel("Rapor"), 0, 0)
-        rapor_row = QHBoxLayout()
-        self.inp_rapor = QLineEdit()
-        self.inp_rapor.setStyleSheet(S["input"])
-        self.inp_rapor.setReadOnly(True)
-        rapor_row.addWidget(self.inp_rapor, 1)
-        self.btn_rapor = QPushButton("Sec")
-        self.btn_rapor.setProperty("style-role", "action")
-        self.btn_rapor.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_rapor, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
-        rapor_row.addWidget(self.btn_rapor)
-        g3.addLayout(rapor_row, 0, 1)
-
-        g3.addWidget(QLabel("Not"), 1, 0)
-        self.inp_not = QLineEdit()
-        self.inp_not.setStyleSheet(S["input"])
-        g3.addWidget(self.inp_not, 1, 1)
-        form_lay.addWidget(grp_ek)
-        form_lay.addStretch()
-
-        scroll.setWidget(form_content)
-        drawer_lay.addWidget(scroll, 1)
-
-        # Drawer butonları
-        btn_row = QHBoxLayout()
-        btn_row.setContentsMargins(12, 8, 12, 12)
-        btn_row.setSpacing(8)
-        self.btn_temizle = QPushButton("Temizle / Yeni")
-        self.btn_temizle.setProperty("style-role", "action")
-        self.btn_temizle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_temizle, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
-        btn_row.addWidget(self.btn_temizle)
-        self.btn_kaydet = QPushButton("Kaydet")
-        self.btn_kaydet.setProperty("style-role", "success")
-        self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
-        btn_row.addWidget(self.btn_kaydet)
-        drawer_lay.addLayout(btn_row)
-
-        root.addWidget(self._drawer)
+    # -------------------------------------------------------------------------
+    # Sinyal ba\u011flant\u0131lar\u0131
+    # -------------------------------------------------------------------------
 
     def _connect_signals(self):
         self.btn_yenile.clicked.connect(self.load_data)
         self.btn_kaydet.clicked.connect(self._save_record)
         self.btn_temizle.clicked.connect(self._clear_form)
-        self.btn_yeni.clicked.connect(self._new_record)
+        self.btn_yeni.clicked.connect(self._show_form_panel)
+        self.btn_form_kapat.clicked.connect(self._hide_form_panel)
         self.btn_rapor.clicked.connect(self._pick_report)
         self.btn_toplu.clicked.connect(self._bulk_plan_year)
         self.search.textChanged.connect(self._apply_filters)
@@ -414,19 +317,44 @@ class SaglikTakipPage(QWidget):
         self.cmb_birim_filter.currentTextChanged.connect(self._apply_filters)
         self.cmb_durum_filter.currentTextChanged.connect(self._apply_filters)
         self.table.selectionModel().selectionChanged.connect(self._on_select_row)
+        self.table.doubleClicked.connect(self._on_table_double_click)
         for key in self._exam_keys:
             self._exam_widgets[key]["durum"].currentTextChanged.connect(
                 lambda _txt, k=key: self._on_exam_status_changed(k)
             )
+
+    # -------------------------------------------------------------------------
+    # Form panel g\u00f6ster / gizle
+    # -------------------------------------------------------------------------
+
+    def _show_form_panel(self):
+        self._editing_id = None
+        self._selected_report_path = ""
+        self.inp_rapor.clear()
+        self.inp_not.clear()
+        self.cmb_personel.setCurrentIndex(-1)
+        for key in self._exam_keys:
+            self._exam_widgets[key]["tarih"].setDate(QDate.currentDate())
+            self._exam_widgets[key]["durum"].setCurrentIndex(0)
+        self.form_panel.setVisible(True)
+
+    def _hide_form_panel(self):
+        self.form_panel.setVisible(False)
+
+    # -------------------------------------------------------------------------
+    # Veri y\u00fckleme
+    # -------------------------------------------------------------------------
 
     def load_data(self):
         if not self._db:
             return
         try:
             from core.di import get_saglik_service as _svc_factory
-            _svc = _svc_factory(self._db)
+            from core.paths import DATA_DIR
+            _svc          = _svc_factory(self._db)
             personel_repo = _svc._r.get("Personel")
-            takip_repo = _svc._r.get("Personel_Saglik_Takip")
+            takip_repo    = _svc._r.get("Personel_Saglik_Takip")
+            dokuman_repo  = _svc._r.get("Dokumanlar")
 
             all_personel = personel_repo.get_all()
             self._personel_rows = [
@@ -437,63 +365,113 @@ class SaglikTakipPage(QWidget):
             self.cmb_personel.clear()
             for p in sorted(self._personel_rows, key=lambda x: str(x.get("AdSoyad", ""))):
                 kimlik = str(p.get("KimlikNo", "")).strip()
-                ad = str(p.get("AdSoyad", "")).strip()
-                birim = str(p.get("GorevYeri", "")).strip()
-                label = f"{ad} ({kimlik})"
-                self.cmb_personel.addItem(label, {"KimlikNo": kimlik, "AdSoyad": ad, "Birim": birim})
+                ad     = str(p.get("AdSoyad", "")).strip()
+                birim  = str(p.get("GorevYeri", "")).strip()
+                self.cmb_personel.addItem(
+                    f"{ad} ({kimlik})",
+                    {"KimlikNo": kimlik, "AdSoyad": ad, "Birim": birim},
+                )
 
             self._takip_rows = takip_repo.get_all()
-            self._all_rows = self._build_personel_list_rows(all_personel)
+
+            rapor_map: dict = {}
+            docs = dokuman_repo.get_where({"EntityType": "personel"})
+            for doc in docs:
+                if str(doc.get("IliskiliBelgeTipi", "")).strip() != "Personel_Saglik_Takip":
+                    continue
+                entity_id = str(doc.get("EntityId", "")).strip()
+                rel_id    = str(doc.get("IliskiliBelgeID", "")).strip()
+                if entity_id and rel_id:
+                    rapor_map[(entity_id, rel_id)] = doc
+
+            for takip in self._takip_rows:
+                personelid = str(takip.get("Personelid", "")).strip()
+                kayit_no   = str(takip.get("KayitNo", "")).strip()
+                doc        = rapor_map.get((personelid, kayit_no))
+
+                rapor_path = ""
+                if doc:
+                    local_path = str(doc.get("LocalPath", "")).strip()
+                    drive_path = str(doc.get("DrivePath", "")).strip()
+                    belge_adi  = str(doc.get("Belge", "")).strip()
+                    tc_no      = str(doc.get("EntityId", "")).strip() or personelid
+
+                    logger.info(
+                        f"RAPOR [{kayit_no}] doc found: "
+                        f"LocalPath={local_path[:50] if local_path else 'EMPTY'}, Belge={belge_adi}"
+                    )
+
+                    if local_path and os.path.isfile(local_path):
+                        rapor_path = local_path
+                    elif drive_path:
+                        rapor_path = drive_path
+                    else:
+                        rapor_path = local_path
+
+                    canonical_path = ""
+                    if belge_adi and tc_no:
+                        canonical_path = os.path.join(
+                            DATA_DIR, "offline_uploads", "personel", tc_no, belge_adi
+                        )
+                    if canonical_path and os.path.isfile(canonical_path):
+                        rapor_path = canonical_path
+                    elif local_path and os.path.isdir(local_path) and belge_adi:
+                        joined = os.path.join(local_path, belge_adi)
+                        if os.path.isfile(joined):
+                            rapor_path = joined
+
+                if not rapor_path:
+                    rapor_dosya = str(takip.get("RaporDosya", "")).strip()
+                    if rapor_dosya:
+                        if not os.path.isabs(rapor_dosya) and not rapor_dosya.startswith(
+                            ("http://", "https://")
+                        ):
+                            basename  = os.path.basename(rapor_dosya)
+                            canonical = os.path.join(
+                                DATA_DIR, "offline_uploads", "personel", personelid, basename
+                            )
+                            rapor_path = canonical if os.path.isfile(canonical) else rapor_dosya
+                        else:
+                            rapor_path = rapor_dosya
+
+                logger.info(
+                    f"RAPOR [{kayit_no}] FINAL _RaporPath: {rapor_path[:80] if rapor_path else 'EMPTY'}"
+                )
+                takip["_RaporPath"] = rapor_path
+
+            self._all_rows = self._build_takip_list_rows(self._takip_rows, all_personel)
             self._fill_filter_combos()
             self._apply_filters()
-            logger.info(f"Saglik takip yüklendi: {len(self._all_rows)} kayit")
+            logger.info(f"Saglik takip yuklendi: {len(self._all_rows)} kayit")
         except Exception as exc:
             logger.error(f"Saglik takip yukleme hatasi: {exc}")
 
-    def _build_personel_list_rows(self, all_personel):
+    def _build_takip_list_rows(self, takip_rows, all_personel) -> list[dict]:
+        personel_map = {
+            str(p.get("KimlikNo", "")).strip(): str(p.get("Durum", "")).strip().lower()
+            for p in all_personel
+        }
         rows = []
-        for p in all_personel:
-            if str(p.get("Durum", "")).strip().lower() == "pasif":
+        for takip in takip_rows:
+            personelid = str(takip.get("Personelid", "")).strip()
+            if personel_map.get(personelid, "") == "pasif":
                 continue
-
-            muayene = to_db_date(p.get("MuayeneTarihi", ""))
-            d_muayene = parse_date(muayene)
-            if d_muayene:
-                try:
-                    sonraki = d_muayene.replace(year=d_muayene.year + 1).isoformat()
-                except ValueError:
-                    sonraki = d_muayene.replace(month=2, day=28, year=d_muayene.year + 1).isoformat()
-            else:
-                sonraki = ""
-
-            sonuc = str(p.get("Sonuc", "")).strip()
-            s_low = sonuc.lower()
-            if s_low == "uygun degil":
-                durum = "Riskli"
-            elif s_low == "sartli uygun":
-                durum = "Gecerli"
-            elif s_low == "uygun":
-                sonraki_tarih = parse_date(sonraki)
-                durum = "Gecikmis" if (sonraki_tarih and sonraki_tarih < date.today()) else "Gecerli"
-            else:
-                durum = "Planlandi"
-
-            yil = d_muayene.year if d_muayene else date.today().year
             rows.append({
-                "KayitNo": "",
-                "Personelid": str(p.get("KimlikNo", "")).strip(),
-                "AdSoyad": str(p.get("AdSoyad", "")).strip(),
-                "Birim": str(p.get("GorevYeri", "")).strip(),
-                "Yil": yil,
-                "MuayeneTarihi": muayene,
-                "SonrakiKontrolTarihi": sonraki,
-                "Sonuc": sonuc,
-                "Durum": durum,
+                "KayitNo":              str(takip.get("KayitNo", "")).strip(),
+                "Personelid":           personelid,
+                "AdSoyad":              str(takip.get("AdSoyad", "")).strip(),
+                "Birim":                str(takip.get("Birim", "")).strip(),
+                "Yil":                  int(takip.get("Yil") or 0),
+                "MuayeneTarihi":        to_db_date(takip.get("MuayeneTarihi", "")),
+                "SonrakiKontrolTarihi": to_db_date(takip.get("SonrakiKontrolTarihi", "")),
+                "Sonuc":                str(takip.get("Sonuc", "")).strip(),
+                "Durum":                str(takip.get("Durum", "")).strip(),
+                "_RaporPath":           str(takip.get("_RaporPath", "")).strip(),
             })
         return rows
 
     def _fill_filter_combos(self):
-        curr = self.cmb_birim_filter.currentText()
+        curr     = self.cmb_birim_filter.currentText()
         birimler = sorted({
             str(r.get("Birim", "")).strip()
             for r in self._all_rows
@@ -508,8 +486,8 @@ class SaglikTakipPage(QWidget):
         self.cmb_birim_filter.blockSignals(False)
 
     def _apply_filters(self):
-        query = self.search.text().strip().lower()
-        yil = self.cmb_yil.currentData()
+        query        = self.search.text().strip().lower()
+        yil          = self.cmb_yil.currentData()
         birim_filter = self.cmb_birim_filter.currentText()
         durum_filter = self.cmb_durum_filter.currentText()
         out = []
@@ -517,64 +495,32 @@ class SaglikTakipPage(QWidget):
             row_yil = int(row.get("Yil") or 0)
             if yil and row_yil != int(yil):
                 continue
-
-            if birim_filter != "Tum Birimler":
-                if str(row.get("Birim", "")).strip() != birim_filter:
-                    continue
-
-            if durum_filter != "Tum Durumlar":
-                if str(row.get("Durum", "")).strip() != durum_filter:
-                    continue
-
-            ad = str(row.get("AdSoyad", "")).lower()
+            if birim_filter != "Tum Birimler" and str(row.get("Birim", "")).strip() != birim_filter:
+                continue
+            if durum_filter != "Tum Durumlar" and str(row.get("Durum", "")).strip() != durum_filter:
+                continue
+            ad    = str(row.get("AdSoyad", "")).lower()
             birim = str(row.get("Birim", "")).lower()
             if query and query not in ad and query not in birim:
                 continue
             out.append(row)
-        out.sort(key=lambda r: (str(r.get("AdSoyad", "")), str(r.get("MuayeneTarihi", ""))), reverse=False)
-        self.model.set_rows(out)
+        out.sort(key=lambda r: (str(r.get("AdSoyad", "")), str(r.get("MuayeneTarihi", ""))))
+        self.model.set_data(out)
         self.lbl_info.setText(f"{len(out)} kayit")
 
-    def _add_exam_fields(self, layout, row_idx, key, title):
-        box = QGroupBox(title)
-        box.setStyleSheet(S["group"])
-        gl = QGridLayout(box)
-        gl.setContentsMargins(10, 8, 10, 8)
-        gl.setHorizontalSpacing(8)
-        gl.setVerticalSpacing(6)
-
-        lbl_tarih = QLabel("Muayene Tarihi")
-        lbl_tarih.setProperty("style-role", "form")
-        gl.addWidget(lbl_tarih, 0, 0)
-
-        de = QDateEdit(QDate.currentDate())
-        de.setDisplayFormat("dd.MM.yyyy")
-        de.setCalendarPopup(True)
-        de.setStyleSheet(S["date"])
-        gl.addWidget(de, 0, 1)
-
-        lbl_durum = QLabel("Durum")
-        lbl_durum.setProperty("style-role", "form")
-        gl.addWidget(lbl_durum, 0, 2)
-
-        cmb = QComboBox()
-        cmb.addItems([""] + STATUS_OPTIONS)
-        cmb.setStyleSheet(S["combo"])
-        gl.addWidget(cmb, 0, 3)
-
-        layout.addWidget(box, row_idx, 0, 1, 2)
-        self._exam_widgets[key] = {"tarih": de, "durum": cmb}
+    # -------------------------------------------------------------------------
+    # Muayene yard\u0131mc\u0131lar\u0131
+    # -------------------------------------------------------------------------
 
     def _on_exam_status_changed(self, key):
-        # Artık açıklama alanı yok, boş bırakıyoruz
         pass
 
-    def _safe_date_from_widget(self, widget):
+    def _safe_date_from_widget(self, widget) -> str:
         if not widget:
             return ""
         return to_db_date(widget.date().toString("yyyy-MM-dd"))
 
-    def _exam_date_if_set(self, key):
+    def _exam_date_if_set(self, key) -> str:
         w = self._exam_widgets[key]
         if not str(w["durum"].currentText()).strip():
             return ""
@@ -583,13 +529,13 @@ class SaglikTakipPage(QWidget):
     def _compute_summary(self):
         exam_data = []
         for key in self._exam_keys:
-            w = self._exam_widgets[key]
-            tarih_db = self._exam_date_if_set(key)
+            w     = self._exam_widgets[key]
+            tarih = self._exam_date_if_set(key)
             durum = str(w["durum"].currentText()).strip()
-            exam_data.append((tarih_db, durum))
+            exam_data.append((tarih, durum))
 
-        dates = [d for d, _ in exam_data if parse_date(d)]
-        latest = max(dates) if dates else ""
+        dates   = [d for d, _ in exam_data if parse_date(d)]
+        latest  = max(dates) if dates else ""
         sonraki = ""
         if latest:
             d = datetime.strptime(latest, "%Y-%m-%d").date()
@@ -599,24 +545,25 @@ class SaglikTakipPage(QWidget):
                 sonraki = d.replace(month=2, day=28, year=d.year + 1).isoformat()
 
         statuses = [s for _, s in exam_data if s]
-        if "Uygun Degil" in statuses:
-            sonuc = "Uygun Degil"
+        if "Uygun De\u011fil" in statuses:
+            sonuc = "Uygun De\u011fil"
             durum = "Riskli"
-        elif "Sartli Uygun" in statuses:
-            sonuc = "Sartli Uygun"
+        elif "Şartl\u0131 Uygun" in statuses:
+            sonuc = "Şartl\u0131 Uygun"
             durum = "Gecerli"
         elif "Uygun" in statuses:
             sonuc = "Uygun"
             sonraki_tarih = parse_date(sonraki)
-            if sonraki_tarih and sonraki_tarih < date.today():
-                durum = "Gecikmis"
-            else:
-                durum = "Gecerli"
+            durum = "Gecikmis" if (sonraki_tarih and sonraki_tarih < date.today()) else "Gecerli"
         else:
             sonuc = ""
             durum = "Planlandi"
 
         return latest, sonraki, sonuc, durum
+
+    # -------------------------------------------------------------------------
+    # Rapor
+    # -------------------------------------------------------------------------
 
     def _pick_report(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -624,102 +571,93 @@ class SaglikTakipPage(QWidget):
         )
         if path:
             self._selected_report_path = path
-            self.inp_rapor.setText(path)
+            self.inp_rapor.setText(os.path.basename(path))
 
-    def _upload_report(self, tc_no, kayit_no):
-        """Seçilen raporu DokumanService ile yükler ve erişim yolunu döndürür."""
+    def _upload_report(self, tc_no, kayit_no) -> str:
         if not self._selected_report_path:
             return self.inp_rapor.text().strip()
         if not os.path.exists(self._selected_report_path):
             QMessageBox.warning(self, "Uyari", "Secilen rapor dosyasi bulunamadi.")
             return ""
-
         try:
-            ext = os.path.splitext(self._selected_report_path)[1]
+            ext         = os.path.splitext(self._selected_report_path)[1]
             custom_name = f"{tc_no}_{kayit_no}_SaglikRapor{ext}"
-            svc = DokumanService(self._db)
-            sonuc = svc.upload_and_save(
-                file_path=self._selected_report_path,
-                entity_type="personel",
-                entity_id=str(tc_no),
-                belge_turu="SaglikRapor",
-                folder_name="Saglik_Raporlari",
-                doc_type="Personel_Belge",
-                custom_name=custom_name,
-                iliskili_id=str(kayit_no),
-                iliskili_tip="Personel_Saglik_Takip",
+            svc         = DokumanService(self._db)
+            sonuc       = svc.upload_and_save(
+                file_path    = self._selected_report_path,
+                entity_type  = "personel",
+                entity_id    = str(tc_no),
+                belge_turu   = "Periyodik Sa\u011fl\u0131k Muayene Raporu",
+                folder_name  = "Saglik_Raporlari",
+                doc_type     = "Personel_Belge",
+                custom_name  = custom_name,
+                iliskili_id  = str(kayit_no),
+                iliskili_tip = "Personel_Saglik_Takip",
             )
-
             if not sonuc.get("ok"):
-                err = str(sonuc.get("error", "Bilinmeyen yükleme hatası"))
-                QMessageBox.warning(self, "Yukleme Hatasi", f"Rapor yüklenemedi:\n{err}")
+                err = str(sonuc.get("error", "Bilinmeyen y\u00fckleme hatas\u0131"))
+                QMessageBox.warning(self, "Yukleme Hatasi", f"Rapor y\u00fcklenemedi:\n{err}")
                 return ""
-
             rapor_ref = str(sonuc.get("drive_link") or sonuc.get("local_path") or "").strip()
-            logger.info(
-                f"Saglik raporu yuklendi [{sonuc.get('mode', 'none')}]: "
-                f"{custom_name}"
-            )
+            logger.info(f"Saglik raporu yuklendi [{sonuc.get('mode', 'none')}]: {custom_name}")
             return rapor_ref
         except Exception as exc:
             logger.error(f"Saglik rapor yukleme hatasi: {exc}")
             QMessageBox.critical(self, "Hata", f"Rapor yuklenemedi:\n{exc}")
             return ""
 
+    # -------------------------------------------------------------------------
+    # Kaydet
+    # -------------------------------------------------------------------------
+
     def _save_record(self):
         if self.cmb_personel.currentIndex() < 0:
             QMessageBox.warning(self, "Eksik Bilgi", "Lutfen personel seciniz.")
             return
 
-        personel_data = self.cmb_personel.currentData()
+        personel_data                        = self.cmb_personel.currentData()
         muayene_db, sonraki_db, sonuc, durum = self._compute_summary()
-        kayit_no = self._editing_id or uuid.uuid4().hex[:12].upper()
-        rapor_link = self._upload_report(
-            personel_data.get("KimlikNo", ""),
-            kayit_no
-        )
+        kayit_no   = self._editing_id or uuid.uuid4().hex[:12].upper()
+        rapor_link = self._upload_report(personel_data.get("KimlikNo", ""), kayit_no)
         if self._selected_report_path and not rapor_link:
             return
 
         payload = {
-            "KayitNo": kayit_no,
-            "Personelid": personel_data.get("KimlikNo", ""),
-            "AdSoyad": personel_data.get("AdSoyad", ""),
-            "Birim": personel_data.get("Birim", ""),
-            "Yil": int(self.cmb_yil.currentData() or date.today().year),
-            "MuayeneTarihi": muayene_db,
-            "SonrakiKontrolTarihi": sonraki_db,
-            "Sonuc": sonuc,
-            "Durum": durum,
+            "KayitNo":                  kayit_no,
+            "Personelid":               personel_data.get("KimlikNo", ""),
+            "AdSoyad":                  personel_data.get("AdSoyad", ""),
+            "Birim":                    personel_data.get("Birim", ""),
+            "Yil":                      int(self.cmb_yil.currentData() or date.today().year),
+            "MuayeneTarihi":            muayene_db,
+            "SonrakiKontrolTarihi":     sonraki_db,
+            "Sonuc":                    sonuc,
+            "Durum":                    durum,
             "DermatolojiMuayeneTarihi": self._exam_date_if_set("Dermatoloji"),
-            "DermatolojiDurum": str(self._exam_widgets["Dermatoloji"]["durum"].currentText()).strip(),
-            "DahiliyeMuayeneTarihi": self._exam_date_if_set("Dahiliye"),
-            "DahiliyeDurum": str(self._exam_widgets["Dahiliye"]["durum"].currentText()).strip(),
-            "GozMuayeneTarihi": self._exam_date_if_set("Goz"),
-            "GozDurum": str(self._exam_widgets["Goz"]["durum"].currentText()).strip(),
+            "DermatolojiDurum":         str(self._exam_widgets["Dermatoloji"]["durum"].currentText()).strip(),
+            "DahiliyeMuayeneTarihi":    self._exam_date_if_set("Dahiliye"),
+            "DahiliyeDurum":            str(self._exam_widgets["Dahiliye"]["durum"].currentText()).strip(),
+            "GozMuayeneTarihi":         self._exam_date_if_set("Goz"),
+            "GozDurum":                 str(self._exam_widgets["Goz"]["durum"].currentText()).strip(),
             "GoruntulemeMuayeneTarihi": self._exam_date_if_set("Goruntuleme"),
-            "GoruntulemeDurum": str(self._exam_widgets["Goruntuleme"]["durum"].currentText()).strip(),
-            "RaporDosya": rapor_link,
-            "Notlar": self.inp_not.text().strip(),
+            "GoruntulemeDurum":         str(self._exam_widgets["Goruntuleme"]["durum"].currentText()).strip(),
+            "RaporDosya":               rapor_link,
+            "Notlar":                   self.inp_not.text().strip(),
         }
 
         try:
             from core.di import get_saglik_service as _svc_factory
-            _svc = _svc_factory(self._db)
-            takip_repo = _svc._r.get("Personel_Saglik_Takip")
+            _svc          = _svc_factory(self._db)
+            takip_repo    = _svc._r.get("Personel_Saglik_Takip")
             personel_repo = _svc._r.get("Personel")
             mevcut = takip_repo.get_by_id(payload["KayitNo"])
             if mevcut:
                 takip_repo.update(payload["KayitNo"], payload)
             else:
                 takip_repo.insert(payload)
-
-            personel_sonuc = "uygun" if sonuc == "Uygun" else sonuc
             personel_repo.update(payload["Personelid"], {
                 "MuayeneTarihi": muayene_db,
-                "Sonuc": personel_sonuc,
+                "Sonuc":         sonuc,
             })
-
             QMessageBox.information(self, "Basarili", "Saglik takip kaydi kaydedildi.")
             self._clear_form()
             self.load_data()
@@ -727,27 +665,9 @@ class SaglikTakipPage(QWidget):
             logger.error(f"Saglik takip kaydetme hatasi: {exc}")
             QMessageBox.critical(self, "Hata", f"Kayit sirasinda hata olustu:\n{exc}")
 
-    def _find_personel_takip_row(self, personelid):
-        selected_year = int(self.cmb_yil.currentData() or 0)
-        candidates = [
-            r for r in self._takip_rows
-            if str(r.get("Personelid", "")).strip() == str(personelid).strip()
-        ]
-        if selected_year:
-            yearly = [r for r in candidates if int(r.get("Yil") or 0) == selected_year]
-            if yearly:
-                candidates = yearly
-        if not candidates:
-            return None
-        candidates.sort(
-            key=lambda r: (
-                to_db_date(r.get("MuayeneTarihi", "")),
-                str(r.get("updated_at", "")),
-                str(r.get("KayitNo", "")),
-            ),
-            reverse=True
-        )
-        return candidates[0]
+    # -------------------------------------------------------------------------
+    # Se\u00e7im & Temizlik
+    # -------------------------------------------------------------------------
 
     def _on_select_row(self, *_):
         idx = self.table.currentIndex()
@@ -757,27 +677,34 @@ class SaglikTakipPage(QWidget):
         if not row:
             return
 
-        personelid = str(row.get("Personelid", "")).strip()
-        takip_row = self._find_personel_takip_row(personelid) or {}
+        kayit_no  = str(row.get("KayitNo", "")).strip()
+        takip_row = None
+        for t in self._takip_rows:
+            if str(t.get("KayitNo", "")).strip() == kayit_no:
+                takip_row = t
+                break
+        if not takip_row:
+            return
 
-        self._editing_id = takip_row.get("KayitNo")
+        personelid = str(takip_row.get("Personelid", "")).strip()
+        self._editing_id           = takip_row.get("KayitNo")
         self._selected_report_path = ""
         self.inp_not.setText(str(takip_row.get("Notlar", "")))
-        self.inp_rapor.setText(str(takip_row.get("RaporDosya", "")))
+
+        rapor_dosya = str(takip_row.get("RaporDosya", ""))
+        self.inp_rapor.setText(os.path.basename(rapor_dosya) if rapor_dosya else "")
+
         mapping = [
             ("Dermatoloji", "DermatolojiMuayeneTarihi", "DermatolojiDurum"),
-            ("Dahiliye", "DahiliyeMuayeneTarihi", "DahiliyeDurum"),
-            ("Goz", "GozMuayeneTarihi", "GozDurum"),
-            ("Goruntuleme", "GoruntulemeMuayeneTarihi", "GoruntulemeDurum"),
+            ("Dahiliye",    "DahiliyeMuayeneTarihi",    "DahiliyeDurum"),
+            ("Goz",         "GozMuayeneTarihi",         "GozDurum"),
+            ("Goruntuleme", "GoruntulemeMuayeneTarihi",  "GoruntulemeDurum"),
         ]
         for key, col_t, col_d in mapping:
             w = self._exam_widgets[key]
             w["durum"].setCurrentText(str(takip_row.get(col_d, "")))
             d = parse_date(takip_row.get(col_t, ""))
-            if d:
-                w["tarih"].setDate(QDate(d.year, d.month, d.day))
-            else:
-                w["tarih"].setDate(QDate.currentDate())
+            w["tarih"].setDate(QDate(d.year, d.month, d.day) if d else QDate.currentDate())
             self._on_exam_status_changed(key)
 
         for i in range(self.cmb_personel.count()):
@@ -786,45 +713,15 @@ class SaglikTakipPage(QWidget):
                 self.cmb_personel.setCurrentIndex(i)
                 break
 
-        # Timeline güncelle
-        self._update_timeline_for_person(personelid)
-        
-        # Drawer'ı aç
-        self._open_drawer()
-    
-    def _update_timeline_for_person(self, personelid: str):
-        """Kişinin tüm muayene geçmişini timeline'a göster."""
-        if not self._timeline_widget:
-            return
-        
-        # Personel için tüm muayene kayıtlarını filtrele
-        person_exams = [r for r in self._all_rows if str(r.get("Personelid", "")).strip() == personelid]
-        
-        # Muayene geçmişini timeline'a geç
-        self._timeline_widget.set_exams(person_exams)
-
-    def _new_record(self):
-        """Yeni kayıt eklemek için formu temizle ve drawer'ı aç."""
-        self._editing_id = None
-        self._selected_report_path = ""
-        self.inp_rapor.clear()
-        self.inp_not.clear()
-        self.cmb_personel.setCurrentIndex(-1)
-        for key in self._exam_keys:
-            self._exam_widgets[key]["tarih"].setDate(QDate.currentDate())
-            self._exam_widgets[key]["durum"].setCurrentIndex(0)
-        self._open_drawer()
-
     def _clear_form(self):
-        self._editing_id = None
+        self._editing_id           = None
         self._selected_report_path = ""
         self.inp_rapor.clear()
         self.inp_not.clear()
         for key in self._exam_keys:
             self._exam_widgets[key]["tarih"].setDate(QDate.currentDate())
             self._exam_widgets[key]["durum"].setCurrentIndex(0)
-        # Drawer'ı kapat
-        self._close_drawer()
+        self.form_panel.setVisible(False)
 
     def _bulk_plan_year(self):
         target_year = self.cmb_yil.currentData()
@@ -833,14 +730,14 @@ class SaglikTakipPage(QWidget):
         if not self._personel_rows:
             QMessageBox.warning(self, "Uyari", "Planlanacak aktif personel bulunamadi.")
             return
-
         try:
             from core.di import get_saglik_service as _svc_factory
-            _svc = _svc_factory(self._db)
+            _svc       = _svc_factory(self._db)
             takip_repo = _svc._r.get("Personel_Saglik_Takip")
-            mevcut = takip_repo.get_all()
-            mevcut_keys = {(str(r.get("Personelid", "")), int(r.get("Yil") or 0)) for r in mevcut}
-
+            mevcut     = takip_repo.get_all()
+            mevcut_keys = {
+                (str(r.get("Personelid", "")), int(r.get("Yil") or 0)) for r in mevcut
+            }
             added = 0
             for p in self._personel_rows:
                 pid = str(p.get("KimlikNo", "")).strip()
@@ -848,59 +745,124 @@ class SaglikTakipPage(QWidget):
                     continue
                 plan_date = date(int(target_year), 1, 15)
                 takip_repo.insert({
-                    "KayitNo": uuid.uuid4().hex[:12].upper(),
-                    "Personelid": pid,
-                    "AdSoyad": str(p.get("AdSoyad", "")).strip(),
-                    "Birim": str(p.get("GorevYeri", "")).strip(),
-                    "Yil": int(target_year),
-                    "MuayeneTarihi": "",
-                    "SonrakiKontrolTarihi": plan_date.isoformat(),
-                    "Sonuc": "",
-                    "Durum": "Planlandi",
+                    "KayitNo":                  uuid.uuid4().hex[:12].upper(),
+                    "Personelid":               pid,
+                    "AdSoyad":                  str(p.get("AdSoyad", "")).strip(),
+                    "Birim":                    str(p.get("GorevYeri", "")).strip(),
+                    "Yil":                      int(target_year),
+                    "MuayeneTarihi":            "",
+                    "SonrakiKontrolTarihi":     plan_date.isoformat(),
+                    "Sonuc":                    "",
+                    "Durum":                    "Planlandi",
                     "DermatolojiMuayeneTarihi": "",
-                    "DermatolojiDurum": "",
-                    "DahiliyeMuayeneTarihi": "",
-                    "DahiliyeDurum": "",
-                    "GozMuayeneTarihi": "",
-                    "GozDurum": "",
+                    "DermatolojiDurum":         "",
+                    "DahiliyeMuayeneTarihi":    "",
+                    "DahiliyeDurum":            "",
+                    "GozMuayeneTarihi":         "",
+                    "GozDurum":                 "",
                     "GoruntulemeMuayeneTarihi": "",
-                    "GoruntulemeDurum": "",
-                    "RaporDosya": "",
-                    "Notlar": "",
+                    "GoruntulemeDurum":         "",
+                    "RaporDosya":               "",
+                    "Notlar":                   "",
                 })
                 added += 1
-
             self.load_data()
-            QMessageBox.information(self, "Tamam", f"{added} personel icin yillik plan olusturuldu.")
+            QMessageBox.information(
+                self, "Tamam", f"{added} personel icin yillik plan olusturuldu."
+            )
         except Exception as exc:
             logger.error(f"Toplu plan hatasi: {exc}")
             QMessageBox.critical(self, "Hata", f"Toplu planlama sirasinda hata:\n{exc}")
 
-    def _open_drawer(self):
-        """Sağdan drawer'ı animasyonlu aç."""
-        if not self._drawer or self._drawer.width() == self._drawer_width:
-            return
-        
-        anim = QPropertyAnimation(self._drawer, b"maximumWidth", self)
-        anim.setDuration(250)
-        anim.setStartValue(0)
-        anim.setEndValue(self._drawer_width)
-        anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-        anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
-        
-        # Minimum genişliği de ayarla
-        self._drawer.setMinimumWidth(self._drawer_width)
+    # -------------------------------------------------------------------------
+    # \u00c7ift t\u0131klama \u2014 rapor a\u00e7
+    # -------------------------------------------------------------------------
 
-    def _close_drawer(self):
-        """Drawer'ı animasyonlu kapat."""
-        if not self._drawer or self._drawer.width() == 0:
+    def _on_table_double_click(self, index):
+        if not index.isValid():
             return
-        drawer = self._drawer
-        
-        anim = QPropertyAnimation(drawer, b"maximumWidth", self)
-        anim.setDuration(200)
-        anim.setStartValue(drawer.width())
-        anim.setEndValue(0)
-        anim.setEasingCurve(QEasingCurve.Type.InCubic)
-        anim.finished.connect(lambda: drawer.setMinimumWidth(0))
-        anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
+        if index.column() != len(TABLE_COLUMNS) - 1:
+            return
+        row = self.model.get_row(index.row())
+        if not row:
+            return
+        rapor_path = str(row.get("_RaporPath", "")).strip()
+        if not rapor_path:
+            QMessageBox.information(self, "Bilgi", "Bu kay\u0131t i\u00e7in rapor dosyas\u0131 bulunmuyor.")
+            return
+        try:
+            if rapor_path.startswith(("http://", "https://")):
+                QDesktopServices.openUrl(QUrl(rapor_path))
+                logger.info(f"Saglik raporu acildi (online): {rapor_path}")
+                return
+
+            from core.paths import DATA_DIR
+
+            resolved_path = rapor_path
+            if not os.path.isfile(resolved_path):
+                personelid = str(row.get("Personelid", "")).strip()
+                kayit_no   = str(row.get("KayitNo",    "")).strip()
+                file_name  = os.path.basename(rapor_path)
+                candidates = []
+
+                if file_name and personelid:
+                    candidates.append(
+                        os.path.join(DATA_DIR, "offline_uploads", "personel", personelid, file_name)
+                    )
+                if rapor_path and not os.path.isabs(rapor_path):
+                    candidates.append(os.path.join(DATA_DIR, rapor_path))
+
+                if self._db and personelid and kayit_no:
+                    try:
+                        from core.di import get_saglik_service as _svc_factory
+                        _svc         = _svc_factory(self._db)
+                        dokuman_repo = _svc._r.get("Dokumanlar")
+                        docs = dokuman_repo.get_where({
+                            "EntityType": "personel",
+                            "EntityId":   personelid,
+                        })
+                        for doc in docs:
+                            if str(doc.get("IliskiliBelgeTipi", "")).strip() != "Personel_Saglik_Takip":
+                                continue
+                            if str(doc.get("IliskiliBelgeID", "")).strip() != kayit_no:
+                                continue
+                            db_local = str(doc.get("LocalPath", "")).strip()
+                            db_belge = str(doc.get("Belge",     "")).strip()
+                            if db_local:
+                                candidates.append(db_local)
+                            if db_belge:
+                                candidates.append(
+                                    os.path.join(
+                                        DATA_DIR, "offline_uploads",
+                                        "personel", personelid, db_belge,
+                                    )
+                                )
+                            break
+                    except Exception as exc:
+                        logger.warning(f"Rapor yolu DB fallback hatasi: {exc}")
+
+                for candidate in candidates:
+                    if candidate and os.path.isfile(candidate):
+                        resolved_path = candidate
+                        break
+
+            if not os.path.isfile(resolved_path):
+                QMessageBox.warning(
+                    self, "Dosya Bulunamad\u0131",
+                    f"Rapor dosyas\u0131 bulunamad\u0131:\n\n{rapor_path}\n\n"
+                    f"Dosya silinmi\u015f veya yol de\u011fi\u015fmi\u015f olabilir.",
+                )
+                logger.warning(f"Saglik raporu dosyas\u0131 bulunamad\u0131: {rapor_path}")
+                return
+
+            if platform.system() == "Windows":
+                os.startfile(str(resolved_path))
+            elif platform.system() == "Darwin":
+                subprocess.run(["open", str(resolved_path)])
+            else:
+                subprocess.run(["xdg-open", str(resolved_path)])
+
+            logger.info(f"Saglik raporu acildi (local): {resolved_path}")
+        except Exception as e:
+            logger.error(f"Saglik raporu acma hatasi: {e}")
+            QMessageBox.critical(self, "Hata", f"Rapor a\u00e7\u0131lamad\u0131:\n\n{str(e)}\n\nYol: {rapor_path}")

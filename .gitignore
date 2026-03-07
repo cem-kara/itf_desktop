@@ -58,8 +58,8 @@ database/*.sqlite
 database/*.sqlite3
 *.cache
 .cache/
-database/*-wal
-database/*-shm
+database/*.db-wal
+database/*.db-shm
 database/*.sqbpro
 # ─── Google API (Credentials & Tokens) ──────────────────────────────
 credentials.json

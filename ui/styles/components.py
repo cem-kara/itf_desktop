@@ -437,6 +437,8 @@ def _build_component_styles(C: Any = None):
         """
 
         # ── Tablo ─────────────────────────────────────────────────────
+        # NOT: QHeaderView::section stilleri global QSS'de tanımlı (theme_template.qss).
+        # Manuel override yerine global stillerin kullanılmasına izin verilir.
         TABLE = f"""
             QTableView, QTableWidget {{
                 background-color: {C.BG_SECONDARY};
@@ -446,17 +448,6 @@ def _build_component_styles(C: Any = None):
                 selection-background-color: {C.ACCENT_BG};
                 selection-color: {C.ACCENT2};
                 outline: 0;
-            }}
-            QHeaderView::section {{
-                background-color: {C.BG_PRIMARY};
-                color: {C.TEXT_MUTED};
-                border: none;
-                border-bottom: 1px solid {C.BORDER_PRIMARY};
-                padding: 7px 10px;
-                font-family: {C.MONOSPACE};
-                font-size: 8px;
-                font-weight: 700;
-                letter-spacing: 2px;
             }}
             QTableView::item {{ padding: 4px 10px; color: {C.TEXT_SECONDARY}; }}
             QTableView::item:selected {{

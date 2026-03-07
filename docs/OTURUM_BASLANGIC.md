@@ -27,7 +27,7 @@
 | TODO-4 | RKE UI → Servis katmanı | ✅ KOD ONAYLANDI |
 | TODO-4b | Cihaz UI anti-pattern temizliği | ✅ KOD ONAYLANDI |
 | TODO-5 | Sync pull-only transaction | ✅ KOD ONAYLANDI |
-| TODO-6 | setStyleSheet(f-string) — 352 → 193 adet | ⚠️ DEVAM |
+| TODO-6 | setStyleSheet(f-string) — 352 → 0 adet | ✅ TAMAMLANDI |
 | TODO-6b | QTabWidget S.get("tab") — 1 kaldı | ⚠️ 1 KALDI |
 | — | migrations.py squash — CURRENT_VERSION=1 | ✅ KOD ONAYLANDI |
 | — | MesajKutusu (native QMessageBox yerine) | ✅ KOD ONAYLANDI |
@@ -45,7 +45,7 @@ Personel UI get_registry() kalan: 2 çağrı  ❌
   components/personel_overview_panel.py  satır 71-72
 RKE UI get_registry() kalan     : 0  ✅
 Cihaz svc._r.get() bypass kalan : 0  ✅
-setStyleSheet(f-string) kalan   : 193 adet (352'den düştü)
+setStyleSheet(f-string) kalan   : 0 adet ✅ (TODO-6 tamamlandı)
 QTabWidget S.get("tab") kalan   : 1 (teknik_hizmetler.py satır 26)
 Sync transaction (BEGIN/ROLLBACK): ✅ VAR
 CURRENT_VERSION migrations      : 1  ✅
@@ -95,8 +95,8 @@ self.tab_widget = QTabWidget()
 
 ---
 
-### 🟡 TODO-6 — setStyleSheet(f-string) Temizliği
-**Kalan:** 193 adet — fırsatçı temizlik (dosyaya girince yap)
+### ✅ TODO-6 — setStyleSheet(f-string) Temizliği [TAMAMLANDI]
+**Kalan:** 0 adet
 
 **Büyük tablo: `S` dict kullanımları**
 S dict (`ui/styles/components.py`'den STYLES as S) hala çok sayıda dosyada kullanılıyor.
@@ -354,7 +354,7 @@ DOKUNMA: [değişmeyecek kısımlar]
 2026-03-05: TODO-4 tamamlandı — RKE UI temiz
 2026-03-05: TODO-4b tamamlandı — Cihaz bypass sıfır
 2026-03-05: TODO-5 tamamlandı — Sync transaction
-2026-03-05: TODO-6 devam — 352 → 193 setStyleSheet(f-string)
+2026-03-07: TODO-6 tamamlandı — 352 → 0 setStyleSheet(f-string)
 2026-03-05: TODO-6b neredeyse bitti — 1 kaldı (teknik_hizmetler.py)
 2026-03-05: migrations.py squash — CURRENT_VERSION=1
 2026-03-05: MesajKutusu + HakkindaDialog eklendi

@@ -436,26 +436,8 @@ class PersonelOverviewPanel(QWidget):
 
     def _create_editable_group(self, title, group_id):
         grp = QGroupBox(title)
-        grp.setStyleSheet("""
-            QGroupBox {{
-                background-color: {};
-                border: 1px solid {};
-                border-radius: 8px;
-                margin-top: 8px;
-                font-weight: bold;
-                color: {};
-            }}
-            QGroupBox::title {{
-                subcontrol-origin: margin;
-                subcontrol-position: top left;
-                left: 12px;
-                padding: 0 6px;
-                color: {DarkTheme.ACCENT};
-                font-size: 12px;
-                font-weight: 700;
-                background-color: {DarkTheme.BG_SECONDARY};
-            }}
-        """)
+        # Sol sütundaki grup kutusu ile birebir aynı tema stili kullanılır.
+        grp.setStyleSheet(S["group"])
         
         # Başlık ve Butonlar için Layout
         # QGroupBox layout'u yerine içine bir layout koyup en üste butonları ekliyoruz
