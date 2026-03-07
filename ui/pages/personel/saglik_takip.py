@@ -46,10 +46,20 @@ class SaglikTakipTableModel(BaseTableModel):
 
     def _display(self, key, row):
         if key == "Rapor":
-            return "A\u00e7" if row.get("_RaporPath") else "-"
+            if row.get("_RaporPath"):
+                return "Raporu Aç"
+            muayene = row.get("MuayeneTarihi")
+            if muayene and str(muayene).strip():
+                return "⚠ Rapor Eksik"
+            return "-"
         return super()._display(key, row)
 
     def _fg(self, key, row):
+        from PySide6.QtGui import QColor
+        if key == "Rapor":
+            muayene = row.get("MuayeneTarihi") if row else None
+            if muayene and str(muayene).strip() and not row.get("_RaporPath"):
+                return QColor("#f59e0b")   # turuncu — rapor eksik uyarısı
         if key == "Durum":
             return self.status_fg(row.get("Durum", ""))
         return None
@@ -104,7 +114,7 @@ class SaglikTakipPage(QWidget):
         self.lbl_info.setProperty("style-role", "footer")
         main_lay.addWidget(self.lbl_info)
 
-    # -- Filtre \u00e7ubu\u011fu -------------------------------------------------------
+    # -- Filtre çubu\u011fu -------------------------------------------------------
 
     def _build_filter_bar(self) -> QFrame:
         frame = QFrame()
@@ -138,11 +148,7 @@ class SaglikTakipPage(QWidget):
 
         lay.addStretch()
 
-        self.btn_toplu = QPushButton("Toplu Yillik Plan")
-        self.btn_toplu.setProperty("style-role", "action")
-        self.btn_toplu.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_toplu, "clipboard_list", color=IconColors.PRIMARY, size=14)
-        lay.addWidget(self.btn_toplu)
+
 
         self.btn_yeni = QPushButton("Yeni Ekle")
         self.btn_yeni.setProperty("style-role", "action")
@@ -176,9 +182,9 @@ class SaglikTakipPage(QWidget):
         form_lay.setContentsMargins(12, 10, 12, 10)
         form_lay.setSpacing(10)
 
-        # \u00dcst: personel se\u00e7imi + kapat
+        # \u00dcst: personel seçimi + kapat
         top_row = QHBoxLayout()
-        lbl_personel = QLabel("Personel ad\u0131")
+        lbl_personel = QLabel("Personel adı")
         lbl_personel.setProperty("style-role", "section-title")
         top_row.addWidget(lbl_personel)
 
@@ -201,18 +207,18 @@ class SaglikTakipPage(QWidget):
         exam_labels = {
             "Dermatoloji": "Dermatoloji",
             "Dahiliye":    "Dahiliye",
-            "Goz":         "G\u00f6z",
-            "Goruntuleme": "G\u00f6r\u00fcntüleme",
+            "Goz":         "Göz",
+            "Goruntuleme": "Görüntüleme",
         }
         for key in self._exam_keys:
             exam_row.addWidget(self._create_exam_box(key, exam_labels[key]))
         form_lay.addLayout(exam_row)
 
-        # Rapor dosyas\u0131 sat\u0131r\u0131
+        # Rapor dosyası satırı
         rapor_row = QHBoxLayout()
         rapor_row.setSpacing(8)
 
-        self.btn_rapor = QPushButton("Rapor Se\u00e7")
+        self.btn_rapor = QPushButton("Rapor Seç")
         self.btn_rapor.setProperty("style-role", "secondary")
         self.btn_rapor.setFixedWidth(100)
         self.btn_rapor.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -221,21 +227,21 @@ class SaglikTakipPage(QWidget):
 
         self.inp_rapor = QLineEdit()
         self.inp_rapor.setReadOnly(True)
-        self.inp_rapor.setPlaceholderText("Dosya se\u00e7ilmedi...")
+        self.inp_rapor.setPlaceholderText("Dosya seçilmedi...")
         rapor_row.addWidget(self.inp_rapor, 1)
         form_lay.addLayout(rapor_row)
 
-        # Notlar sat\u0131r\u0131
+        # Notlar satırı
         not_row = QHBoxLayout()
         lbl_not = QLabel("Notlar")
         lbl_not.setProperty("style-role", "form")
         not_row.addWidget(lbl_not)
         self.inp_not = QLineEdit()
-        self.inp_not.setPlaceholderText("A\u00e7\u0131klama veya not...")
+        self.inp_not.setPlaceholderText("Açıklama veya not...")
         not_row.addWidget(self.inp_not, 1)
         form_lay.addLayout(not_row)
 
-        # Kaydet / \u0130ptal
+        # Kaydet / İptal
         btn_row = QHBoxLayout()
         btn_row.setSpacing(8)
 
@@ -246,7 +252,7 @@ class SaglikTakipPage(QWidget):
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color=IconColors.PRIMARY, size=14)
         btn_row.addWidget(self.btn_kaydet)
 
-        self.btn_temizle = QPushButton("\u0130ptal")
+        self.btn_temizle = QPushButton("İptal")
         self.btn_temizle.setProperty("style-role", "secondary")
         self.btn_temizle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_temizle.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -299,9 +305,13 @@ class SaglikTakipPage(QWidget):
         self.table.setSortingEnabled(True)
         self.table.verticalHeader().setVisible(False)
         self.model.setup_columns(self.table)
+        # Seçili satırda metin her zaman beyaz — model rengini ezmez
+        self.table.setStyleSheet(
+            "QTableView::item:selected { color: #ffffff; }"
+        )
 
     # -------------------------------------------------------------------------
-    # Sinyal ba\u011flant\u0131lar\u0131
+    # Sinyal ba\u011flantıları
     # -------------------------------------------------------------------------
 
     def _connect_signals(self):
@@ -311,7 +321,6 @@ class SaglikTakipPage(QWidget):
         self.btn_yeni.clicked.connect(self._show_form_panel)
         self.btn_form_kapat.clicked.connect(self._hide_form_panel)
         self.btn_rapor.clicked.connect(self._pick_report)
-        self.btn_toplu.clicked.connect(self._bulk_plan_year)
         self.search.textChanged.connect(self._apply_filters)
         self.cmb_yil.currentIndexChanged.connect(self._apply_filters)
         self.cmb_birim_filter.currentTextChanged.connect(self._apply_filters)
@@ -324,7 +333,7 @@ class SaglikTakipPage(QWidget):
             )
 
     # -------------------------------------------------------------------------
-    # Form panel g\u00f6ster / gizle
+    # Form panel g\öster / gizle
     # -------------------------------------------------------------------------
 
     def _show_form_panel(self):
@@ -342,7 +351,7 @@ class SaglikTakipPage(QWidget):
         self.form_panel.setVisible(False)
 
     # -------------------------------------------------------------------------
-    # Veri y\u00fckleme
+    # Veri yükleme
     # -------------------------------------------------------------------------
 
     def load_data(self):
@@ -509,7 +518,7 @@ class SaglikTakipPage(QWidget):
         self.lbl_info.setText(f"{len(out)} kayit")
 
     # -------------------------------------------------------------------------
-    # Muayene yard\u0131mc\u0131lar\u0131
+    # Muayene yardımcıları
     # -------------------------------------------------------------------------
 
     def _on_exam_status_changed(self, key):
@@ -548,8 +557,8 @@ class SaglikTakipPage(QWidget):
         if "Uygun De\u011fil" in statuses:
             sonuc = "Uygun De\u011fil"
             durum = "Riskli"
-        elif "Şartl\u0131 Uygun" in statuses:
-            sonuc = "Şartl\u0131 Uygun"
+        elif "Şartlı Uygun" in statuses:
+            sonuc = "Şartlı Uygun"
             durum = "Gecerli"
         elif "Uygun" in statuses:
             sonuc = "Uygun"
@@ -587,7 +596,7 @@ class SaglikTakipPage(QWidget):
                 file_path    = self._selected_report_path,
                 entity_type  = "personel",
                 entity_id    = str(tc_no),
-                belge_turu   = "Periyodik Sa\u011fl\u0131k Muayene Raporu",
+                belge_turu   = "Periyodik Sa\u011flık Muayene Raporu",
                 folder_name  = "Saglik_Raporlari",
                 doc_type     = "Personel_Belge",
                 custom_name  = custom_name,
@@ -595,8 +604,8 @@ class SaglikTakipPage(QWidget):
                 iliskili_tip = "Personel_Saglik_Takip",
             )
             if not sonuc.get("ok"):
-                err = str(sonuc.get("error", "Bilinmeyen y\u00fckleme hatas\u0131"))
-                QMessageBox.warning(self, "Yukleme Hatasi", f"Rapor y\u00fcklenemedi:\n{err}")
+                err = str(sonuc.get("error", "Bilinmeyen yükleme hatası"))
+                QMessageBox.warning(self, "Yukleme Hatasi", f"Rapor yüklenemedi:\n{err}")
                 return ""
             rapor_ref = str(sonuc.get("drive_link") or sonuc.get("local_path") or "").strip()
             logger.info(f"Saglik raporu yuklendi [{sonuc.get('mode', 'none')}]: {custom_name}")
@@ -666,7 +675,7 @@ class SaglikTakipPage(QWidget):
             QMessageBox.critical(self, "Hata", f"Kayit sirasinda hata olustu:\n{exc}")
 
     # -------------------------------------------------------------------------
-    # Se\u00e7im & Temizlik
+    # Seçim & Temizlik
     # -------------------------------------------------------------------------
 
     def _on_select_row(self, *_):
@@ -775,7 +784,7 @@ class SaglikTakipPage(QWidget):
             QMessageBox.critical(self, "Hata", f"Toplu planlama sirasinda hata:\n{exc}")
 
     # -------------------------------------------------------------------------
-    # \u00c7ift t\u0131klama \u2014 rapor a\u00e7
+    # Çift tıklama \u2014 rapor aç
     # -------------------------------------------------------------------------
 
     def _on_table_double_click(self, index):
@@ -788,7 +797,7 @@ class SaglikTakipPage(QWidget):
             return
         rapor_path = str(row.get("_RaporPath", "")).strip()
         if not rapor_path:
-            QMessageBox.information(self, "Bilgi", "Bu kay\u0131t i\u00e7in rapor dosyas\u0131 bulunmuyor.")
+            QMessageBox.information(self, "Bilgi", "Bu kayıt için rapor dosyası bulunmuyor.")
             return
         try:
             if rapor_path.startswith(("http://", "https://")):
@@ -848,11 +857,11 @@ class SaglikTakipPage(QWidget):
 
             if not os.path.isfile(resolved_path):
                 QMessageBox.warning(
-                    self, "Dosya Bulunamad\u0131",
-                    f"Rapor dosyas\u0131 bulunamad\u0131:\n\n{rapor_path}\n\n"
+                    self, "Dosya Bulunamadı",
+                    f"Rapor dosyası bulunamadı:\n\n{rapor_path}\n\n"
                     f"Dosya silinmi\u015f veya yol de\u011fi\u015fmi\u015f olabilir.",
                 )
-                logger.warning(f"Saglik raporu dosyas\u0131 bulunamad\u0131: {rapor_path}")
+                logger.warning(f"Saglik raporu dosyası bulunamadı: {rapor_path}")
                 return
 
             if platform.system() == "Windows":
@@ -865,4 +874,4 @@ class SaglikTakipPage(QWidget):
             logger.info(f"Saglik raporu acildi (local): {resolved_path}")
         except Exception as e:
             logger.error(f"Saglik raporu acma hatasi: {e}")
-            QMessageBox.critical(self, "Hata", f"Rapor a\u00e7\u0131lamad\u0131:\n\n{str(e)}\n\nYol: {rapor_path}")
+            QMessageBox.critical(self, "Hata", f"Rapor açılamadı:\n\n{str(e)}\n\nYol: {rapor_path}")
