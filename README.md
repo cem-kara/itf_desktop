@@ -1,4 +1,4 @@
-# REPYS V3 — Medikal Veritabanı Yönetim Sistemi
+# REPYS V3 — Radyoloji Veritabanı Yönetim Sistemi
 
 > **v0.3.0** — UI Stabilization & Type-Safety ✨
 
