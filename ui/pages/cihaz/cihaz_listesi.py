@@ -262,7 +262,7 @@ class CihazListesiPage(QWidget):
 
     def _build_toolbar(self) -> QFrame:
         frame = QFrame()
-        frame.setFixedHeight(48)
+        frame.setFixedHeight(60)
         frame.setStyleSheet("""
             QFrame {{
                 background-color: {};

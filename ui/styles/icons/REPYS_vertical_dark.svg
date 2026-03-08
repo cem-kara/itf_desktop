@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1280" viewBox="0 0 1024 1280" xmlns="http://www.w3.org/2000/svg">
+  <title>REPYS RADYOLOJİ — Radyoloji Personel ve Cihaz Yönetim Sistemi</title>
+  <rect width="100%" height="100%" fill="#0E1B26"/>
+
+<defs>
+  <linearGradient id="gradCyan" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#00E5FF"/>
+    <stop offset="100%" stop-color="#00B8E6"/>
+  </linearGradient>
+  <!-- Icon glow (moderate) -->
+  <filter id="iconGlow" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur"/>
+    <feMerge>
+      <feMergeNode in="blur"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+  <!-- Text glow (stronger) -->
+  <filter id="textGlow" x="-80%" y="-80%" width="260%" height="260%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/>
+    <feMerge>
+      <feMergeNode in="blur"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+  <style>
+    .fontHead{{font-family: Inter, 'Segoe UI', Arial, sans-serif}}
+    .fontSub{{font-family: Inter, 'Segoe UI', Arial, sans-serif}}
+  </style>
+</defs>
+
+  <g transform="translate(512.0, 340)">
+
+<g id="rozet" filter="url(#iconGlow)">
+  <circle cx="0" cy="0" r="190" fill="none" stroke="url(#gradCyan)" stroke-width="24"/>
+  <circle cx="0" cy="0" r="150" fill="none" stroke="url(#gradCyan)" stroke-width="10" opacity="0.9"/>
+  <g stroke="url(#gradCyan)" stroke-width="14" stroke-linecap="round" fill="none">
+    <path d="M-120,-30 C-40,-30 -40,-55 0,-55 C40,-55 40,-30 120,-30"/>
+    <path d="M-120,-10 C-40,-10 -40,-35 0,-35 C40,-35 40,-10 120,-10"/>
+    <path d="M-120,10  C-40,10  -40,-15 0,-15 C40,-15 40,10  120,10"/>
+    <path d="M-120,30  C-40,30  -40,5   0,5   C40,5   40,30  120,30"/>
+  </g>
+  <g fill="url(#gradCyan)">
+    <rect x="-8" y="-85" width="16" height="24" rx="6"/>
+    <rect x="-8" y="40" width="16" height="24" rx="6"/>
+    <rect x="-8" y="68" width="16" height="24" rx="6"/>
+  </g>
+  <g transform="translate(0, 20)">
+    <circle cx="0" cy="0" r="10" fill="url(#gradCyan)"/>
+    <path d="M0,0 L0,-44 A44,44 0 0 1 38,-22 Z" fill="url(#gradCyan)"/>
+    <path d="M0,0 L38,-22 A44,44 0 0 1 38,22 Z" fill="url(#gradCyan)"/>
+    <path d="M0,0 L38,22 A44,44 0 0 1 0,44 Z" fill="url(#gradCyan)"/>
+  </g>
+</g>
+
+  </g>
+  <g filter="url(#textGlow)" fill="#FFB020" class="fontHead" text-anchor="middle">
+    <text x="512.0" y="720" font-size="140" font-weight="800">REPYS RADYOLOJİ</text>
+    <text x="512.0" y="860" font-size="84" font-weight="700" class="fontSub">Personel ve Cihaz</text>
+    <text x="512.0" y="950" font-size="84" font-weight="700" class="fontSub">Yönetim Sistemi</text>
+  </g>
+</svg>

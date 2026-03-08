@@ -444,7 +444,7 @@ class PersonelListesiPage(QWidget):
     def _build_toolbar(self) -> QFrame:
         frame = QFrame()
         self._toolbar_frame = frame
-        frame.setFixedHeight(48)
+        frame.setFixedHeight(60)
         lay = QHBoxLayout(frame)
         lay.setContentsMargins(16, 0, 16, 0)
         lay.setSpacing(8)
@@ -542,8 +542,8 @@ class PersonelListesiPage(QWidget):
         self.btn_yeni.setProperty("style-role", "action")
         self.btn_yeni.style().unpolish(self.btn_yeni)
         self.btn_yeni.style().polish(self.btn_yeni)
-        IconRenderer.set_button_icon(self.btn_yeni, "user_add", color=C.BTN_PRIMARY_TEXT, size=16)
-        self.btn_yeni.setIconSize(QSize(16, 16))
+        IconRenderer.set_button_icon(self.btn_yeni, "user_add", color=C.BTN_PRIMARY_TEXT, size=18)
+        self.btn_yeni.setIconSize(QSize(18, 18))
         
         # IP-06: Aksiyon bazlı yetki kontrolü
         if self._action_guard:
