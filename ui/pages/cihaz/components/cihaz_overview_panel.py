@@ -56,39 +56,32 @@ class CihazOverviewPanel(QWidget):
 
         content = QWidget()
         content.setStyleSheet("background: transparent;")
-        layout = QVBoxLayout(content)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(16)
+        content_layout = QHBoxLayout(content)
+        content_layout.setSpacing(20)
+        content_layout.setContentsMargins(16, 16, 16, 16)
 
-        # Form grid
-        form_grid = QGridLayout()
-        form_grid.setHorizontalSpacing(16)
-        form_grid.setVerticalSpacing(16)
-        form_grid.setColumnStretch(0, 1)
-        form_grid.setColumnStretch(1, 1)
-        layout.addLayout(form_grid)
+        # Formu ortala (cihaz_ekle.py gibi)
+        content_layout.addStretch()
 
         # 1. Medya ve Dosyalar grubu
         grp_media = self._create_editable_group("Medya ve Dosyalar", "media")
+        grp_media.setFixedWidth(500)
         media_content_widget = self._groups["media"]["widget"]
         grid_media = QGridLayout(media_content_widget)
         grid_media.setHorizontalSpacing(12)
         grid_media.setVerticalSpacing(10)
-
         self._add_line(grid_media, 0, 0, "Cihaz ID", "Cihazid", "media", read_only=True)
         self._add_combo(grid_media, 0, 1, "Cihaz Tipi", "CihazTipi", "media", "Cihaz_Tipi")
         self._add_combo(grid_media, 1, 0, "Ana Bilim Dali", "AnaBilimDali", "media", "AnaBilimDali")
         self._add_combo(grid_media, 1, 1, "Kaynak", "Kaynak", "media", "Kaynak")
 
-        form_grid.addWidget(grp_media, 0, 0)
-
-        # 2. Kimlik Bilgileri grubu
+        # 2. Kimlik Bilgileri grubu (medyanın altına)
         grp_kimlik = self._create_editable_group("Kimlik Bilgileri", "kimlik")
+        grp_kimlik.setFixedWidth(500)
         kimlik_content_widget = self._groups["kimlik"]["widget"]
         grid_kimlik = QGridLayout(kimlik_content_widget)
         grid_kimlik.setHorizontalSpacing(12)
         grid_kimlik.setVerticalSpacing(10)
-
         self._add_combo(grid_kimlik, 0, 0, "Marka", "Marka", "kimlik", "Marka")
         self._add_line(grid_kimlik, 0, 1, "Model", "Model", "kimlik")
         self._add_line(grid_kimlik, 1, 0, "Seri No", "SeriNo", "kimlik")
@@ -96,7 +89,23 @@ class CihazOverviewPanel(QWidget):
         self._add_combo(grid_kimlik, 2, 0, "Birim", "Birim", "kimlik", "Birim")
         self._add_line(grid_kimlik, 2, 1, "Bulundugu Bina", "BulunduguBina", "kimlik")
 
-        form_grid.addWidget(grp_kimlik, 0, 1)
+        # Solda dikey olarak yerleştir
+        left_panel = QWidget()
+        left_panel.setFixedWidth(500)
+        left_layout = QVBoxLayout(left_panel)
+        left_layout.setSpacing(16)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.addWidget(grp_media)
+        left_layout.addWidget(grp_kimlik)
+        left_layout.addStretch()
+        content_layout.addWidget(left_panel, alignment=Qt.AlignmentFlag.AlignTop)
+
+        # Sağ: Diğer gruplar (kimlik bilgileri kaldırıldı)
+        right = QWidget()
+        right.setFixedWidth(500)
+        right_lay = QVBoxLayout(right)
+        right_lay.setSpacing(16)
+        right_lay.setContentsMargins(0, 0, 0, 0)
 
         # 3. NDK Lisans Bilgileri grubu
         grp_lisans = self._create_editable_group("NDK Lisans Bilgileri", "lisans")
@@ -104,7 +113,6 @@ class CihazOverviewPanel(QWidget):
         grid_lisans = QGridLayout(lisans_content_widget)
         grid_lisans.setHorizontalSpacing(12)
         grid_lisans.setVerticalSpacing(10)
-
         self._add_line(grid_lisans, 0, 0, "Lisans No", "NDKLisansNo", "lisans")
         self._add_line(grid_lisans, 0, 1, "NDK Seri No", "NDKSeriNo", "lisans")
         self._add_combo(grid_lisans, 1, 0, "Lisans Durum", "LisansDurum", "lisans", "Lisans_Durum")
@@ -112,8 +120,7 @@ class CihazOverviewPanel(QWidget):
         self._add_line(grid_lisans, 2, 0, "Sorumlu", "Sorumlusu", "lisans")
         self._add_line(grid_lisans, 2, 1, "RKS", "RKS", "lisans")
         self._add_file(grid_lisans, 3, 0, "Lisans Belgesi", "NDKLisansBelgesi", "lisans", colspan=2)
-
-        form_grid.addWidget(grp_lisans, 1, 0)
+        right_lay.addWidget(grp_lisans)
 
         # 4. Teknik Hizmetler grubu
         grp_teknik = self._create_editable_group("Teknik Hizmetler", "teknik")
@@ -121,32 +128,27 @@ class CihazOverviewPanel(QWidget):
         grid_teknik = QGridLayout(teknik_content_widget)
         grid_teknik.setHorizontalSpacing(12)
         grid_teknik.setVerticalSpacing(10)
-
         self._add_date(grid_teknik, 0, 0, "Hizmete Giris", "HizmeteGirisTarihi", "teknik", colspan=2)
         self._add_combo(grid_teknik, 1, 0, "Garanti Durum", "GarantiDurumu", "teknik", "Garanti_Durum")
         self._add_date(grid_teknik, 1, 1, "Garanti Bitis", "GarantiBitisTarihi", "teknik")
         self._add_combo(grid_teknik, 2, 0, "Periyodik Bakim", "BakimDurum", "teknik", "Bakim_Durum")
         self._add_combo(grid_teknik, 2, 1, "Kalibrasyon", "KalibrasyonGereklimi", "teknik", "Kalibrasyon_Durum")
+        right_lay.addWidget(grp_teknik)
 
-        form_grid.addWidget(grp_teknik, 1, 1)
+        right_lay.addStretch()
+        content_layout.addWidget(right)
 
-        layout.addStretch()
+        # Formu ortala
+        content_layout.addStretch()
+
         scroll.setWidget(content)
         main_layout.addWidget(scroll)
 
     def _create_editable_group(self, title, group_id):
         """Düzenlenebilir grup kutusu oluştur."""
-        grp = QGroupBox()
-        grp.setStyleSheet("""
-            QGroupBox {{
-                background-color: {};
-                border: 1px solid {};
-                border-radius: 8px;
-                margin-top: 0px;
-                font-weight: bold;
-                color: {};
-            }}
-        """.format(C.BG_SECONDARY, C.BORDER_PRIMARY, C.TEXT_PRIMARY))
+        grp = QGroupBox(title)
+        from ui.styles.components import STYLES as S
+        grp.setStyleSheet(S["group_box"])
         
         vbox = QVBoxLayout(grp)
         vbox.setContentsMargins(10, 10, 10, 10)
