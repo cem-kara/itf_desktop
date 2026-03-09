@@ -30,7 +30,7 @@ class MigrationManager:
     """
 
     # Mevcut Şema versiyonu
-    CURRENT_VERSION = 1
+    CURRENT_VERSION = 2
 
     def __init__(self, db_path):
         self.db_path = db_path
@@ -199,6 +199,42 @@ class MigrationManager:
             conn.commit()
             logger.info("v1: Tüm tablolar oluŞturuldu ve baŞlangıç verileri eklendi")
 
+        finally:
+            conn.close()
+
+    def _migrate_to_v2(self):
+        """v1 -> v2: Add Dozimetre_Olcum table."""
+        conn = self.connect()
+        cur = conn.cursor()
+        try:
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS Dozimetre_Olcum (
+                KayitNo            TEXT PRIMARY KEY,
+                SiraNo             INTEGER,
+                RaporNo            TEXT,
+                Periyot            INTEGER,
+                PeriyotAdi         TEXT,
+                Yil                INTEGER,
+                DozimetriTipi      TEXT,
+                AdSoyad            TEXT,
+                TCKimlikNo         TEXT,
+                CalistiBirim       TEXT,
+                PersonelID         TEXT,
+                DozimetreNo        TEXT,
+                VucutBolgesi       TEXT,
+                Hp10               REAL,
+                Hp007              REAL,
+                DozSiniri_Hp10     REAL,
+                DozSiniri_Hp007    REAL,
+                Durum              TEXT,
+                OlusturmaTarihi    TEXT DEFAULT (date('now')),
+
+                sync_status        TEXT DEFAULT 'clean',
+                updated_at         TEXT
+            )
+            """)
+            conn.commit()
+            logger.info("v2: Dozimetre_Olcum tablosu eklendi")
         finally:
             conn.close()
 
@@ -630,6 +666,34 @@ class MigrationManager:
 
             sync_status                 TEXT DEFAULT 'clean',
             updated_at                  TEXT
+        )
+        """)
+
+        # == DOZIMETRE ÖLÇÜM ==================================================
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Dozimetre_Olcum (
+            KayitNo            TEXT PRIMARY KEY,
+            SiraNo             INTEGER,
+            RaporNo            TEXT,
+            Periyot            INTEGER,
+            PeriyotAdi         TEXT,
+            Yil                INTEGER,
+            DozimetriTipi      TEXT,
+            AdSoyad            TEXT,
+            TCKimlikNo         TEXT,
+            CalistiBirim       TEXT,
+            PersonelID         TEXT,
+            DozimetreNo        TEXT,
+            VucutBolgesi       TEXT,
+            Hp10               REAL,
+            Hp007              REAL,
+            DozSiniri_Hp10     REAL,
+            DozSiniri_Hp007    REAL,
+            Durum              TEXT,
+            OlusturmaTarihi    TEXT DEFAULT (date('now')),
+
+            sync_status        TEXT DEFAULT 'clean',
+            updated_at         TEXT
         )
         """)
 

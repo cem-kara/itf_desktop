@@ -255,6 +255,17 @@ class MainWindow(QMainWindow):
             page.load_data()
             return page
 
+        if baslik == "Dozimetre Takip":
+            from ui.pages.personel.dozimetre_takip import DozimetreTakipPage
+            # Pass DB file path (str) to satisfy page's expected type
+            db_path = getattr(self._db, "db_path", "")
+            page = DozimetreTakipPage(db=db_path)
+            #{page.btn_kapat.clicked.connect(lambda: self._close_page("Dozimetre Takip"))
+            fn = getattr(page, "load_data", None)
+            if callable(fn):
+                fn()
+            return page
+        
         if baslik == "Cihaz Ekle":
             from ui.pages.cihaz.cihaz_ekle import CihazEklePage
             page = CihazEklePage(

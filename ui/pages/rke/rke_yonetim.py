@@ -18,7 +18,7 @@ from core.di import get_rke_service as _get_rke_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.colors import DarkTheme
 from ui.styles.components import STYLES
-from ui.styles.icons import IconRenderer
+from ui.styles.icons import IconRenderer, IconColors
 
 
 # ── ORTAK STİL STRİNGLERİ ────────────────────────────────────────
@@ -503,13 +503,14 @@ class RKEYonetimPenceresi(QWidget):
         self.txt_ara.setFixedHeight(28); self.txt_ara.setPlaceholderText("⌕  Ara...")
         self.txt_ara.textChanged.connect(self.tabloyu_filtrele)
 
-        btn_yenile = QPushButton("⟳")
+        btn_yenile = QPushButton("")
         btn_yenile.setFixedSize(28,28)
         btn_yenile.setStyleSheet(
             f"QPushButton{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;"
             f"color:{DarkTheme.TEXT_SECONDARY};}}QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};}}"
         )
         btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        IconRenderer.set_button_icon(btn_yenile, "refresh", color=IconColors.MUTED, size=14)
         btn_yenile.clicked.connect(self.load_data)
 
         fl.addWidget(self.cmb_filtre_abd); fl.addWidget(self.cmb_filtre_dur)

@@ -25,6 +25,7 @@ from ui.pages.personel.components.personel_izin_panel import PersonelIzinPanel
 from ui.pages.personel.components.personel_saglik_panel import PersonelSaglikPanel
 from ui.pages.personel.components.personel_fhsz_panel import PersonelFhszPanel
 from ui.pages.personel.components.hizli_izin_giris import HizliIzinGirisDialog
+from ui.pages.personel.components.personel_dozimetre_panel import PersonelDozimetrePanel
 
 C = DarkTheme
 
@@ -32,8 +33,9 @@ C = DarkTheme
 TABS = [
     ("GENEL",   "Genel Bakış"),
     ("IZIN",    "İzinler"),
-    ("SAGLIK",  "Sağlık"),
     ("FHSZ",    "FHSZ Bilgileri"),
+    ("SAGLIK",  "Sağlık"),
+    ("DOZIMETRE", "Dozimetre"),
     ("DOKUMAN", "Belgeler"),
     ("AYRILIS", "İşten Ayrılış"),
 ]
@@ -421,6 +423,8 @@ class PersonelMerkezPage(QWidget):
                 w = PersonelSaglikPanel(self.db, self.personel_id)
                 if hasattr(w, "open_documents"):
                     w.open_documents.connect(self._open_documents_for_saglik)
+            elif code == "DOZIMETRE":
+                w = PersonelDozimetrePanel(db=self.db, personel_id=self.personel_id)
             elif code == "FHSZ":
                 w = PersonelFhszPanel(self.db, self.personel_id)
             elif code == "DOKUMAN":
@@ -512,6 +516,10 @@ class PersonelMerkezPage(QWidget):
         set_related_record = getattr(dokuman_modul, "set_related_record", None)
         if callable(set_related_record):
             set_related_record(kayit_no, "Personel_Saglik_Takip")
+        # Sağlık modülden yönlendirme: varsayılan belge türünü periyodik muayene raporu olarak seç
+        set_default = getattr(dokuman_modul, "set_default_belge_turu", None)
+        if callable(set_default):
+            set_default("Periyodik Sağlık Muayene Raporu")
 
     def _refresh_saglik_module(self):
         saglik_modul = self._modules.get("SAGLIK")

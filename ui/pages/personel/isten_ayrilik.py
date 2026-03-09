@@ -13,7 +13,8 @@ from PySide6.QtCore import Qt, QDate, QThread, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QProgressBar, QFrame, QComboBox, QDateEdit,
-    QGroupBox, QMessageBox, QFileDialog, QGridLayout
+    QGroupBox, QMessageBox, QFileDialog, QGridLayout,
+    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView
 )
 from PySide6.QtGui import QCursor
 
@@ -24,6 +25,7 @@ from core.date_utils import to_ui_date
 from ui.styles.colors import DarkTheme as C
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
+from core.services.dokuman_service import DokumanService
 
 
 # ═══════════════════════════════════════════════
@@ -331,33 +333,51 @@ class IstenAyrilikPage(QWidget):
 
         left_l.addWidget(grp_form)
 
-        # Mevcut Dosyalar
+        # Mevcut Dosyalar (Doküman tablosundaki tüm belgeler — sadece liste)
         grp_dosya = QGroupBox("Mevcut Drive Dosyalari")
         grp_dosya.setStyleSheet(S["group"])
-        dg = QGridLayout(grp_dosya)
-        dg.setSpacing(6)
+        dg = QVBoxLayout(grp_dosya)
         dg.setContentsMargins(12, 12, 12, 12)
 
-        dosya_alanlar = [
-            ("Resim", self._data.get("Resim", "")),
-            ("Diploma 1", self._data.get("Diploma1", "")),
-            ("Diploma 2", self._data.get("Diploma2", "")),
-            ("Özlük Dosyası", self._data.get("OzlukDosyasi", "")),
-        ]
-        for i, (lbl_t, val) in enumerate(dosya_alanlar):
-            l = QLabel(lbl_t)
-            l.setStyleSheet(S["label"])
-            dg.addWidget(l, i, 0)
-            if val and str(val).startswith("http"):
-                v = QLabel("Mevcut")
-                v.setStyleSheet("font-size: 12px; background: transparent;")
-            else:
-                v = QLabel("—")
-                v.setProperty("color-role", "disabled")
-                v.setStyleSheet("font-size: 12px; background: transparent;")
-                v.style().unpolish(v)
-                v.style().polish(v)
-            dg.addWidget(v, i, 1)
+        tc = self._data.get("KimlikNo", "")
+        if not tc or not self._db:
+            fallback = QLabel("Doküman listesi yüklenemedi.")
+            fallback.setStyleSheet(f"font-size:12px; color: {C.TEXT_MUTED}; background: transparent;")
+            dg.addWidget(fallback)
+        else:
+            try:
+                svc = DokumanService(self._db)
+                doks = svc.get_belgeler("personel", tc) or []
+
+                table = QTableWidget()
+                table.setColumnCount(4)
+                table.setHorizontalHeaderLabels(["Belge Türü", "Dosya Adı", "Açıklama", "Tarih"])
+                table.setMinimumHeight(160)
+                table.setAlternatingRowColors(True)
+                table.setSelectionBehavior(table.SelectionBehavior.SelectRows)
+                table.setSelectionMode(table.SelectionMode.SingleSelection)
+                table.setRowCount(len(doks))
+
+                from datetime import datetime
+                for r, doc in enumerate(doks):
+                    tarih = doc.get("YuklenmeTarihi", "")
+                    try:
+                        tarih_str = datetime.fromisoformat(tarih).strftime("%d.%m.%Y %H:%M")
+                    except Exception:
+                        tarih_str = tarih[:16] if len(tarih) > 16 else tarih or "-"
+
+                    table.setItem(r, 0, QTableWidgetItem(doc.get("BelgeTuru", "")))
+                    table.setItem(r, 1, QTableWidgetItem(doc.get("Belge") or doc.get("Belge", "")))
+                    table.setItem(r, 2, QTableWidgetItem(doc.get("BelgeAciklama", "") or "-"))
+                    table.setItem(r, 3, QTableWidgetItem(tarih_str))
+
+                dg.addWidget(table)
+            except Exception as e:
+                logger.error(f"Dokumanlar yüklenemedi: {e}")
+                fallback = QLabel("Doküman listesi yüklenemedi.")
+                fallback.setStyleSheet(f"font-size:12px; color: {C.TEXT_MUTED}; background: transparent;")
+                dg.addWidget(fallback)
+
         left_l.addWidget(grp_dosya)
 
         left_l.addStretch()

@@ -111,6 +111,22 @@ class BaseDokumanPanel(QWidget):
                 self._form.setEnabled(False)
             self._tablo.setRowCount(0)
 
+    def set_default_belge_turu(self, tur: str):
+        """Varsayılan belge türünü combo'ya uygular (varsa)."""
+        if not tur:
+            return
+        try:
+            if hasattr(self, '_combo_tur') and self._combo_tur:
+                idx = self._combo_tur.findText(tur)
+                if idx >= 0:
+                    self._combo_tur.setCurrentIndex(idx)
+                else:
+                    # Eğer listede yoksa ekle ve seç
+                    self._combo_tur.addItem(tur)
+                    self._combo_tur.setCurrentIndex(self._combo_tur.count() - 1)
+        except Exception:
+            pass
+
     def load_data(self):
         """Belgeleri yeniden yükle."""
         self._load_dokumanlari()
