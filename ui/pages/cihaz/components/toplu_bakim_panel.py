@@ -8,7 +8,7 @@ from dateutil.relativedelta import relativedelta
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QComboBox, QListWidget, QListWidgetItem,
-    QHBoxLayout, QPushButton, QDateEdit, QLineEdit, QMessageBox,
+    QHBoxLayout, QPushButton, QDateEdit, QLineEdit, QMessageBox, QFileDialog,
 )
 
 from core.logger import logger
@@ -57,6 +57,27 @@ class TopluBakimPlanPanel(QWidget):
         self.cmb_marka_filter.setMinimumHeight(32)
         self.cmb_marka_filter.currentIndexChanged.connect(self._refresh_cihaz_list)
         layout.addWidget(self.cmb_marka_filter)
+
+        # Sözleşme seçimi dropdown (Dokumanlar içinden)
+        lbl_sozlesme = QLabel("Sözleşme seç (isteğe bağlı):")
+        lbl_sozlesme.setProperty("color-role", "primary")
+        lbl_sozlesme.setStyleSheet("font-weight: 600;")
+        lbl_sozlesme.style().unpolish(lbl_sozlesme)
+        lbl_sozlesme.style().polish(lbl_sozlesme)
+        layout.addWidget(lbl_sozlesme)
+
+        self.cmb_sozlesme = QComboBox()
+        self.cmb_sozlesme.setStyleSheet(S["combo"])
+        self.cmb_sozlesme.setMinimumHeight(32)
+        self.cmb_sozlesme.currentIndexChanged.connect(self._on_sozlesme_changed)
+        layout.addWidget(self.cmb_sozlesme)
+
+        # Yeni sözleşme ekle butonu
+        self.btn_yeni_sozlesme = QPushButton("Sözleşme Yükle")
+        self.btn_yeni_sozlesme.setStyleSheet(S.get("btn_secondary", "") or "")
+        self.btn_yeni_sozlesme.setMinimumHeight(32)
+        self.btn_yeni_sozlesme.clicked.connect(self._on_add_sozlesme)
+        layout.addWidget(self.btn_yeni_sozlesme)
 
         lbl_cihaz = QLabel("Cihazlar Seçin:")
         lbl_cihaz.setProperty("color-role", "primary")
@@ -130,6 +151,20 @@ class TopluBakimPlanPanel(QWidget):
         self.txt_aciklama.setMinimumHeight(36)
         layout.addWidget(self.txt_aciklama)
 
+        # Sözleşme DokümanId (opsiyonel)
+        lbl_soz = QLabel("Sözleşme DokümanId (opsiyonel):")
+        lbl_soz.setProperty("color-role", "primary")
+        lbl_soz.setStyleSheet("font-weight: 600;")
+        lbl_soz.style().unpolish(lbl_soz)
+        lbl_soz.style().polish(lbl_soz)
+        layout.addWidget(lbl_soz)
+
+        self.le_sozlesme_id = QLineEdit()
+        self.le_sozlesme_id.setStyleSheet(S["input"])
+        self.le_sozlesme_id.setPlaceholderText("DokumanId girin veya boş bırakın")
+        self.le_sozlesme_id.setMinimumHeight(36)
+        layout.addWidget(self.le_sozlesme_id)
+
         layout.addStretch()
 
         btn_layout = QHBoxLayout()
@@ -174,6 +209,21 @@ class TopluBakimPlanPanel(QWidget):
             self.cmb_marka_filter.addItem(marka, marka)
 
         self._refresh_cihaz_list()
+        # load sozlesme list from Dokumanlar where EntityType='sozlesme'
+        try:
+            from core.di import get_dokuman_service
+            svc = get_dokuman_service(self._db)
+            sozler = svc.get_belgeler("sozlesme") or []
+            # Expecting each row to have DokumanId and DisplayName
+            self.cmb_sozlesme.clear()
+            self.cmb_sozlesme.addItem("(Yok)", None)
+            for s in sozler:
+                dokid = s.get("DokumanId") or s.get("IliskiliBelgeID") or s.get("Belge")
+                # Show the 'Belge' column (stored filename) in combo instead of DisplayName
+                label = s.get("Belge") or s.get("DisplayName") or dokid
+                self.cmb_sozlesme.addItem(str(label or ""), dokid)
+        except Exception as e:
+            logger.warning(f"Sözleşme listesi yüklenemedi: {e}")
 
     def _refresh_cihaz_list(self):
         self.list_cihazlar.clear()
@@ -185,10 +235,76 @@ class TopluBakimPlanPanel(QWidget):
                 continue
             if secili_marka and c_marka != secili_marka:
                 continue
+            # If a sozlesme is selected, optionally filter devices here (skipped for now)
             item = QListWidgetItem(f"{c_id} - {c_marka}")
             item.setData(Qt.ItemDataRole.UserRole, c_id)
             item.setCheckState(Qt.CheckState.Unchecked)
             self.list_cihazlar.addItem(item)
+
+    def _on_sozlesme_changed(self, idx: int):
+        """When user selects a sozlesme from dropdown, fill the SozlesmeId field."""
+        try:
+            dokid = self.cmb_sozlesme.itemData(idx)
+            if dokid is None:
+                # fallback to currentData
+                dokid = self.cmb_sozlesme.currentData()
+            if hasattr(self, 'le_sozlesme_id') and dokid:
+                self.le_sozlesme_id.setText(str(dokid))
+            elif hasattr(self, 'le_sozlesme_id'):
+                self.le_sozlesme_id.clear()
+        except Exception:
+            # non-fatal: just ignore
+            pass
+
+    def _on_add_sozlesme(self):
+        """Open file dialog, upload selected file as a 'sozlesme' document and select it."""
+        try:
+            # Require a brand to be selected
+            marka = self.cmb_marka_filter.currentData()
+            if not marka:
+                QMessageBox.warning(self, "Uyarı", "Lütfen önce bir marka seçin.")
+                return
+
+            dlg = QFileDialog(self)
+            dlg.setFileMode(QFileDialog.FileMode.ExistingFile)
+            dlg.setNameFilter("PDF Files (*.pdf);;All Files (*)")
+            if dlg.exec() != QFileDialog.DialogCode.Accepted:
+                return
+            paths = dlg.selectedFiles()
+            if not paths:
+                return
+            file_path = paths[0]
+
+            from core.di import get_dokuman_service
+            svc = get_dokuman_service(self._db)
+            # Use entryid=<marka> as entity_id so we can track which brand the
+            # agreement belongs to
+            entity_id = f"{marka}"
+            res = svc.upload_and_save(
+                file_path=file_path,
+                entity_type="sozlesme",
+                entity_id=entity_id,
+                belge_turu="Sözleşme",
+                folder_name="Sozlesme",
+                doc_type="Sozlesme",
+                aciklama=f"Toplu plan sırasında yüklenen sözleşme (marka={marka})",
+            )
+            if not res.get("ok"):
+                QMessageBox.critical(self, "Hata", f"Sözleşme yüklenemedi: {res.get('error')}")
+                return
+
+            dokid = res.get("dokuman_id") or res.get("dokuman_id")
+            # Use saved filename (belge_adi) as the combo label when possible
+            label = res.get("belge_adi") or res.get("DisplayName") or dokid
+            # add to combo and select
+            self.cmb_sozlesme.addItem(str(label or ""), dokid)
+            idx = self.cmb_sozlesme.findData(dokid)
+            if idx >= 0:
+                self.cmb_sozlesme.setCurrentIndex(idx)
+            QMessageBox.information(self, "Başarılı", "Sözleşme yüklendi ve seçildi.")
+        except Exception as e:
+            logger.error(f"Sözleşme yükleme hatası: {e}")
+            QMessageBox.critical(self, "Hata", f"Sözleşme yükleme hatası: {e}")
 
     def _select_all_visible(self):
         for i in range(self.list_cihazlar.count()):
@@ -245,12 +361,21 @@ class TopluBakimPlanPanel(QWidget):
                     "Aciklama": aciklama,
                     "Teknisyen": "-",
                     "Rapor": "-",
+                    "SozlesmeId": (self.le_sozlesme_id.text().strip() or None),
                 }
                 kayitlar.append(kayit)
 
         try:
             svc = _get_cihaz_service(self._db)
+            # If user selected a sozlesme, use its DokumanId
+            selected_soz = None
+            try:
+                selected_soz = self.cmb_sozlesme.currentData()
+            except Exception:
+                selected_soz = None
             for kayit in kayitlar:
+                if selected_soz:
+                    kayit["SozlesmeId"] = selected_soz
                 svc.bakim_ekle(kayit)
             self.toplam_plan = len(kayitlar)
             if self._on_success:

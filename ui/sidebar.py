@@ -195,9 +195,9 @@ class Sidebar(QWidget):
 
         name_lbl = QLabel("REPYS")
         name_lbl.setStyleSheet(
-            f"color: #e2eaf4; font-size: 14px; font-weight: 800;"
-            f" letter-spacing: -0.01em; background: transparent;"
-        )
+                f"color: #e2eaf4; font-size: 14px; font-weight: 800;"
+                f" background: transparent;"
+            )
         ver_lbl = QLabel(f"Versiyon · v{AppConfig.VERSION}")
         ver_lbl.setStyleSheet(
             f"color: {GROUP_LBL}; font-size: 11px; background: transparent;"
@@ -223,7 +223,7 @@ class Sidebar(QWidget):
             QScrollArea { border: none; background: transparent; }
             QWidget { background: transparent; }
             QScrollBar:vertical {
-                background: transparent; width: 4px; margin: 0;
+                background: transparent; width: 4px; padding: 0;
             }
             QScrollBar::handle:vertical {
                 background: rgba(0,180,216,0.20);

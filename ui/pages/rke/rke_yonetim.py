@@ -66,7 +66,7 @@ class FieldGroup(QWidget):
         lbl = QLabel(title.upper())
         lbl.setStyleSheet(
             f"color:{color};background:transparent;font-size:9px;font-weight:700;"
-            f"letter-spacing:2px;font-family:{DarkTheme.MONOSPACE};"
+            f"font-family:{DarkTheme.MONOSPACE};"
         )
         hh.addWidget(bar)
         hh.addWidget(lbl)
@@ -291,7 +291,7 @@ class RKEYonetimPenceresi(QWidget):
         lt = QLabel(title)
         lt.setStyleSheet(
             f"color:{DarkTheme.TEXT_MUTED};background:transparent;font-family:{DarkTheme.MONOSPACE};"
-            f"font-size:8px;font-weight:700;letter-spacing:2px;"
+            f"font-size:8px;font-weight:700;"
         )
         lv = QLabel(val)
         lv.setStyleSheet(
@@ -339,7 +339,7 @@ class RKEYonetimPenceresi(QWidget):
         hh = QHBoxLayout(hdr); hh.setContentsMargins(14,0,14,0)
         t1 = QLabel("EKİPMAN FORMU")
         t1.setProperty("color-role", "muted")
-        t1.setStyleSheet("font-family: {DarkTheme.MONOSPACE}; font-size: 9px; font-weight: 700; letter-spacing: 2px;")
+        t1.setStyleSheet("font-family: {DarkTheme.MONOSPACE}; font-size: 9px; font-weight: 700;")
         t1.style().unpolish(t1)
         t1.style().polish(t1)
         self._lbl_mode = QLabel("YENİ KAYIT")
@@ -558,7 +558,7 @@ class RKEYonetimPenceresi(QWidget):
     def _lbl(self, text) -> QLabel:
         l = QLabel(text)
         l.setProperty("color-role", "muted")
-        l.setStyleSheet("font-family: {DarkTheme.MONOSPACE}; font-size: 8px; font-weight: 700; letter-spacing: 1px;")
+        l.setStyleSheet("font-family: {DarkTheme.MONOSPACE}; font-size: 8px; font-weight: 700;")
         l.style().unpolish(l)
         l.style().polish(l)
         return l
@@ -597,7 +597,7 @@ class RKEYonetimPenceresi(QWidget):
             b.setStyleSheet(
                 f"QPushButton{{background:{DarkTheme.STATUS_SUCCESS};border:none;border-radius:5px;"
                 f"color:#051a10;font-family:{DarkTheme.MONOSPACE};font-size:10px;font-weight:800;"
-                f"letter-spacing:1px;}}"
+                f"}}"
                 f"QPushButton:hover{{background:#38e0a0;}}"
                 f"QPushButton:disabled{{background:{DarkTheme.BORDER_PRIMARY};color:{DarkTheme.TEXT_MUTED};}}"
             )
@@ -605,7 +605,7 @@ class RKEYonetimPenceresi(QWidget):
             b.setStyleSheet(
                 f"QPushButton{{background:transparent;border:1px solid {DarkTheme.BORDER_PRIMARY};"
                 f"border-radius:5px;color:{DarkTheme.TEXT_MUTED};font-family:{DarkTheme.MONOSPACE};"
-                f"font-size:10px;letter-spacing:1px;}}"
+                f"font-size:10px;}}"
                 f"QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};border-color:{DarkTheme.TEXT_SECONDARY};}}"
             )
         return b
@@ -761,8 +761,7 @@ class RKEYonetimPenceresi(QWidget):
         self.btn_kaydet.setText("↑  GÜNCELLE")
         self.btn_kaydet.setStyleSheet(
             f"QPushButton{{background:{DarkTheme.STATUS_WARNING};border:none;border-radius:5px;"
-            f"color:#1a0f00;font-family:{DarkTheme.MONOSPACE};font-size:10px;font-weight:800;"
-            f"letter-spacing:1px;}}"
+            f"color:#1a0f00;font-family:{DarkTheme.MONOSPACE};font-size:10px;font-weight:800;}}"
         )
         self._lbl_mode.setText("DÜZENLEME")
         self.gecmisi_yukle(row.get("EkipmanNo",""))
@@ -829,8 +828,7 @@ class RKEYonetimPenceresi(QWidget):
         self.btn_kaydet.setText("✓  KAYDET")
         self.btn_kaydet.setStyleSheet(
             f"QPushButton{{background:{DarkTheme.STATUS_SUCCESS};border:none;border-radius:5px;"
-            f"color:#051a10;font-family:{DarkTheme.MONOSPACE};font-size:10px;font-weight:800;"
-            f"letter-spacing:1px;}}"
+            f"color:#051a10;font-family:{DarkTheme.MONOSPACE};font-size:10px;font-weight:800;}}"
         )
         self._lbl_mode.setText("YENİ KAYIT")
 

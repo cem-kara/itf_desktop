@@ -308,7 +308,6 @@ class _MesajDialog(QDialog):
                 font-size: 13px;
                 color: {};
                 background: transparent;
-                line-height: 1.5;
             }}
 
             /* Buton alanı */

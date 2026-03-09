@@ -212,7 +212,6 @@ class StatCard(QFrame):
         self.value_label = QLabel("—")
         self.value_label.setStyleSheet(
             f"font-size: 30px; font-weight: 800; color: {TXT}; background: transparent;"
-            f" letter-spacing: -0.5px;"
         )
         lay.addWidget(self.value_label)
 
@@ -274,7 +273,6 @@ class StatCard(QFrame):
             )
             self.value_label.setStyleSheet(
                 f"font-size: 30px; font-weight: 800; color: {TXT}; background: transparent;"
-                f" letter-spacing: -0.5px;"
             )
         self.desc_label.setText(description)
 
@@ -309,7 +307,7 @@ def _section_header(title: str, icon: str = "") -> QWidget:
     lbl = QLabel(title)
     lbl.setStyleSheet(
         f"font-size: 12px; font-weight: 700; color: {TXT2}; background: transparent;"
-        f" letter-spacing: 0.04em; text-transform: uppercase;"
+        f" text-transform: uppercase;"
     )
     row.addWidget(lbl)
     row.addStretch()

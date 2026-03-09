@@ -55,7 +55,7 @@ def get_kalibrasyon_service(db):
 
 def get_dokuman_service(db):
     from core.services.dokuman_service import DokumanService
-    return DokumanService(get_registry(db))
+    return DokumanService(db, get_registry(db))
 
 def get_backup_service(db):
     from core.services.backup_service import BackupService

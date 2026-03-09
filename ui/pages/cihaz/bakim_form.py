@@ -262,7 +262,7 @@ class BakimKayitForm(QWidget):
         self._h_splitter.setChildrenCollapsible(False)
         for i in range(2):
             self._h_splitter.handle(i).setEnabled(False)
-        self._h_splitter.setSizes([710, 350])
+        self._h_splitter.setSizes([760, 300])
         lt_layout.addWidget(self._h_splitter)
         self._tabs.addTab(list_tab, "Bakım Listesi")
 
@@ -298,7 +298,7 @@ class BakimKayitForm(QWidget):
     def _make_kpi_card(self, key: str, title: str, default: str, color: str) -> QWidget:
         card = QWidget()
         card.setProperty("bg-role", "panel")
-        card.setStyleSheet("border-radius:6px;margin:0 2px;")
+        card.setStyleSheet("border-radius:6px;padding:0 2px;")
         card.style().unpolish(card)
         card.style().polish(card)
         vl = QVBoxLayout(card)

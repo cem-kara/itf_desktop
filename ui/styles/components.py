@@ -501,7 +501,7 @@ def _build_component_styles(C: Any = None):
         # ── Kaydırma çubuğu ───────────────────────────────────────────
         SCROLLBAR = f"""
             QScrollBar:vertical {{
-                background: transparent; width: 5px; margin: 0;
+                background: transparent; width: 5px; padding: 0;
             }}
             QScrollBar::handle:vertical {{
                 background: {C.BORDER_SECONDARY};
@@ -510,7 +510,7 @@ def _build_component_styles(C: Any = None):
             QScrollBar::handle:vertical:hover {{ background: {C.TEXT_MUTED}; }}
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
             QScrollBar:horizontal {{
-                background: transparent; height: 5px; margin: 0;
+                background: transparent; height: 5px; padding: 0;
             }}
             QScrollBar::handle:horizontal {{
                 background: {C.BORDER_SECONDARY};
@@ -527,7 +527,7 @@ def _build_component_styles(C: Any = None):
                 border: none;
                 border-radius: 1px;
                 height: 3px;
-                margin: 0px; padding: 0px;
+                padding: 0px;
             }}
             QProgressBar::chunk {{
                 background-color: {C.INPUT_BORDER_FOCUS};
@@ -553,7 +553,7 @@ def _build_component_styles(C: Any = None):
             QMenu::separator {{
                 height: 1px;
                 background-color: {C.BORDER_SECONDARY};
-                margin: 4px 0;
+                padding: 4px 0;
             }}
         """
 
@@ -564,14 +564,13 @@ def _build_component_styles(C: Any = None):
                 font-size: 11px;
                 font-weight: 700;
                 background: transparent;
-                letter-spacing: 0.04em;
             }}
         """
 
         LABEL_TITLE = f"""
             QLabel {{
                 color: {C.TEXT_PRIMARY};
-                font-size: 15px;
+                font-size: 13px;
                 font-weight: 700;
                 background: transparent;
             }}
@@ -580,10 +579,9 @@ def _build_component_styles(C: Any = None):
         SECTION_LABEL = f"""
             QLabel {{
                 color: {C.TEXT_PRIMARY};
-                font-size: 13px;
+                font-size: 14px;
                 font-weight: 700;
                 background: transparent;
-                letter-spacing: 0.02em;
             }}
         """
 
@@ -621,7 +619,6 @@ def _build_component_styles(C: Any = None):
                 font-size: 14px;
                 font-weight: 700;
                 background: transparent;
-                letter-spacing: 0.01em;
             }}
         """
 
@@ -631,7 +628,6 @@ def _build_component_styles(C: Any = None):
                 font-size: 11px;
                 font-weight: 700;
                 background: transparent;
-                letter-spacing: 0.04em;
             }}
         """
 
@@ -719,7 +715,6 @@ def _build_component_styles(C: Any = None):
                 padding: 4px 10px;
                 font-size: 11px;
                 font-weight: 700;
-                letter-spacing: 0.04em;
             }}
         """
 
@@ -732,7 +727,6 @@ def _build_component_styles(C: Any = None):
                 padding: 4px 10px;
                 font-size: 11px;
                 font-weight: 700;
-                letter-spacing: 0.04em;
             }}
         """
 
@@ -745,7 +739,6 @@ def _build_component_styles(C: Any = None):
                 padding: 4px 10px;
                 font-size: 11px;
                 font-weight: 700;
-                letter-spacing: 0.04em;
             }}
         """
 

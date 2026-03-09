@@ -3,7 +3,7 @@
 import re
 from typing import Any, cast
 
-from PySide6.QtCore import Qt, QDate, Signal
+from PySide6.QtCore import Qt, QDate, Signal, QThread
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QFrame, QGridLayout, QLineEdit,
@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 
 from core.logger import logger
 from core.di import get_cihaz_service as _get_cihaz_service
+from core.di import get_dokuman_service
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
@@ -42,6 +43,7 @@ class CihazEklePage(QWidget):
         self._teknik_uts_panel = None
         self._belgeler_panel = None
         self._uts_mode = False  # Cihaz kaydedildi, ÜTS bekliyor mu?
+        self._dokuman_uploader = None
 
         self.setStyleSheet(S["page"])
         self._setup_ui()
@@ -245,8 +247,9 @@ class CihazEklePage(QWidget):
 
         tab_belgeler_lay.addWidget(footer3)
         self._tabs.addTab(tab_belgeler, "Belgeler")
-        # NOT: Tab'ı başta disabled yapmıyoruz, bunu kullanıcı tıklayabilsin
-        # Panel içinde cihaz_id check'i yapılacak
+        # Başlangıçta ÜTS ve Belgeler sekmelerini devre dışı bırak — cihaz kaydedilince etkinleşecek
+        self._tabs.setTabEnabled(1, False)
+        self._tabs.setTabEnabled(2, False)
 
         root.addStretch()
 
@@ -418,25 +421,50 @@ class CihazEklePage(QWidget):
             ndk_belge_path = self._get_value("NDKLisansBelgesi")
             if ndk_belge_path:
                 try:
-                    from core.services.dokuman_service import DokumanService
-                    dokuman_svc = DokumanService(self._db)
-                    sonuc = dokuman_svc.upload_and_save(
-                        file_path=ndk_belge_path,
-                        entity_type="cihaz",
-                        entity_id=cihaz_id,
-                        belge_turu="NDK Lisansı",
-                        folder_name="Cihaz_Belgeler",
-                        doc_type="Cihaz_Belge",
-                        custom_name=None
-                    )
-                    if sonuc.get("ok"):
-                        logger.info(f"NDK Lisans Belgesi başarıyla yüklendi: {sonuc.get('belge_adi')}")
-                    else:
-                        logger.warning(f"NDK Lisans Belgesi yüklenemedi: {sonuc.get('error')}")
-                        QMessageBox.warning(self, "Belge Yükleme Hatası", f"NDK Lisans Belgesi yüklenemedi: {sonuc.get('error')}")
+                    # Background uploader thread using DI-provided DokumanService
+                    class _DokumanUploader(QThread):
+                        finished = Signal(dict)
+                        error = Signal(str)
+                        def __init__(self, db, file_path, entity_id):
+                            super().__init__()
+                            self._db = db
+                            self._file = file_path
+                            self._eid = entity_id
+                        def run(self):
+                            try:
+                                svc = get_dokuman_service(self._db)
+                                res = svc.upload_and_save(
+                                    file_path=self._file,
+                                    entity_type="cihaz",
+                                    entity_id=self._eid,
+                                    belge_turu="NDK Lisansı",
+                                    folder_name="Cihaz_Belgeler",
+                                    doc_type="Cihaz_Belge",
+                                    custom_name=None
+                                )
+                                self.finished.emit(res)
+                            except Exception as e:
+                                self.error.emit(str(e))
+
+                    self._dokuman_uploader = _DokumanUploader(self._db, ndk_belge_path, cihaz_id)
+                    def _on_upload_finished(res: dict):
+                        if res.get("ok"):
+                            logger.info(f"NDK Lisans Belgesi yüklendi (async): {res.get('belge_adi')}")
+                        else:
+                            logger.warning(f"NDK Lisans Belgesi yüklenemedi (async): {res.get('error')}")
+                            QMessageBox.warning(self, "Belge Yükleme Hatası", f"NDK Lisans Belgesi yüklenemedi: {res.get('error')}")
+                        self._dokuman_uploader = None
+
+                    def _on_upload_error(msg: str):
+                        logger.error(f"NDK belge async yükleme hatası: {msg}")
+                        QMessageBox.warning(self, "Belge Yükleme Hatası", f"NDK Lisans Belgesi yüklenirken hata oluştu: {msg}")
+                        self._dokuman_uploader = None
+
+                    self._dokuman_uploader.finished.connect(_on_upload_finished)
+                    self._dokuman_uploader.error.connect(_on_upload_error)
+                    self._dokuman_uploader.start()
                 except Exception as ex:
-                    logger.error(f"NDK Lisans Belgesi yükleme hatası: {ex}")
-                    QMessageBox.warning(self, "Belge Yükleme Hatası", f"NDK Lisans Belgesi yüklenirken hata oluştu: {ex}")
+                    logger.error(f"NDK Lisans Belgesi upload thread başlatılamadı: {ex}")
 
             # Cihaz başarıyla kaydedildi - ÜTS paneline cihaz_id ver
             if self._teknik_uts_panel is not None:
@@ -455,6 +483,13 @@ class CihazEklePage(QWidget):
             # ÜTS modunu aktif et (form kapanmasın)
             self._uts_mode = True
             
+            # Sekmeleri etkinleştir: ÜTS ve Belgeler artık erişilebilir
+            try:
+                self._tabs.setTabEnabled(1, True)
+                self._tabs.setTabEnabled(2, True)
+            except Exception:
+                pass
+
             # ÜTS sekmesine geç
             self._tabs.setCurrentIndex(1)
             
@@ -622,6 +657,12 @@ class CihazEklePage(QWidget):
             
             # Mode'u kapat
             self._uts_mode = False
+            # Sekmeleri tekrar devre dışı bırak
+            try:
+                self._tabs.setTabEnabled(1, False)
+                self._tabs.setTabEnabled(2, False)
+            except Exception:
+                pass
             
             logger.info("ÜTS işlemi iptal edildi.")
 

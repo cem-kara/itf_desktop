@@ -162,7 +162,7 @@ class FieldGroup(QWidget):
         lbl = QLabel(title.upper())
         lbl.setStyleSheet(
             f"color:{color};background:transparent;font-size:9px;font-weight:700;"
-            f"letter-spacing:2px;font-family:{DarkTheme.MONOSPACE};"
+            f"font-family:{DarkTheme.MONOSPACE};"
         )
         hh.addWidget(bar)
         hh.addWidget(lbl)
@@ -818,7 +818,7 @@ class RKEMuayenePage(QWidget):
         lt = QLabel(title)
         lt.setStyleSheet(
             f"color:{DarkTheme.TEXT_MUTED};background:transparent;font-family:{DarkTheme.MONOSPACE};"
-            f"font-size:8px;font-weight:700;letter-spacing:2px;"
+            f"font-size:8px;font-weight:700;"
         )
         lv = QLabel(val)
         lv.setStyleSheet(
@@ -873,7 +873,7 @@ class RKEMuayenePage(QWidget):
         hh.setContentsMargins(14, 0, 14, 0)
         t1 = QLabel("MUAYENE FORMU")
         t1.setProperty("color-role", "muted")
-        t1.setStyleSheet("font-family: {}; font-size: 9px; font-weight: 700; letter-spacing: 2px;".format(DarkTheme.MONOSPACE))
+        t1.setStyleSheet("font-family: {}; font-size: 9px; font-weight: 700;".format(DarkTheme.MONOSPACE))
         t1.style().unpolish(t1)
         t1.style().polish(t1)
         hh.addWidget(t1)
@@ -1035,7 +1035,7 @@ class RKEMuayenePage(QWidget):
         self.btn_temizle.setStyleSheet(
             f"QPushButton{{background:transparent;border:1px solid {DarkTheme.BORDER_PRIMARY};"
             f"border-radius:5px;color:{DarkTheme.TEXT_MUTED};font-family:{DarkTheme.MONOSPACE};"
-            f"font-size:10px;letter-spacing:1px;}}"
+            f"font-size:10px;}}"
             f"QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};border-color:{DarkTheme.TEXT_SECONDARY};}}"
         )
         self.btn_temizle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -1046,7 +1046,7 @@ class RKEMuayenePage(QWidget):
         self.btn_kaydet.setStyleSheet(
             f"QPushButton{{background:{DarkTheme.STATUS_SUCCESS};border:none;border-radius:5px;"
             f"color:#051a10;font-family:{DarkTheme.MONOSPACE};font-size:10px;font-weight:800;"
-            f"letter-spacing:1px;}}"
+            f"}}"
         )
         self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color="#051a10", size=14)
@@ -1166,7 +1166,7 @@ class RKEMuayenePage(QWidget):
         lbl = QLabel(text)
         lbl.setStyleSheet(
             f"color:{DarkTheme.TEXT_MUTED};font-family:{DarkTheme.MONOSPACE};"
-            f"font-size:10px;font-weight:500;letter-spacing:0.3px;"
+            f"font-size:10px;font-weight:500;"
         )
         return lbl
 

@@ -71,11 +71,11 @@ QToolTip {{
 }}
 
 /* ── ScrollBar ───────────────────────────────────────────────── */
-QScrollBar:vertical {{
+QScrollBar:vertical {
     background: transparent;
     width: 8px;
-    margin: 4px 2px;
-}}
+    padding: 4px 2px;
+}
 QScrollBar::handle:vertical {{
     background: rgba(15,23,42,0.12);
     border-radius: 4px;
@@ -85,11 +85,11 @@ QScrollBar::handle:vertical:hover  {{ background: rgba(2,132,199,0.35); }}
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
 QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{ background: transparent; }}
 
-QScrollBar:horizontal {{
+QScrollBar:horizontal {
     background: transparent;
     height: 8px;
-    margin: 2px 4px;
-}}
+    padding: 2px 4px;
+}
 QScrollBar::handle:horizontal {{
     background: rgba(15,23,42,0.12);
     border-radius: 4px;
@@ -201,11 +201,11 @@ QMenu::item:selected {{
     background-color: rgba(2,132,199,0.12);
     color: {ACCENT2};
 }}
-QMenu::separator {{
-    background-color: rgba(15,23,42,0.07);
+QMenu::separator {
+    background-color: rgba(0,0,0,0.04);
     height: 1px;
-    margin: 4px 8px;
-}}
+    padding: 4px 8px;
+}
 
 /* ── QStatusBar ──────────────────────────────────────────────── */
 QStatusBar {{

@@ -146,6 +146,7 @@ TABLES = {
             "EntityId",
             "BelgeTuru",
             "Belge",
+            "DokumanId",
             "DocType",
             "DisplayName",
             "LocalPath",
@@ -194,7 +195,7 @@ TABLES = {
         "columns": [                          # ← "colums" → "columns"
             "Planid","Cihazid","BakimPeriyodu","BakimSirasi","PlanlananTarih",
             "Bakim","Durum","BakimTarihi","BakimTipi","YapilanIslemler","Aciklama",
-            "Teknisyen","Rapor"
+            "Teknisyen","Rapor","SozlesmeId"
         ],
         "date_fields": ["PlanlananTarih", "BakimTarihi"],
     },

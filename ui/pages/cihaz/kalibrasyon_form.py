@@ -219,7 +219,7 @@ class KalibrasyonKayitForm(QWidget):
         card = QWidget()
         card.setProperty("bg-role", "panel")
         card.setStyleSheet(
-            "QWidget{{border-radius:6px;margin:0 2px;}}"
+            "QWidget{{border-radius:6px;padding:0 2px;}}"
             "QWidget:hover{{background:{};}}" .format(_C['border'])
         )
         card.style().unpolish(card)

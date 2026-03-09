@@ -30,7 +30,7 @@ class MigrationManager:
     """
 
     # Mevcut Şema versiyonu
-    CURRENT_VERSION = 2
+    CURRENT_VERSION = 3
 
     def __init__(self, db_path):
         self.db_path = db_path
@@ -235,6 +235,28 @@ class MigrationManager:
             """)
             conn.commit()
             logger.info("v2: Dozimetre_Olcum tablosu eklendi")
+        finally:
+            conn.close()
+
+    def _migrate_to_v3(self):
+        """v2 -> v3: Add DokumanId to Dokumanlar and SozlesmeId to Periyodik_Bakim."""
+        conn = self.connect()
+        cur = conn.cursor()
+        try:
+            # Add DokumanId to Dokumanlar if not present
+            cur.execute("PRAGMA table_info(Dokumanlar)")
+            cols = [r[1] for r in cur.fetchall()]
+            if 'DokumanId' not in cols:
+                cur.execute("ALTER TABLE Dokumanlar ADD COLUMN DokumanId TEXT")
+
+            # Add SozlesmeId to Periyodik_Bakim if not present
+            cur.execute("PRAGMA table_info(Periyodik_Bakim)")
+            cols2 = [r[1] for r in cur.fetchall()]
+            if 'SozlesmeId' not in cols2:
+                cur.execute("ALTER TABLE Periyodik_Bakim ADD COLUMN SozlesmeId TEXT")
+
+            conn.commit()
+            logger.info("v3: DokumanId ve SozlesmeId sütunları eklendi")
         finally:
             conn.close()
 
@@ -467,6 +489,7 @@ class MigrationManager:
             EntityId            TEXT NOT NULL,
             BelgeTuru           TEXT NOT NULL,
             Belge               TEXT NOT NULL,
+            DokumanId           TEXT,
             DocType             TEXT,
             DisplayName         TEXT,
             LocalPath           TEXT,
@@ -537,6 +560,7 @@ class MigrationManager:
             Aciklama            TEXT,
             Teknisyen           TEXT,
             Rapor               TEXT,
+            SozlesmeId          TEXT,
 
             sync_status         TEXT DEFAULT 'clean',
             updated_at          TEXT

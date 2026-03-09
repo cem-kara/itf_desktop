@@ -248,7 +248,7 @@ class ArizaKayitForm(QWidget):
         card = QWidget()
         card.setStyleSheet(
             f"QWidget{{background:{getattr(DarkTheme,'PANEL','#191d26')};"
-            f"border-radius:6px; margin:0 2px;}}"
+            f"border-radius:6px; padding:0 2px;}}"
             f"QWidget:hover{{background:{getattr(DarkTheme,'BORDER','#242938')};}} "
         )
         vl = QVBoxLayout(card)
@@ -787,7 +787,7 @@ class ArizaKayitForm(QWidget):
         self._active_form = form
         self._form_layout.insertWidget(0, form)
         self._form_panel.setVisible(True)
-        self._h_splitter.setSizes([470, 360, 350])
+        self._h_splitter.setSizes([500, 350, 300])
 
     def _open_islem_form(self):
         """Seçili arıza için İşlem Giriş formunu açar."""

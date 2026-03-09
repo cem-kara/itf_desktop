@@ -30,6 +30,7 @@ Drive klasör yapısı (otomatik oluşturulur):
 """
 
 import os
+import uuid
 from datetime import datetime
 from typing import Optional, List, Dict
 
@@ -51,6 +52,12 @@ class DokumanService:
     """
 
     def __init__(self, db, registry: Optional[RepositoryRegistry] = None):
+        # Allow callers to accidentally pass a RepositoryRegistry as first arg.
+        # Normalize: ensure self._db is SQLiteManager-like and self._registry is RepositoryRegistry.
+        if isinstance(db, RepositoryRegistry):
+            registry = db
+            db = getattr(registry, 'db', db)
+
         self._db = db
         self._registry = registry or RepositoryRegistry(db)
         # Drive klasör ID'leri process boyunca cache'lenir
@@ -131,9 +138,11 @@ class DokumanService:
             "local_path": upload.get("local_path", ""),
         })
 
-        # 3 — Dokumanlar tablosuna kaydet
+        # 3 — Dokumanlar tablosuna kaydet (DokumanId atama)
         try:
+            dokuman_id = str(uuid.uuid4())
             self._registry.get("Dokumanlar").insert({
+                "DokumanId": dokuman_id,
                 "EntityType":       entity_type,
                 "EntityId":         str(entity_id),
                 "BelgeTuru":        belge_turu,
@@ -147,6 +156,8 @@ class DokumanService:
                 "IliskiliBelgeID":  iliskili_id,
                 "IliskiliBelgeTipi": iliskili_tip,
             })
+            # expose DokumanId to caller
+            result["dokuman_id"] = dokuman_id
             result["ok"] = True
             logger.info(
                 f"DokumanService: kayıt oluşturuldu "
@@ -158,10 +169,16 @@ class DokumanService:
 
         return result
 
-    def get_belgeler(self, entity_type: str, entity_id: str) -> List[dict]:
-        """Entity'e ait tüm belgeleri döner."""
+    def get_belgeler(self, entity_type: str, entity_id: Optional[str] = None) -> List[dict]:
+        """Entity'e ait tüm belgeleri döner.
+
+        If `entity_id` is None, returns all documents matching `EntityType`.
+        """
         try:
-            return self._registry.get("Dokumanlar").get_where({
+            repo = self._registry.get("Dokumanlar")
+            if not entity_id or str(entity_id).lower() == "all":
+                return repo.get_where({"EntityType": entity_type})
+            return repo.get_where({
                 "EntityType": entity_type,
                 "EntityId":   str(entity_id),
             })

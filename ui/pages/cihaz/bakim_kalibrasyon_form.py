@@ -199,7 +199,7 @@ class _BaseListDetailForm(QWidget):
     def _make_kpi_card(self, key, title, default, color) -> QWidget:
         card = QWidget()
         card.setStyleSheet(
-            f"QWidget{{background:{_C['panel']};border-radius:6px;margin:0 2px;}}"
+            f"QWidget{{background:{_C['panel']};border-radius:6px;padding:0 2px;}}"
             f"QWidget:hover{{background:{_C['border']};}}"
         )
         vl = QVBoxLayout(card)
