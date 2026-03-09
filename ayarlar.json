@@ -59,6 +59,11 @@
         "baslik": "Admin Panel",
         "implemented": true,
         "note": "Kullanıcı ve rol yönetimi"
+      },
+      {
+        "baslik": "Doküman Yönetimi",
+        "implemented": true,
+        "note": "Doküman yönetimi"
       }
     ],
     "AYARLAR": [

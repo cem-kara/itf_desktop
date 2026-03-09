@@ -32,7 +32,7 @@ C = DarkTheme
 # Sekme tanımları
 TABS = [
     ("GENEL",        "Genel Bakış"),
-    ("TEKNIK",       "Teknik Bilgiler"),
+    ("ÜTS BİLGİLERİ", "ÜTS Bilgileri"),
     ("BELGELER",     "Belgeler"),
     ("ARIZA",        "Arıza Kayıtları"),
     ("BAKIM",        "Bakım İşlemleri"),
@@ -48,6 +48,7 @@ class CihazMerkezPage(QWidget):
         self.db              = db
         self.cihaz_id        = str(cihaz_id)
         self.sabitler_cache  = sabitler_cache
+        self._cihaz_svc      = None
         self.cihaz_data      = {}
         self._modules        = {}       # code → widget (lazy cache)
         self._nav_btns       = {}       # code → QPushButton
@@ -188,15 +189,16 @@ class CihazMerkezPage(QWidget):
 
     def _load_data(self):
         try:
-            svc = _get_cihaz_service(self.db)
+            svc = self._cihaz_svc or _get_cihaz_service(self.db)
+            self._cihaz_svc = svc
             # Cihaz verisini çek
-            cihazlar = [svc.get_cihaz(self.cihaz_id)] if svc.get_cihaz(self.cihaz_id) else []
-            if not cihazlar:
+            cihaz = svc.get_cihaz(self.cihaz_id)
+            if not cihaz:
                 QMessageBox.warning(self, "Hata", f"Cihaz bulunamadı: {self.cihaz_id}")
                 self.kapat_istegi.emit()
                 return
-            
-            self.cihaz_data = cihazlar[0]
+
+            self.cihaz_data = cihaz
             
             # Header bilgileri
             data = cast(dict, self.cihaz_data) or {}
@@ -291,7 +293,7 @@ class CihazMerkezPage(QWidget):
                 from ui.pages.cihaz.components.cihaz_overview_panel import CihazOverviewPanel
                 w = CihazOverviewPanel(self.cihaz_data, self.db, sabitler_cache=self.sabitler_cache)
                 w.saved.connect(self._load_data)  # Kayıt sonrası veriyi yenile
-            elif code == "TEKNIK":
+            elif code == "ÜTS BİLGİLERİ":
                 # Teknik bilgiler paneli
                 from ui.pages.cihaz.components.cihaz_teknik_panel import CihazTeknikPanel
                 w = CihazTeknikPanel(self.cihaz_id, self.db)
@@ -344,14 +346,22 @@ class CihazMerkezPage(QWidget):
         # Threading ile async işem çalıştır
         def run_search():
             try:
-                # uts_parser verisiyle asyncio.run() çalıştır
-                data = asyncio.run(scrape_uts(urun_no.strip()))
-                
+                # Yeni event loop oluşturarak async fonksiyonu çalıştır
+                loop = asyncio.new_event_loop()
+                try:
+                    asyncio.set_event_loop(loop)
+                    data = loop.run_until_complete(scrape_uts(urun_no.strip()))
+                finally:
+                    try:
+                        loop.close()
+                    except Exception:
+                        pass
+
                 if data and isinstance(data, dict):
                     panel.search_complete.emit(data, True, f"Ürün yüklendi: {urun_no}")
                 else:
                     panel.search_complete.emit({}, False, f"Ürün bulunamadı: {urun_no}")
-                        
+
             except Exception as e:
                 logger.error(f"ÜTS sorgu hatası: {e}")
                 panel.search_complete.emit({}, False, f"ÜTS sorgulama başarısız:\n{str(e)[:200]}")

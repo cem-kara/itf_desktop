@@ -319,6 +319,12 @@ class MainWindow(QMainWindow):
             page.btn_kapat.clicked.connect(lambda: self._close_page("Admin Panel"))
             return page
 
+        if baslik == "Doküman Yönetimi":
+            from ui.pages.dokuman.dokuman_listesi import DokumanListesiPage
+            page = DokumanListesiPage(db=self._db)
+            #{page.btn_kapat.clicked.connect(lambda: self._close_page("Doküman Yönetimi"))
+            return page
+        
         if baslik == "Ayarlar":
             from ui.admin.settings_page import SettingsPage
             page = SettingsPage(db=self._db)

@@ -321,7 +321,9 @@ class BaseDokumanPanel(QWidget):
             except Exception:
                 tarih_str = tarih[:16] if len(tarih) > 16 else tarih or "-"
 
-            item_dosya = QTableWidgetItem(doc.get("DisplayName") or doc.get("Belge", ""))
+            # Dosya adı sütununda önce DB'deki 'Belge' (dosya adı) gösterilsin;
+            # eğer yoksa 'DisplayName' fallback olarak kullanılır.
+            item_dosya = QTableWidgetItem(doc.get("Belge") or doc.get("DisplayName", ""))
             item_dosya.setToolTip("Çift tıklayarak dosyayı aç")
             item_dosya.setForeground(QColor(_ACCENT))
 
@@ -361,11 +363,11 @@ class BaseDokumanPanel(QWidget):
         # ⚠️ DB'de entity gerçekten var mı kontrol et
         try:
             from core.di import get_registry; registry = get_registry(self._db)
-            # entity_type'a göre tablo adını belirle
+            # entity_type'a göre tablo adını belirle (TABLES anahtarlarıyla uyumlu olmalı)
             table_name_map = {
                 "personel": "Personel",
-                "cihaz": "Cihaz",
-                "rke": "RKE",
+                "cihaz": "Cihazlar",
+                "rke": "RKE_List",
             }
             table_name = table_name_map.get(self._entity_type)
             if table_name:
