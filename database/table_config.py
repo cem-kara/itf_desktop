@@ -71,68 +71,6 @@ TABLES = {
         ],
     },
 
-    "Cihaz_Teknik": {
-        "pk": "Cihazid",
-        "sync": False,  # Local-only table (Google Sheets'e eklenmedi)
-        "columns": [
-            "Cihazid",
-            "BirincilUrunNumarasi",
-            "MarkaAdi",
-            "EtiketAdi",
-            "UrunTanimi",
-            "VersiyonModel",
-            "KatalogNo",
-            "TemelUdiDi",
-            "Aciklama",
-            "KurumUnvan",
-            "KurumGorunenAd",
-            "KurumNo",
-            "KurumTelefon",
-            "KurumEposta",
-            "Durum",
-            "UtsBaslangicTarihi",
-            "KontroleGonderildigiTarih",
-            "CihazKayitTipi",
-            "UrunTipi",
-            "Sinif",
-            "IthalImalBilgisi",
-            "GmdnTerimKod",
-            "GmdnTerimTurkceAd",
-            "GmdnTerimTurkceAciklama",
-            "KalibrasyonaTabiMi",
-            "KalibrasyonPeriyodu",
-            "BakimaTabiMi",
-            "BakimPeriyodu",
-            "IyonizeRadyasyonIcerir",
-            "SinirliKullanimSayisiVar",
-            "SinirliKullanimSayisi",
-            "TekHastayaKullanilabilir",
-            "MrgUyumlu",
-            "SutEslesmesiSet",
-            "BaskaImalatciyaUrettirildiMi",
-            "MenseiUlkeSet",
-            "IthalEdilenUlkeSet"
-        ],
-        "date_fields": [
-            "UtsBaslangicTarihi",
-            "KontroleGonderildigiTarih",
-        ],
-    },
-
-    "Cihaz_Belgeler": {
-        "pk": ["Cihazid", "BelgeTuru", "Belge"],
-        "sync": False,  # Local-only table (Google Sheets'e eklenmedi)
-        "columns": [
-            "Cihazid",              # Cihaz ID
-            "BelgeTuru",            # Belge türü (Teknik, Arıza, Bakım, Kalibrasyon, vb)
-            "Belge",                # Dosya adı
-            "BelgeAciklama",        # Açıklama
-            "YuklenmeTarihi",       # Upload tarihi
-            "IliskiliBelgeID",      # Foreign Key (Arizaid, Planid, Kalid, vb)
-            "IliskiliBelgeTipi",    # "Ariza" / "Bakim" / "Kalibrasyon" / NULL
-        ],
-        "date_fields": ["YuklenmeTarihi"],
-    },
 
     "Dokumanlar": {
         "pk": ["EntityType", "EntityId", "BelgeTuru", "Belge"],
@@ -159,17 +97,6 @@ TABLES = {
         "date_fields": ["YuklenmeTarihi"],
     },
 
-    "Cihaz_Teknik_Belge": {
-        "pk": ["Cihazid", "BelgeTuru", "Belge"],
-        "sync": False,  # Local-only table (Google Sheets'e eklenmedi)
-        "columns": [
-            "Cihazid",
-            "BelgeTuru",
-            "Belge",
-            "BelgeAciklama",
-        ],
-        "date_fields": [],
-    },
 
     "Cihaz_Ariza": {
         "pk": "Arizaid",

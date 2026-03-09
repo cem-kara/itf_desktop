@@ -30,7 +30,7 @@ class MigrationManager:
     """
 
     # Mevcut Şema versiyonu
-    CURRENT_VERSION = 3
+    CURRENT_VERSION = 1
 
     def __init__(self, db_path):
         self.db_path = db_path
@@ -202,64 +202,6 @@ class MigrationManager:
         finally:
             conn.close()
 
-    def _migrate_to_v2(self):
-        """v1 -> v2: Add Dozimetre_Olcum table."""
-        conn = self.connect()
-        cur = conn.cursor()
-        try:
-            cur.execute("""
-            CREATE TABLE IF NOT EXISTS Dozimetre_Olcum (
-                KayitNo            TEXT PRIMARY KEY,
-                SiraNo             INTEGER,
-                RaporNo            TEXT,
-                Periyot            INTEGER,
-                PeriyotAdi         TEXT,
-                Yil                INTEGER,
-                DozimetriTipi      TEXT,
-                AdSoyad            TEXT,
-                TCKimlikNo         TEXT,
-                CalistiBirim       TEXT,
-                PersonelID         TEXT,
-                DozimetreNo        TEXT,
-                VucutBolgesi       TEXT,
-                Hp10               REAL,
-                Hp007              REAL,
-                DozSiniri_Hp10     REAL,
-                DozSiniri_Hp007    REAL,
-                Durum              TEXT,
-                OlusturmaTarihi    TEXT DEFAULT (date('now')),
-
-                sync_status        TEXT DEFAULT 'clean',
-                updated_at         TEXT
-            )
-            """)
-            conn.commit()
-            logger.info("v2: Dozimetre_Olcum tablosu eklendi")
-        finally:
-            conn.close()
-
-    def _migrate_to_v3(self):
-        """v2 -> v3: Add DokumanId to Dokumanlar and SozlesmeId to Periyodik_Bakim."""
-        conn = self.connect()
-        cur = conn.cursor()
-        try:
-            # Add DokumanId to Dokumanlar if not present
-            cur.execute("PRAGMA table_info(Dokumanlar)")
-            cols = [r[1] for r in cur.fetchall()]
-            if 'DokumanId' not in cols:
-                cur.execute("ALTER TABLE Dokumanlar ADD COLUMN DokumanId TEXT")
-
-            # Add SozlesmeId to Periyodik_Bakim if not present
-            cur.execute("PRAGMA table_info(Periyodik_Bakim)")
-            cols2 = [r[1] for r in cur.fetchall()]
-            if 'SozlesmeId' not in cols2:
-                cur.execute("ALTER TABLE Periyodik_Bakim ADD COLUMN SozlesmeId TEXT")
-
-            conn.commit()
-            logger.info("v3: DokumanId ve SozlesmeId sütunları eklendi")
-        finally:
-            conn.close()
-
     # ================================================
     # TABLO OLUŞTURMA (İLK KURULUM / RESET)
     # ================================================
@@ -402,87 +344,9 @@ class MigrationManager:
         )
         """)
 
-        # == CIHAZ TEKNIK ======================================================
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Cihaz_Teknik (
-            Cihazid                         TEXT PRIMARY KEY,
-            BirincilUrunNumarasi            TEXT,
-            MarkaAdi                        TEXT,
-            EtiketAdi                       TEXT,
-            UrunTanimi                      TEXT,
-            VersiyonModel                   TEXT,
-            KatalogNo                       TEXT,
-            TemelUdiDi                      TEXT,
-            Aciklama                        TEXT,
-            KurumUnvan                      TEXT,
-            KurumGorunenAd                  TEXT,
-            KurumNo                         TEXT,
-            KurumTelefon                    TEXT,
-            KurumEposta                     TEXT,
-            Durum                           TEXT,
-            UtsBaslangicTarihi              TEXT,
-            KontroleGonderildigiTarih       TEXT,
-            CihazKayitTipi                  TEXT,
-            UrunTipi                        TEXT,
-            Sinif                           TEXT,
-            IthalImalBilgisi                TEXT,
-            GmdnTerimKod                    TEXT,
-            GmdnTerimTurkceAd               TEXT,
-            GmdnTerimTurkceAciklama         TEXT,
-            KalibrasyonaTabiMi              TEXT,
-            KalibrasyonPeriyodu             TEXT,
-            BakimaTabiMi                    TEXT,
-            BakimPeriyodu                   TEXT,
-            IyonizeRadyasyonIcerir          TEXT,
-            SinirliKullanimSayisiVar        TEXT,
-            SinirliKullanimSayisi           TEXT,
-            TekHastayaKullanilabilir        TEXT,
-            MrgUyumlu                       TEXT,
-            SutEslesmesiSet                 TEXT,
-            BaskaImalatciyaUrettirildiMi    TEXT,
-            MenseiUlkeSet                   TEXT,
-            IthalEdilenUlkeSet              TEXT,
+        # == CIHAZ TEKNIK, CIHAZ TEKNIK BELGE, CIHAZ BELGELER tabloları kaldırıldı ==
 
-            sync_status                     TEXT DEFAULT 'clean',
-            updated_at                      TEXT
-        )
-        """)
-
-        # == CIHAZ TEKNIK BELGE ================================================
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Cihaz_Teknik_Belge (
-            Cihazid         TEXT NOT NULL,
-            BelgeTuru       TEXT NOT NULL,
-            Belge           TEXT NOT NULL,
-            BelgeAciklama   TEXT,
-            YuklenmeTarihi  TEXT,
-
-            sync_status     TEXT DEFAULT 'clean',
-            updated_at      TEXT,
-
-            PRIMARY KEY (Cihazid, BelgeTuru, Belge)
-        )
-        """)
-
-        # == CIHAZ BELGELER (Merkezi Belgeler) =================================
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Cihaz_Belgeler (
-            Cihazid             TEXT NOT NULL,
-            BelgeTuru           TEXT NOT NULL,
-            Belge               TEXT NOT NULL,
-            BelgeAciklama       TEXT,
-            YuklenmeTarihi      TEXT,
-            IliskiliBelgeID     TEXT,
-            IliskiliBelgeTipi   TEXT,
-
-            sync_status         TEXT DEFAULT 'clean',
-            updated_at          TEXT,
-
-            PRIMARY KEY (Cihazid, BelgeTuru, Belge)
-        )
-        """)
-
-        # == ORTAK DOKÃœMANLAR (Tüm modüller) ==================================
+        # == ORTAK DOKÜMANLAR (Tüm modüller) ==================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Dokumanlar (
             EntityType          TEXT NOT NULL,
@@ -589,7 +453,7 @@ class MigrationManager:
         # == SABITLER ==========================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Sabitler (
-            Rowid       TEXT PRIMARY KEY,
+            Rowid       INTEGER PRIMARY KEY,
             Kod         TEXT,
             MenuEleman  TEXT,
             Aciklama    TEXT,
@@ -929,13 +793,44 @@ class MigrationManager:
             ("71", "Birim", "Poliklinik", "POL"),
             ("72", "Birim", "Radyoloji USG", "USG"),
             ("73", "Birim", "Yoğun Bakım Ünitesi", "YBÜ"),
-            ("74", "Cihaz_Belge_Tur", "NDK Lisansı", "Cihazın NDK (Uygunluk Beyanı) Lisansı"),
-            ("75", "Cihaz_Belge_Tur", "RKS Belgesi", "Cihazın RKS (Radyasyon Koruma) Belgesi"),
-            ("76", "Cihaz_Belge_Tur", "Sorumlu Diploması", "Sorumlu kişinin diploması"),
-            ("77", "Cihaz_Belge_Tur", "Kullanım Klavuzu", "Cihaz kullanım kılavuzu"),
-            ("78", "Cihaz_Belge_Tur", "Cihaz Sertifikası", "Cihaz sertifikası/belgelendirmesi"),
+            ("74", "Cihaz_Belge_Tur", "NDK Lisansı",        "Cihazın NDK (Uygunluk Beyanı) Lisansı"),
+            ("75", "Cihaz_Belge_Tur", "RKS Belgesi",         "Cihazın RKS (Radyasyon Koruma) Belgesi"),
+            ("76", "Cihaz_Belge_Tur", "Sorumlu Diploması",   "Sorumlu kişinin diploması"),
+            ("77", "Cihaz_Belge_Tur", "Kullanım Kılavuzu",   "Cihaz kullanım kılavuzu"),
+            ("78", "Cihaz_Belge_Tur", "Cihaz Sertifikası",   "Cihaz sertifikası/belgelendirmesi"),
             ("79", "Cihaz_Belge_Tur", "Teknik Veri Sayfası", "Cihazın teknik özellikleri"),
-            ("80", "Cihaz_Belge_Tur", "Garantı Belgesi", "Cihaz garanti belgesi"),
+            ("80", "Cihaz_Belge_Tur", "Garanti Belgesi",     "Cihaz garanti belgesi"),
+            ("80a","Cihaz_Belge_Tur", "Diğer",               "Diğer cihaz belgeleri"),
+
+            # ── Personel Belge Türleri ─────────────────────────────────────────
+            ("200", "Personel_Belge_Tur", "Diploma",                  "Personel diploması"),
+            ("201", "Personel_Belge_Tur", "Sertifika",                "Personel sertifikası"),
+            ("202", "Personel_Belge_Tur", "Periyodik Muayene Raporu", "Periyodik sağlık muayene raporu"),
+            ("203", "Personel_Belge_Tur", "Hastalık Raporu",          "Personel hastalık/istirahat raporu"),
+            ("204", "Personel_Belge_Tur", "Dozimetre Sonuçları",      "Kişisel dozimetre ölçüm sonuç belgesi"),
+            ("205", "Personel_Belge_Tur", "Diğer",                    "Diğer personel belgeleri"),
+
+            # ── RKE Belge Türleri ──────────────────────────────────────────────
+            ("300", "RKE_Belge_Tur", "Muayene Raporu",          "RKE periyodik muayene raporu"),
+            ("301", "RKE_Belge_Tur", "Kalibrasyon Sertifikası", "RKE kalibrasyon sertifikası"),
+            ("302", "RKE_Belge_Tur", "Teknik Doküman",          "RKE teknik belgesi"),
+            ("303", "RKE_Belge_Tur", "Diğer",                   "Diğer RKE belgeleri"),
+
+            # ── Satın Alma Belge Türleri ───────────────────────────────────────
+            ("400", "Satin_Alma_Belge_Tur", "Teklif",    "Tedarikçi teklif belgesi"),
+            ("401", "Satin_Alma_Belge_Tur", "Sözleşme",  "Satın alma sözleşmesi"),
+            ("402", "Satin_Alma_Belge_Tur", "Fatura",    "Satın alma faturası"),
+            ("403", "Satin_Alma_Belge_Tur", "İrsaliye",  "Mal teslim irsaliyesi"),
+            ("404", "Satin_Alma_Belge_Tur", "Şartname",  "Teknik şartname belgesi"),
+            ("405", "Satin_Alma_Belge_Tur", "Diğer",     "Diğer satın alma belgeleri"),
+
+            # ── Kurumsal Belge Türleri ─────────────────────────────────────────
+            ("500", "Kurumsal_Belge_Tur", "Yönetmelik",           "Kurum yönetmeliği"),
+            ("501", "Kurumsal_Belge_Tur", "Prosedür",             "İş prosedürü/talimatı"),
+            ("502", "Kurumsal_Belge_Tur", "Sözleşme",             "Kurumsal sözleşme"),
+            ("503", "Kurumsal_Belge_Tur", "Akreditasyon Belgesi", "Akreditasyon/yetki belgesi"),
+            ("504", "Kurumsal_Belge_Tur", "Yazışma",              "Resmi yazışma/dilekçe"),
+            ("505", "Kurumsal_Belge_Tur", "Diğer",                "Diğer kurumsal belgeler"),
             ("81", "Cihaz_Tipi", "Görüntüleme (Diğer)", "GOR"),
             ("82", "Cihaz_Tipi", "Görüntüleme (Radyasyon Kaynaklı)", "XRY"),
             ("83", "Cihaz_Tipi", "Medikal Cihazlar", "MED"),
@@ -997,30 +892,36 @@ class MigrationManager:
             ("157", "RKE_Teknik", "Sabitleyici bantlar ve/veya tokalar deforme", ""),
             ("158", "RKE_Teknik", "Skopi altında kırık tespit edildi", ""),
             ("159", "RKE_Teknik", "Tüm testler normal ekipman kullanıma uygun", ""),
-            ("160", "Sistem_DriveID", "Ariza_Raporlari", ""),
-            ("161", "Sistem_DriveID", "Cihaz_Kunye", ""),
-            ("162", "Sistem_DriveID", "Cihaz_Resim", ""),
-            ("163", "Sistem_DriveID", "Kalibrasyon_Raporlari", ""),
-            ("164", "Sistem_DriveID", "Cihaz_Lisanslar", ""),
-            ("165", "Sistem_DriveID", "Personel_Diploma", ""),
-            ("166", "Sistem_DriveID", "Personel_Dosya", ""),
-            ("167", "Sistem_DriveID", "Personel_Resim", ""),
-            ("168", "Sistem_DriveID", "RKE_Raporlari", ""),
-            ("169", "Sistem_DriveID", "Eski_Personel_Dosyalari", ""),
-            ("170", "Sistem_DriveID", "RKE_Muayene", ""),
-            ("171", "Sistem_DriveID", "Saglik_Raporlari", ""),
+            ("160", "Sistem_DriveID", "Ariza_Raporlari",         ""),
+            ("161", "Sistem_DriveID", "Cihaz_Kunye",              ""),
+            ("162", "Sistem_DriveID", "Cihaz_Resim",              ""),
+            ("163", "Sistem_DriveID", "Kalibrasyon_Raporlari",    ""),
+            ("164", "Sistem_DriveID", "Cihaz_Lisanslar",          ""),
+            ("165", "Sistem_DriveID", "Personel_Diploma",         ""),
+            ("166", "Sistem_DriveID", "Personel_Dosya",           ""),
+            ("167", "Sistem_DriveID", "Personel_Resim",           ""),
+            ("168", "Sistem_DriveID", "RKE_Raporlari",            ""),
+            ("169", "Sistem_DriveID", "Eski_Personel_Dosyalari",  ""),
+            ("170", "Sistem_DriveID", "RKE_Muayene",              ""),
+            ("171", "Sistem_DriveID", "Saglik_Raporlari",         ""),
+            ("172", "Sistem_DriveID", "Cihaz_Belgeler",           ""),
+            ("173", "Sistem_DriveID", "Personel_Belge",           ""),
+            ("174", "Sistem_DriveID", "RKE_Rapor",                ""),
+            ("175", "Sistem_DriveID", "Sozlesme",                 ""),
+            ("176", "Sistem_DriveID", "Satin_Alma_Belge",         ""),
+            ("177", "Sistem_DriveID", "Kurumsal_Belge",           ""),
         ]
         
         added_count = 0
-        for rowid, kod, menu_eleman, aciklama in sistem_sabitler:
+        for _, kod, menu_eleman, aciklama in sistem_sabitler:
             cur.execute(
                 "SELECT COUNT(*) FROM Sabitler WHERE Kod = ? AND MenuEleman = ?",
                 (kod, menu_eleman)
             )
             if cur.fetchone()[0] == 0:
                 cur.execute(
-                    "INSERT INTO Sabitler (Rowid, Kod, MenuEleman, Aciklama) VALUES (?, ?, ?, ?)",
-                    (rowid, kod, menu_eleman, aciklama)
+                    "INSERT INTO Sabitler (Kod, MenuEleman, Aciklama) VALUES (?, ?, ?)",
+                    (kod, menu_eleman, aciklama)
                 )
                 added_count += 1
         
