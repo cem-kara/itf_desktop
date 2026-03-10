@@ -272,16 +272,7 @@ class YilSonuDevirPage(QWidget):
         self.btn_baslat = QPushButton("DEVİR İŞLEMİNİ BAŞLAT")
         self.btn_baslat.setFixedHeight(50)
         self.btn_baslat.setEnabled(False)
-        self.btn_baslat.setStyleSheet("""
-            QPushButton {{
-                background-color: {};
-                color: {};
-                font-weight: bold;
-                font-size: 14px;
-                border: 1px solid {};
-                border-radius: 6px;
-            }}
-        """.format(C.BG_TERTIARY, C.TEXT_DISABLED, C.INPUT_BORDER))
+        self.btn_baslat.setProperty("style-role", "action")
         self.btn_baslat.clicked.connect(self._islemi_baslat)
         layout.addWidget(self.btn_baslat)
 
@@ -289,31 +280,10 @@ class YilSonuDevirPage(QWidget):
         """Onay checkbox değiştiğinde buton durumunu ayarla"""
         if self.chk_onay.isChecked():
             self.btn_baslat.setEnabled(True)
-            self.btn_baslat.setStyleSheet("""
-                QPushButton {{
-                    background-color: {};
-                    color: {};
-                    font-weight: bold;
-                    font-size: 14px;
-                    border: none;
-                    border-radius: 6px;
-                }}
-                QPushButton:hover {{
-                    background-color: {};
-                }}
-            """.format(C.STATUS_ERROR, C.TEXT_PRIMARY, C.BTN_DANGER_HOVER))
+            self.btn_baslat.setProperty("style-role", "success-filled")
         else:
             self.btn_baslat.setEnabled(False)
-            self.btn_baslat.setStyleSheet("""
-                QPushButton {{
-                    background-color: {};
-                    color: {};
-                    font-weight: bold;
-                    font-size: 14px;
-                    border: 1px solid {};
-                    border-radius: 6px;
-                }}
-            """.format(C.BG_TERTIARY, C.TEXT_DISABLED, C.INPUT_BORDER))
+            self.btn_baslat.setProperty("style-role", "warning")
 
     def _islemi_baslat(self):
         """Devir işlemini başlat"""

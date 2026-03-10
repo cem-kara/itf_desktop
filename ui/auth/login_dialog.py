@@ -89,11 +89,7 @@ class LoginDialog(QDialog):
         self._button_login = QPushButton("GİRİŞ")
         self._button_login.setFixedHeight(50)
         self._button_login.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._button_login.setStyleSheet(
-            "QPushButton { background-color: #0078d4; color: white; font-weight: bold; "
-            "border-radius: 5px; font-size: 15px; } "
-            "QPushButton:hover { background-color: #106ebe; }"
-        )
+        self._button_login.setProperty("style-role", "action")
         self._button_login.clicked.connect(self._on_accept)
         card_layout.addWidget(self._button_login)
 

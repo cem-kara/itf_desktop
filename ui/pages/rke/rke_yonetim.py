@@ -505,10 +505,7 @@ class RKEYonetimPenceresi(QWidget):
 
         btn_yenile = QPushButton("")
         btn_yenile.setFixedSize(28,28)
-        btn_yenile.setStyleSheet(
-            f"QPushButton{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;"
-            f"color:{DarkTheme.TEXT_SECONDARY};}}QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};}}"
-        )
+        btn_yenile.setProperty("style-role", "refresh")
         btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(btn_yenile, "refresh", color=IconColors.MUTED, size=14)
         btn_yenile.clicked.connect(self.load_data)
@@ -594,20 +591,9 @@ class RKEYonetimPenceresi(QWidget):
         b = QPushButton(text); b.setFixedHeight(34)
         b.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         if style == "primary":
-            b.setStyleSheet(
-                f"QPushButton{{background:{DarkTheme.STATUS_SUCCESS};border:none;border-radius:5px;"
-                f"color:#051a10;font-family:{DarkTheme.MONOSPACE};font-size:10px;font-weight:800;"
-                f"}}"
-                f"QPushButton:hover{{background:#38e0a0;}}"
-                f"QPushButton:disabled{{background:{DarkTheme.BORDER_PRIMARY};color:{DarkTheme.TEXT_MUTED};}}"
-            )
+            b.setProperty("style-role", "success-filled")
         else:
-            b.setStyleSheet(
-                f"QPushButton{{background:transparent;border:1px solid {DarkTheme.BORDER_PRIMARY};"
-                f"border-radius:5px;color:{DarkTheme.TEXT_MUTED};font-family:{DarkTheme.MONOSPACE};"
-                f"font-size:10px;}}"
-                f"QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};border-color:{DarkTheme.TEXT_SECONDARY};}}"
-            )
+            b.setProperty("style-role", "secondary")
         return b
 
     def _add_row(self, grid, row, label, key, ro=False):
@@ -759,10 +745,7 @@ class RKEYonetimPenceresi(QWidget):
 
         # Durum ve KontrolTarihi artık label, setEnabled gereksiz
         self.btn_kaydet.setText("↑  GÜNCELLE")
-        self.btn_kaydet.setStyleSheet(
-            f"QPushButton{{background:{DarkTheme.STATUS_WARNING};border:none;border-radius:5px;"
-            f"color:#1a0f00;font-family:{DarkTheme.MONOSPACE};font-size:10px;font-weight:800;}}"
-        )
+        self.btn_kaydet.setProperty("style-role", "warning")
         self._lbl_mode.setText("DÜZENLEME")
         self.gecmisi_yukle(row.get("EkipmanNo",""))
 
@@ -826,10 +809,7 @@ class RKEYonetimPenceresi(QWidget):
         # Durum ve KontrolTarihi artık label, setEnabled gereksiz
         self._gecmis_model.set_rows([])
         self.btn_kaydet.setText("✓  KAYDET")
-        self.btn_kaydet.setStyleSheet(
-            f"QPushButton{{background:{DarkTheme.STATUS_SUCCESS};border:none;border-radius:5px;"
-            f"color:#051a10;font-family:{DarkTheme.MONOSPACE};font-size:10px;font-weight:800;}}"
-        )
+        self.btn_kaydet.setProperty("style-role", "success-filled")
         self._lbl_mode.setText("YENİ KAYIT")
 
     def kaydet(self):

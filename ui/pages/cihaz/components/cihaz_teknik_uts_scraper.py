@@ -252,7 +252,7 @@ class CihazTeknikUtsScraper(QWidget):
         self._inp.setStyleSheet(_INP_CSS)
         self._inp.returnPressed.connect(self._start)
         row.addWidget(self._inp, stretch=1)
-        btn = QPushButton("Sorgula"); btn.setStyleSheet(_BTN_P)
+        btn = QPushButton("Sorgula"); btn.setProperty("style-role", "action")
         btn.setCursor(Qt.CursorShape.PointingHandCursor); btn.clicked.connect(self._start)
         row.addWidget(btn); vb.addLayout(row)
 
@@ -263,20 +263,20 @@ class CihazTeknikUtsScraper(QWidget):
         h = QHBoxLayout(bar); h.setContentsMargins(0,0,0,0); h.setSpacing(10)
 
         self._btn_debug = QPushButton("Ham JSON")
-        self._btn_debug.setStyleSheet(_BTN_S)
+        self._btn_debug.setProperty("style-role", "secondary")
         self._btn_debug.setCursor(Qt.CursorShape.PointingHandCursor)
         self._btn_debug.setVisible(False)
         self._btn_debug.clicked.connect(self._show_debug)
         h.addWidget(self._btn_debug)
 
         h.addStretch()
-        b_cancel = QPushButton("İptal"); b_cancel.setStyleSheet(_BTN_S)
+        b_cancel = QPushButton("İptal"); b_cancel.setProperty("style-role", "secondary")
         b_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
         b_cancel.clicked.connect(self.canceled.emit); h.addWidget(b_cancel)
 
         self._b_save = QPushButton("Veritabanına Kaydet")
         IconRenderer.set_button_icon(self._b_save, "save", color="#00b4d8", size=14)
-        self._b_save.setStyleSheet(_BTN_P); self._b_save.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._b_save.setProperty("style-role", "action"); self._b_save.setCursor(Qt.CursorShape.PointingHandCursor)
         self._b_save.setEnabled(False); self._b_save.clicked.connect(self._save)
         h.addWidget(self._b_save)
         return bar

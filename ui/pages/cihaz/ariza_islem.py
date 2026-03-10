@@ -386,11 +386,7 @@ class ArizaIslemPenceresi(QWidget):
         hdr.addStretch()
         btn_kapat = QPushButton("✕")
         btn_kapat.setFixedSize(18, 18)
-        btn_kapat.setStyleSheet(
-            "QPushButton{{background:transparent;border:none;"
-            "color:{};font-size:11px;}}"
-            "QPushButton:hover{{color:{};}}".format(muted, text_pr)
-        )
+        btn_kapat.setProperty("style-role", "close")
         btn_kapat.clicked.connect(lambda: frame.setVisible(False))
         hdr.addWidget(btn_kapat)
         fl.addLayout(hdr)

@@ -171,19 +171,7 @@ class BildirimPaneli(QWidget):
         btn.setFixedSize(22, 22)
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn.setToolTip("Bu oturum için kapat")
-        btn.setStyleSheet("""
-            QPushButton {
-                background: transparent;
-                color: #5a5d6e;
-                border: none;
-                font-size: 13px;
-                border-radius: 4px;
-            }
-            QPushButton:hover {
-                color: #c9d1d9;
-                background: rgba(255,255,255,0.08);
-            }
-        """)
+        btn.setProperty("style-role", "close")
         btn.clicked.connect(self._dismiss)
         return btn
 

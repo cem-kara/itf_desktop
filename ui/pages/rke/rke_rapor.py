@@ -399,10 +399,7 @@ class RKERaporPenceresi(QWidget):
         self.btn_yenile=QPushButton("VERILERI YENILE")
         self.btn_yenile.setFixedHeight(30); self.btn_yenile.setMinimumWidth(180)
         self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_yenile.setStyleSheet(
-            f"QPushButton{{background:transparent;border:1px solid {_BD2};border-radius:5px;"
-            f"color:{_TX1};font-family:{_MONO};font-size:9px;letter-spacing:1px;}}"
-            f"QPushButton:hover{{color:{_TX0};border-color:{_TX1};}}")
+        self.btn_yenile.setProperty("style-role", "refresh")
         self.btn_yenile.clicked.connect(self.load_data)
         IconRenderer.set_button_icon(self.btn_yenile, "refresh", size=16, color=_TX1)
 
@@ -410,11 +407,7 @@ class RKERaporPenceresi(QWidget):
         self.btn_olustur.setObjectName("btn_kaydet")
         self.btn_olustur.setFixedHeight(30); self.btn_olustur.setMinimumWidth(180)
         self.btn_olustur.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_olustur.setStyleSheet(
-            f"QPushButton{{background:{_RED};border:none;border-radius:5px;"
-            f"color:#fff;font-family:{_MONO};font-size:9px;font-weight:800;letter-spacing:1px;}}"
-            f"QPushButton:hover{{background:#f06060;}}"
-            f"QPushButton:disabled{{background:{_BD};color:{_TX2};}}")
+        self.btn_olustur.setProperty("style-role", "danger")
         self.btn_olustur.clicked.connect(self.rapor_baslat)
         IconRenderer.set_button_icon(self.btn_olustur, "save", size=16, color="#FFFFFF")
         if self._action_guard:

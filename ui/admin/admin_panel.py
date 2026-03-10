@@ -135,25 +135,7 @@ class AdminPanel(QWidget):
         self.btn_kapat = QPushButton("Kapat")
         IconRenderer.set_button_icon(self.btn_kapat, "x", size=14)
         self.btn_kapat.setFixedHeight(32)
-        self.btn_kapat.setStyleSheet("""
-            QPushButton {{
-                background: {};
-                color: {};
-                border: 1px solid {};
-                border-radius: 6px;
-                padding: 0 16px;
-                font-weight: 500;
-            }}
-            QPushButton:hover {{
-                background: {};
-                color: {};
-                border-color: {};
-            }}
-        """.format(
-            DarkTheme.BG_TERTIARY, DarkTheme.TEXT_SECONDARY,
-            DarkTheme.BORDER_PRIMARY, DarkTheme.BG_HOVER,
-            DarkTheme.TEXT_PRIMARY, DarkTheme.BORDER_STRONG
-        ))
+        self.btn_kapat.setProperty("style-role", "secondary")
         header_layout.addWidget(self.btn_kapat)
         
         return header

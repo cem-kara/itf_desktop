@@ -142,20 +142,7 @@ class RaporButon(QWidget):
         btn.setObjectName(obj_name)
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(btn, icon_name, color=DarkTheme.TEXT_PRIMARY, size=14)
-        btn.setStyleSheet("""
-            QPushButton {{
-                background: {};
-                color: #ffffff;
-                border: none;
-                border-radius: 6px;
-                padding: 8px 16px;
-                font-size: 12px;
-                font-weight: 600;
-            }}
-            QPushButton:hover  {{ background: {}; }}
-            QPushButton:pressed{{ background: {}; opacity: 0.85; }}
-            QPushButton:disabled {{ background: {}; color: {}; }}
-        """.format(renk1, renk2, renk1, DarkTheme.BG_TERTIARY, DarkTheme.TEXT_DISABLED))
+        btn.setProperty("style-role", "action")
         btn.clicked.connect(slot)
         return btn
 

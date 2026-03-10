@@ -224,15 +224,7 @@ class TopluMuayeneDialog(QDialog):
         self.lbl_file.style().unpolish(self.lbl_file)
         self.lbl_file.style().polish(self.lbl_file)
         btn_file = QPushButton("Ortak Rapor")
-        btn_file.setStyleSheet(
-            "QPushButton{{background:{bg};border:1px solid {bd};border-radius:4px;"
-            "color:{tx};padding:0 12px;}}QPushButton:hover{{color:{tx_hover};}}".format(
-                bg=DarkTheme.BG_SECONDARY,
-                bd=DarkTheme.BORDER_PRIMARY,
-                tx=DarkTheme.TEXT_SECONDARY,
-                tx_hover=DarkTheme.TEXT_PRIMARY,
-            )
-        )
+        btn_file.setProperty("style-role", "upload")
         btn_file.setFixedHeight(28)
         btn_file.clicked.connect(self._dosya_sec)
         file_row.addWidget(self.lbl_file, 1)
@@ -249,28 +241,13 @@ class TopluMuayeneDialog(QDialog):
         btn_row = QHBoxLayout()
         btn_row.addStretch()
         btn_iptal = QPushButton("İptal")
-        btn_iptal.setStyleSheet(
-            "QPushButton{{background:transparent;border:1px solid {bd};"
-            "border-radius:5px;color:{tx};font-family:{mono};"
-            "font-size:10px;padding:0 16px;}}QPushButton:hover{{color:{tx_hover};}}".format(
-                bd=DarkTheme.BORDER_PRIMARY2,
-                tx=DarkTheme.TEXT_MUTED,
-                mono=DarkTheme.MONOSPACE,
-                tx_hover=DarkTheme.TEXT_PRIMARY,
-            )
-        )
+        btn_iptal.setProperty("style-role", "secondary")
         btn_iptal.setFixedHeight(36)
         btn_iptal.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_iptal.clicked.connect(self.reject)
 
         self.btn_kaydet = QPushButton("▶ Başlat")
-        self.btn_kaydet.setStyleSheet(
-            "QPushButton{{background:{bg};border:none;border-radius:5px;"
-            "color:#051a10;font-family:{mono};font-size:10px;font-weight:800;padding:0 16px;}}".format(
-                bg=DarkTheme.STATUS_SUCCESS,
-                mono=DarkTheme.MONOSPACE,
-            )
-        )
+        self.btn_kaydet.setProperty("style-role", "success-filled")
         self.btn_kaydet.setFixedHeight(36)
         self.btn_kaydet.setFixedWidth(120)
         self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))

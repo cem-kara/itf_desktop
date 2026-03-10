@@ -627,3 +627,348 @@ QScrollArea[style-role="plain"] {
     background: transparent;
     border: none;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   EK BUTON ROLLERİ — v3.3
+   ══════════════════════════════════════════════════════════════ */
+
+/* Turuncu / uyarı butonu (kaydet=güncelle modu vb.) */
+QPushButton[style-role="warning"] {
+    background-color: {STATUS_WARNING};
+    color: #1a0f00;
+    border: none;
+    border-radius: 5px;
+    padding: 4px 14px;
+    font-weight: 800;
+    font-size: 11px;
+}
+QPushButton[style-role="warning"]:hover { background-color: {BTN_PRIMARY_HOVER}; }
+QPushButton[style-role="warning"]:disabled {
+    background-color: {BORDER_PRIMARY};
+    color: {TEXT_MUTED};
+}
+
+/* Dolu yeşil kaydet butonu */
+QPushButton[style-role="success-filled"] {
+    background-color: {STATUS_SUCCESS};
+    color: #051a10;
+    border: none;
+    border-radius: 5px;
+    padding: 4px 14px;
+    font-weight: 800;
+    font-size: 11px;
+}
+QPushButton[style-role="success-filled"]:hover { background-color: #059669; }
+QPushButton[style-role="success-filled"]:disabled {
+    background-color: {BORDER_PRIMARY};
+    color: {TEXT_MUTED};
+}
+
+/* Küçük kapat X butonu (22x22, şeffaf) */
+QPushButton[style-role="close"] {
+    background: transparent;
+    border: none;
+    color: {TEXT_SECONDARY};
+    font-size: 12px;
+    border-radius: 4px;
+}
+QPushButton[style-role="close"]:hover {
+    background-color: {BG_ELEVATED};
+    color: {TEXT_PRIMARY};
+}
+
+/* Dosya yükleme / upload butonu (secondary görünümlü) */
+QPushButton[style-role="upload"] {
+    background-color: {BG_SECONDARY};
+    color: {TEXT_SECONDARY};
+    border: 1px solid {BORDER_PRIMARY};
+    border-radius: 4px;
+    padding: 0px 12px;
+    font-weight: 500;
+}
+QPushButton[style-role="upload"]:hover {
+    color: {TEXT_PRIMARY};
+    border-color: {INPUT_BORDER_FOCUS};
+}
+
+/* Tab navigasyon butonu — aktif */
+QPushButton[style-role="tab-active"] {
+    background-color: {ACCENT_BG};
+    color: {ACCENT};
+    border: 1px solid {ACCENT};
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-weight: 700;
+}
+/* Tab navigasyon butonu — pasif */
+QPushButton[style-role="tab-inactive"] {
+    background: transparent;
+    color: {TEXT_SECONDARY};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-weight: 500;
+}
+QPushButton[style-role="tab-inactive"]:hover {
+    background-color: {BG_ELEVATED};
+    color: {TEXT_PRIMARY};
+}
+
+/* Hızlı işlem (quick action) butonu */
+QPushButton[style-role="quick-action"] {
+    background-color: {BG_SECONDARY};
+    color: {TEXT_SECONDARY};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-weight: 500;
+    font-size: 11px;
+    text-align: left;
+}
+QPushButton[style-role="quick-action"]:hover {
+    background-color: {BG_ELEVATED};
+    color: {TEXT_PRIMARY};
+    border-color: {INPUT_BORDER_FOCUS};
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FORM GİRİŞ ALANLARI — v3.4 (global, setStyleSheet kaldırıldı)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── QLineEdit (tüm metin girişleri) ───────────────────────── */
+QLineEdit {
+    background-color: {INPUT_BG};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 4px;
+    padding: 5px 9px;
+    min-height: 22px;
+    color: {TEXT_PRIMARY};
+    font-family: {MONOSPACE};
+}
+QLineEdit:focus       { border-color: {INPUT_BORDER_FOCUS}; }
+QLineEdit:read-only   { background-color: {BG_SECONDARY}; color: {TEXT_SECONDARY}; }
+QLineEdit:disabled    { background-color: {BG_SECONDARY}; color: {TEXT_MUTED}; }
+QLineEdit::placeholder { color: {TEXT_MUTED}; }
+
+/* Arama girişi (icon boşluğu) */
+QLineEdit[input-role="search"] { padding-left: 32px; font-family: {MONOSPACE}; }
+
+/* ── QTextEdit / QPlainTextEdit ─────────────────────────────── */
+QTextEdit, QPlainTextEdit {
+    background-color: {INPUT_BG};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 4px;
+    padding: 5px 9px;
+    color: {TEXT_PRIMARY};
+    font-family: {MONOSPACE};
+}
+QTextEdit:focus, QPlainTextEdit:focus { border-color: {INPUT_BORDER_FOCUS}; }
+
+/* ── QComboBox ───────────────────────────────────────────────── */
+QComboBox {
+    background-color: {INPUT_BG};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 4px;
+    padding: 5px 32px 5px 9px;
+    min-height: 22px;
+    color: {TEXT_PRIMARY};
+    font-family: {MONOSPACE};
+}
+QComboBox:focus  { border-color: {INPUT_BORDER_FOCUS}; }
+QComboBox:hover  { border-color: {BORDER_STRONG}; }
+QComboBox:disabled { background-color: {BG_SECONDARY}; color: {TEXT_MUTED}; }
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: right center;
+    width: 28px;
+    border-left: 1px solid {BORDER_PRIMARY};
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+    background: {BG_ELEVATED};
+}
+QComboBox::drop-down:hover { background: {ACCENT_BG}; }
+QComboBox::down-arrow {
+    width: 0; height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid {TEXT_SECONDARY};
+}
+QComboBox QAbstractItemView {
+    background-color: {BG_ELEVATED};
+    border: 1px solid {BORDER_SECONDARY};
+    color: {TEXT_PRIMARY};
+    selection-background-color: {ACCENT_BG};
+    selection-color: {TEXT_PRIMARY};
+    padding: 4px;
+    outline: 0;
+}
+QComboBox QAbstractItemView::item { min-height: 26px; padding: 3px 8px; }
+QComboBox QAbstractItemView::item:hover { background-color: {ACCENT_BG}; color: {ACCENT2}; }
+
+/* ── QDateEdit / QDateTimeEdit ──────────────────────────────── */
+QDateEdit, QDateTimeEdit {
+    background-color: {INPUT_BG};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 4px;
+    padding: 5px 32px 5px 9px;
+    min-height: 22px;
+    color: {TEXT_PRIMARY};
+    font-family: {MONOSPACE};
+}
+QDateEdit:focus, QDateTimeEdit:focus   { border-color: {INPUT_BORDER_FOCUS}; }
+QDateEdit:hover, QDateTimeEdit:hover   { border-color: {BORDER_STRONG}; }
+QDateEdit::drop-down, QDateTimeEdit::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: right center;
+    width: 28px;
+    border-left: 1px solid {BORDER_PRIMARY};
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+    background: {BG_ELEVATED};
+}
+QDateEdit::drop-down:hover, QDateTimeEdit::drop-down:hover { background: {ACCENT_BG}; }
+QDateEdit::down-arrow, QDateTimeEdit::down-arrow {
+    width: 0; height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid {TEXT_SECONDARY};
+}
+
+/* ── QListWidget ────────────────────────────────────────────── */
+QListWidget {
+    background-color: {BG_SECONDARY};
+    border: 1px solid {BORDER_PRIMARY};
+    color: {TEXT_PRIMARY};
+    outline: 0;
+}
+QListWidget::item           { padding: 4px 10px; }
+QListWidget::item:hover     { background-color: {BG_HOVER}; }
+QListWidget::item:selected  { background-color: {ACCENT_BG}; color: {TEXT_PRIMARY}; }
+
+/* ── QScrollArea (tüm scroll alanlar) ───────────────────────── */
+QScrollArea { border: none; background: transparent; }
+QScrollArea > QWidget > QWidget { background: transparent; }
+
+/* ── QSplitter ──────────────────────────────────────────────── */
+QSplitter::handle          { background-color: {BORDER_PRIMARY}; }
+QSplitter::handle:hover    { background-color: {BORDER_SECONDARY}; }
+QSplitter::handle:horizontal { width: 1px; }
+QSplitter::handle:vertical   { height: 1px; }
+
+/* ── QGroupBox (güncellendi) ────────────────────────────────── */
+QGroupBox {
+    background-color: {BG_SECONDARY};
+    border: 1px solid {BORDER_PRIMARY};
+    border-radius: 6px;
+    margin-top: 14px;
+    padding-top: 10px;
+    color: {TEXT_PRIMARY};
+    font-weight: 600;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0 8px;
+    color: {TEXT_PRIMARY};
+    font-weight: 600;
+}
+
+/* ── QTabWidget / QTabBar (güncellendi) ─────────────────────── */
+QTabWidget::pane {
+    background-color: {BG_SECONDARY};
+    border: 1px solid {BORDER_PRIMARY};
+    border-radius: 0 0 6px 6px;
+}
+QTabBar::tab {
+    background-color: transparent;
+    color: {TEXT_SECONDARY};
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 6px 14px;
+    font-weight: 500;
+}
+QTabBar::tab:hover    { color: {TEXT_PRIMARY}; }
+QTabBar::tab:selected { color: {ACCENT2}; border-bottom-color: {INPUT_BORDER_FOCUS}; font-weight: 700; }
+
+/* ── QTableView / QTableWidget (güncellendi) ────────────────── */
+QTableView, QTableWidget {
+    background-color: {BG_SECONDARY};
+    border: 1px solid {BORDER_PRIMARY};
+    gridline-color: transparent;
+    color: {TEXT_PRIMARY};
+    selection-background-color: {ACCENT_BG};
+    selection-color: {ACCENT2};
+    outline: 0;
+}
+QTableView::item, QTableWidget::item { padding: 4px 10px; color: {TEXT_SECONDARY}; }
+QTableView::item:selected, QTableWidget::item:selected {
+    background-color: {ACCENT_BG}; color: {TEXT_PRIMARY};
+}
+QTableView::item:hover, QTableWidget::item:hover { background-color: {BG_HOVER}; }
+
+/* ── QHeaderView ────────────────────────────────────────────── */
+QHeaderView::section {
+    background-color: {BG_ELEVATED};
+    color: {TEXT_SECONDARY};
+    border: none;
+    border-bottom: 1px solid {BORDER_PRIMARY};
+    padding: 5px 10px;
+    font-weight: 600;
+    font-size: 11px;
+}
+QHeaderView::section:hover { background-color: {BG_HOVER}; color: {TEXT_PRIMARY}; }
+
+/* ── QMenu (güncellendi) ────────────────────────────────────── */
+QMenu {
+    background-color: {BG_ELEVATED};
+    color: {TEXT_PRIMARY};
+    border: 1px solid {BORDER_SECONDARY};
+    border-radius: 8px;
+    padding: 4px 0;
+}
+QMenu::item               { padding: 6px 16px; background: transparent; }
+QMenu::item:selected      { background-color: {BG_HOVER}; color: {ACCENT2}; }
+QMenu::item:pressed       { background-color: {BG_SELECTED}; }
+QMenu::separator          { height: 1px; background-color: {BORDER_SECONDARY}; margin: 4px 0; }
+
+/* ── QProgressBar (güncellendi) ─────────────────────────────── */
+QProgressBar {
+    background-color: {BORDER_SECONDARY};
+    border: none;
+    border-radius: 2px;
+    height: 4px;
+    padding: 0;
+    text-align: center;
+    color: transparent;
+}
+QProgressBar::chunk { background-color: {INPUT_BORDER_FOCUS}; border-radius: 2px; }
+
+
+/* ── Durum badge etiketleri (header-durum-*) ────────────────── */
+QLabel[style-role="header-durum-aktif"] {
+    background-color: {STATUS_SUCCESS_BG};
+    color: {STATUS_SUCCESS};
+    border: 1px solid rgba(46,201,142,0.30);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+}
+QLabel[style-role="header-durum-pasif"] {
+    background-color: {STATUS_ERROR_BG};
+    color: {STATUS_ERROR};
+    border: 1px solid rgba(232,85,85,0.30);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+}
+QLabel[style-role="header-durum-izinli"] {
+    background-color: {STATUS_WARNING_BG};
+    color: {STATUS_WARNING};
+    border: 1px solid rgba(232,160,48,0.30);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+}

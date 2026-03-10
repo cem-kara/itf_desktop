@@ -25,7 +25,6 @@ from core.date_utils import to_ui_date
 from core.logger import logger
 from database.repository_registry import RepositoryRegistry
 from ui.styles import DarkTheme
-from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 
 
@@ -168,7 +167,6 @@ class _BaseListDetailForm(QWidget):
         root.addWidget(self._make_hsep())
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
-        splitter.setStyleSheet(S.get("splitter") or "")
         splitter.addWidget(self._build_left_panel())
         splitter.addWidget(self._build_right_panel())
         splitter.setStretchFactor(0, 3)
@@ -243,13 +241,11 @@ class _BaseListDetailForm(QWidget):
 
         self.txt_filter = QLineEdit()
         self.txt_filter.setPlaceholderText("🔍  Ara…")
-        self.txt_filter.setStyleSheet(S["input"])
         self.txt_filter.setMaximumWidth(200)
         self.txt_filter.textChanged.connect(self._apply_filters)
         fb_l.addWidget(self.txt_filter)
 
         self.cmb_durum_filter = QComboBox()
-        self.cmb_durum_filter.setStyleSheet(S["combo"])
         self.cmb_durum_filter.setFixedWidth(160)
         for lbl, val in self._durum_filter_items():
             self.cmb_durum_filter.addItem(lbl, val)
@@ -259,7 +255,7 @@ class _BaseListDetailForm(QWidget):
         fb_l.addStretch()
 
         self.btn_yeni = QPushButton(self._new_btn_label())
-        self.btn_yeni.setStyleSheet(S.get("btn_primary") or "")
+        self.btn_yeni.setProperty("style-role", "secondary")
         self.btn_yeni.clicked.connect(self._open_entry_form)
         fb_l.addWidget(self.btn_yeni)
         layout.addWidget(fb)
@@ -270,7 +266,6 @@ class _BaseListDetailForm(QWidget):
         from PySide6.QtWidgets import QAbstractItemView
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        self.table.setStyleSheet(S["table"])
         self.table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         cols = self._columns()
         for i, (_, _, w) in enumerate(cols):
@@ -325,8 +320,7 @@ class _BaseListDetailForm(QWidget):
         bb_l.addWidget(lbl)
         bb_l.addStretch()
         self.btn_duzenle = QPushButton("Düzenle / Yeni")
-        btn_sec_style = S.get("btn_secondary") or S.get("btn_primary") or ""
-        self.btn_duzenle.setStyleSheet(btn_sec_style)
+        self.btn_duzenle.setProperty("style-role", "secondary")
         self.btn_duzenle.setEnabled(False)
         self.btn_duzenle.clicked.connect(self._open_entry_form)
         bb_l.addWidget(self.btn_duzenle)
@@ -334,11 +328,9 @@ class _BaseListDetailForm(QWidget):
 
         # Dikey splitter: detay alanları + form
         self._v_splitter = QSplitter(Qt.Orientation.Vertical)
-        self._v_splitter.setStyleSheet(S.get("splitter") or "")
 
         detail_scroll = QScrollArea()
         detail_scroll.setWidgetResizable(True)
-        detail_scroll.setStyleSheet(S.get("scroll") or "")
         self._detail_widget = QWidget()
         self._detail_layout = QVBoxLayout(self._detail_widget)
         self._detail_layout.setContentsMargins(12, 10, 12, 10)
@@ -350,7 +342,6 @@ class _BaseListDetailForm(QWidget):
         # Form container
         self.form_container = QScrollArea()
         self.form_container.setWidgetResizable(True)
-        self.form_container.setStyleSheet(S.get("scroll") or "")
         self.form_container.setVisible(False)
         self._form_inner = QWidget()
         self._form_layout = QVBoxLayout(self._form_inner)
@@ -689,58 +680,50 @@ class _BakimGirisForm(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(8)
 
+        # Widget tanımları
+        self.txt_periyot   = QLineEdit()
+        self.txt_sira      = QLineEdit()
+        self.txt_bakim     = QLineEdit()
+        self.txt_tip       = QLineEdit()
+        self.txt_teknisyen = QLineEdit()
+        self.txt_islemler  = QTextEdit()
+        self.txt_aciklama  = QTextEdit()
+        self.txt_rapor     = QTextEdit()
+        self.cmb_durum     = QComboBox()
+
         grp = QGroupBox("Bakım Kaydı")
-        grp.setStyleSheet(S["group"])
         grid = QGridLayout(grp)
         grid.setContentsMargins(12, 12, 12, 12)
         grid.setHorizontalSpacing(10)
         grid.setVerticalSpacing(8)
 
-        grp = QGroupBox("Bakım Kaydı")
-        grp.setStyleSheet(S["group"])
-        grid = QGridLayout(grp)
-        grid.setContentsMargins(12, 12, 12, 12)
-        grid.setHorizontalSpacing(10)
-        grid.setVerticalSpacing(8)
-
-        self.txt_periyot = QLineEdit(); self.txt_periyot.setStyleSheet(S["input"])
         self._r(grid, 0, "Bakım Periyodu", self.txt_periyot)
 
-        self.txt_sira = QLineEdit(); self.txt_sira.setStyleSheet(S["input"])
         self._r(grid, 1, "Bakım Sırası", self.txt_sira)
 
         self.dt_plan = QDateEdit(QDate.currentDate())
         self.dt_plan.setCalendarPopup(True); self.dt_plan.setDisplayFormat("dd.MM.yyyy")
-        self.dt_plan.setStyleSheet(S["date"])
         self._r(grid, 2, "Planlanan Tarih", self.dt_plan)
 
-        self.txt_bakim = QLineEdit(); self.txt_bakim.setStyleSheet(S["input"])
         self._r(grid, 3, "Bakım", self.txt_bakim)
 
-        self.cmb_durum = QComboBox(); self.cmb_durum.setStyleSheet(S["combo"])
         self.cmb_durum.addItems(["Planli", "Yapildi", "Gecikmis"])
         self._r(grid, 4, "Durum", self.cmb_durum)
 
         self.dt_bakim = QDateEdit(QDate.currentDate())
         self.dt_bakim.setCalendarPopup(True); self.dt_bakim.setDisplayFormat("dd.MM.yyyy")
-        self.dt_bakim.setStyleSheet(S["date"])
         self._r(grid, 5, "Bakım Tarihi", self.dt_bakim)
 
-        self.txt_tip = QLineEdit(); self.txt_tip.setStyleSheet(S["input"])
         self._r(grid, 6, "Bakım Tipi", self.txt_tip)
 
-        self.txt_islemler = QTextEdit(); self.txt_islemler.setStyleSheet(S["input_text"])
         self.txt_islemler.setFixedHeight(70)
         self._r(grid, 7, "Yapılan İşlemler", self.txt_islemler)
 
-        self.txt_aciklama = QTextEdit(); self.txt_aciklama.setStyleSheet(S["input_text"])
         self.txt_aciklama.setFixedHeight(60)
         self._r(grid, 8, "Açıklama", self.txt_aciklama)
 
-        self.txt_teknisyen = QLineEdit(); self.txt_teknisyen.setStyleSheet(S["input"])
         self._r(grid, 9, "Teknisyen", self.txt_teknisyen)
 
-        self.txt_rapor = QTextEdit(); self.txt_rapor.setStyleSheet(S["input_text"])
         self.txt_rapor.setFixedHeight(60)
         self._r(grid, 10, "Rapor", self.txt_rapor)
 
@@ -749,13 +732,12 @@ class _BakimGirisForm(QWidget):
         btns = QHBoxLayout()
         btns.addStretch()
         btn_temizle = QPushButton("Temizle")
-        btn_temizle.setStyleSheet(S["btn_refresh"])
+        btn_temizle.setProperty("style-role", "refresh")
         btn_temizle.clicked.connect(self._clear)
         btns.addWidget(btn_temizle)
 
         btn_kaydet = QPushButton("Kaydet")
-        action_style = S.get("action_btn") or S.get("btn_primary") or ""
-        btn_kaydet.setStyleSheet(action_style)
+        btn_kaydet.setProperty("style-role", "action")
         try:
             IconRenderer.set_button_icon(btn_kaydet, "save",
                                          color=DarkTheme.BTN_PRIMARY_TEXT, size=14)
@@ -766,7 +748,8 @@ class _BakimGirisForm(QWidget):
         root.addLayout(btns)
 
     def _r(self, grid, row, label, widget):
-        lbl = QLabel(label); lbl.setStyleSheet(S["label"])
+        lbl = QLabel(label)
+        lbl.setProperty("style-role", "form")
         grid.addWidget(lbl, row, 0); grid.addWidget(widget, row, 1)
 
     def _save(self):
@@ -1000,40 +983,39 @@ class _KalibrasyonGirisForm(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(8)
 
+        # Widget tanımları
+        self.txt_firma      = QLineEdit()
+        self.txt_sertifika  = QLineEdit()
+        self.txt_gecerlilik = QLineEdit()
+        self.txt_dosya      = QLineEdit()
+        self.txt_aciklama   = QTextEdit()
+        self.cmb_durum      = QComboBox()
+
         grp = QGroupBox("Kalibrasyon Kaydı")
-        grp.setStyleSheet(S["group"])
         grid = QGridLayout(grp)
         grid.setContentsMargins(12, 12, 12, 12)
         grid.setHorizontalSpacing(10)
         grid.setVerticalSpacing(8)
 
-        self.txt_firma = QLineEdit(); self.txt_firma.setStyleSheet(S["input"])
         self._r(grid, 0, "Firma", self.txt_firma)
 
-        self.txt_sertifika = QLineEdit(); self.txt_sertifika.setStyleSheet(S["input"])
         self._r(grid, 1, "Sertifika No", self.txt_sertifika)
 
         self.dt_yapilan = QDateEdit(QDate.currentDate())
         self.dt_yapilan.setCalendarPopup(True); self.dt_yapilan.setDisplayFormat("dd.MM.yyyy")
-        self.dt_yapilan.setStyleSheet(S["date"])
         self._r(grid, 2, "Yapılan Tarih", self.dt_yapilan)
 
-        self.txt_gecerlilik = QLineEdit(); self.txt_gecerlilik.setStyleSheet(S["input"])
         self._r(grid, 3, "Geçerlilik", self.txt_gecerlilik)
 
         self.dt_bitis = QDateEdit(QDate.currentDate())
         self.dt_bitis.setCalendarPopup(True); self.dt_bitis.setDisplayFormat("dd.MM.yyyy")
-        self.dt_bitis.setStyleSheet(S["date"])
         self._r(grid, 4, "Bitiş Tarihi", self.dt_bitis)
 
-        self.cmb_durum = QComboBox(); self.cmb_durum.setStyleSheet(S["combo"])
         self.cmb_durum.addItems(["Gecerli", "Gecersiz"])
         self._r(grid, 5, "Durum", self.cmb_durum)
 
-        self.txt_dosya = QLineEdit(); self.txt_dosya.setStyleSheet(S["input"])
         self._r(grid, 6, "Dosya", self.txt_dosya)
 
-        self.txt_aciklama = QTextEdit(); self.txt_aciklama.setStyleSheet(S["input_text"])
         self.txt_aciklama.setFixedHeight(80)
         self._r(grid, 7, "Açıklama", self.txt_aciklama)
 
@@ -1042,13 +1024,12 @@ class _KalibrasyonGirisForm(QWidget):
         btns = QHBoxLayout()
         btns.addStretch()
         btn_temizle = QPushButton("Temizle")
-        btn_temizle.setStyleSheet(S["btn_refresh"])
+        btn_temizle.setProperty("style-role", "refresh")
         btn_temizle.clicked.connect(self._clear)
         btns.addWidget(btn_temizle)
 
         btn_kaydet = QPushButton("Kaydet")
-        action_style = S.get("action_btn") or S.get("btn_primary") or ""
-        btn_kaydet.setStyleSheet(action_style)
+        btn_kaydet.setProperty("style-role", "action")
         try:
             IconRenderer.set_button_icon(btn_kaydet, "save",
                                          color=DarkTheme.BTN_PRIMARY_TEXT, size=14)
@@ -1059,7 +1040,8 @@ class _KalibrasyonGirisForm(QWidget):
         root.addLayout(btns)
 
     def _r(self, grid, row, label, widget):
-        lbl = QLabel(label); lbl.setStyleSheet(S["label"])
+        lbl = QLabel(label)
+        lbl.setProperty("style-role", "form")
         grid.addWidget(lbl, row, 0); grid.addWidget(widget, row, 1)
 
     def _save(self):

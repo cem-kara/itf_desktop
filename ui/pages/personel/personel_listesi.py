@@ -758,22 +758,7 @@ class PersonelListesiPage(QWidget):
             )
 
         if hasattr(self, "btn_close"):
-            self.btn_close.setStyleSheet(
-                f"""
-                QPushButton {{
-                    background-color: transparent;
-                    color: {C.TEXT_MUTED};
-                    border: none;
-                    border-radius: 4px;
-                    font-size: 16px;
-                    font-weight: bold;
-                }}
-                QPushButton:hover {{
-                    background-color: {C.BG_TERTIARY};
-                    color: {C.TEXT_PRIMARY};
-                }}
-                """
-            )
+            self.btn_close.setProperty("style-role", "close")
 
     # ─── Veri Yükleme ────────────────────────────────────
 

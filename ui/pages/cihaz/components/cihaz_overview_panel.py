@@ -205,13 +205,7 @@ class CihazOverviewPanel(QWidget):
         btn.setFixedSize(30, 26)
         btn.setVisible(visible)
         IconRenderer.set_button_icon(btn, icon_name, color=C.TEXT_SECONDARY, size=14)
-        btn.setStyleSheet("""
-            QPushButton {
-                background: rgba(255,255,255,0.1); 
-                border: none; border-radius: 4px; color: #ccc;
-            }
-            QPushButton:hover { background: rgba(255,255,255,0.2); color: white; }
-        """)
+        btn.setProperty("style-role", "quick-action")
         btn.clicked.connect(callback)
         return btn
 

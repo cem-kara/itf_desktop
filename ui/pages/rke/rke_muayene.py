@@ -984,10 +984,7 @@ class RKEMuayenePage(QWidget):
         self.lbl_dosya.style().unpolish(self.lbl_dosya)
         self.lbl_dosya.style().polish(self.lbl_dosya)
         btn_dosya = QPushButton("Rapor Yukle")
-        btn_dosya.setStyleSheet(
-            f"QPushButton{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;"
-            f"color:{DarkTheme.TEXT_SECONDARY};padding:0 12px;}}QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};}}"
-        )
+        btn_dosya.setProperty("style-role", "upload")
         btn_dosya.setFixedHeight(28)
         btn_dosya.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(btn_dosya, "upload", color=DarkTheme.TEXT_SECONDARY, size=14)
@@ -1032,22 +1029,13 @@ class RKEMuayenePage(QWidget):
         btn_row.setSpacing(8)
         self.btn_temizle = QPushButton("TEMIZLE")
         self.btn_temizle.setFixedHeight(34)
-        self.btn_temizle.setStyleSheet(
-            f"QPushButton{{background:transparent;border:1px solid {DarkTheme.BORDER_PRIMARY};"
-            f"border-radius:5px;color:{DarkTheme.TEXT_MUTED};font-family:{DarkTheme.MONOSPACE};"
-            f"font-size:10px;}}"
-            f"QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};border-color:{DarkTheme.TEXT_SECONDARY};}}"
-        )
+        self.btn_temizle.setProperty("style-role", "secondary")
         self.btn_temizle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_temizle, "x", color=DarkTheme.TEXT_MUTED, size=14)
         self.btn_temizle.clicked.connect(self.temizle)
         self.btn_kaydet = QPushButton("KAYDET")
         self.btn_kaydet.setFixedHeight(34)
-        self.btn_kaydet.setStyleSheet(
-            f"QPushButton{{background:{DarkTheme.STATUS_SUCCESS};border:none;border-radius:5px;"
-            f"color:#051a10;font-family:{DarkTheme.MONOSPACE};font-size:10px;font-weight:800;"
-            f"}}"
-        )
+        self.btn_kaydet.setProperty("style-role", "success-filled")
         self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color="#051a10", size=14)
         self.btn_kaydet.clicked.connect(self.kaydet)
@@ -1092,20 +1080,14 @@ class RKEMuayenePage(QWidget):
 
         btn_yenile = QPushButton("")
         btn_yenile.setFixedSize(28, 28)
-        btn_yenile.setStyleSheet(
-            f"QPushButton{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;"
-            f"color:{DarkTheme.TEXT_SECONDARY};}}QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};}}"
-        )
+        btn_yenile.setProperty("style-role", "refresh")
         btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(btn_yenile, "refresh", color=DarkTheme.TEXT_SECONDARY, size=14)
         btn_yenile.clicked.connect(self.verileri_yukle)
 
         btn_toplu = QPushButton("Toplu Muayene")
         btn_toplu.setFixedHeight(28)
-        btn_toplu.setStyleSheet(
-            f"QPushButton{{background:{DarkTheme.ACCENT};border:none;border-radius:4px;"
-            f"color:#0a1420;font-family:{DarkTheme.MONOSPACE};font-size:9px;font-weight:700;padding:0 12px;}}"
-        )
+        btn_toplu.setProperty("style-role", "action")
         btn_toplu.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(btn_toplu, "clipboard_list", color="#0a1420", size=14)
         btn_toplu.clicked.connect(self.ac_toplu_dialog)

@@ -69,8 +69,11 @@ DARK: dict[str, str] = {
 
     # Durum
     "STATUS_SUCCESS": "#2ec98e",
+    "STATUS_SUCCESS_BG": "rgba(46,201,142,0.12)",
     "STATUS_WARNING": "#e8a030",
+    "STATUS_WARNING_BG": "rgba(232,160,48,0.12)",
     "STATUS_ERROR":   "#e85555",
+    "STATUS_ERROR_BG":  "rgba(232,85,85,0.12)",
     "STATUS_INFO":    "#3d8ef5",
 
     # Diğer
@@ -135,8 +138,11 @@ LIGHT: dict[str, str] = {
 
     # Durum
     "STATUS_SUCCESS": "#16a34a",
+    "STATUS_SUCCESS_BG": "rgba(22,163,74,0.10)",
     "STATUS_WARNING": "#d97706",
+    "STATUS_WARNING_BG": "rgba(217,119,6,0.10)",
     "STATUS_ERROR":   "#dc2626",
+    "STATUS_ERROR_BG":  "rgba(220,38,38,0.10)",
     "STATUS_INFO":    "#2563eb",
 
     # Diğer

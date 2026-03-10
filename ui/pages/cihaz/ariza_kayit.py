@@ -440,11 +440,7 @@ class ArizaKayitForm(QWidget):
 
         btn_kapat = QPushButton("✕")
         btn_kapat.setFixedSize(22, 22)
-        btn_kapat.setStyleSheet(
-            f"QPushButton{{background:transparent;border:none;"
-            f"color:{text_sec};font-size:12px;border-radius:4px;}}"
-            f"QPushButton:hover{{background:{border};color:{text_pr};}}"
-        )
+        btn_kapat.setProperty("style-role", "secondary")
         btn_kapat.clicked.connect(self._close_form)
         hdr_l.addWidget(btn_kapat)
         layout.addWidget(hdr)

@@ -14,7 +14,6 @@ from PySide6.QtWidgets import (
 from core.logger import logger
 
 from ui.styles.colors import C as _C
-from ui.styles.components import STYLES as S
 
 
 def ay_ekle(kaynak_tarih: datetime, ay_sayisi: int) -> datetime:
@@ -53,7 +52,6 @@ class TopluBakimPlanPanel(QWidget):
         layout.addWidget(lbl_marka)
 
         self.cmb_marka_filter = QComboBox()
-        self.cmb_marka_filter.setStyleSheet(S["combo"])
         self.cmb_marka_filter.setMinimumHeight(32)
         self.cmb_marka_filter.currentIndexChanged.connect(self._refresh_cihaz_list)
         layout.addWidget(self.cmb_marka_filter)
@@ -67,14 +65,13 @@ class TopluBakimPlanPanel(QWidget):
         layout.addWidget(lbl_sozlesme)
 
         self.cmb_sozlesme = QComboBox()
-        self.cmb_sozlesme.setStyleSheet(S["combo"])
         self.cmb_sozlesme.setMinimumHeight(32)
         self.cmb_sozlesme.currentIndexChanged.connect(self._on_sozlesme_changed)
         layout.addWidget(self.cmb_sozlesme)
 
         # Yeni sözleşme ekle butonu
         self.btn_yeni_sozlesme = QPushButton("Sözleşme Yükle")
-        self.btn_yeni_sozlesme.setStyleSheet(S.get("btn_secondary", "") or "")
+        self.btn_yeni_sozlesme.setProperty("style-role", "secondary")
         self.btn_yeni_sozlesme.setMinimumHeight(32)
         self.btn_yeni_sozlesme.clicked.connect(self._on_add_sozlesme)
         layout.addWidget(self.btn_yeni_sozlesme)
@@ -87,19 +84,18 @@ class TopluBakimPlanPanel(QWidget):
         layout.addWidget(lbl_cihaz)
 
         self.list_cihazlar = QListWidget()
-        self.list_cihazlar.setStyleSheet(cast(str, S.get("list", "") or ""))
         self.list_cihazlar.setMaximumHeight(200)
         self.list_cihazlar.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
         layout.addWidget(self.list_cihazlar)
 
         select_row = QHBoxLayout()
         btn_tumunu_sec = QPushButton("Tümünü Seç")
-        btn_tumunu_sec.setStyleSheet(cast(str, S.get("btn_secondary", "") or ""))
+        btn_tumunu_sec.setProperty("style-role", "secondary")
         btn_tumunu_sec.clicked.connect(self._select_all_visible)
         select_row.addWidget(btn_tumunu_sec)
 
         btn_temizle = QPushButton("Seçimi Temizle")
-        btn_temizle.setStyleSheet(cast(str, S.get("btn_secondary", "") or ""))
+        btn_temizle.setProperty("style-role", "secondary")
         btn_temizle.clicked.connect(self._clear_selection)
         select_row.addWidget(btn_temizle)
 
@@ -114,7 +110,6 @@ class TopluBakimPlanPanel(QWidget):
         layout.addWidget(lbl_plan)
 
         self.cmb_plan_tipi = QComboBox()
-        self.cmb_plan_tipi.setStyleSheet(S["combo"])
         self.cmb_plan_tipi.setMinimumHeight(36)
         self.cmb_plan_tipi.addItems([
             "Tek Seferlik",
@@ -134,7 +129,6 @@ class TopluBakimPlanPanel(QWidget):
         self.dt_baslangic = QDateEdit(QDate.currentDate())
         self.dt_baslangic.setCalendarPopup(True)
         self.dt_baslangic.setDisplayFormat("dddd, d MMMM yyyy")
-        self.dt_baslangic.setStyleSheet(S["date"])
         self.dt_baslangic.setMinimumHeight(36)
         layout.addWidget(self.dt_baslangic)
 
@@ -146,7 +140,6 @@ class TopluBakimPlanPanel(QWidget):
         layout.addWidget(lbl_acik)
 
         self.txt_aciklama = QLineEdit()
-        self.txt_aciklama.setStyleSheet(S["input"])
         self.txt_aciklama.setPlaceholderText("Periyodik rutin bakım, ...")
         self.txt_aciklama.setMinimumHeight(36)
         layout.addWidget(self.txt_aciklama)
@@ -160,7 +153,6 @@ class TopluBakimPlanPanel(QWidget):
         layout.addWidget(lbl_soz)
 
         self.le_sozlesme_id = QLineEdit()
-        self.le_sozlesme_id.setStyleSheet(S["input"])
         self.le_sozlesme_id.setPlaceholderText("DokumanId girin veya boş bırakın")
         self.le_sozlesme_id.setMinimumHeight(36)
         layout.addWidget(self.le_sozlesme_id)
@@ -170,10 +162,7 @@ class TopluBakimPlanPanel(QWidget):
         btn_layout = QHBoxLayout()
         btn_iptal = QPushButton("İptal")
         btn_iptal.setMinimumHeight(38)
-        btn_iptal.setStyleSheet(
-            f"QPushButton{{background:{_C['panel']};border:1px solid {_C['border']};"
-            f"border-radius:6px;color:{_C['text']};font-weight:bold;}}"
-        )
+        btn_iptal.setProperty("style-role", "secondary")
         btn_iptal.clicked.connect(self._on_close or (lambda: None))
         btn_layout.addWidget(btn_iptal)
 
@@ -182,11 +171,7 @@ class TopluBakimPlanPanel(QWidget):
         btn_olustur = QPushButton("Planları Oluştur")
         btn_olustur.setMinimumHeight(38)
         btn_olustur.setMinimumWidth(120)
-        btn_olustur.setStyleSheet(
-            f"QPushButton{{background:{_C['green']};border:none;"
-            f"border-radius:6px;color:white;font-weight:bold;font-size:12px;}}"
-            f"QPushButton:hover{{background:#2e7d32;}}"
-        )
+        btn_olustur.setProperty("style-role", "success-filled")
         btn_olustur.clicked.connect(self._olustur_planlar)
         btn_layout.addWidget(btn_olustur)
 

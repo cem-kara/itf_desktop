@@ -125,19 +125,7 @@ class BackupPage(QWidget):
         self._btn_create_backup = QPushButton("Yedek Oluştur")
         IconRenderer.set_button_icon(self._btn_create_backup, "save", size=14)
         self._btn_create_backup.clicked.connect(self._create_backup)
-        self._btn_create_backup.setStyleSheet("""
-            QPushButton {{
-                background-color: {};
-                color: {};
-                font-weight: bold;
-                padding: 8px 16px;
-                border-radius: 4px;
-                border: none;
-            }}
-            QPushButton:hover {{
-                background-color: {};
-            }}
-        """.format(C.BTN_PRIMARY_BG, C.BTN_PRIMARY_TEXT, C.BTN_PRIMARY_HOVER))
+        self._btn_create_backup.setProperty("style-role", "action")
         create_layout.addWidget(self._btn_create_backup)
         create_layout.addStretch()
 
@@ -169,19 +157,7 @@ class BackupPage(QWidget):
         self._btn_create_full_backup = QPushButton("Tam Yedek Oluştur")
         IconRenderer.set_button_icon(self._btn_create_full_backup, "package", size=14)
         self._btn_create_full_backup.clicked.connect(self._create_full_backup)
-        self._btn_create_full_backup.setStyleSheet("""
-            QPushButton {{
-                background-color: {};
-                color: {};
-                font-weight: bold;
-                padding: 8px 16px;
-                border-radius: 4px;
-                border: none;
-            }}
-            QPushButton:hover {{
-                background-color: {};
-            }}
-        """.format(C.STATUS_SUCCESS, C.BTN_PRIMARY_TEXT, C.ACCENT2))
+        self._btn_create_full_backup.setProperty("style-role", "action")
         full_backup_layout.addWidget(self._btn_create_full_backup)
         
         # İki grubu yan yana al
@@ -208,19 +184,7 @@ class BackupPage(QWidget):
         IconRenderer.set_button_icon(self._btn_delete, "trash", size=14)
         self._btn_delete.clicked.connect(self._delete_backup)
         self._btn_delete.setEnabled(False)
-        self._btn_delete.setStyleSheet("""
-            QPushButton {{
-                background-color: {};
-                color: {};
-            }}
-            QPushButton:hover {{
-                background-color: {};
-            }}
-            QPushButton:disabled {{
-                background-color: {};
-                color: {};
-            }}
-        """.format(C.BTN_DANGER_BG, C.BTN_DANGER_TEXT, C.BTN_DANGER_HOVER, C.BG_SECONDARY, C.TEXT_DISABLED))
+        self._btn_delete.setProperty("style-role", "danger")
         btn_layout.addWidget(self._btn_delete)
         
         btn_layout.addSpacing(20)

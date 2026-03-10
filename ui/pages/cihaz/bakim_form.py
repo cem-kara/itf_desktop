@@ -656,11 +656,7 @@ class BakimKayitForm(QWidget):
 
         btn_kapat = QPushButton("✕")
         btn_kapat.setFixedSize(22, 22)
-        btn_kapat.setStyleSheet(
-            f"QPushButton{{background:transparent;border:none;"
-            f"color:{text_sec};font-size:12px;border-radius:4px;}}"
-            f"QPushButton:hover{{background:{border};color:{text_pr};}}"
-        )
+        btn_kapat.setProperty("style-role", "secondary")
         btn_kapat.clicked.connect(self._close_form)
         form_hdr_l.addWidget(btn_kapat)
         form_page_layout.addWidget(form_hdr)
@@ -712,11 +708,7 @@ class BakimKayitForm(QWidget):
 
         bulk_close = QPushButton("✕")
         bulk_close.setFixedSize(22, 22)
-        bulk_close.setStyleSheet(
-            f"QPushButton{{background:transparent;border:none;"
-            f"color:{text_sec};font-size:12px;border-radius:4px;}}"
-            f"QPushButton:hover{{background:{border};color:{text_pr};}}"
-        )
+        bulk_close.setProperty("style-role", "close")
         bulk_close.clicked.connect(self._close_bulk_panel)
         bulk_hdr_l.addWidget(bulk_close)
         bulk_layout.addWidget(bulk_hdr)

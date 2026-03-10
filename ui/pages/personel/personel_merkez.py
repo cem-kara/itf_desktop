@@ -184,7 +184,7 @@ class PersonelMerkezPage(QWidget):
         for code, label in TABS:
             btn = QPushButton(label)
             btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-            btn.setStyleSheet(self._tab_btn_qss(active=False))
+            self._apply_tab_style(btn, False)
             btn.clicked.connect(lambda _, c=code: self._switch_tab(c))
             nav_lay.addWidget(btn)
             self._nav_btns[code] = btn
@@ -394,7 +394,7 @@ class PersonelMerkezPage(QWidget):
     def _switch_tab(self, code: str):
         self._active_tab = code
         for c, btn in self._nav_btns.items():
-            btn.setStyleSheet(self._tab_btn_qss(active=(c == code)))
+            self._apply_tab_style(btn, (c == code))
 
         if code not in self._modules:
             widget = self._create_module(code)
@@ -565,7 +565,7 @@ class PersonelMerkezPage(QWidget):
 
         # Hızlı işlem butonlarını tema sonrası yeniden boya
         for btn in getattr(self, "_quick_action_buttons", []):
-            btn.setStyleSheet(self._quick_action_btn_qss())
+            self._apply_quick_action_style(btn)
 
         # Başlık yazılarının renkleri
         if hasattr(self, "lbl_avatar"):
@@ -580,7 +580,7 @@ class PersonelMerkezPage(QWidget):
 
         # Tab butonlarını aktif sekmeye göre yeniden boya
         for code, btn in self._nav_btns.items():
-            btn.setStyleSheet(self._tab_btn_qss(active=(code == self._active_tab)))
+            self._apply_tab_style(btn, (code == self._active_tab))
 
         # İkon renkleri
         if hasattr(self, "_btn_kapat"):
@@ -617,7 +617,7 @@ class PersonelMerkezPage(QWidget):
         btn = QPushButton(label)
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn.setFixedHeight(34)
-        btn.setStyleSheet(self._quick_action_btn_qss())
+        self._apply_quick_action_style(btn)
         try:
             IconRenderer.set_button_icon(btn, icon, color=C.TEXT_SECONDARY, size=13)
         except Exception:
@@ -634,46 +634,14 @@ class PersonelMerkezPage(QWidget):
     # ═══════════════════════════════════════════════════
 
     @staticmethod
-    def _tab_btn_qss(active: bool) -> str:
-        if active:
-            return (
-                f"QPushButton{{"
-                f"background:transparent; border:none;"
-                f"border-bottom:2px solid {C.INPUT_BORDER_FOCUS};"
-                f"color:{C.TEXT_PRIMARY};"
-                f"font-size:13px; font-weight:700; padding:0 14px;"
-                f"}}"
-            )
-        return (
-            f"QPushButton{{"
-            f"background:transparent; border:none;"
-            f"border-bottom:2px solid transparent;"
-                f"color:{C.TEXT_SECONDARY};"
-                f"font-size:13px; font-weight:600; padding:0 14px;"
-            f"}}"
-            f"QPushButton:hover{{color:{C.TEXT_PRIMARY};}}"
-        )
+    def _apply_tab_style(self, btn, active: bool):
+        """Tab butonunu aktif/pasif yap — QSS style-role sistemi."""
+        btn.setProperty("style-role", "tab-active" if active else "tab-inactive")
+        btn.style().unpolish(btn)
+        btn.style().polish(btn)
 
-    @staticmethod
-    def _quick_action_btn_qss() -> str:
-        return (
-            f"QPushButton{{"
-            f"text-align:left;"
-            f"padding:0 10px;"
-            f"background:transparent;"
-            f"border:1px solid transparent;"
-            f"border-radius:8px;"
-            f"color:{C.TEXT_PRIMARY};"
-            f"font-size:13px; font-weight:600;"
-            f"}}"
-            f"QPushButton:hover{{"
-            f"background:{C.BG_TERTIARY};"
-            f"border:1px solid {C.BORDER_PRIMARY};"
-            f"color:{C.TEXT_PRIMARY};"
-            f"}}"
-            f"QPushButton:disabled{{"
-            f"background:transparent;"
-            f"border:1px dashed {C.BORDER_PRIMARY};"
-            f"color:{C.TEXT_SECONDARY};"
-            f"}}"
-        )
+    def _apply_quick_action_style(self, btn):
+        """Hızlı işlem butonuna stil ver — QSS style-role sistemi."""
+        btn.setProperty("style-role", "quick-action")
+        btn.style().unpolish(btn)
+        btn.style().polish(btn)

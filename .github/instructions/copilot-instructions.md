@@ -103,7 +103,7 @@ REPYS/
     ├── styles/
     │   ├── colors.py            ← DarkTheme / C alias
     │   ├── themes.py            ← DARK / LIGHT token dict
-    │   ├── components.py        ← STYLES dict (geçiş dönemi, kullanımı azalıyor)
+    │   ├── components.py        ← STYLES dict (KULLANIMI YASAK — yalnızca okunabilir)
     │   └── icons.py             ← Icons, IconRenderer, IconColors
     ├── components/
     │   ├── base_table_model.py  ← Tüm model sınıflarının ebeveyni
@@ -621,7 +621,7 @@ personel_svc.get_personel_listesi()
 
 | # | Dosya | Satır | Yapılacak |
 |---|---|---|---|
-| TODO-6 | Tüm UI | — | ✅ `setStyleSheet(f-string)` kalan: 0 (tamamlandı) |
+| TODO-6 | Tüm UI | — | ✅ `setStyleSheet(f-string)` kalan: 0 (tamamlandı — Mart 2026) |
 | TODO-8 | `tests/services/` | — | Test klasörü henüz yok |
 
 ---
@@ -629,10 +629,12 @@ personel_svc.get_personel_listesi()
 ## DOSYAYA GİRERKEN KONTROL LİSTESİ
 
 ```
-TEMA
-[ ] setStyleSheet(f"...") var mı?       → setProperty("color-role"/"style-role", ...)
-[ ] STYLES["key"] / S["key"] var mı?    → setProperty("style-role", ...) + S import sil
-[ ] QTabWidget'e setStyleSheet var mı?  → satırı sil (QSS global)
+TEMA (bkz. "TEMA SİSTEMİ — KESİN KURALLAR" bölümü)
+[ ] setStyleSheet(f"...") var mı?            → setProperty("style-role", ...) kullan, YASAK
+[ ] setStyleSheet("QPushButton{...}") var mı?→ setProperty("style-role", ...) kullan, YASAK
+[ ] STYLES["key"] / S["key"] var mı?         → setProperty("style-role", ...) + S import sil
+[ ] DarkTheme.XXX inline kullanımı var mı?   → setProperty("color-role"/"bg-role", ...) kullan
+[ ] QTabWidget'e setStyleSheet var mı?        → satırı sil (QSS global)
 
 MODEL
 [ ] _DURUM_COLOR lokal dict var mı?     → status_fg/status_bg kullan, dict sil
@@ -653,6 +655,156 @@ ENUM
 [ ] QHeaderView.Stretch/ResizeTo...?    → QHeaderView.ResizeMode...
 [ ] QSizePolicy.Expanding vb.?          → QSizePolicy.Policy...
 [ ] QFrame.StyledPanel/HLine vb.?       → QFrame.Shape/Shadow...
+```
+
+---
+
+## TEMA SİSTEMİ — KESİN KURALLAR
+
+> ⛔ Bu bölüm **değiştirilemez kurallar** içerir. Aşağıdaki yasaklar hiçbir gerekçeyle esnetilemez.
+
+### Stil Mimarisi
+
+Projede **tek stil kaynağı** `ui/theme_template.qss` dosyasıdır.  
+Python kodunda renk veya stil string'i **asla** üretilmez.
+
+```
+theme_template.qss   ← TEK YER — tüm renkler, boyutlar, durum stilleri burada
+ThemeManager         ← QApplication.setStyleSheet() ile uygular
+setProperty()        ← Python tarafı SADECE bunu kullanır
+```
+
+### ⛔ KESİN YASAKLAR
+
+Aşağıdaki kalıpların **tamamı yasaktır.** Yeni kodda yazma, mevcut kodda görürsen düzelt.
+
+```python
+# ❌ YASAK 1 — f-string ile setStyleSheet
+btn.setStyleSheet(f"QPushButton{{background:{DarkTheme.ACCENT};}}")
+
+# ❌ YASAK 2 — .format() ile setStyleSheet (QPushButton/QLabel için)
+btn.setStyleSheet("QPushButton{{background:{};}}".format(renk))
+
+# ❌ YASAK 3 — STYLES dict / S.get() ile setStyleSheet
+btn.setStyleSheet(S.get("btn_action"))
+btn.setStyleSheet(STYLES.get("btn_secondary", ""))
+
+# ❌ YASAK 4 — Ham renk kodu
+btn.setStyleSheet("QPushButton { background: #0ea5e9; }")
+
+# ❌ YASAK 5 — DarkTheme / C import ile inline stil
+lbl.setStyleSheet(f"color: {C.TEXT_MUTED}; font-size: 12px;")
+```
+
+### ✅ DOĞRU KULLANIM
+
+```python
+# Butona stil ver → setProperty("style-role", "ROL_ADI")
+btn.setProperty("style-role", "action")
+
+# Etikete renk ver → setProperty("color-role", "ROL_ADI")
+lbl.setProperty("color-role", "muted")
+
+# Widget arka planı → setProperty("bg-role", "ROL_ADI")
+panel.setProperty("bg-role", "panel")
+
+# ÖNEMLİ: setProperty sonrası Qt cache'ini temizle (runtime değişimde)
+btn.style().unpolish(btn)
+btn.style().polish(btn)
+```
+
+### style-role Referans Tablosu (QPushButton / QLabel)
+
+| role | Widget | Görünüm / Kullanım |
+|---|---|---|
+| `action` | QPushButton | Mavi dolu — ana işlem (Kaydet, Ekle, Onayla) |
+| `secondary` | QPushButton | Şeffaf + kenarlık — ikincil işlem (Düzenle, Geri) |
+| `success-filled` | QPushButton | Yeşil dolu — kesin kayıt (✓ KAYDET, ✓ BAŞLAT) |
+| `warning` | QPushButton | Turuncu dolu — güncelleme/uyarı (↑ GÜNCELLE) |
+| `danger` | QPushButton | Kırmızı hover — silme/iptal |
+| `refresh` | QPushButton | Şeffaf + kenarlık — yenile ikonu ile |
+| `upload` | QPushButton | BG_SECONDARY + kenarlık — dosya seç/yükle |
+| `close` | QPushButton | Şeffaf, 22×22 — ✕ kapat butonu |
+| `quick-action` | QPushButton | Sol hizalı, yuvarlak — panel hızlı işlem |
+| `tab-active` | QPushButton | Mavi kenarlık-alt — aktif sekme |
+| `tab-inactive` | QPushButton | Şeffaf — pasif sekme |
+| `success` | QPushButton | Yeşil outline hover |
+| `form` | QLabel | Form alan etiketi (gri, 12px) |
+| `title` | QLabel | Büyük başlık |
+| `section` | QLabel | Bölüm başlığı (büyük harf, tracking) |
+| `section-title` | QLabel | Alt bölüm başlığı |
+| `info` | QLabel | Bilgi etiketi (muted, 11px) |
+| `footer` | QLabel | Alt bilgi / sayfalama (muted, 11px) |
+| `header-name` | QLabel | Personel/cihaz adı başlığı |
+| `required` | QLabel | Zorunlu alan yıldızı (*) |
+| `stat-label` | QLabel | İstatistik etiketi (muted, 10px) |
+| `stat-value` | QLabel | İstatistik değeri (büyük, bold) |
+| `stat-red` | QLabel | Kırmızı istatistik değeri |
+| `stat-green` | QLabel | Yeşil istatistik değeri |
+| `stat-highlight` | QLabel | Vurgulu istatistik (accent renk) |
+| `value` | QLabel | Tek değer gösterimi |
+| `donem` | QLabel | Dönem/periyot etiketi |
+| `plain` | QScrollArea | Sade scroll area (transparent, border yok) |
+
+### color-role Referans Tablosu (renk tonu)
+
+| role | Renk |
+|---|---|
+| `primary` | TEXT_PRIMARY |
+| `secondary` | TEXT_SECONDARY |
+| `muted` | TEXT_MUTED (gri açıklama) |
+| `disabled` | TEXT_DISABLED |
+| `accent` | ACCENT (mavi) |
+| `accent2` | ACCENT2 |
+| `ok` | STATUS_SUCCESS (yeşil) |
+| `warn` | STATUS_WARNING (turuncu) |
+| `err` | STATUS_ERROR (kırmızı) |
+| `info` | STATUS_INFO (mavi) |
+
+```python
+# Kullanım: renk tonu vermek için
+lbl.setProperty("color-role", "muted")    # gri açıklama
+lbl.setProperty("color-role", "ok")       # yeşil başarı
+lbl.setProperty("color-role", "err")      # kırmızı hata
+lbl.setProperty("color-role", "warn")     # turuncu uyarı
+```
+
+### bg-role Referans Tablosu (arka plan)
+
+| role | Arka Plan |
+|---|---|
+| `page` | BG_PRIMARY (sayfa) |
+| `panel` | BG_SECONDARY (panel/kart) |
+| `elevated` | BG_ELEVATED (üst katman) |
+| `hover` | BG_TERTIARY (hover/seçili) |
+| `input` | INPUT_BG (input alanı) |
+| `separator` | BORDER_PRIMARY — 1px çizgi (max-height:1px) |
+| `separator-secondary` | BORDER_SECONDARY — ince çizgi |
+| `accent` | ACCENT (vurgulu arka plan) |
+| `transparent` | Şeffaf + kenarsız |
+
+### Yeni QSS Rolü Ekleme Kuralı
+
+Yukarıdaki tablolarda olmayan bir stil gerekirse:
+
+1. `ui/theme_template.qss` dosyasına ekle (dosyanın sonuna, `/* EK BUTON ROLLERİ */` bölümüne)
+2. Python kodunda `setProperty("style-role", "yeni-rol")` kullan
+3. Bu bölümdeki tabloya satır ekle
+
+**Python koduna kesinlikle renk kodu veya stil string'i yazma.**
+
+### İstisna: Gerçekten Dinamik Renkler
+
+Sadece runtime'da hesaplanan renkler (örn. durum badge'i: `rgba(r,g,b,a)`) doğrudan
+`setStyleSheet()` kullanabilir — ama **bu durumda `{{` ve `}}` ile escape zorunludur:**
+
+```python
+# ✅ İZİN VERİLEN TEK İSTİSNA — dinamik hesaplanmış renk
+btn.setStyleSheet(
+    f"QPushButton {{ background: rgba({r},{g},{b},{a}); color: {text}; }}"
+    f"QPushButton:hover {{ background: rgba({r},{g},{b},{min(a+30,255)}); }}"
+)
+# NOT: {{ ve }} QSS literal brace için zorunlu. Değişkenler direkt kullanılabilir.
 ```
 
 ---

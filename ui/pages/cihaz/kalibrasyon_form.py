@@ -1352,10 +1352,7 @@ class _KalibrasyonGirisForm(QWidget):
         text_sec = getattr(DarkTheme, "TEXT_SECONDARY", "#c8cdd8")
         btn_kapat = QPushButton("✕")
         btn_kapat.setFixedSize(22, 22)
-        btn_kapat.setStyleSheet(
-            "QPushButton{{background:transparent;border:none;color:{};font-size:12px;border-radius:4px;}}"
-            "QPushButton:hover{{background:{};color:{};}}" .format(text_sec, _C['border'], _C['text'])
-        )
+        btn_kapat.setProperty("style-role", "close")
         btn_kapat.clicked.connect(self._close_self)
         hdr_l.addWidget(btn_kapat)
         root.addWidget(hdr)
