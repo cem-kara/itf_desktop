@@ -19,10 +19,30 @@ from core.logger import logger
 from core.di import get_cihaz_service as _get_cihaz_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
-from ui.styles.components import ComponentStyles, STYLES
 from ui.styles.icons import IconRenderer
 
 C = DarkTheme
+
+# ── Durum renk yardımcıları ───────────────────────────────────────────────────
+_STATUS_COLORS = {
+    "Aktif":      (46,  201, 142, 38),
+    "Arızalı":    (232, 85,  85,  38),
+    "Bakımda":    (232, 160, 48,  38),
+    "Devre Dışı": (232, 85,  85,  25),
+}
+_STATUS_TEXT = {
+    "Aktif":      "#2ec98e",
+    "Arızalı":    "#e85555",
+    "Bakımda":    "#e8a030",
+    "Devre Dışı": "#8fa3b8",
+}
+
+def _get_status_color(durum: str) -> tuple:
+    return _STATUS_COLORS.get(durum, (143, 163, 184, 25))
+
+def _get_status_text_color(durum: str) -> str:
+    return _STATUS_TEXT.get(durum, "#8fa3b8")
+
 
 # ─── Sütun tanımları ──────────────────────────────────────────
 COLUMNS = [
@@ -174,8 +194,8 @@ class CihazDelegate(QStyledItemDelegate):
     def _draw_status_pill(self, p, rect, text):
         text = text or "—"
         r = QRect(rect.x() + 8, rect.y() + 9, rect.width() - 16, 22)
-        bg = ComponentStyles.get_status_color(text)
-        fg = ComponentStyles.get_status_text_color(text)
+        bg = _get_status_color(text)
+        fg = _get_status_text_color(text)
         br, bgc, bb, ba = bg
         p.setBrush(QBrush(QColor(br, bgc, bb, ba)))
         p.setPen(Qt.PenStyle.NoPen)
@@ -289,8 +309,8 @@ class CihazListesiPage(QWidget):
             btn.setFixedHeight(28)
             btn.setMinimumWidth(90)
 
-            bg = ComponentStyles.get_status_color(lbl)
-            text_color = ComponentStyles.get_status_text_color(lbl)
+            bg = _get_status_color(lbl)
+            text_color = _get_status_text_color(lbl)
             r, g, b, a = bg
             btn_style = f"""
                 QPushButton {{

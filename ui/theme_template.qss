@@ -1,10 +1,10 @@
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ===============================================================
    REPYS v3 â€” Medikal Dark-Blue Tema (theme_template.qss)
    Palette: Deep Navy Â· Cyan accent
    
-   âš  DÄ°KKAT: Bu dosya ÅŸablondur. Sabit renkler {PLACEHOLDER} formatÄ±nda.
-   LoadTheme() iÅŸlevi Ã§alÄ±ÅŸma zamanÄ±nda dynamik olarak doldurur.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   âš  DİKKAT: Bu dosya şablondur. Sabit renkler {PLACEHOLDER} formatında.
+   LoadTheme() işlevi Çalışma zamanında dynamik olarak doldurur.
+   =============================================================== */
 
 /* == Global ==================================================== */
 QWidget {
@@ -18,7 +18,7 @@ QMainWindow, QDialog {
     background-color: {BG_PRIMARY};
 }
 
-/* == Ã–zel pencere Ã§erÃ§evesi =================================== */
+/* == Özel pencere ÇerÇevesi =================================== */
 QMainWindow {
     border: 1px solid rgba(0,180,216,0.15);
 }
@@ -46,15 +46,15 @@ QMessageBox QPushButton {
     min-width: 80px;
 }
 QMessageBox QPushButton:hover { background-color: {ACCENT2}; }
-QMessageBox QPushButton[text="Ä°ptal"],
+QMessageBox QPushButton[text="İptal"],
 QMessageBox QPushButton[text="Cancel"],
-QMessageBox QPushButton[text="HayÄ±r"],
+QMessageBox QPushButton[text="Hayır"],
 QMessageBox QPushButton[text="No"] {
     background-color: rgba(255,255,255,0.06);
     color: {TEXT_SECONDARY};
     border: 1px solid rgba(255,255,255,0.10);
 }
-QMessageBox QPushButton[text="Ä°ptal"]:hover,
+QMessageBox QPushButton[text="İptal"]:hover,
 QMessageBox QPushButton[text="Cancel"]:hover {
     background-color: rgba(255,255,255,0.09);
     color: {TEXT_PRIMARY};
@@ -66,7 +66,7 @@ QToolTip {
     color: {TEXT_PRIMARY};
     border: 1px solid rgba(0,180,216,0.30);
     border-radius: 7px;
-    padding: 6px 10px;
+    padding: 6px 8px;
     font-size: 12px;
 }
 
@@ -162,9 +162,40 @@ QSpinBox:focus, QDoubleSpinBox:focus { border-color: {ACCENT}; }
 QSpinBox::up-button, QSpinBox::down-button,
 QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
     width: 20px;
-    background: transparent;
+    background: {BG_ELEVATED};
     border: none;
+    border-left: 1px solid {BORDER_PRIMARY};
 }
+QSpinBox::up-button, QDoubleSpinBox::up-button {
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+    border-top-right-radius: 3px;
+}
+QSpinBox::down-button, QDoubleSpinBox::down-button {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    border-top: 1px solid {BORDER_PRIMARY};
+    border-bottom-right-radius: 3px;
+}
+QSpinBox::up-button:hover, QSpinBox::down-button:hover,
+QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {
+    background: {ACCENT_BG};
+}
+QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 5px solid {TEXT_SECONDARY};
+}
+QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid {TEXT_SECONDARY};
+}
+
 
 /* == QTextBrowser ============================================== */
 QTextBrowser {
@@ -237,14 +268,53 @@ QCalendarWidget QToolButton:hover {
     color: {ACCENT2};
 }
 QCalendarWidget QAbstractItemView {
-    background-color: {BG_SECONDARY};
-    color: {TEXT_SECONDARY};
-    selection-background-color: rgba(0,180,216,0.18);
-    selection-color: {ACCENT2};
+    background-color: {BG_PRIMARY};
+    color: {TEXT_PRIMARY};
+    selection-background-color: {ACCENT};
+    selection-color: {TEXT_PRIMARY};
     font-size: 13px;
     outline: none;
+    gridline-color: {BORDER_PRIMARY};
 }
-QCalendarWidget QAbstractItemView:disabled { color: {TEXT_DISABLED}; }
+QCalendarWidget QAbstractItemView:enabled {
+    color: {TEXT_PRIMARY};
+}
+QCalendarWidget QAbstractItemView:disabled {
+    color: {TEXT_MUTED};
+}
+QCalendarWidget QWidget#qt_calendar_calendarview {
+    background-color: {BG_PRIMARY};
+    alternate-background-color: {BG_SECONDARY};
+}
+QCalendarWidget QTableView {
+    background-color: {BG_PRIMARY};
+    color: {TEXT_PRIMARY};
+    selection-background-color: {ACCENT};
+    selection-color: {TEXT_PRIMARY};
+    alternate-background-color: {BG_SECONDARY};
+}
+QCalendarWidget QTableView::item:hover {
+    background-color: {ACCENT_BG};
+    color: {TEXT_PRIMARY};
+}
+QCalendarWidget QAbstractItemView:disabled {
+    color: {TEXT_MUTED};
+}
+QCalendarWidget QWidget#qt_calendar_calendarview {
+    background-color: {BG_PRIMARY};
+    alternate-background-color: {BG_SECONDARY};
+}
+QCalendarWidget QTableView {
+    background-color: {BG_PRIMARY};
+    color: {TEXT_PRIMARY};
+    selection-background-color: {ACCENT};
+    selection-color: {TEXT_PRIMARY};
+    alternate-background-color: {BG_SECONDARY};
+}
+QCalendarWidget QTableView::item:hover {
+    background-color: {ACCENT_BG};
+    color: {TEXT_PRIMARY};
+}
 QCalendarWidget #qt_calendar_navigationbar {
     background-color: {BG_TERTIARY};
     border-bottom: 1px solid rgba(255,255,255,0.07);
@@ -321,7 +391,7 @@ QTabBar::tab:selected {
     font-weight: 700;
 }
 
-/* == QFrame ayÄ±rÄ±cÄ±lar ========================================= */
+/* == QFrame ayırıcılar ========================================= */
 QFrame[frameShape="4"],   /* HLine */
 QFrame[frameShape="5"] {  /* VLine */
     color: {BORDER_PRIMARY};
@@ -788,10 +858,9 @@ QComboBox::drop-down {
 }
 QComboBox::drop-down:hover { background: {ACCENT_BG}; }
 QComboBox::down-arrow {
-    width: 0; height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid {TEXT_SECONDARY};
+    image: url("{ICON_CHEVRON_DOWN}");
+    width: 12px;
+    height: 12px;
 }
 QComboBox QAbstractItemView {
     background-color: {BG_ELEVATED};
@@ -828,10 +897,9 @@ QDateEdit::drop-down, QDateTimeEdit::drop-down {
 }
 QDateEdit::drop-down:hover, QDateTimeEdit::drop-down:hover { background: {ACCENT_BG}; }
 QDateEdit::down-arrow, QDateTimeEdit::down-arrow {
-    width: 0; height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid {TEXT_SECONDARY};
+    image: url("{ICON_CHEVRON_DOWN}");
+    width: 12px;
+    height: 12px;
 }
 
 /* ── QListWidget ────────────────────────────────────────────── */
@@ -906,6 +974,25 @@ QTableView::item:selected, QTableWidget::item:selected {
 }
 QTableView::item:hover, QTableWidget::item:hover { background-color: {BG_HOVER}; }
 
+/* Calendar popup için genel table kurallarını override et */
+QCalendarWidget QTableView::item {
+    color: {TEXT_PRIMARY};
+    padding: 4px 6px;
+}
+QCalendarWidget QTableView::item:selected {
+    background-color: {ACCENT};
+    color: {TEXT_PRIMARY};
+}
+QCalendarWidget QTableView::item:hover {
+    background-color: {ACCENT_BG};
+    color: {TEXT_PRIMARY};
+}
+QCalendarWidget QHeaderView::section {
+    background-color: {BG_TERTIARY};
+    color: {TEXT_PRIMARY};
+    border-bottom: 1px solid {BORDER_PRIMARY};
+}
+
 /* ── QHeaderView ────────────────────────────────────────────── */
 QHeaderView::section {
     background-color: {BG_ELEVATED};
@@ -972,3 +1059,9 @@ QLabel[style-role="header-durum-izinli"] {
     font-size: 11px;
     font-weight: 700;
 }
+
+/* Doğru: color-role ve style-role ile
+lbl.setProperty("color-role", "ok")
+lbl.setProperty("style-role", "info")
+lbl.style().unpolish(lbl)
+lbl.style().polish(lbl) */

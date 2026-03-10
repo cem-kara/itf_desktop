@@ -57,19 +57,22 @@ class CihazOverviewPanel(QWidget):
         content = QWidget()
         content.setStyleSheet("background: transparent;")
         content_layout = QHBoxLayout(content)
-        content_layout.setSpacing(20)
+        content_layout.setSpacing(24)
         content_layout.setContentsMargins(16, 16, 16, 16)
 
-        # Formu ortala (cihaz_ekle.py gibi)
-        content_layout.addStretch()
+                # Formu ortala
+        content_layout.setContentsMargins(20, 20, 20, 20)
+        content_layout.addStretch(1)
 
         # 1. Medya ve Dosyalar grubu
         grp_media = self._create_editable_group("Medya ve Dosyalar", "media")
-        grp_media.setFixedWidth(500)
+        grp_media.setMinimumWidth(540)
         media_content_widget = self._groups["media"]["widget"]
         grid_media = QGridLayout(media_content_widget)
-        grid_media.setHorizontalSpacing(12)
-        grid_media.setVerticalSpacing(10)
+        grid_media.setHorizontalSpacing(14)
+        grid_media.setVerticalSpacing(12)
+        grid_media.setColumnStretch(0, 1)
+        grid_media.setColumnStretch(1, 1)
         self._add_line(grid_media, 0, 0, "Cihaz ID", "Cihazid", "media", read_only=True)
         self._add_combo(grid_media, 0, 1, "Cihaz Tipi", "CihazTipi", "media", "Cihaz_Tipi")
         self._add_combo(grid_media, 1, 0, "Ana Bilim Dali", "AnaBilimDali", "media", "AnaBilimDali")
@@ -77,11 +80,13 @@ class CihazOverviewPanel(QWidget):
 
         # 2. Kimlik Bilgileri grubu (medyanın altına)
         grp_kimlik = self._create_editable_group("Kimlik Bilgileri", "kimlik")
-        grp_kimlik.setFixedWidth(500)
+        grp_kimlik.setMinimumWidth(540)
         kimlik_content_widget = self._groups["kimlik"]["widget"]
         grid_kimlik = QGridLayout(kimlik_content_widget)
-        grid_kimlik.setHorizontalSpacing(12)
-        grid_kimlik.setVerticalSpacing(10)
+        grid_kimlik.setHorizontalSpacing(14)
+        grid_kimlik.setVerticalSpacing(12)
+        grid_kimlik.setColumnStretch(0, 1)
+        grid_kimlik.setColumnStretch(1, 1)
         self._add_combo(grid_kimlik, 0, 0, "Marka", "Marka", "kimlik", "Marka")
         self._add_line(grid_kimlik, 0, 1, "Model", "Model", "kimlik")
         self._add_line(grid_kimlik, 1, 0, "Seri No", "SeriNo", "kimlik")
@@ -91,7 +96,7 @@ class CihazOverviewPanel(QWidget):
 
         # Solda dikey olarak yerleştir
         left_panel = QWidget()
-        left_panel.setFixedWidth(500)
+        left_panel.setMinimumWidth(540)
         left_layout = QVBoxLayout(left_panel)
         left_layout.setSpacing(16)
         left_layout.setContentsMargins(0, 0, 0, 0)
@@ -102,7 +107,7 @@ class CihazOverviewPanel(QWidget):
 
         # Sağ: Diğer gruplar (kimlik bilgileri kaldırıldı)
         right = QWidget()
-        right.setFixedWidth(500)
+        right.setMinimumWidth(540)
         right_lay = QVBoxLayout(right)
         right_lay.setSpacing(16)
         right_lay.setContentsMargins(0, 0, 0, 0)
@@ -111,8 +116,10 @@ class CihazOverviewPanel(QWidget):
         grp_lisans = self._create_editable_group("NDK Lisans Bilgileri", "lisans")
         lisans_content_widget = self._groups["lisans"]["widget"]
         grid_lisans = QGridLayout(lisans_content_widget)
-        grid_lisans.setHorizontalSpacing(12)
-        grid_lisans.setVerticalSpacing(10)
+        grid_lisans.setHorizontalSpacing(14)
+        grid_lisans.setVerticalSpacing(12)
+        grid_lisans.setColumnStretch(0, 1)
+        grid_lisans.setColumnStretch(1, 1)
         self._add_line(grid_lisans, 0, 0, "Lisans No", "NDKLisansNo", "lisans")
         self._add_line(grid_lisans, 0, 1, "NDK Seri No", "NDKSeriNo", "lisans")
         self._add_combo(grid_lisans, 1, 0, "Lisans Durum", "LisansDurum", "lisans", "Lisans_Durum")
@@ -126,8 +133,10 @@ class CihazOverviewPanel(QWidget):
         grp_teknik = self._create_editable_group("Teknik Hizmetler", "teknik")
         teknik_content_widget = self._groups["teknik"]["widget"]
         grid_teknik = QGridLayout(teknik_content_widget)
-        grid_teknik.setHorizontalSpacing(12)
-        grid_teknik.setVerticalSpacing(10)
+        grid_teknik.setHorizontalSpacing(14)
+        grid_teknik.setVerticalSpacing(12)
+        grid_teknik.setColumnStretch(0, 1)
+        grid_teknik.setColumnStretch(1, 1)
         self._add_date(grid_teknik, 0, 0, "Hizmete Giris", "HizmeteGirisTarihi", "teknik", colspan=2)
         self._add_combo(grid_teknik, 1, 0, "Garanti Durum", "GarantiDurumu", "teknik", "Garanti_Durum")
         self._add_date(grid_teknik, 1, 1, "Garanti Bitis", "GarantiBitisTarihi", "teknik")
@@ -136,10 +145,9 @@ class CihazOverviewPanel(QWidget):
         right_lay.addWidget(grp_teknik)
 
         right_lay.addStretch()
-        content_layout.addWidget(right)
-
+        content_layout.addWidget(right, 0)
         # Formu ortala
-        content_layout.addStretch()
+        content_layout.addStretch(1)
 
         scroll.setWidget(content)
         main_layout.addWidget(scroll)
@@ -151,7 +159,8 @@ class CihazOverviewPanel(QWidget):
         grp.setStyleSheet(S["group_box"])
         
         vbox = QVBoxLayout(grp)
-        vbox.setContentsMargins(10, 10, 10, 10)
+        vbox.setContentsMargins(12, 12, 12, 12)
+        vbox.setSpacing(10)
         
         # Header Satırı (Başlık + Butonlar)
         header_row = QHBoxLayout()
@@ -184,6 +193,7 @@ class CihazOverviewPanel(QWidget):
         
         # İçerik için placeholder widget
         content_widget = QWidget()
+        content_widget.setStyleSheet("background: transparent;")
         vbox.addWidget(content_widget)
         
         # Referansları sakla
@@ -214,10 +224,11 @@ class CihazOverviewPanel(QWidget):
         lbl = QLabel(label)
         lbl.setStyleSheet(S["label_form"])
         edit = QLineEdit()
+        edit.setPlaceholderText("-")
         edit.setReadOnly(True)
         edit.setProperty("initial_readonly", read_only)
         edit.setProperty("color-role", "primary")
-        edit.setStyleSheet("background: transparent; border: none; font-weight: 500;")
+        edit.setStyleSheet(self._field_style_read())
         edit.style().unpolish(edit)
         edit.style().polish(edit)
         self._widgets[key] = edit
@@ -232,10 +243,7 @@ class CihazOverviewPanel(QWidget):
         combo = QComboBox()
         combo.setEnabled(False)
         combo.setProperty("db_kodu", db_kodu)
-        combo.setStyleSheet(
-            f"background: transparent; border: none; color: {C.TEXT_PRIMARY}; "
-            "font-size: 13px; font-weight: 500; padding: 4px;"
-        )
+        combo.setStyleSheet(self._combo_style_read())
         self._widgets[key] = combo
         self._groups[group_id]["fields"].append(key)
         grid.addWidget(lbl, row * 2, col, 1, colspan)
@@ -249,10 +257,7 @@ class CihazOverviewPanel(QWidget):
         date.setCalendarPopup(True)
         date.setDisplayFormat("dd.MM.yyyy")
         date.setEnabled(False)
-        date.setStyleSheet(
-            f"background: transparent; border: none; color: {C.TEXT_PRIMARY}; "
-            "font-size: 13px; font-weight: 500; padding: 4px;"
-        )
+        date.setStyleSheet(self._date_style_read())
         self._widgets[key] = date
         self._groups[group_id]["fields"].append(key)
         grid.addWidget(lbl, row * 2, col, 1, colspan)
@@ -265,14 +270,17 @@ class CihazOverviewPanel(QWidget):
         wrap = QHBoxLayout()
         line = QLineEdit()
         line.setReadOnly(True)
+        line.setPlaceholderText("-")
         line.setProperty("color-role", "primary")
-        line.setStyleSheet("background: transparent; border: none; font-weight: 500;")
+        line.setStyleSheet(self._field_style_read())
         line.style().unpolish(line)
         line.style().polish(line)
         btn = QPushButton("Sec")
         btn.setStyleSheet(S["btn_refresh"])
         btn.setEnabled(False)
         btn.clicked.connect(lambda: self._pick_file(line))
+        wrap.setContentsMargins(0, 0, 0, 0)
+        wrap.setSpacing(8)
         wrap.addWidget(line)
         wrap.addWidget(btn)
         container = QWidget()
@@ -349,19 +357,10 @@ class CihazOverviewPanel(QWidget):
         grp["btn_save"].setVisible(edit_mode)
         grp["btn_cancel"].setVisible(edit_mode)
         
-        style_edit = (
-            f"background: {C.BG_SECONDARY}; border: 1px solid {C.INPUT_BORDER_FOCUS}; "
-            f"border-radius: 4px; padding: 4px; color: {C.TEXT_PRIMARY};"
-        )
-        style_read = f"background: transparent; border: none; color: {C.TEXT_PRIMARY}; font-weight: 500;"
-        style_combo_read = (
-            f"background: transparent; border: none; color: {C.TEXT_PRIMARY}; "
-            "font-size: 13px; font-weight: 500; padding: 4px;"
-        )
-        style_date_read = (
-            f"background: transparent; border: none; color: {C.TEXT_PRIMARY}; "
-            "font-size: 13px; font-weight: 500; padding: 4px;"
-        )
+        style_edit = self._field_style_edit()
+        style_read = self._field_style_read()
+        style_combo_read = self._combo_style_read()
+        style_date_read = self._date_style_read()
         
         for key in grp["fields"]:
             widget = self._widgets[key]
@@ -402,6 +401,30 @@ class CihazOverviewPanel(QWidget):
                             widget.setDate(QDate.currentDate())
                     else:
                         widget.setDate(QDate.currentDate())
+
+    def _field_style_read(self):
+        return (
+            f"background: {C.BG_TERTIARY}; border: 1px solid {C.BORDER_SECONDARY}; "
+            f"border-radius: 4px; padding: 6px; color: {C.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
+        )
+
+    def _field_style_edit(self):
+        return (
+            f"background: {C.BG_SECONDARY}; border: 1px solid {C.INPUT_BORDER_FOCUS}; "
+            f"border-radius: 4px; padding: 6px; color: {C.TEXT_PRIMARY}; font-size: 13px;"
+        )
+
+    def _combo_style_read(self):
+        return (
+            f"background: {C.BG_TERTIARY}; border: 1px solid {C.BORDER_SECONDARY}; "
+            f"border-radius: 4px; padding: 6px; color: {C.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
+        )
+
+    def _date_style_read(self):
+        return (
+            f"background: {C.BG_TERTIARY}; border: 1px solid {C.BORDER_SECONDARY}; "
+            f"border-radius: 4px; padding: 6px; color: {C.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
+        )
 
     def _save_group(self, group_id):
         """Grup verilerini kaydet."""

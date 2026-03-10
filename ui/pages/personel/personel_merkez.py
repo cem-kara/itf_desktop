@@ -14,7 +14,6 @@ from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QCursor, QPixmap
 
 from ui.styles import DarkTheme
-from ui.styles.components import ComponentStyles, STYLES
 from ui.styles.icons import IconRenderer, Icons
 from ui.theme_manager import ThemeManager
 from ui.pages.personel.components.personel_ozet_servisi import personel_ozet_getir
@@ -335,12 +334,12 @@ class PersonelMerkezPage(QWidget):
                 icon_lbl = QLabel()
                 icon_lbl.setFixedSize(16, 16)
                 icon_lbl.setPixmap(Icons.pixmap("check_circle", size=16, 
-                                                color=ComponentStyles.get_status_text_color('Aktif')))
+                                                color=_get_status_text_color('Aktif')))
                 h.addWidget(icon_lbl)
                 
                 lbl = QLabel("Kritik durum yok")
                 lbl.setStyleSheet(
-                    f"color:{ComponentStyles.get_status_text_color('Aktif')};"
+                    f"color:{_get_status_text_color('Aktif')};"
                     "background:transparent; font-size:12px;"
                 )
                 h.addWidget(lbl)
@@ -362,13 +361,13 @@ class PersonelMerkezPage(QWidget):
                     icon_lbl = QLabel()
                     icon_lbl.setFixedSize(16, 16)
                     icon_lbl.setPixmap(Icons.pixmap("alert_triangle", size=16,
-                                                    color=ComponentStyles.get_status_text_color('İzinli')))
+                                                    color=_get_status_text_color('İzinli')))
                     h.addWidget(icon_lbl)
                     
                     lbl = QLabel(msg)
                     lbl.setWordWrap(True)
                     lbl.setStyleSheet(
-                        f"color:{ComponentStyles.get_status_text_color('İzinli')};"
+                        f"color:{_get_status_text_color('İzinli')};"
                         "background:transparent; font-size:12px;"
                     )
                     h.addWidget(lbl, 1)
@@ -447,7 +446,7 @@ class PersonelMerkezPage(QWidget):
             err = QLabel(f"Modül yüklenemedi: {code}\n{e}")
             err.setAlignment(Qt.AlignmentFlag.AlignCenter)
             # Fallback: stat_red yoksa direkt hata rengi kullan
-            err.setStyleSheet(STYLES.get("stat_red") or "color:{};".format(C.STATUS_ERROR))
+            err.setProperty("style-role", "stat-red")
             return err
 
     # ═══════════════════════════════════════════════════
@@ -533,13 +532,15 @@ class PersonelMerkezPage(QWidget):
                 logger.warning(f"Sağlık modülü yenileme hatası: {e}")
 
     def _apply_durum_style(self, durum: str):
-        durum_style_map = {
-            "Aktif": STYLES["header_durum_aktif"],
-            "Pasif": STYLES["header_durum_pasif"],
-            "İzinli": STYLES["header_durum_izinli"],
+        role_map = {
+            "Aktif":  "header-durum-aktif",
+            "Pasif":  "header-durum-pasif",
+            "İzinli": "header-durum-izinli",
         }
-        fallback_style = f"color:{C.TEXT_SECONDARY}; background:transparent; font-size:11px;"
-        self.lbl_durum.setStyleSheet(durum_style_map.get(durum, fallback_style))
+        role = role_map.get(durum, "info")
+        self.lbl_durum.setProperty("style-role", role)
+        self.lbl_durum.style().unpolish(self.lbl_durum)
+        self.lbl_durum.style().polish(self.lbl_durum)
 
     def _on_theme_changed(self, _theme_name: str):
         """Tema değişince runtime setStyleSheet alanlarını yeniler."""
@@ -633,7 +634,6 @@ class PersonelMerkezPage(QWidget):
     #  STİL SABİTLERİ (hardcoded renk içermeyen)
     # ═══════════════════════════════════════════════════
 
-    @staticmethod
     def _apply_tab_style(self, btn, active: bool):
         """Tab butonunu aktif/pasif yap — QSS style-role sistemi."""
         btn.setProperty("style-role", "tab-active" if active else "tab-inactive")

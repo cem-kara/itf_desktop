@@ -93,54 +93,64 @@ class CihazEklePage(QWidget):
         # Formu ortala (personel_ekle.py gibi)
         content_layout.addStretch()
 
-        # Sol: Medya ve Dosyalar grubu
+        # Sol kolon: Medya ve Kimlik Bilgileri
+        left = QWidget()
+        left.setFixedWidth(500)
+        left_col = QVBoxLayout(left)
+        left_col.setSpacing(16)
+        left_col.setContentsMargins(0, 0, 0, 0)
+
+        # 1) Medya ve Dosyalar
         left_grp = QGroupBox("Medya ve Dosyalar")
         left_grp.setStyleSheet(S["group"])
         left_lay = QGridLayout(left_grp)
-        left_grp.setFixedWidth(500)
         left_lay.setSpacing(8)
-        # Cihaz ID
+        left_lay.setColumnStretch(0, 1)
+        left_lay.setColumnStretch(1, 1)
         self._add_line(left_lay, 0, 0, "Cihaz ID", "Cihazid", read_only=True)
-        # Ana Bilim Dalı
+        self._add_combo(left_lay, 0, 1, "Cihaz Tipi", "CihazTipi", "Cihaz_Tipi")
         self._add_combo(left_lay, 1, 0, "Ana Bilim Dali", "AnaBilimDali", "AnaBilimDali")
-        # Cihaz Tipi
-        self._add_combo(left_lay, 2, 0, "Cihaz Tipi", "CihazTipi", "Cihaz_Tipi")
-        # Kaynak
-        self._add_combo(left_lay, 3, 0, "Kaynak", "Kaynak", "Kaynak")
-        content_layout.addWidget(left_grp, alignment=Qt.AlignmentFlag.AlignTop)
+        self._add_combo(left_lay, 1, 1, "Kaynak", "Kaynak", "Kaynak")
+        left_col.addWidget(left_grp)
 
-        # Sağ: Kimlik, NDK, Teknik Hizmetler grupları alt alta
-        right = QWidget()
-        right.setFixedWidth(600)
-        right_lay = QVBoxLayout(right)
-        right_lay.setSpacing(16)
-        right_lay.setContentsMargins(0, 0, 0, 0)
-
-        # Kimlik Bilgileri
+        # 2) Kimlik Bilgileri
         kimlik_grp = QGroupBox("Kimlik Bilgileri")
         kimlik_grp.setStyleSheet(S["group"])
         kimlik_lay = QGridLayout(kimlik_grp)
         kimlik_lay.setSpacing(8)
+        kimlik_lay.setColumnStretch(0, 1)
+        kimlik_lay.setColumnStretch(1, 1)
         self._add_combo(kimlik_lay, 0, 0, "Marka", "Marka", "Marka")
         self._add_line(kimlik_lay, 0, 1, "Model", "Model")
         self._add_line(kimlik_lay, 1, 0, "Seri No", "SeriNo")
         self._add_combo(kimlik_lay, 1, 1, "Amac", "Amac", "Amac")
         self._add_combo(kimlik_lay, 2, 0, "Birim", "Birim", "Birim")
         self._add_line(kimlik_lay, 2, 1, "Bulundugu Bina", "BulunduguBina")
-        right_lay.addWidget(kimlik_grp)
+        left_col.addWidget(kimlik_grp)
+        left_col.addStretch()
+        content_layout.addWidget(left, alignment=Qt.AlignmentFlag.AlignTop)
+
+        # Sağ kolon: NDK + Teknik Hizmetler
+        right = QWidget()
+        right.setFixedWidth(600)
+        right_lay = QVBoxLayout(right)
+        right_lay.setSpacing(16)
+        right_lay.setContentsMargins(0, 0, 0, 0)
 
         # NDK Lisans Bilgileri
         ndk_grp = QGroupBox("NDK Lisans Bilgileri")
         ndk_grp.setStyleSheet(S["group"])
         ndk_lay = QGridLayout(ndk_grp)
         ndk_lay.setSpacing(8)
+        ndk_lay.setColumnStretch(0, 1)
+        ndk_lay.setColumnStretch(1, 1)
         self._add_line(ndk_lay, 0, 0, "Lisans No", "NDKLisansNo")
         self._add_line(ndk_lay, 0, 1, "NDK Seri No", "NDKSeriNo")
         self._add_combo(ndk_lay, 1, 0, "Lisans Durum", "LisansDurum", "Lisans_Durum")
         self._add_date(ndk_lay, 1, 1, "Lisans Bitis", "BitisTarihi")
         self._add_line(ndk_lay, 2, 0, "Sorumlu", "Sorumlusu")
         self._add_line(ndk_lay, 2, 1, "RKS", "RKS")
-        self._add_file(ndk_lay, 3, 0, "Lisans Belgesi", "NDKLisansBelgesi")
+        self._add_file(ndk_lay, 3, 0, "Lisans Belgesi", "NDKLisansBelgesi", colspan=2)
         right_lay.addWidget(ndk_grp)
 
         # Teknik Hizmetler
@@ -148,11 +158,13 @@ class CihazEklePage(QWidget):
         teknik_grp.setStyleSheet(S["group"])
         teknik_lay = QGridLayout(teknik_grp)
         teknik_lay.setSpacing(8)
-        self._add_date(teknik_lay, 0, 0, "Hizmete Giris", "HizmeteGirisTarihi")
-        self._add_combo(teknik_lay, 0, 1, "Garanti Durum", "GarantiDurumu", "Garanti_Durum")
-        self._add_date(teknik_lay, 1, 0, "Garanti Bitis", "GarantiBitisTarihi")
-        self._add_combo(teknik_lay, 1, 1, "Periyodik Bakim", "BakimDurum", "Bakim_Durum")
-        self._add_combo(teknik_lay, 2, 0, "Kalibrasyon", "KalibrasyonGereklimi", "Kalibrasyon_Durum")
+        teknik_lay.setColumnStretch(0, 1)
+        teknik_lay.setColumnStretch(1, 1)
+        self._add_date(teknik_lay, 0, 0, "Hizmete Giris", "HizmeteGirisTarihi", colspan=2)
+        self._add_combo(teknik_lay, 1, 0, "Garanti Durum", "GarantiDurumu", "Garanti_Durum")
+        self._add_date(teknik_lay, 1, 1, "Garanti Bitis", "GarantiBitisTarihi")
+        self._add_combo(teknik_lay, 2, 0, "Periyodik Bakim", "BakimDurum", "Bakim_Durum")
+        self._add_combo(teknik_lay, 2, 1, "Kalibrasyon", "KalibrasyonGereklimi", "Kalibrasyon_Durum")
         right_lay.addWidget(teknik_grp)
 
         right_lay.addStretch()

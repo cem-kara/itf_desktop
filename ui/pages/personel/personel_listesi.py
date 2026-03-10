@@ -23,11 +23,29 @@ from core.logger import logger
 from core.di import get_personel_service, get_izin_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
-from ui.styles.components import ComponentStyles, STYLES
 from ui.styles.icons import IconRenderer
 from ui.theme_manager import ThemeManager
 
 C = DarkTheme  # kısayol
+
+# ── Durum renk yardımcıları (ComponentStyles yerine) ─────────────────────────
+_STATUS_COLORS = {
+    "Aktif":   (46,  201, 142, 38),   # yeşil  rgba(46,201,142,0.15)
+    "Pasif":   (232, 85,  85,  38),   # kırmızı
+    "İzinli":  (232, 160, 48,  38),   # turuncu
+}
+_STATUS_TEXT = {
+    "Aktif":   "#2ec98e",
+    "Pasif":   "#e85555",
+    "İzinli":  "#e8a030",
+}
+
+def _get_status_color(durum: str) -> tuple:
+    return _STATUS_COLORS.get(durum, (143, 163, 184, 25))
+
+def _get_status_text_color(durum: str) -> str:
+    return _STATUS_TEXT.get(durum, "#8fa3b8")
+
 
 # ─── Sütun tanımları ──────────────────────────────────────────
 COLUMNS = [
@@ -341,11 +359,11 @@ class PersonelDelegate(QStyledItemDelegate):
         # Dolu kısım (pct'ye göre renk)
         if pct is not None and pct >= 0:
             if pct >= 0.7:
-                fc = QColor(ComponentStyles.get_status_text_color("Aktif"))   # yeşil
+                fc = QColor(_get_status_text_color("Aktif"))   # yeşil
             elif pct >= 0.3:
                 fc = QColor(C.BTN_PRIMARY_BORDER)                             # mavi
             else:
-                fc = QColor(ComponentStyles.get_status_text_color("İzinli"))  # sarı
+                fc = QColor(_get_status_text_color("İzinli"))  # sarı
             fw = max(3, int(bw * pct))
             p.setBrush(QBrush(fc))
             p.drawRoundedRect(bx, by, fw, bh, 2, 2)
@@ -355,8 +373,8 @@ class PersonelDelegate(QStyledItemDelegate):
         durum = str(row.get("Durum", "")).strip()
         text = str(row.get("DurumDetay", "")).strip() or durum
 
-        r_val, g_val, b_val, a_val = ComponentStyles.get_status_color(durum)
-        fg_hex = ComponentStyles.get_status_text_color(durum)
+        r_val, g_val, b_val, a_val = _get_status_color(durum)
+        fg_hex = _get_status_text_color(durum)
 
         font = QFont("", 8, QFont.Weight.Medium)
         p.setFont(font)
@@ -460,16 +478,16 @@ class PersonelListesiPage(QWidget):
         # Durum filtre pill butonları — her durum için özel renk
         filter_styles = {
             "Aktif": {
-                "bg": ComponentStyles.get_status_color("Aktif"),
-                "text": ComponentStyles.get_status_text_color("Aktif")
+                "bg": _get_status_color("Aktif"),
+                "text": _get_status_text_color("Aktif")
             },
             "Pasif": {
-                "bg": ComponentStyles.get_status_color("Pasif"),
-                "text": ComponentStyles.get_status_text_color("Pasif")
+                "bg": _get_status_color("Pasif"),
+                "text": _get_status_text_color("Pasif")
             },
             "İzinli": {
-                "bg": ComponentStyles.get_status_color("İzinli"),
-                "text": ComponentStyles.get_status_text_color("İzinli")
+                "bg": _get_status_color("İzinli"),
+                "text": _get_status_text_color("İzinli")
             },
             "Tümü": {
                 "bg": (30, 180, 216, 35),  # Accent color
@@ -562,7 +580,7 @@ class PersonelListesiPage(QWidget):
     def _build_subtoolbar(self) -> QFrame:
         frame = QFrame()
         self._subtoolbar_frame = frame
-        frame.setFixedHeight(36)
+        frame.setFixedHeight(48)
         lay = QHBoxLayout(frame)
         lay.setContentsMargins(16, 0, 16, 0)
         lay.setSpacing(8)
@@ -712,16 +730,16 @@ class PersonelListesiPage(QWidget):
         # Durum filtre butonlarını aktif tema renkleriyle yeniden boya.
         filter_styles = {
             "Aktif": {
-                "bg": ComponentStyles.get_status_color("Aktif"),
-                "text": ComponentStyles.get_status_text_color("Aktif")
+                "bg": _get_status_color("Aktif"),
+                "text": _get_status_text_color("Aktif")
             },
             "Pasif": {
-                "bg": ComponentStyles.get_status_color("Pasif"),
-                "text": ComponentStyles.get_status_text_color("Pasif")
+                "bg": _get_status_color("Pasif"),
+                "text": _get_status_text_color("Pasif")
             },
             "İzinli": {
-                "bg": ComponentStyles.get_status_color("İzinli"),
-                "text": ComponentStyles.get_status_text_color("İzinli")
+                "bg": _get_status_color("İzinli"),
+                "text": _get_status_text_color("İzinli")
             },
             "Tümü": {
                 "bg": (30, 180, 216, 35),
@@ -1077,7 +1095,6 @@ class PersonelListesiPage(QWidget):
         durum  = str(row.get("Durum", "")).strip()
 
         menu = QMenu(self)
-        menu.setStyleSheet(STYLES["context_menu"])
         menu.addAction("Detay Görüntüle").triggered.connect(
             lambda: self.detay_requested.emit(row))
         menu.addSeparator()

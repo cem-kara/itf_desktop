@@ -110,11 +110,14 @@ class ThemeRegistry:
     def get_theme_template_content(self, theme_type: ThemeType) -> str:
         """QSS şablon içeriğini döndür (geriye dönük uyumluluk)."""
         from pathlib import Path
+        from ui.styles.icons import Icons
         from ui.styles.themes import get_tokens
         try:
             qss_path = Path(__file__).parent.parent / "theme_template.qss"
             template = qss_path.read_text(encoding="utf-8")
             tokens = get_tokens(theme_type.value)
+            tokens["ICON_CHEVRON_UP"] = Icons.qss_url("chevron_up", tokens["TEXT_SECONDARY"], 12)
+            tokens["ICON_CHEVRON_DOWN"] = Icons.qss_url("chevron_down", tokens["TEXT_SECONDARY"], 12)
             for k, v in tokens.items():
                 template = template.replace(f"{{{k}}}", v)
             return template

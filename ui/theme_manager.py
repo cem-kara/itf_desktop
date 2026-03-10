@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QApplication
 
 from core import settings
 from core.logger import logger
+from ui.styles.icons import Icons
 from ui.styles.themes import get_tokens
 
 _QSS_PATH = Path(__file__).parent / "theme_template.qss"
@@ -107,6 +108,8 @@ class ThemeManager(QObject):
             template = ""
 
         qss = template
+        tokens["ICON_CHEVRON_UP"] = Icons.qss_url("chevron_up", tokens["TEXT_SECONDARY"], 12)
+        tokens["ICON_CHEVRON_DOWN"] = Icons.qss_url("chevron_down", tokens["TEXT_SECONDARY"], 12)
         for key, val in tokens.items():
             qss = qss.replace(f"{{{key}}}", val)
         app.setStyleSheet(qss)
@@ -148,6 +151,8 @@ class ThemeManager(QObject):
             template = _QSS_PATH.read_text(encoding="utf-8")
         except FileNotFoundError:
             return ""
+        tokens["ICON_CHEVRON_UP"] = Icons.qss_url("chevron_up", tokens["TEXT_SECONDARY"], 12)
+        tokens["ICON_CHEVRON_DOWN"] = Icons.qss_url("chevron_down", tokens["TEXT_SECONDARY"], 12)
         for key, val in tokens.items():
             template = template.replace(f"{{{key}}}", val)
         return template
