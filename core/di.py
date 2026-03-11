@@ -67,7 +67,7 @@ def get_log_service(db):
 
 def get_settings_service(db):
     from core.services.settings_service import SettingsService
-    return SettingsService()
+    return SettingsService(db)
 
 def get_file_sync_service(db):
     from core.services.file_sync_service import FileSyncService

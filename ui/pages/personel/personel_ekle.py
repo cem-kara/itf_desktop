@@ -958,8 +958,9 @@ class PersonelEklePage(QWidget):
 
         if self._upload_errors:
             MesajKutusu.uyari(
-                self, "Drive Yükleme Uyarısı",
-                "Bazı dosyalar yüklenemedi:\n" + "\n".join(self._upload_errors)
+                self,
+                "Bazı dosyalar yüklenemedi:\n" + "\n".join(self._upload_errors),
+                "Drive Yükleme Uyarısı"
             )
         if hasattr(self, "_upload_callback"):
             self._upload_callback()
@@ -1067,8 +1068,9 @@ class PersonelEklePage(QWidget):
         errors = self._validate()
         if errors:
             MesajKutusu.uyari(
-                self, "Eksik Bilgi",
-                "\n".join(f"• {e}" for e in errors)
+                self,
+                "\n".join(f"• {e}" for e in errors),
+                "Eksik Bilgi"
             )
             self.btn_kaydet.setEnabled(True)
             return
@@ -1093,8 +1095,9 @@ class PersonelEklePage(QWidget):
                 existing = self._personel_svc.get_personel_by_tc(tc_no)
                 if existing:
                     MesajKutusu.uyari(
-                        self, "Kayıt Mevcut",
-                        f"TC {tc_no} ile kayıtlı personel zaten var."
+                        self,
+                        f"TC {tc_no} ile kayıtlı personel zaten var.",
+                        "Kayıt Mevcut"
                     )
                     self.btn_kaydet.setEnabled(True)
                     return
@@ -1120,21 +1123,22 @@ class PersonelEklePage(QWidget):
 
         try:
             if not self._personel_svc:
-                MesajKutusu.hata(self, "Hata", "Veritabanı bağlantısı bulunamadı.")
+                MesajKutusu.hata(self, "Veritabanı bağlantısı bulunamadı.", "Hata")
                 self.btn_kaydet.setEnabled(True)
                 return
 
             if self._is_edit:
                 ok = self._personel_svc.guncelle(data["KimlikNo"], data)
                 if not ok:
-                    MesajKutusu.hata(self, "Hata", "Personel kaydı güncellenemedi.")
+                    MesajKutusu.hata(self, "Personel kaydı güncellenemedi.", "Hata")
                     self.btn_kaydet.setEnabled(True)
                     return
                 logger.info(f"Personel güncellendi: {data['KimlikNo']}")
                 
                 MesajKutusu.bilgi(
-                    self, "Başarılı",
-                    "Personel kaydı başarıyla güncellendi."
+                    self,
+                    "Personel kaydı başarıyla güncellendi.",
+                    "Başarılı"
                 )
 
                 if self._on_saved:
@@ -1146,8 +1150,8 @@ class PersonelEklePage(QWidget):
                 if not ok:
                     MesajKutusu.hata(
                         self,
-                        "Hata",
                         "Personel kaydı eklenemedi.\nTC Kimlik No ve zorunlu alanları kontrol edin.",
+                        "Hata"
                     )
                     self.btn_kaydet.setEnabled(True)
                     return
@@ -1212,8 +1216,8 @@ class PersonelEklePage(QWidget):
                 # Yeni ekleme: kullanıcıya belge yükleme seçeneği sun
                 yanit = MesajKutusu.soru(
                     self,
-                    "Başarılı",
-                    "Personel kaydı başarıyla eklendi.\n\nBelge yüklemek istiyor musunuz?"
+                    "Personel kaydı başarıyla eklendi.\n\nBelge yüklemek istiyor musunuz?",
+                    "Başarılı"
                 )
 
                 if yanit:
@@ -1239,8 +1243,8 @@ class PersonelEklePage(QWidget):
                     
                     MesajKutusu.bilgi(
                         self,
-                        "Bilgi",
-                        "Artık belge yükleyebilirsiniz.\n\nİşlemler bittiğinde:\n- 'YENİ PERSONEL' → Başka personel ekleyin\n- 'İptal' → Listeye dönün"
+                        "Artık belge yükleyebilirsiniz.\n\nİşlemler bittiğinde:\n- 'YENİ PERSONEL' → Başka personel ekleyin\n- 'İptal' → Listeye dönün",
+                        "Bilgi"
                     )
                 else:
                     # Hayır dedi, normal akış devam etsin
@@ -1251,7 +1255,7 @@ class PersonelEklePage(QWidget):
 
         except Exception as e:
             logger.error(f"Kaydetme hatası: {e}")
-            MesajKutusu.hata(self, "Hata", f"Kaydetme sırasında hata:\n{e}")
+            MesajKutusu.hata(self, f"Kaydetme sırasında hata:\n{e}", "Hata")
             self.btn_kaydet.setEnabled(True)
 
     def _on_cancel(self):
@@ -1306,10 +1310,10 @@ class PersonelEklePage(QWidget):
             logger.info("Form yeni personel için temizlendi")
             MesajKutusu.bilgi(
                 self,
-                "Form Hazır",
-                "Form yeni personel eklemek için temizlendi."
+                "Form yeni personel eklemek için temizlendi.",
+                "Form Hazır"
             )
 
         except Exception as e:
             logger.error(f"Form temizleme hatası: {e}")
-            MesajKutusu.uyari(self, "Uyarı", f"Form temizlenirken hata oluştu: {e}")
+            MesajKutusu.uyari(self, f"Form temizlenirken hata oluştu: {e}", "Uyarı")

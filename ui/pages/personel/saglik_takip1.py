@@ -279,7 +279,7 @@ class SaglikTakipPage(QWidget):
         for p in aktif:
             ad = p.get("AdSoyad", "")
             tc = p.get("KimlikNo", "")
-            birim = p.get("GorevYeri", "") or p.get("Birim", "")
+            birim = p.get("Birim", "")
             self.cmb_personel.addItem(f"{ad}  ({birim})", p)
         if current_data:
             idx = self.cmb_personel.findData(current_data)
@@ -434,7 +434,7 @@ class SaglikTakipPage(QWidget):
 
         # Yıl
         self.cmb_yil = QComboBox()
-        self.cmb_yil.setFixedWidth(200)
+        self.cmb_yil.setFixedWidth(110)
         self.cmb_yil.addItem("Tüm Yıllar", 0)
         this_year = date.today().year
         for y in range(this_year + 1, this_year - 4, -1):
@@ -444,13 +444,13 @@ class SaglikTakipPage(QWidget):
 
         # Birim
         self.cmb_birim_filter = QComboBox()
-        self.cmb_birim_filter.setMinimumWidth(300)
+        self.cmb_birim_filter.setMinimumWidth(140)
         self.cmb_birim_filter.addItem("Tüm Birimler")
         lay.addWidget(self.cmb_birim_filter)
 
         # Durum
         self.cmb_durum_filter = QComboBox()
-        self.cmb_durum_filter.setMinimumWidth(150)
+        self.cmb_durum_filter.setMinimumWidth(130)
         self.cmb_durum_filter.addItems(
             ["Tüm Durumlar", "Planlandi", "Gecerli", "Gecikmis", "Riskli"]
         )
@@ -526,7 +526,7 @@ class SaglikTakipPage(QWidget):
         self.btn_form_kapat.setFixedSize(28, 28)
         self.btn_form_kapat.setToolTip("Formu Kapat")
         self.btn_form_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_form_kapat, "x", color=IconColors.DANGER, size=14)
+        IconRenderer.set_button_icon(self.btn_form_kapat, "x", color=IconColors.DANGER, size=12)
         top_row.addWidget(self.btn_form_kapat)
         form_lay.addLayout(top_row)
 
@@ -562,11 +562,10 @@ class SaglikTakipPage(QWidget):
         for key in self._exam_keys:
             lbl_txt, icon_key = exam_labels[key]
             exam_row.addWidget(self._create_exam_box(key, lbl_txt, icon_key))
-
         exam_lay.addLayout(exam_row)
         form_lay.addWidget(self.exam_section)
 
-        # ── Alt satır: Rapor + Notlar + Kaydet/İptal ──
+        # ── Alt satır: Rapor + Notlar + Kaydet ──
         bottom_row = QHBoxLayout()
         bottom_row.setSpacing(10)
 
@@ -596,8 +595,7 @@ class SaglikTakipPage(QWidget):
         bottom_row.addWidget(rapor_grp, 2)
 
         # Notlar
-        self._not_grp = QFrame()
-        not_grp = self._not_grp
+        not_grp = QFrame()
         not_grp.setProperty("bg-role", "elevated")
         not_grp.setStyleSheet("border-radius: 6px;")
         not_grp_l = QHBoxLayout(not_grp)
@@ -840,6 +838,7 @@ class SaglikTakipPage(QWidget):
         self.exam_section.setVisible(True)
         self.cmb_personel.setVisible(True)
         self.lbl_personel_ro.setVisible(False)
+        self.inp_not.setVisible(True)
         self._rapor_only_mode = False
         self.form_panel.setVisible(True)
 
@@ -878,6 +877,7 @@ class SaglikTakipPage(QWidget):
         self.exam_section.setVisible(True)
         self.cmb_personel.setVisible(True)
         self.lbl_personel_ro.setVisible(False)
+        self.inp_not.setVisible(True)
         self._rapor_only_mode = False
         self.form_panel.setVisible(True)
 
@@ -896,6 +896,7 @@ class SaglikTakipPage(QWidget):
 
         self.lbl_form_title.setText("Rapor Yükle")
         self.exam_section.setVisible(False)
+        self.inp_not.setVisible(False)
         self._rapor_only_mode = True
         self.form_panel.setVisible(True)
 
@@ -976,7 +977,7 @@ class SaglikTakipPage(QWidget):
         })
         self.cmb_birim_filter.blockSignals(True)
         self.cmb_birim_filter.clear()
-        self.cmb_birim_filter.addItem("Tüm Birimler")
+        self.cmb_birim_filter.addItem("Tum Birimler")
         self.cmb_birim_filter.addItems(birimler)
         idx = self.cmb_birim_filter.findText(curr)
         self.cmb_birim_filter.setCurrentIndex(idx if idx >= 0 else 0)
@@ -1012,9 +1013,9 @@ class SaglikTakipPage(QWidget):
             row_yil = int(row.get("Yil") or 0)
             if yil and row_yil != int(yil):
                 continue
-            if birim_filter != "Tüm Birimler" and str(row.get("Birim", "")).strip() != birim_filter:
+            if birim_filter != "Tum Birimler" and str(row.get("Birim", "")).strip() != birim_filter:
                 continue
-            if durum_filter != "Tüm Durumlar" and str(row.get("Durum", "")).strip() != durum_filter:
+            if durum_filter != "Tum Durumlar" and str(row.get("Durum", "")).strip() != durum_filter:
                 continue
             ad    = str(row.get("AdSoyad", "")).lower()
             birim = str(row.get("Birim", "")).lower()
@@ -1309,6 +1310,7 @@ class SaglikTakipPage(QWidget):
         self.exam_section.setVisible(True)
         self.cmb_personel.setVisible(True)
         self.lbl_personel_ro.setVisible(False)
+        self.inp_not.setVisible(True)
         self._rapor_only_mode = False
         self.form_panel.setVisible(False)
 

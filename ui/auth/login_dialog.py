@@ -8,8 +8,8 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QFrame,
-    QMessageBox,
 )
+from ui.dialogs.mesaj_kutusu import MesajKutusu
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QFont, QPixmap
 
@@ -21,7 +21,7 @@ class LoginDialog(QDialog):
         super().__init__(parent)
         self._auth = auth_service
 
-        self.setWindowTitle("System Login")
+        self.setWindowTitle("REPYS Giriş")
         self.resize(400, 450)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -74,6 +74,7 @@ class LoginDialog(QDialog):
             "QLineEdit { background-color: #1e1e1e; border: 1px solid #444; "
             "border-radius: 5px; color: white; padding-left: 10px; font-size: 14px; }"
         )
+        self._username.setText("admin")  # Otomatik doldur
         card_layout.addWidget(self._username)
 
         # Şifre alanı
@@ -82,7 +83,7 @@ class LoginDialog(QDialog):
         self._password.setEchoMode(QLineEdit.EchoMode.Password)
         self._password.setFixedHeight(45)
         self._password.setStyleSheet(self._username.styleSheet())
-        self._password.returnPressed.connect(self._on_accept)
+        self._password.setText("admin123")  # Otomatik doldur
         card_layout.addWidget(self._password)
 
         # Giriş butonu
@@ -105,18 +106,31 @@ class LoginDialog(QDialog):
 
         layout.addWidget(self.frame)
 
+    def keyPressEvent(self, event) -> None:
+        """Enter giriş yapar, Escape dialog kapatmaz."""
+        key = event.key()
+        if key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            self._on_accept()
+        elif key == Qt.Key.Key_Escape:
+            pass  # Escape ile kapanmasın
+        else:
+            super().keyPressEvent(event)
+
     def _on_accept(self) -> None:
         """Giriş butonuna basıldığında çalışır"""
+        if not self._button_login.isEnabled():
+            return
+
         username = self._username.text().strip()
         password = self._password.text()
 
         if not username:
-            QMessageBox.warning(self, "Warning", "Username is required.")
+            MesajKutusu.uyari(self, "Kullanıcı adı zorunludur.")
             self._username.setFocus()
             return
 
         if not password:
-            QMessageBox.warning(self, "Warning", "Password is required.")
+            MesajKutusu.uyari(self, "Şifre zorunludur.")
             self._password.setFocus()
             return
 
@@ -132,17 +146,26 @@ class LoginDialog(QDialog):
             if user:
                 self.accept()
             else:
-                QMessageBox.critical(self, "Login Failed", "Invalid username or password.")
+                MesajKutusu.hata(self, "Kullanıcı adı veya şifre hatalı.")
                 self._reset_ui()
         except Exception as e:
-            QMessageBox.critical(self, "Login Error", f"An error occurred: {str(e)}")
+            MesajKutusu.hata(self, f"Giriş sırasında hata oluştu: {str(e)}")
             self._reset_ui()
 
     def _reset_ui(self) -> None:
         """UI alanlarını sıfırla"""
-        self._button_login.setText("LOGIN")
+        self._button_login.setText("GİRİŞ")
         self._button_login.setEnabled(True)
         self._username.setEnabled(True)
         self._password.setEnabled(True)
         self._password.clear()
         self._username.setFocus()
+
+    def _reset_ui(self) -> None:
+        self._button_login.setText("GİRİŞ")
+        self._button_login.setEnabled(True)
+        self._username.setEnabled(True)
+        self._password.setEnabled(True)
+        self._password.clear()
+        self._password.setFocus()
+        self._busy = False

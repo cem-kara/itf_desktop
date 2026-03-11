@@ -17,9 +17,9 @@ from database.sqlite_manager import SQLiteManager
 class SettingsService:
     """Ayarlar servisi"""
     
-    def __init__(self):
-        """Settings servisi oluştur"""
-        self._db = SQLiteManager()
+    def __init__(self, db):
+        """Settings servisi oluştur (thread-safe db parametresi ile)"""
+        self._db = db
     
     # ============== SABİTLER ==============
     
