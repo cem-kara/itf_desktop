@@ -16,6 +16,7 @@ from PySide6.QtGui import QCursor, QPixmap
 from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer, Icons
 from ui.theme_manager import ThemeManager
+from ui.pages.personel.personel_listesi import _get_status_text_color
 from ui.pages.personel.components.personel_ozet_servisi import personel_ozet_getir
 from core.logger import logger
 from ui.pages.personel.components.personel_overview_panel import PersonelOverviewPanel

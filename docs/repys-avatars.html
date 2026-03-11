@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REPYS · Personel Avatarları</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap');
+
+  :root {
+    /* REPYS Dark Theme — doğrudan themes.py'den */
+    --bg-primary:    #0d1117;
+    --bg-secondary:  #121820;
+    --bg-elevated:   #1a2030;
+    --bg-dark:       #060d1a;
+    --border:        #1e2d3d;
+    --border-strong: #253545;
+    --accent:        #3d8ef5;
+    --accent2:       #20c0d8;
+    --accent-bg:     rgba(61,142,245,0.12);
+    --text-primary:  #e8edf5;
+    --text-secondary:#8fa3b8;
+    --text-muted:    #4d6070;
+    --success:       #2ec98e;
+    --success-bg:    rgba(46,201,142,0.12);
+    --warning:       #e8a030;
+    --warning-bg:    rgba(232,160,48,0.12);
+    --error:         #e85555;
+    --error-bg:      rgba(232,85,85,0.12);
+    --purple:        #a855f7;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-primary);
+    min-height: 100vh;
+    padding: 40px 24px 60px;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    max-width: 1060px;
+    margin: 0 auto 36px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-mark {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; font-weight: 500;
+    color: #060d1a;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .header-text h1 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.3px;
+  }
+  .header-text p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 2px;
+  }
+
+  /* ── Section ── */
+  .section-label {
+    max-width: 1060px;
+    margin: 0 auto 14px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── Grid ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    max-width: 1060px;
+    margin: 0 auto 40px;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 16px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    cursor: default;
+    transition: border-color 0.18s, background 0.18s, transform 0.18s;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--card-accent, var(--accent)), transparent);
+    opacity: 0;
+    transition: opacity 0.18s;
+  }
+  .card:hover {
+    border-color: var(--border-strong);
+    background: #1e2840;
+    transform: translateY(-4px);
+  }
+  .card:hover::before { opacity: 1; }
+
+  /* ── Avatar ring ── */
+  .avatar-wrap {
+    position: relative;
+  }
+  .avatar-wrap::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1.5px solid var(--card-accent, var(--accent));
+    opacity: 0.3;
+  }
+
+  /* ── Name & badge ── */
+  .card-name {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-align: center;
+    line-height: 1.4;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.63rem;
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .badge-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.8;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-mark">REPYS</div>
+  <div class="header-text">
+    <h1>Personel Avatarları</h1>
+    <p>v3 · dark theme · 8 karakter</p>
+  </div>
+</div>
+
+<div class="section-label">// Doktorlar</div>
+<div class="grid">
+
+  <!-- 1. Kadın Doktor -->
+  <div class="card" style="--card-accent:#3d8ef5">
+    <div class="avatar-wrap">
+      <svg width="110" height="128" viewBox="0 0 110 128" xmlns="http://www.w3.org/2000/svg">
+        <!-- Body: lab coat on dark bg -->
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="#1a2030"/>
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="none" stroke="#1e2d3d" stroke-width="1.5"/>
+        <!-- Coat white panels -->
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="#e8edf5" opacity="0.06"/>
+        <!-- Lapels -->
+        <polygon points="55,84 36,76 45,108" fill="#1e2d3d"/>
+        <polygon points="55,84 74,76 65,108" fill="#1e2d3d"/>
+        <!-- Stethoscope — cyan accent -->
+        <path d="M32,88 Q24,106 31,115 Q38,122 45,114" stroke="#20c0d8" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="45" cy="115" r="4.5" fill="#20c0d8"/>
+        <circle cx="45" cy="115" r="2.5" fill="#060d1a"/>
+        <!-- Pocket + pens -->
+        <rect x="64" y="88" width="22" height="14" rx="4" fill="#121820" stroke="#253545" stroke-width="1"/>
+        <rect x="68" y="84" width="2.5" height="10" rx="1" fill="#3d8ef5"/>
+        <rect x="73" y="84" width="2.5" height="8" rx="1" fill="#2ec98e"/>
+        <rect x="78" y="84" width="2.5" height="9" rx="1" fill="#e8a030"/>
+        <!-- Neck -->
+        <rect x="48" y="60" width="14" height="20" rx="6" fill="#2a1a0e" opacity="0.8"/>
+        <rect x="48" y="60" width="14" height="20" rx="6" fill="#c8956a"/>
+        <!-- Head -->
+        <ellipse cx="55" cy="46" rx="21" ry="23" fill="#c8956a"/>
+        <!-- Hair — wavy, dark brown -->
+        <ellipse cx="55" cy="27" rx="21" ry="11" fill="#1a0f05"/>
+        <path d="M34,27 Q30,38 32,50 Q33,56 36,54 Q34,46 36,36 Z" fill="#1a0f05"/>
+        <path d="M76,27 Q80,38 78,50 Q77,56 74,54 Q76,46 74,36 Z" fill="#1a0f05"/>
+        <!-- Ears -->
+        <ellipse cx="34" cy="47" rx="4" ry="5" fill="#c8956a"/>
+        <ellipse cx="76" cy="47" rx="4" ry="5" fill="#c8956a"/>
+        <!-- Earrings — cyan -->
+        <circle cx="34" cy="52" r="2.5" fill="#20c0d8"/>
+        <circle cx="76" cy="52" r="2.5" fill="#20c0d8"/>
+        <!-- Eyes -->
+        <ellipse cx="46" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
+        <ellipse cx="64" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
+        <circle cx="47" cy="46" r="2.5" fill="#3d8ef5"/>
+        <circle cx="65" cy="46" r="2.5" fill="#3d8ef5"/>
+        <circle cx="48" cy="45" r="1" fill="white"/>
+        <circle cx="66" cy="45" r="1" fill="white"/>
+        <!-- Eyebrows -->
+        <path d="M42,39 Q46,37 50,39" stroke="#1a0f05" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <path d="M60,39 Q64,37 68,39" stroke="#1a0f05" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <!-- Smile -->
+        <path d="M49,57 Q55,63 61,57" stroke="#a0614a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <!-- Blush -->
+        <ellipse cx="40" cy="54" rx="5" ry="3" fill="#e85555" opacity="0.18"/>
+        <ellipse cx="70" cy="54" rx="5" ry="3" fill="#e85555" opacity="0.18"/>
+      </svg>
+    </div>
+    <div class="card-name">Kadın Doktor</div>
+    <span class="badge" style="color:#3d8ef5;background:rgba(61,142,245,0.12);border-color:rgba(61,142,245,0.25)">
+      <span class="badge-dot"></span>Doktor
+    </span>
+  </div>
+
+  <!-- 2. Erkek Doktor -->
+  <div class="card" style="--card-accent:#3d8ef5">
+    <div class="avatar-wrap">
+      <svg width="110" height="128" viewBox="0 0 110 128" xmlns="http://www.w3.org/2000/svg">
+        <!-- Body lab coat -->
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="#e8edf5" opacity="0.06"/>
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="none" stroke="#1e2d3d" stroke-width="1.5"/>
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="#1a2030"/>
+        <polygon points="55,84 36,76 45,108" fill="#1e2d3d"/>
+        <polygon points="55,84 74,76 65,108" fill="#1e2d3d"/>
+        <!-- Tie — accent blue -->
+        <polygon points="55,76 51,68 59,68" fill="#3d8ef5"/>
+        <polygon points="55,76 52,76 55,100 58,76" fill="#3d8ef5"/>
+        <!-- Stethoscope -->
+        <path d="M32,88 Q24,106 31,115 Q38,122 45,114" stroke="#20c0d8" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <circle cx="45" cy="115" r="4.5" fill="#20c0d8"/>
+        <circle cx="45" cy="115" r="2.5" fill="#060d1a"/>
+        <!-- Pocket -->
+        <rect x="64" y="88" width="22" height="14" rx="4" fill="#121820" stroke="#253545" stroke-width="1"/>
+        <rect x="68" y="84" width="2.5" height="10" rx="1" fill="#e8a030"/>
+        <rect x="73" y="84" width="2.5" height="8" rx="1" fill="#3d8ef5"/>
+        <!-- Neck -->
+        <rect x="48" y="60" width="14" height="20" rx="6" fill="#d4a574"/>
+        <!-- Head -->
+        <ellipse cx="55" cy="46" rx="21" ry="23" fill="#d4a574"/>
+        <!-- Hair — short dark side part -->
+        <path d="M34,40 Q34,24 55,24 Q76,24 76,40 L76,32 Q56,16 34,32 Z" fill="#1e2d3d"/>
+        <!-- Glasses — accent -->
+        <rect x="38" y="42" width="15" height="11" rx="5.5" fill="none" stroke="#3d8ef5" stroke-width="1.5" opacity="0.9"/>
+        <rect x="57" y="42" width="15" height="11" rx="5.5" fill="none" stroke="#3d8ef5" stroke-width="1.5" opacity="0.9"/>
+        <line x1="53" y1="47.5" x2="57" y2="47.5" stroke="#3d8ef5" stroke-width="1.5" opacity="0.9"/>
+        <line x1="34" y1="47.5" x2="38" y2="47.5" stroke="#3d8ef5" stroke-width="1" opacity="0.7"/>
+        <line x1="72" y1="47.5" x2="76" y2="47.5" stroke="#3d8ef5" stroke-width="1" opacity="0.7"/>
+        <!-- Eyes -->
+        <circle cx="46" cy="47.5" r="2.5" fill="#1a2030"/>
+        <circle cx="65" cy="47.5" r="2.5" fill="#1a2030"/>
+        <circle cx="47" cy="46.5" r="1" fill="white"/>
+        <circle cx="66" cy="46.5" r="1" fill="white"/>
+        <!-- Ears -->
+        <ellipse cx="34" cy="47" rx="4" ry="5" fill="#d4a574"/>
+        <ellipse cx="76" cy="47" rx="4" ry="5" fill="#d4a574"/>
+        <!-- Eyebrows -->
+        <path d="M38,38 Q43,36 48,38" stroke="#1e2d3d" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M58,38 Q63,36 68,38" stroke="#1e2d3d" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <!-- Smile + stubble -->
+        <path d="M49,58 Q55,63 61,58" stroke="#a07040" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <ellipse cx="55" cy="63" rx="10" ry="4" fill="#1e2d3d" opacity="0.2"/>
+      </svg>
+    </div>
+    <div class="card-name">Erkek Doktor</div>
+    <span class="badge" style="color:#3d8ef5;background:rgba(61,142,245,0.12);border-color:rgba(61,142,245,0.25)">
+      <span class="badge-dot"></span>Doktor
+    </span>
+  </div>
+
+</div>
+
+<div class="section-label">// Hemşireler</div>
+<div class="grid">
+
+  <!-- 3. Kadın Hemşire -->
+  <div class="card" style="--card-accent:#2ec98e">
+    <div class="avatar-wrap">
+      <svg width="110" height="128" viewBox="0 0 110 128" xmlns="http://www.w3.org/2000/svg">
+        <!-- Scrubs — dark teal tinted -->
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="#0d2520"/>
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="none" stroke="#1a3830" stroke-width="1.5"/>
+        <polygon points="55,84 42,76 50,108" fill="#0a1c18"/>
+        <polygon points="55,84 68,76 60,108" fill="#0a1c18"/>
+        <!-- Cross badge — success green -->
+        <rect x="62" y="84" width="24" height="18" rx="5" fill="#121820" stroke="#253545" stroke-width="1"/>
+        <rect x="70" y="86" width="8" height="14" rx="2" fill="#2ec98e" opacity="0.9"/>
+        <rect x="64" y="90" width="20" height="6" rx="2" fill="#2ec98e" opacity="0.9"/>
+        <!-- Nurse cap -->
+        <rect x="39" y="17" width="32" height="13" rx="4" fill="#e8edf5" opacity="0.95"/>
+        <rect x="39" y="17" width="32" height="13" rx="4" fill="none" stroke="#253545" stroke-width="1"/>
+        <rect x="50" y="12" width="10" height="18" rx="3" fill="#e8edf5" opacity="0.95"/>
+        <rect x="50" y="12" width="10" height="18" rx="3" fill="none" stroke="#253545" stroke-width="0.8"/>
+        <!-- Cross on cap -->
+        <rect x="53" y="18" width="4" height="10" rx="1" fill="#e85555"/>
+        <rect x="50" y="21" width="10" height="4" rx="1" fill="#e85555"/>
+        <!-- Neck -->
+        <rect x="48" y="60" width="14" height="20" rx="6" fill="#c8a882"/>
+        <!-- Head -->
+        <ellipse cx="55" cy="46" rx="21" ry="23" fill="#c8a882"/>
+        <!-- Hair under cap — auburn -->
+        <rect x="33" y="28" width="7" height="32" rx="3.5" fill="#6b2d0a"/>
+        <rect x="70" y="28" width="7" height="32" rx="3.5" fill="#6b2d0a"/>
+        <!-- Ears -->
+        <ellipse cx="34" cy="47" rx="4" ry="5" fill="#c8a882"/>
+        <ellipse cx="76" cy="47" rx="4" ry="5" fill="#c8a882"/>
+        <!-- Eyes -->
+        <ellipse cx="46" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
+        <ellipse cx="64" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
+        <circle cx="47" cy="46" r="2.5" fill="#2ec98e"/>
+        <circle cx="65" cy="46" r="2.5" fill="#2ec98e"/>
+        <circle cx="48" cy="45" r="1" fill="white"/>
+        <circle cx="66" cy="45" r="1" fill="white"/>
+        <!-- Eyebrows -->
+        <path d="M42,39 Q46,37 50,39" stroke="#6b2d0a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <path d="M60,39 Q64,37 68,39" stroke="#6b2d0a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <!-- Smile -->
+        <path d="M49,57 Q55,63 61,57" stroke="#a07040" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <!-- Blush -->
+        <ellipse cx="40" cy="54" rx="5" ry="3" fill="#2ec98e" opacity="0.2"/>
+        <ellipse cx="70" cy="54" rx="5" ry="3" fill="#2ec98e" opacity="0.2"/>
+      </svg>
+    </div>
+    <div class="card-name">Kadın Hemşire</div>
+    <span class="badge" style="color:#2ec98e;background:rgba(46,201,142,0.12);border-color:rgba(46,201,142,0.25)">
+      <span class="badge-dot"></span>Hemşire
+    </span>
+  </div>
+
+  <!-- 4. Erkek Hemşire -->
+  <div class="card" style="--card-accent:#2ec98e">
+    <div class="avatar-wrap">
+      <svg width="110" height="128" viewBox="0 0 110 128" xmlns="http://www.w3.org/2000/svg">
+        <!-- Scrubs -->
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="#0d2520"/>
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="none" stroke="#1a3830" stroke-width="1.5"/>
+        <polygon points="55,84 42,76 50,108" fill="#0a1c18"/>
+        <polygon points="55,84 68,76 60,108" fill="#0a1c18"/>
+        <!-- Cross badge -->
+        <rect x="62" y="84" width="24" height="18" rx="5" fill="#121820" stroke="#253545" stroke-width="1"/>
+        <rect x="70" y="86" width="8" height="14" rx="2" fill="#2ec98e" opacity="0.9"/>
+        <rect x="64" y="90" width="20" height="6" rx="2" fill="#2ec98e" opacity="0.9"/>
+        <!-- Neck -->
+        <rect x="48" y="60" width="14" height="20" rx="6" fill="#8b6340"/>
+        <!-- Head -->
+        <ellipse cx="55" cy="46" rx="21" ry="23" fill="#8b6340"/>
+        <!-- Hair short -->
+        <path d="M34,42 Q34,24 55,24 Q76,24 76,42 L76,34 Q55,18 34,34 Z" fill="#111827"/>
+        <!-- Ears -->
+        <ellipse cx="34" cy="47" rx="4" ry="5" fill="#8b6340"/>
+        <ellipse cx="76" cy="47" rx="4" ry="5" fill="#8b6340"/>
+        <!-- Eyes -->
+        <ellipse cx="46" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
+        <ellipse cx="64" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
+        <circle cx="47" cy="46" r="2.5" fill="#20c0d8"/>
+        <circle cx="65" cy="46" r="2.5" fill="#20c0d8"/>
+        <circle cx="48" cy="45" r="1" fill="white"/>
+        <circle cx="66" cy="45" r="1" fill="white"/>
+        <!-- Eyebrows -->
+        <path d="M42,39 Q46,37 50,39" stroke="#111827" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        <path d="M60,39 Q64,37 68,39" stroke="#111827" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        <!-- Smile -->
+        <path d="M49,58 Q55,63 61,58" stroke="#6b4020" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <!-- Stubble -->
+        <ellipse cx="55" cy="63" rx="11" ry="4" fill="#111827" opacity="0.25"/>
+      </svg>
+    </div>
+    <div class="card-name">Erkek Hemşire</div>
+    <span class="badge" style="color:#2ec98e;background:rgba(46,201,142,0.12);border-color:rgba(46,201,142,0.25)">
+      <span class="badge-dot"></span>Hemşire
+    </span>
+  </div>
+
+</div>
+
+<div class="section-label">// Radyoloji Teknisyenleri</div>
+<div class="grid">
+
+  <!-- 5. Kadın Radyoloji -->
+  <div class="card" style="--card-accent:#e8a030">
+    <div class="avatar-wrap">
+      <svg width="110" height="128" viewBox="0 0 110 128" xmlns="http://www.w3.org/2000/svg">
+        <!-- Scrubs navy -->
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="#0d1829"/>
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="none" stroke="#1e2d3d" stroke-width="1.5"/>
+        <polygon points="55,84 42,76 50,108" fill="#0a1220"/>
+        <polygon points="55,84 68,76 60,108" fill="#0a1220"/>
+        <!-- Radiation badge — warning amber -->
+        <rect x="62" y="83" width="24" height="18" rx="5" fill="#1a1200" stroke="#e8a030" stroke-width="1" opacity="0.9"/>
+        <circle cx="74" cy="92" r="4" fill="#e8a030"/>
+        <circle cx="74" cy="92" r="2" fill="#060d1a"/>
+        <line x1="74" y1="85" x2="74" y2="88" stroke="#e8a030" stroke-width="2" stroke-linecap="round"/>
+        <line x1="68" y1="87" x2="70.5" y2="89.5" stroke="#e8a030" stroke-width="2" stroke-linecap="round"/>
+        <line x1="80" y1="87" x2="77.5" y2="89.5" stroke="#e8a030" stroke-width="2" stroke-linecap="round"/>
+        <!-- Lead belt hint -->
+        <rect x="22" y="118" width="66" height="8" rx="4" fill="#253545" stroke="#1e2d3d" stroke-width="1"/>
+        <rect x="50" y="116" width="10" height="12" rx="3" fill="#1e2d3d" stroke="#253545" stroke-width="1"/>
+        <!-- Neck -->
+        <rect x="48" y="60" width="14" height="20" rx="6" fill="#e8c0a0"/>
+        <!-- Head -->
+        <ellipse cx="55" cy="46" rx="21" ry="23" fill="#e8c0a0"/>
+        <!-- Hair — red, ponytail -->
+        <ellipse cx="55" cy="27" rx="20" ry="10" fill="#7c1010"/>
+        <rect x="33" y="28" width="7" height="28" rx="3.5" fill="#7c1010"/>
+        <!-- Ponytail right -->
+        <path d="M76,32 Q84,40 82,56 Q80,64 76,62" fill="#7c1010"/>
+        <!-- Ears -->
+        <ellipse cx="34" cy="47" rx="4" ry="5" fill="#e8c0a0"/>
+        <ellipse cx="76" cy="47" rx="4" ry="5" fill="#e8c0a0"/>
+        <!-- Eyes -->
+        <ellipse cx="46" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
+        <ellipse cx="64" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
+        <circle cx="47" cy="46" r="2.5" fill="#e8a030"/>
+        <circle cx="65" cy="46" r="2.5" fill="#e8a030"/>
+        <circle cx="48" cy="45" r="1" fill="white"/>
+        <circle cx="66" cy="45" r="1" fill="white"/>
+        <!-- Eyebrows -->
+        <path d="M42,39 Q46,37 50,39" stroke="#7c1010" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <path d="M60,39 Q64,37 68,39" stroke="#7c1010" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <!-- Smile -->
+        <path d="M49,57 Q55,62 61,57" stroke="#c08060" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <ellipse cx="40" cy="54" rx="5" ry="3" fill="#e85555" opacity="0.15"/>
+        <ellipse cx="70" cy="54" rx="5" ry="3" fill="#e85555" opacity="0.15"/>
+      </svg>
+    </div>
+    <div class="card-name">Kadın Radyoloji Tek.</div>
+    <span class="badge" style="color:#e8a030;background:rgba(232,160,48,0.12);border-color:rgba(232,160,48,0.25)">
+      <span class="badge-dot"></span>Radyoloji
+    </span>
+  </div>
+
+  <!-- 6. Erkek Radyoloji -->
+  <div class="card" style="--card-accent:#e8a030">
+    <div class="avatar-wrap">
+      <svg width="110" height="128" viewBox="0 0 110 128" xmlns="http://www.w3.org/2000/svg">
+        <!-- Scrubs navy -->
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="#0d1829"/>
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="none" stroke="#1e2d3d" stroke-width="1.5"/>
+        <polygon points="55,84 42,76 50,108" fill="#0a1220"/>
+        <polygon points="55,84 68,76 60,108" fill="#0a1220"/>
+        <!-- Radiation badge -->
+        <rect x="62" y="83" width="24" height="18" rx="5" fill="#1a1200" stroke="#e8a030" stroke-width="1" opacity="0.9"/>
+        <circle cx="74" cy="92" r="4" fill="#e8a030"/>
+        <circle cx="74" cy="92" r="2" fill="#060d1a"/>
+        <line x1="74" y1="85" x2="74" y2="88" stroke="#e8a030" stroke-width="2" stroke-linecap="round"/>
+        <line x1="68" y1="87" x2="70.5" y2="89.5" stroke="#e8a030" stroke-width="2" stroke-linecap="round"/>
+        <line x1="80" y1="87" x2="77.5" y2="89.5" stroke="#e8a030" stroke-width="2" stroke-linecap="round"/>
+        <!-- Lead belt -->
+        <rect x="22" y="118" width="66" height="8" rx="4" fill="#253545" stroke="#1e2d3d" stroke-width="1"/>
+        <rect x="50" y="116" width="10" height="12" rx="3" fill="#1e2d3d" stroke="#253545" stroke-width="1"/>
+        <!-- Neck -->
+        <rect x="48" y="60" width="14" height="20" rx="6" fill="#b08040"/>
+        <!-- Head -->
+        <ellipse cx="55" cy="46" rx="21" ry="23" fill="#b08040"/>
+        <!-- Hair buzzcut -->
+        <path d="M34,44 Q34,24 55,24 Q76,24 76,44 L76,36 Q55,20 34,36 Z" fill="#1e1008"/>
+        <!-- Ears -->
+        <ellipse cx="34" cy="47" rx="4" ry="5" fill="#b08040"/>
+        <ellipse cx="76" cy="47" rx="4" ry="5" fill="#b08040"/>
+        <!-- Eyes -->
+        <ellipse cx="46" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
+        <ellipse cx="64" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
+        <circle cx="47" cy="46" r="2.5" fill="#e8a030"/>
+        <circle cx="65" cy="46" r="2.5" fill="#e8a030"/>
+        <circle cx="48" cy="45" r="1" fill="white"/>
+        <circle cx="66" cy="45" r="1" fill="white"/>
+        <!-- Eyebrows thick -->
+        <path d="M42,39 Q46,37 50,39" stroke="#1e1008" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M60,39 Q64,37 68,39" stroke="#1e1008" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <!-- Smile -->
+        <path d="M49,58 Q55,63 61,58" stroke="#806020" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <ellipse cx="55" cy="63" rx="11" ry="4" fill="#1e1008" opacity="0.2"/>
+      </svg>
+    </div>
+    <div class="card-name">Erkek Radyoloji Tek.</div>
+    <span class="badge" style="color:#e8a030;background:rgba(232,160,48,0.12);border-color:rgba(232,160,48,0.25)">
+      <span class="badge-dot"></span>Radyoloji
+    </span>
+  </div>
+
+</div>
+
+<div class="section-label">// İdari Personel</div>
+<div class="grid">
+
+  <!-- 7. Kadın İdari -->
+  <div class="card" style="--card-accent:#a855f7">
+    <div class="avatar-wrap">
+      <svg width="110" height="128" viewBox="0 0 110 128" xmlns="http://www.w3.org/2000/svg">
+        <!-- Blazer — dark with purple accent -->
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="#150d20"/>
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="none" stroke="#2a1a40" stroke-width="1.5"/>
+        <!-- Lapels -->
+        <polygon points="55,84 36,76 46,110" fill="#1e1030"/>
+        <polygon points="55,84 74,76 64,110" fill="#1e1030"/>
+        <!-- Blouse V -->
+        <polygon points="55,104 49,76 61,76" fill="#1a2030"/>
+        <!-- Lanyard — purple -->
+        <line x1="55" y1="84" x2="51" y2="106" stroke="#a855f7" stroke-width="1.5" opacity="0.8"/>
+        <!-- ID card -->
+        <rect x="44" y="104" width="16" height="12" rx="3" fill="#1a2030" stroke="#253545" stroke-width="1"/>
+        <rect x="46" y="106" width="12" height="2" rx="1" fill="#a855f7" opacity="0.8"/>
+        <rect x="46" y="110" width="8" height="2" rx="1" fill="#4d6070"/>
+        <!-- Neck -->
+        <rect x="48" y="60" width="14" height="20" rx="6" fill="#d4b896"/>
+        <!-- Head -->
+        <ellipse cx="55" cy="46" rx="21" ry="23" fill="#d4b896"/>
+        <!-- Hair — shoulder length, dark -->
+        <ellipse cx="55" cy="27" rx="21" ry="12" fill="#2d1a00"/>
+        <rect x="33" y="27" width="8" height="40" rx="4" fill="#2d1a00"/>
+        <rect x="69" y="27" width="8" height="40" rx="4" fill="#2d1a00"/>
+        <!-- Hair band — purple accent -->
+        <path d="M34,34 Q55,28 76,34" stroke="#a855f7" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.9"/>
+        <!-- Ears -->
+        <ellipse cx="34" cy="47" rx="4" ry="5" fill="#d4b896"/>
+        <ellipse cx="76" cy="47" rx="4" ry="5" fill="#d4b896"/>
+        <!-- Earrings — purple -->
+        <circle cx="34" cy="52" r="3" fill="#a855f7" opacity="0.9"/>
+        <circle cx="76" cy="52" r="3" fill="#a855f7" opacity="0.9"/>
+        <!-- Eyes -->
+        <ellipse cx="46" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
+        <ellipse cx="64" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
+        <circle cx="47" cy="46" r="2.5" fill="#a855f7"/>
+        <circle cx="65" cy="46" r="2.5" fill="#a855f7"/>
+        <circle cx="48" cy="45" r="1" fill="white"/>
+        <circle cx="66" cy="45" r="1" fill="white"/>
+        <!-- Eyebrows -->
+        <path d="M42,39 Q46,37 50,39" stroke="#2d1a00" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <path d="M60,39 Q64,37 68,39" stroke="#2d1a00" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <!-- Smile -->
+        <path d="M49,57 Q55,63 61,57" stroke="#a07040" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <ellipse cx="40" cy="54" rx="5" ry="3" fill="#a855f7" opacity="0.15"/>
+        <ellipse cx="70" cy="54" rx="5" ry="3" fill="#a855f7" opacity="0.15"/>
+      </svg>
+    </div>
+    <div class="card-name">Kadın İdari Personel</div>
+    <span class="badge" style="color:#a855f7;background:rgba(168,85,247,0.12);border-color:rgba(168,85,247,0.25)">
+      <span class="badge-dot"></span>İdari
+    </span>
+  </div>
+
+  <!-- 8. Erkek İdari -->
+  <div class="card" style="--card-accent:#a855f7">
+    <div class="avatar-wrap">
+      <svg width="110" height="128" viewBox="0 0 110 128" xmlns="http://www.w3.org/2000/svg">
+        <!-- Suit -->
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="#111827"/>
+        <rect x="12" y="76" width="86" height="52" rx="14" fill="none" stroke="#1e2d3d" stroke-width="1.5"/>
+        <!-- Lapels -->
+        <polygon points="55,84 36,76 46,110" fill="#1a2030"/>
+        <polygon points="55,84 74,76 64,110" fill="#1a2030"/>
+        <!-- Shirt & tie — cyan -->
+        <polygon points="55,104 49,76 61,76" fill="#e8edf5" opacity="0.06"/>
+        <polygon points="55,76 51,68 59,68" fill="#20c0d8"/>
+        <polygon points="55,76 52,76 55,102 58,76" fill="#20c0d8"/>
+        <!-- ID lanyard -->
+        <line x1="55" y1="84" x2="51" y2="108" stroke="#8fa3b8" stroke-width="1.2" opacity="0.6"/>
+        <rect x="44" y="106" width="16" height="12" rx="3" fill="#1a2030" stroke="#253545" stroke-width="1"/>
+        <rect x="46" y="108" width="12" height="2" rx="1" fill="#3d8ef5" opacity="0.8"/>
+        <rect x="46" y="112" width="8" height="2" rx="1" fill="#4d6070"/>
+        <!-- Neck -->
+        <rect x="48" y="60" width="14" height="20" rx="6" fill="#c0885a"/>
+        <!-- Head -->
+        <ellipse cx="55" cy="46" rx="21" ry="23" fill="#c0885a"/>
+        <!-- Hair side part — dark -->
+        <path d="M34,42 Q34,24 55,24 Q76,24 76,42 L76,32 Q60,18 34,32 Z" fill="#1e2d3d"/>
+        <!-- Ears -->
+        <ellipse cx="34" cy="47" rx="4" ry="5" fill="#c0885a"/>
+        <ellipse cx="76" cy="47" rx="4" ry="5" fill="#c0885a"/>
+        <!-- Eyes -->
+        <ellipse cx="46" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
+        <ellipse cx="64" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
+        <circle cx="47" cy="46" r="2.5" fill="#20c0d8"/>
+        <circle cx="65" cy="46" r="2.5" fill="#20c0d8"/>
+        <circle cx="48" cy="45" r="1" fill="white"/>
+        <circle cx="66" cy="45" r="1" fill="white"/>
+        <!-- Eyebrows -->
+        <path d="M42,39 Q46,37 50,39" stroke="#1e2d3d" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M60,39 Q64,37 68,39" stroke="#1e2d3d" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <!-- Smile -->
+        <path d="M49,58 Q55,63 61,58" stroke="#8b5a2a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="card-name">Erkek İdari Personel</div>
+    <span class="badge" style="color:#a855f7;background:rgba(168,85,247,0.12);border-color:rgba(168,85,247,0.25)">
+      <span class="badge-dot"></span>İdari
+    </span>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div style="max-width:1060px;margin:0 auto;padding-top:24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+  <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-muted)">REPYS v3 · dark theme · personel modülü</span>
+  <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-muted)">8 avatar · SVG</span>
+</div>
+
+</body>
+</html>

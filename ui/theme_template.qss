@@ -182,18 +182,14 @@ QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {
     background: {ACCENT_BG};
 }
 QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {
-    width: 0;
-    height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-bottom: 5px solid {TEXT_SECONDARY};
+    image: url("{ICON_CHEVRON_UP}");
+    width: 10px;
+    height: 10px;
 }
 QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
-    width: 0;
-    height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid {TEXT_SECONDARY};
+    image: url("{ICON_CHEVRON_DOWN}");
+    width: 10px;
+    height: 10px;
 }
 
 
@@ -897,9 +893,9 @@ QDateEdit::drop-down, QDateTimeEdit::drop-down {
 }
 QDateEdit::drop-down:hover, QDateTimeEdit::drop-down:hover { background: {ACCENT_BG}; }
 QDateEdit::down-arrow, QDateTimeEdit::down-arrow {
-    image: url("{ICON_CHEVRON_DOWN}");
-    width: 12px;
-    height: 12px;
+    image: url("{ICON_CALENDAR}");
+    width: 14px;
+    height: 14px;
 }
 
 /* ── QListWidget ────────────────────────────────────────────── */

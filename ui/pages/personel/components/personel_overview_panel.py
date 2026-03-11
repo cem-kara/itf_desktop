@@ -11,7 +11,6 @@ from core.logger import logger
 from core.paths import DB_PATH
 from core.services.dokuman_service import DokumanService
 from ui.styles import DarkTheme
-from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 from ui.components.formatted_widgets import apply_combo_title_case_formatting
 import os
@@ -94,10 +93,13 @@ class PersonelOverviewPanel(QWidget):
         self._populate_combos()
 
     def _setup_ui(self):
+        # Eski widget ve grup referanslarını temizle (silinmiş objelerden kaçınmak için)
+        self._widgets.clear()
+        self._groups.clear()
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
 
-        # Scroll Area (İçerik uzayabileceği için)
+        # Scroll Area
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
@@ -105,44 +107,63 @@ class PersonelOverviewPanel(QWidget):
 
         content = QWidget()
         content.setStyleSheet("background: transparent;")
-        content_layout = QHBoxLayout(content)
-        content_layout.setSpacing(20)
-        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_vbox = QVBoxLayout(content)
+        content_vbox.setSpacing(16)
+        content_vbox.setContentsMargins(16, 16, 16, 16)
 
         if not self.personel_data:
-            content_layout.addWidget(QLabel("Personel verisi bulunamadı."))
+            from core.logger import logger
+            logger.warning(f"PersonelOverviewPanel: personel_data boş! (ozet_data: {self.data})")
+            content_vbox.addWidget(QLabel("Personel verisi bulunamadı."))
             scroll.setWidget(content)
             main_layout.addWidget(scroll)
             return
 
-        # Formu ortala
-        content_layout.addStretch()
-
-        # ── SOL GRUP (Fotoğraf ve Kimlik Bilgileri) ──
+        # ══════════════════════════════════════════════════════
+        # SOL KART — Fotoğraf ve Kimlik
+        # ══════════════════════════════════════════════════════
         left_grp = QGroupBox("Fotograf ve Kimlik Bilgileri")
-        left_grp.setStyleSheet(S["group"])
-        left_grp.setFixedWidth(250)
+        left_grp.setFixedWidth(270)
         left_l = QVBoxLayout(left_grp)
-        left_l.setSpacing(8)
-        left_l.setContentsMargins(8, 12, 8, 12)
+        left_l.setSpacing(0)
+        left_l.setContentsMargins(12, 12, 12, 16)
 
-        # Fotoğraf
+        # — Fotoğraf —
+        photo_wrap = QWidget()
+        photo_wrap.setFixedHeight(200)
+        pw_l = QVBoxLayout(photo_wrap)
+        pw_l.setContentsMargins(0, 0, 0, 0)
+        pw_l.setSpacing(6)
+
         self.lbl_resim = QLabel()
-        self.lbl_resim.setFixedSize(120, 140)
+        self.lbl_resim.setFixedSize(160, 180)
         self.lbl_resim.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.lbl_resim.setProperty("bg-role", "panel")
         self.lbl_resim.setStyleSheet(
-            f"border: 1px solid {DarkTheme.BORDER_PRIMARY}; border-radius: 6px; "
-            f"background: {DarkTheme.BG_SECONDARY};"
+            "border: 2px solid rgba(61,142,245,0.25); border-radius: 8px;"
         )
-        left_l.addWidget(self.lbl_resim, alignment=Qt.AlignmentFlag.AlignCenter)
+        pw_l.addWidget(self.lbl_resim, alignment=Qt.AlignmentFlag.AlignCenter)
+        left_l.addWidget(photo_wrap)
 
         self._photo_upload_btn = QPushButton("Resim Yükle")
-        self._photo_upload_btn.setStyleSheet(S["file_btn"])
+        self._photo_upload_btn.setProperty("style-role", "upload")
+        self._photo_upload_btn.setFixedHeight(28)
         self._photo_upload_btn.clicked.connect(self._on_photo_upload)
-        IconRenderer.set_button_icon(self._photo_upload_btn, "upload", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self._photo_upload_btn, "upload", color=DarkTheme.TEXT_PRIMARY, size=13)
         left_l.addWidget(self._photo_upload_btn, alignment=Qt.AlignmentFlag.AlignCenter)
+        left_l.addSpacing(10)
 
-        # Ayırıcı çizgi
+        # — Ad Soyad büyük —
+        ad_soyad_val = str(self.personel_data.get("AdSoyad", ""))
+        self.ad_display = QLabel(ad_soyad_val)
+        self.ad_display.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.ad_display.setWordWrap(True)
+        self.ad_display.setProperty("style-role", "section-title")
+        self.ad_display.setProperty("formatted", True)
+        left_l.addWidget(self.ad_display)
+        left_l.addSpacing(8)
+
+        # — Ayırıcı —
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
@@ -150,42 +171,48 @@ class PersonelOverviewPanel(QWidget):
         sep.style().unpolish(sep)
         sep.style().polish(sep)
         left_l.addWidget(sep)
+        left_l.addSpacing(8)
 
-        # Kimlik Bilgileri
-        tc_lbl = QLabel("TC Kimlik No")
-        tc_lbl.setStyleSheet(S["required_label"])
-        left_l.addWidget(tc_lbl)
-        self.tc_display = QLabel(str(self.personel_data.get("KimlikNo", "")))
-        self.tc_display.setStyleSheet(S["input"])
-        left_l.addWidget(self.tc_display)
+        # — Kimlik bilgileri grid —
+        kimlik_grid = QGridLayout()
+        kimlik_grid.setHorizontalSpacing(8)
+        kimlik_grid.setVerticalSpacing(6)
+        kimlik_grid.setColumnStretch(1, 1)
 
-        ad_lbl = QLabel("Ad Soyad")
-        ad_lbl.setStyleSheet(S["required_label"])
-        left_l.addWidget(ad_lbl)
-        self.ad_display = QLabel(str(self.personel_data.get("AdSoyad", "")))
-        self.ad_display.setStyleSheet(S["input"])
-        left_l.addWidget(self.ad_display)
+        def _kimlik_row(grid, row, label_txt, value_txt, is_accent=False):
+            lbl = QLabel(label_txt)
+            lbl.setProperty("color-role", "muted")
+            lbl.setStyleSheet("font-size: 10px;")
+            lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            lbl.style().unpolish(lbl); lbl.style().polish(lbl)
 
-        dogum_yeri_lbl = QLabel("Doğum Yeri")
-        dogum_yeri_lbl.setStyleSheet(S["label"])
-        left_l.addWidget(dogum_yeri_lbl)
-        self.dogum_yeri_display = QLabel(str(self.personel_data.get("DogumYeri", "")))
-        self.dogum_yeri_display.setStyleSheet(S["input"])
-        left_l.addWidget(self.dogum_yeri_display)
+            val = QLabel(str(value_txt) if value_txt else "—")
+            val.setWordWrap(True)
+            if is_accent:
+                val.setProperty("color-role", "accent")
+                val.setStyleSheet("font-size: 11px; font-weight: 600;")
+            else:
+                val.setProperty("color-role", "primary")
+                val.setStyleSheet("font-size: 12px; font-weight: 500;")
+            val.style().unpolish(val); val.style().polish(val)
 
-        dogum_tarihi_lbl = QLabel("Doğum Tarihi")
-        dogum_tarihi_lbl.setStyleSheet(S["label"])
-        left_l.addWidget(dogum_tarihi_lbl)
-        self.dogum_tarihi_display = QLabel(self._fmt_date(self.personel_data.get("DogumTarihi", "")))
-        self.dogum_tarihi_display.setStyleSheet(S["input"])
-        left_l.addWidget(self.dogum_tarihi_display)
+            grid.addWidget(lbl, row, 0)
+            grid.addWidget(val, row, 1)
+            return val
+
+        self.tc_display       = _kimlik_row(kimlik_grid, 0, "TC Kimlik No",  self.personel_data.get("KimlikNo", ""), is_accent=True)
+        self.dogum_yeri_display = _kimlik_row(kimlik_grid, 1, "Doğum Yeri",  self.personel_data.get("DogumYeri", ""))
+        self.dogum_tarihi_display = _kimlik_row(kimlik_grid, 2, "Doğum Tarihi", self._fmt_date(self.personel_data.get("DogumTarihi", "")))
+
+        left_l.addLayout(kimlik_grid)
+        left_l.addStretch()
 
         self._set_photo_preview(self.personel_data.get("Resim"))
-        self.ad_display.setProperty("formatted", True)  # Text formatting bayrağı
 
-        # ── SAĞ SÜTUN (Grid Form) ──
+        # ══════════════════════════════════════════════════════
+        # SAĞ SÜTUN — İletişim + Kadro
+        # ══════════════════════════════════════════════════════
         right = QWidget()
-        right.setMaximumWidth(800)
         right_l = QVBoxLayout(right)
         right_l.setSpacing(12)
         right_l.setContentsMargins(0, 0, 0, 0)
@@ -193,45 +220,54 @@ class PersonelOverviewPanel(QWidget):
         # İletişim Grubu
         grp_iletisim = self._create_editable_group("İletişim Bilgileri", "iletisim")
         iletisim_content_widget = self._groups["iletisim"]["widget"]
-        g2 = QGridLayout(iletisim_content_widget)
-        g2.setSpacing(12)
-        g2.setColumnStretch(0, 1)
-        g2.setColumnStretch(1, 1)
-        self._add_editable_item(g2, 0, 0, "Cep Telefonu", "CepTelefonu", "iletisim")
-        self._add_editable_item(g2, 0, 1, "E-posta", "Eposta", "iletisim")
+        g_ilet = QGridLayout(iletisim_content_widget)
+        g_ilet.setSpacing(12)
+        g_ilet.setColumnStretch(0, 1)
+        g_ilet.setColumnStretch(1, 1)
+        self._add_editable_item(g_ilet, 0, 0, "Cep Telefonu", "CepTelefonu", "iletisim")
+        self._add_editable_item(g_ilet, 0, 1, "E-posta", "Eposta", "iletisim")
         right_l.addWidget(grp_iletisim)
 
         # Kadro Grubu
         grp_kurum = self._create_editable_group("Kadro ve Kurumsal Bilgiler", "kadro")
         kadro_content_widget = self._groups["kadro"]["widget"]
-        g3 = QGridLayout(kadro_content_widget)
-        g3.setSpacing(12)
-        g3.setColumnStretch(0, 1)
-        g3.setColumnStretch(1, 1)
-        self._add_editable_combo(g3, 0, 0, "Hizmet Sınıfı", "HizmetSinifi", "kadro")
-        self._add_editable_combo(g3, 0, 1, "Kadro Ünvanı", "KadroUnvani", "kadro")
-        self._add_editable_item(g3, 1, 1, "Sicil No", "KurumSicilNo", "kadro")
-        self._add_editable_combo(g3, 1, 0, "Görev Yeri", "GorevYeri", "kadro")
-        self._add_editable_date(g3, 2, 0, "Başlama Tarihi", "MemuriyeteBaslamaTarihi", "kadro")
-        self._add_readonly_item(g3, 2, 1, "Durum", self.personel_data.get("Durum"))
+        g_kad = QGridLayout(kadro_content_widget)
+        g_kad.setSpacing(12)
+        g_kad.setColumnStretch(0, 1)
+        g_kad.setColumnStretch(1, 1)
+        self._add_editable_combo(g_kad, 0, 0, "Hizmet Sınıfı", "HizmetSinifi", "kadro")
+        self._add_editable_combo(g_kad, 0, 1, "Kadro Ünvanı",  "KadroUnvani",  "kadro")
+        self._add_editable_combo(g_kad, 1, 0, "Görev Yeri",    "GorevYeri",    "kadro")
+        self._add_editable_item( g_kad, 1, 1, "Sicil No",      "KurumSicilNo", "kadro")
+        self._add_editable_date( g_kad, 2, 0, "Başlama Tarihi","MemuriyeteBaslamaTarihi","kadro")
+        self._add_durum_item(    g_kad, 2, 1, self.personel_data.get("Durum"))
         right_l.addWidget(grp_kurum)
 
-        # Eğitim Grubu
+        # ── Üst satır: sol kart | sağ form ──
+        form_row = QHBoxLayout()
+        form_row.setSpacing(16)
+        form_row.addWidget(left_grp, alignment=Qt.AlignmentFlag.AlignTop)
+        form_row.addWidget(right, 1)
+        content_vbox.addLayout(form_row)
+
+        # ══════════════════════════════════════════════════════
+        # EĞİTİM GRUBU — tam genişlik
+        # ══════════════════════════════════════════════════════
         grp_egitim = self._create_editable_group("Eğitim Bilgileri", "egitim")
         egitim_content_widget = self._groups["egitim"]["widget"]
-        g4 = QGridLayout(egitim_content_widget)
-        g4.setSpacing(15)
+        eg_vbox = QVBoxLayout(egitim_content_widget)
+        eg_vbox.setSpacing(6)
+        eg_vbox.setContentsMargins(0, 0, 0, 0)
 
-        # Belgeler sekmesine yönlendirme
+        # Hint satırı
         hint_row = QHBoxLayout()
         hint = QLabel("Diploma ve ek belgeler için Belgeler sekmesini kullanın.")
         hint.setProperty("color-role", "muted")
         hint.setStyleSheet("font-size: 11px;")
-        hint.style().unpolish(hint)
-        hint.style().polish(hint)
+        hint.style().unpolish(hint); hint.style().polish(hint)
         btn_docs = QPushButton("Belgeler")
         btn_docs.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        btn_docs.setStyleSheet(S.get("btn_action") or S.get("refresh_btn") or "")
+        btn_docs.setProperty("style-role", "secondary")
         try:
             IconRenderer.set_button_icon(btn_docs, "upload", color=DarkTheme.TEXT_SECONDARY, size=14)
         except Exception:
@@ -240,38 +276,58 @@ class PersonelOverviewPanel(QWidget):
         hint_row.addWidget(hint)
         hint_row.addStretch()
         hint_row.addWidget(btn_docs)
-        g4.addLayout(hint_row, 0, 0, 1, 4)
-        
-        # Başlıklar
-        headers = ["Okul Adı", "Bölüm / Fakülte", "Mezuniyet Tarihi", "Diploma No"]
-        for i, h in enumerate(headers):
-            lbl = QLabel(h)
+        eg_vbox.addLayout(hint_row)
+
+        # Başlık satırı
+        def _eg_header(text, stretch):
+            lbl = QLabel(text)
             lbl.setProperty("color-role", "muted")
-            lbl.setStyleSheet("font-size: 11px; font-weight: bold;")
-            lbl.style().unpolish(lbl)
-            lbl.style().polish(lbl)
-            g4.addWidget(lbl, 1, i)
+            lbl.setStyleSheet("font-size: 11px; font-weight: 600; padding-bottom: 2px;")
+            lbl.style().unpolish(lbl); lbl.style().polish(lbl)
+            return lbl, stretch
 
-        # 1. Okul
-        self._add_editable_combo_only(g4, 2, 0, "MezunOlunanOkul", "egitim")
-        self._add_editable_combo_only(g4, 2, 1, "MezunOlunanFakulte", "egitim")
-        self._add_editable_date_only(g4, 2, 2, "MezuniyetTarihi", "egitim")
-        self._add_editable_field_only(g4, 2, 3, "DiplomaNo", "egitim")
+        header_row = QHBoxLayout()
+        header_row.setSpacing(8)
+        header_row.setContentsMargins(0, 4, 0, 2)
+        for lbl, st in [_eg_header("Okul Adı", 2), _eg_header("Bölüm / Fakülte", 2),
+                        _eg_header("Mezuniyet Tarihi", 1), _eg_header("Diploma No", 2)]:
+            header_row.addWidget(lbl, st)
+        eg_vbox.addLayout(header_row)
 
-        # 2. Okul
-        self._add_editable_combo_only(g4, 3, 0, "MezunOlunanOkul2", "egitim")
-        self._add_editable_combo_only(g4, 3, 1, "MezunOlunanFakulte2", "egitim")
-        self._add_editable_date_only(g4, 3, 2, "MezuniyetTarihi2", "egitim")
-        self._add_editable_field_only(g4, 3, 3, "DiplomaNo2", "egitim")
-        
-        right_l.addWidget(grp_egitim)
-        right_l.addStretch()
+        # 1. Eğitim satırı
+        g_ed1 = QGridLayout()
+        g_ed1.setHorizontalSpacing(8)
+        g_ed1.setVerticalSpacing(0)
+        g_ed1.setContentsMargins(0, 0, 0, 0)
+        g_ed1.setColumnStretch(0, 2); g_ed1.setColumnStretch(1, 2)
+        g_ed1.setColumnStretch(2, 1); g_ed1.setColumnStretch(3, 2)
+        self._add_editable_combo_only(g_ed1, 0, 0, "MezunOlunanOkul",    "egitim")
+        self._add_editable_combo_only(g_ed1, 0, 1, "MezunOlunanFakulte", "egitim")
+        self._add_editable_date_only( g_ed1, 0, 2, "MezuniyetTarihi",    "egitim")
+        self._add_editable_field_only(g_ed1, 0, 3, "DiplomaNo",          "egitim")
+        eg_vbox.addLayout(g_ed1)
 
-        # Layout'a bileşenleri ekle
-        content_layout.addWidget(left_grp, alignment=Qt.AlignmentFlag.AlignTop)
-        content_layout.addWidget(right)
-        content_layout.addStretch()
+        # Ayırıcı
+        sep2 = QFrame()
+        sep2.setProperty("bg-role", "separator")
+        sep2.setFixedHeight(1)
+        eg_vbox.addWidget(sep2)
 
+        # 2. Eğitim satırı
+        g_ed2 = QGridLayout()
+        g_ed2.setHorizontalSpacing(8)
+        g_ed2.setVerticalSpacing(0)
+        g_ed2.setContentsMargins(0, 0, 0, 0)
+        g_ed2.setColumnStretch(0, 2); g_ed2.setColumnStretch(1, 2)
+        g_ed2.setColumnStretch(2, 1); g_ed2.setColumnStretch(3, 2)
+        self._add_editable_combo_only(g_ed2, 0, 0, "MezunOlunanOkul2",    "egitim")
+        self._add_editable_combo_only(g_ed2, 0, 1, "MezunOlunanFakulte2", "egitim")
+        self._add_editable_date_only( g_ed2, 0, 2, "MezuniyetTarihi2",    "egitim")
+        self._add_editable_field_only(g_ed2, 0, 3, "DiplomaNo2",          "egitim")
+        eg_vbox.addLayout(g_ed2)
+
+        content_vbox.addWidget(grp_egitim)
+        content_vbox.addStretch()
         scroll.setWidget(content)
         main_layout.addWidget(scroll, 1)
 
@@ -379,7 +435,10 @@ class PersonelOverviewPanel(QWidget):
                              ("GorevYeri", "Gorev_Yeri")]:
                 combo = self._widgets.get(key)
                 if isinstance(combo, QComboBox):
-                    current_val = combo.currentText()
+                    try:
+                        current_val = combo.currentText()
+                    except RuntimeError:
+                        continue  # Silinmiş widget, atla
                     items = get_sabit(kod)
                     combo.clear()
                     combo.addItem("")
@@ -405,11 +464,13 @@ class PersonelOverviewPanel(QWidget):
                         for col in col_key
                         if (s := str(r.get(col) or "").strip())
                     ))
-                    
                     for key in combo_keys:
                         combo = self._widgets.get(key)
                         if isinstance(combo, QComboBox):
-                            current_val = combo.currentText()
+                            try:
+                                current_val = combo.currentText()
+                            except RuntimeError:
+                                continue  # Silinmiş widget, atla
                             combo.clear()
                             combo.addItem("")
                             combo.addItems(unique_vals)
@@ -436,50 +497,39 @@ class PersonelOverviewPanel(QWidget):
 
     def _create_editable_group(self, title, group_id):
         grp = QGroupBox(title)
-        # Sol sütundaki grup kutusu ile birebir aynı tema stili kullanılır.
-        grp.setStyleSheet(S["group"])
-        
-        # Başlık ve Butonlar için Layout
-        # QGroupBox layout'u yerine içine bir layout koyup en üste butonları ekliyoruz
+
         vbox = QVBoxLayout(grp)
-        vbox.setContentsMargins(10, 10, 10, 10)
-        
-        # Header Satırı (Butonlar)
+        vbox.setContentsMargins(12, 6, 12, 12)
+        vbox.setSpacing(8)
+
+        # Buton satırı — sağa hizalı, minimum yükseklik
         header_row = QHBoxLayout()
+        header_row.setContentsMargins(0, 0, 0, 0)
+        header_row.setSpacing(4)
         header_row.addStretch()
 
-        # Butonlar
-        btn_edit = self._create_icon_btn("edit", "Düzenle", lambda: self._toggle_edit(group_id, True))
-        btn_save = self._create_icon_btn("save", "Kaydet", lambda: self._save_group(group_id), visible=False)
-        btn_cancel = self._create_icon_btn("x", "İptal", lambda: self._toggle_edit(group_id, False), visible=False)
-        
-        # Stil özelleştirme
-        btn_save.setStyleSheet(
-            f"background: #16a34a; color: {DarkTheme.TEXT_PRIMARY}; border-radius: 4px; padding: 4px 8px;"
-        )
-        btn_cancel.setStyleSheet(
-            f"background: #dc2626; color: {DarkTheme.TEXT_PRIMARY}; border-radius: 4px; padding: 4px 8px;"
-        )
+        btn_edit   = self._create_icon_btn("edit", "Düzenle", lambda: self._toggle_edit(group_id, True))
+        btn_save   = self._create_icon_btn("save", "Kaydet",  lambda: self._save_group(group_id),        visible=False)
+        btn_cancel = self._create_icon_btn("x",    "İptal",   lambda: self._toggle_edit(group_id, False), visible=False)
+
+        btn_save.setProperty("style-role", "success-filled")
+        btn_cancel.setProperty("style-role", "danger")
 
         header_row.addWidget(btn_edit)
         header_row.addWidget(btn_save)
         header_row.addWidget(btn_cancel)
-        
         vbox.addLayout(header_row)
-        
-        # İçerik için placeholder widget (Grid layout buna eklenecek)
+
         content_widget = QWidget()
         vbox.addWidget(content_widget)
-        
-        # Referansları sakla
+
         self._groups[group_id] = {
-            "widget": content_widget,
-            "btn_edit": btn_edit,
-            "btn_save": btn_save,
+            "widget":     content_widget,
+            "btn_edit":   btn_edit,
+            "btn_save":   btn_save,
             "btn_cancel": btn_cancel,
-            "fields": [] # Bu gruba ait field key'leri
+            "fields":     [],
         }
-        
         return grp
 
     def _create_icon_btn(self, icon_name, tooltip, callback, visible=True):
@@ -489,38 +539,65 @@ class PersonelOverviewPanel(QWidget):
         btn.setFixedSize(30, 26)
         btn.setVisible(visible)
         IconRenderer.set_button_icon(btn, icon_name, color=DarkTheme.TEXT_SECONDARY, size=14)
-        btn.setStyleSheet("""
-            QPushButton {
-                background: rgba(255,255,255,0.1); 
-                border: none; border-radius: 4px; color: #ccc;
-            }
-            QPushButton:hover { background: rgba(255,255,255,0.2); color: white; }
-        """)
+        btn.setProperty("style-role", "quick-action")
         btn.clicked.connect(callback)
         return btn
+
+
+    def _add_durum_item(self, layout, row, col, durum_val):
+        """Durum alanı için renkli badge gösterir."""
+        container = QWidget()
+        l = QVBoxLayout(container)
+        l.setContentsMargins(0, 0, 0, 0)
+        l.setSpacing(2)
+
+        lbl_t = QLabel("Durum")
+        lbl_t.setProperty("color-role", "muted")
+        lbl_t.setStyleSheet("font-size: 11px;")
+        lbl_t.style().unpolish(lbl_t); lbl_t.style().polish(lbl_t)
+        l.addWidget(lbl_t)
+
+        val_str = str(durum_val) if durum_val else "—"
+        lbl_v = QLabel(val_str)
+        lbl_v.setWordWrap(False)
+
+        # Badge rengi
+        durum_role = {
+            "Aktif":   "header-durum-aktif",
+            "Pasif":   "header-durum-pasif",
+            "İzinli":  "header-durum-izinli",
+        }.get(val_str)
+        if durum_role:
+            lbl_v.setProperty("style-role", durum_role)
+        else:
+            lbl_v.setProperty("color-role", "primary")
+            lbl_v.setStyleSheet("font-size: 13px; font-weight: 500;")
+
+        lbl_v.style().unpolish(lbl_v); lbl_v.style().polish(lbl_v)
+        l.addWidget(lbl_v)
+        l.addStretch()
+
+        layout.addWidget(container, row, col)
 
     def _add_readonly_item(self, layout, row, col, label, value):
         container = QWidget()
         l = QVBoxLayout(container)
         l.setContentsMargins(0, 0, 0, 0)
         l.setSpacing(2)
-        
+
         lbl_t = QLabel(label)
         lbl_t.setProperty("color-role", "muted")
         lbl_t.setStyleSheet("font-size: 11px;")
-        lbl_t.style().unpolish(lbl_t)
-        lbl_t.style().polish(lbl_t)
+        lbl_t.style().unpolish(lbl_t); lbl_t.style().polish(lbl_t)
         l.addWidget(lbl_t)
-        
-        val_str = str(value) if value else "-"
-        lbl_v = QLabel(val_str)
+
+        lbl_v = QLabel(str(value) if value else "—")
         lbl_v.setProperty("color-role", "primary")
         lbl_v.setStyleSheet("font-size: 13px; font-weight: 500;")
-        lbl_v.style().unpolish(lbl_v)
-        lbl_v.style().polish(lbl_v)
+        lbl_v.style().unpolish(lbl_v); lbl_v.style().polish(lbl_v)
         lbl_v.setWordWrap(True)
         l.addWidget(lbl_v)
-        
+
         layout.addWidget(container, row, col)
 
     def _add_editable_item(self, layout, row, col, label, db_key, group_id):
@@ -540,10 +617,7 @@ class PersonelOverviewPanel(QWidget):
         val = self.personel_data.get(db_key, "")
         inp = QLineEdit(str(val) if val else "")
         inp.setReadOnly(True)
-        inp.setStyleSheet(
-            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
-            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
-        )
+
         l.addWidget(inp)
         
         layout.addWidget(container, row, col)
@@ -572,10 +646,7 @@ class PersonelOverviewPanel(QWidget):
         combo.addItem(str(val) if val else "")
         combo.setCurrentText(str(val) if val else "")
         combo.setEnabled(False)
-        combo.setStyleSheet(
-            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
-            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
-        )
+
         
         completer = QCompleter(self)
         completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
@@ -598,10 +669,6 @@ class PersonelOverviewPanel(QWidget):
         combo.addItem(str(val) if val else "")
         combo.setCurrentText(str(val) if val else "")
         combo.setEnabled(False)
-        combo.setStyleSheet(
-            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
-            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px;"
-        )
 
         completer = QCompleter(self)
         completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
@@ -619,10 +686,6 @@ class PersonelOverviewPanel(QWidget):
         inp = QLineEdit(str(val) if val else "")
         inp.setReadOnly(True)
         inp.setPlaceholderText("-")
-        inp.setStyleSheet(
-            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
-            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px;"
-        )
 
         # Container: input + görüntüle butonu
         container = QWidget()
@@ -671,10 +734,6 @@ class PersonelOverviewPanel(QWidget):
         date_edit.setDate(d if d.isValid() else QDate.currentDate())
 
         date_edit.setEnabled(False)
-        date_edit.setStyleSheet(
-            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
-            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
-        )
 
         l.addWidget(date_edit)
         layout.addWidget(container, row, col)
@@ -693,10 +752,6 @@ class PersonelOverviewPanel(QWidget):
         date_edit.setDate(d if d.isValid() else QDate.currentDate())
 
         date_edit.setEnabled(False)
-        date_edit.setStyleSheet(
-            f"background: {DarkTheme.BG_TERTIARY}; border: 1px solid {DarkTheme.BORDER_SECONDARY}; "
-            f"border-radius: 4px; padding: 6px; color: {DarkTheme.TEXT_PRIMARY}; font-size: 13px;"
-        )
         
         layout.addWidget(date_edit, row, col)
         
@@ -709,31 +764,16 @@ class PersonelOverviewPanel(QWidget):
         grp["btn_save"].setVisible(edit_mode)
         grp["btn_cancel"].setVisible(edit_mode)
         
-        style_edit = (
-            f"background: {DarkTheme.BG_SECONDARY}; border: 1px solid {DarkTheme.INPUT_BORDER_FOCUS}; "
-            f"border-radius: 4px; padding: 4px; color: {DarkTheme.TEXT_PRIMARY};"
-        )
-        style_read = f"background: transparent; border: none; color: {DarkTheme.TEXT_PRIMARY}; font-weight: 500;"
-        style_combo_read = (
-            f"background: transparent; border: none; color: {DarkTheme.TEXT_PRIMARY}; "
-            "font-size: 13px; font-weight: 500; padding: 4px;"
-        )
-        style_date_read = (
-            f"background: transparent; border: none; color: {DarkTheme.TEXT_PRIMARY}; "
-            "font-size: 13px; font-weight: 500; padding: 4px;"
-        )
+        # Edit / read modu: setProperty ile QSS role sistemi kullanılır
         
         for key in grp["fields"]:
             widget = self._widgets[key]
             if isinstance(widget, QLineEdit):
                 widget.setReadOnly(not edit_mode)
-                widget.setStyleSheet(style_edit if edit_mode else style_read)
             elif isinstance(widget, QComboBox):
                 widget.setEnabled(edit_mode)
-                widget.setStyleSheet(S["combo"] if edit_mode else style_combo_read)
             elif isinstance(widget, QDateEdit):
                 widget.setEnabled(edit_mode)
-                widget.setStyleSheet(S["date"] if edit_mode else style_date_read)
             
             # İptal edilirse eski veriyi geri yükle
             if not edit_mode:

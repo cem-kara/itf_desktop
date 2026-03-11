@@ -119,7 +119,35 @@ QSpinBox, QDoubleSpinBox {
 QSpinBox:focus, QDoubleSpinBox:focus { border-color: {INPUT_BORDER_FOCUS}; }
 QSpinBox::up-button, QSpinBox::down-button,
 QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
-    width: 20px; background: transparent; border: none;
+    width: 20px;
+    background: {BG_ELEVATED};
+    border: none;
+    border-left: 1px solid {BORDER_PRIMARY};
+}
+QSpinBox::up-button, QDoubleSpinBox::up-button {
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+    border-top-right-radius: 3px;
+}
+QSpinBox::down-button, QDoubleSpinBox::down-button {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    border-top: 1px solid {BORDER_PRIMARY};
+    border-bottom-right-radius: 3px;
+}
+QSpinBox::up-button:hover, QSpinBox::down-button:hover,
+QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {
+    background: {ACCENT_BG};
+}
+QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {
+    image: url("{ICON_CHEVRON_UP}");
+    width: 10px;
+    height: 10px;
+}
+QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
+    image: url("{ICON_CHEVRON_DOWN}");
+    width: 10px;
+    height: 10px;
 }
 
 /* ── QTextBrowser ────────────────────────────────────────────── */
@@ -508,10 +536,9 @@ QComboBox::drop-down {
 }
 QComboBox::drop-down:hover { background: {ACCENT_BG}; }
 QComboBox::down-arrow {
-    width: 0; height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid {TEXT_SECONDARY};
+    image: url("{ICON_CHEVRON_DOWN}");
+    width: 12px;
+    height: 12px;
 }
 QComboBox QAbstractItemView {
     background-color: #ffffff;
@@ -541,10 +568,9 @@ QDateEdit::drop-down, QDateTimeEdit::drop-down {
 }
 QDateEdit::drop-down:hover, QDateTimeEdit::drop-down:hover { background: {ACCENT_BG}; }
 QDateEdit::down-arrow, QDateTimeEdit::down-arrow {
-    width: 0; height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid {TEXT_SECONDARY};
+    image: url("{ICON_CALENDAR}");
+    width: 14px;
+    height: 14px;
 }
 
 QListWidget {
