@@ -798,6 +798,35 @@ class PersonelOverviewPanel(QWidget):
                 except Exception:
                     pass
 
+    def _recalc_izin_if_needed(self, group_id: str, tc: str, update_data: dict):
+        """
+        Kadro grubu kaydedilince MemuriyeteBaslamaTarihi değişmiş olabilir.
+        İzin hak edişini yeniden hesapla ve Izin_Bilgi'yi güncelle.
+        Diğer gruplarda çağrılsa da sessizce çıkar.
+        """
+        if group_id != "kadro":
+            return
+        baslama = str(update_data.get("MemuriyeteBaslamaTarihi", "")).strip()
+        if not baslama:
+            logger.debug("_recalc_izin: MemuriyeteBaslamaTarihi boş, atlandı.")
+            return
+        if not self._izin_svc:
+            logger.warning("_recalc_izin: izin_svc yok, atlandı.")
+            return
+        try:
+            ad_soyad = str(self.personel_data.get("AdSoyad", "")).strip()
+            ok = self._izin_svc.create_or_update_izin_bilgi(
+                tc=tc,
+                ad_soyad=ad_soyad,
+                baslama_tarihi=baslama,
+            )
+            if ok:
+                logger.info(f"İzin hak edişi yeniden hesaplandı: {tc} | BaslamaTarihi={baslama}")
+            else:
+                logger.warning(f"İzin hak ediş güncellenemedi: {tc}")
+        except Exception as e:
+            logger.error(f"_recalc_izin hatası: {e}")
+
     def _save_group(self, group_id):
         """Grup verilerini kaydet"""
         if not self._personel_svc:
@@ -856,6 +885,8 @@ class PersonelOverviewPanel(QWidget):
             if not self._file_paths:
                 repo.update(tc, update_data)
                 self.personel_data.update(update_data)
+                # Kadro grubu kaydedilince izin hak edişini yeniden hesapla
+                self._recalc_izin_if_needed(group_id, tc, update_data)
                 self._toggle_edit(group_id, False)
                 logger.info(f"Personel başarıyla güncellendi: {tc} ({group_id})")
                 QMessageBox.information(self, "Başarılı", "Veriler kaydedildi.")
@@ -876,6 +907,7 @@ class PersonelOverviewPanel(QWidget):
 
                 repo.update(tc, update_data)
                 self.personel_data.update(update_data)
+                self._recalc_izin_if_needed(group_id, tc, update_data)
                 self._toggle_edit(group_id, False)
                 logger.info(f"Personel (dosya dahil) başarıyla güncellendi: {tc} ({group_id})")
                 QMessageBox.information(self, "Başarılı", "Veriler ve dosyalar kaydedildi.")

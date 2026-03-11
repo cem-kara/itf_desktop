@@ -1224,23 +1224,56 @@ class PersonelEklePage(QWidget):
                     # Form'u edit mode'a geçir ve açık tut
                     self._is_edit = True
                     self._edit_data = data
-                    
+
+                    # ── Sağlık Takip: IlkMuayene satırı aç ──────────────────
+                    saglik_kayit_no = None
+                    try:
+                        import uuid as _uuid
+                        from datetime import date as _date
+                        from core.di import get_registry as _get_reg
+                        _reg = _get_reg(self._db)
+                        _saglik_repo = _reg.get("Personel_Saglik_Takip")
+                        saglik_kayit_no = _uuid.uuid4().hex[:12].upper()
+                        _saglik_repo.insert({
+                            "KayitNo":    saglik_kayit_no,
+                            "Personelid": str(data.get("KimlikNo", "")).strip(),
+                            "AdSoyad":    str(data.get("AdSoyad",  "")).strip(),
+                            "Birim":      str(data.get("GorevYeri","")).strip(),
+                            "Yil":        _date.today().year,
+                            "Durum":      "IlkMuayene",
+                        })
+                        logger.info(
+                            f"IlkMuayene satırı açıldı: "
+                            f"{data.get('AdSoyad')} / KayitNo={saglik_kayit_no}"
+                        )
+                    except Exception as _se:
+                        logger.warning(f"IlkMuayene satırı açılamadı: {_se}")
+                        saglik_kayit_no = None
+                    # ─────────────────────────────────────────────────────────
+
                     # Form başlığını güncelle
                     if self.lbl_baslik:
                         self.lbl_baslik.setText(f"Personel Düzenle — {data.get('AdSoyad', '')}")
-                    
+
                     # Kaydet butonunu güncelle
                     if hasattr(self, 'btn_kaydet') and self.btn_kaydet:
                         self.btn_kaydet.setText("KİŞİYİ GÜNCELLE")
-                    
+
                     # Yeni Personel butonu göster
                     if hasattr(self, 'btn_yeni_personel') and self.btn_yeni_personel:
                         self.btn_yeni_personel.setVisible(True)
-                    
-                    # Belge panelini göster (varsa)
+
+                    # Belge panelini aç ve saglik kaydına bağla
                     if hasattr(self, '_dokuman_panel') and self._dokuman_panel:
                         self._dokuman_panel.set_entity_id(data["KimlikNo"])
-                    
+                        if saglik_kayit_no:
+                            self._dokuman_panel.set_related_record(
+                                iliskili_id  = saglik_kayit_no,
+                                iliskili_tip = "Personel_Saglik_Takip",
+                            )
+                            # Varsayılan belge türünü İşe Giriş Muayenesi yap
+                            self._dokuman_panel.set_default_belge_turu("İşe Giriş Muayenesi")
+
                     MesajKutusu.bilgi(
                         self,
                         "Artık belge yükleyebilirsiniz.\n\nİşlemler bittiğinde:\n- 'YENİ PERSONEL' → Başka personel ekleyin\n- 'İptal' → Listeye dönün",

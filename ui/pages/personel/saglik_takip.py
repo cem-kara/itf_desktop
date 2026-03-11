@@ -38,16 +38,49 @@ from core.services.dokuman_service import DokumanService
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.icons import IconRenderer, IconColors
 
+def _compute_durum(durum_db: str, sonraki_tarih_str: str) -> str:
+    """
+    DB'den gelen Durum değerini günceller:
+    - Elle "Gecerli"/"Gecikmis" yazılmışsa önce bunları koru,
+      ama SonrakiKontrolTarihi'ne göre tekrar değerlendir.
+    - SonrakiKontrolTarihi geçmişse → Gecikmis
+    - SonrakiKontrolTarihi 60 gün içindeyse → Riskli
+    - SonrakiKontrolTarihi uzaktaysa → Gecerli
+    - Tarih yoksa → Planlandi
+    """
+    from datetime import date, timedelta
+    RISKLI_GUN = 60
+
+    sonraki = None
+    if sonraki_tarih_str:
+        from core.date_utils import parse_date as _pd
+        sonraki = _pd(sonraki_tarih_str)
+
+    if sonraki is None:
+        return durum_db if durum_db else "Planlandi"
+
+    bugun = date.today()
+    if sonraki < bugun:
+        return "Gecikmis"
+    if sonraki <= bugun + timedelta(days=RISKLI_GUN):
+        return "Riskli"
+    return "Gecerli"
+
+
 STATUS_OPTIONS = ["Uygun", "Şartlı Uygun", "Uygun Değil"]
 
 TABLE_COLUMNS = [
-    ("AdSoyad",              "Ad Soyad",         200),
-    ("Birim",                "Birim",             200),
-    ("MuayeneTarihi",        "Muayene",         150),
-    ("SonrakiKontrolTarihi", "Sonraki Kontrol", 150),
-    ("Sonuc",                "Sonuç",           150),
-    ("Durum",                "Durum",           100),
-    ("Rapor",                "Rapor",            80),
+    ("AdSoyad",              "Ad Soyad",         175),
+    ("Birim",                "Birim",             155),
+    ("MuayeneTarihi",        "Muayene",          120),
+    ("SonrakiKontrolTarihi", "Sonraki Kontrol",  120),
+    ("Dermat",               "Derm.",              52),
+    ("Dahiliye",             "Dah.",               52),
+    ("Goz",                  "Göz",               52),
+    ("Goruntuleme",          "Görünt.",            52),
+    ("Sonuc",                "Sonuç",            130),
+    ("Durum",                "Durum",            100),
+    ("Rapor",                "Rapor",             80),
 ]
 
 
@@ -57,13 +90,36 @@ TABLE_COLUMNS = [
 
 class SaglikTakipTableModel(BaseTableModel):
     DATE_KEYS    = frozenset({"MuayeneTarihi", "SonrakiKontrolTarihi"})
-    ALIGN_CENTER = frozenset({"MuayeneTarihi", "SonrakiKontrolTarihi", "Sonuc", "Durum", "Rapor"})
+    ALIGN_CENTER = frozenset({
+        "MuayeneTarihi", "SonrakiKontrolTarihi",
+        "Dermat", "Dahiliye", "Goz", "Goruntuleme",
+        "Sonuc", "Durum", "Rapor",
+    })
+    _EXAM_COL_MAP = {
+        "Dermat":      "DermatolojiDurum",
+        "Dahiliye":    "DahiliyeDurum",
+        "Goz":         "GozDurum",
+        "Goruntuleme": "GoruntulemeDurum",
+    }
 
     def __init__(self, rows=None, parent=None):
         super().__init__(TABLE_COLUMNS, rows, parent)
 
     def _display(self, key, row):
+        if key in self._EXAM_COL_MAP:
+            val = str(row.get(self._EXAM_COL_MAP[key], "") or "").strip()
+            if not val:
+                return "–"
+            if val.lower() in ("uygun", "normal", "ok"):
+                return "✓"
+            if val.lower() in ("uygun değil", "anormal"):
+                return "✗"
+            # Şartlı Uygun veya bilinmeyen kısaltılmış göster
+            return "~"
         if key == "Rapor":
+            # İlk Muayene satırında rapor gösterme — henüz kaydı yok
+            if row.get("Durum") == "IlkMuayene":
+                return "-"
             rapor_path = row.get("_RaporPath")
             if rapor_path and str(rapor_path).strip():
                 return "Raporu Aç"
@@ -71,21 +127,45 @@ class SaglikTakipTableModel(BaseTableModel):
             if muayene and str(muayene).strip():
                 return "⚠ Rapor Eksik"
             return "-"
-        return super()._display(key, row)
+        if key == "Durum" and row.get("Durum") == "IlkMuayene":
+            return "İlk Muayene"
+        # "None" string'ini temizle
+        val = super()._display(key, row)
+        return "" if str(val).strip().lower() == "none" else val
 
     def _fg(self, key, row):
         from PySide6.QtGui import QColor
+        if key in self._EXAM_COL_MAP:
+            val = str(row.get(self._EXAM_COL_MAP[key], "") or "").strip().lower()
+            # Sanal satır (bu yıl kaydı yok) → önceki yılın verisi, daha soluk renk
+            is_virtual = not str(row.get("KayitNo", "")).strip()
+            alpha = 140 if is_virtual else 255
+            if val in ("uygun", "normal", "ok"):
+                c = QColor("#22c55e"); c.setAlpha(alpha); return c
+            if val in ("uygun değil", "anormal"):
+                c = QColor("#ef4444"); c.setAlpha(alpha); return c
+            if val:
+                c = QColor("#f59e0b"); c.setAlpha(alpha); return c
+            return QColor("#6b7280")       # gri — boş
         if key == "Rapor":
             muayene = row.get("MuayeneTarihi") if row else None
             if muayene and str(muayene).strip() and not row.get("_RaporPath"):
-                return QColor("#f59e0b")   # turuncu — rapor eksik uyarısı
+                return QColor("#f59e0b")
         if key == "Durum":
-            return self.status_fg(row.get("Durum", ""))
+            durum = row.get("Durum", "")
+            if durum == "IlkMuayene":
+                from PySide6.QtGui import QColor
+                return QColor("#38bdf8")   # açık mavi
+            return self.status_fg(durum)
         return None
 
     def _bg(self, key, row):
         if key == "Durum":
-            return self.status_bg(row.get("Durum", ""))
+            durum = row.get("Durum", "")
+            if durum == "IlkMuayene":
+                from PySide6.QtGui import QColor
+                return QColor("#38bdf822")
+            return self.status_bg(durum)
         return None
 
 
@@ -369,6 +449,13 @@ class SaglikTakipPage(QWidget):
         IconRenderer.set_button_icon(self.btn_yenile, "sync", color=IconColors.PRIMARY, size=14)
         lay.addWidget(self.btn_yenile)
 
+        self.btn_export = QPushButton("Excel'e Aktar")
+        self.btn_export.setProperty("style-role", "secondary")
+        self.btn_export.setFixedHeight(34)
+        self.btn_export.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_export, "download", color=IconColors.PRIMARY, size=14)
+        lay.addWidget(self.btn_export)
+
         self.btn_kapat = QPushButton("Kapat")
         self.btn_kapat.setProperty("style-role", "danger")
         self.btn_kapat.setFixedHeight(34)
@@ -387,11 +474,12 @@ class SaglikTakipPage(QWidget):
         lay.setSpacing(10)
 
         card_defs = [
-            ("toplam",   "Toplam Kayıt",  "—", "accent",  None),
-            ("gecerli",  "Geçerli",        "—", "ok",      "#16a34a"),
-            ("gecikmis", "Gecikmiş",       "—", "warn",    "#d97706"),
-            ("riskli",   "Riskli",         "—", "err",     "#dc2626"),
-            ("planlandi","Planlandı",       "—", "muted",   None),
+            ("toplam",      "Toplam Kayıt",  "—", "accent",  None),
+            ("gecerli",     "Geçerli",        "—", "ok",      "#16a34a"),
+            ("gecikmis",    "Gecikmiş",       "—", "warn",    "#d97706"),
+            ("riskli",      "Riskli",         "—", "err",     "#dc2626"),
+            ("planlandi",   "Planlandı",       "—", "muted",   None),
+            ("ilkmuayene",  "İlk Muayene",    "—", "info",    "#0369a1"),
         ]
         for key, label, init_val, color_role, badge_bg in card_defs:
             card = QFrame()
@@ -434,25 +522,25 @@ class SaglikTakipPage(QWidget):
 
         # Yıl
         self.cmb_yil = QComboBox()
-        self.cmb_yil.setFixedWidth(200)
+        self.cmb_yil.setFixedWidth(110)
         self.cmb_yil.addItem("Tüm Yıllar", 0)
         this_year = date.today().year
         for y in range(this_year + 1, this_year - 4, -1):
             self.cmb_yil.addItem(str(y), y)
-        self.cmb_yil.setCurrentIndex(1)
+        self.cmb_yil.setCurrentIndex(2)  # index 0=Tüm Yıllar, 1=gelecek yıl, 2=bu yıl
         lay.addWidget(self.cmb_yil)
 
         # Birim
         self.cmb_birim_filter = QComboBox()
-        self.cmb_birim_filter.setMinimumWidth(300)
+        self.cmb_birim_filter.setMinimumWidth(140)
         self.cmb_birim_filter.addItem("Tüm Birimler")
         lay.addWidget(self.cmb_birim_filter)
 
         # Durum
         self.cmb_durum_filter = QComboBox()
-        self.cmb_durum_filter.setMinimumWidth(150)
+        self.cmb_durum_filter.setMinimumWidth(130)
         self.cmb_durum_filter.addItems(
-            ["Tüm Durumlar", "Planlandi", "Gecerli", "Gecikmis", "Riskli"]
+            ["Tüm Durumlar", "Planlandi", "Gecerli", "Gecikmis", "Riskli", "IlkMuayene"]
         )
         lay.addWidget(self.cmb_durum_filter)
 
@@ -526,7 +614,7 @@ class SaglikTakipPage(QWidget):
         self.btn_form_kapat.setFixedSize(28, 28)
         self.btn_form_kapat.setToolTip("Formu Kapat")
         self.btn_form_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_form_kapat, "x", color=IconColors.DANGER, size=14)
+        IconRenderer.set_button_icon(self.btn_form_kapat, "x", color=IconColors.DANGER, size=12)
         top_row.addWidget(self.btn_form_kapat)
         form_lay.addLayout(top_row)
 
@@ -740,6 +828,64 @@ class SaglikTakipPage(QWidget):
         rapor_col = [i for i, (k, _, _) in enumerate(TABLE_COLUMNS) if k == "Rapor"]
         if rapor_col:
             self.table.setItemDelegateForColumn(rapor_col[0], RaporButtonDelegate(self))
+    def _on_export(self):
+        """Tabloda görünen satırları CSV olarak dışa aktar."""
+        rows = self.model._data if hasattr(self.model, "_data") else []
+        if not rows:
+            QMessageBox.information(self, "Dışa Aktarma", "Aktarılacak satır bulunamadı.")
+            return
+
+        yil  = self.cmb_yil.currentData() or date.today().year
+        birim = self.cmb_birim_filter.currentText()
+        dosya_adi = f"saglik_takip_{yil}"
+        if birim and birim != "Tüm Birimler":
+            dosya_adi += f"_{birim}"
+        dosya_adi += ".csv"
+
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Excel/CSV olarak kaydet", dosya_adi,
+            "CSV Dosyaları (*.csv);;Tüm Dosyalar (*)"
+        )
+        if not path:
+            return
+
+        import csv
+        basliklar = [
+            "Ad Soyad", "Birim", "Yıl", "Muayene Tarihi", "Sonraki Kontrol",
+            "Dermatoloji", "Dahiliye", "Göz", "Görüntüleme",
+            "Sonuç", "Durum",
+        ]
+        alan_map = [
+            ("AdSoyad", ""),
+            ("Birim", ""),
+            ("Yil", ""),
+            ("MuayeneTarihi", ""),
+            ("SonrakiKontrolTarihi", ""),
+            ("DermatolojiDurum", ""),
+            ("DahiliyeDurum", ""),
+            ("GozDurum", ""),
+            ("GoruntulemeDurum", ""),
+            ("Sonuc", ""),
+            ("Durum", ""),
+        ]
+        try:
+            with open(path, "w", newline="", encoding="utf-8-sig") as f:
+                writer = csv.writer(f)
+                writer.writerow(basliklar)
+                for row in rows:
+                    writer.writerow([
+                        str(row.get(alan, "") or "").strip()
+                        for alan, _ in alan_map
+                    ])
+            QMessageBox.information(
+                self, "Başarılı",
+                f"{len(rows)} satır dışa aktarıldı.\n\n{path}"
+            )
+            if platform.system() == "Windows":
+                os.startfile(path)
+        except Exception as e:
+            QMessageBox.critical(self, "Hata", f"Dosya kaydedilemedi:\n{e}")
+
     def handle_rapor_button_clicked(self, row_idx: int, value: str):
         row = self.model.get_row(row_idx)
         if not row:
@@ -809,9 +955,10 @@ class SaglikTakipPage(QWidget):
         self.btn_temizle.clicked.connect(self._clear_form)
         self.btn_yeni.clicked.connect(self._show_form_panel)
         self.btn_form_kapat.clicked.connect(self._hide_form_panel)
+        self.btn_export.clicked.connect(self._on_export)
         self.btn_rapor.clicked.connect(self._pick_report)
         self.search.textChanged.connect(self._apply_filters)
-        self.cmb_yil.currentIndexChanged.connect(self._apply_filters)
+        self.cmb_yil.currentIndexChanged.connect(self._on_yil_changed)
         self.cmb_birim_filter.currentTextChanged.connect(self._apply_filters)
         self.cmb_durum_filter.currentTextChanged.connect(self._apply_filters)
         self.table.selectionModel().selectionChanged.connect(self._on_select_row)
@@ -841,6 +988,7 @@ class SaglikTakipPage(QWidget):
         self.cmb_personel.setVisible(True)
         self.lbl_personel_ro.setVisible(False)
         self._rapor_only_mode = False
+        self.cmb_yil.setEnabled(False)   # Form açıkken yıl değiştirme engeli
         self.form_panel.setVisible(True)
 
     def _fill_form_from_takip(self, takip_row: dict):
@@ -879,6 +1027,7 @@ class SaglikTakipPage(QWidget):
         self.cmb_personel.setVisible(True)
         self.lbl_personel_ro.setVisible(False)
         self._rapor_only_mode = False
+        self.cmb_yil.setEnabled(False)
         self.form_panel.setVisible(True)
 
     def _show_rapor_panel(self, takip_row: dict):
@@ -900,6 +1049,7 @@ class SaglikTakipPage(QWidget):
         self.form_panel.setVisible(True)
 
     def _hide_form_panel(self):
+        self.cmb_yil.setEnabled(True)   # Formu kapatınca yıl seçimi tekrar açık
         self.form_panel.setVisible(False)
 
     # -------------------------------------------------------------------------
@@ -925,17 +1075,24 @@ class SaglikTakipPage(QWidget):
         self.btn_yenile.setEnabled(True)
         self.form_panel.setEnabled(True)
         all_personel = result["all_personel"]
-        # Hizmet sınıfı combosu için tam personel listesi kullan
         self._personel_rows = all_personel
-        self._takip_rows = result["takip_rows"]
+        self._takip_rows    = result["takip_rows"]
 
-        # Hizmet sınıfı ve personel combolarını doldur
         self._fill_hizmet_sinifi_combo()
         self._fill_personel_combo()
 
-        self._all_rows = self._build_takip_list_rows(self._takip_rows, all_personel)
+        # Seçili yıl için listeyi oluştur
+        self._rebuild_all_rows()
         self._fill_filter_combos()
         self._apply_filters()
+
+    def _rebuild_all_rows(self):
+        """Seçili yıla göre tüm aktif personelin muayene satırlarını oluşturur."""
+        yil = int(self.cmb_yil.currentData() or date.today().year)
+        self._current_yil = yil   # _apply_filters ile senkron
+        self._all_rows = self._build_yearly_exam_rows(
+            self._takip_rows, self._personel_rows, yil
+        )
 
     def _on_load_error(self, msg: str):
         self.btn_yenile.setEnabled(True)
@@ -943,29 +1100,156 @@ class SaglikTakipPage(QWidget):
         self.lbl_info.setText("Yükleme hatası")
         logger.error(f"Saglik takip yukleme hatasi: {msg}")
 
-    def _build_takip_list_rows(self, takip_rows, all_personel) -> list[dict]:
-        personel_map = {
-            str(p.get("KimlikNo", "")).strip(): str(p.get("Durum", "")).strip().lower()
+    def _build_yearly_exam_rows(self, takip_rows, all_personel, yil: int) -> list[dict]:
+        """
+        Verilen yıl için her aktif personelin bir satırını döner.
+
+        Mantık:
+        - Bu yıla ait kayıt varsa → onu kullan.
+        - Yoksa → önceki yılın (yil-1) Göz/Dahiliye/Dermatoloji muayenelerinin
+          en yeni tarihine +1 yıl ekleyerek SonrakiKontrolTarihi hesapla,
+          Durum = "Planlandi" ile sanal satır oluştur.
+        """
+        # Aktif personel seti
+        aktif_set = {
+            str(p.get("KimlikNo", "")).strip()
             for p in all_personel
+            if str(p.get("Durum", "")).strip().lower() != "pasif"
         }
-        rows = []
-        for takip in takip_rows:
-            personelid = str(takip.get("Personelid", "")).strip()
-            if personel_map.get(personelid, "") == "pasif":
+        personel_by_id = {
+            str(p.get("KimlikNo", "")).strip(): p for p in all_personel
+        }
+
+        # Takip kayıtlarını personelid + yıl bazında indeksle
+        # Aynı (pid, yil) için birden fazla kayıt varsa MuayeneTarihi en yeni olanı tut
+        takip_index: dict = {}
+        for t in takip_rows:
+            pid = str(t.get("Personelid", "")).strip()
+            ty  = int(t.get("Yil") or 0)
+            if not pid:
                 continue
-            rows.append({
-                "KayitNo":              str(takip.get("KayitNo", "")).strip(),
-                "Personelid":           personelid,
-                "AdSoyad":              str(takip.get("AdSoyad", "")).strip(),
-                "Birim":                str(takip.get("Birim", "")).strip(),
-                "Yil":                  int(takip.get("Yil") or 0),
-                "MuayeneTarihi":        to_db_date(takip.get("MuayeneTarihi", "")),
-                "SonrakiKontrolTarihi": to_db_date(takip.get("SonrakiKontrolTarihi", "")),
-                "Sonuc":                str(takip.get("Sonuc", "")).strip(),
-                "Durum":                str(takip.get("Durum", "")).strip(),
-                "_RaporPath":           str(takip.get("_RaporPath", "")).strip(),
-            })
+            key = (pid, ty)
+            mevcut = takip_index.get(key)
+            if mevcut is None:
+                takip_index[key] = t
+            else:
+                # En yeni MuayeneTarihi olan kaydı tut
+                t_tarih  = parse_date(t.get("MuayeneTarihi", ""))
+                mv_tarih = parse_date(mevcut.get("MuayeneTarihi", ""))
+                if t_tarih and (mv_tarih is None or t_tarih > mv_tarih):
+                    takip_index[key] = t
+
+        rows = []
+        for pid in aktif_set:
+            p_data = personel_by_id.get(pid, {})
+            ad     = str(p_data.get("AdSoyad", "")).strip()
+            birim  = str(p_data.get("GorevYeri", "") or p_data.get("Birim", "")).strip()
+
+            # Bu yıl kaydı var mı?
+            takip = takip_index.get((pid, yil))
+
+            if takip:
+                rows.append({
+                    "KayitNo":              str(takip.get("KayitNo", "")).strip(),
+                    "Personelid":           pid,
+                    "AdSoyad":              str(takip.get("AdSoyad", "") or ad).strip(),
+                    "Birim":                str(takip.get("Birim", "") or birim).strip(),
+                    "Yil":                  yil,
+                    "MuayeneTarihi":        to_db_date(takip.get("MuayeneTarihi", "")),
+                    "SonrakiKontrolTarihi": to_db_date(takip.get("SonrakiKontrolTarihi", "")),
+                    "DermatolojiDurum":     str(takip.get("DermatolojiDurum", "")).strip(),
+                    "DahiliyeDurum":        str(takip.get("DahiliyeDurum", "")).strip(),
+                    "GozDurum":             str(takip.get("GozDurum", "")).strip(),
+                    "GoruntulemeDurum":     str(takip.get("GoruntulemeDurum", "")).strip(),
+                    "Sonuc":                str(takip.get("Sonuc", "")).strip(),
+                    "Durum":                _compute_durum(
+                                                str(takip.get("Durum", "")).strip(),
+                                                to_db_date(takip.get("SonrakiKontrolTarihi", ""))
+                                            ),
+                    "_RaporPath":           str(takip.get("_RaporPath", "")).strip(),
+                })
+            else:
+                # Önceki yıllarda hiç kaydı var mı? (yeni personel tespiti)
+                has_any_record = any(
+                    (pid, y) in takip_index for y in range(yil - 5, yil)
+                )
+
+                if has_any_record:
+                    # Eski personel: bu yıl henüz muayene olmamış
+                    # → önceki yılın en yeni exam tarihine göre SonrakiKontrol hesapla
+                    sonraki = self._calc_next_exam_from_prev_year(takip_index, pid, yil)
+                    durum   = _compute_durum("Planlandi", sonraki)
+                    dermat  = self._prev_exam_durum(takip_index, pid, yil, "DermatolojiDurum")
+                    dahil   = self._prev_exam_durum(takip_index, pid, yil, "DahiliyeDurum")
+                    goz     = self._prev_exam_durum(takip_index, pid, yil, "GozDurum")
+                    gorunt  = self._prev_exam_durum(takip_index, pid, yil, "GoruntulemeDurum")
+                else:
+                    # Yeni personel: hiç geçmiş kaydı yok
+                    # → SonrakiKontrol boş, Durum özel işaretli, exam alanları boş
+                    sonraki = ""
+                    durum   = "IlkMuayene"
+                    dermat = dahil = goz = gorunt = ""
+
+                rows.append({
+                    "KayitNo":              "",
+                    "Personelid":           pid,
+                    "AdSoyad":              ad,
+                    "Birim":                birim,
+                    "Yil":                  yil,
+                    "MuayeneTarihi":        "",
+                    "SonrakiKontrolTarihi": sonraki,
+                    "Sonuc":                "",
+                    "Durum":                durum,
+                    "DermatolojiDurum":     dermat,
+                    "DahiliyeDurum":        dahil,
+                    "GozDurum":             goz,
+                    "GoruntulemeDurum":     gorunt,
+                    "_RaporPath":           "",
+                })
         return rows
+
+    def _prev_exam_durum(
+        self, takip_index: dict, pid: str, yil: int, field: str
+    ) -> str:
+        """Önceki yıla ait tek bir exam durum alanını döner (en fazla 3 yıl geriye)."""
+        for gecmis_yil in range(yil - 1, yil - 4, -1):
+            prev = takip_index.get((pid, gecmis_yil))
+            if prev:
+                val = str(prev.get(field, "") or "").strip()
+                if val:
+                    return val
+        return ""
+
+    def _calc_next_exam_from_prev_year(
+        self, takip_index: dict, pid: str, yil: int
+    ) -> str:
+        """
+        Önceki kayıtlardan (en fazla 3 yıl geriye) Göz/Dahiliye/Dermatoloji
+        muayenelerinin en yenisine kayıt_yılı - muayene_yılı + 1 yıl ekler.
+        Yeni sisteme geçmiş personelde de tarih hesaplanabilsin diye geriye bakar.
+        Hiç kayıt bulunamazsa boş string döner.
+        """
+        EXAM_FIELDS = ("GozMuayeneTarihi", "DahiliyeMuayeneTarihi", "DermatolojiMuayeneTarihi")
+        LOOKBACK    = 3   # kaç yıl geriye bakılacak
+
+        for gecmis_yil in range(yil - 1, yil - 1 - LOOKBACK, -1):
+            prev = takip_index.get((pid, gecmis_yil))
+            if not prev:
+                continue
+            candidates = [parse_date(prev.get(f, "")) for f in EXAM_FIELDS]
+            valid = [d for d in candidates if d]
+            if not valid:
+                continue
+            # En yeni muayene tarihine (hedef_yil - muayene_yili + 1) yıl ekle
+            latest   = max(valid)
+            delta    = (yil - latest.year)   # kaç yıl geçmiş + 1 sonraki kontrol
+            yeni_yil = latest.year + delta
+            try:
+                return latest.replace(year=yeni_yil).isoformat()
+            except ValueError:
+                return latest.replace(month=2, day=28, year=yeni_yil).isoformat()
+
+        return ""
 
     def _fill_filter_combos(self):
         curr     = self.cmb_birim_filter.currentText()
@@ -985,7 +1269,7 @@ class SaglikTakipPage(QWidget):
 
     def _update_stat_cards(self, rows: list):
         """Özet kart sayılarını günceller."""
-        counts = {"toplam": len(rows), "gecerli": 0, "gecikmis": 0, "riskli": 0, "planlandi": 0}
+        counts = {"toplam": len(rows), "gecerli": 0, "gecikmis": 0, "riskli": 0, "planlandi": 0, "ilkmuayene": 0}
         for r in rows:
             d = str(r.get("Durum", "")).strip()
             if d == "Gecerli":
@@ -996,22 +1280,33 @@ class SaglikTakipPage(QWidget):
                 counts["riskli"] += 1
             elif d == "Planlandi":
                 counts["planlandi"] += 1
+            elif d == "IlkMuayene":
+                counts["ilkmuayene"] += 1
         for key, lbl in self._stat_cards.items():
             try:
                 lbl.setText(str(counts.get(key, 0)))
             except RuntimeError:
                 pass
 
+    def _on_yil_changed(self):
+        """Yıl combo değişince _all_rows yeniden oluşturulur, sonra filtreler uygulanır.
+        Birim/durum/arama değişikliklerinde bu metod çağrılmaz — gereksiz rebuild önlenir."""
+        yil = self.cmb_yil.currentData()
+        if yil and self._personel_rows:
+            yil_int = int(yil)
+            self._rebuild_all_rows()
+            self._fill_filter_combos()
+        self._apply_filters()
+
     def _apply_filters(self):
+        """Sadece birim/durum/arama filtrelerini uygular.
+        Yıl rebuild burada yapılmaz — _on_yil_changed sorumluluğundadır."""
         query        = self.search.text().strip().lower()
-        yil          = self.cmb_yil.currentData()
         birim_filter = self.cmb_birim_filter.currentText()
         durum_filter = self.cmb_durum_filter.currentText()
+
         out = []
         for row in self._all_rows:
-            row_yil = int(row.get("Yil") or 0)
-            if yil and row_yil != int(yil):
-                continue
             if birim_filter != "Tüm Birimler" and str(row.get("Birim", "")).strip() != birim_filter:
                 continue
             if durum_filter != "Tüm Durumlar" and str(row.get("Durum", "")).strip() != durum_filter:
@@ -1138,7 +1433,7 @@ class SaglikTakipPage(QWidget):
     # -------------------------------------------------------------------------
 
     def _on_table_double_click(self, index):
-        """Rapor sütunu hariç çift tıklama → kaydı düzenle."""
+        """Rapor sütunu hariç çift tıklama → kayıt varsa düzenle, yoksa yeni form (personel dolu)."""
         if not index.isValid():
             return
         # Rapor sütununu delegate zaten ele alıyor — buraya düşmez, yine de guard
@@ -1151,12 +1446,24 @@ class SaglikTakipPage(QWidget):
         if not row:
             return
         kayit_no  = str(row.get("KayitNo", "")).strip()
-        takip_row = next(
-            (t for t in self._takip_rows if str(t.get("KayitNo", "")).strip() == kayit_no),
-            None,
-        )
-        if takip_row:
-            self._show_edit_panel(takip_row)
+
+        if kayit_no:
+            # Mevcut kayıt → düzenle
+            takip_row = next(
+                (t for t in self._takip_rows if str(t.get("KayitNo", "")).strip() == kayit_no),
+                None,
+            )
+            if takip_row:
+                self._show_edit_panel(takip_row)
+        else:
+            # Sanal satır (Planlandi/Gecikmis, kayıt yok) → yeni form aç + personeli doldur
+            self._show_form_panel()
+            pid = str(row.get("Personelid", "")).strip()
+            for i in range(self.cmb_personel.count()):
+                info = self.cmb_personel.itemData(i)
+                if info and str(info.get("KimlikNo", "")).strip() == pid:
+                    self.cmb_personel.setCurrentIndex(i)
+                    break
 
     # -------------------------------------------------------------------------
     # Kaydet

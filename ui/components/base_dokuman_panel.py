@@ -31,7 +31,6 @@ from PySide6.QtGui import QDesktopServices, QColor
 from ui.dialogs.mesaj_kutusu import MesajKutusu
 
 from ui.styles import DarkTheme
-from ui.styles.components import STYLES as S
 from core.logger import logger
 from core.services.dokuman_service import DokumanService
 from database.repository_registry import RepositoryRegistry
@@ -155,7 +154,6 @@ class BaseDokumanPanel(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(S.get("scroll") or "")
 
         content = QWidget()
         content.setStyleSheet("background: transparent;")
@@ -194,7 +192,6 @@ class BaseDokumanPanel(QWidget):
         # Belge Türü
         r1.addWidget(self._lbl("Belge Türü:", w=80))
         self._combo_tur = QComboBox()
-        self._combo_tur.setStyleSheet(S.get("input_combo") or "")
         self._combo_tur.setMinimumHeight(30)
         r1.addWidget(self._combo_tur, 1)
         
@@ -203,13 +200,12 @@ class BaseDokumanPanel(QWidget):
         self._inp_dosya = QLineEdit()
         self._inp_dosya.setPlaceholderText("Dosya seçilmedi...")
         self._inp_dosya.setReadOnly(True)
-        self._inp_dosya.setStyleSheet(S.get("input_field") or "")
         self._inp_dosya.setMinimumHeight(30)
         r1.addWidget(self._inp_dosya, 2)
         
         # Dosya Seç Butonu
         btn_sec = QPushButton("Dosya Seç")
-        btn_sec.setStyleSheet(S.get("btn_action") or "")
+        btn_sec.setProperty("style-role", "action")
         btn_sec.setMinimumHeight(30)
         btn_sec.setMaximumWidth(120)
         btn_sec.clicked.connect(self._browse)
@@ -222,12 +218,11 @@ class BaseDokumanPanel(QWidget):
         r2.addWidget(self._lbl("Açıklama:", w=80))
         self._inp_aciklama = QLineEdit()
         self._inp_aciklama.setPlaceholderText("Belge hakkında notlar...")
-        self._inp_aciklama.setStyleSheet(S.get("input_field") or "")
         self._inp_aciklama.setMinimumHeight(30)
         r2.addWidget(self._inp_aciklama, 2)
         
         self._btn_yukle = QPushButton("Belgeyi Yükle")
-        self._btn_yukle.setStyleSheet(S.get("save_btn") or "")
+        self._btn_yukle.setProperty("style-role", "success-filled")
         self._btn_yukle.setMinimumHeight(30)
         self._btn_yukle.setMaximumWidth(140)
         self._btn_yukle.clicked.connect(self._upload)
@@ -247,7 +242,6 @@ class BaseDokumanPanel(QWidget):
         self._tablo.setHorizontalHeaderLabels(
             ["Belge Türü", "Dosya Adı", "Açıklama", "Tarih"]
         )
-        self._tablo.setStyleSheet(S.get("table") or "")
         self._tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._tablo.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self._tablo.setAlternatingRowColors(True)
@@ -410,13 +404,29 @@ class BaseDokumanPanel(QWidget):
             self._inp_aciklama.clear()
             self._load_dokumanlari()
 
-            if self._iliskili_tip == "Personel_Saglik_Takip" and self._iliskili_id:
+            # Sadece "İşe Giriş Muayenesi" belgesi sağlık kaydını günceller.
+            # Diploma, Sertifika vb. diğer belgeler saglik tablosuna dokunmaz.
+            belge_tur_str = str(belge_tur).strip()
+            if (
+                self._iliskili_tip == "Personel_Saglik_Takip"
+                and self._iliskili_id
+                and belge_tur_str == "İşe Giriş Muayenesi"
+            ):
                 try:
+                    from datetime import date as _date
                     from core.di import get_registry; registry = get_registry(self._db)
                     saglik_repo = registry.get("Personel_Saglik_Takip")
+                    rapor_dosya = sonuc.get("drive_link") or sonuc.get("belge_adi") or ""
                     saglik_repo.update(self._iliskili_id, {
-                        "RaporDosya": sonuc.get("drive_link") or sonuc.get("belge_adi") or ""
+                        "RaporDosya":    rapor_dosya,
+                        "MuayeneTarihi": _date.today().isoformat(),
+                        "Durum":         "Gecerli",
+                        "Sonuc":         "Uygun",
                     })
+                    logger.info(
+                        f"BaseDokumanPanel: Saglik_Takip güncellendi "
+                        f"(KayitNo={self._iliskili_id})"
+                    )
                 except Exception as upd_err:
                     logger.warning(f"BaseDokumanPanel: RaporDosya güncellenemedi: {upd_err}")
 

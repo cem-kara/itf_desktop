@@ -200,13 +200,6 @@ _SVG_PATHS: dict[str, str] = {
         <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
     """,
 
-    "radiation": """
-        <path d="M12 12h.01"/>
-        <path d="M14 15.4641a4 4 0 0 1-4 0L7.52786 19.74597 A 1 1 0 0 0 7.99303 21.16211 10 10 0 0 0 16.00697 21.16211 1 1 0 0 0 16.47214 19.74597z"/>
-        <path d="M16 12a4 4 0 0 0-2-3.464l2.472-4.282a1 1 0 0 1 1.46-.305 10 10 0 0 1 4.006 6.94A1 1 0 0 1 21 12z"/>
-        <path d="M8 12a4 4 0 0 1 2-3.464L7.528 4.254a1 1 0 0 0-1.46-.305 10 10 0 0 0-4.006 6.94A1 1 0 0 0 3 12z"/>
-    """,
-
     #  RKE / GVENLK 
     "shield": """
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -218,9 +211,9 @@ _SVG_PATHS: dict[str, str] = {
     """,
 
     "shield_alert": """
-        <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
-        <path d="M12 8v4"/>
-        <path d="M12 16h.01"/>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <path d="M12 8v4" stroke-linecap="round"/>
+        <circle cx="12" cy="15" r="0.5" fill="currentColor" stroke="none"/>
     """,
 
     "lock": """
@@ -238,11 +231,9 @@ _SVG_PATHS: dict[str, str] = {
 
     #  RAPORLAMA 
     "file_text": """
-        <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/>
-        <path d="M14 2v5a1 1 0 0 0 1 1h5"/>
-        <path d="M10 9H8"/>
-        <path d="M16 13H8"/>
-        <path d="M16 17H8"/>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14,2 14,8 20,8"/>
+        <path d="M16 13H8M16 17H8M10 9H8" stroke-linecap="round"/>
     """,
 
     "file_chart": """
@@ -519,305 +510,6 @@ _SVG_PATHS: dict[str, str] = {
 
 
 # ================================================================
-# PERSONEL AVATAR SVG'LERİ
-# Tam renkli, fill tabanlı karakter avatarları.
-# viewBox: 0 0 110 128  (en:boy oranı 110/128 ≈ 0.859)
-#
-# Kullanım:
-#   # QPixmap (QLabel için):
-#   pm = Icons.avatar_pixmap("kadin_doktor", size=80)
-#   label.setPixmap(pm)
-#
-#   # QIcon (QPushButton için):
-#   icon = Icons.avatar_icon("erkek_hemsire", size=48)
-#   btn.setIcon(icon)
-#
-# Mevcut anahtarlar:
-#   kadin_doktor     · erkek_doktor
-#   kadin_hemsire    · erkek_hemsire
-#   kadin_radyoloji  · erkek_radyoloji
-#   kadin_idari      · erkek_idari
-# ================================================================
-
-_AVATAR_W = 110   # viewBox genişliği
-_AVATAR_H = 128   # viewBox yüksekliği
-
-
-def _build_avatar_svg(body: str, w: int, h: int) -> str:
-    """Avatar path gövdesinden tam SVG belgesi oluşturur."""
-    return (
-        f'<svg xmlns="http://www.w3.org/2000/svg" '
-        f'width="{w}" height="{h}" viewBox="0 0 {_AVATAR_W} {_AVATAR_H}">'
-        f'{body}'
-        f'</svg>'
-    )
-
-
-_AVATAR_SVG: dict[str, str] = {
-
-    # ── Kadın Doktor ─────────────────────────────────────────────
-    "kadin_doktor": """
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="#1a2030"/>
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="none" stroke="#1e2d3d" stroke-width="1.5"/>
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="#e8edf5" opacity="0.06"/>
-        <polygon points="55,84 36,76 45,108" fill="#1e2d3d"/>
-        <polygon points="55,84 74,76 65,108" fill="#1e2d3d"/>
-        <path d="M32,88 Q24,106 31,115 Q38,122 45,114" stroke="#20c0d8" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="45" cy="115" r="4.5" fill="#20c0d8"/>
-        <circle cx="45" cy="115" r="2.5" fill="#060d1a"/>
-        <rect x="64" y="88" width="22" height="14" rx="4" fill="#121820" stroke="#253545" stroke-width="1"/>
-        <rect x="68" y="84" width="2.5" height="10" rx="1" fill="#3d8ef5"/>
-        <rect x="73" y="84" width="2.5" height="8" rx="1" fill="#2ec98e"/>
-        <rect x="78" y="84" width="2.5" height="9" rx="1" fill="#e8a030"/>
-        <rect x="48" y="60" width="14" height="20" rx="6" fill="#2a1a0e" opacity="0.8"/>
-        <rect x="48" y="60" width="14" height="20" rx="6" fill="#c8956a"/>
-        <ellipse cx="55" cy="46" rx="21" ry="23" fill="#c8956a"/>
-        <ellipse cx="55" cy="27" rx="21" ry="11" fill="#1a0f05"/>
-        <path d="M34,27 Q30,38 32,50 Q33,56 36,54 Q34,46 36,36 Z" fill="#1a0f05"/>
-        <path d="M76,27 Q80,38 78,50 Q77,56 74,54 Q76,46 74,36 Z" fill="#1a0f05"/>
-        <ellipse cx="34" cy="47" rx="4" ry="5" fill="#c8956a"/>
-        <ellipse cx="76" cy="47" rx="4" ry="5" fill="#c8956a"/>
-        <circle cx="34" cy="52" r="2.5" fill="#20c0d8"/>
-        <circle cx="76" cy="52" r="2.5" fill="#20c0d8"/>
-        <ellipse cx="46" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
-        <ellipse cx="64" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
-        <circle cx="47" cy="46" r="2.5" fill="#3d8ef5"/>
-        <circle cx="65" cy="46" r="2.5" fill="#3d8ef5"/>
-        <circle cx="48" cy="45" r="1" fill="white"/>
-        <circle cx="66" cy="45" r="1" fill="white"/>
-        <path d="M42,39 Q46,37 50,39" stroke="#1a0f05" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <path d="M60,39 Q64,37 68,39" stroke="#1a0f05" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <path d="M49,57 Q55,63 61,57" stroke="#a0614a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <ellipse cx="40" cy="54" rx="5" ry="3" fill="#e85555" opacity="0.18"/>
-        <ellipse cx="70" cy="54" rx="5" ry="3" fill="#e85555" opacity="0.18"/>
-    """,
-
-    # ── Erkek Doktor ─────────────────────────────────────────────
-    "erkek_doktor": """
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="#e8edf5" opacity="0.06"/>
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="none" stroke="#1e2d3d" stroke-width="1.5"/>
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="#1a2030"/>
-        <polygon points="55,84 36,76 45,108" fill="#1e2d3d"/>
-        <polygon points="55,84 74,76 65,108" fill="#1e2d3d"/>
-        <polygon points="55,76 51,68 59,68" fill="#3d8ef5"/>
-        <polygon points="55,76 52,76 55,100 58,76" fill="#3d8ef5"/>
-        <path d="M32,88 Q24,106 31,115 Q38,122 45,114" stroke="#20c0d8" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <circle cx="45" cy="115" r="4.5" fill="#20c0d8"/>
-        <circle cx="45" cy="115" r="2.5" fill="#060d1a"/>
-        <rect x="64" y="88" width="22" height="14" rx="4" fill="#121820" stroke="#253545" stroke-width="1"/>
-        <rect x="68" y="84" width="2.5" height="10" rx="1" fill="#e8a030"/>
-        <rect x="73" y="84" width="2.5" height="8" rx="1" fill="#3d8ef5"/>
-        <rect x="48" y="60" width="14" height="20" rx="6" fill="#d4a574"/>
-        <ellipse cx="55" cy="46" rx="21" ry="23" fill="#d4a574"/>
-        <path d="M34,40 Q34,24 55,24 Q76,24 76,40 L76,32 Q56,16 34,32 Z" fill="#1e2d3d"/>
-        <rect x="38" y="42" width="15" height="11" rx="5.5" fill="none" stroke="#3d8ef5" stroke-width="1.5" opacity="0.9"/>
-        <rect x="57" y="42" width="15" height="11" rx="5.5" fill="none" stroke="#3d8ef5" stroke-width="1.5" opacity="0.9"/>
-        <line x1="53" y1="47.5" x2="57" y2="47.5" stroke="#3d8ef5" stroke-width="1.5" opacity="0.9"/>
-        <line x1="34" y1="47.5" x2="38" y2="47.5" stroke="#3d8ef5" stroke-width="1" opacity="0.7"/>
-        <line x1="72" y1="47.5" x2="76" y2="47.5" stroke="#3d8ef5" stroke-width="1" opacity="0.7"/>
-        <circle cx="46" cy="47.5" r="2.5" fill="#1a2030"/>
-        <circle cx="65" cy="47.5" r="2.5" fill="#1a2030"/>
-        <circle cx="47" cy="46.5" r="1" fill="white"/>
-        <circle cx="66" cy="46.5" r="1" fill="white"/>
-        <ellipse cx="34" cy="47" rx="4" ry="5" fill="#d4a574"/>
-        <ellipse cx="76" cy="47" rx="4" ry="5" fill="#d4a574"/>
-        <path d="M38,38 Q43,36 48,38" stroke="#1e2d3d" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <path d="M58,38 Q63,36 68,38" stroke="#1e2d3d" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <path d="M49,58 Q55,63 61,58" stroke="#a07040" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <ellipse cx="55" cy="63" rx="10" ry="4" fill="#1e2d3d" opacity="0.2"/>
-    """,
-
-    # ── Kadın Hemşire ─────────────────────────────────────────────
-    "kadin_hemsire": """
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="#0d2520"/>
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="none" stroke="#1a3830" stroke-width="1.5"/>
-        <polygon points="55,84 42,76 50,108" fill="#0a1c18"/>
-        <polygon points="55,84 68,76 60,108" fill="#0a1c18"/>
-        <rect x="62" y="84" width="24" height="18" rx="5" fill="#121820" stroke="#253545" stroke-width="1"/>
-        <rect x="70" y="86" width="8" height="14" rx="2" fill="#2ec98e" opacity="0.9"/>
-        <rect x="64" y="90" width="20" height="6" rx="2" fill="#2ec98e" opacity="0.9"/>
-        <rect x="39" y="17" width="32" height="13" rx="4" fill="#e8edf5" opacity="0.95"/>
-        <rect x="39" y="17" width="32" height="13" rx="4" fill="none" stroke="#253545" stroke-width="1"/>
-        <rect x="50" y="12" width="10" height="18" rx="3" fill="#e8edf5" opacity="0.95"/>
-        <rect x="50" y="12" width="10" height="18" rx="3" fill="none" stroke="#253545" stroke-width="0.8"/>
-        <rect x="53" y="18" width="4" height="10" rx="1" fill="#e85555"/>
-        <rect x="50" y="21" width="10" height="4" rx="1" fill="#e85555"/>
-        <rect x="48" y="60" width="14" height="20" rx="6" fill="#c8a882"/>
-        <ellipse cx="55" cy="46" rx="21" ry="23" fill="#c8a882"/>
-        <rect x="33" y="28" width="7" height="32" rx="3.5" fill="#6b2d0a"/>
-        <rect x="70" y="28" width="7" height="32" rx="3.5" fill="#6b2d0a"/>
-        <ellipse cx="34" cy="47" rx="4" ry="5" fill="#c8a882"/>
-        <ellipse cx="76" cy="47" rx="4" ry="5" fill="#c8a882"/>
-        <ellipse cx="46" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
-        <ellipse cx="64" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
-        <circle cx="47" cy="46" r="2.5" fill="#2ec98e"/>
-        <circle cx="65" cy="46" r="2.5" fill="#2ec98e"/>
-        <circle cx="48" cy="45" r="1" fill="white"/>
-        <circle cx="66" cy="45" r="1" fill="white"/>
-        <path d="M42,39 Q46,37 50,39" stroke="#6b2d0a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <path d="M60,39 Q64,37 68,39" stroke="#6b2d0a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <path d="M49,57 Q55,63 61,57" stroke="#a07040" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <ellipse cx="40" cy="54" rx="5" ry="3" fill="#2ec98e" opacity="0.2"/>
-        <ellipse cx="70" cy="54" rx="5" ry="3" fill="#2ec98e" opacity="0.2"/>
-    """,
-
-    # ── Erkek Hemşire ─────────────────────────────────────────────
-    "erkek_hemsire": """
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="#0d2520"/>
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="none" stroke="#1a3830" stroke-width="1.5"/>
-        <polygon points="55,84 42,76 50,108" fill="#0a1c18"/>
-        <polygon points="55,84 68,76 60,108" fill="#0a1c18"/>
-        <rect x="62" y="84" width="24" height="18" rx="5" fill="#121820" stroke="#253545" stroke-width="1"/>
-        <rect x="70" y="86" width="8" height="14" rx="2" fill="#2ec98e" opacity="0.9"/>
-        <rect x="64" y="90" width="20" height="6" rx="2" fill="#2ec98e" opacity="0.9"/>
-        <rect x="48" y="60" width="14" height="20" rx="6" fill="#8b6340"/>
-        <ellipse cx="55" cy="46" rx="21" ry="23" fill="#8b6340"/>
-        <path d="M34,42 Q34,24 55,24 Q76,24 76,42 L76,34 Q55,18 34,34 Z" fill="#111827"/>
-        <ellipse cx="34" cy="47" rx="4" ry="5" fill="#8b6340"/>
-        <ellipse cx="76" cy="47" rx="4" ry="5" fill="#8b6340"/>
-        <ellipse cx="46" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
-        <ellipse cx="64" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
-        <circle cx="47" cy="46" r="2.5" fill="#20c0d8"/>
-        <circle cx="65" cy="46" r="2.5" fill="#20c0d8"/>
-        <circle cx="48" cy="45" r="1" fill="white"/>
-        <circle cx="66" cy="45" r="1" fill="white"/>
-        <path d="M42,39 Q46,37 50,39" stroke="#111827" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-        <path d="M60,39 Q64,37 68,39" stroke="#111827" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-        <path d="M49,58 Q55,63 61,58" stroke="#6b4020" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <ellipse cx="55" cy="63" rx="11" ry="4" fill="#111827" opacity="0.25"/>
-    """,
-
-    # ── Kadın Radyoloji Teknisyeni ────────────────────────────────
-    "kadin_radyoloji": """
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="#0d1829"/>
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="none" stroke="#1e2d3d" stroke-width="1.5"/>
-        <polygon points="55,84 42,76 50,108" fill="#0a1220"/>
-        <polygon points="55,84 68,76 60,108" fill="#0a1220"/>
-        <rect x="62" y="83" width="24" height="18" rx="5" fill="#1a1200" stroke="#e8a030" stroke-width="1" opacity="0.9"/>
-        <circle cx="74" cy="92" r="4" fill="#e8a030"/>
-        <circle cx="74" cy="92" r="2" fill="#060d1a"/>
-        <line x1="74" y1="85" x2="74" y2="88" stroke="#e8a030" stroke-width="2" stroke-linecap="round"/>
-        <line x1="68" y1="87" x2="70.5" y2="89.5" stroke="#e8a030" stroke-width="2" stroke-linecap="round"/>
-        <line x1="80" y1="87" x2="77.5" y2="89.5" stroke="#e8a030" stroke-width="2" stroke-linecap="round"/>
-        <rect x="22" y="118" width="66" height="8" rx="4" fill="#253545" stroke="#1e2d3d" stroke-width="1"/>
-        <rect x="50" y="116" width="10" height="12" rx="3" fill="#1e2d3d" stroke="#253545" stroke-width="1"/>
-        <rect x="48" y="60" width="14" height="20" rx="6" fill="#e8c0a0"/>
-        <ellipse cx="55" cy="46" rx="21" ry="23" fill="#e8c0a0"/>
-        <ellipse cx="55" cy="27" rx="20" ry="10" fill="#7c1010"/>
-        <rect x="33" y="28" width="7" height="28" rx="3.5" fill="#7c1010"/>
-        <path d="M76,32 Q84,40 82,56 Q80,64 76,62" fill="#7c1010"/>
-        <ellipse cx="34" cy="47" rx="4" ry="5" fill="#e8c0a0"/>
-        <ellipse cx="76" cy="47" rx="4" ry="5" fill="#e8c0a0"/>
-        <ellipse cx="46" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
-        <ellipse cx="64" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
-        <circle cx="47" cy="46" r="2.5" fill="#e8a030"/>
-        <circle cx="65" cy="46" r="2.5" fill="#e8a030"/>
-        <circle cx="48" cy="45" r="1" fill="white"/>
-        <circle cx="66" cy="45" r="1" fill="white"/>
-        <path d="M42,39 Q46,37 50,39" stroke="#7c1010" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <path d="M60,39 Q64,37 68,39" stroke="#7c1010" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <path d="M49,57 Q55,62 61,57" stroke="#c08060" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <ellipse cx="40" cy="54" rx="5" ry="3" fill="#e85555" opacity="0.15"/>
-        <ellipse cx="70" cy="54" rx="5" ry="3" fill="#e85555" opacity="0.15"/>
-    """,
-
-    # ── Erkek Radyoloji Teknisyeni ────────────────────────────────
-    "erkek_radyoloji": """
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="#0d1829"/>
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="none" stroke="#1e2d3d" stroke-width="1.5"/>
-        <polygon points="55,84 42,76 50,108" fill="#0a1220"/>
-        <polygon points="55,84 68,76 60,108" fill="#0a1220"/>
-        <rect x="62" y="83" width="24" height="18" rx="5" fill="#1a1200" stroke="#e8a030" stroke-width="1" opacity="0.9"/>
-        <circle cx="74" cy="92" r="4" fill="#e8a030"/>
-        <circle cx="74" cy="92" r="2" fill="#060d1a"/>
-        <line x1="74" y1="85" x2="74" y2="88" stroke="#e8a030" stroke-width="2" stroke-linecap="round"/>
-        <line x1="68" y1="87" x2="70.5" y2="89.5" stroke="#e8a030" stroke-width="2" stroke-linecap="round"/>
-        <line x1="80" y1="87" x2="77.5" y2="89.5" stroke="#e8a030" stroke-width="2" stroke-linecap="round"/>
-        <rect x="22" y="118" width="66" height="8" rx="4" fill="#253545" stroke="#1e2d3d" stroke-width="1"/>
-        <rect x="50" y="116" width="10" height="12" rx="3" fill="#1e2d3d" stroke="#253545" stroke-width="1"/>
-        <rect x="48" y="60" width="14" height="20" rx="6" fill="#b08040"/>
-        <ellipse cx="55" cy="46" rx="21" ry="23" fill="#b08040"/>
-        <path d="M34,44 Q34,24 55,24 Q76,24 76,44 L76,36 Q55,20 34,36 Z" fill="#1e1008"/>
-        <ellipse cx="34" cy="47" rx="4" ry="5" fill="#b08040"/>
-        <ellipse cx="76" cy="47" rx="4" ry="5" fill="#b08040"/>
-        <ellipse cx="46" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
-        <ellipse cx="64" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
-        <circle cx="47" cy="46" r="2.5" fill="#e8a030"/>
-        <circle cx="65" cy="46" r="2.5" fill="#e8a030"/>
-        <circle cx="48" cy="45" r="1" fill="white"/>
-        <circle cx="66" cy="45" r="1" fill="white"/>
-        <path d="M42,39 Q46,37 50,39" stroke="#1e1008" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <path d="M60,39 Q64,37 68,39" stroke="#1e1008" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <path d="M49,58 Q55,63 61,58" stroke="#806020" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <ellipse cx="55" cy="63" rx="11" ry="4" fill="#1e1008" opacity="0.2"/>
-    """,
-
-    # ── Kadın İdari Personel ──────────────────────────────────────
-    "kadin_idari": """
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="#150d20"/>
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="none" stroke="#2a1a40" stroke-width="1.5"/>
-        <polygon points="55,84 36,76 46,110" fill="#1e1030"/>
-        <polygon points="55,84 74,76 64,110" fill="#1e1030"/>
-        <polygon points="55,104 49,76 61,76" fill="#1a2030"/>
-        <line x1="55" y1="84" x2="51" y2="106" stroke="#a855f7" stroke-width="1.5" opacity="0.8"/>
-        <rect x="44" y="104" width="16" height="12" rx="3" fill="#1a2030" stroke="#253545" stroke-width="1"/>
-        <rect x="46" y="106" width="12" height="2" rx="1" fill="#a855f7" opacity="0.8"/>
-        <rect x="46" y="110" width="8" height="2" rx="1" fill="#4d6070"/>
-        <rect x="48" y="60" width="14" height="20" rx="6" fill="#d4b896"/>
-        <ellipse cx="55" cy="46" rx="21" ry="23" fill="#d4b896"/>
-        <ellipse cx="55" cy="27" rx="21" ry="12" fill="#2d1a00"/>
-        <rect x="33" y="27" width="8" height="40" rx="4" fill="#2d1a00"/>
-        <rect x="69" y="27" width="8" height="40" rx="4" fill="#2d1a00"/>
-        <path d="M34,34 Q55,28 76,34" stroke="#a855f7" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.9"/>
-        <ellipse cx="34" cy="47" rx="4" ry="5" fill="#d4b896"/>
-        <ellipse cx="76" cy="47" rx="4" ry="5" fill="#d4b896"/>
-        <circle cx="34" cy="52" r="3" fill="#a855f7" opacity="0.9"/>
-        <circle cx="76" cy="52" r="3" fill="#a855f7" opacity="0.9"/>
-        <ellipse cx="46" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
-        <ellipse cx="64" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
-        <circle cx="47" cy="46" r="2.5" fill="#a855f7"/>
-        <circle cx="65" cy="46" r="2.5" fill="#a855f7"/>
-        <circle cx="48" cy="45" r="1" fill="white"/>
-        <circle cx="66" cy="45" r="1" fill="white"/>
-        <path d="M42,39 Q46,37 50,39" stroke="#2d1a00" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <path d="M60,39 Q64,37 68,39" stroke="#2d1a00" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <path d="M49,57 Q55,63 61,57" stroke="#a07040" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <ellipse cx="40" cy="54" rx="5" ry="3" fill="#a855f7" opacity="0.15"/>
-        <ellipse cx="70" cy="54" rx="5" ry="3" fill="#a855f7" opacity="0.15"/>
-    """,
-
-    # ── Erkek İdari Personel ──────────────────────────────────────
-    "erkek_idari": """
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="#111827"/>
-        <rect x="12" y="76" width="86" height="52" rx="14" fill="none" stroke="#1e2d3d" stroke-width="1.5"/>
-        <polygon points="55,84 36,76 46,110" fill="#1a2030"/>
-        <polygon points="55,84 74,76 64,110" fill="#1a2030"/>
-        <polygon points="55,104 49,76 61,76" fill="#e8edf5" opacity="0.06"/>
-        <polygon points="55,76 51,68 59,68" fill="#20c0d8"/>
-        <polygon points="55,76 52,76 55,102 58,76" fill="#20c0d8"/>
-        <line x1="55" y1="84" x2="51" y2="108" stroke="#8fa3b8" stroke-width="1.2" opacity="0.6"/>
-        <rect x="44" y="106" width="16" height="12" rx="3" fill="#1a2030" stroke="#253545" stroke-width="1"/>
-        <rect x="46" y="108" width="12" height="2" rx="1" fill="#3d8ef5" opacity="0.8"/>
-        <rect x="46" y="112" width="8" height="2" rx="1" fill="#4d6070"/>
-        <rect x="48" y="60" width="14" height="20" rx="6" fill="#c0885a"/>
-        <ellipse cx="55" cy="46" rx="21" ry="23" fill="#c0885a"/>
-        <path d="M34,42 Q34,24 55,24 Q76,24 76,42 L76,32 Q60,18 34,32 Z" fill="#1e2d3d"/>
-        <ellipse cx="34" cy="47" rx="4" ry="5" fill="#c0885a"/>
-        <ellipse cx="76" cy="47" rx="4" ry="5" fill="#c0885a"/>
-        <ellipse cx="46" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
-        <ellipse cx="64" cy="46" rx="4.5" ry="5" fill="#060d1a"/>
-        <circle cx="47" cy="46" r="2.5" fill="#20c0d8"/>
-        <circle cx="65" cy="46" r="2.5" fill="#20c0d8"/>
-        <circle cx="48" cy="45" r="1" fill="white"/>
-        <circle cx="66" cy="45" r="1" fill="white"/>
-        <path d="M42,39 Q46,37 50,39" stroke="#1e2d3d" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <path d="M60,39 Q64,37 68,39" stroke="#1e2d3d" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <path d="M49,58 Q55,63 61,58" stroke="#8b5a2a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-    """,
-}
-
-
-# ================================================================
 # MENU IKON HARITALAMASI
 # sidebar.py'deki MENU_ICONS'u emojiden SVG key'e tasiyin
 # ================================================================
@@ -840,9 +532,6 @@ MENU_ICON_MAP: dict[str, str] = {
     "RKE Muayene":       "check_in",
     "RKE Raporlama":     "file_text",
     "Yıl Sonu İzin":     "calendar_year",
-    "Admin Panel":        "shield_lock",
-    "Döküman Yönetimi":         "file_text",
-    "Dozimetre Takip":       "radiation",
     "Ayarlar":           "settings",
 }
 
@@ -996,13 +685,34 @@ class Icons:
         import pathlib, tempfile
         key = (name, color, size)
         if key in cls._qss_file_cache:
-            return cls._qss_file_cache[key]
+            cached = cls._qss_file_cache[key]
+            if pathlib.Path(cached).exists():
+                return cached
+            # Dosya silinmişse cache'i temizle ve yeniden oluştur
+            del cls._qss_file_cache[key]
 
-        # Geçici dizin — uygulama kapanana kadar kalır
-        icon_dir = pathlib.Path(tempfile.gettempdir()) / "repys_qss_icons"
+        # 1. Önce ui/styles/icons klasörüne bak (projenin kendi SVG ikonları)
+        #    Bu klasör varsa temp'e yazmaya gerek yok — kalıcı ve güvenli.
+        try:
+            from core.paths import BASE_DIR as _BASE_DIR
+            static_dir = pathlib.Path(_BASE_DIR) / "ui" / "styles" / "icons"
+            static_file = static_dir / f"{name}.svg"
+            if static_file.exists():
+                url = static_file.as_posix()
+                cls._qss_file_cache[key] = url
+                return url
+        except Exception:
+            pass
+
+        # 2. Klasörde yoksa (renk/boyut varyantı gerekiyor) — kalıcı app temp'e yaz
+        try:
+            from core.paths import TEMP_DIR as _TEMP_DIR
+            icon_dir = pathlib.Path(_TEMP_DIR) / "qss_icons"
+        except ImportError:
+            icon_dir = pathlib.Path(tempfile.gettempdir()) / "repys_qss_icons"
+
         icon_dir.mkdir(parents=True, exist_ok=True)
 
-        # Benzersiz dosya adı: isim + renk hash + boyut
         safe_color = color.lstrip("#")
         fname      = f"{name}_{safe_color}_{size}.svg"
         fpath      = icon_dir / fname
@@ -1010,9 +720,13 @@ class Icons:
         if not fpath.exists():
             paths = _SVG_PATHS.get(name, '<circle cx="12" cy="12" r="8"/>')
             svg   = _build_svg(paths, color, size)
-            fpath.write_text(svg, encoding="utf-8")
+            try:
+                fpath.write_text(svg, encoding="utf-8")
+            except OSError as e:
+                import warnings
+                warnings.warn(f"SVG ikon yazılamadı ({fpath}): {e}")
+                return fpath.as_posix()
 
-        # Qt QSS: forward slash kullan (Windows'ta da çalışır)
         url = fpath.as_posix()
         cls._qss_file_cache[key] = url
         return url
@@ -1021,87 +735,6 @@ class Icons:
     def clear_cache(cls) -> None:
         """Render nbelleini temizler."""
         cls._cache.clear()
-
-    # ── Avatar API ───────────────────────────────────────────────
-
-    _avatar_cache: dict[tuple, QPixmap] = {}
-
-    @classmethod
-    def avatar_pixmap(
-        cls,
-        name: str,
-        size: int = 80,
-    ) -> QPixmap:
-        """
-        Personel avatarini QPixmap olarak dondurur.
-
-        Boyut, orijinal en-boy oranini (110x128) koruyarak
-        verilen size degerine gore olceklenir (genislik = size).
-
-        Parametreler
-        ------------
-        name : str
-            _AVATAR_SVG anahtari.
-            Ornek: "kadin_doktor", "erkek_hemsire"
-        size : int
-            Piksel cinsinden genislik (varsayilan 80).
-
-        Dondurur
-        --------
-        QPixmap  (bulunamazsa bos 1x1 pixmap)
-
-        Ornek
-        -----
-        label.setPixmap(Icons.avatar_pixmap("kadin_doktor", size=96))
-        """
-        key = (name, size)
-        if key in cls._avatar_cache:
-            return cls._avatar_cache[key]
-
-        body = _AVATAR_SVG.get(name)
-        if body is None:
-            pm = QPixmap(1, 1)
-            pm.fill(Qt.GlobalColor.transparent)
-            return pm
-
-        h   = round(size * _AVATAR_H / _AVATAR_W)
-        svg = _build_avatar_svg(body, size, h)
-        pm  = _render_svg(svg, size)
-        pm  = pm.scaled(
-            size, h,
-            Qt.AspectRatioMode.IgnoreAspectRatio,
-            Qt.TransformationMode.SmoothTransformation,
-        )
-        cls._avatar_cache[key] = pm
-        return pm
-
-    @classmethod
-    def avatar_icon(
-        cls,
-        name: str,
-        size: int = 80,
-    ) -> "QIcon":
-        """
-        Personel avatarini QIcon olarak dondurur.
-
-        Parametreler
-        ------------
-        name : str
-            _AVATAR_SVG anahtari.
-        size : int
-            Piksel cinsinden genislik (varsayilan 80).
-
-        Ornek
-        -----
-        btn.setIcon(Icons.avatar_icon("erkek_doktor", size=48))
-        btn.setIconSize(QSize(48, round(48 * 128 / 110)))
-        """
-        return QIcon(cls.avatar_pixmap(name, size))
-
-    @classmethod
-    def available_avatars(cls) -> list[str]:
-        """Kayitli tum avatar isimlerini dondurur."""
-        return sorted(_AVATAR_SVG.keys())
 
 
 # ================================================================

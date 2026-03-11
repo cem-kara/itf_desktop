@@ -803,12 +803,13 @@ class MigrationManager:
             ("80a","Cihaz_Belge_Tur", "Diğer",               "Diğer cihaz belgeleri"),
 
             # ── Personel Belge Türleri ─────────────────────────────────────────
-            ("200", "Personel_Belge_Tur", "Diploma",                  "Personel diploması"),
-            ("201", "Personel_Belge_Tur", "Sertifika",                "Personel sertifikası"),
-            ("202", "Personel_Belge_Tur", "Periyodik Muayene Raporu", "Periyodik sağlık muayene raporu"),
-            ("203", "Personel_Belge_Tur", "Hastalık Raporu",          "Personel hastalık/istirahat raporu"),
-            ("204", "Personel_Belge_Tur", "Dozimetre Sonuçları",      "Kişisel dozimetre ölçüm sonuç belgesi"),
-            ("205", "Personel_Belge_Tur", "Diğer",                    "Diğer personel belgeleri"),
+            ("200", "Personel_Belge_Tur", "Diploma",                    "Personel diploması"),
+            ("201", "Personel_Belge_Tur", "Sertifika",                  "Personel sertifikası"),
+            ("202", "Personel_Belge_Tur", "Periyodik Muayene Raporu",   "Periyodik sağlık muayene raporu"),
+            ("202a","Personel_Belge_Tur", "İşe Giriş Muayenesi",        "İşe giriş sağlık muayene raporu"),
+            ("203", "Personel_Belge_Tur", "Hastalık Raporu",            "Personel hastalık/istirahat raporu"),
+            ("204", "Personel_Belge_Tur", "Dozimetre Sonuçları",        "Kişisel dozimetre ölçüm sonuç belgesi"),
+            ("205", "Personel_Belge_Tur", "Diğer",                      "Diğer personel belgeleri"),
 
             # ── RKE Belge Türleri ──────────────────────────────────────────────
             ("300", "RKE_Belge_Tur", "Muayene Raporu",          "RKE periyodik muayene raporu"),
