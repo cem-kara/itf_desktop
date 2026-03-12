@@ -433,6 +433,7 @@ class IstenAyrilikPage(QWidget):
 
         self.btn_onayla = QPushButton("ONAYLA VE BITIR")
         self.btn_onayla.setStyleSheet(S["danger_btn"])
+        self.btn_onayla.setFixedHeight(30)
         self.btn_onayla.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_onayla.clicked.connect(self._on_confirm)
         IconRenderer.set_button_icon(self.btn_onayla, "alert_triangle", color=C.TEXT_PRIMARY, size=14)

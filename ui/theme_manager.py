@@ -43,9 +43,9 @@ class ThemeManager(QObject):
     def _normalize_theme_name(value: object) -> str:
         if isinstance(value, str):
             name = value.lower()
-            if name in ("dark", "light"):
+            if name in ("dark", "abyss", "light"):
                 return name
-        return "dark"
+        return "abyss"
 
     @classmethod
     def instance(cls) -> "ThemeManager":
@@ -76,7 +76,7 @@ class ThemeManager(QObject):
             True (başarılı) | False (hata)
         """
         name = name.lower()
-        if name not in ("dark", "light"):
+        if name not in ("dark", "abyss", "light"):
             logger.error(f"Geçersiz tema adı: {name}")
             return False
 
@@ -108,9 +108,11 @@ class ThemeManager(QObject):
             template = ""
 
         qss = template
-        tokens["ICON_CHEVRON_UP"]   = Icons.qss_url("chevron_up",   tokens["TEXT_SECONDARY"], 12)
-        tokens["ICON_CHEVRON_DOWN"] = Icons.qss_url("chevron_down", tokens["TEXT_SECONDARY"], 12)
-        tokens["ICON_CALENDAR"]     = Icons.qss_url("calendar",     tokens["TEXT_SECONDARY"], 14)
+        tokens["ICON_CHEVRON_UP"]    = Icons.qss_url("chevron_up",    tokens["TEXT_SECONDARY"], 12)
+        tokens["ICON_CALENDAR"]      = Icons.qss_url("calendar",      tokens["TEXT_SECONDARY"], 14)
+        tokens["ICON_CHEVRON_DOWN"]  = Icons.qss_url("chevron_down",  tokens["TEXT_SECONDARY"], 12)
+        tokens["ICON_CHEVRON_LEFT"]  = Icons.qss_url("chevron_left",  tokens["TEXT_SECONDARY"], 14)
+        tokens["ICON_CHEVRON_RIGHT"] = Icons.qss_url("chevron_right", tokens["TEXT_SECONDARY"], 14)
         for key, val in tokens.items():
             qss = qss.replace(f"{{{key}}}", val)
         app.setStyleSheet(qss)
@@ -152,9 +154,11 @@ class ThemeManager(QObject):
             template = _QSS_PATH.read_text(encoding="utf-8")
         except FileNotFoundError:
             return ""
-        tokens["ICON_CHEVRON_UP"]   = Icons.qss_url("chevron_up",   tokens["TEXT_SECONDARY"], 12)
-        tokens["ICON_CHEVRON_DOWN"] = Icons.qss_url("chevron_down", tokens["TEXT_SECONDARY"], 12)
-        tokens["ICON_CALENDAR"]     = Icons.qss_url("calendar",     tokens["TEXT_SECONDARY"], 14)
+        tokens["ICON_CHEVRON_UP"]    = Icons.qss_url("chevron_up",    tokens["TEXT_SECONDARY"], 12)
+        tokens["ICON_CALENDAR"]      = Icons.qss_url("calendar",      tokens["TEXT_SECONDARY"], 14)
+        tokens["ICON_CHEVRON_DOWN"]  = Icons.qss_url("chevron_down",  tokens["TEXT_SECONDARY"], 12)
+        tokens["ICON_CHEVRON_LEFT"]  = Icons.qss_url("chevron_left",  tokens["TEXT_SECONDARY"], 14)
+        tokens["ICON_CHEVRON_RIGHT"] = Icons.qss_url("chevron_right", tokens["TEXT_SECONDARY"], 14)
         for key, val in tokens.items():
             template = template.replace(f"{{{key}}}", val)
         return template
