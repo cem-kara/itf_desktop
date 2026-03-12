@@ -161,10 +161,7 @@ class PersonelMerkezPage(QWidget):
         btn_kapat.setToolTip("Kapat")
         btn_kapat.setStyleSheet("background:transparent; border:none;")
         btn_kapat.clicked.connect(self.kapat_istegi.emit)
-        try:
-            IconRenderer.set_button_icon(btn_kapat, "x", color=C.TEXT_MUTED, size=14)
-        except Exception:
-            btn_kapat.setText("✕")
+        IconRenderer.set_button_icon(btn_kapat, "x", color=C.TEXT_MUTED, size=14)
         top_lay.addWidget(btn_kapat)
 
         lay.addWidget(top)
@@ -231,10 +228,7 @@ class PersonelMerkezPage(QWidget):
         btn_form_kapat.setStyleSheet("background:transparent; border:none;")
         btn_form_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_form_kapat.clicked.connect(self._hide_form)
-        try:
-            IconRenderer.set_button_icon(btn_form_kapat, "x", color=C.TEXT_MUTED, size=11)
-        except Exception:
-            btn_form_kapat.setText("✕")
+        IconRenderer.set_button_icon(btn_form_kapat, "x", color=C.TEXT_MUTED, size=11)
         form_hdr.addWidget(btn_form_kapat)
         self.form_lay.addLayout(form_hdr)
 

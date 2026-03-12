@@ -34,7 +34,7 @@ class HizliIzinGirisDialog(QDialog):
         self._izin_max_gun = {}
         self.ui = {}
 
-        self.setStyleSheet(S["page"])
+        self.setProperty("bg-role", "page")
 
         self._setup_ui()
         self._load_sabitler()
@@ -50,48 +50,48 @@ class HizliIzinGirisDialog(QDialog):
 
         # İzin Tipi
         lbl_izin = QLabel("İzin Tipi")
-        lbl_izin.setStyleSheet(S["label"])
+        lbl_izin.setProperty("style-role", "label")
         form.addWidget(lbl_izin, 0, 0)
         self.ui["izin_tipi"] = QComboBox()
-        self.ui["izin_tipi"].setStyleSheet(S["combo"])
+        self.ui["izin_tipi"].setProperty("style-role", "combo")
         form.addWidget(self.ui["izin_tipi"], 0, 1)
 
         # Max gün uyarı
         self.ui["max_gun_label"] = QLabel("")
-        self.ui["max_gun_label"].setStyleSheet(S["max_label"])
+        self.ui["max_gun_label"].setProperty("style-role", "stat-label")
         form.addWidget(self.ui["max_gun_label"], 1, 1)
 
         # Başlama Tarihi
         lbl_baslama = QLabel("Başlama Tarihi")
-        lbl_baslama.setStyleSheet(S["label"])
+        lbl_baslama.setProperty("style-role", "label")
         form.addWidget(lbl_baslama, 2, 0)
         self.ui["baslama"] = QDateEdit()
         self.ui["baslama"].setDate(QDate.currentDate())
         self.ui["baslama"].setCalendarPopup(True)
         self.ui["baslama"].setDisplayFormat("dd.MM.yyyy")
-        self.ui["baslama"].setStyleSheet(S["date"])
+        self.ui["baslama"].setProperty("style-role", "date")
         form.addWidget(self.ui["baslama"], 2, 1)
 
         # Süre
         lbl_gun = QLabel("Süre (Gün)")
-        lbl_gun.setStyleSheet(S["label"])
+        lbl_gun.setProperty("style-role", "label")
         form.addWidget(lbl_gun, 3, 0)
         self.ui["gun"] = QSpinBox()
         self.ui["gun"].setMinimum(1)
         self.ui["gun"].setMaximum(365)
         self.ui["gun"].setValue(1)
-        self.ui["gun"].setStyleSheet(S["spin"])
+        self.ui["gun"].setProperty("style-role", "spin")
         form.addWidget(self.ui["gun"], 3, 1)
 
         # Bitiş Tarihi
         lbl_bitis = QLabel("İşe Dönüş Tarihi")
-        lbl_bitis.setStyleSheet(S["label"])
+        lbl_bitis.setProperty("style-role", "label")
         form.addWidget(lbl_bitis, 4, 0)
         self.ui["bitis"] = QDateEdit()
         self.ui["bitis"].setReadOnly(True)
         self.ui["bitis"].setDisplayFormat("dd.MM.yyyy")
         self.ui["bitis"].setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
-        self.ui["bitis"].setStyleSheet(S["date"])
+        self.ui["bitis"].setProperty("style-role", "date")
         form.addWidget(self.ui["bitis"], 4, 1)
 
         main.addLayout(form)
@@ -101,12 +101,12 @@ class HizliIzinGirisDialog(QDialog):
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
         btn_iptal = QPushButton("İptal")
-        btn_iptal.setStyleSheet(S["cancel_btn"])
+        btn_iptal.setProperty("style-role", "danger")
         btn_iptal.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_iptal.clicked.connect(self.cancelled.emit)
         btn_layout.addWidget(btn_iptal)
         btn_kaydet = QPushButton("Kaydet")
-        btn_kaydet.setStyleSheet(S["save_btn"])
+        btn_kaydet.setProperty("style-role", "action")
         btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_kaydet.clicked.connect(self._on_save)
         btn_layout.addWidget(btn_kaydet)

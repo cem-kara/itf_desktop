@@ -14,16 +14,16 @@ from datetime import datetime
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QFrame, QTableWidget, QTableWidgetItem,
-    QHeaderView, QMessageBox, QProgressBar,
+    QHeaderView, QProgressBar,
     QAbstractItemView, QFileDialog, QStyledItemDelegate, QStyle
 )
 from PySide6.QtCore import Qt, QRectF
 from PySide6.QtGui import QColor, QCursor, QFont, QPainter, QBrush, QPen, QPainterPath
 
 from core.logger import logger
+from ui.dialogs.mesaj_kutusu import MesajKutusu
 from core.hesaplamalar import sua_hak_edis_hesapla
 from ui.styles import Colors, DarkTheme
-from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 
 
@@ -93,7 +93,9 @@ class PuantajRaporPage(QWidget):
 
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(S["page"])
+        self.setProperty("bg-role", "page")
+        self.style().unpolish(self)
+        self.style().polish(self)
         self._db = db
         self._rapor_data = []     # Tablodaki satırlar (dict list)
 
@@ -111,21 +113,17 @@ class PuantajRaporPage(QWidget):
 
         # ── ÜST BAR: Rapor Filtreleri ──
         filter_frame = QFrame()
-        filter_frame.setStyleSheet(S["filter_panel"])
+        filter_frame.setProperty("bg-role", "panel")
+        filter_frame.style().unpolish(filter_frame)
+        filter_frame.style().polish(filter_frame)
         fp = QHBoxLayout(filter_frame)
         fp.setContentsMargins(12, 8, 12, 8)
         fp.setSpacing(8)
 
-        lbl_t = QLabel("Puantaj Raporlama ve Sua Takip")
-        lbl_t.setStyleSheet(S.get("section_title") or "")
-        fp.addWidget(lbl_t)
-
-        self._add_sep(fp)
-
         # Yıl
         fp.addWidget(self._make_label("Rapor Yılı:"))
         self.cmb_yil = QComboBox()
-        self.cmb_yil.setStyleSheet(S["combo"])
+        # self.cmb_yil.setStyleSheet kaldırıldı (global QSS yönetir)
         self.cmb_yil.setFixedWidth(100)
         by = datetime.now().year
         for y in range(by - 5, by + 5):
@@ -136,7 +134,7 @@ class PuantajRaporPage(QWidget):
         # Dönem / Ay
         fp.addWidget(self._make_label("Dönem:"))
         self.cmb_donem = QComboBox()
-        self.cmb_donem.setStyleSheet(S["combo"])
+        # self.cmb_donem.setStyleSheet kaldırıldı (global QSS yönetir)
         self.cmb_donem.setFixedWidth(130)
         self.cmb_donem.addItem("Tümü")
         self.cmb_donem.addItems(AY_ISIMLERI)
@@ -145,7 +143,9 @@ class PuantajRaporPage(QWidget):
         fp.addStretch()
 
         self.btn_getir = QPushButton("Raporu Olustur")
-        self.btn_getir.setStyleSheet(S["report_btn"])
+        self.btn_getir.setProperty("style-role", "action")
+        self.btn_getir.style().unpolish(self.btn_getir)
+        self.btn_getir.style().polish(self.btn_getir)
         self.btn_getir.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_getir, "clipboard_list", color=DarkTheme.TEXT_PRIMARY, size=14)
         fp.addWidget(self.btn_getir)
@@ -154,7 +154,9 @@ class PuantajRaporPage(QWidget):
 
         # ── BİLGİ LABEL ──
         self.lbl_bilgi = QLabel("Veri bekleniyor...")
-        self.lbl_bilgi.setStyleSheet(S["info_label"])
+        self.lbl_bilgi.setProperty("color-role", "muted")
+        self.lbl_bilgi.style().unpolish(self.lbl_bilgi)
+        self.lbl_bilgi.style().polish(self.lbl_bilgi)
         self.lbl_bilgi.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         main.addWidget(self.lbl_bilgi)
 
@@ -166,7 +168,7 @@ class PuantajRaporPage(QWidget):
         self.tablo.setAlternatingRowColors(True)
         self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tablo.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.tablo.setStyleSheet(S["table"])
+        # self.tablo.setStyleSheet kaldırıldı (global QSS yönetir)
 
         h = self.tablo.horizontalHeader()
         h.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -181,13 +183,17 @@ class PuantajRaporPage(QWidget):
 
         # ── ALT BAR ──
         bot_frame = QFrame()
-        bot_frame.setStyleSheet(S["filter_panel"])
+        bot_frame.setProperty("bg-role", "panel")
+        bot_frame.style().unpolish(bot_frame)
+        bot_frame.style().polish(bot_frame)
         bf = QHBoxLayout(bot_frame)
         bf.setContentsMargins(12, 8, 12, 8)
         bf.setSpacing(12)
 
         self.lbl_durum = QLabel("Hazır")
-        self.lbl_durum.setStyleSheet(S["footer_label"])
+        self.lbl_durum.setProperty("color-role", "muted")
+        self.lbl_durum.style().unpolish(self.lbl_durum)
+        self.lbl_durum.style().polish(self.lbl_durum)
         bf.addWidget(self.lbl_durum)
 
         bf.addStretch()
@@ -211,14 +217,18 @@ class PuantajRaporPage(QWidget):
 
 
         self.btn_excel = QPushButton("Excel Indir")
-        self.btn_excel.setStyleSheet(S["excel_btn"])
+        self.btn_excel.setProperty("style-role", "success-filled")
+        self.btn_excel.style().unpolish(self.btn_excel)
+        self.btn_excel.style().polish(self.btn_excel)
         self.btn_excel.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_excel.setEnabled(False)
         IconRenderer.set_button_icon(self.btn_excel, "download", color=DarkTheme.TEXT_PRIMARY, size=14)
         bf.addWidget(self.btn_excel)
 
         self.btn_pdf = QPushButton("PDF Indir")
-        self.btn_pdf.setStyleSheet(S["pdf_btn"])
+        self.btn_pdf.setProperty("style-role", "danger")
+        self.btn_pdf.style().unpolish(self.btn_pdf)
+        self.btn_pdf.style().polish(self.btn_pdf)
         self.btn_pdf.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_pdf.setEnabled(False)
         IconRenderer.set_button_icon(self.btn_pdf, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
@@ -230,7 +240,9 @@ class PuantajRaporPage(QWidget):
 
     def _make_label(self, text):
         lbl = QLabel(text)
-        lbl.setStyleSheet(S["label"])
+        lbl.setProperty("color-role", "muted")
+        lbl.style().unpolish(lbl)
+        lbl.style().polish(lbl)
         return lbl
 
     def _add_sep(self, layout):
@@ -413,7 +425,7 @@ class PuantajRaporPage(QWidget):
 
         except Exception as e:
             logger.error(f"Puantaj rapor hatası: {e}")
-            QMessageBox.critical(self, "Hata", str(e))
+            MesajKutusu.hata(self, str(e))
             self.lbl_bilgi.setText("Hata oluştu.")
 
         self.progress.setVisible(False)
@@ -520,15 +532,14 @@ class PuantajRaporPage(QWidget):
             wb.save(path)
 
             self.lbl_durum.setText(f"Excel kaydedildi: {os.path.basename(path)}")
-            QMessageBox.information(self, "Başarılı", f"Excel dosyası kaydedildi:\n{path}")
+            MesajKutusu.bilgi(self, f"Excel dosyası kaydedildi:\n{path}")
             logger.info(f"Puantaj rapor Excel: {path}")
 
         except ImportError:
-            QMessageBox.warning(self, "Uyarı",
-                "openpyxl modülü yüklü değil.\npip install openpyxl")
+            MesajKutusu.uyari(self, "openpyxl modülü yüklü değil.\npip install openpyxl")
         except Exception as e:
             logger.error(f"Excel kaydetme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Excel kaydedilemedi:\n{e}")
+            MesajKutusu.hata(self, f"Excel kaydedilemedi:\n{e}")
 
     # ═══════════════════════════════════════════
     #  📄 PDF İNDİR
@@ -645,14 +656,13 @@ class PuantajRaporPage(QWidget):
             doc.build(elements)
 
             self.lbl_durum.setText(f"PDF kaydedildi: {os.path.basename(path)}")
-            QMessageBox.information(self, "Başarılı", f"PDF dosyası kaydedildi:\n{path}")
+            MesajKutusu.bilgi(self, f"PDF dosyası kaydedildi:\n{path}")
             logger.info(f"Puantaj rapor PDF: {path}")
 
         except ImportError:
-            QMessageBox.warning(self, "Uyarı",
-                "reportlab modülü yüklü değil.\npip install reportlab")
+            MesajKutusu.uyari(self, "reportlab modülü yüklü değil.\npip install reportlab")
         except Exception as e:
             logger.error(f"PDF kaydetme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"PDF kaydedilemedi:\n{e}")
+            MesajKutusu.hata(self, f"PDF kaydedilemedi:\n{e}")
 
 

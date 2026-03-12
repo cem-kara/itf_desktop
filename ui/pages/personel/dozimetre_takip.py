@@ -134,7 +134,7 @@ class _TrendWidget(QWidget):
         self._labels: list[str]   = []
         self.setMinimumHeight(70)
         self.setMaximumHeight(90)
-        self.setStyleSheet("background:transparent;")
+        self.setProperty("bg-role", "transparent")
 
     def set_data(self, rows: list[dict]):
         self._points = []
@@ -262,15 +262,16 @@ class DozimetreTakipPage(QWidget):
         # Başlık + yenile
         top = QHBoxLayout()
         lbl = QLabel("Dozimetre Ölçüm Takibi")
-        lbl.setStyleSheet(f"font-size:18px;font-weight:700;color:{DarkTheme.TEXT_PRIMARY};")
+        lbl.setProperty("style-role", "title")
+        lbl.setProperty("color-role", "primary")
         self.btn_yenile = QPushButton("Yenile")
-        self.btn_yenile.setStyleSheet(str(S.get("refresh_btn", "") or ""))
+        self.btn_yenile.setProperty("style-role", "refresh")
         IconRenderer.set_button_icon(self.btn_yenile, "refresh", color=IconColors.MUTED, size=14)
         self.btn_yenile.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_yenile.clicked.connect(self.load_data)
 
         self.btn_import = QPushButton("Yeni Dönem Raporu")
-        self.btn_import.setStyleSheet(str(S.get("action_btn", "") or ""))
+        self.btn_import.setProperty("style-role", "action")
         IconRenderer.set_button_icon(self.btn_import, "upload", color=IconColors.PRIMARY, size=14)
         self.btn_import.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_import.clicked.connect(self._open_import)
@@ -297,7 +298,7 @@ class DozimetreTakipPage(QWidget):
 
         # Filtre çubuğu
         filter_frame = QFrame()
-        filter_frame.setStyleSheet(str(S.get("filter_panel", "") or ""))
+        filter_frame.setProperty("style-role", "form")
         fb = QHBoxLayout(filter_frame)
         fb.setContentsMargins(12, 8, 12, 8)
         fb.setSpacing(8)
@@ -308,7 +309,7 @@ class DozimetreTakipPage(QWidget):
         self.cmb_durum  = self._cmb("Durum")
         self.inp_arama  = QLineEdit()
         self.inp_arama.setPlaceholderText("Ad / TC ara...")
-        self.inp_arama.setStyleSheet(str(S.get("search", "") or ""))
+        self.inp_arama.setProperty("style-role", "search")
         self.inp_arama.setFixedWidth(200)
 
         for lbl_text, w in (("Yıl", self.cmb_yil), ("Periyot", self.cmb_periyot),
@@ -318,7 +319,8 @@ class DozimetreTakipPage(QWidget):
         fb.addWidget(self.inp_arama)
 
         self.lbl_sonuc = QLabel("— kayıt")
-        self.lbl_sonuc.setStyleSheet(f"color:{DarkTheme.TEXT_MUTED};font-size:12px;")
+        self.lbl_sonuc.setProperty("color-role", "muted")
+        self.lbl_sonuc.setProperty("style-role", "footer")
         fb.addStretch()
         fb.addWidget(self.lbl_sonuc)
         root.addWidget(filter_frame)
@@ -326,10 +328,7 @@ class DozimetreTakipPage(QWidget):
         # Splitter: üst tablo / alt panel
         splitter = QSplitter(Qt.Orientation.Vertical)
         splitter.setHandleWidth(6)
-        splitter.setStyleSheet("""
-            QSplitter::handle { background: #ffffff18; border-radius:3px; }
-            QSplitter::handle:hover { background: #ffffff35; }
-        """)
+        splitter.setProperty("bg-role", "panel")
 
         # Ana tablo
         self.table = QTableView()
@@ -338,7 +337,7 @@ class DozimetreTakipPage(QWidget):
         self.table.setSortingEnabled(True)
         self.table.verticalHeader().setVisible(False)
         self.table.setAlternatingRowColors(True)
-        self.table.setStyleSheet(str(S.get("table", "") or ""))
+        self.table.setProperty("style-role", "table")
         self._main_model = _MainModel(MAIN_COLS)
         self.table.setModel(self._main_model)
         self._main_model.setup_columns(self.table, stretch_keys=["AdSoyad","VucutBolgesi"])
@@ -347,17 +346,14 @@ class DozimetreTakipPage(QWidget):
 
         # Alt panel — seçili personel geçmişi
         bottom = QFrame()
-        bottom.setStyleSheet(f"""
-            QFrame{{background:{DarkTheme.BG_SECONDARY};
-                    border-top:1px solid {DarkTheme.BORDER_PRIMARY};}}
-        """)
+        bottom.setProperty("bg-role", "panel")
         bottom_lay = QVBoxLayout(bottom)
         bottom_lay.setContentsMargins(16,10,16,10)
         bottom_lay.setSpacing(8)
 
         self.lbl_alt_baslik = QLabel("← Tabloda bir satır seçin")
-        self.lbl_alt_baslik.setStyleSheet(
-            f"font-size:13px;font-weight:600;color:{DarkTheme.TEXT_MUTED};")
+        self.lbl_alt_baslik.setProperty("style-role", "section-title")
+        self.lbl_alt_baslik.setProperty("color-role", "muted")
         bottom_lay.addWidget(self.lbl_alt_baslik)
 
         alt_icerik = QHBoxLayout()
@@ -369,7 +365,7 @@ class DozimetreTakipPage(QWidget):
         self.tbl_gecmis.verticalHeader().setVisible(False)
         self.tbl_gecmis.setAlternatingRowColors(True)
         self.tbl_gecmis.setMaximumHeight(200)
-        self.tbl_gecmis.setStyleSheet(str(S.get("table", "") or ""))
+        self.tbl_gecmis.setProperty("style-role", "table")
         self._gecmis_model = _GecmisModel(GECMIS_COLS)
         self.tbl_gecmis.setModel(self._gecmis_model)
         self._gecmis_model.setup_columns(self.tbl_gecmis, stretch_keys=["PeriyotAdi"])
@@ -380,12 +376,14 @@ class DozimetreTakipPage(QWidget):
         right_panel.setSpacing(6)
 
         self.lbl_mini_stat = QLabel("")
-        self.lbl_mini_stat.setStyleSheet(f"color:{DarkTheme.TEXT_MUTED};font-size:11px;")
+        self.lbl_mini_stat.setProperty("color-role", "muted")
+        self.lbl_mini_stat.setProperty("style-role", "info")
         self.lbl_mini_stat.setWordWrap(True)
         right_panel.addWidget(self.lbl_mini_stat)
 
         lbl_trend = QLabel("Hp(10) Trend")
-        lbl_trend.setStyleSheet(f"color:{DarkTheme.TEXT_MUTED};font-size:10px;")
+        lbl_trend.setProperty("color-role", "muted")
+        lbl_trend.setProperty("style-role", "stat-label")
         right_panel.addWidget(lbl_trend)
 
         self._trend = _TrendWidget()
@@ -400,7 +398,7 @@ class DozimetreTakipPage(QWidget):
 
         # Footer
         self.lbl_footer = QLabel("")
-        self.lbl_footer.setStyleSheet(str(S.get("footer_label", "") or ""))
+        self.lbl_footer.setProperty("style-role", "footer")
         root.addWidget(self.lbl_footer)
 
         # Bağlantılar
@@ -410,30 +408,26 @@ class DozimetreTakipPage(QWidget):
 
     def _cmb(self, placeholder: str) -> QComboBox:
         c = QComboBox()
-        c.setStyleSheet(str(S.get("combo_filter", "") or ""))
+        c.setProperty("style-role", "combo")
         c.addItem(f"Tümü ({placeholder})")
         c.setMinimumWidth(130)
         return c
 
     def _make_stat(self, title: str, value: str, color: str) -> QFrame:
         card = QFrame()
-        card.setStyleSheet(f"""
-            QFrame {{
-                background:{DarkTheme.BG_SECONDARY};
-                border:1px solid {DarkTheme.BORDER_PRIMARY};
-                border-left:3px solid {color};
-                border-radius:6px;
-            }}
-        """)
+        card.setProperty("bg-role", "panel")
+        card.setProperty("style-role", "stat-card")
         lay = QVBoxLayout(card)
         lay.setContentsMargins(12, 8, 12, 8)
         lay.setSpacing(2)
 
         lbl_t = QLabel(title)
-        lbl_t.setStyleSheet(f"color:{DarkTheme.TEXT_MUTED};font-size:10px;")
+        lbl_t.setProperty("color-role", "muted")
+        lbl_t.setProperty("style-role", "stat-label")
 
         lbl_v = QLabel(value)
-        lbl_v.setStyleSheet(f"color:{color};font-size:20px;font-weight:700;")
+        lbl_v.setProperty("color-role", color)
+        lbl_v.setProperty("style-role", "stat-value")
         lbl_v.setObjectName("val")
 
         lay.addWidget(lbl_t)

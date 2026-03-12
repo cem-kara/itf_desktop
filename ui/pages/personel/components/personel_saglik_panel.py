@@ -1,15 +1,45 @@
 # -*- coding: utf-8 -*-
+from PySide6.QtWidgets import QStyledItemDelegate
+from PySide6.QtGui import QPainter
+from ui.styles.icons import Icons
+
+# =============================================================================
+# Delegate: IconCellDelegate — [icon:check], [icon:x], [icon:tilde] stringlerini svg ikon olarak çizer
+# =============================================================================
+class IconCellDelegate(QStyledItemDelegate):
+    def paint(self, painter, option, index):
+        value = index.data()
+        if isinstance(value, str) and value.startswith('[icon:'):
+            icon_key = value[6:-1]
+            color = None
+            if icon_key == 'check':
+                color = '#22c55e'
+            elif icon_key == 'x':
+                color = '#ef4444'
+            elif icon_key == 'tilde':
+                color = '#f59e0b'
+            else:
+                color = '#6b7280'
+            pixmap = Icons.pixmap(icon_key, size=16, color=color)
+            rect = option.rect
+            x = rect.x() + (rect.width() - 16) // 2
+            y = rect.y() + (rect.height() - 16) // 2
+            painter.save()
+            painter.drawPixmap(x, y, pixmap)
+            painter.restore()
+        else:
+            super().paint(painter, option, index)
+
 """
 PersonelSaglikPanel — Personel detay sayfasındaki sağlık takip sekmesi.
 
 Mantık saglik_takip.py ile senkron:
-  - _compute_durum  : Gecerli / Riskli (60 gün) / Gecikmis / Planlandi / IlkMuayene
-  - Tablo           : Dermat/Dah/Göz/Görünt sütunları  ✓ / ✗ / ~
-  - Muayene kartları: StyledPanel + renkli başlık (saglik_takip tarzı)
-  - IlkMuayene      : Hiç kaydı olmayan personel → yeni form açılır
-  - Rapor açma      : Drive link önce, sonra DATA_DIR offline yol
+    - _compute_durum  : Gecerli / Riskli (60 gün) / Gecikmis / Planlandi / IlkMuayene
+    - Tablo           : Dermat/Dah/Göz/Görünt sütunları  ✓ / ✗ / ~
+    - Muayene kartları: StyledPanel + renkli başlık (saglik_takip tarzı)
+    - IlkMuayene      : Hiç kaydı olmayan personel → yeni form açılır
+    - Rapor açma      : Drive link önce, sonra DATA_DIR offline yol
 """
-from __future__ import annotations
 
 import os
 import platform
@@ -48,11 +78,11 @@ _EXAM_LABELS = {
 TABLE_COLUMNS = [
     ("MuayeneTarihi",        "Muayene",         110),
     ("SonrakiKontrolTarihi", "Sonraki Kontrol",  110),
-    ("Dermat",               "Derm.",             52),
-    ("Dahiliye_",            "Dah.",              52),
-    ("Goz_",                 "Göz",               52),
-    ("Goruntuleme_",         "Görünt.",            52),
-    ("Sonuc",                "Sonuç",            120),
+    ("Dermat",               "Derm.",             65),
+    ("Dahiliye_",            "Dah.",              65),
+    ("Goz_",                 "Göz",               65),
+    ("Goruntuleme_",         "Görünt.",            65),
+    ("Sonuc",                "Sonuç",            100),
     ("Durum",                "Durum",             95),
     ("Notlar",               "Not",             -1),   # stretch
     ("Rapor",                "Rapor",             80),
@@ -105,10 +135,13 @@ class _SaglikModel(BaseTableModel):
     def _display(self, key, row):
         if key in self._EXAM_MAP:
             val = str(row.get(self._EXAM_MAP[key], "") or "").strip().lower()
-            if not val:                return "–"
-            if val == "uygun":         return "✓"
-            if val == "uygun değil":   return "✗"
-            return "~"
+            if not val:
+                return "–"
+            if val == "uygun":
+                return "[icon:check]"
+            if val == "uygun değil":
+                return "[icon:x]"
+            return "[icon:tilde]"
         if key == "Rapor":
             if str(row.get("Durum","")) == "IlkMuayene": return "—"
             return "Aç" if row.get("_RaporDoc") else (
@@ -200,7 +233,7 @@ class PersonelSaglikPanel(QWidget):
 
         self._btn_yeni = QPushButton(" Muayene Ekle")
         self._btn_yeni.setProperty("style-role", "action")
-        self._btn_yeni.setFixedHeight(34)
+        self._btn_yeni.setFixedHeight(28)
         self._btn_yeni.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self._btn_yeni, "plus", color=IconColors.PRIMARY, size=13)
         self._btn_yeni.clicked.connect(self._open_form_new)
@@ -244,7 +277,7 @@ class PersonelSaglikPanel(QWidget):
         btn_kapat.setFixedSize(28, 28)
         btn_kapat.setToolTip("Kapat")
         btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(btn_kapat, "x", color=IconColors.DANGER, size=12)
+        IconRenderer.set_button_icon(btn_kapat, "x", color=IconColors.DANGER, size=14)
         btn_kapat.clicked.connect(self._close_form)
         top.addWidget(btn_kapat)
         lay.addLayout(top)
@@ -384,12 +417,15 @@ class PersonelSaglikPanel(QWidget):
         self._table.doubleClicked.connect(self._on_double_click)
 
         hdr_h = self._table.horizontalHeader()
-        for i, (_, _, w) in enumerate(TABLE_COLUMNS):
+        for i, (col_key, _, w) in enumerate(TABLE_COLUMNS):
             if w == -1:
                 hdr_h.setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch)
             else:
                 hdr_h.setSectionResizeMode(i, QHeaderView.ResizeMode.Interactive)
                 self._table.setColumnWidth(i, w)
+            # Muayene sütunları için ikon delegate ata
+            if col_key in ("Dermat", "Dahiliye_", "Goz_", "Goruntuleme_"):
+                self._table.setItemDelegateForColumn(i, IconCellDelegate(self._table))
 
         lay.addWidget(self._table)
         return panel
@@ -552,13 +588,17 @@ class PersonelSaglikPanel(QWidget):
             w = self._exam_widgets[key]
             exam_data.append((self._exam_date_if_set(key), str(w["durum"].currentText()).strip()))
 
-        dates   = [parse_date(t) for t, _ in exam_data if parse_date(t)]
-        latest  = max(dates).isoformat() if dates else ""
+        dates   = [parse_date(t) for t, _ in exam_data]
+        dates_no_none = [d for d in dates if d is not None]
+        latest  = max(dates_no_none).isoformat() if dates_no_none else ""
         sonraki = ""
         if latest:
             d = parse_date(latest)
-            try:    sonraki = d.replace(year=d.year + 1).isoformat()
-            except: sonraki = d.replace(month=2, day=28, year=d.year + 1).isoformat()
+            if d is not None:
+                try:
+                    sonraki = d.replace(year=d.year + 1).isoformat()
+                except Exception:
+                    sonraki = d.replace(month=2, day=28, year=d.year + 1).isoformat()
 
         statuses = [s for _, s in exam_data if s]
         if "Uygun Değil" in statuses:

@@ -14,17 +14,17 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QDateEdit, QSpinBox, QFrame, QGroupBox,
     QGridLayout, QTableView, QHeaderView, QScrollArea,
-    QAbstractSpinBox, QMessageBox, QMenu, QSizePolicy
+    QAbstractSpinBox, QMenu, QSizePolicy
 )
 from PySide6.QtGui import QColor, QCursor
 
 from typing import cast
 from core.logger import logger
+from ui.dialogs.mesaj_kutusu import MesajKutusu
 from core.date_utils import parse_date
 from core.di import get_personel_service, get_izin_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
-from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 
 
@@ -106,7 +106,9 @@ class IzinTakipPage(QWidget):
 
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(S["page"])
+        self.setProperty("bg-role", "page")
+        self.style().unpolish(self)
+        self.style().polish(self)
         self._db = db
         self._svc = get_izin_service(db) if db else None
         self._all_izin = []
@@ -134,16 +136,12 @@ class IzinTakipPage(QWidget):
 
         # ── FILTER BAR: Sadece Ay + Yıl ──
         filter_frame = QFrame()
-        filter_frame.setStyleSheet(S["filter_panel"])
+        filter_frame.setProperty("bg-role", "panel")
+        filter_frame.style().unpolish(filter_frame)
+        filter_frame.style().polish(filter_frame)
         fp = QHBoxLayout(filter_frame)
         fp.setContentsMargins(12, 8, 12, 8)
         fp.setSpacing(8)
-
-        lbl_title = QLabel("Izin Takip")
-        lbl_title.setStyleSheet(S.get("section_title") or "")
-        fp.addWidget(lbl_title)
-
-        self._add_sep(fp)
 
         lbl_ay = QLabel("Ay:")
         lbl_ay.setProperty("color-role", "muted")
@@ -153,7 +151,7 @@ class IzinTakipPage(QWidget):
         fp.addWidget(lbl_ay)
 
         self.cmb_ay = QComboBox()
-        self.cmb_ay.setStyleSheet(S["combo_filter"])
+        # self.cmb_ay.setStyleSheet kaldırıldı (global QSS yönetir)
         self.cmb_ay.setFixedWidth(110)
         self.cmb_ay.addItem("Tümü", 0)
         for i in range(1, 13):
@@ -170,7 +168,7 @@ class IzinTakipPage(QWidget):
         fp.addWidget(lbl_yil)
 
         self.cmb_yil = QComboBox()
-        self.cmb_yil.setStyleSheet(S["combo_filter"])
+        # self.cmb_yil.setStyleSheet kaldırıldı (global QSS yönetir)
         self.cmb_yil.setFixedWidth(100)
         current_year = date.today().year
         self.cmb_yil.addItem("Tümü", 0)
@@ -183,14 +181,18 @@ class IzinTakipPage(QWidget):
         fp.addStretch()
 
         self.btn_yeni = QPushButton("Yeni Izin")
-        self.btn_yeni.setStyleSheet(S["save_btn"])
+        self.btn_yeni.setProperty("style-role", "action")
+        self.btn_yeni.style().unpolish(self.btn_yeni)
+        self.btn_yeni.style().polish(self.btn_yeni)
         self.btn_yeni.setToolTip("Yeni İzin")
         self.btn_yeni.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_yeni, "plus", color=DarkTheme.TEXT_PRIMARY, size=14)
         fp.addWidget(self.btn_yeni)
 
         self.btn_yenile = QPushButton("Yenile")
-        self.btn_yenile.setStyleSheet(S["refresh_btn"])
+        self.btn_yenile.setProperty("style-role", "refresh")
+        self.btn_yenile.style().unpolish(self.btn_yenile)
+        self.btn_yenile.style().polish(self.btn_yenile)
         self.btn_yenile.setToolTip("Yenile")
         self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_yenile, "sync", color=DarkTheme.TEXT_PRIMARY, size=14)
@@ -210,7 +212,9 @@ class IzinTakipPage(QWidget):
         right_l.setSpacing(8)
 
         grp_tablo = QGroupBox("Izin Kayitlari")
-        grp_tablo.setStyleSheet(S["group"])
+        grp_tablo.setProperty("bg-role", "panel")
+        grp_tablo.style().unpolish(grp_tablo)
+        grp_tablo.style().polish(grp_tablo)
         tl = QVBoxLayout(grp_tablo)
         tl.setContentsMargins(8, 8, 8, 8)
         tl.setSpacing(6)
@@ -228,7 +232,7 @@ class IzinTakipPage(QWidget):
         self.table.setSortingEnabled(True)
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
-        self.table.setStyleSheet(S["table"])
+        # self.table.setStyleSheet kaldırıldı (global QSS yönetir)
         self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._show_context_menu)
 
@@ -236,15 +240,17 @@ class IzinTakipPage(QWidget):
         header.setStretchLastSection(False)
         for i in range(len(IZIN_COLUMNS)):
             header.setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch)
-        header.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)  # Gün
-        header.setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)  # Durum
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)  # Gün
+        header.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)  # Durum
 
         tl.addWidget(self.table, 1)
 
         # Footer
         foot = QHBoxLayout()
         self.lbl_count = QLabel("")
-        self.lbl_count.setStyleSheet(S["footer_label"])
+        self.lbl_count.setProperty("color-role", "muted")
+        self.lbl_count.style().unpolish(self.lbl_count)
+        self.lbl_count.style().polish(self.lbl_count)
         foot.addWidget(self.lbl_count)
         foot.addStretch()
         tl.addLayout(foot)
@@ -281,7 +287,9 @@ class IzinTakipPage(QWidget):
 
         btn_drawer_close = QPushButton()
         btn_drawer_close.setFixedSize(32, 32)
-        btn_drawer_close.setStyleSheet(S["close_btn"])
+        btn_drawer_close.setProperty("style-role", "close")
+        btn_drawer_close.style().unpolish(btn_drawer_close)
+        btn_drawer_close.style().polish(btn_drawer_close)
         btn_drawer_close.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(btn_drawer_close, "x", color=DarkTheme.TEXT_PRIMARY, size=16)
         btn_drawer_close.clicked.connect(self._close_drawer)
@@ -291,7 +299,7 @@ class IzinTakipPage(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(S.get("scroll") or "")
+        # scroll.setStyleSheet kaldırıldı (global QSS yönetir)
 
         left = QWidget()
         left.setStyleSheet("background: transparent;")
@@ -301,7 +309,9 @@ class IzinTakipPage(QWidget):
 
         # ─ Personel Seçimi ─
         grp_personel = QGroupBox("Personel Secimi")
-        grp_personel.setStyleSheet(S["group"])
+        grp_personel.setProperty("bg-role", "panel")
+        grp_personel.style().unpolish(grp_personel)
+        grp_personel.style().polish(grp_personel)
         grp_personel.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         pg = QGridLayout(grp_personel)
         pg.setSpacing(8)
@@ -310,22 +320,26 @@ class IzinTakipPage(QWidget):
         pg.setColumnStretch(1, 1)
 
         lbl_sinif = QLabel("Hizmet Sınıfı")
-        lbl_sinif.setStyleSheet(S["label"])
+        lbl_sinif.setProperty("color-role", "muted")
+        lbl_sinif.style().unpolish(lbl_sinif)
+        lbl_sinif.style().polish(lbl_sinif)
         lbl_sinif.setFixedWidth(120)
         pg.addWidget(lbl_sinif, 0, 0)
         self.cmb_hizmet_sinifi = QComboBox()
-        self.cmb_hizmet_sinifi.setStyleSheet(S["combo"])
+        # self.cmb_hizmet_sinifi.setStyleSheet kaldırıldı (global QSS yönetir)
         self.cmb_hizmet_sinifi.setMinimumWidth(200)
         self.cmb_hizmet_sinifi.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         pg.addWidget(self.cmb_hizmet_sinifi, 0, 1)
 
         lbl_p = QLabel("Personel")
-        lbl_p.setStyleSheet(S["label"])
+        lbl_p.setProperty("color-role", "muted")
+        lbl_p.style().unpolish(lbl_p)
+        lbl_p.style().polish(lbl_p)
         lbl_p.setFixedWidth(120)
         pg.addWidget(lbl_p, 1, 0)
         self.cmb_personel = QComboBox()
         self.cmb_personel.setEditable(True)
-        self.cmb_personel.setStyleSheet(S["combo"])
+        # self.cmb_personel.setStyleSheet kaldırıldı (global QSS yönetir)
         if _le := self.cmb_personel.lineEdit():
             _le.setPlaceholderText("İsim yazarak ara...")
         self.cmb_personel.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
@@ -342,7 +356,9 @@ class IzinTakipPage(QWidget):
 
         # ─ İzin Giriş Formu ─
         grp_giris = QGroupBox("Yeni Izin Girisi")
-        grp_giris.setStyleSheet(S["group"])
+        grp_giris.setProperty("bg-role", "panel")
+        grp_giris.style().unpolish(grp_giris)
+        grp_giris.style().polish(grp_giris)
         grp_giris.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         fg = QGridLayout(grp_giris)
         fg.setSpacing(10)
@@ -351,22 +367,28 @@ class IzinTakipPage(QWidget):
         fg.setColumnStretch(1, 1)
 
         lbl_tip = QLabel("İzin Tipi")
-        lbl_tip.setStyleSheet(S["label"])
+        lbl_tip.setProperty("color-role", "muted")
+        lbl_tip.style().unpolish(lbl_tip)
+        lbl_tip.style().polish(lbl_tip)
         lbl_tip.setFixedWidth(120)
         fg.addWidget(lbl_tip, 0, 0)
         self.cmb_izin_tipi = QComboBox()
-        self.cmb_izin_tipi.setStyleSheet(S["combo"])
+        # self.cmb_izin_tipi.setStyleSheet kaldırıldı (global QSS yönetir)
         self.cmb_izin_tipi.setMinimumWidth(200)
         self.cmb_izin_tipi.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         fg.addWidget(self.cmb_izin_tipi, 0, 1)
 
         # Max gün uyarı etiketi
         self.lbl_max_gun = QLabel("")
-        self.lbl_max_gun.setStyleSheet(S["max_label"])
+        self.lbl_max_gun.setProperty("color-role", "muted")
+        self.lbl_max_gun.style().unpolish(self.lbl_max_gun)
+        self.lbl_max_gun.style().polish(self.lbl_max_gun)
         fg.addWidget(self.lbl_max_gun, 1, 0, 1, 2)
 
         lbl_bas = QLabel("Başlama / Süre")
-        lbl_bas.setStyleSheet(S["label"])
+        lbl_bas.setProperty("color-role", "muted")
+        lbl_bas.style().unpolish(lbl_bas)
+        lbl_bas.style().polish(lbl_bas)
         lbl_bas.setFixedWidth(120)
         fg.addWidget(lbl_bas, 2, 0)
 
@@ -375,7 +397,7 @@ class IzinTakipPage(QWidget):
         self.dt_baslama = QDateEdit(QDate.currentDate())
         self.dt_baslama.setCalendarPopup(True)
         self.dt_baslama.setDisplayFormat("dd.MM.yyyy")
-        self.dt_baslama.setStyleSheet(S["date"])
+        # self.dt_baslama.setStyleSheet kaldırıldı (global QSS yönetir)
         self.dt_baslama.setMinimumWidth(160)
         self.dt_baslama.setMaximumWidth(240)
         self.dt_baslama.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -383,33 +405,39 @@ class IzinTakipPage(QWidget):
         h_tarih.addWidget(self.dt_baslama, 2)
 
         lbl_gun = QLabel("Gün:")
-        lbl_gun.setStyleSheet(S["label"])
+        lbl_gun.setProperty("color-role", "muted")
+        lbl_gun.style().unpolish(lbl_gun)
+        lbl_gun.style().polish(lbl_gun)
         h_tarih.addWidget(lbl_gun)
         self.spn_gun = QSpinBox()
         self.spn_gun.setRange(1, 365)
         self.spn_gun.setValue(1)
-        self.spn_gun.setStyleSheet(S["spin"])
+        # self.spn_gun.setStyleSheet kaldırıldı (global QSS yönetir)
         self.spn_gun.setFixedWidth(70)
         h_tarih.addWidget(self.spn_gun)
         h_tarih.addStretch()
         fg.addLayout(h_tarih, 2, 1)
 
         lbl_bit = QLabel("Bitiş (İşe Dönüş)")
-        lbl_bit.setStyleSheet(S["label"])
+        lbl_bit.setProperty("color-role", "muted")
+        lbl_bit.style().unpolish(lbl_bit)
+        lbl_bit.style().polish(lbl_bit)
         lbl_bit.setFixedWidth(120)
         fg.addWidget(lbl_bit, 3, 0)
         self.dt_bitis = QDateEdit()
         self.dt_bitis.setReadOnly(True)
         self.dt_bitis.setDisplayFormat("dd.MM.yyyy")
         self.dt_bitis.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
-        self.dt_bitis.setStyleSheet(S["date"])
+        # self.dt_bitis.setStyleSheet kaldırıldı (global QSS yönetir)
         self.dt_bitis.setMinimumWidth(160)
         self.dt_bitis.setMaximumWidth(240)
         self.dt_bitis.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         fg.addWidget(self.dt_bitis, 3, 1)
 
         self.btn_kaydet = QPushButton("IZIN KAYDET")
-        self.btn_kaydet.setStyleSheet(S["save_btn"])
+        self.btn_kaydet.setProperty("style-role", "action")
+        self.btn_kaydet.style().unpolish(self.btn_kaydet)
+        self.btn_kaydet.style().polish(self.btn_kaydet)
         self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_kaydet.setEnabled(False)
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
@@ -418,7 +446,9 @@ class IzinTakipPage(QWidget):
 
         # ─ Bakiye Panosu ─
         grp_bakiye = QGroupBox("Izin Bakiyesi")
-        grp_bakiye.setStyleSheet(S["group"])
+        grp_bakiye.setProperty("bg-role", "panel")
+        grp_bakiye.style().unpolish(grp_bakiye)
+        grp_bakiye.style().polish(grp_bakiye)
         grp_bakiye.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         bg = QGridLayout(grp_bakiye)
         bg.setSpacing(4)
@@ -427,7 +457,9 @@ class IzinTakipPage(QWidget):
         bg.setColumnStretch(1, 1)
 
         lbl_y = QLabel("YILLIK İZİN")
-        lbl_y.setStyleSheet(S["section_title"])
+        lbl_y.setProperty("style-role", "section-title")
+        lbl_y.style().unpolish(lbl_y)
+        lbl_y.style().polish(lbl_y)
         bg.addWidget(lbl_y, 0, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
 
         self.lbl_y_devir = self._add_stat(bg, 1, "Devir", "stat_value")
@@ -435,18 +467,20 @@ class IzinTakipPage(QWidget):
         self.lbl_y_kul = self._add_stat(bg, 3, "Kullanılan", "stat_red")
         self.lbl_y_kal = self._add_stat(bg, 4, "KALAN", "stat_green")
 
-        sep3 = QFrame(); sep3.setFixedHeight(1); sep3.setStyleSheet(S["separator"])
+        sep3 = QFrame(); sep3.setFixedHeight(1); sep3.setProperty("bg-role", "separator"); sep3.style().unpolish(sep3); sep3.style().polish(sep3)
         bg.addWidget(sep3, 5, 0, 1, 2)
 
         lbl_s = QLabel("ŞUA İZNİ")
-        lbl_s.setStyleSheet(S["section_title"])
+        lbl_s.setProperty("style-role", "section-title")
+        lbl_s.style().unpolish(lbl_s)
+        lbl_s.style().polish(lbl_s)
         bg.addWidget(lbl_s, 6, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
 
         self.lbl_s_hak = self._add_stat(bg, 7, "Hakediş", "stat_value")
         self.lbl_s_kul = self._add_stat(bg, 8, "Kullanılan", "stat_red")
         self.lbl_s_kal = self._add_stat(bg, 9, "KALAN", "stat_green")
 
-        sep4 = QFrame(); sep4.setFixedHeight(1); sep4.setStyleSheet(S["separator"])
+        sep4 = QFrame(); sep4.setFixedHeight(1); sep4.setProperty("bg-role", "separator"); sep4.style().unpolish(sep4); sep4.style().polish(sep4)
         bg.addWidget(sep4, 10, 0, 1, 2)
 
         self.lbl_diger = self._add_stat(bg, 11, "Rapor / Mazeret", "stat_value")
@@ -531,12 +565,20 @@ class IzinTakipPage(QWidget):
         pass
 
     def _add_stat(self, grid, row, text, style_key):
+        _COLOR_MAP = {
+            "stat_green": DarkTheme.SUCCESS,
+            "stat_red":   DarkTheme.DANGER,
+            "stat_value": DarkTheme.TEXT_PRIMARY,
+        }
         lbl = QLabel(text)
-        lbl.setStyleSheet(S["stat_label"])
+        lbl.setProperty("style-role", "stat-label")
+        lbl.style().unpolish(lbl)
+        lbl.style().polish(lbl)
         grid.addWidget(lbl, row, 0)
         val = QLabel("—")
         val.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        val.setStyleSheet(S[style_key])
+        color = _COLOR_MAP.get(style_key, DarkTheme.TEXT_PRIMARY)
+        val.setStyleSheet(f"color: {color}; font-weight: 600; background: transparent;")
         grid.addWidget(val, row, 1)
         return val
 
@@ -867,7 +909,7 @@ class IzinTakipPage(QWidget):
     def _on_save(self):
         tc = self.cmb_personel.currentData()
         if not tc:
-            QMessageBox.warning(self, "Uyarı", "Lütfen bir personel seçin.")
+            MesajKutusu.uyari(self, "Lütfen bir personel seçin.")
             return
 
         p = next((p for p in self._all_personel
@@ -877,7 +919,7 @@ class IzinTakipPage(QWidget):
         izin_tipi = self.cmb_izin_tipi.currentText().strip()
 
         if not izin_tipi:
-            QMessageBox.warning(self, "Eksik", "İzin tipi seçilmeli.")
+            MesajKutusu.uyari(self, "İzin tipi seçilmeli.")
             return
 
         baslama = self.dt_baslama.date().toString("yyyy-MM-dd")
@@ -890,7 +932,7 @@ class IzinTakipPage(QWidget):
                 tc=str(tc), izin_tipi=izin_tipi, gun=gun
             )
             if not ok_limit:
-                QMessageBox.warning(self, "Limit Aşımı", limit_msg)
+                MesajKutusu.uyari(self, limit_msg)
                 return
 
         # ═══════════════════════════════════════════════
@@ -900,7 +942,7 @@ class IzinTakipPage(QWidget):
         yeni_bit = parse_date(bitis)
 
         if not yeni_bas or not yeni_bit:
-            QMessageBox.critical(self, "Hata", "Tarih formatı hatalı.")
+            MesajKutusu.hata(self, "Tarih formatı hatalı.")
             return
 
         # Aynı personelin mevcut izinlerini kontrol et
@@ -922,8 +964,8 @@ class IzinTakipPage(QWidget):
             if vt_bas and vt_bit:
                 # Çakışma formülü: (yeni_bas <= vt_bit) AND (yeni_bit >= vt_bas)
                 if (yeni_bas <= vt_bit) and (yeni_bit >= vt_bas):
-                    QMessageBox.warning(
-                        self, "Cakisma Var!",
+                    MesajKutusu.uyari(
+                        self,
                         f"{ad} personeli {vt_bas.strftime('%d.%m.%Y')} - "
                         f"{vt_bit.strftime('%d.%m.%Y')} tarihlerinde zaten izinli!\n\n"
                         f"İzin Tipi: {kayit.get('IzinTipi', '')}\n"
@@ -964,9 +1006,8 @@ class IzinTakipPage(QWidget):
             # 🔧 UZUN / AYLIKSIZ İZİN → PERSONEL PASİF
             # ═══════════════════════════════════════════════
             self._svc.set_personel_pasif(tc, izin_tipi, gun)
-
-            QMessageBox.information(
-                self, "Başarılı",
+            MesajKutusu.bilgi(
+                self,
                 f"{ad} için {gun} gün {izin_tipi} kaydedildi.\n"
                 f"Başlama: {self.dt_baslama.date().toString('dd.MM.yyyy')}\n"
                 f"İşe Dönüş: {self.dt_bitis.date().toString('dd.MM.yyyy')}"
@@ -978,7 +1019,7 @@ class IzinTakipPage(QWidget):
 
         except Exception as e:
             logger.error(f"İzin kaydetme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"İzin kaydedilemedi:\n{e}")
+            MesajKutusu.hata(self, f"İzin kaydedilemedi:\n{e}")
 
 
 
@@ -1000,7 +1041,7 @@ class IzinTakipPage(QWidget):
         durum = str(row_data.get("Durum", "")).strip()
 
         menu = QMenu(self)
-        menu.setStyleSheet(S["context_menu"])
+        # menu.setStyleSheet kaldırıldı (global QSS yönetir)
 
         if durum != "İptal":
             act_iptal = menu.addAction("Izni Iptal Et")
@@ -1013,12 +1054,8 @@ class IzinTakipPage(QWidget):
         menu.exec(self.table.viewport().mapToGlobal(pos))
 
     def _iptal_izin(self, izin_id, ad):
-        cevap = QMessageBox.question(
-            self, "İzin İptal",
-            f"{ad} personelinin bu izni iptal edilsin mi?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
-        )
-        if cevap == QMessageBox.StandardButton.Yes:
+        cevap = MesajKutusu.soru(self, f"{ad} personelinin bu izni iptal edilsin mi?")
+        if cevap:
             self._durum_degistir(izin_id, ad, "İptal")
 
     def _durum_degistir(self, izin_id, ad, yeni_durum):
@@ -1030,7 +1067,7 @@ class IzinTakipPage(QWidget):
             self.load_data()
         except Exception as e:
             logger.error(f"İzin durum hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"İşlem hatası:\n{e}")
+            MesajKutusu.hata(self, f"İşlem hatası:\n{e}")
 
 
 

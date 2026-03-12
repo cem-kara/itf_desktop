@@ -570,10 +570,15 @@ class PersonelListesiPage(QWidget):
         lay.addWidget(self.btn_yeni)
         
         # Kapat butonu (en sağ köşe)
-        self.btn_close = QPushButton("✕")
+        self.btn_close = QPushButton()
         self.btn_close.setFixedSize(28, 28)
         self.btn_close.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_close.setToolTip("Kapat")
+        self.btn_close.setProperty("style-role", "close")
+        self.btn_close.style().unpolish(self.btn_close)
+        self.btn_close.style().polish(self.btn_close)
+        IconRenderer.set_button_icon(self.btn_close, "x", color=C.TEXT_SECONDARY, size=16)
+        self.btn_close.setIconSize(QSize(16, 16))
         lay.addWidget(self.btn_close)
         return frame
 
@@ -594,13 +599,13 @@ class PersonelListesiPage(QWidget):
 
         self.cmb_gorev_yeri = QComboBox()
         self.cmb_gorev_yeri.addItem("Tüm Birimler")
-        self.cmb_gorev_yeri.setFixedWidth(180)
+        self.cmb_gorev_yeri.setFixedWidth(250)
         # setStyleSheet kaldırıldı: combo — global QSS kuralı geçerli
         lay.addWidget(self.cmb_gorev_yeri)
 
         self.cmb_hizmet = QComboBox()
         self.cmb_hizmet.addItem("Tüm Sınıflar")
-        self.cmb_hizmet.setFixedWidth(200)
+        self.cmb_hizmet.setFixedWidth(300)
         # setStyleSheet kaldırıldı: combo — global QSS kuralı geçerli
         lay.addWidget(self.cmb_hizmet)
 

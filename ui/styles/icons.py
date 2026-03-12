@@ -37,6 +37,11 @@ from PySide6.QtWidgets import QPushButton, QLabel
 
 _SVG_PATHS: dict[str, str] = {
 
+    #  TILDE ~
+    "tilde": """
+        <path d="M4 15c1.5-2 4.5-2 6 0s4.5 2 6 0" stroke-linecap="round"/>
+    """,
+
     #  PERSONEL 
     "users": """
         <circle cx="9" cy="7" r="3.5"/>

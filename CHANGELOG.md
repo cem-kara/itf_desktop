@@ -8,6 +8,21 @@ Format şu kurallara uyar: [Keep a Changelog](https://keepachangelog.com/tr/1.0.
 
 ## [v0.3.0 - UI Stabilization] - 2026-03-06 (WIP)
 
+### 2026-03-12 Güncellemesi
+
+#### ✨ Fixed
+- `ui/pages/personel/personel_ekle.py`: kayıt sonrası "Evet" dalında `btn_kaydet.setEnabled(True)` çağrısı eksikti — düzeltildi
+- `ui/pages/personel/personel_ekle.py`: `QTabWidget` import satırına eklenmemişti — düzeltildi
+
+#### ✨ Added
+- `ui/pages/personel/personel_ekle.py`: Belge paneli sekmeli yapıya (QTabWidget) taşındı
+  - Tab 1 — "👤 Kişisel Bilgiler": mevcut form (scroll içinde)
+  - Tab 2 — "📎 Belgeler": kayıt öncesi kilitli (`setTabEnabled(1, False)`), kayıt sonrası otomatik açılır ve bu sekmeye geçer
+  - Edit modunda açılışta Belgeler sekmesi zaten aktif
+  - "Yeni Personel" reset akışında sekme tekrar kilitlenir
+
+---
+
 ### 2026-03-07 Güncellemesi
 
 #### ✨ Fixed

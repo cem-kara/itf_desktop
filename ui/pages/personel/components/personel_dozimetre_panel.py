@@ -92,7 +92,7 @@ class _TrendWidget(QWidget):
         self._labels: list[str]   = []
         self.setMinimumHeight(80)
         self.setMaximumHeight(100)
-        self.setStyleSheet("background: transparent;")
+        self.setProperty("bg-role", "transparent")
 
     def set_data(self, rows: list[dict]):
         self._points = []
@@ -212,7 +212,7 @@ class PersonelDozimetrePanel(QWidget):
 
         # ── Özet grup ──
         ozet_group = QGroupBox("Dozimetre Özeti")
-        ozet_group.setStyleSheet(str(S.get("group", S.get("group_box", "")) or ""))
+        ozet_group.setProperty("style-role", "group")
         ozet_lay = QHBoxLayout(ozet_group)
         ozet_lay.setContentsMargins(16, 12, 16, 12)
         ozet_lay.setSpacing(32)
@@ -232,7 +232,7 @@ class PersonelDozimetrePanel(QWidget):
         self.btn_yenile = QPushButton("")
         self.btn_yenile.setToolTip("Yenile")
         self.btn_yenile.setFixedSize(32, 32)
-        self.btn_yenile.setStyleSheet(str(S.get("refresh_btn", "") or ""))
+        self.btn_yenile.setProperty("style-role", "refresh")
         self.btn_yenile.setCursor(Qt.CursorShape.PointingHandCursor)
         IconRenderer.set_button_icon(self.btn_yenile, "refresh", color=IconColors.MUTED, size=14)
         self.btn_yenile.clicked.connect(self.load_data)
@@ -241,7 +241,7 @@ class PersonelDozimetrePanel(QWidget):
 
         # ── Trend ──
         trend_group = QGroupBox("Hp(10) Trendi")
-        trend_group.setStyleSheet(str(S.get("group", S.get("group_box", "")) or ""))
+        trend_group.setProperty("style-role", "group")
         trend_lay = QVBoxLayout(trend_group)
         trend_lay.setContentsMargins(12, 8, 12, 8)
         self._trend = _TrendWidget()
@@ -250,7 +250,7 @@ class PersonelDozimetrePanel(QWidget):
 
         # ── Geçmiş tablo ──
         tablo_group = QGroupBox("Periyot Geçmişi")
-        tablo_group.setStyleSheet(str(S.get("group", S.get("group_box", "")) or ""))
+        tablo_group.setProperty("style-role", "group")
         tablo_lay = QVBoxLayout(tablo_group)
         tablo_lay.setContentsMargins(8, 8, 8, 8)
 
@@ -259,7 +259,7 @@ class PersonelDozimetrePanel(QWidget):
         self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._table.verticalHeader().setVisible(False)
         self._table.setAlternatingRowColors(True)
-        self._table.setStyleSheet(str(S.get("table", "") or ""))
+        self._table.setProperty("style-role", "table")
         self._model = _DozModel(GECMIS_COLS)
         self._table.setModel(self._model)
         self._model.setup_columns(self._table, stretch_keys=["VucutBolgesi"])
@@ -275,14 +275,16 @@ class PersonelDozimetrePanel(QWidget):
 
     def _stat_lbl(self, title: str) -> QFrame:
         f = QFrame()
-        f.setStyleSheet("background:transparent;border:none;")
+        f.setProperty("bg-role", "transparent")
         lay = QVBoxLayout(f)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(2)
         t = QLabel(title)
-        t.setStyleSheet(f"color:{C.TEXT_MUTED};font-size:10px;")
+        t.setProperty("color-role", "muted")
+        t.setProperty("style-role", "stat-label")
         v = QLabel("—")
-        v.setStyleSheet(f"color:{C.TEXT_PRIMARY};font-size:14px;font-weight:600;")
+        v.setProperty("color-role", "primary")
+        v.setProperty("style-role", "stat-value")
         v.setObjectName("val")
         lay.addWidget(t)
         lay.addWidget(v)

@@ -52,8 +52,6 @@ class IzinFHSZPuantajMerkezPage(QWidget):
 
     def _setup_ui(self):
         self.setProperty("bg-role", "page")
-        self.style().unpolish(self)
-        self.style().polish(self)
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
@@ -65,12 +63,8 @@ class IzinFHSZPuantajMerkezPage(QWidget):
     def _build_header(self) -> QFrame:
         """Header (52px) + sekme nav (36px)."""
         outer = QFrame()
-        outer.setStyleSheet("""
-            QFrame {{
-                background-color: {};
-                border-bottom: 1px solid {};
-            }}
-        """.format(C.BG_SECONDARY, C.BORDER_PRIMARY))
+        outer.setProperty("bg-role", "panel")
+        outer.setProperty("border-role", "bottom-primary")
         lay = QVBoxLayout(outer)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)
@@ -84,10 +78,8 @@ class IzinFHSZPuantajMerkezPage(QWidget):
 
         # Başlık
         lbl_title = QLabel("İzin & FHSZ & Puantaj")
-        lbl_title.setStyleSheet(
-            f"font-size:16px; font-weight:600; color:{C.TEXT_PRIMARY}; "
-            "background:transparent;"
-        )
+        lbl_title.setProperty("style-role", "section-title")
+        lbl_title.setProperty("color-role", "primary")
         top_lay.addWidget(lbl_title)
 
         top_lay.addStretch()
@@ -110,9 +102,7 @@ class IzinFHSZPuantajMerkezPage(QWidget):
         nav = QWidget()
         nav.setFixedHeight(36)
         nav.setProperty("border-role", "top-secondary")
-        nav.setStyleSheet("background: transparent;")
-        nav.style().unpolish(nav)
-        nav.style().polish(nav)
+        nav.setProperty("bg-role", "transparent")
         nav_lay = QHBoxLayout(nav)
         nav_lay.setContentsMargins(16, 0, 16, 0)
         nav_lay.setSpacing(0)
@@ -120,7 +110,7 @@ class IzinFHSZPuantajMerkezPage(QWidget):
         for code, label in TABS:
             btn = QPushButton(label)
             btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-            btn.setStyleSheet(self._tab_btn_qss(active=False))
+            btn.setProperty("style-role", "tab-inactive")
             btn.clicked.connect(lambda _, c=code: self._switch_tab(c))
             nav_lay.addWidget(btn)
             self._nav_btns[code] = btn
@@ -185,7 +175,12 @@ class IzinFHSZPuantajMerkezPage(QWidget):
         # UI güncelle
         self._active_tab = code
         for c, btn in self._nav_btns.items():
-            btn.setStyleSheet(self._tab_btn_qss(active=(c == code)))
+            if c == code:
+                btn.setProperty("style-role", "tab-active")
+            else:
+                btn.setProperty("style-role", "tab-inactive")
+            btn.style().unpolish(btn)
+            btn.style().polish(btn)
 
         # Widget lazy-load
         if code not in self._modules:

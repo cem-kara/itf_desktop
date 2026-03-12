@@ -2,11 +2,11 @@
 import os
 import re
 from datetime import datetime
-from PySide6.QtCore import Qt, QDate, QTimer, QThread, Signal
+from PySide6.QtCore import Qt, QDate, QTimer, QThread, Signal, QSize
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton,
     QScrollArea, QProgressBar, QFrame, QComboBox, QLineEdit,
-    QDateEdit, QGroupBox, QMessageBox, QFileDialog
+    QDateEdit, QGroupBox, QMessageBox, QFileDialog, QTabWidget
 )
 from PySide6.QtGui import QCursor, QPixmap
 
@@ -21,12 +21,13 @@ from core.services.dokuman_service import DokumanService
 from database.auth_repository import AuthRepository
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
-from ui.styles.icons import IconRenderer
+from ui.styles.icons import Icons
 from ui.theme_manager import ThemeManager
 from ui.components.formatted_widgets import apply_title_case_formatting, apply_combo_title_case_formatting
 from ui.pages.personel.components.personel_dokuman_panel import PersonelDokumanPanel
 from ui.styles.colors import get_current_theme
 from ui.dialogs.mesaj_kutusu import MesajKutusu
+from ui.styles.icons import Icons
 
 class DokumanUploadWorker(QThread):
     """Tek bir dosya için DokumanService upload worker'ı."""
@@ -127,7 +128,7 @@ class PersonelEklePage(QWidget):
 
     def __init__(self, db=None, edit_data=None, on_saved=None, action_guard=None, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(S["page"])
+        self.setProperty("bg-role", "page")
         self._db = db
         self._edit_data = edit_data
         self._on_saved = on_saved
@@ -156,10 +157,12 @@ class PersonelEklePage(QWidget):
 
         if self._is_edit:
             self._fill_form(edit_data)
-            # Düzenleme modunda form doldurulduktan sonra panel ayarla
-            self._update_dokuman_panel()
+            # Düzenleme modunda Belgeler sekmesi baştan açık
+            tc_no = str(edit_data.get("KimlikNo", "")).strip() if edit_data else ""
+            if tc_no:
+                self._activate_belge_tab(tc_no)
         else:
-            # Yeni ekleme modunda da ilk panel oluştur
+            # Yeni ekleme: panel instance hazırla, sekme kilitli kalır
             self._update_dokuman_panel()
 
     # ═══════════════════════════════════════════
@@ -182,7 +185,7 @@ class PersonelEklePage(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(S["scroll"])
+        scroll.setProperty("bg-role", "transparent")
 
         content = QWidget()
         content.setStyleSheet("background: transparent;")
@@ -218,7 +221,8 @@ class PersonelEklePage(QWidget):
         btn_resim.setFixedHeight(28)
         btn_resim.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_resim.clicked.connect(self._select_photo)
-        IconRenderer.set_button_icon(btn_resim, "upload", color=DarkTheme.TEXT_PRIMARY, size=13)
+        btn_resim.setIcon(Icons.get("upload", size=13, color=DarkTheme.TEXT_PRIMARY))
+        btn_resim.setIconSize(QSize(13, 13))
         left_l.addWidget(btn_resim, alignment=Qt.AlignmentFlag.AlignCenter)
         left_l.addSpacing(10)
 
@@ -261,7 +265,7 @@ class PersonelEklePage(QWidget):
         self.ui["tc"].setStyleSheet(S["input"])
         self.ui["tc"].setPlaceholderText("11 haneli")
         self.ui["tc"].textChanged.connect(self._validate_tc_on_change)
-        self.ui["tc"].textChanged.connect(self._update_dokuman_panel)
+        # TC değişince belge sekmesi açılmaz; sadece kayıt sonrası açılır
         tc_h.addWidget(self.ui["tc"], 1)
         self._tc_status = QLabel("")
         self._tc_status.setFixedWidth(18)
@@ -509,20 +513,69 @@ class PersonelEklePage(QWidget):
 
         right_l.addWidget(edu_grp)
 
-        # İlk Başlama Evrakları (PersonelDokumanPanel)
-        self._dokuman_panel_container = QWidget()
-        self._dokuman_panel_container.setStyleSheet("background: transparent;")
-        self._dokuman_panel_layout = QVBoxLayout(self._dokuman_panel_container)
-        self._dokuman_panel_layout.setContentsMargins(0, 0, 0, 0)
-
-        right_l.addWidget(self._dokuman_panel_container)
         right_l.addStretch()
 
         content_layout.addWidget(left_grp, alignment=Qt.AlignmentFlag.AlignTop)
         content_layout.addWidget(right, 1)
 
         scroll.setWidget(content)
-        main.addWidget(scroll, 1)
+
+        # ── SEKMELER ──
+        self._tabs = QTabWidget()
+
+        # Tab 1: Kişisel Bilgiler
+        tab_bilgiler = QWidget()
+        tab_bilgiler_lay = QVBoxLayout(tab_bilgiler)
+        tab_bilgiler_lay.setContentsMargins(0, 0, 0, 0)
+        tab_bilgiler_lay.addWidget(scroll, 1)
+        # Tab başlığı: Kişisel Bilgiler (ikonlu)
+        from ui.styles.icons import IconRenderer
+        # Icons importu dosya başında mevcut
+        self._tabs.addTab(tab_bilgiler, "  Kişisel Bilgiler")
+        self._tabs.setTabIcon(0, Icons.get("user", size=16))
+
+        # Tab 2: Belgeler — kayıt yapılana kadar kilitli
+        tab_belgeler = QWidget()
+        tab_belgeler_lay = QVBoxLayout(tab_belgeler)
+        tab_belgeler_lay.setContentsMargins(12, 12, 12, 12)
+        tab_belgeler_lay.setSpacing(0)
+
+        # Kilitli belge etiketi: emoji yerine ikon
+        self._lbl_belge_lock = QLabel()
+        self._lbl_belge_lock.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._lbl_belge_lock.setProperty("color-role", "muted")
+        self._lbl_belge_lock.setStyleSheet("font-size: 13px; padding: 40px; background: transparent;")
+        # Kilit ikonu + metin
+        # QWidget, QHBoxLayout importları dosya başında mevcut
+        lock_row = QWidget()
+        lock_row.setStyleSheet("background: transparent;")
+        lock_layout = QHBoxLayout(lock_row)
+        lock_layout.setContentsMargins(0, 0, 0, 0)
+        lock_layout.setSpacing(8)
+        lbl_icon = QLabel()
+        lbl_icon.setPixmap(Icons.get("lock", size=16).pixmap(16, 16))
+        lock_layout.addWidget(lbl_icon)
+        lbl_text = QLabel("Belge yükleyebilmek için önce kişisel bilgileri kaydedin.")
+        lbl_text.setProperty("color-role", "muted")
+        lbl_text.setStyleSheet("font-size: 13px; background: transparent;")
+        lock_layout.addWidget(lbl_text)
+        lock_layout.addStretch()
+        tab_belgeler_lay.addWidget(lock_row)
+        self._lbl_belge_lock = lbl_text
+
+        self._dokuman_panel_container = QWidget()
+        self._dokuman_panel_container.setStyleSheet("background: transparent;")
+        self._dokuman_panel_layout = QVBoxLayout(self._dokuman_panel_container)
+        self._dokuman_panel_layout.setContentsMargins(0, 0, 0, 0)
+        self._dokuman_panel_container.setVisible(False)
+        tab_belgeler_lay.addWidget(self._dokuman_panel_container, 1)
+
+        # Tab başlığı: Belgeler (ikonlu)
+        self._tabs.addTab(tab_belgeler, "  Belgeler")
+        self._tabs.setTabIcon(1, Icons.get("paperclip", size=16))
+        self._tabs.setTabEnabled(1, False)   # Kayıt öncesi kilitli
+
+        main.addWidget(self._tabs, 1)
 
         # ── FOOTER ──
         footer = QHBoxLayout()
@@ -575,28 +628,32 @@ class PersonelEklePage(QWidget):
     # ═══════════════════════════════════════════
 
     def _update_dokuman_panel(self):
-        """TC No değiştiğinde PersonelDokumanPanel'i güncelle/enable-disable yap."""
-        tc_no = self.ui["tc"].text().strip()
-        
-        # Panel yoksa oluştur (TC fark etmeksizin)
+        """Panel instance'ını hazırlar — aktivasyon kayıt sonrası yapılır."""
         if not self._dokuman_panel and self._db:
             self._dokuman_panel = PersonelDokumanPanel(
-                personel_id="",  # Başlangıçta boş
+                personel_id="",
                 db=self._db,
                 sabitler_cache=self._all_sabit,
                 parent=self
             )
             self._dokuman_panel_layout.addWidget(self._dokuman_panel)
-        
-        # TC No durumuna göre panel'ı enable/disable et
+
+    def _activate_belge_tab(self, tc_no: str):
+        """Kayıt başarılı → Belgeler sekmesini aç ve paneli bağla."""
+        # Paneli oluştur (henüz yoksa)
+        self._update_dokuman_panel()
+
         if self._dokuman_panel:
-            if tc_no:
-                # TC No varsa: panel enabled ve entity id'yi güncelle
-                self._dokuman_panel.setEnabled(True)
-                self._dokuman_panel.set_entity_id(tc_no)
-            else:
-                # TC No yoksa: panel disabled
-                self._dokuman_panel.setEnabled(False)
+            self._dokuman_panel.set_entity_id(tc_no)
+            self._dokuman_panel.setEnabled(True)
+
+        # Kilit etiketini gizle, container'ı göster
+        self._lbl_belge_lock.setVisible(False)
+        self._dokuman_panel_container.setVisible(True)
+
+        # Sekmeyi aç
+        self._tabs.setTabEnabled(1, True)
+        self._tabs.setTabText(1, "📎  Belgeler")
 
     # ═══════════════════════════════════════════
     #  YARDIMCI WIDGET FABRİKALARI
@@ -970,21 +1027,20 @@ class PersonelEklePage(QWidget):
     # ═══════════════════════════════════════════
 
     def _set_validation_status(self, label_widget, is_valid):
-        """Validasyon statusunu ayarla: ✓ (ok), ✗ (err), ⚠ (muted)."""
+        """Validasyon statusunu ayarla: svg ikon ile (ok, err, muted)."""
         style = "font-size: 16px;"
         if is_valid is None:
             # Boş/kontrol edilmemiş
-            label_widget.setText("⚠")
+            label_widget.setPixmap(Icons.pixmap("info", size=16, color=DarkTheme.TEXT_MUTED))
             label_widget.setProperty("color-role", "muted")
         elif is_valid:
             # Geçerli
-            label_widget.setText("✓")
+            label_widget.setPixmap(Icons.pixmap("check", size=16, color=DarkTheme.STATUS_SUCCESS))
             label_widget.setProperty("color-role", "ok")
         else:
             # Geçersiz
-            label_widget.setText("✗")
+            label_widget.setPixmap(Icons.pixmap("x", size=16, color=DarkTheme.STATUS_ERROR))
             label_widget.setProperty("color-role", "err")
-        
         label_widget.setStyleSheet(style)
         label_widget.style().unpolish(label_widget)
         label_widget.style().polish(label_widget)
@@ -1263,22 +1319,26 @@ class PersonelEklePage(QWidget):
                     if hasattr(self, 'btn_yeni_personel') and self.btn_yeni_personel:
                         self.btn_yeni_personel.setVisible(True)
 
-                    # Belge panelini aç ve saglik kaydına bağla
-                    if hasattr(self, '_dokuman_panel') and self._dokuman_panel:
-                        self._dokuman_panel.set_entity_id(data["KimlikNo"])
-                        if saglik_kayit_no:
-                            self._dokuman_panel.set_related_record(
-                                iliskili_id  = saglik_kayit_no,
-                                iliskili_tip = "Personel_Saglik_Takip",
-                            )
-                            # Varsayılan belge türünü İşe Giriş Muayenesi yap
-                            self._dokuman_panel.set_default_belge_turu("İşe Giriş Muayenesi")
+                    # Belgeler sekmesini aç ve paneli yapılandır
+                    self._activate_belge_tab(data["KimlikNo"])
+                    if saglik_kayit_no and self._dokuman_panel:
+                        self._dokuman_panel.set_related_record(
+                            iliskili_id  = saglik_kayit_no,
+                            iliskili_tip = "Personel_Saglik_Takip",
+                        )
+                        self._dokuman_panel.set_default_belge_turu("İşe Giriş Muayenesi")
+
+                    # Belgeler sekmesine geç
+                    self._tabs.setCurrentIndex(1)
 
                     MesajKutusu.bilgi(
                         self,
-                        "Artık belge yükleyebilirsiniz.\n\nİşlemler bittiğinde:\n- 'YENİ PERSONEL' → Başka personel ekleyin\n- 'İptal' → Listeye dönün",
+                        "Personel kaydedildi. Belgeler sekmesinden evrak yükleyebilirsiniz.\n\n"
+                        "İşlemler bittiğinde:\n- 'YENİ PERSONEL' → Başka personel ekleyin\n- 'İptal' → Listeye dönün",
                         "Bilgi"
                     )
+                    # Evet dalında da butonu aç — kullanıcı eksik bilgiyi güncelleyebilsin
+                    self.btn_kaydet.setEnabled(True)
                 else:
                     # Hayır dedi, normal akış devam etsin
                     if self._on_saved:
@@ -1336,9 +1396,16 @@ class PersonelEklePage(QWidget):
             self._drive_links = {}
             self._file_paths = {}
 
-            # Belge panelini temizle
+            # Belge panelini temizle ve sekmeyi kilitle
             if hasattr(self, '_dokuman_panel') and self._dokuman_panel:
                 self._dokuman_panel.set_entity_id("")
+            if hasattr(self, '_tabs'):
+                self._tabs.setTabEnabled(1, False)
+                self._tabs.setCurrentIndex(0)
+            if hasattr(self, '_lbl_belge_lock'):
+                self._lbl_belge_lock.setVisible(True)
+            if hasattr(self, '_dokuman_panel_container'):
+                self._dokuman_panel_container.setVisible(False)
 
             logger.info("Form yeni personel için temizlendi")
             MesajKutusu.bilgi(

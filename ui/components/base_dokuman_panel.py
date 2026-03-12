@@ -205,7 +205,7 @@ class BaseDokumanPanel(QWidget):
         
         # Dosya Seç Butonu
         btn_sec = QPushButton("Dosya Seç")
-        btn_sec.setProperty("style-role", "action")
+        btn_sec.setProperty("style-role", "elevated")
         btn_sec.setMinimumHeight(30)
         btn_sec.setMaximumWidth(120)
         btn_sec.clicked.connect(self._browse)
@@ -222,7 +222,7 @@ class BaseDokumanPanel(QWidget):
         r2.addWidget(self._inp_aciklama, 2)
         
         self._btn_yukle = QPushButton("Belgeyi Yükle")
-        self._btn_yukle.setProperty("style-role", "success-filled")
+        self._btn_yukle.setProperty("style-role", "elevated")
         self._btn_yukle.setMinimumHeight(30)
         self._btn_yukle.setMaximumWidth(140)
         self._btn_yukle.clicked.connect(self._upload)
@@ -482,14 +482,14 @@ class BaseDokumanPanel(QWidget):
     @staticmethod
     def _lbl(text, bold=False, color=None, size=11, w=None):
         lbl = QLabel(text)
-        style = f"font-size:{size}px;"
-        if bold:
-            style += "font-weight:700;"
-        if color:
-            style += f"color:{color};"
-        else:
-            style += f"color:{_TEXT_SEC};"
         if w:
-            style += f"min-width:{w}px;"
-        lbl.setStyleSheet(style)
+            lbl.setMinimumWidth(w)
+        font = lbl.font()
+        font.setBold(bold)
+        font.setPointSize(size)
+        lbl.setFont(font)
+        if color:
+            lbl.setProperty("color-role", "accent")
+        else:
+            lbl.setProperty("color-role", "secondary")
         return lbl
