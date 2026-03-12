@@ -706,20 +706,16 @@ QPushButton[style-role="elevated"] {
     border-radius: 6px;
     padding: 5px 16px;
     font-weight: 600;
-    box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
-    transition: background 0.2s, border 0.2s, color 0.2s;
 }
 QPushButton[style-role="elevated"]:hover {
     background-color: {BG_SECONDARY};
     color: {ACCENT};
     border-color: {ACCENT};
-    box-shadow: 0 4px 16px 0 rgba(0,180,216,0.10);
 }
 QPushButton[style-role="elevated"]:disabled {
     background-color: {BG_ELEVATED};
     color: {TEXT_MUTED};
     border-color: {BORDER_PRIMARY};
-    box-shadow: none;
 }
 
 /* Turuncu / uyarı butonu (kaydet=güncelle modu vb.) */
