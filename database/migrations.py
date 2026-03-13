@@ -30,7 +30,57 @@ class MigrationManager:
     """
 
     # Mevcut Şema versiyonu
-    CURRENT_VERSION = 2
+    CURRENT_VERSION = 4
+
+    def _migrate_to_v4(self):
+        """
+        v3 -> v4: Dis_Alan_Hbys_Referans tablosu ekleniyor.
+        """
+        conn = self.connect()
+        cur = conn.cursor()
+        try:
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS Dis_Alan_Hbys_Referans (
+                HbysReferansKodu   TEXT PRIMARY KEY,
+                HbysReferansAdi    TEXT,
+                Aciklama           TEXT,
+                Aktif              INTEGER NOT NULL DEFAULT 1 CHECK (Aktif IN (0,1)),
+                KayitTarihi        TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
+                KaydedenKullanici  TEXT
+            )
+            """)
+            conn.commit()
+            logger.info("v4: Dis_Alan_Hbys_Referans tablosu eklendi")
+        finally:
+            conn.close()
+    def _migrate_to_v3(self):
+        """
+        v2 -> v3: Dis_Alan_Katsayi_Protokol tablosu ekleniyor.
+        """
+        conn = self.connect()
+        cur = conn.cursor()
+        try:
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS Dis_Alan_Katsayi_Protokol (
+                AnaBilimDali           TEXT    NOT NULL,
+                Birim                  TEXT    NOT NULL,
+                GecerlilikBaslangic    TEXT    NOT NULL,
+                Katsayi                REAL    NOT NULL,
+                OrtSureDk              INTEGER,
+                AlanTipAciklama        TEXT,
+                AciklamaFormul         TEXT,
+                ProtokolRef            TEXT,
+                GecerlilikBitis        TEXT,
+                Aktif                  INTEGER NOT NULL DEFAULT 1 CHECK (Aktif IN (0,1)),
+                KayitTarihi            TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
+                KaydedenKullanici      TEXT,
+                PRIMARY KEY (AnaBilimDali, Birim, GecerlilikBaslangic)
+            )
+            """)
+            conn.commit()
+            logger.info("v3: Dis_Alan_Katsayi_Protokol tablosu eklendi")
+        finally:
+            conn.close()
 
     def __init__(self, db_path):
         self.db_path = db_path
@@ -509,6 +559,18 @@ class MigrationManager:
         )
         """)
 
+        # == Dis_Alan_Hbys_Referans ===========================================
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Dis_Alan_Hbys_Referans (
+            HbysReferansKodu   TEXT PRIMARY KEY,
+            HbysReferansAdi    TEXT,
+            Aciklama           TEXT,
+            Aktif              INTEGER NOT NULL DEFAULT 1 CHECK (Aktif IN (0,1)),
+            KayitTarihi        TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
+            KaydedenKullanici  TEXT
+        )
+        """)
+
         # == RKE MUAYENE =======================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS RKE_Muayene (
@@ -619,6 +681,25 @@ class MigrationManager:
         )
         """)
  
+
+        # == DIS ALAN KATSAYI PROTOKOL ======================================
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Dis_Alan_Katsayi_Protokol (
+            AnaBilimDali           TEXT    NOT NULL,
+            Birim                  TEXT    NOT NULL,
+            GecerlilikBaslangic    TEXT    NOT NULL,
+            Katsayi                REAL    NOT NULL,
+            OrtSureDk              INTEGER,
+            AlanTipAciklama        TEXT,
+            AciklamaFormul         TEXT,
+            ProtokolRef            TEXT,
+            GecerlilikBitis        TEXT,
+            Aktif                  INTEGER NOT NULL DEFAULT 1 CHECK (Aktif IN (0,1)),
+            KayitTarihi            TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
+            KaydedenKullanici      TEXT,
+            PRIMARY KEY (AnaBilimDali, Birim, GecerlilikBaslangic)
+        )
+        """)
 # create_tables() içine şu iki satırı ekleyin:
 #   cur.execute(CREATE_DIS_ALAN_CALISMA)
 #   cur.execute(CREATE_DIS_ALAN_IZIN_OZET)

@@ -27,9 +27,10 @@ KOLONLAR = [
     ("Küm. Saat", 90),
     ("İzin Gün", 80),
     ("Tutanak No", 120),
+    ("Uyarı", 60),
 ]
 
-C_TC, C_AD, C_ANA, C_ALAN, C_VAKA, C_KATSAYI, C_SAAT, C_KUM, C_IZIN, C_TUTANAK = range(10)
+C_TC, C_AD, C_ANA, C_ALAN, C_VAKA, C_KATSAYI, C_SAAT, C_KUM, C_IZIN, C_TUTANAK, C_UYARI = range(11)
 
 class DisAlanPuantajRaporPage(QWidget):
     def __init__(self, db=None, parent=None):
@@ -251,11 +252,38 @@ class DisAlanPuantajRaporPage(QWidget):
             if _to_int(r.get("DonemAy", 0)) == ay and _to_int(r.get("DonemYil", 0)) == yil
         ]
 
+        # Denetim motoru ile uyarı ekle
+        try:
+            from core.di import get_dis_alan_denetim_service
+            denetim_service = get_dis_alan_denetim_service(self._db) if self._db else None
+        except Exception:
+            denetim_service = None
+
         for r in rows:
             key = _person_key(r)
             kum = round(kum_map.get(key, 0.0), 2)
             r["_kumulatif_saat"] = kum
             r["_izin_gun_hakki"] = _izin_gunu_hesapla(kum)
+            # Denetim sonucu ekle
+            if denetim_service:
+                try:
+                    # Denetim motoru import_sonucu bekliyor, satır dict'i ile minimal mock
+                    class Satir:
+                        def __init__(self, d):
+                            self.veri = d
+                            self.durum = ""
+                            self.hatalar = []
+                            self.uyarilar = []
+                    import types
+                    import_sonucu = types.SimpleNamespace()
+                    import_sonucu.satirlar = [Satir(r)]
+                    sonuc_list = denetim_service.denetle(import_sonucu)
+                    # DenetimSonucu dataclass'ı dict'e çevir
+                    r["_denetim_uyari"] = [s.__dict__ for s in sonuc_list] if sonuc_list else []
+                except Exception as e:
+                    r["_denetim_uyari"] = []
+            else:
+                r["_denetim_uyari"] = []
         self._fill_table(rows)
 
     def _fill_table(self, rows):
@@ -272,6 +300,30 @@ class DisAlanPuantajRaporPage(QWidget):
             self.tablo.setItem(i, C_KUM, QTableWidgetItem(str(r.get("_kumulatif_saat", ""))))
             self.tablo.setItem(i, C_IZIN, QTableWidgetItem(str(r.get("_izin_gun_hakki", ""))))
             self.tablo.setItem(i, C_TUTANAK, QTableWidgetItem(str(r.get("TutanakNo", ""))))
+
+            # Uyarı kolonu: denetim sonucu
+            uyarilar = r.get("_denetim_uyari", [])
+            if not isinstance(uyarilar, list):
+                uyarilar = [uyarilar] if uyarilar else []
+            # Öncelik: BLOKE > INCELE > DIKKAT
+            ikon = ""
+            renk = None
+            if any(u.get("seviye") == "BLOKE" for u in uyarilar):
+                ikon = "⛔"
+                renk = Qt.GlobalColor.red
+            elif any(u.get("seviye") == "INCELE" for u in uyarilar):
+                ikon = "🔴"
+                renk = Qt.GlobalColor.darkRed
+            elif any(u.get("seviye") == "DIKKAT" for u in uyarilar):
+                ikon = "🟡"
+                renk = Qt.GlobalColor.darkYellow
+            elif any(u.get("seviye") == "BILGI" for u in uyarilar):
+                ikon = "ℹ️"
+                renk = Qt.GlobalColor.blue
+            item = QTableWidgetItem(ikon)
+            if renk:
+                item.setForeground(renk)
+            self.tablo.setItem(i, C_UYARI, item)
         self.lbl_ozet.setText(f"Toplam kayıt: {len(rows)}")
 
     # Not: Henüz veri yükleme veya servis bağlantısı yok, sadece arayüz.

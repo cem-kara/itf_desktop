@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QTabWidget
-from .dis_alan_katsayi_page import DisAlanKatsayiPage
+from .fhsz.dis_alan_katsayi_page import DisAlanKatsayiPage
 
 class DisAlanMerkezPage(QWidget):
     def __init__(self, db=None, parent=None):

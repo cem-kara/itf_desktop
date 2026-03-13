@@ -25,14 +25,6 @@ from typing import Optional
 
 from core.logger import logger
 
-KATSAYI_TABLOSU: dict[str, float] = {
-    "Anjio (Koroner/Vasküler)":     0.35,
-    "Ameliyathane (C-Kollu Skopi)": 0.15,
-    "ERCP (Gastroenteroloji)":      0.50,
-    "ESWL (Taş Kırma)":            0.75,
-    "Üroloji (Skopi Destekli)":    0.20,
-    "Diğer (Manuel Giriş)":        1.00,
-}
 
 KOLON_HARITA = {
     "TC Kimlik No":     "TCKimlik",
@@ -69,6 +61,7 @@ class SatirSonucu:
         return "TAMAM"
 
 
+
 @dataclass
 class ImportSonucu:
     dosya: str
@@ -88,6 +81,7 @@ class ImportSonucu:
     conflict_report_text: str = ""
     conflict_report_path: str = ""
     conflict_report_pdf_path: str = ""
+    denetim_sonuclari: list = field(default_factory=list)  # Denetim motoru sonuçları
 
     @property
     def basarili(self) -> bool:
@@ -119,12 +113,17 @@ def _parse_int(deger) -> Optional[int]:
 #  Servis
 # ─────────────────────────────────────────────────────────────
 
-class DisAlanImportService:
 
-    def __init__(self, registry=None, arsiv_dizin: Optional[str] = None):
+from core.di import get_dis_alan_katsayi_service, get_dis_alan_hbys_referans_service
+
+class DisAlanImportService:
+    def __init__(self, registry=None, arsiv_dizin: Optional[str] = None, katsayi_service=None, denetim_service=None):
         self._r          = registry
-        # Excel dosyaları bu dizine kopyalanır (ör: DATA_DIR / "dis_alan_tutanaklar")
         self._arsiv_dizin = Path(arsiv_dizin) if arsiv_dizin else None
+        self._katsayi_service = katsayi_service or (get_dis_alan_katsayi_service(registry) if registry else None)
+        self._referans_service = get_dis_alan_hbys_referans_service(registry) if registry else None
+        # Denetim servisi DI ile alınabilir, yoksa None
+        self._denetim_service = denetim_service
 
     # ── 1. Excel Okuma ───────────────────────────────────────
 
@@ -252,8 +251,7 @@ class DisAlanImportService:
                     f"AdSoyad={veri.get('AdSoyad', '')} | "
                     f"Alan={veri.get('IslemTipi', '')} | "
                     f"Vaka={veri.get('VakaSayisi', '')} | "
-                    f"Katsayi={veri.get('Katsayi', '')} | "
-                    f"Saat={veri.get('HesaplananSaat', '')}"
+                    f"Katsayi={veri.get('HesaplananSaat', '')}"
                 )
 
             for i, c in enumerate(conflict_items, 1):
@@ -270,10 +268,11 @@ class DisAlanImportService:
 
             report_text = "\n".join(lines).strip() + "\n"
             sonuc.conflict_report_text = report_text
+
+            report_dir = Path("logs")
+            report_name = f"dis_alan_import_hata_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
             try:
-                report_dir = Path("logs")
                 report_dir.mkdir(parents=True, exist_ok=True)
-                report_name = f"dis_alan_import_hata_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
                 report_path = report_dir / report_name
                 report_path.write_text(report_text, encoding="utf-8")
                 sonuc.conflict_report_path = str(report_path)
@@ -364,6 +363,12 @@ class DisAlanImportService:
             f"Hatalı:{sonuc.hatali} "
             f"Uyarılı:{sonuc.uyarili}"
         )
+        # Denetim motoru entegrasyonu (Aşama 5.1)
+        if self._denetim_service:
+            try:
+                sonuc.denetim_sonuclari = self._denetim_service.denetle(sonuc)
+            except Exception as e:
+                logger.error(f"Denetim motoru çalıştırılamadı: {e}")
         return sonuc
 
     def _kolon_haritasi_bul(self, ws, baslik_satiri: int) -> dict[str, int]:
@@ -394,7 +399,7 @@ class DisAlanImportService:
         veri = {
             "DonemAy":      donem_ay,
             "DonemYil":     donem_yil,
-            "AnaBilimDali": anabilim_dali,   # Tablo sütun adınızla eşleşmeli
+            "AnaBilimDali": anabilim_dali,
             "Birim":        birim,
         }
 
@@ -415,11 +420,15 @@ class DisAlanImportService:
         alan = str(row_vals.get("IslemTipi") or "").strip()
         if not alan:
             hatalar.append("Çalışılan Alan boş")
-        elif alan not in KATSAYI_TABLOSU:
-            hatalar.append(f"Tanımsız alan: '{alan}'")
         else:
             veri["IslemTipi"] = alan
-            veri["Katsayi"]   = KATSAYI_TABLOSU[alan]
+            katsayi_kayit = None
+            if self._katsayi_service:
+                katsayi_kayit = self._katsayi_service.get_aktif_katsayi(anabilim_dali, birim)
+            if katsayi_kayit:
+                veri["Katsayi"] = katsayi_kayit.get("Katsayi")
+            else:
+                hatalar.append("Bu birim için aktif katsayı protokolü yok")
 
         # Vaka Sayısı — zorunlu
         vaka = _parse_int(row_vals.get("VakaSayisi"))
@@ -434,10 +443,24 @@ class DisAlanImportService:
 
         # Hesaplanan Saat
         if "VakaSayisi" in veri and "Katsayi" in veri:
-            veri["HesaplananSaat"] = round(veri["VakaSayisi"] * veri["Katsayi"], 2)
+            vaka = veri["VakaSayisi"]
+            katsayi = veri["Katsayi"]
+            if vaka is not None and katsayi is not None:
+                veri["HesaplananSaat"] = round(vaka * katsayi, 2)
 
         # TutanakNo ve TutanakTarihi → kaydet() aşamasında doldurulur
-        # (DokumanId henüz üretilmedi)
+
+        # HBYS Referans Kodu — opsiyonel ama varsa doğrula
+        referans_kodu = str(row_vals.get("HbysReferansKodu") or "").strip()
+        if referans_kodu:
+            if not self._referans_service:
+                hatalar.append("Referans servisi tanımsız")
+            else:
+                kayit = self._referans_service.get_referans_listesi()
+                kodlar = {r.get("HbysReferansKodu") for r in kayit}
+                if referans_kodu not in kodlar:
+                    hatalar.append(f"HBYS Referans Kodu bulunamadı: {referans_kodu}")
+            veri["HbysReferansKodu"] = referans_kodu
 
         return SatirSonucu(
             satir_no=row_idx,
@@ -446,6 +469,10 @@ class DisAlanImportService:
             uyarilar=uyarilar,
             gecerli=len(hatalar) == 0,
         )
+    def get_birim_listesi(self):
+        if not self._katsayi_service:
+            return []
+        return self._katsayi_service.get_birim_listesi()
 
     # ── 3. Kaydetme ──────────────────────────────────────────
 
@@ -464,6 +491,14 @@ class DisAlanImportService:
              tüm satırlara yaz
           3. Dis_Alan_Calisma tablosuna satırları ekle
         """
+
+        # BLOKE denetim sonucu varsa kaydetme
+        if hasattr(sonuc, "denetim_sonuclari"):
+            for d in sonuc.denetim_sonuclari:
+                if getattr(d, "seviye", "") == "BLOKE":
+                    logger.error("BLOKE seviyesinde denetim sonucu bulundu, kayıt engellendi.")
+                    raise RuntimeError("BLOKE seviyesinde denetim sonucu bulundu, kayıt engellendi.")
+
         if not self._r:
             raise RuntimeError("RepositoryRegistry bağlı değil")
 
@@ -536,7 +571,7 @@ class DisAlanImportService:
         kaydeden: Optional[str],
     ) -> str:
         """
-        Excel dosyasını Dokumanlar tablosuna kaydeder.
+        Excel dosyasını Dokumanlar tablosına kaydeder.
         Dosyayı arşiv dizinine kopyalar (varsa).
         Üretilen DokumanId'yi döndürür.
         """

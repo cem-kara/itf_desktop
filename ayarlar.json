@@ -29,6 +29,23 @@
         "implemented": true
       }
     ],
+    "FHSZ": [
+      {
+        "baslik": "Katsayı Protokolleri",
+        "implemented": true,
+        "icon": "settings"
+      },
+      {
+        "baslik": "HBYS Referans Import",
+        "implemented": true,
+        "icon": "upload"
+      },
+      {
+        "baslik": "Dış Alan HBYS Referansları",
+        "implemented": true,
+        "icon": "list"
+      }
+    ],
     "CİHAZ": [
       {
         "baslik": "Cihaz Listesi",

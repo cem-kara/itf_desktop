@@ -50,16 +50,17 @@ class DisAlanService:
 
     def get_dis_alan_personeli(self) -> list[dict]:
         """
-        Dış alan kapsamındaki personeli döndürür.
-        Kapsam: HizmetSinifi != 'Radyasyon Görevlisi' ve Durum != 'pasif'
+        Dis_Alan_Calisma tablosundan benzersiz kişi (TCKimlik, AdSoyad) listesi döndürür.
         """
         try:
-            rows = self._r.get("Personel").get_all() or []
-            return [
-                r for r in rows
-                if str(r.get("HizmetSinifi", "")).strip() != "Radyasyon Görevlisi"
-                and str(r.get("Durum", "")).strip().lower() != "pasif"
-            ]
+            rows = self._r.get("Dis_Alan_Calisma").get_all() or []
+            unique = {}
+            for r in rows:
+                tc = str(r.get("TCKimlik", "")).strip()
+                ad = str(r.get("AdSoyad", "")).strip()
+                if tc and tc not in unique:
+                    unique[tc] = {"TCKimlik": tc, "AdSoyad": ad}
+            return list(unique.values())
         except Exception as e:
             logger.error(f"Dış alan personel listesi hatası: {e}")
             return []
@@ -70,7 +71,7 @@ class DisAlanService:
 
     def get_calisma_listesi(
         self,
-        personel_kimlik: Optional[str] = None,
+        tckimlik: Optional[str] = None,
         donem_ay: Optional[int] = None,
         donem_yil: Optional[int] = None,
     ) -> list[dict]:
@@ -78,8 +79,8 @@ class DisAlanService:
         try:
             rows = self._r.get("Dis_Alan_Calisma").get_all() or []
 
-            if personel_kimlik is not None:
-                rows = [r for r in rows if str(r.get("PersonelKimlik", "")) == str(personel_kimlik)]
+            if tckimlik is not None:
+                rows = [r for r in rows if str(r.get("TCKimlik", "")) == str(tckimlik)]
             if donem_ay is not None:
                 rows = [r for r in rows if str(r.get("DonemAy", "")) == str(donem_ay)]
             if donem_yil is not None:
@@ -93,13 +94,13 @@ class DisAlanService:
     def calisma_kaydet(self, veri: dict) -> bool:
         """
         Yeni tutanak kaydı ekler.
-        PK: (PersonelKimlik, DonemAy, DonemYil, TutanakNo)
+        PK: (TCKimlik, DonemAy, DonemYil, TutanakNo)
         Aynı tutanak numarası aynı dönemde tekrar girilirse hata döner.
         """
         try:
             repo = self._r.get("Dis_Alan_Calisma")
             pk = (
-                str(veri.get("PersonelKimlik", "")),
+                str(veri.get("TCKimlik", "")),
                 str(veri.get("DonemAy", "")),
                 str(veri.get("DonemYil", "")),
                 str(veri.get("TutanakNo", "")),
@@ -111,7 +112,7 @@ class DisAlanService:
             repo.insert(veri)
             logger.info(
                 f"Dış alan kaydı eklendi | "
-                f"{veri.get('PersonelAd')} | "
+                f"{veri.get('AdSoyad')} | "
                 f"{veri.get('DonemAy')}/{veri.get('DonemYil')} | "
                 f"{veri.get('IslemTipi')} | "
                 f"{veri.get('HesaplananSaat'):.2f} saat"
@@ -202,8 +203,8 @@ class DisAlanService:
 
     def ozet_hesapla_ve_kaydet(
         self,
-        personel_kimlik: str,
-        personel_ad: str,
+        tckimlik: str,
+        ad_soyad: str,
         donem_ay: int,
         donem_yil: int,
         kaydeden: Optional[str] = None,
@@ -221,31 +222,31 @@ class DisAlanService:
 
         try:
             repo_ozet = self._r.get("Dis_Alan_Izin_Ozet")
-            pk = (str(personel_kimlik), str(donem_ay), str(donem_yil))
+            pk = (str(tckimlik), str(donem_ay), str(donem_yil))
             mevcut = repo_ozet.get_by_pk(pk)
 
             if mevcut and int(mevcut.get("RksOnay", 0)) == 1:
                 logger.warning(
                     f"Onaylanmış dönem yeniden hesaplanamaz: "
-                    f"{personel_kimlik} {donem_ay}/{donem_yil}"
+                    f"{tckimlik} {donem_ay}/{donem_yil}"
                 )
                 return None
 
-            toplam_saat = self.aylik_toplam_saat(personel_kimlik, donem_ay, donem_yil)
+            toplam_saat = self.aylik_toplam_saat(tckimlik, donem_ay, donem_yil)
 
             # Yıllık kümülatif: önceki aylar + bu ay
             onceki_toplam = 0.0
             for ay in range(1, donem_ay):
-                onceki_toplam += self.aylik_toplam_saat(personel_kimlik, ay, donem_yil)
+                onceki_toplam += self.aylik_toplam_saat(tckimlik, ay, donem_yil)
             yillik_kumülatif = onceki_toplam + toplam_saat
 
             izin_gun = _izin_gunu_hesapla(yillik_kumülatif)
 
             ozet = {
-                "PersonelKimlik":   str(personel_kimlik),
-                "PersonelAd":       personel_ad,
-                "DonemAy":          donem_ay,
-                "DonemYil":         donem_yil,
+                "TCKimlik":   str(tckimlik),
+                "AdSoyad":    ad_soyad,
+                "DonemAy":    donem_ay,
+                "DonemYil":   donem_yil,
                 "ToplamSaat":       toplam_saat,
                 "IzinGunHakki":     izin_gun,
                 "HesaplamaTarihi":  datetime.now().strftime("%Y-%m-%d"),

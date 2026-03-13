@@ -69,12 +69,13 @@ class _OkuyucuWorker(QObject):
 
 
 class DisAlanImportPage(QWidget):
-    def __init__(self, db=None, parent=None):
+    def __init__(self, db=None, parent=None, katsayi_service=None):
         super().__init__(parent)
         self.setStyleSheet(S["page"])
         self._db     = db
         self._sonuc  = None   # Son okunan ImportSonucu
         self._thread = None
+        self._katsayi_service = katsayi_service
 
         self._setup_ui()
         self._connect_signals()
@@ -222,10 +223,12 @@ class DisAlanImportPage(QWidget):
         self.tablo.setRowCount(0)
         self.lbl_ozet.setText("")
 
-        from core.di import get_registry
+        from core.di import get_registry, get_dis_alan_katsayi_service
         from core.services.dis_alan_import_service import DisAlanImportService
 
-        svc = DisAlanImportService(get_registry(self._db) if self._db else None)
+        registry = get_registry(self._db) if self._db else None
+        katsayi_service = self._katsayi_service or (get_dis_alan_katsayi_service(self._db) if self._db else None)
+        svc = DisAlanImportService(registry, katsayi_service=katsayi_service)
 
         ay  = self.cmb_ay.currentIndex() + 1
         yil = int(self.cmb_yil.currentText())
@@ -406,11 +409,13 @@ class DisAlanImportPage(QWidget):
             if cevap != QMessageBox.StandardButton.Yes:
                 return
 
-        from core.di import get_registry
+        from core.di import get_registry, get_dis_alan_katsayi_service
         from core.services.dis_alan_import_service import DisAlanImportService
         from core.auth.session_context import SessionContext
 
-        svc = DisAlanImportService(get_registry(self._db))
+        registry = get_registry(self._db) if self._db else None
+        katsayi_service = self._katsayi_service or (get_dis_alan_katsayi_service(self._db) if self._db else None)
+        svc = DisAlanImportService(registry, katsayi_service=katsayi_service)
 
         try:
             ctx = SessionContext()

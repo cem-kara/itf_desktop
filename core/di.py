@@ -1,3 +1,9 @@
+def get_dis_alan_hbys_service(db):
+    from core.services.dis_alan_hbys_service import DisAlanHbysService
+    return DisAlanHbysService(get_registry(db))
+def get_dis_alan_denetim_service(db):
+    from core.services.dis_alan_denetim_service import DisAlanDenetimService
+    return DisAlanDenetimService(get_registry(db))
 from database.repository_registry import RepositoryRegistry
 from database.cloud_adapter import get_cloud_adapter as _get_cloud_adapter
 
@@ -20,11 +26,14 @@ def get_dis_alan_service(db):
 def get_dis_alan_import_service(db):
     from core.services.dis_alan_import_service import DisAlanImportService
     from core.paths import DATA_DIR
+    from core.di import get_dis_alan_denetim_service
     import os
     arsiv = os.path.join(DATA_DIR, "dis_alan_tutanaklar")
+    denetim_service = get_dis_alan_denetim_service(db)
     return DisAlanImportService(
         registry=get_registry(db),
         arsiv_dizin=arsiv,
+        denetim_service=denetim_service,
     )
 
 def get_cihaz_service(db):
@@ -58,6 +67,11 @@ def get_izin_service(db):
 def get_ariza_service(db):
     from core.services.ariza_service import ArizaService
     return ArizaService(get_registry(db))
+
+
+def get_dis_alan_katsayi_service(db):
+    from core.services.dis_alan_katsayi_service import DisAlanKatsayiService
+    return DisAlanKatsayiService(get_registry(db))
 
 def get_bakim_service(db):
     from core.services.bakim_service import BakimService
@@ -131,3 +145,8 @@ def get_auth_services(db):
     auth_service = AuthService(db=db, hasher=hasher, session=session_context)
     authorization_service = AuthorizationService(db)
     return auth_service, authorization_service, session_context
+
+
+def get_dis_alan_hbys_referans_service(db):
+    from core.services.dis_alan_hbys_referans_service import DisAlanHbysReferansService
+    return DisAlanHbysReferansService(get_registry(db))

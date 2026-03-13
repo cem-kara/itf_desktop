@@ -264,6 +264,45 @@ TABLES = {
         ],
         "date_fields": ["OlusturmaTarihi"],
         "sync": False
+    },
+
+
+    "Dis_Alan_Katsayi_Protokol": {
+        "pk": ["AnaBilimDali", "Birim", "GecerlilikBaslangic"],
+        "columns": [
+            "AnaBilimDali",           # TEXT, PK
+            "Birim",                  # TEXT, PK
+            "GecerlilikBaslangic",    # TEXT, PK
+            "Katsayi",                # REAL
+            "OrtSureDk",              # INTEGER
+            "AlanTipAciklama",        # TEXT
+            "AciklamaFormul",         # TEXT
+            "ProtokolRef",            # TEXT
+            "GecerlilikBitis",        # TEXT, NULL olabilir
+            "Aktif",                  # INTEGER, 1/0
+            "KayitTarihi",            # TEXT, otomatik
+            "KaydedenKullanici"       # TEXT
+        ],
+        "date_fields": ["GecerlilikBaslangic", "GecerlilikBitis", "KayitTarihi"],
+        "sync":False
+    },
+
+    "Dis_Alan_Hbys_Referans": {
+        "pk": ["AnaBilimDali", "Birim", "DonemAy", "DonemYil"],
+        "columns": [
+            "AnaBilimDali",      # TEXT, PK
+            "Birim",             # TEXT, PK
+            "DonemAy",           # INTEGER, PK
+            "DonemYil",          # INTEGER, PK
+            "ToplamVaka",        # INTEGER
+            "OrtIslemSureDk",    # REAL
+            "PersonelSayisi",    # INTEGER
+            "CKolluOrani",       # REAL
+            "ImportTarihi",      # TEXT
+            "KaynakDosya"        # TEXT
+        ],
+        "date_fields": ["ImportTarihi"],
+        "sync": False
     }
 
 }

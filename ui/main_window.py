@@ -1,3 +1,4 @@
+
 from datetime import datetime
 
 from PySide6.QtWidgets import (
@@ -273,6 +274,7 @@ class MainWindow(QMainWindow):
                 fn()
             return page
         
+
         if baslik == "Cihaz Ekle":
             from ui.pages.cihaz.cihaz_ekle import CihazEklePage
             page = CihazEklePage(
@@ -281,6 +283,10 @@ class MainWindow(QMainWindow):
                 action_guard=self._action_guard
             )
             return page
+
+        if baslik == "HBYS Referans Import":
+            from ui.pages.fhsz.dis_alan_hbys_import_page import DisAlanHbysImportPage
+            return DisAlanHbysImportPage(db=self._db)
 
         if baslik == "Cihaz Listesi":
             from ui.pages.cihaz.cihaz_listesi import CihazListesiPage
@@ -335,6 +341,11 @@ class MainWindow(QMainWindow):
         if baslik == "Ayarlar":
             from ui.admin.settings_page import SettingsPage
             page = SettingsPage(db=self._db)
+            return page
+        
+        if baslik == "Dış Alan HBYS Referansları":
+            from ui.pages.fhsz.dis_alan_hbys_referans_page import DisAlanHbysReferansPage
+            page = DisAlanHbysReferansPage(db=self._db)
             return page
         
         return PlaceholderPage(
