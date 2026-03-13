@@ -30,7 +30,7 @@ class MigrationManager:
     """
 
     # Mevcut Şema versiyonu
-    CURRENT_VERSION = 1
+    CURRENT_VERSION = 2
 
     def __init__(self, db_path):
         self.db_path = db_path
@@ -584,6 +584,44 @@ class MigrationManager:
             updated_at         TEXT
         )
         """)
+        
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Dis_Alan_Calisma (
+            TCKimlik            TEXT    NOT NULL DEFAULT '',
+            AdSoyad             TEXT    NOT NULL,
+            DonemAy             INTEGER NOT NULL CHECK (DonemAy BETWEEN 1 AND 12),
+            DonemYil            INTEGER NOT NULL CHECK (DonemYil > 2000),
+            AnaBilimDali        TEXT    NOT NULL,
+            IslemTipi           TEXT    NOT NULL,
+            Katsayi             REAL    NOT NULL,
+            VakaSayisi          INTEGER NOT NULL CHECK (VakaSayisi > 0),
+            HesaplananSaat      REAL    NOT NULL,
+            TutanakNo           TEXT    NOT NULL,
+            TutanakTarihi       TEXT    NOT NULL,
+            KayitTarihi         TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
+            KaydedenKullanici   TEXT,
+            PRIMARY KEY (TCKimlik, DonemAy, DonemYil, TutanakNo)
+        )
+        """)
+
+        cur.execute ("""
+            CREATE TABLE IF NOT EXISTS Dis_Alan_Izin_Ozet (
+            TCKimlik            TEXT    NOT NULL DEFAULT '',
+            AdSoyad             TEXT    NOT NULL,
+            DonemAy             INTEGER NOT NULL CHECK (DonemAy BETWEEN 1 AND 12),
+            DonemYil            INTEGER NOT NULL CHECK (DonemYil > 2000),
+            ToplamSaat          REAL    NOT NULL DEFAULT 0.0,
+            IzinGunHakki        REAL    NOT NULL DEFAULT 0.0,
+            HesaplamaTarihi     TEXT,
+            RksOnay             INTEGER NOT NULL DEFAULT 0 CHECK (RksOnay IN (0,1)),
+            Notlar              TEXT,
+        PRIMARY KEY (TCKimlik, AdSoyad, DonemAy, DonemYil)
+        )
+        """)
+ 
+# create_tables() içine şu iki satırı ekleyin:
+#   cur.execute(CREATE_DIS_ALAN_CALISMA)
+#   cur.execute(CREATE_DIS_ALAN_IZIN_OZET)
 
         # Auth/RBAC tabloları
         self._create_auth_tables(cur)
@@ -982,7 +1020,7 @@ class MigrationManager:
             "Cihaz_Ariza", "Ariza_Islem", "Periyodik_Bakim", "Kalibrasyon",
             "Sabitler", "Tatiller", "Loglar",
             "RKE_List", "RKE_Muayene", "Personel_Saglik_Takip",
-            "Dokumanlar",
+            "Dokumanlar","Dis_Alan_Calisma","Dis_Alan_Izin_Ozet",
             "Users", "Roles", "Permissions", "UserRoles", "RolePermissions", "AuthAudit",
             "schema_version",
         ]
@@ -1010,5 +1048,59 @@ class MigrationManager:
         conn.close()
 
         logger.info(f"✓ Tüm tablolar yeniden oluŞturuldu (v{self.CURRENT_VERSION})")
+    
+    def _migrate_to_v2(self):
+        """
+        v1 → v2: Dış alan (anjio, ERCP, ESWL vb.) radyasyon çalışma
+             kayıt tabloları eklendi.
+ 
+        Yeni tablolar:
+            - Dis_Alan_Calisma  : Tutanak bazlı çalışma bildirimleri
+            - Dis_Alan_Izin_Ozet: Aylık toplam saat ve izin günü özeti
+        """
+        conn = self.connect()
+        cur = conn.cursor()
+        try:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS Dis_Alan_Calisma (
+                    PersonelKimlik      TEXT    NOT NULL,
+                    PersonelAd          TEXT    NOT NULL,
+                    DonemAy             INTEGER NOT NULL CHECK (DonemAy BETWEEN 1 AND 12),
+                    DonemYil            INTEGER NOT NULL CHECK (DonemYil > 2000),
+                    IslemTipi           TEXT    NOT NULL,
+                    Katsayi             REAL    NOT NULL,
+                    VakaSayisi          INTEGER NOT NULL CHECK (VakaSayisi > 0),
+                    HesaplananSaat      REAL    NOT NULL,
+                    TutanakNo           TEXT    NOT NULL,
+                    TutanakTarihi       TEXT    NOT NULL,
+                    KayitTarihi         TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
+                    KaydedenKullanici   TEXT,
+                    PRIMARY KEY (PersonelKimlik, DonemAy, DonemYil, TutanakNo)
+                )
+            """)
+            logger.info("  ✓ Dis_Alan_Calisma tablosu oluşturuldu")
 
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS Dis_Alan_Izin_Ozet (
+                    PersonelKimlik      TEXT    NOT NULL,
+                    PersonelAd          TEXT    NOT NULL,
+                    DonemAy             INTEGER NOT NULL CHECK (DonemAy BETWEEN 1 AND 12),
+                    DonemYil            INTEGER NOT NULL CHECK (DonemYil > 2000),
+                    ToplamSaat          REAL    NOT NULL DEFAULT 0.0,
+                    IzinGunHakki        REAL    NOT NULL DEFAULT 0.0,
+                    HesaplamaTarihi     TEXT,
+                    RksOnay             INTEGER NOT NULL DEFAULT 0 CHECK (RksOnay IN (0, 1)),
+                    Notlar              TEXT,
+                    PRIMARY KEY (PersonelKimlik, DonemAy, DonemYil)
+                )
+            """)
+            logger.info("  ✓ Dis_Alan_Izin_Ozet tablosu oluşturuldu")
+
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"v2 migration hatası: {e}")
+            raise
+        finally:
+            conn.close()
 

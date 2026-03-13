@@ -23,6 +23,10 @@
       {
         "baslik": "İzin Takip ve FHSZ Yönetim",
         "implemented": true
+      },
+      {
+        "baslik": "Dış Personel FHSZ Yönetim",
+        "implemented": true
       }
     ],
     "CİHAZ": [

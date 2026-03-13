@@ -12,6 +12,20 @@ from core.auth.session_context import SessionContext
 #   from core.di import get_cihaz_service
 #   svc = get_cihaz_service(self._db)
 # ────────────────────────────────────────────────────────────────
+def get_dis_alan_service(db):
+    from core.services.dis_alan_service import DisAlanService
+    return DisAlanService(get_registry(db))
+ 
+ 
+def get_dis_alan_import_service(db):
+    from core.services.dis_alan_import_service import DisAlanImportService
+    from core.paths import DATA_DIR
+    import os
+    arsiv = os.path.join(DATA_DIR, "dis_alan_tutanaklar")
+    return DisAlanImportService(
+        registry=get_registry(db),
+        arsiv_dizin=arsiv,
+    )
 
 def get_cihaz_service(db):
     from core.services.cihaz_service import CihazService

@@ -209,9 +209,50 @@ TABLES = {
             "DermatolojiMuayeneTarihi", "DahiliyeMuayeneTarihi",
             "GozMuayeneTarihi", "GoruntulemeMuayeneTarihi"
         ],
-    }
+    },
+    
+"Dis_Alan_Calisma": {
+    # Personel tablosundan BAĞIMSIZ — dış alan personeli sisteme kayıtlı değil.
+    # PK: TCKimlik + DonemAy + DonemYil + TutanakNo
+    # TCKimlik boş gelebilir (opsiyonel), o zaman AdSoyad + TutanakNo benzersizlik sağlar.
+    "pk": ["TCKimlik", "DonemAy", "DonemYil", "TutanakNo"],
+    "columns": [
+        "TCKimlik",          # Opsiyonel — 11 haneli TC (TEXT)
+        "AdSoyad",           # Zorunlu
+        "DonemAy",           # 1–12
+        "DonemYil",          # 2024, 2025 …
+        "AnaBilimDali",      # Zorunlu"
+        "IslemTipi",         # KATSAYI_TABLOSU anahtarı
+        "Katsayi",           # Kayıt anındaki katsayı (REAL)
+        "VakaSayisi",        # INTEGER > 0
+        "HesaplananSaat",    # VakaSayisi * Katsayi (REAL)
+        "TutanakNo",         # Zorunlu
+        "TutanakTarihi",     # Import tarihi (YYYY-MM-DD)
+        "KayitTarihi",       # Otomatik
+        "KaydedenKullanici",
+    ],
+    "date_fields": ["TutanakTarihi", "KayitTarihi"],
+    "sync": False,
+},
+ 
+"Dis_Alan_Izin_Ozet": {
+    "pk": ["TCKimlik", "AdSoyad", "DonemAy", "DonemYil"],
+    "columns": [
+        "TCKimlik",
+        "AdSoyad",
+        "DonemAy",
+        "DonemYil",
+        "ToplamSaat",
+        "IzinGunHakki",
+        "HesaplamaTarihi",
+        "RksOnay",
+        "Notlar",
+    ],
+    "date_fields": ["HesaplamaTarihi"],
+    "sync": False,
+},
 
-    ,"Dozimetre_Olcum": {
+    "Dozimetre_Olcum": {
         "pk": "KayitNo",
         "columns": [
             "KayitNo", "SiraNo", "RaporNo",
