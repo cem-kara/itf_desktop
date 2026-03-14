@@ -222,10 +222,13 @@ TABLES = {
         "DonemAy",           # 1–12
         "DonemYil",          # 2024, 2025 …
         "AnaBilimDali",      # Zorunlu"
-        "IslemTipi",         # KATSAYI_TABLOSU anahtarı
+        "Birim",             # Zorunlu
+        "IslemTipi",         # Alan adı
         "Katsayi",           # Kayıt anındaki katsayı (REAL)
+        "OrtSureDk",         # Ortalama işlem süresi dk
         "VakaSayisi",        # INTEGER > 0
         "HesaplananSaat",    # VakaSayisi * Katsayi (REAL)
+        "ToplamSureDk",      # VakaSayisi * OrtSureDk
         "TutanakNo",         # Zorunlu
         "TutanakTarihi",     # Import tarihi (YYYY-MM-DD)
         "KayitTarihi",       # Otomatik
@@ -287,22 +290,6 @@ TABLES = {
         "sync":False
     },
 
-    "Dis_Alan_Hbys_Referans": {
-        "pk": ["AnaBilimDali", "Birim", "DonemAy", "DonemYil"],
-        "columns": [
-            "AnaBilimDali",      # TEXT, PK
-            "Birim",             # TEXT, PK
-            "DonemAy",           # INTEGER, PK
-            "DonemYil",          # INTEGER, PK
-            "ToplamVaka",        # INTEGER
-            "OrtIslemSureDk",    # REAL
-            "PersonelSayisi",    # INTEGER
-            "CKolluOrani",       # REAL
-            "ImportTarihi",      # TEXT
-            "KaynakDosya"        # TEXT
-        ],
-        "date_fields": ["ImportTarihi"],
-        "sync": False
-    }
 
 }
+

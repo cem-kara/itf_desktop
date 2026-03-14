@@ -9,87 +9,19 @@ from core.logger import logger
 class MigrationManager:
     """
     Versiyon tabanlı migration yöneticisi.
-
-    Özellikler:
-    - Otomatik Şema versiyonlama
-    - Güvenli migration adımları
-    - Otomatik yedekleme
-    - Rollback desteği
-    - Veri kaybı olmadan Şema güncellemeleri
-
-    Squash Geçmişi:
-    - v1:v18 arası tüm migration'lar tek temiz kurulum adımına squash edildi.
-    - Sıfırdan kurulumda v1 tüm tabloları doğrudan son şemalarıyla oluşturur.
-    - Mevcut (eski) veritabanları: current_version >= CURRENT_VERSION ise
-      güncel sayılır, hiçbir migration çalışmaz.
-
-    Yeni migration eklerken:
-    - CURRENT_VERSION değerini 1 artır (örn. 2)
-    - _migrate_to_v2() metodunu yaz
-    - create_tables() içindeki ilgili CREATE TABLE'ı da güncelle
+    v1: Tüm tablolar (temiz kurulum)
     """
 
-    # Mevcut Şema versiyonu
-    CURRENT_VERSION = 4
-
-    def _migrate_to_v4(self):
-        """
-        v3 -> v4: Dis_Alan_Hbys_Referans tablosu ekleniyor.
-        """
-        conn = self.connect()
-        cur = conn.cursor()
-        try:
-            cur.execute("""
-            CREATE TABLE IF NOT EXISTS Dis_Alan_Hbys_Referans (
-                HbysReferansKodu   TEXT PRIMARY KEY,
-                HbysReferansAdi    TEXT,
-                Aciklama           TEXT,
-                Aktif              INTEGER NOT NULL DEFAULT 1 CHECK (Aktif IN (0,1)),
-                KayitTarihi        TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
-                KaydedenKullanici  TEXT
-            )
-            """)
-            conn.commit()
-            logger.info("v4: Dis_Alan_Hbys_Referans tablosu eklendi")
-        finally:
-            conn.close()
-    def _migrate_to_v3(self):
-        """
-        v2 -> v3: Dis_Alan_Katsayi_Protokol tablosu ekleniyor.
-        """
-        conn = self.connect()
-        cur = conn.cursor()
-        try:
-            cur.execute("""
-            CREATE TABLE IF NOT EXISTS Dis_Alan_Katsayi_Protokol (
-                AnaBilimDali           TEXT    NOT NULL,
-                Birim                  TEXT    NOT NULL,
-                GecerlilikBaslangic    TEXT    NOT NULL,
-                Katsayi                REAL    NOT NULL,
-                OrtSureDk              INTEGER,
-                AlanTipAciklama        TEXT,
-                AciklamaFormul         TEXT,
-                ProtokolRef            TEXT,
-                GecerlilikBitis        TEXT,
-                Aktif                  INTEGER NOT NULL DEFAULT 1 CHECK (Aktif IN (0,1)),
-                KayitTarihi            TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
-                KaydedenKullanici      TEXT,
-                PRIMARY KEY (AnaBilimDali, Birim, GecerlilikBaslangic)
-            )
-            """)
-            conn.commit()
-            logger.info("v3: Dis_Alan_Katsayi_Protokol tablosu eklendi")
-        finally:
-            conn.close()
+    CURRENT_VERSION = 2
 
     def __init__(self, db_path):
         self.db_path = db_path
         self.backup_dir = Path(db_path).parent / "backups"
         self.backup_dir.mkdir(exist_ok=True)
 
-    # ================================================
-    # BAĞLANTI & VERSİYON
-    # ================================================
+    # ════════════════════════════════════════════════════════
+    #  BAĞLANTI & VERSİYON
+    # ════════════════════════════════════════════════════════
 
     def connect(self):
         conn = sqlite3.connect(self.db_path, timeout=30)
@@ -97,16 +29,13 @@ class MigrationManager:
         return conn
 
     def get_schema_version(self):
-        """Mevcut Şema versiyonunu döndürür."""
         conn = self.connect()
         cur = conn.cursor()
-
         try:
             cur.execute("""
                 SELECT name FROM sqlite_master
                 WHERE type='table' AND name='schema_version'
             """)
-
             if not cur.fetchone():
                 cur.execute("""
                     CREATE TABLE schema_version (
@@ -117,152 +46,135 @@ class MigrationManager:
                 """)
                 conn.commit()
                 return 0
-
             cur.execute("SELECT MAX(version) FROM schema_version")
             result = cur.fetchone()
             return result[0] if result[0] is not None else 0
-
         finally:
             conn.close()
 
     def set_schema_version(self, version, description=""):
-        """Şema versiyonunu günceller."""
         conn = self.connect()
         cur = conn.cursor()
-
         try:
             cur.execute("""
                 INSERT INTO schema_version (version, applied_at, description)
                 VALUES (?, ?, ?)
             """, (version, datetime.now().isoformat(), description))
             conn.commit()
-            logger.info(f"Şema versiyonu {version} olarak güncellendi: {description}")
-
+            logger.info(f"Sema versiyonu {version}: {description}")
         finally:
             conn.close()
 
-    # ================================================
-    # YEDEKLEME
-    # ================================================
+    # ════════════════════════════════════════════════════════
+    #  YEDEKLEME
+    # ════════════════════════════════════════════════════════
 
     def backup_database(self):
-        """Veritabanını yedekler."""
         if not Path(self.db_path).exists():
-            logger.info("Yedeklenecek veritabanı bulunamadı")
             return None
-
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_path = self.backup_dir / f"db_backup_{timestamp}.db"
-
         try:
             shutil.copy2(self.db_path, backup_path)
-            logger.info(f"Veritabanı yedeklendi: {backup_path}")
+            logger.info(f"Yedek: {backup_path}")
             self._cleanup_old_backups()
             return backup_path
-
         except Exception as e:
-            logger.error(f"Yedekleme hatası: {e}")
+            logger.error(f"Yedekleme hatasi: {e}")
             return None
 
     def _cleanup_old_backups(self, keep_count=10):
-        """Eski yedekleri temizler."""
         backups = sorted(self.backup_dir.glob("db_backup_*.db"))
+        for old in backups[:-keep_count]:
+            try:
+                old.unlink()
+            except Exception:
+                pass
 
-        if len(backups) > keep_count:
-            for old_backup in backups[:-keep_count]:
-                try:
-                    old_backup.unlink()
-                    logger.info(f"Eski yedek silindi: {old_backup.name}")
-                except Exception as e:
-                    logger.warning(f"Yedek silinemedi {old_backup.name}: {e}")
-
-    # ================================================
-    # MİGRATION Ã‡ALIŞTIRICI
-    # ================================================
+    # ════════════════════════════════════════════════════════
+    #  MIGRATION CALISTIRICI
+    # ════════════════════════════════════════════════════════
 
     def run_migrations(self):
-        """
-        Tüm bekleyen migration'ları çalıŞtırır.
-        Veri kaybı olmadan Şemayı günceller.
-        """
-        current_version = self.get_schema_version()
-
-        if current_version == self.CURRENT_VERSION:
-            logger.info(f"Şema güncel (v{current_version})")
-            return True
-
-        if current_version > self.CURRENT_VERSION:
-            # Squash sonrası eski veritabanları daha yüksek versiyonda olabilir.
-            # Bu durumu "güncel" kabul et — veri kaybı riski yok.
-            logger.info(
-                f"Şema versiyonu ({current_version}) > kod versiyonu ({self.CURRENT_VERSION}) "
-                "— squash öncesi kurulum, güncel sayılıyor."
-            )
+        current = self.get_schema_version()
+        if current >= self.CURRENT_VERSION:
+            logger.info(f"Sema guncel (v{current})")
             return True
 
         backup_path = self.backup_database()
-        if not backup_path:
-            logger.warning("Yedekleme yapılamadı ama migration devam ediyor")
-
-        logger.info(f"Migration baŞlıyor: v{current_version} â†’ v{self.CURRENT_VERSION}")
+        logger.info(f"Migration: v{current} to v{self.CURRENT_VERSION}")
 
         try:
-            for version in range(current_version + 1, self.CURRENT_VERSION + 1):
-                migration_method = getattr(self, f"_migrate_to_v{version}", None)
-
-                if migration_method:
-                    logger.info(f"Migration v{version} uygulanıyor...")
-                    migration_method()
+            for version in range(current + 1, self.CURRENT_VERSION + 1):
+                method = getattr(self, f"_migrate_to_v{version}", None)
+                if method:
+                    logger.info(f"  v{version} uygulanıyor...")
+                    method()
                 else:
-                    # Tanımlı metod yok â†’ no-op; yine de versiyona kayıt yapılır.
-                    logger.info(f"Migration v{version} â€” no-op, atlanıyor")
-
+                    logger.info(f"  v{version} no-op")
                 self.set_schema_version(version, f"Migrated to v{version}")
-
-            logger.info("✓ Tüm migration'lar baŞarıyla tamamlandı")
+            logger.info("Tum migrationlar tamamlandi")
             return True
-
         except Exception as e:
-            logger.error(f"Migration hatası: {e}")
-            logger.error(f"Yedekten geri yükleme yapabilirsiniz: {backup_path}")
+            logger.error(f"Migration hatasi: {e} | Yedek: {backup_path}")
             raise
 
-    # ================================================
-    # MIGRATION METODLARI
-    # ================================================
+    # ════════════════════════════════════════════════════════
+    #  MIGRATION METODLARI
+    # ════════════════════════════════════════════════════════
 
-    def _migrate_to_v1(self):
+    def _migrate_to_v2(self):
         """
-        v0 -> v1: TEK VE TAMAMLANMIS KURULUM — tüm tabloları güncel
-                  şemalarıyla oluşturur, başlangıç ve auth verilerini ekler.
-
-        Squash: v1-v18 arası tüm migration\'lar bu tek adıma indirgendi (Mart 2026).
-        Yeni migration gerekirse _migrate_to_v2() ekle, CURRENT_VERSION=2 yap.
+        v2: Dis_Alan_Calisma tablosuna eksik kolonlar eklendi.
+        Birim, OrtSureDk, ToplamSureDk — table_config ile senkronize.
+        ALTER TABLE IF NOT EXISTS kullanılamaz, önce kolon var mı kontrol edilir.
         """
         conn = self.connect()
-        cur = conn.cursor()
+        cur  = conn.cursor()
+        try:
+            cur.execute("PRAGMA table_info(Dis_Alan_Calisma)")
+            mevcut = {row[1] for row in cur.fetchall()}
 
+            eklenecekler = [
+                ("Birim",       "TEXT    NOT NULL DEFAULT ''"),
+                ("OrtSureDk",   "INTEGER"),
+                ("ToplamSureDk","REAL"),
+            ]
+            for kolon, tip in eklenecekler:
+                if kolon not in mevcut:
+                    cur.execute(
+                        f"ALTER TABLE Dis_Alan_Calisma ADD COLUMN {kolon} {tip}"
+                    )
+                    logger.info(f"v2: Dis_Alan_Calisma.{kolon} eklendi")
+                else:
+                    logger.info(f"v2: Dis_Alan_Calisma.{kolon} zaten var")
+
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"v2 migration hatasi: {e}")
+            raise
+        finally:
+            conn.close()
+
+    def _migrate_to_v1(self):
+        """v1: Tum tablolar - temiz kurulum."""
+        conn = self.connect()
+        cur = conn.cursor()
         try:
             self.create_tables(cur)
             self._seed_initial_data(cur)
             self._seed_auth_data(cur)
             conn.commit()
-            logger.info("v1: Tüm tablolar oluŞturuldu ve baŞlangıç verileri eklendi")
-
+            logger.info("v1: Tum tablolar olusturuldu")
         finally:
             conn.close()
 
-    # ================================================
-    # TABLO OLUŞTURMA (İLK KURULUM / RESET)
-    # ================================================
+    # ════════════════════════════════════════════════════════
+    #  TABLO OLUSTURMA
+    # ════════════════════════════════════════════════════════
 
     def create_tables(self, cur):
-        """
-        Tüm tabloları v14 (güncel) Şemasıyla oluŞturur.
-        Yalnızca _migrate_to_v1 ve reset_database tarafından çağrılır.
-        """
-
-        # == PERSONEL ==========================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Personel (
             KimlikNo                    TEXT PRIMARY KEY,
@@ -293,13 +205,11 @@ class MigrationManager:
             AyrilmaNedeni               TEXT,
             MuayeneTarihi               TEXT,
             Sonuc                       TEXT,
-
             sync_status                 TEXT DEFAULT 'clean',
             updated_at                  TEXT
         )
         """)
 
-        # == IZIN GIRIS ========================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Izin_Giris (
             Izinid          TEXT PRIMARY KEY,
@@ -311,13 +221,11 @@ class MigrationManager:
             Gun             INTEGER,
             BitisTarihi     TEXT,
             Durum           TEXT,
-
             sync_status     TEXT DEFAULT 'clean',
             updated_at      TEXT
         )
         """)
 
-        # == IZIN BILGI ========================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Izin_Bilgi (
             TCKimlik                TEXT PRIMARY KEY,
@@ -332,13 +240,11 @@ class MigrationManager:
             SuaKalan                REAL,
             SuaCariYilKazanim       REAL,
             RaporMazeretTop         REAL,
-
             sync_status             TEXT DEFAULT 'clean',
             updated_at              TEXT
         )
         """)
 
-        # == FHSZ PUANTAJ =====================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS FHSZ_Puantaj (
             Personelid          TEXT NOT NULL,
@@ -350,15 +256,12 @@ class MigrationManager:
             AylikGun            INTEGER,
             KullanilanIzin      INTEGER,
             FiiliCalismaSaat    REAL,
-
             sync_status         TEXT DEFAULT 'clean',
             updated_at          TEXT,
-
             PRIMARY KEY (Personelid, AitYil, Donem)
         )
         """)
 
-        # == CIHAZLAR ==========================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Cihazlar (
             Cihazid                 TEXT PRIMARY KEY,
@@ -388,15 +291,11 @@ class MigrationManager:
             Durum                   TEXT,
             Img                     TEXT,
             NDKLisansBelgesi        TEXT,
-
             sync_status             TEXT DEFAULT 'clean',
             updated_at              TEXT
         )
         """)
 
-        # == CIHAZ TEKNIK, CIHAZ TEKNIK BELGE, CIHAZ BELGELER tabloları kaldırıldı ==
-
-        # == ORTAK DOKÜMANLAR (Tüm modüller) ==================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Dokumanlar (
             EntityType          TEXT NOT NULL,
@@ -412,15 +311,12 @@ class MigrationManager:
             DrivePath           TEXT,
             IliskiliBelgeID     TEXT,
             IliskiliBelgeTipi   TEXT,
-
             sync_status         TEXT DEFAULT 'clean',
             updated_at          TEXT,
-
             PRIMARY KEY (EntityType, EntityId, BelgeTuru, Belge)
         )
         """)
 
-        # == CIHAZ ARIZA =======================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Cihaz_Ariza (
             Arizaid         TEXT PRIMARY KEY,
@@ -434,13 +330,11 @@ class MigrationManager:
             ArizaAcikla     TEXT,
             Durum           TEXT,
             Rapor           TEXT,
-
             sync_status     TEXT DEFAULT 'clean',
             updated_at      TEXT
         )
         """)
 
-        # == ARIZA ISLEM =======================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Ariza_Islem (
             Islemid         TEXT PRIMARY KEY,
@@ -452,13 +346,11 @@ class MigrationManager:
             YapilanIslem    TEXT,
             YeniDurum       TEXT,
             Rapor           TEXT,
-
             sync_status     TEXT DEFAULT 'clean',
             updated_at      TEXT
         )
         """)
 
-        # == PERIYODIK BAKIM ===================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Periyodik_Bakim (
             Planid              TEXT PRIMARY KEY,
@@ -475,13 +367,11 @@ class MigrationManager:
             Teknisyen           TEXT,
             Rapor               TEXT,
             SozlesmeId          TEXT,
-
             sync_status         TEXT DEFAULT 'clean',
             updated_at          TEXT
         )
         """)
 
-        # == KALIBRASYON =======================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Kalibrasyon (
             Kalid           TEXT PRIMARY KEY,
@@ -494,37 +384,31 @@ class MigrationManager:
             Durum           TEXT,
             Dosya           TEXT,
             Aciklama        TEXT,
-
             sync_status     TEXT DEFAULT 'clean',
             updated_at      TEXT
         )
         """)
 
-        # == SABITLER ==========================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Sabitler (
             Rowid       INTEGER PRIMARY KEY,
             Kod         TEXT,
             MenuEleman  TEXT,
             Aciklama    TEXT,
-
             sync_status TEXT DEFAULT 'clean',
             updated_at  TEXT
         )
         """)
 
-        # == TATILLER ==========================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Tatiller (
             Tarih       TEXT PRIMARY KEY,
             ResmiTatil  TEXT,
-
             sync_status TEXT DEFAULT 'clean',
             updated_at  TEXT
         )
         """)
 
-        # == LOGLAR ============================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Loglar (
             Tarih       TEXT,
@@ -536,42 +420,27 @@ class MigrationManager:
         )
         """)
 
-        # == RKE LIST ==========================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS RKE_List (
-            EkipmanNo       TEXT PRIMARY KEY,
+            EkipmanNo        TEXT PRIMARY KEY,
             KoruyucuNumarasi TEXT,
-            AnaBilimDali    TEXT,
-            Birim           TEXT,
-            KoruyucuCinsi   TEXT,
-            KursunEsdegeri  TEXT,
-            HizmetYili      INTEGER,
-            Bedeni          TEXT,
-            KontrolTarihi   TEXT,
-            Durum           TEXT,
-            Aciklama        TEXT,
-            VarsaDemirbasNo TEXT,
-            KayitTarih      TEXT,
-            Barkod          TEXT,
-
-            sync_status     TEXT DEFAULT 'clean',
-            updated_at      TEXT
+            AnaBilimDali     TEXT,
+            Birim            TEXT,
+            KoruyucuCinsi    TEXT,
+            KursunEsdegeri   TEXT,
+            HizmetYili       INTEGER,
+            Bedeni           TEXT,
+            KontrolTarihi    TEXT,
+            Durum            TEXT,
+            Aciklama         TEXT,
+            VarsaDemirbasNo  TEXT,
+            KayitTarih       TEXT,
+            Barkod           TEXT,
+            sync_status      TEXT DEFAULT 'clean',
+            updated_at       TEXT
         )
         """)
 
-        # == Dis_Alan_Hbys_Referans ===========================================
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Dis_Alan_Hbys_Referans (
-            HbysReferansKodu   TEXT PRIMARY KEY,
-            HbysReferansAdi    TEXT,
-            Aciklama           TEXT,
-            Aktif              INTEGER NOT NULL DEFAULT 1 CHECK (Aktif IN (0,1)),
-            KayitTarihi        TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
-            KaydedenKullanici  TEXT
-        )
-        """)
-
-        # == RKE MUAYENE =======================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS RKE_Muayene (
             KayitNo                 TEXT PRIMARY KEY,
@@ -585,13 +454,11 @@ class MigrationManager:
             BirimSorumlusuUnvani    TEXT,
             Notlar                  TEXT,
             Rapor                   TEXT,
-
             sync_status             TEXT DEFAULT 'clean',
             updated_at              TEXT
         )
         """)
 
-        # == PERSONEL SAGLIK TAKIP =============================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Personel_Saglik_Takip (
             KayitNo                     TEXT PRIMARY KEY,
@@ -613,13 +480,11 @@ class MigrationManager:
             GozDurum                    TEXT,
             GoruntulemeMuayeneTarihi    TEXT,
             GoruntulemeDurum            TEXT,
-
             sync_status                 TEXT DEFAULT 'clean',
             updated_at                  TEXT
         )
         """)
 
-        # == DOZIMETRE ÖLÇÜM ==================================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Dozimetre_Olcum (
             KayitNo            TEXT PRIMARY KEY,
@@ -641,19 +506,19 @@ class MigrationManager:
             DozSiniri_Hp007    REAL,
             Durum              TEXT,
             OlusturmaTarihi    TEXT DEFAULT (date('now')),
-
             sync_status        TEXT DEFAULT 'clean',
             updated_at         TEXT
         )
         """)
-        
+
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Dis_Alan_Calisma (
             TCKimlik            TEXT    NOT NULL DEFAULT '',
             AdSoyad             TEXT    NOT NULL,
             DonemAy             INTEGER NOT NULL CHECK (DonemAy BETWEEN 1 AND 12),
             DonemYil            INTEGER NOT NULL CHECK (DonemYil > 2000),
-            AnaBilimDali        TEXT    NOT NULL,
+            AnaBilimDali        TEXT    NOT NULL DEFAULT '',
+            Birim               TEXT    NOT NULL DEFAULT '',
             IslemTipi           TEXT    NOT NULL,
             Katsayi             REAL    NOT NULL,
             VakaSayisi          INTEGER NOT NULL CHECK (VakaSayisi > 0),
@@ -666,8 +531,8 @@ class MigrationManager:
         )
         """)
 
-        cur.execute ("""
-            CREATE TABLE IF NOT EXISTS Dis_Alan_Izin_Ozet (
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Dis_Alan_Izin_Ozet (
             TCKimlik            TEXT    NOT NULL DEFAULT '',
             AdSoyad             TEXT    NOT NULL,
             DonemAy             INTEGER NOT NULL CHECK (DonemAy BETWEEN 1 AND 12),
@@ -677,12 +542,10 @@ class MigrationManager:
             HesaplamaTarihi     TEXT,
             RksOnay             INTEGER NOT NULL DEFAULT 0 CHECK (RksOnay IN (0,1)),
             Notlar              TEXT,
-        PRIMARY KEY (TCKimlik, AdSoyad, DonemAy, DonemYil)
+            PRIMARY KEY (TCKimlik, AdSoyad, DonemAy, DonemYil)
         )
         """)
- 
 
-        # == DIS ALAN KATSAYI PROTOKOL ======================================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Dis_Alan_Katsayi_Protokol (
             AnaBilimDali           TEXT    NOT NULL,
@@ -700,265 +563,173 @@ class MigrationManager:
             PRIMARY KEY (AnaBilimDali, Birim, GecerlilikBaslangic)
         )
         """)
-# create_tables() içine şu iki satırı ekleyin:
-#   cur.execute(CREATE_DIS_ALAN_CALISMA)
-#   cur.execute(CREATE_DIS_ALAN_IZIN_OZET)
 
-        # Auth/RBAC tabloları
         self._create_auth_tables(cur)
 
     def _create_auth_tables(self, cur):
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Users (
-            UserId          INTEGER PRIMARY KEY AUTOINCREMENT,
-            Username        TEXT UNIQUE NOT NULL,
-            PasswordHash    TEXT NOT NULL,
-            IsActive        INTEGER NOT NULL DEFAULT 1,
+            UserId             INTEGER PRIMARY KEY AUTOINCREMENT,
+            Username           TEXT UNIQUE NOT NULL,
+            PasswordHash       TEXT NOT NULL,
+            IsActive           INTEGER NOT NULL DEFAULT 1,
             MustChangePassword INTEGER NOT NULL DEFAULT 0,
-            CreatedAt       TEXT NOT NULL,
-            LastLoginAt     TEXT
+            CreatedAt          TEXT NOT NULL,
+            LastLoginAt        TEXT
         )
         """)
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Roles (
-            RoleId      INTEGER PRIMARY KEY AUTOINCREMENT,
-            RoleName    TEXT UNIQUE NOT NULL
+            RoleId   INTEGER PRIMARY KEY AUTOINCREMENT,
+            RoleName TEXT UNIQUE NOT NULL
         )
         """)
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Permissions (
-            PermissionId    INTEGER PRIMARY KEY AUTOINCREMENT,
-            PermissionKey   TEXT UNIQUE NOT NULL,
-            Description     TEXT
+            PermissionId  INTEGER PRIMARY KEY AUTOINCREMENT,
+            PermissionKey TEXT UNIQUE NOT NULL,
+            Description   TEXT
         )
         """)
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS UserRoles (
-            UserId  INTEGER NOT NULL,
-            RoleId  INTEGER NOT NULL,
+            UserId INTEGER NOT NULL,
+            RoleId INTEGER NOT NULL,
             PRIMARY KEY (UserId, RoleId)
         )
         """)
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS RolePermissions (
-            RoleId          INTEGER NOT NULL,
-            PermissionId    INTEGER NOT NULL,
+            RoleId       INTEGER NOT NULL,
+            PermissionId INTEGER NOT NULL,
             PRIMARY KEY (RoleId, PermissionId)
         )
         """)
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS AuthAudit (
-            AuditId     INTEGER PRIMARY KEY AUTOINCREMENT,
-            Username    TEXT,
-            Success     INTEGER NOT NULL,
-            Reason      TEXT,
-            CreatedAt   TEXT NOT NULL
+            AuditId   INTEGER PRIMARY KEY AUTOINCREMENT,
+            Username  TEXT,
+            Success   INTEGER NOT NULL,
+            Reason    TEXT,
+            CreatedAt TEXT NOT NULL
         )
         """)
 
-    def _seed_auth_data(self, cur):
-        permissions = [
-            ("personel.read", "Personel okuma"),
-            ("personel.write", "Personel yazma"),
-            ("cihaz.read", "Cihaz okuma"),
-            ("cihaz.write", "Cihaz yazma"),
-            ("admin.panel", "Admin panel eriŞimi"),
-            ("admin.logs.view", "Log görüntüleme"),
-            ("admin.backup", "Yedek yönetimi"),
-            ("admin.settings", "Ayarlar yönetimi"),
-        ]
-
-        for key, desc in permissions:
-            cur.execute("SELECT COUNT(*) FROM Permissions WHERE PermissionKey = ?", (key,))
-            if cur.fetchone()[0] == 0:
-                cur.execute(
-                    "INSERT INTO Permissions (PermissionKey, Description) VALUES (?, ?)",
-                    (key, desc)
-                )
-
-        roles = ["admin", "operator", "viewer"]
-        for role in roles:
-            cur.execute("SELECT COUNT(*) FROM Roles WHERE RoleName = ?", (role,))
-            if cur.fetchone()[0] == 0:
-                cur.execute("INSERT INTO Roles (RoleName) VALUES (?)", (role,))
-
-        cur.execute("SELECT RoleId, RoleName FROM Roles")
-        role_map = {row["RoleName"]: row["RoleId"] for row in cur.fetchall()}
-
-        cur.execute("SELECT PermissionId, PermissionKey FROM Permissions")
-        perm_map = {row["PermissionKey"]: row["PermissionId"] for row in cur.fetchall()}
-
-        admin_id = role_map.get("admin")
-        if admin_id:
-            for perm_id in perm_map.values():
-                cur.execute("""
-                    SELECT COUNT(*) FROM RolePermissions
-                    WHERE RoleId = ? AND PermissionId = ?
-                """, (admin_id, perm_id))
-                if cur.fetchone()[0] == 0:
-                    cur.execute(
-                        "INSERT INTO RolePermissions (RoleId, PermissionId) VALUES (?, ?)",
-                        (admin_id, perm_id)
-                    )
-
-        operator_id = role_map.get("operator")
-        if operator_id:
-            for key in ("personel.read", "personel.write", "cihaz.read", "cihaz.write"):
-                perm_id = perm_map.get(key)
-                if not perm_id:
-                    continue
-                cur.execute("""
-                    SELECT COUNT(*) FROM RolePermissions
-                    WHERE RoleId = ? AND PermissionId = ?
-                """, (operator_id, perm_id))
-                if cur.fetchone()[0] == 0:
-                    cur.execute(
-                        "INSERT INTO RolePermissions (RoleId, PermissionId) VALUES (?, ?)",
-                        (operator_id, perm_id)
-                    )
-
-        viewer_id = role_map.get("viewer")
-        if viewer_id:
-            for key in ("personel.read", "cihaz.read"):
-                perm_id = perm_map.get(key)
-                if not perm_id:
-                    continue
-                cur.execute("""
-                    SELECT COUNT(*) FROM RolePermissions
-                    WHERE RoleId = ? AND PermissionId = ?
-                """, (viewer_id, perm_id))
-                if cur.fetchone()[0] == 0:
-                    cur.execute(
-                        "INSERT INTO RolePermissions (RoleId, PermissionId) VALUES (?, ?)",
-                        (viewer_id, perm_id)
-                    )
+    # ════════════════════════════════════════════════════════
+    #  SEED VERILERI
+    # ════════════════════════════════════════════════════════
 
     def _seed_initial_data(self, cur):
-        """
-        Sabitler tablosuna başlangıç / sistem verilerini ekler.
-        Tatiller tablosuna tatil tarihlerini ekler.
-        Yalnızca yeni kurulumda çağrılır; mevcut kayıtların üzerine yazmaz.
-        """
-        # === SİSTEM SABİTLERİ ===
-        # Sabitler.csv baz alınarak seed listesi
         sistem_sabitler = [
-            ("1", "İzin_Tipi", "Aylıksız İzin - Askerlik Nedeniyle", ""),
-            ("2", "İzin_Tipi", "Aylıksız İzin - Doğum Nedeniyle", ""),
-            ("3", "İzin_Tipi", "Doğum İzni (Eşinin)", "10"),
-            ("4", "İzin_Tipi", "Doğum Öncesi İzin", "42"),
-            ("5", "İzin_Tipi", "Doğum Sonrası İzin", "42"),
-            ("6", "İzin_Tipi", "Evlenme-Ölüm İzni", ""),
-            ("7", "İzin_Tipi", "Evlilik İzni", ""),
-            ("8", "İzin_Tipi", "Heyet Raporu", ""),
-            ("9", "İzin_Tipi", "İdari İzin", ""),
-            ("11", "İzin_Tipi", "Kongre izni: 3 aya kadar", ""),
-            ("12", "İzin_Tipi", "Mazeret", ""),
-            ("13", "İzin_Tipi", "Rapor İzni", ""),
-            ("14", "İzin_Tipi", "Refakatçı İzni", ""),
-            ("15", "İzin_Tipi", "Şua İzni", "30"),
-            ("16", "İzin_Tipi", "Tedavi İzni (Yatış Ve Ayaktan)", ""),
-            ("17", "İzin_Tipi", "Yıllık İzin", "30"),
-            ("18", "Amac", "Defibrilator", ""),
-            ("19", "Amac", "EKG Cihazı", ""),
-            ("20", "Amac", "Grafi", ""),
-            ("21", "Amac", "Kaset Okuyucu", ""),
-            ("22", "Amac", "Manyetik Rezonans", ""),
-            ("23", "Amac", "Skopi", ""),
-            ("24", "Amac", "Skopi (Ercp)", ""),
-            ("25", "Amac", "Skopi (Eswl)", ""),
-            ("26", "Amac", "Ultrasonografi", ""),
-            ("27", "AnaBilimDali", "Beyin ve Sinir Cerrahisi ABD", "NRŞ"),
-            ("32", "AnaBilimDali", "Göğüs Hastalıkları ABD", "GHA"),
-            ("33", "AnaBilimDali", "İç Hastalıkları ABD", "DHL"),
-            ("34", "AnaBilimDali", "Kalp ve Damar Cerrahisi ABD", "KDC"),
-            ("35", "AnaBilimDali", "Kardiyoloji ABD", "KRD"),
-            ("38", "AnaBilimDali", "Ortopedi ve Travmatoloji ABD", "ORT"),
-            ("39", "AnaBilimDali", "Radyoloji ABD", "RAD"),
-            ("40", "AnaBilimDali", "Üroloji ABD", "URO"),
-            ("41", "Ariza_Durum", "İşlemde", ""),
-            ("42", "Ariza_Durum", "Parça Bekliyor", ""),
-            ("43", "Ariza_Durum", "Dış Serviste", ""),
-            ("44", "Ariza_Durum", "Kapalı (Çözüldü)", ""),
-            ("45", "Ariza_Durum", "Kapalı (İptal)", ""),
-            ("46", "Ariza_Islem_Turu", "Arıza Tespiti / İnceleme", ""),
-            ("47", "Ariza_Islem_Turu", "Onarım / Tamirat", ""),
-            ("48", "Ariza_Islem_Turu", "Parça Değişimi", ""),
-            ("49", "Ariza_Islem_Turu", "Yazılım Güncelleme", ""),
-            ("50", "Ariza_Islem_Turu", "Kalibrasyon", ""),
-            ("51", "Ariza_Islem_Turu", "Dış Servis Gönderimi", ""),
-            ("52", "Ariza_Islem_Turu", "Kapatma / Sonlandırma", ""),
-            ("53", "Bedeni", "L", ""),
-            ("54", "Bedeni", "M", ""),
-            ("55", "Bedeni", "Pediatrik", ""),
-            ("56", "Bedeni", "S", ""),
-            ("57", "Bedeni", "STN", ""),
-            ("58", "Bedeni", "XL", ""),
-            ("59", "Bedeni", "XS", ""),
-            ("60", "Bedeni", "Yetişkin", ""),
-            ("61", "Birim", "Acil Radyoloji", "ARAD"),
-            ("63", "Birim", "Ameliyathane", "AML"),
-            ("64", "Birim", "Anjiografi", "ANJ"),
-            ("65", "Birim", "Endoskopi Ünitesi", "ENU"),
-            ("66", "Birim", "Girişimsel Radyoloji Anjiografi", "RANJ"),
-            ("67", "Birim", "Koroner Anjiografi", "KANJ"),
-            ("68", "Birim", "Mamografi", "MAM"),
-            ("69", "Birim", "Manyetik Rezonans Ünitesi", "MRI"),
-            ("70", "Birim", "Nöroradyoloji Anjiografi", "NANJ"),
-            ("71", "Birim", "Poliklinik", "POL"),
-            ("72", "Birim", "Radyoloji USG", "USG"),
-            ("73", "Birim", "Yoğun Bakım Ünitesi", "YBÜ"),
-            ("74", "Cihaz_Belge_Tur", "NDK Lisansı",        "Cihazın NDK (Uygunluk Beyanı) Lisansı"),
-            ("75", "Cihaz_Belge_Tur", "RKS Belgesi",         "Cihazın RKS (Radyasyon Koruma) Belgesi"),
-            ("76", "Cihaz_Belge_Tur", "Sorumlu Diploması",   "Sorumlu kişinin diploması"),
-            ("77", "Cihaz_Belge_Tur", "Kullanım Kılavuzu",   "Cihaz kullanım kılavuzu"),
-            ("78", "Cihaz_Belge_Tur", "Cihaz Sertifikası",   "Cihaz sertifikası/belgelendirmesi"),
-            ("79", "Cihaz_Belge_Tur", "Teknik Veri Sayfası", "Cihazın teknik özellikleri"),
-            ("80", "Cihaz_Belge_Tur", "Garanti Belgesi",     "Cihaz garanti belgesi"),
-            ("80a","Cihaz_Belge_Tur", "Diğer",               "Diğer cihaz belgeleri"),
-
-            # ── Personel Belge Türleri ─────────────────────────────────────────
-            ("200", "Personel_Belge_Tur", "Diploma",                    "Personel diploması"),
-            ("201", "Personel_Belge_Tur", "Sertifika",                  "Personel sertifikası"),
-            ("202", "Personel_Belge_Tur", "Periyodik Muayene Raporu",   "Periyodik sağlık muayene raporu"),
-            ("202a","Personel_Belge_Tur", "İşe Giriş Muayenesi",        "İşe giriş sağlık muayene raporu"),
-            ("203", "Personel_Belge_Tur", "Hastalık Raporu",            "Personel hastalık/istirahat raporu"),
-            ("204", "Personel_Belge_Tur", "Dozimetre Sonuçları",        "Kişisel dozimetre ölçüm sonuç belgesi"),
-            ("205", "Personel_Belge_Tur", "Diğer",                      "Diğer personel belgeleri"),
-
-            # ── RKE Belge Türleri ──────────────────────────────────────────────
-            ("300", "RKE_Belge_Tur", "Muayene Raporu",          "RKE periyodik muayene raporu"),
-            ("301", "RKE_Belge_Tur", "Kalibrasyon Sertifikası", "RKE kalibrasyon sertifikası"),
-            ("302", "RKE_Belge_Tur", "Teknik Doküman",          "RKE teknik belgesi"),
-            ("303", "RKE_Belge_Tur", "Diğer",                   "Diğer RKE belgeleri"),
-
-            # ── Satın Alma Belge Türleri ───────────────────────────────────────
-            ("400", "Satin_Alma_Belge_Tur", "Teklif",    "Tedarikçi teklif belgesi"),
-            ("401", "Satin_Alma_Belge_Tur", "Sözleşme",  "Satın alma sözleşmesi"),
-            ("402", "Satin_Alma_Belge_Tur", "Fatura",    "Satın alma faturası"),
-            ("403", "Satin_Alma_Belge_Tur", "İrsaliye",  "Mal teslim irsaliyesi"),
-            ("404", "Satin_Alma_Belge_Tur", "Şartname",  "Teknik şartname belgesi"),
-            ("405", "Satin_Alma_Belge_Tur", "Diğer",     "Diğer satın alma belgeleri"),
-
-            # ── Kurumsal Belge Türleri ─────────────────────────────────────────
-            ("500", "Kurumsal_Belge_Tur", "Yönetmelik",           "Kurum yönetmeliği"),
-            ("501", "Kurumsal_Belge_Tur", "Prosedür",             "İş prosedürü/talimatı"),
-            ("502", "Kurumsal_Belge_Tur", "Sözleşme",             "Kurumsal sözleşme"),
-            ("503", "Kurumsal_Belge_Tur", "Akreditasyon Belgesi", "Akreditasyon/yetki belgesi"),
-            ("504", "Kurumsal_Belge_Tur", "Yazışma",              "Resmi yazışma/dilekçe"),
-            ("505", "Kurumsal_Belge_Tur", "Diğer",                "Diğer kurumsal belgeler"),
-            ("81", "Cihaz_Tipi", "Görüntüleme (Diğer)", "GOR"),
-            ("82", "Cihaz_Tipi", "Görüntüleme (Radyasyon Kaynaklı)", "XRY"),
-            ("83", "Cihaz_Tipi", "Medikal Cihazlar", "MED"),
-            ("84", "Gorev_Yeri", "Acil Radyoloji", "Çalışma Koşulu A"),
-            ("85", "Gorev_Yeri", "Esnaf Has. Yerleşkesi", "Çalışma Koşulu B"),
-            ("86", "Gorev_Yeri", "Girişimsel Radyoloji", "Çalışma Koşulu A"),
-            ("87", "Gorev_Yeri", "Gögüs Hastalıkları", "Çalışma Koşulu B"),
-            ("99", "Hizmet_Sinifi", "Akademik Personel", ""),
+            ("1",   "Izin_Tipi", "Aylıksız İzin - Askerlik Nedeniyle", ""),
+            ("2",   "Izin_Tipi", "Aylıksız İzin - Doğum Nedeniyle", ""),
+            ("3",   "Izin_Tipi", "Doğum İzni (Eşinin)", "10"),
+            ("4",   "Izin_Tipi", "Doğum Öncesi İzin", "42"),
+            ("5",   "Izin_Tipi", "Doğum Sonrası İzin", "42"),
+            ("6",   "Izin_Tipi", "Evlenme-Ölüm İzni", ""),
+            ("7",   "Izin_Tipi", "Evlilik İzni", ""),
+            ("8",   "Izin_Tipi", "Heyet Raporu", ""),
+            ("9",   "Izin_Tipi", "İdari İzin", ""),
+            ("11",  "Izin_Tipi", "Kongre izni: 3 aya kadar", ""),
+            ("12",  "Izin_Tipi", "Mazeret", ""),
+            ("13",  "Izin_Tipi", "Rapor İzni", ""),
+            ("14",  "Izin_Tipi", "Refakatçı İzni", ""),
+            ("15",  "Izin_Tipi", "Şua İzni", "30"),
+            ("16",  "Izin_Tipi", "Tedavi İzni (Yatış Ve Ayaktan)", ""),
+            ("17",  "Izin_Tipi", "Yıllık İzin", "30"),
+            ("18",  "Amac", "Defibrilator", ""),
+            ("19",  "Amac", "EKG Cihazı", ""),
+            ("20",  "Amac", "Grafi", ""),
+            ("21",  "Amac", "Kaset Okuyucu", ""),
+            ("22",  "Amac", "Manyetik Rezonans", ""),
+            ("23",  "Amac", "Skopi", ""),
+            ("24",  "Amac", "Skopi (Ercp)", ""),
+            ("25",  "Amac", "Skopi (Eswl)", ""),
+            ("26",  "Amac", "Ultrasonografi", ""),
+            ("27",  "AnaBilimDali", "Beyin ve Sinir Cerrahisi ABD", "NRS"),
+            ("32",  "AnaBilimDali", "Göğüs Hastalıkları ABD", "GHA"),
+            ("33",  "AnaBilimDali", "İç Hastalıkları ABD", "DHL"),
+            ("34",  "AnaBilimDali", "Kalp ve Damar Cerrahisi ABD", "KDC"),
+            ("35",  "AnaBilimDali", "Kardiyoloji ABD", "KRD"),
+            ("38",  "AnaBilimDali", "Ortopedi ve Travmatoloji ABD", "ORT"),
+            ("39",  "AnaBilimDali", "Radyoloji ABD", "RAD"),
+            ("40",  "AnaBilimDali", "Üroloji ABD", "URO"),
+            ("41",  "Ariza_Durum", "İşlemde", ""),
+            ("42",  "Ariza_Durum", "Parça Bekliyor", ""),
+            ("43",  "Ariza_Durum", "Dış Serviste", ""),
+            ("44",  "Ariza_Durum", "Kapalı (Çözüldü)", ""),
+            ("45",  "Ariza_Durum", "Kapalı (İptal)", ""),
+            ("46",  "Ariza_Islem_Turu", "Arıza Tespiti / İnceleme", ""),
+            ("47",  "Ariza_Islem_Turu", "Onarım / Tamirat", ""),
+            ("48",  "Ariza_Islem_Turu", "Parça Değişimi", ""),
+            ("49",  "Ariza_Islem_Turu", "Yazılım Güncelleme", ""),
+            ("50",  "Ariza_Islem_Turu", "Kalibrasyon", ""),
+            ("51",  "Ariza_Islem_Turu", "Dış Servis Gönderimi", ""),
+            ("52",  "Ariza_Islem_Turu", "Kapatma / Sonlandırma", ""),
+            ("53",  "Bedeni", "L", ""),
+            ("54",  "Bedeni", "M", ""),
+            ("55",  "Bedeni", "Pediatrik", ""),
+            ("56",  "Bedeni", "S", ""),
+            ("57",  "Bedeni", "STN", ""),
+            ("58",  "Bedeni", "XL", ""),
+            ("59",  "Bedeni", "XS", ""),
+            ("60",  "Bedeni", "Yetişkin", ""),
+            ("61",  "Birim", "Acil Radyoloji", "ARAD"),
+            ("63",  "Birim", "Ameliyathane", "AML"),
+            ("64",  "Birim", "Anjiografi", "ANJ"),
+            ("65",  "Birim", "Endoskopi Ünitesi", "ENU"),
+            ("66",  "Birim", "Girişimsel Radyoloji Anjiografi", "RANJ"),
+            ("67",  "Birim", "Koroner Anjiografi", "KANJ"),
+            ("68",  "Birim", "Mamografi", "MAM"),
+            ("69",  "Birim", "Manyetik Rezonans Ünitesi", "MRI"),
+            ("70",  "Birim", "Nöroradyoloji Anjiografi", "NANJ"),
+            ("71",  "Birim", "Poliklinik", "POL"),
+            ("72",  "Birim", "Radyoloji USG", "USG"),
+            ("73",  "Birim", "Yoğun Bakım Ünitesi", "YBU"),
+            ("74",  "Cihaz_Belge_Tur", "NDK Lisansı", ""),
+            ("75",  "Cihaz_Belge_Tur", "RKS Belgesi", ""),
+            ("76",  "Cihaz_Belge_Tur", "Sorumlu Diploması", ""),
+            ("77",  "Cihaz_Belge_Tur", "Kullanım Kılavuzu", ""),
+            ("78",  "Cihaz_Belge_Tur", "Cihaz Sertifikası", ""),
+            ("79",  "Cihaz_Belge_Tur", "Teknik Veri Sayfası", ""),
+            ("80",  "Cihaz_Belge_Tur", "Garanti Belgesi", ""),
+            ("80a", "Cihaz_Belge_Tur", "Diğer", ""),
+            ("200", "Personel_Belge_Tur", "Diploma", ""),
+            ("201", "Personel_Belge_Tur", "Sertifika", ""),
+            ("202", "Personel_Belge_Tur", "Periyodik Muayene Raporu", ""),
+            ("202a","Personel_Belge_Tur", "İşe Giriş Muayenesi", ""),
+            ("203", "Personel_Belge_Tur", "Hastalık Raporu", ""),
+            ("204", "Personel_Belge_Tur", "Dozimetre Sonuçları", ""),
+            ("205", "Personel_Belge_Tur", "Diğer", ""),
+            ("300", "RKE_Belge_Tur", "Muayene Raporu", ""),
+            ("301", "RKE_Belge_Tur", "Kalibrasyon Sertifikası", ""),
+            ("302", "RKE_Belge_Tur", "Teknik Doküman", ""),
+            ("303", "RKE_Belge_Tur", "Diğer", ""),
+            ("400", "Satin_Alma_Belge_Tur", "Teklif", ""),
+            ("401", "Satin_Alma_Belge_Tur", "Sözleşme", ""),
+            ("402", "Satin_Alma_Belge_Tur", "Fatura", ""),
+            ("403", "Satin_Alma_Belge_Tur", "İrsaliye", ""),
+            ("404", "Satin_Alma_Belge_Tur", "Şartname", ""),
+            ("405", "Satin_Alma_Belge_Tur", "Diğer", ""),
+            ("500", "Kurumsal_Belge_Tur", "Yönetmelik", ""),
+            ("501", "Kurumsal_Belge_Tur", "Prosedür", ""),
+            ("502", "Kurumsal_Belge_Tur", "Sözleşme", ""),
+            ("503", "Kurumsal_Belge_Tur", "Akreditasyon Belgesi", ""),
+            ("504", "Kurumsal_Belge_Tur", "Yazışma", ""),
+            ("505", "Kurumsal_Belge_Tur", "Diğer", ""),
+            ("81",  "Cihaz_Tipi", "Görüntüleme (Diğer)", "GOR"),
+            ("82",  "Cihaz_Tipi", "Görüntüleme (Radyasyon Kaynaklı)", "XRY"),
+            ("83",  "Cihaz_Tipi", "Medikal Cihazlar", "MED"),
+            ("84",  "Gorev_Yeri", "Acil Radyoloji", "Çalışma Koşulu A"),
+            ("85",  "Gorev_Yeri", "Esnaf Has. Yerleşkesi", "Çalışma Koşulu B"),
+            ("86",  "Gorev_Yeri", "Girişimsel Radyoloji", "Çalışma Koşulu A"),
+            ("87",  "Gorev_Yeri", "Gögüs Hastalıkları", "Çalışma Koşulu B"),
+            ("99",  "Hizmet_Sinifi", "Akademik Personel", ""),
             ("100", "Hizmet_Sinifi", "Asistan Doktor", ""),
             ("101", "Hizmet_Sinifi", "Hemşire", ""),
             ("102", "Hizmet_Sinifi", "Radyasyon Görevlisi", ""),
@@ -1004,35 +775,34 @@ class MigrationManager:
             ("149", "Lisans_Durum", "Lisans Gerekli Değil", ""),
             ("150", "Lisans_Durum", "Lisansız", ""),
             ("151", "Lisans_Durum", "Lisanslı", ""),
-            ("152", "Marka", "", ""),
             ("153", "RKE_Teknik", "Dikiş yerlerinde hasar var", ""),
             ("154", "RKE_Teknik", "Kullanım Ömrünü Doldurmuş", ""),
             ("155", "RKE_Teknik", "Kullanım ve bakım koşullarına uyulmamış", ""),
-            ("156", "RKE_Teknik", "Kurşun, etek kısımlarında (aşağıya) toplanmış", ""),
-            ("157", "RKE_Teknik", "Sabitleyici bantlar ve/veya tokalar deforme", ""),
+            ("156", "RKE_Teknik", "Kurşun, etek kısımlarında toplanmış", ""),
+            ("157", "RKE_Teknik", "Sabitleyici bantlar ve tokalar deforme", ""),
             ("158", "RKE_Teknik", "Skopi altında kırık tespit edildi", ""),
             ("159", "RKE_Teknik", "Tüm testler normal ekipman kullanıma uygun", ""),
-            ("160", "Sistem_DriveID", "Ariza_Raporlari",         ""),
-            ("161", "Sistem_DriveID", "Cihaz_Kunye",              ""),
-            ("162", "Sistem_DriveID", "Cihaz_Resim",              ""),
-            ("163", "Sistem_DriveID", "Kalibrasyon_Raporlari",    ""),
-            ("164", "Sistem_DriveID", "Cihaz_Lisanslar",          ""),
-            ("165", "Sistem_DriveID", "Personel_Diploma",         ""),
-            ("166", "Sistem_DriveID", "Personel_Dosya",           ""),
-            ("167", "Sistem_DriveID", "Personel_Resim",           ""),
-            ("168", "Sistem_DriveID", "RKE_Raporlari",            ""),
-            ("169", "Sistem_DriveID", "Eski_Personel_Dosyalari",  ""),
-            ("170", "Sistem_DriveID", "RKE_Muayene",              ""),
-            ("171", "Sistem_DriveID", "Saglik_Raporlari",         ""),
-            ("172", "Sistem_DriveID", "Cihaz_Belgeler",           ""),
-            ("173", "Sistem_DriveID", "Personel_Belge",           ""),
-            ("174", "Sistem_DriveID", "RKE_Rapor",                ""),
-            ("175", "Sistem_DriveID", "Sozlesme",                 ""),
-            ("176", "Sistem_DriveID", "Satin_Alma_Belge",         ""),
-            ("177", "Sistem_DriveID", "Kurumsal_Belge",           ""),
+            ("160", "Sistem_DriveID", "Ariza_Raporlari", ""),
+            ("161", "Sistem_DriveID", "Cihaz_Kunye", ""),
+            ("162", "Sistem_DriveID", "Cihaz_Resim", ""),
+            ("163", "Sistem_DriveID", "Kalibrasyon_Raporlari", ""),
+            ("164", "Sistem_DriveID", "Cihaz_Lisanslar", ""),
+            ("165", "Sistem_DriveID", "Personel_Diploma", ""),
+            ("166", "Sistem_DriveID", "Personel_Dosya", ""),
+            ("167", "Sistem_DriveID", "Personel_Resim", ""),
+            ("168", "Sistem_DriveID", "RKE_Raporlari", ""),
+            ("169", "Sistem_DriveID", "Eski_Personel_Dosyalari", ""),
+            ("170", "Sistem_DriveID", "RKE_Muayene", ""),
+            ("171", "Sistem_DriveID", "Saglik_Raporlari", ""),
+            ("172", "Sistem_DriveID", "Cihaz_Belgeler", ""),
+            ("173", "Sistem_DriveID", "Personel_Belge", ""),
+            ("174", "Sistem_DriveID", "RKE_Rapor", ""),
+            ("175", "Sistem_DriveID", "Sozlesme", ""),
+            ("176", "Sistem_DriveID", "Satin_Alma_Belge", ""),
+            ("177", "Sistem_DriveID", "Kurumsal_Belge", ""),
         ]
-        
-        added_count = 0
+
+        added = 0
         for _, kod, menu_eleman, aciklama in sistem_sabitler:
             cur.execute(
                 "SELECT COUNT(*) FROM Sabitler WHERE Kod = ? AND MenuEleman = ?",
@@ -1043,51 +813,115 @@ class MigrationManager:
                     "INSERT INTO Sabitler (Kod, MenuEleman, Aciklama) VALUES (?, ?, ?)",
                     (kod, menu_eleman, aciklama)
                 )
-                added_count += 1
-        
-        if added_count > 0:
-            logger.info(f"  ✓ Sabitler: {added_count} kayıt eklendi")
-        
-        # === TATİLLER ===
-        # Tatiller.csv baz alınarak YYYY-MM-DD formatında seed listesi
+                added += 1
+        if added:
+            logger.info(f"  Sabitler: {added} kayit eklendi")
+
         tatiller = [
-            ("2026-01-01", "Yılbaşı"),
-            ("2026-04-23", "Ulusal Egemenlik ve Çocuk Bayramı"),
-            ("2026-05-01", "Emek ve Dayanışma Günü"),
-            ("2026-05-19", "Atatürk’ü Anma Gençlik ve Spor Bayramı"),
-            ("2026-07-15", "Demokrasi ve Millî Birlik Günü"),
-            ("2026-08-30", "Zafer Bayramı"),
-            ("2026-10-28", "Cumhuriyet Bayramı Arifesi"),
-            ("2026-10-29", "Cumhuriyet Bayramı"),
-            ("2026-12-31", "Yılbaşı gecesi"),
+            ("2026-01-01", "Yilbasi"),
+            ("2026-04-23", "Ulusal Egemenlik ve Cocuk Bayrami"),
+            ("2026-05-01", "Emek ve Dayanisma Gunu"),
+            ("2026-05-19", "Ataturk'u Anma Genclik ve Spor Bayrami"),
+            ("2026-07-15", "Demokrasi ve Milli Birlik Gunu"),
+            ("2026-08-30", "Zafer Bayrami"),
+            ("2026-10-28", "Cumhuriyet Bayrami Arifesi"),
+            ("2026-10-29", "Cumhuriyet Bayrami"),
+            ("2026-12-31", "Yilbasi gecesi"),
         ]
-        
-        added_tatil = 0
+
+        added_t = 0
         for tarih, ad in tatiller:
-            cur.execute(
-                "SELECT COUNT(*) FROM Tatiller WHERE Tarih = ?",
-                (tarih,)
-            )
+            cur.execute("SELECT COUNT(*) FROM Tatiller WHERE Tarih = ?", (tarih,))
             if cur.fetchone()[0] == 0:
                 cur.execute(
                     "INSERT INTO Tatiller (Tarih, ResmiTatil) VALUES (?, ?)",
                     (tarih, ad)
                 )
-                added_tatil += 1
-        
-        if added_tatil > 0:
-            logger.info(f"  ✓ Tatillər: {added_tatil} kayıt eklendi")
+                added_t += 1
+        if added_t:
+            logger.info(f"  Tatiller: {added_t} kayit eklendi")
 
+    def _seed_auth_data(self, cur):
+        permissions = [
+            ("personel.read",   "Personel okuma"),
+            ("personel.write",  "Personel yazma"),
+            ("cihaz.read",      "Cihaz okuma"),
+            ("cihaz.write",     "Cihaz yazma"),
+            ("admin.panel",     "Admin panel erisimi"),
+            ("admin.logs.view", "Log goruntuleme"),
+            ("admin.backup",    "Yedek yonetimi"),
+            ("admin.settings",  "Ayarlar yonetimi"),
+        ]
+        for key, desc in permissions:
+            cur.execute("SELECT COUNT(*) FROM Permissions WHERE PermissionKey = ?", (key,))
+            if cur.fetchone()[0] == 0:
+                cur.execute(
+                    "INSERT INTO Permissions (PermissionKey, Description) VALUES (?, ?)",
+                    (key, desc)
+                )
+
+        for role in ["admin", "operator", "viewer"]:
+            cur.execute("SELECT COUNT(*) FROM Roles WHERE RoleName = ?", (role,))
+            if cur.fetchone()[0] == 0:
+                cur.execute("INSERT INTO Roles (RoleName) VALUES (?)", (role,))
+
+        cur.execute("SELECT RoleId, RoleName FROM Roles")
+        role_map = {row["RoleName"]: row["RoleId"] for row in cur.fetchall()}
+        cur.execute("SELECT PermissionId, PermissionKey FROM Permissions")
+        perm_map = {row["PermissionKey"]: row["PermissionId"] for row in cur.fetchall()}
+
+        admin_id = role_map.get("admin")
+        if admin_id:
+            for perm_id in perm_map.values():
+                cur.execute(
+                    "SELECT COUNT(*) FROM RolePermissions WHERE RoleId=? AND PermissionId=?",
+                    (admin_id, perm_id)
+                )
+                if cur.fetchone()[0] == 0:
+                    cur.execute(
+                        "INSERT INTO RolePermissions (RoleId, PermissionId) VALUES (?, ?)",
+                        (admin_id, perm_id)
+                    )
+
+        operator_id = role_map.get("operator")
+        if operator_id:
+            for key in ("personel.read", "personel.write", "cihaz.read", "cihaz.write"):
+                perm_id = perm_map.get(key)
+                if not perm_id:
+                    continue
+                cur.execute(
+                    "SELECT COUNT(*) FROM RolePermissions WHERE RoleId=? AND PermissionId=?",
+                    (operator_id, perm_id)
+                )
+                if cur.fetchone()[0] == 0:
+                    cur.execute(
+                        "INSERT INTO RolePermissions (RoleId, PermissionId) VALUES (?, ?)",
+                        (operator_id, perm_id)
+                    )
+
+        viewer_id = role_map.get("viewer")
+        if viewer_id:
+            for key in ("personel.read", "cihaz.read"):
+                perm_id = perm_map.get(key)
+                if not perm_id:
+                    continue
+                cur.execute(
+                    "SELECT COUNT(*) FROM RolePermissions WHERE RoleId=? AND PermissionId=?",
+                    (viewer_id, perm_id)
+                )
+                if cur.fetchone()[0] == 0:
+                    cur.execute(
+                        "INSERT INTO RolePermissions (RoleId, PermissionId) VALUES (?, ?)",
+                        (viewer_id, perm_id)
+                    )
+
+    # ════════════════════════════════════════════════════════
+    #  ACIL RESET
+    # ════════════════════════════════════════════════════════
 
     def reset_database(self):
-        """
-        âš ï¸  ACİL DURUM: Tüm tabloları sil ve yeniden oluŞtur.
-
-        Ciddi veri bozulması durumunda manuel olarak çağrılmalıdır.
-        Normal kullanımda run_migrations() tercih edilmelidir.
-        """
-        logger.warning("âš ï¸  VERİTABANI TAM RESET YAPILIYOR â€” TÃœM VERİ SİLİNECEK!")
-
+        """Tum tablolari sil ve yeniden olustur."""
+        logger.warning("VERITABANI RESET - TUM VERI SILINECEK!")
         backup_path = self.backup_database()
         if backup_path:
             logger.info(f"Son yedek: {backup_path}")
@@ -1097,91 +931,37 @@ class MigrationManager:
 
         tables = [
             "Personel", "Izin_Giris", "Izin_Bilgi", "FHSZ_Puantaj",
-            "Cihazlar", "Cihaz_Teknik", "Cihaz_Teknik_Belge", "Cihaz_Belgeler",
-            "Cihaz_Ariza", "Ariza_Islem", "Periyodik_Bakim", "Kalibrasyon",
-            "Sabitler", "Tatiller", "Loglar",
+            "Cihazlar", "Cihaz_Ariza", "Ariza_Islem",
+            "Periyodik_Bakim", "Kalibrasyon",
+            "Dokumanlar", "Sabitler", "Tatiller", "Loglar",
             "RKE_List", "RKE_Muayene", "Personel_Saglik_Takip",
-            "Dokumanlar","Dis_Alan_Calisma","Dis_Alan_Izin_Ozet",
-            "Users", "Roles", "Permissions", "UserRoles", "RolePermissions", "AuthAudit",
+            "Dozimetre_Olcum",
+            "Dis_Alan_Calisma", "Dis_Alan_Izin_Ozet",
+            "Dis_Alan_Katsayi_Protokol",
+            "Users", "Roles", "Permissions",
+            "UserRoles", "RolePermissions", "AuthAudit",
             "schema_version",
         ]
 
         for table in tables:
             cur.execute(f"DROP TABLE IF EXISTS {table}")
-            logger.info(f"  {table} silindi")
 
         self.create_tables(cur)
         self._seed_initial_data(cur)
+        self._seed_auth_data(cur)
 
         cur.execute("""
-            CREATE TABLE schema_version (
+            CREATE TABLE IF NOT EXISTS schema_version (
                 version     INTEGER PRIMARY KEY,
                 applied_at  TEXT NOT NULL,
                 description TEXT
             )
         """)
-        cur.execute("""
-            INSERT INTO schema_version (version, applied_at, description)
-            VALUES (?, ?, ?)
-        """, (self.CURRENT_VERSION, datetime.now().isoformat(), "Full reset"))
+        cur.execute(
+            "INSERT INTO schema_version (version, applied_at, description) VALUES (?, ?, ?)",
+            (self.CURRENT_VERSION, datetime.now().isoformat(), "Full reset")
+        )
 
         conn.commit()
         conn.close()
-
-        logger.info(f"✓ Tüm tablolar yeniden oluŞturuldu (v{self.CURRENT_VERSION})")
-    
-    def _migrate_to_v2(self):
-        """
-        v1 → v2: Dış alan (anjio, ERCP, ESWL vb.) radyasyon çalışma
-             kayıt tabloları eklendi.
- 
-        Yeni tablolar:
-            - Dis_Alan_Calisma  : Tutanak bazlı çalışma bildirimleri
-            - Dis_Alan_Izin_Ozet: Aylık toplam saat ve izin günü özeti
-        """
-        conn = self.connect()
-        cur = conn.cursor()
-        try:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS Dis_Alan_Calisma (
-                    PersonelKimlik      TEXT    NOT NULL,
-                    PersonelAd          TEXT    NOT NULL,
-                    DonemAy             INTEGER NOT NULL CHECK (DonemAy BETWEEN 1 AND 12),
-                    DonemYil            INTEGER NOT NULL CHECK (DonemYil > 2000),
-                    IslemTipi           TEXT    NOT NULL,
-                    Katsayi             REAL    NOT NULL,
-                    VakaSayisi          INTEGER NOT NULL CHECK (VakaSayisi > 0),
-                    HesaplananSaat      REAL    NOT NULL,
-                    TutanakNo           TEXT    NOT NULL,
-                    TutanakTarihi       TEXT    NOT NULL,
-                    KayitTarihi         TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
-                    KaydedenKullanici   TEXT,
-                    PRIMARY KEY (PersonelKimlik, DonemAy, DonemYil, TutanakNo)
-                )
-            """)
-            logger.info("  ✓ Dis_Alan_Calisma tablosu oluşturuldu")
-
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS Dis_Alan_Izin_Ozet (
-                    PersonelKimlik      TEXT    NOT NULL,
-                    PersonelAd          TEXT    NOT NULL,
-                    DonemAy             INTEGER NOT NULL CHECK (DonemAy BETWEEN 1 AND 12),
-                    DonemYil            INTEGER NOT NULL CHECK (DonemYil > 2000),
-                    ToplamSaat          REAL    NOT NULL DEFAULT 0.0,
-                    IzinGunHakki        REAL    NOT NULL DEFAULT 0.0,
-                    HesaplamaTarihi     TEXT,
-                    RksOnay             INTEGER NOT NULL DEFAULT 0 CHECK (RksOnay IN (0, 1)),
-                    Notlar              TEXT,
-                    PRIMARY KEY (PersonelKimlik, DonemAy, DonemYil)
-                )
-            """)
-            logger.info("  ✓ Dis_Alan_Izin_Ozet tablosu oluşturuldu")
-
-            conn.commit()
-        except Exception as e:
-            conn.rollback()
-            logger.error(f"v2 migration hatası: {e}")
-            raise
-        finally:
-            conn.close()
-
+        logger.info(f"Tum tablolar yeniden olusturuldu (v{self.CURRENT_VERSION})")

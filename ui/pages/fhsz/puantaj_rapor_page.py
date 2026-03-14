@@ -1,7 +1,7 @@
-﻿# ui/pages/fhsz/puantaj_rapor_page.py
+# ui/pages/fhsz/puantaj_rapor_page.py
 # -*- coding: utf-8 -*-
 """
-Dış Alan Puantaj Raporu â€” Arayüz Taslağı
+Dış Alan Puantaj Raporu - Arayüz Taslağı
 """
 
 from PySide6.QtWidgets import (
@@ -59,7 +59,7 @@ class DisAlanPuantajRaporPage(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(20, 15, 20, 15)
 
-        # Ãœst filtre paneli
+        # Üst filtre paneli
         top = QFrame(self)
         top.setStyleSheet(S["filter_panel"])
         top.setMaximumHeight(56)
@@ -91,7 +91,7 @@ class DisAlanPuantajRaporPage(QWidget):
         top_lay.addWidget(lbl_donem)
         self.cmb_ay = QComboBox()
         self.cmb_ay.addItems([
-            "Ocak", "Åubat", "Mart", "Nisan", "Mayıs", "Haziran",
+            "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
             "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
         ])
         self.cmb_ay.setCurrentIndex(QDate.currentDate().month() - 1)

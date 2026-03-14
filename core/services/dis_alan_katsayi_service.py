@@ -30,6 +30,31 @@ class DisAlanKatsayiService:
             logger.error(f"DisAlanKatsayiService.get_aktif_katsayi: {e}")
             return None
 
+    def get_tum_aktif_dict(self) -> dict:
+        """
+        Tüm aktif katsayı protokollerini {(AnaBilimDali, Birim): kayit} dict'i olarak döner.
+        Worker thread'e geçirilmek üzere ana thread'de önceden çekilir — DB'ye thread'den erişilmez.
+        """
+        try:
+            today = date.today().isoformat()
+            rows = self._r.get("Dis_Alan_Katsayi_Protokol").get_all() or []
+            sonuc: dict = {}
+            for p in rows:
+                if not p.get("Aktif"):
+                    continue
+                bitis = p.get("GecerlilikBitis")
+                if bitis and bitis < today:
+                    continue
+                key = (str(p.get("AnaBilimDali", "")), str(p.get("Birim", "")))
+                # En güncel GecerlilikBaslangic öncelikli
+                mevcut = sonuc.get(key)
+                if mevcut is None or p.get("GecerlilikBaslangic", "") > mevcut.get("GecerlilikBaslangic", ""):
+                    sonuc[key] = p
+            return sonuc
+        except Exception as e:
+            logger.error(f"DisAlanKatsayiService.get_tum_aktif_dict: {e}")
+            return {}
+
     def get_tum_protokoller(self) -> List[dict]:
         try:
             return self._r.get("Dis_Alan_Katsayi_Protokol").get_all() or []

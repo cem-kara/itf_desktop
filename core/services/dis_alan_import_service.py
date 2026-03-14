@@ -34,11 +34,113 @@ KOLON_HARITA = {
     "Çalışılan Alan *": "IslemTipi",
     "Vaka Sayısı":      "VakaSayisi",
     "Vaka Sayısı *":    "VakaSayisi",
-    "Tutanak No":       "TutanakNo",
-    "Tutanak No *":     "TutanakNo",
 }
 
 TC_REGEX = re.compile(r"^\d{11}$")
+
+# Türkçe ay adları → numara
+_AY_MAP = {
+    "oca": 1, "ocak": 1,
+    "şub": 2, "sub": 2, "şubat": 2, "subat": 2,
+    "mar": 3, "mart": 3,
+    "nis": 4, "nisan": 4,
+    "may": 5, "mayıs": 5, "mayis": 5,
+    "haz": 6, "haziran": 6,
+    "tem": 7, "temmuz": 7,
+    "ağu": 8, "agu": 8, "ağustos": 8, "agustos": 8,
+    "eyl": 9, "eylül": 9, "eylul": 9,
+    "eki": 10, "ekim": 10,
+    "kas": 11, "kasım": 11, "kasim": 11,
+    "ara": 12, "aralık": 12, "aralik": 12,
+}
+
+
+def _parse_ay(deger) -> int:
+    """
+    D3 hücresinden sadece ay numarasını çıkarır.
+    Desteklenen formatlar:
+      - Sayı:  1, 3, 12
+      - Ay adı (TR): "Ocak", "Mart", "oca", "mar"
+      - Kısa+nokta: "Oca.", "Mar."
+    Returns: 1–12 veya 0 (parse edilemedi)
+    """
+    if deger is None:
+        return 0
+    import datetime as _dt
+    if isinstance(deger, (_dt.datetime, _dt.date)):
+        return deger.month
+    try:
+        v = int(float(str(deger).strip()))
+        if 1 <= v <= 12:
+            return v
+    except (ValueError, TypeError):
+        pass
+    s = str(deger).strip().rstrip(".").lower()
+    return _AY_MAP.get(s, 0)
+    """
+    F3 hücresinden ay ve yılı çıkarır.
+
+    Desteklenen formatlar:
+      - "3/2026"  veya  "03/2026"
+      - "3-2026"
+      - "Mart 2026"  /  "Mar.26"  /  "Oca.26"
+      - datetime / date nesnesi
+      - Excel serial float
+
+    Returns:
+        (ay, yil)  — başarısız olursa (0, 0)
+    """
+    import datetime as _dt
+
+    if deger is None:
+        return 0, 0
+
+    # datetime / date
+    if isinstance(deger, (_dt.datetime, _dt.date)):
+        return deger.month, deger.year
+
+    # float → Excel seri tarihi
+    if isinstance(deger, float):
+        try:
+            base = _dt.date(1899, 12, 30)
+            d = base + _dt.timedelta(days=int(deger))
+            return d.month, d.year
+        except Exception:
+            pass
+
+    s = str(deger).strip()
+
+    # "3/2026"  "03/2026"  "3-2026"
+    m = re.match(r"^(\d{1,2})[/\-\.](\d{4})$", s)
+    if m:
+        return int(m.group(1)), int(m.group(2))
+
+    # "2026/3"  "2026-03"
+    m = re.match(r"^(\d{4})[/\-\.](\d{1,2})$", s)
+    if m:
+        return int(m.group(2)), int(m.group(1))
+
+    # "Oca.26"  "Mar.26"  — Excel otomatik kısa format
+    m = re.match(r"^([A-Za-zÇçĞğİıÖöŞşÜü]{3,})[\.\s\-](\d{2,4})$", s)
+    if m:
+        ay_str = m.group(1).lower()
+        yil_str = m.group(2)
+        ay = _AY_MAP.get(ay_str, 0)
+        yil = int(yil_str)
+        if yil < 100:
+            yil += 2000
+        if ay:
+            return ay, yil
+
+    # "Mart 2026"  "OCAK 2026"
+    m = re.match(r"^([A-Za-zÇçĞğİıÖöŞşÜü]+)\s+(\d{4})$", s)
+    if m:
+        ay_str = m.group(1).lower()
+        ay = _AY_MAP.get(ay_str, 0)
+        if ay:
+            return ay, int(m.group(2))
+
+    return 0, 0
 
 
 # ─────────────────────────────────────────────────────────────
@@ -68,6 +170,8 @@ class ImportSonucu:
     anabilim_dali: str = ""
     birim: str = ""
     donem_etiket: str = ""
+    donem_ay: int = 0
+    donem_yil: int = 0
     dokuman_id: str = ""        # Dokumanlar tablosuna kaydedilince dolar
     tutanak_no: str = ""        # dokuman_id ile aynı — tüm satırlar bunu kullanır
     import_tarihi: str = ""
@@ -81,7 +185,6 @@ class ImportSonucu:
     conflict_report_text: str = ""
     conflict_report_path: str = ""
     conflict_report_pdf_path: str = ""
-    denetim_sonuclari: list = field(default_factory=list)  # Denetim motoru sonuçları
 
     @property
     def basarili(self) -> bool:
@@ -114,31 +217,40 @@ def _parse_int(deger) -> Optional[int]:
 # ─────────────────────────────────────────────────────────────
 
 
-from core.di import get_dis_alan_katsayi_service, get_dis_alan_hbys_referans_service
-
 class DisAlanImportService:
-    def __init__(self, registry=None, arsiv_dizin: Optional[str] = None, katsayi_service=None, denetim_service=None):
+    def __init__(self, registry=None, arsiv_dizin: Optional[str] = None, katsayi_service=None):
         self._r          = registry
         self._arsiv_dizin = Path(arsiv_dizin) if arsiv_dizin else None
-        self._katsayi_service = katsayi_service or (get_dis_alan_katsayi_service(registry) if registry else None)
-        self._referans_service = get_dis_alan_hbys_referans_service(registry) if registry else None
+        if katsayi_service:
+            self._katsayi_service = katsayi_service
+        elif registry:
+            from core.services.dis_alan_katsayi_service import DisAlanKatsayiService
+            self._katsayi_service = DisAlanKatsayiService(registry)
+        else:
+            self._katsayi_service = None
         # Denetim servisi DI ile alınabilir, yoksa None
-        self._denetim_service = denetim_service
 
     # ── 1. Excel Okuma ───────────────────────────────────────
 
     def excel_oku(
         self,
         dosya_yolu: str,
-        donem_ay: int,
-        donem_yil: int,
+        donem_ay: int = 0,
+        donem_yil: int = 0,
+        katsayi_cache: dict = None,
     ) -> ImportSonucu:
         """
         Excel şablonunu okur ve doğrular. DB'ye yazmaz.
 
         Başlık satırı: 6. satır
         Veri satırları: 7–56
-        Üst bilgi: B3=AnaBilim Dalı, B4=Birim, F3=Dönem
+        Üst bilgi:
+          A3="Anabilim Dalı" etiketi, B3=değer
+          A4="Birim" etiketi,         B4=değer
+          C3="Dönem Ay" etiketi,      D3=değer (ör: Ocak veya 1)
+          C4="Dönem Yıl" etiketi,     D4=değer (ör: 2026)
+
+        donem_ay / donem_yil: 0 verilirse D3/D4'ten otomatik okunur.
         """
         try:
             import openpyxl
@@ -167,11 +279,37 @@ class DisAlanImportService:
         # Üst bilgi — B3:AnaBilimDali, B4:Birim, F3:Dönem
         anabilim = str(ws["B3"].value or "").strip()
         birim    = str(ws["B4"].value or "").strip()
-        donem_et = str(ws["F3"].value or "").strip()
+
+        # Dönem: D3=Ay, D4=Yıl
+        d3_val = ws["D3"].value
+        d4_val = ws["D4"].value
+
+        # Yıl — D4
+        if not donem_yil:
+            try:
+                donem_yil = int(float(str(d4_val).strip()))
+            except (ValueError, TypeError):
+                donem_yil = 0
+
+        # Ay — D3: sadece ay adı veya numarası
+        if not donem_ay:
+            donem_ay = _parse_ay(d3_val)
+
+        if not (donem_ay and donem_yil):
+            raise ValueError(
+                f"Dönem bilgisi okunamadı.\n"
+                f"D3 hücresine ay adını (ör: Ocak) veya numarasını (ör: 1),\n"
+                f"D4 hücresine yılı (ör: 2026) girin.\n"
+                f"Okunan — D3: '{d3_val}'  D4: '{d4_val}'"
+            )
+
+        donem_et = f"{donem_ay}/{donem_yil}"
 
         sonuc.anabilim_dali = anabilim
         sonuc.birim         = birim
-        sonuc.donem_etiket  = donem_et or f"{donem_ay}/{donem_yil}"
+        sonuc.donem_etiket  = donem_et
+        sonuc.donem_ay      = donem_ay
+        sonuc.donem_yil     = donem_yil
 
         # Kolon haritası
         kolon_idx = self._kolon_haritasi_bul(ws, baslik_satiri=6)
@@ -197,6 +335,7 @@ class DisAlanImportService:
                 row, row_vals, donem_ay, donem_yil,
                 anabilim_dali=sonuc.anabilim_dali,
                 birim=sonuc.birim,
+                katsayi_cache=katsayi_cache,
             )
 
             # TCKimlik + dönem eşleşmesi kontrolü (tutanak no boş gelebilir)
@@ -363,12 +502,6 @@ class DisAlanImportService:
             f"Hatalı:{sonuc.hatali} "
             f"Uyarılı:{sonuc.uyarili}"
         )
-        # Denetim motoru entegrasyonu (Aşama 5.1)
-        if self._denetim_service:
-            try:
-                sonuc.denetim_sonuclari = self._denetim_service.denetle(sonuc)
-            except Exception as e:
-                logger.error(f"Denetim motoru çalıştırılamadı: {e}")
         return sonuc
 
     def _kolon_haritasi_bul(self, ws, baslik_satiri: int) -> dict[str, int]:
@@ -394,6 +527,7 @@ class DisAlanImportService:
         donem_yil: int,
         anabilim_dali: str = "",
         birim: str = "",
+        katsayi_cache: dict = None,
     ) -> SatirSonucu:
         hatalar, uyarilar = [], []
         veri = {
@@ -416,19 +550,30 @@ class DisAlanImportService:
         else:
             veri["AdSoyad"] = ad
 
-        # Çalışılan Alan — zorunlu
+        # Çalışılan Alan — zorunlu (Excel'de birim adını tanımlar, aynı zamanda gösterim için saklanır)
         alan = str(row_vals.get("IslemTipi") or "").strip()
         if not alan:
             hatalar.append("Çalışılan Alan boş")
         else:
             veri["IslemTipi"] = alan
-            katsayi_kayit = None
-            if self._katsayi_service:
-                katsayi_kayit = self._katsayi_service.get_aktif_katsayi(anabilim_dali, birim)
-            if katsayi_kayit:
-                veri["Katsayi"] = katsayi_kayit.get("Katsayi")
-            else:
-                hatalar.append("Bu birim için aktif katsayı protokolü yok")
+
+        # Katsayı — önce cache'e bak (thread-safe), yoksa servise düş
+        katsayi_kayit = None
+        if katsayi_cache is not None:
+            katsayi_kayit = katsayi_cache.get((anabilim_dali, birim))
+        elif self._katsayi_service:
+            katsayi_kayit = self._katsayi_service.get_aktif_katsayi(anabilim_dali, birim)
+
+        if katsayi_kayit:
+            veri["Katsayi"]   = katsayi_kayit.get("Katsayi")
+            veri["OrtSureDk"] = katsayi_kayit.get("OrtSureDk", 0)
+        elif katsayi_cache is not None or self._katsayi_service:
+            hatalar.append(
+                f"{anabilim_dali} / {birim} için aktif katsayı protokolü yok. "
+                f"Lütfen önce Katsayı Protokolleri ekranından protokol tanımlayın."
+            )
+        else:
+            hatalar.append("Katsayı servisi bağlı değil — sistem yöneticisiyle iletişime geçin.")
 
         # Vaka Sayısı — zorunlu
         vaka = _parse_int(row_vals.get("VakaSayisi"))
@@ -441,26 +586,15 @@ class DisAlanImportService:
                 uyarilar.append(f"Vaka Sayısı yüksek ({vaka}) — kontrol edin")
             veri["VakaSayisi"] = vaka
 
-        # Hesaplanan Saat
+        # Hesaplanan Saat + Toplam İşlem Süresi
         if "VakaSayisi" in veri and "Katsayi" in veri:
-            vaka = veri["VakaSayisi"]
+            vaka    = veri["VakaSayisi"]
             katsayi = veri["Katsayi"]
             if vaka is not None and katsayi is not None:
                 veri["HesaplananSaat"] = round(vaka * katsayi, 2)
+                veri["ToplamSureDk"]   = vaka * veri.get("OrtSureDk", 0)
 
         # TutanakNo ve TutanakTarihi → kaydet() aşamasında doldurulur
-
-        # HBYS Referans Kodu — opsiyonel ama varsa doğrula
-        referans_kodu = str(row_vals.get("HbysReferansKodu") or "").strip()
-        if referans_kodu:
-            if not self._referans_service:
-                hatalar.append("Referans servisi tanımsız")
-            else:
-                kayit = self._referans_service.get_referans_listesi()
-                kodlar = {r.get("HbysReferansKodu") for r in kayit}
-                if referans_kodu not in kodlar:
-                    hatalar.append(f"HBYS Referans Kodu bulunamadı: {referans_kodu}")
-            veri["HbysReferansKodu"] = referans_kodu
 
         return SatirSonucu(
             satir_no=row_idx,
@@ -491,13 +625,6 @@ class DisAlanImportService:
              tüm satırlara yaz
           3. Dis_Alan_Calisma tablosuna satırları ekle
         """
-
-        # BLOKE denetim sonucu varsa kaydetme
-        if hasattr(sonuc, "denetim_sonuclari"):
-            for d in sonuc.denetim_sonuclari:
-                if getattr(d, "seviye", "") == "BLOKE":
-                    logger.error("BLOKE seviyesinde denetim sonucu bulundu, kayıt engellendi.")
-                    raise RuntimeError("BLOKE seviyesinde denetim sonucu bulundu, kayıt engellendi.")
 
         if not self._r:
             raise RuntimeError("RepositoryRegistry bağlı değil")

@@ -124,7 +124,7 @@ class DisAlanService:
 
     def calisma_sil(
         self,
-        personel_kimlik: str,
+        tckimlik: str,
         donem_ay: int,
         donem_yil: int,
         tutanak_no: str,
@@ -132,16 +132,16 @@ class DisAlanService:
         """Tutanak kaydını siler. Onaylanmış dönem özeti varsa silmeyi engeller."""
         try:
             # Önce bu döneme ait onaylanmış özet var mı kontrol et
-            ozet_pk = (str(personel_kimlik), str(donem_ay), str(donem_yil))
+            ozet_pk = (str(tckimlik), str(donem_ay), str(donem_yil))
             ozet = self._r.get("Dis_Alan_Izin_Ozet").get_by_pk(ozet_pk)
             if ozet and int(ozet.get("RksOnay", 0)) == 1:
                 logger.warning(
                     f"Onaylanmış dönem kaydı silinemez: "
-                    f"{personel_kimlik} {donem_ay}/{donem_yil}"
+                    f"{tckimlik} {donem_ay}/{donem_yil}"
                 )
                 return False
 
-            pk = (str(personel_kimlik), str(donem_ay), str(donem_yil), str(tutanak_no))
+            pk = (str(tckimlik), str(donem_ay), str(donem_yil), str(tutanak_no))
             self._r.get("Dis_Alan_Calisma").delete(pk)
             logger.info(f"Dış alan kaydı silindi: {pk}")
             return True
@@ -155,32 +155,32 @@ class DisAlanService:
 
     def aylik_toplam_saat(
         self,
-        personel_kimlik: str,
+        tckimlik: str,
         donem_ay: int,
         donem_yil: int,
     ) -> float:
         """Personelin ilgili aydaki tüm tutanakların toplam saatini döndürür."""
         kayitlar = self.get_calisma_listesi(
-            personel_kimlik=personel_kimlik,
+            tckimlik=tckimlik,
             donem_ay=donem_ay,
             donem_yil=donem_yil,
         )
         return round(sum(float(k.get("HesaplananSaat", 0)) for k in kayitlar), 2)
 
-    def yillik_toplam_saat(self, personel_kimlik: str, yil: int) -> float:
+    def yillik_toplam_saat(self, tckimlik: str, yil: int) -> float:
         """Personelin o yılki tüm ayların toplam saatini döndürür."""
         kayitlar = self.get_calisma_listesi(
-            personel_kimlik=personel_kimlik,
+            tckimlik=tckimlik,
             donem_yil=yil,
         )
         return round(sum(float(k.get("HesaplananSaat", 0)) for k in kayitlar), 2)
 
-    def izin_hakki_hesapla(self, personel_kimlik: str, yil: int) -> float:
+    def izin_hakki_hesapla(self, tckimlik: str, yil: int) -> float:
         """
         Yıllık kümülatif şua süresinden izin günü hakkını hesaplar.
         Dönem özetine yazmaz — sadece hesaplar.
         """
-        toplam = self.yillik_toplam_saat(personel_kimlik, yil)
+        toplam = self.yillik_toplam_saat(tckimlik, yil)
         return _izin_gunu_hesapla(toplam)
 
     # ─────────────────────────────────────────────────────────
@@ -189,13 +189,13 @@ class DisAlanService:
 
     def get_ozet(
         self,
-        personel_kimlik: str,
+        tckimlik: str,
         donem_ay: int,
         donem_yil: int,
     ) -> Optional[dict]:
         """Dönem özetini döndürür. Yoksa None."""
         try:
-            pk = (str(personel_kimlik), str(donem_ay), str(donem_yil))
+            pk = (str(tckimlik), str(donem_ay), str(donem_yil))
             return self._r.get("Dis_Alan_Izin_Ozet").get_by_pk(pk)
         except Exception as e:
             logger.error(f"Dönem özeti okuma hatası: {e}")
@@ -269,14 +269,14 @@ class DisAlanService:
 
     def ozet_onayla(
         self,
-        personel_kimlik: str,
+        tckimlik: str,
         donem_ay: int,
         donem_yil: int,
     ) -> bool:
         """RKS onayını verir. Onaylı kayıt artık değiştirilemez ve silinemez."""
         try:
             repo = self._r.get("Dis_Alan_Izin_Ozet")
-            pk = (str(personel_kimlik), str(donem_ay), str(donem_yil))
+            pk = (str(tckimlik), str(donem_ay), str(donem_yil))
             ozet = repo.get_by_pk(pk)
             if not ozet:
                 logger.warning(f"Onaylanacak özet bulunamadı: {pk}")

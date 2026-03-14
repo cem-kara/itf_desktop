@@ -249,11 +249,11 @@ class MainWindow(QMainWindow):
             page.kapat_istegi.connect(lambda: self._close_page("İzin Takip ve FHSZ Yönetim"))
             return page
         
-        if baslik in ("Dış Personel FHSZ Yönetim"):
+        if baslik in ("Diğer Rad. Gör. FHSZ Yön."):
             # Üç sayfayı birleştirilmiş merkez olarak göster
             from ui.pages.fhsz.dis_alan_merkez_page import DisAlanMerkezPage
             page = DisAlanMerkezPage(db=self._db)
-            #page.kapat_istegi.connect(lambda: self._close_page("Dış Personel FHSZ Yönetim"))
+            #page.kapat_istegi.connect(lambda: self._close_page("Diğer Rad. Gör. FHSZ Yön"))
             return page
 
         if baslik == "Sağlık Takip":
@@ -284,9 +284,6 @@ class MainWindow(QMainWindow):
             )
             return page
 
-        if baslik == "HBYS Referans Import":
-            from ui.pages.fhsz.dis_alan_hbys_import_page import DisAlanHbysImportPage
-            return DisAlanHbysImportPage(db=self._db)
 
         if baslik == "Cihaz Listesi":
             from ui.pages.cihaz.cihaz_listesi import CihazListesiPage
@@ -343,10 +340,6 @@ class MainWindow(QMainWindow):
             page = SettingsPage(db=self._db)
             return page
         
-        if baslik == "Dış Alan HBYS Referansları":
-            from ui.pages.fhsz.dis_alan_hbys_referans_page import DisAlanHbysReferansPage
-            page = DisAlanHbysReferansPage(db=self._db)
-            return page
         
         return PlaceholderPage(
             title=baslik,
