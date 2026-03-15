@@ -12,7 +12,7 @@ class MigrationManager:
     v1: Tüm tablolar (temiz kurulum)
     """
 
-    CURRENT_VERSION = 2
+    CURRENT_VERSION = 3
 
     def __init__(self, db_path):
         self.db_path = db_path
@@ -122,6 +122,79 @@ class MigrationManager:
     # ════════════════════════════════════════════════════════
     #  MIGRATION METODLARI
     # ════════════════════════════════════════════════════════
+
+    def _migrate_to_v3(self):
+        """
+        v3: Cihaz_Teknik ve Cihaz_Teknik_Belge tablolari eklendi.
+        UTS (Ulusal Tuketici Sicili) teknik bilgi verileri icin.
+        """
+        conn = self.connect()
+        cur  = conn.cursor()
+        try:
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS Cihaz_Teknik (
+                Cihazid                     TEXT    PRIMARY KEY,
+                BirincilUrunNumarasi        TEXT,
+                KurumUnvan                  TEXT,
+                MarkaAdi                    TEXT,
+                EtiketAdi                   TEXT,
+                VersiyonModel               TEXT,
+                UrunTipi                    TEXT,
+                Sinif                       TEXT,
+                KatalogNo                   TEXT,
+                GmdnTerimKod                TEXT,
+                GmdnTerimTurkceAd           TEXT,
+                TemelUdiDi                  TEXT,
+                UrunTanimi                  TEXT,
+                Aciklama                    TEXT,
+                KurumGorunenAd              TEXT,
+                KurumNo                     TEXT,
+                KurumTelefon                TEXT,
+                KurumEposta                 TEXT,
+                IthalImalBilgisi            TEXT,
+                MenseiUlkeSet               TEXT,
+                IthalEdilenUlkeSet          TEXT,
+                SutEslesmesiSet             TEXT,
+                Durum                       TEXT,
+                CihazKayitTipi              TEXT,
+                UtsBaslangicTarihi          TEXT,
+                KontroleGonderildigiTarih   TEXT,
+                KalibrasyonaTabiMi          TEXT,
+                KalibrasyonPeriyodu         TEXT,
+                BakimaTabiMi                TEXT,
+                BakimPeriyodu               TEXT,
+                MrgUyumlu                   TEXT,
+                IyonizeRadyasyonIcerir      TEXT,
+                TekHastayaKullanilabilir    TEXT,
+                SinirliKullanimSayisiVar    TEXT,
+                SinirliKullanimSayisi       TEXT,
+                BaskaImalatciyaUrettirildiMi TEXT,
+                GmdnTerimTurkceAciklama     TEXT
+            )
+            """)
+            logger.info("v3: Cihaz_Teknik tablosu olusturuldu")
+
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS Cihaz_Teknik_Belge (
+                Cihazid         TEXT    NOT NULL,
+                BelgeTuru       TEXT    NOT NULL,
+                Belge           TEXT    NOT NULL,
+                BelgeAdi        TEXT,
+                YuklenmeTarihi  TEXT,
+                DrivePath       TEXT,
+                LocalPath       TEXT,
+                PRIMARY KEY (Cihazid, BelgeTuru, Belge)
+            )
+            """)
+            logger.info("v3: Cihaz_Teknik_Belge tablosu olusturuldu")
+
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"v3 migration hatasi: {e}")
+            raise
+        finally:
+            conn.close()
 
     def _migrate_to_v2(self):
         """
@@ -564,6 +637,61 @@ class MigrationManager:
         )
         """)
 
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Cihaz_Teknik (
+            Cihazid                     TEXT    PRIMARY KEY,
+            BirincilUrunNumarasi        TEXT,
+            KurumUnvan                  TEXT,
+            MarkaAdi                    TEXT,
+            EtiketAdi                   TEXT,
+            VersiyonModel               TEXT,
+            UrunTipi                    TEXT,
+            Sinif                       TEXT,
+            KatalogNo                   TEXT,
+            GmdnTerimKod                TEXT,
+            GmdnTerimTurkceAd           TEXT,
+            TemelUdiDi                  TEXT,
+            UrunTanimi                  TEXT,
+            Aciklama                    TEXT,
+            KurumGorunenAd              TEXT,
+            KurumNo                     TEXT,
+            KurumTelefon                TEXT,
+            KurumEposta                 TEXT,
+            IthalImalBilgisi            TEXT,
+            MenseiUlkeSet               TEXT,
+            IthalEdilenUlkeSet          TEXT,
+            SutEslesmesiSet             TEXT,
+            Durum                       TEXT,
+            CihazKayitTipi              TEXT,
+            UtsBaslangicTarihi          TEXT,
+            KontroleGonderildigiTarih   TEXT,
+            KalibrasyonaTabiMi          TEXT,
+            KalibrasyonPeriyodu         TEXT,
+            BakimaTabiMi                TEXT,
+            BakimPeriyodu               TEXT,
+            MrgUyumlu                   TEXT,
+            IyonizeRadyasyonIcerir      TEXT,
+            TekHastayaKullanilabilir    TEXT,
+            SinirliKullanimSayisiVar    TEXT,
+            SinirliKullanimSayisi       TEXT,
+            BaskaImalatciyaUrettirildiMi TEXT,
+            GmdnTerimTurkceAciklama     TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Cihaz_Teknik_Belge (
+            Cihazid         TEXT    NOT NULL,
+            BelgeTuru       TEXT    NOT NULL,
+            Belge           TEXT    NOT NULL,
+            BelgeAdi        TEXT,
+            YuklenmeTarihi  TEXT,
+            DrivePath       TEXT,
+            LocalPath       TEXT,
+            PRIMARY KEY (Cihazid, BelgeTuru, Belge)
+        )
+        """)
+
         self._create_auth_tables(cur)
 
     def _create_auth_tables(self, cur):
@@ -932,6 +1060,7 @@ class MigrationManager:
         tables = [
             "Personel", "Izin_Giris", "Izin_Bilgi", "FHSZ_Puantaj",
             "Cihazlar", "Cihaz_Ariza", "Ariza_Islem",
+            "Cihaz_Teknik", "Cihaz_Teknik_Belge",
             "Periyodik_Bakim", "Kalibrasyon",
             "Dokumanlar", "Sabitler", "Tatiller", "Loglar",
             "RKE_List", "RKE_Muayene", "Personel_Saglik_Takip",

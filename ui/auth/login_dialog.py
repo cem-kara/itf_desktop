@@ -56,7 +56,7 @@ class LoginDialog(QDialog):
         # Başlık metni
         lbl_title = QLabel("REPYS GİRİŞ")
         lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lbl_title.setFont(QFont("Arial", 20, QFont.Weight.Bold))
+        lbl_title.setFont(QFont("Arial", 48, QFont.Weight.Bold))
         lbl_title.setProperty("color-role", "accent")
         lbl_title.setStyleSheet("border: none;")
         lbl_title.style().unpolish(lbl_title)
@@ -161,11 +161,3 @@ class LoginDialog(QDialog):
         self._password.clear()
         self._username.setFocus()
 
-    def _reset_ui(self) -> None:
-        self._button_login.setText("GİRİŞ")
-        self._button_login.setEnabled(True)
-        self._username.setEnabled(True)
-        self._password.setEnabled(True)
-        self._password.clear()
-        self._password.setFocus()
-        self._busy = False

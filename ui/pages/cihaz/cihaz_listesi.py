@@ -23,6 +23,58 @@ from ui.styles.icons import IconRenderer
 
 C = DarkTheme
 
+# ── Bakım / Kalibrasyon uyarı hesaplamaları ───────────────────────────────────
+import calendar as _cal
+from datetime import date as _date, datetime as _dt
+
+def _parse_date(val) -> _date | None:
+    """ISO tarih string'ini date nesnesine çevirir."""
+    if not val:
+        return None
+    try:
+        s = str(val).strip()[:10]
+        return _dt.strptime(s, "%Y-%m-%d").date()
+    except Exception:
+        return None
+
+def _bakim_uyari(row: dict) -> str | None:
+    """
+    Planlanan bakım tarihi geçmiş ya da 30 gün içinde ise uyarı döner.
+    Returns: "gecikmiş" | "yaklaşan" | None
+    """
+    try:
+        from core.di import get_cihaz_service as _cs
+        pass
+    except Exception:
+        return None
+    # BakimDurum veya PlanlananTarih alanı varsa kullan
+    bakim_tarihi = _parse_date(row.get("PlanlananTarih") or row.get("SonBakimTarihi"))
+    if not bakim_tarihi:
+        return None
+    bugun = _date.today()
+    delta = (bakim_tarihi - bugun).days
+    if delta < 0:
+        return "gecikmiş"
+    if delta <= 30:
+        return "yaklaşan"
+    return None
+
+def _kalibrasyon_uyari(row: dict) -> str | None:
+    """
+    Kalibrasyon bitiş tarihi geçmiş ya da 30 gün içinde ise uyarı döner.
+    Returns: "süresi dolmuş" | "yaklaşan" | None
+    """
+    bitis = _parse_date(row.get("KalibrasyonBitis") or row.get("KalBitis"))
+    if not bitis:
+        return None
+    bugun = _date.today()
+    delta = (bitis - bugun).days
+    if delta < 0:
+        return "süresi dolmuş"
+    if delta <= 30:
+        return "yaklaşan"
+    return None
+
 # ── Durum renk yardımcıları ───────────────────────────────────────────────────
 _STATUS_COLORS = {
     "Aktif":      (46,  201, 142, 38),
@@ -158,6 +210,11 @@ class CihazDelegate(QStyledItemDelegate):
             self._draw_mono(painter, rect, str(raw.get("DemirbasNo", "") or "—"))
         elif key == "Durum":
             self._draw_status_pill(painter, rect, str(raw.get("Durum", "") or "—"))
+            # Bakım uyarısı rozeti
+            bakim_u = _bakim_uyari(raw)
+            kal_u   = _kalibrasyon_uyari(raw)
+            if bakim_u or kal_u:
+                self._draw_uyari_rozet(painter, rect, bakim_u, kal_u)
         elif key == "_actions":
             if is_hover or is_sel:
                 self._draw_action_btns(painter, rect, row)
@@ -203,6 +260,38 @@ class CihazDelegate(QStyledItemDelegate):
         p.setPen(QColor(fg))
         p.setFont(QFont("Segoe UI", 9, QFont.Weight.Medium))
         p.drawText(r, Qt.AlignmentFlag.AlignCenter, text)
+
+    def _draw_uyari_rozet(self, p, rect, bakim_u: str | None, kal_u: str | None):
+        """
+        Durum hücresinin sağ üst köşesine küçük uyarı rozeti çizer.
+        Kırmızı = gecikmiş/süresi dolmuş, Turuncu = yaklaşan.
+        """
+        # Renk önceliği: gecikmiş > yaklaşan
+        renk_str = None
+        tooltip_parts = []
+        if bakim_u == "gecikmiş":
+            renk_str = "#ef4444"
+            tooltip_parts.append("Bakım gecikmiş")
+        elif kal_u == "süresi dolmuş":
+            renk_str = "#ef4444"
+            tooltip_parts.append("Kalibrasyon süresi dolmuş")
+        elif bakim_u == "yaklaşan":
+            renk_str = "#f59e0b"
+            tooltip_parts.append("Bakım yaklaşıyor")
+        elif kal_u == "yaklaşan":
+            renk_str = "#f59e0b"
+            tooltip_parts.append("Kalibrasyon bitiyor")
+
+        if not renk_str:
+            return
+
+        # Küçük daire rozet — sağ üst köşe
+        dot_x = rect.right() - 10
+        dot_y = rect.top() + 6
+        dot_r = 5
+        p.setBrush(QBrush(QColor(renk_str)))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawEllipse(dot_x - dot_r, dot_y - dot_r, dot_r * 2, dot_r * 2)
 
     def _draw_action_btns(self, p, rect, row):
         labels = [
@@ -530,6 +619,33 @@ class CihazListesiPage(QWidget):
                 page=self._current_page,
                 page_size=self._page_size
             )
+            # Bakım ve kalibrasyon tarihlerini zenginleştir (uyarı rozetleri için)
+            try:
+                tum_bakimlar  = svc.get_tum_bakimlar() or []
+                tum_kal       = svc.get_kalibrasyon_listesi(cihaz_id=None) if hasattr(svc, 'get_kalibrasyon_listesi') else []
+                # Son planlanan bakım tarihi
+                bakim_map: dict[str, str] = {}
+                for b in tum_bakimlar:
+                    cid = str(b.get("Cihazid", "")).strip()
+                    if b.get("PlanlananTarih") and b.get("Durum", "") != "Yapıldı":
+                        if cid not in bakim_map or b["PlanlananTarih"] < bakim_map[cid]:
+                            bakim_map[cid] = str(b["PlanlananTarih"])
+                # Son kalibrasyon bitiş tarihi
+                kal_map: dict[str, str] = {}
+                for k in tum_kal:
+                    cid = str(k.get("Cihazid", "")).strip()
+                    if k.get("BitisTarihi"):
+                        if cid not in kal_map or k["BitisTarihi"] > kal_map[cid]:
+                            kal_map[cid] = str(k["BitisTarihi"])
+                # Satırlara ekle
+                for row in page_data:
+                    cid = str(row.get("Cihazid", "")).strip()
+                    if cid in bakim_map:
+                        row["PlanlananTarih"] = bakim_map[cid]
+                    if cid in kal_map:
+                        row["KalibrasyonBitis"] = kal_map[cid]
+            except Exception as e:
+                logger.debug(f"Bakım/kalibrasyon zenginleştirme: {e}")
             self._all_data = page_data
             self._total_count = total
 

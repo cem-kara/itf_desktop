@@ -18,7 +18,6 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal, QThread, QObject
 
 from ui.styles import DarkTheme
-from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 from core.logger import logger
 from core.di import get_cihaz_service
@@ -200,7 +199,7 @@ class CihazTeknikUtsScraper(QWidget):
     def _build(self):
         main = QVBoxLayout(self); main.setContentsMargins(0,0,0,0); main.setSpacing(0)
         scroll = QScrollArea(); scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame); scroll.setStyleSheet(cast(str, S.get("scroll","") or ""))
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         cnt = QWidget(); cnt.setStyleSheet("background:transparent;")
         root = QVBoxLayout(cnt); root.setContentsMargins(20,20,20,20); root.setSpacing(14)
 
@@ -312,7 +311,7 @@ class CihazTeknikUtsScraper(QWidget):
         
         # DEBUG: Parsed data içeriğini logla
         logger.info(f"📦 Parser çıktısı: {len(self._parsed)} alan")
-        logger.debug(f"📋 Alan isimleri: {list(self._parsed.keys())}")
+        logger.debug(f"Alan isimleri: {list(self._parsed.keys())}")
         for key, val in list(self._parsed.items())[:10]:  # İlk 10 alanı göster
             logger.debug(f"  - {key}: {val[:50] if isinstance(val, str) and len(val) > 50 else val}")
         

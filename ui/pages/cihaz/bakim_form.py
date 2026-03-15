@@ -403,7 +403,20 @@ class BakimKayitForm(QWidget):
         self.btn_toplu.clicked.connect(self._open_toplu_plan_dialog)
         fb_l.addWidget(self.btn_toplu)
 
+        # Görünüm geçiş butonu
+        self.btn_takvim_toggle = QPushButton("Takvim Görünümü")
+        self.btn_takvim_toggle.setProperty("style-role", "secondary")
+        self.btn_takvim_toggle.style().unpolish(self.btn_takvim_toggle)
+        self.btn_takvim_toggle.style().polish(self.btn_takvim_toggle)
+        self.btn_takvim_toggle.setCheckable(True)
+        self.btn_takvim_toggle.toggled.connect(self._toggle_takvim_gorunumu)
+        fb_l.addWidget(self.btn_takvim_toggle)
+
         layout.addWidget(filter_bar)
+
+        # İçerik stack: 0=Tablo, 1=Takvim
+        from PySide6.QtWidgets import QStackedWidget
+        self._view_stack = QStackedWidget()
 
         # Tablo
         self._model = BakimTableModel()
@@ -418,7 +431,13 @@ class BakimKayitForm(QWidget):
         self.table.doubleClicked.connect(self._open_bakim_form_execution)
         self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._show_context_menu)
-        layout.addWidget(self.table, 1)
+        self._view_stack.addWidget(self.table)
+
+        # Takvim
+        self._takvim_widget = _BakimTakvimWidget()
+        self._view_stack.addWidget(self._takvim_widget)
+
+        layout.addWidget(self._view_stack, 1)
 
         self.lbl_count = QLabel("0 kayıt")
         self.lbl_count.setProperty("color-role", "muted")
@@ -888,6 +907,9 @@ class BakimKayitForm(QWidget):
         self._rows = filtered
         self._model.set_rows(filtered)
         self.lbl_count.setText(f"{len(filtered)} kayıt")
+        # Takvim görünümünü de güncelle
+        if hasattr(self, "_takvim_widget"):
+            self._takvim_widget.set_rows(filtered)
 
     # ══════════════════════════════════════════════════════
     #  Satır seçimi → Detay paneli
@@ -1724,10 +1746,276 @@ class BakimKayitForm(QWidget):
                 self._bulk_panel._load_cihazlar()
             self._right_stack.setCurrentIndex(2)
 
+    def _toggle_takvim_gorunumu(self, aktif: bool):
+        """Tablo ↔ Takvim görünümü arasında geçiş."""
+        self._view_stack.setCurrentIndex(1 if aktif else 0)
+        self.btn_takvim_toggle.setText(
+            "Liste Görünümü" if aktif else "Takvim Görünümü"
+        )
+        if aktif:
+            self._takvim_widget.set_rows(self._rows)
+
 
 # ─────────────────────────────────────────────────────────────
 #  Sparkline Widget — 12 aylık mini çubuk grafiği
 # ─────────────────────────────────────────────────────────────
+class _BakimTakvimWidget(QWidget):
+    """
+    Ay bazlı takvim grid'i — bakım planlarını görsel takvimde gösterir.
+
+    Her gün bir hücre. Planlanan bakım varsa hücre renkli, hover'da cihaz adı.
+    Üstte ay/yıl navigasyonu. Durum renkleri: Yapıldı=yeşil, Gecikmiş=kırmızı, Planlı=mavi.
+    """
+
+    DURUM_RENK = {
+        "Yapıldı":  ("#10b981", "#052e16"),
+        "Gecikmiş": ("#ef4444", "#450a0a"),
+        "Planlı":   ("#3b82f6", "#172554"),
+        "İptal":    ("#9ca3af", "#111827"),
+    }
+    DEFAULT_RENK = ("#6366f1", "#1e1b4b")
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._rows: list[dict] = []
+        self._gun_map: dict[str, list[dict]] = {}   # "YYYY-MM-DD" → [bakım satırı]
+        self._nav_yil  = QDate.currentDate().year()
+        self._nav_ay   = QDate.currentDate().month()
+        self._setup_ui()
+
+    # ── UI ─────────────────────────────────────────────────────
+
+    def _setup_ui(self):
+        root = QVBoxLayout(self)
+        root.setContentsMargins(8, 8, 8, 8)
+        root.setSpacing(6)
+
+        # Navigasyon şeridi
+        nav = QHBoxLayout()
+        nav.setSpacing(8)
+
+        self.btn_geri = QPushButton("‹")
+        self.btn_geri.setFixedSize(28, 28)
+        self.btn_geri.setProperty("style-role", "secondary")
+        self.btn_geri.style().unpolish(self.btn_geri)
+        self.btn_geri.style().polish(self.btn_geri)
+        self.btn_geri.clicked.connect(self._onceki_ay)
+
+        self.btn_ileri = QPushButton("›")
+        self.btn_ileri.setFixedSize(28, 28)
+        self.btn_ileri.setProperty("style-role", "secondary")
+        self.btn_ileri.style().unpolish(self.btn_ileri)
+        self.btn_ileri.style().polish(self.btn_ileri)
+        self.btn_ileri.clicked.connect(self._sonraki_ay)
+
+        self.btn_bugun = QPushButton("Bugün")
+        self.btn_bugun.setProperty("style-role", "secondary")
+        self.btn_bugun.style().unpolish(self.btn_bugun)
+        self.btn_bugun.style().polish(self.btn_bugun)
+        self.btn_bugun.setFixedHeight(28)
+        self.btn_bugun.clicked.connect(self._bugun_git)
+
+        self.lbl_ay_yil = QLabel()
+        self.lbl_ay_yil.setStyleSheet(
+            "font-size:14px; font-weight:700; color:var(--color-text-primary);"
+        )
+        self.lbl_ay_yil.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # Lejant
+        lejant = QHBoxLayout()
+        for durum, (bg, _) in self.DURUM_RENK.items():
+            dot = QLabel("  ")
+            dot.setStyleSheet(
+                f"background:{bg}; border-radius:3px; min-width:12px; max-width:12px;"
+                f"min-height:12px; max-height:12px;"
+            )
+            lbl = QLabel(durum)
+            lbl.setStyleSheet("font-size:10px; color:#8fa3b8;")
+            lejant.addWidget(dot)
+            lejant.addWidget(lbl)
+            lejant.addSpacing(6)
+        lejant.addStretch()
+
+        nav.addWidget(self.btn_geri)
+        nav.addWidget(self.btn_bugun)
+        nav.addStretch()
+        nav.addWidget(self.lbl_ay_yil)
+        nav.addStretch()
+        nav.addWidget(self.btn_ileri)
+
+        root.addLayout(nav)
+        root.addLayout(lejant)
+
+        # Grid container — scroll içinde
+        from PySide6.QtWidgets import QScrollArea
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+
+        self._grid_container = QWidget()
+        self._grid_container.setStyleSheet("background: transparent;")
+        self._grid_layout = QGridLayout(self._grid_container)
+        self._grid_layout.setSpacing(2)
+        self._grid_layout.setContentsMargins(0, 0, 0, 0)
+
+        scroll.setWidget(self._grid_container)
+        root.addWidget(scroll, 1)
+
+        self._render_takvim()
+
+    # ── Veri ───────────────────────────────────────────────────
+
+    def set_rows(self, rows: list[dict]):
+        self._rows = rows or []
+        self._gun_map = {}
+        for r in self._rows:
+            tarih = str(r.get("PlanlananTarih") or r.get("BakimTarihi") or "")[:10]
+            if tarih and len(tarih) == 10:
+                self._gun_map.setdefault(tarih, []).append(r)
+        self._render_takvim()
+
+    # ── Navigasyon ─────────────────────────────────────────────
+
+    def _onceki_ay(self):
+        if self._nav_ay == 1:
+            self._nav_ay  = 12
+            self._nav_yil -= 1
+        else:
+            self._nav_ay -= 1
+        self._render_takvim()
+
+    def _sonraki_ay(self):
+        if self._nav_ay == 12:
+            self._nav_ay  = 1
+            self._nav_yil += 1
+        else:
+            self._nav_ay += 1
+        self._render_takvim()
+
+    def _bugun_git(self):
+        today = QDate.currentDate()
+        self._nav_yil = today.year()
+        self._nav_ay  = today.month()
+        self._render_takvim()
+
+    # ── Render ─────────────────────────────────────────────────
+
+    _AY_ADLARI = [
+        "", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+        "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
+    ]
+    _GUN_ADLARI = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"]
+
+    def _render_takvim(self):
+        # Eski içeriği temizle
+        while self._grid_layout.count():
+            item = self._grid_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        yil, ay = self._nav_yil, self._nav_ay
+        self.lbl_ay_yil.setText(f"{self._AY_ADLARI[ay]} {yil}")
+
+        # Gün başlıkları (Pzt … Paz)
+        for col, ad in enumerate(self._GUN_ADLARI):
+            lbl = QLabel(ad)
+            lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            lbl.setFixedHeight(22)
+            lbl.setStyleSheet(
+                "font-size:10px; font-weight:600; color:#8fa3b8; background:transparent;"
+            )
+            self._grid_layout.addWidget(lbl, 0, col)
+
+        # Ayın 1. günü hangi sütun (0=Pzt)
+        import calendar as _cal
+        from datetime import date as _d
+        ilk_gun_hafta, toplam_gun = _cal.monthrange(yil, ay)
+        # ilk_gun_hafta: 0=Pzt, 6=Paz
+        bugun = _d.today()
+
+        row = 1
+        col = ilk_gun_hafta
+
+        for gun_no in range(1, toplam_gun + 1):
+            tarih_str = f"{yil:04d}-{ay:02d}-{gun_no:02d}"
+            bakimlar  = self._gun_map.get(tarih_str, [])
+            is_bugun  = (gun_no == bugun.day and ay == bugun.month and yil == bugun.year)
+
+            hucre = self._hucre_olustur(gun_no, bakimlar, is_bugun, tarih_str)
+            self._grid_layout.addWidget(hucre, row, col)
+
+            col += 1
+            if col == 7:
+                col = 0
+                row += 1
+
+        # Boş kalan son sütunları doldur (görsel düzen için)
+        while col < 7 and col > 0:
+            bos = QLabel()
+            bos.setFixedSize(36, 48)
+            self._grid_layout.addWidget(bos, row, col)
+            col += 1
+
+    def _hucre_olustur(self, gun_no: int, bakimlar: list, is_bugun: bool, tarih: str) -> QFrame:
+        f = QFrame()
+        f.setFixedSize(36, 48)
+
+        if is_bugun:
+            f.setStyleSheet(
+                "QFrame { border: 2px solid #3b82f6; border-radius: 4px; background: rgba(59,130,246,0.12); }"
+            )
+        elif bakimlar:
+            # En kritik duruma göre renk
+            durumlar = [str(b.get("Durum","")).strip() for b in bakimlar]
+            renk, _ = self.DURUM_RENK.get(
+                "Gecikmiş" if "Gecikmiş" in durumlar else
+                "Yapıldı"  if all(d == "Yapıldı" for d in durumlar) else
+                "Planlı",
+                self.DEFAULT_RENK
+            )
+            f.setStyleSheet(
+                f"QFrame {{ background: {renk}; border-radius: 4px; border: none; }}"
+            )
+        else:
+            f.setStyleSheet(
+                "QFrame { background: rgba(255,255,255,0.04); border-radius: 4px; border: none; }"
+            )
+
+        lay = QVBoxLayout(f)
+        lay.setContentsMargins(2, 2, 2, 2)
+        lay.setSpacing(1)
+
+        # Gün numarası
+        lbl_no = QLabel(str(gun_no))
+        lbl_no.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+        lbl_no.setStyleSheet(
+            f"font-size:11px; font-weight:{'700' if is_bugun else '400'}; "
+            f"color:{'#3b82f6' if is_bugun else ('#fff' if bakimlar else '#8fa3b8')}; "
+            "background: transparent;"
+        )
+        lay.addWidget(lbl_no)
+
+        # Bakım sayısı rozeti
+        if bakimlar:
+            lbl_n = QLabel(str(len(bakimlar)))
+            lbl_n.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            lbl_n.setStyleSheet(
+                "font-size:9px; font-weight:700; color:#fff; background:transparent;"
+            )
+            lay.addWidget(lbl_n)
+            # Tooltip: cihaz listesi
+            cihazlar = ", ".join(
+                str(b.get("Cihazid","")) for b in bakimlar[:3]
+            )
+            if len(bakimlar) > 3:
+                cihazlar += f" +{len(bakimlar)-3}"
+            f.setToolTip(f"{tarih}\n{cihazlar}")
+        else:
+            lay.addStretch()
+
+        return f
+
+
 class _BakimSparkline(QWidget):
     """12 değerden oluşan mini çubuk grafiği (bakım trend)."""
 

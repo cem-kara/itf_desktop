@@ -7,6 +7,7 @@ from datetime import datetime
 
 from PySide6.QtCore  import Qt, QDate, QThread, Signal, QAbstractTableModel, QModelIndex
 from PySide6.QtWidgets import (
+    QGroupBox,
     QWidget, QVBoxLayout, QHBoxLayout, QAbstractItemView,
     QTableView, QHeaderView, QLabel, QPushButton, QComboBox,
     QDateEdit, QLineEdit, QTextEdit, QProgressBar, QScrollArea,
@@ -17,7 +18,6 @@ from PySide6.QtGui import QColor, QCursor
 from core.di import get_rke_service as _get_rke_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.colors import DarkTheme
-from ui.styles.components import STYLES
 from ui.styles.icons import IconRenderer, IconColors
 
 
@@ -35,55 +35,25 @@ from ui.styles.icons import IconRenderer, IconColors
 # ══════════════════════════════════════════════════════════════════
 #  FieldGroup — mockup'ın fgroup bileşeni
 # ══════════════════════════════════════════════════════════════════
-class FieldGroup(QWidget):
-    """Renkli sol şerit + monospace başlık + içerik kartı."""
-    def __init__(self, title: str, color: str, parent=None):
-        super().__init__(parent)
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.setStyleSheet(
-            f"FieldGroup{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:6px;}}"
-        )
-        root = QVBoxLayout(self)
-        root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(0)
-
-        # ── header ───────────────────────────────────────────────
-        hdr = QWidget()
-        hdr.setFixedHeight(30)
-        hdr.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        hdr.setStyleSheet(
-            f"QWidget{{background:rgba(255,255,255,12);border-bottom:1px solid {DarkTheme.BORDER_PRIMARY};"
-            f"border-top-left-radius:6px;border-top-right-radius:6px;}}"
-        )
-        hh = QHBoxLayout(hdr)
-        hh.setContentsMargins(10, 0, 10, 0)
-        hh.setSpacing(8)
-
-        bar = QFrame()
-        bar.setFixedSize(3, 14)
-        bar.setStyleSheet("border: none;")
-
-        lbl = QLabel(title.upper())
-        lbl.setStyleSheet(
-            f"color:{color};background:transparent;font-size:9px;font-weight:700;"
-            f"font-family:{DarkTheme.MONOSPACE};"
-        )
-        hh.addWidget(bar)
-        hh.addWidget(lbl)
-        hh.addStretch()
-        root.addWidget(hdr)
-
-        # ── body ─────────────────────────────────────────────────
-        self._body = QWidget()
-        self._body.setStyleSheet("background:transparent;")
-        self._bl = QVBoxLayout(self._body)
+class FieldGroup(QGroupBox):
+    """
+    QGroupBox tabanlı grup kutusu — tema sistemiyle uyumlu.
+    color parametresi başlık aksan rengini belirler.
+    Arka plan ve kenarlık tema QSS tarafından otomatik uygulanır.
+    """
+    def __init__(self, title: str, color: str = "", parent=None):
+        super().__init__(title, parent)
+        # Başlık rengini sadece color özelliğiyle override et
+        if color:
+            self.setStyleSheet(f"QGroupBox::title {{ color: {color}; }}")
+        self._bl = QVBoxLayout(self)
         self._bl.setContentsMargins(10, 10, 10, 12)
         self._bl.setSpacing(8)
-        root.addWidget(self._body)
 
     def add_widget(self, w): self._bl.addWidget(w)
     def add_layout(self, l): self._bl.addLayout(l)
     def body_layout(self) -> QVBoxLayout: return self._bl
+
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -249,8 +219,6 @@ class RKEYonetimPenceresi(QWidget):
         bar = QWidget()
         bar.setFixedHeight(68)
         bar.setProperty("bg-role", "page")
-        bar.style().unpolish(bar)
-        bar.style().polish(bar)
         hl = QHBoxLayout(bar)
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setSpacing(1)
@@ -269,35 +237,25 @@ class RKEYonetimPenceresi(QWidget):
     def _mk_kpi_card(self, key, title, val, color) -> QWidget:
         w = QWidget()
         w.setProperty("bg-role", "page")
-        w.style().unpolish(w)
-        w.style().polish(w)
         hl = QHBoxLayout(w)
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setSpacing(0)
 
         accent = QFrame()
         accent.setFixedWidth(3)
-        accent.setStyleSheet("border: none;")
+        # tema otomatik — accent
         hl.addWidget(accent)
 
         content = QWidget()
         content.setProperty("bg-role", "page")
-        content.style().unpolish(content)
-        content.style().polish(content)
         vl = QVBoxLayout(content)
         vl.setContentsMargins(14, 8, 14, 8)
         vl.setSpacing(2)
 
         lt = QLabel(title)
-        lt.setStyleSheet(
-            f"color:{DarkTheme.TEXT_MUTED};background:transparent;font-family:{DarkTheme.MONOSPACE};"
-            f"font-size:8px;font-weight:700;"
-        )
+        lt.setProperty("color-role", "muted")
         lv = QLabel(val)
-        lv.setStyleSheet(
-            f"color:{color};background:transparent;font-family:{DarkTheme.MONOSPACE};"
-            f"font-size:20px;font-weight:700;"
-        )
+        lv.setStyleSheet(f"color:{color};background:transparent;font-size:20px;font-weight:700;")
         vl.addWidget(lt)
         vl.addWidget(lv)
         hl.addWidget(content, 1)
@@ -308,13 +266,11 @@ class RKEYonetimPenceresi(QWidget):
     #  GÖVDE (liste | form)
     # ─────────────────────────────────────────────────────────────
     def _mk_body(self) -> QWidget:
-        w = QWidget(); w.setProperty("bg-role", "page"); w.style().unpolish(w); w.style().polish(w)
+        w = QWidget(); w.setProperty("bg-role", "page");
         hl = QHBoxLayout(w); hl.setContentsMargins(0,0,0,0); hl.setSpacing(0)
         hl.addWidget(self._mk_list_panel(), 1)
         sep = QFrame(); sep.setFixedWidth(1)
         sep.setProperty("bg-role", "separator")
-        sep.style().unpolish(sep)
-        sep.style().polish(sep)
         hl.addWidget(sep)
         self._form_panel = self._mk_form_panel()
         self._form_panel.setFixedWidth(390)
@@ -327,26 +283,17 @@ class RKEYonetimPenceresi(QWidget):
     def _mk_form_panel(self) -> QWidget:
         panel = QWidget()
         panel.setProperty("bg-role", "page")
-        panel.style().unpolish(panel)
-        panel.style().polish(panel)
         vl = QVBoxLayout(panel); vl.setContentsMargins(0,0,0,0); vl.setSpacing(0)
 
         # Panel başlık çubuğu
         hdr = QWidget(); hdr.setFixedHeight(36)
         hdr.setProperty("bg-role", "page")
-        hdr.style().unpolish(hdr)
-        hdr.style().polish(hdr)
         hh = QHBoxLayout(hdr); hh.setContentsMargins(14,0,14,0)
         t1 = QLabel("EKİPMAN FORMU")
         t1.setProperty("color-role", "muted")
-        t1.setStyleSheet("font-family: {DarkTheme.MONOSPACE}; font-size: 9px; font-weight: 700;")
-        t1.style().unpolish(t1)
-        t1.style().polish(t1)
+        t1.setProperty("color-role", "muted")  # monospace tema QSS ile
         self._lbl_mode = QLabel("YENİ KAYIT")
-        self._lbl_mode.setStyleSheet(
-            f"color:{DarkTheme.STATUS_WARNING};background:rgba(232,160,48,.08);border:1px solid rgba(232,160,48,.25);"
-            f"border-radius:3px;padding:2px 8px;font-family:{DarkTheme.MONOSPACE};font-size:9px;font-weight:700;"
-        )
+        self._lbl_mode.setProperty("style-role", "warning")
         hh.addWidget(t1); hh.addStretch(); hh.addWidget(self._lbl_mode)
         vl.addWidget(hdr)
 
@@ -356,7 +303,7 @@ class RKEYonetimPenceresi(QWidget):
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         # setStyleSheet kaldırıldı (_S_SCROLL) — global QSS
 
-        inner = QWidget(); inner.setStyleSheet("background:transparent;")
+        inner = QWidget()
         il = QVBoxLayout(inner)
         il.setContentsMargins(12, 12, 12, 20)
         il.setSpacing(10)
@@ -432,11 +379,7 @@ class RKEYonetimPenceresi(QWidget):
         lbl_aciklama.setFixedHeight(70)
         lbl_aciklama.setWordWrap(True)
         lbl_aciklama.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        lbl_aciklama.setStyleSheet(
-            f"QLabel{{background:{DarkTheme.BG_ELEVATED};color:{DarkTheme.TEXT_PRIMARY};"
-            f"border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:6px;"
-            f"padding:8px;font-size:11px;line-height:1.4;}}"
-        )
+        lbl_aciklama.setProperty("bg-role", "input")
         g3.addWidget(lbl_aciklama, 5, 0, 1, 2)
         self.inputs["Açiklama"] = lbl_aciklama
         
@@ -469,7 +412,7 @@ class RKEYonetimPenceresi(QWidget):
         br = QHBoxLayout(); br.setContentsMargins(12,8,12,12); br.setSpacing(8)
         self.btn_temizle = self._btn("↺  TEMİZLE / YENİ", "secondary")
         self.btn_temizle.clicked.connect(self.temizle)
-        self.btn_kaydet  = self._btn("✓  KAYDET", "primary")
+        self.btn_kaydet  = self._btn("KAYDET", "primary")
         self.btn_kaydet.clicked.connect(self.kaydet)
         if self._action_guard:
             self._action_guard.disable_if_unauthorized(self.btn_kaydet, "cihaz.write")
@@ -481,14 +424,12 @@ class RKEYonetimPenceresi(QWidget):
     #  LİSTE PANELİ
     # ─────────────────────────────────────────────────────────────
     def _mk_list_panel(self) -> QWidget:
-        panel = QWidget(); panel.setProperty("bg-role", "page"); panel.style().unpolish(panel); panel.style().polish(panel)
+        panel = QWidget(); panel.setProperty("bg-role", "page");
         vl = QVBoxLayout(panel); vl.setContentsMargins(0,0,0,0); vl.setSpacing(0)
 
         # Filtre çubuğu
         fbar = QWidget(); fbar.setFixedHeight(46)
         fbar.setProperty("bg-role", "page")
-        fbar.style().unpolish(fbar)
-        fbar.style().polish(fbar)
         fl = QHBoxLayout(fbar); fl.setContentsMargins(12,0,12,0); fl.setSpacing(8)
 
         self.cmb_filtre_abd = self._combo(width=170)
@@ -537,14 +478,10 @@ class RKEYonetimPenceresi(QWidget):
         foot = QWidget(); foot.setFixedHeight(30)
         foot.setProperty("bg-role", "page")
         foot.setProperty("border-role", "top")
-        foot.style().unpolish(foot)
-        foot.style().polish(foot)
         fl2 = QHBoxLayout(foot); fl2.setContentsMargins(12,0,12,0)
         self.lbl_sayi = QLabel("0 kayıt")
         self.lbl_sayi.setProperty("color-role", "muted")
-        self.lbl_sayi.setStyleSheet("font-family: {DarkTheme.MONOSPACE}; font-size: 9px;")
-        self.lbl_sayi.style().unpolish(self.lbl_sayi)
-        self.lbl_sayi.style().polish(self.lbl_sayi)
+        self.lbl_sayi.setProperty("color-role", "muted")  # monospace tema QSS ile
         fl2.addStretch(); fl2.addWidget(self.lbl_sayi)
         vl.addWidget(foot)
         return panel
@@ -555,20 +492,14 @@ class RKEYonetimPenceresi(QWidget):
     def _lbl(self, text) -> QLabel:
         l = QLabel(text)
         l.setProperty("color-role", "muted")
-        l.setStyleSheet("font-family: {DarkTheme.MONOSPACE}; font-size: 8px; font-weight: 700;")
-        l.style().unpolish(l)
-        l.style().polish(l)
+        l.setProperty("color-role", "muted")  # monospace tema QSS ile
         return l
 
     def _value_label(self, text="—") -> QLabel:
         """Salt okunur veri gösterimi için label."""
         l = QLabel(text)
         l.setFixedHeight(28)
-        l.setStyleSheet(
-            f"QLabel{{background:{DarkTheme.BG_ELEVATED};color:{DarkTheme.TEXT_PRIMARY};"
-            f"border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:6px;"
-            f"padding:0 10px;font-size:11px;}}"
-        )
+        l.setProperty("bg-role", "panel")
         return l
 
     def _input(self, ro=False) -> QLineEdit:
@@ -808,7 +739,7 @@ class RKEYonetimPenceresi(QWidget):
         self.inputs["KayitNo"].setText("Otomatik")
         # Durum ve KontrolTarihi artık label, setEnabled gereksiz
         self._gecmis_model.set_rows([])
-        self.btn_kaydet.setText("✓  KAYDET")
+        self.btn_kaydet.setText("KAYDET")
         self.btn_kaydet.setProperty("style-role", "success-filled")
         self._lbl_mode.setText("YENİ KAYIT")
 

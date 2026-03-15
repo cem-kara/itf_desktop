@@ -30,7 +30,6 @@ from core.services.kalibrasyon_service import KalibrasyonService
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.colors import C as _C
 from ui.styles import DarkTheme
-from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 
 
@@ -289,14 +288,18 @@ class KalibrasyonKayitForm(QWidget):
         fb_l.setSpacing(8)
 
         self.txt_filter = QLineEdit()
-        self.txt_filter.setPlaceholderText("🔍  Kal. No, Cihaz, Firma…")
-        self.txt_filter.setStyleSheet(S["input"])
+        self.txt_filter.setPlaceholderText("Kal. No, Cihaz, Firma…")
+        self.txt_filter.setProperty("bg-role", "input")
+        self.txt_filter.style().unpolish(self.txt_filter)
+        self.txt_filter.style().polish(self.txt_filter)
         self.txt_filter.setMaximumWidth(230)
         self.txt_filter.textChanged.connect(self._apply_filters)
         fb_l.addWidget(self.txt_filter)
 
         self.cmb_durum_filter = QComboBox()
-        self.cmb_durum_filter.setStyleSheet(S["combo"])
+        self.cmb_durum_filter.setProperty("bg-role", "input")
+        self.cmb_durum_filter.style().unpolish(self.cmb_durum_filter)
+        self.cmb_durum_filter.style().polish(self.cmb_durum_filter)
         self.cmb_durum_filter.setFixedWidth(155)
         for lbl, val in [("Tüm Durumlar", None),
                           ("Geçerli","Gecerli"), ("Geçersiz","Gecersiz")]:
@@ -305,7 +308,9 @@ class KalibrasyonKayitForm(QWidget):
         fb_l.addWidget(self.cmb_durum_filter)
 
         self.cmb_cihaz_filter = QComboBox()
-        self.cmb_cihaz_filter.setStyleSheet(S["combo"])
+        self.cmb_cihaz_filter.setProperty("bg-role", "input")
+        self.cmb_cihaz_filter.style().unpolish(self.cmb_cihaz_filter)
+        self.cmb_cihaz_filter.style().polish(self.cmb_cihaz_filter)
         self.cmb_cihaz_filter.setFixedWidth(150)
         self.cmb_cihaz_filter.addItem("Tüm Cihazlar", None)
         self.cmb_cihaz_filter.currentIndexChanged.connect(self._apply_filters)
@@ -323,7 +328,7 @@ class KalibrasyonKayitForm(QWidget):
         self.table.setModel(self._model)
         self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
-        self.table.setStyleSheet(S["table"])
+        # tema otomatik — self.table.setStyleSheet(S["table"]) kaldırıldı
         self.table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._model.setup_columns(self.table)
         self.table.selectionModel().currentChanged.connect(self._on_row_selected)
@@ -471,7 +476,7 @@ class KalibrasyonKayitForm(QWidget):
         bb_l.addStretch()
         self.btn_kayit_ekle = QPushButton("+ Kayıt Ekle")
         self.btn_kayit_ekle.setStyleSheet(
-            S.get("btn_secondary", S.get("btn_primary", "") or "") or ""
+            ""
         )
         self.btn_kayit_ekle.setEnabled(False)
         self.btn_kayit_ekle.clicked.connect(self._open_kal_form)
@@ -506,9 +511,7 @@ class KalibrasyonKayitForm(QWidget):
         # index 1: form scroll
         self._exec_form_scroll = QScrollArea()
         self._exec_form_scroll.setWidgetResizable(True)
-        self._exec_form_scroll.setStyleSheet(
-            S.get("scroll", "background:{};border:none;".format(surface)) or "background:{};border:none;".format(surface)
-        )
+        # tema otomatik — scroll
         self._exec_form_inner = QWidget()
         self._exec_form_inner.setProperty("bg-role", "surface")
         self._exec_form_inner.style().unpolish(self._exec_form_inner)
@@ -642,7 +645,7 @@ class KalibrasyonKayitForm(QWidget):
         dur_c_map = {"Planlandi": _C["accent"], "Planlandı": _C["accent"], "Yapildi": _C["green"], "Yapıldı": _C["green"], "Gecikmis": _C["red"], "Gecikmiş": _C["red"]}
         dur_c = dur_c_map.get(durum, _C["muted"])
         if durum:
-            self.lbl_det_durum.setText(f"● {durum}")
+            self.lbl_det_durum.setText(durum)
             self.lbl_det_durum.setStyleSheet(
                 "font-size:10px;font-weight:700;color:{};padding:2px 8px;border-radius:10px;background:{}22;" .format(dur_c, dur_c)
             )
@@ -732,9 +735,7 @@ class KalibrasyonKayitForm(QWidget):
     def _build_perf_tab(self) -> QWidget:
         outer = QScrollArea()
         outer.setWidgetResizable(True)
-        outer.setStyleSheet(
-            S.get("scroll", "background:{};border:none;".format(_C['surface'])) or "background:{};border:none;".format(_C['surface'])
-        )
+        # tema otomatik — scroll
         self._perf_inner = QWidget()
         self._perf_inner.setProperty("bg-role", "elevated")
         self._perf_inner.style().unpolish(self._perf_inner)
@@ -1365,44 +1366,54 @@ class _KalibrasyonGirisForm(QWidget):
         grid.setVerticalSpacing(8)
 
         self.txt_firma = QLineEdit()
-        self.txt_firma.setStyleSheet(S["input"])
+        self.txt_firma.setProperty("bg-role", "input")
+        self.txt_firma.style().unpolish(self.txt_firma)
+        self.txt_firma.style().polish(self.txt_firma)
         self.txt_firma.setPlaceholderText("Kalibrasyon firması")
         self._r(grid, 0, "Firma *", self.txt_firma)
 
         self.txt_sertifika = QLineEdit()
-        self.txt_sertifika.setStyleSheet(S["input"])
+        self.txt_sertifika.setProperty("bg-role", "input")
+        self.txt_sertifika.style().unpolish(self.txt_sertifika)
+        self.txt_sertifika.style().polish(self.txt_sertifika)
         self.txt_sertifika.setPlaceholderText("Sertifika numarası")
         self._r(grid, 1, "Sertifika No", self.txt_sertifika)
 
         self.dt_yapilan = QDateEdit(QDate.currentDate())
         self.dt_yapilan.setCalendarPopup(True)
         self.dt_yapilan.setDisplayFormat("ddd, d MMMM yyyy")
-        self.dt_yapilan.setStyleSheet(S["date"])
+        # tema otomatik — self.dt_yapilan.setStyleSheet(S["date"]) kaldırıldı
         self._r(grid, 2, "Yapılan Tarih *", self.dt_yapilan)
 
         self.txt_gecerlilik = QLineEdit()
-        self.txt_gecerlilik.setStyleSheet(S["input"])
+        self.txt_gecerlilik.setProperty("bg-role", "input")
+        self.txt_gecerlilik.style().unpolish(self.txt_gecerlilik)
+        self.txt_gecerlilik.style().polish(self.txt_gecerlilik)
         self.txt_gecerlilik.setPlaceholderText("Örn: 1 Yıl, 2 Yıl")
         self._r(grid, 3, "Geçerlilik Süresi", self.txt_gecerlilik)
 
         self.dt_bitis = QDateEdit(QDate.currentDate())
         self.dt_bitis.setCalendarPopup(True)
         self.dt_bitis.setDisplayFormat("ddd, d MMMM yyyy")
-        self.dt_bitis.setStyleSheet(S["date"])
+        # tema otomatik — self.dt_bitis.setStyleSheet(S["date"]) kaldırıldı
         self._r(grid, 4, "Bitiş Tarihi *", self.dt_bitis)
 
         self.cmb_durum = QComboBox()
-        self.cmb_durum.setStyleSheet(S["combo"])
+        self.cmb_durum.setProperty("bg-role", "input")
+        self.cmb_durum.style().unpolish(self.cmb_durum)
+        self.cmb_durum.style().polish(self.cmb_durum)
         self.cmb_durum.addItems(["Gecerli", "Gecersiz"])
         self._r(grid, 5, "Durum", self.cmb_durum)
 
         self.txt_dosya = QLineEdit()
-        self.txt_dosya.setStyleSheet(S["input"])
+        self.txt_dosya.setProperty("bg-role", "input")
+        self.txt_dosya.style().unpolish(self.txt_dosya)
+        self.txt_dosya.style().polish(self.txt_dosya)
         self.txt_dosya.setPlaceholderText("Dosya yolu veya link")
         self._r(grid, 6, "Dosya / Link", self.txt_dosya)
 
         self.txt_aciklama = QTextEdit()
-        self.txt_aciklama.setStyleSheet(S["input_text"])
+        # tema otomatik — self.txt_aciklama.setStyleSheet(S["input_text"]) kaldırıldı
         self.txt_aciklama.setFixedHeight(72)
         self.txt_aciklama.setPlaceholderText("Ek açıklama (isteğe bağlı)")
         self._r(grid, 7, "Açıklama", self.txt_aciklama)
@@ -1418,7 +1429,7 @@ class _KalibrasyonGirisForm(QWidget):
         btn_kaydet = QPushButton("Kaydet")
         try:
             IconRenderer.set_button_icon(
-                btn_kaydet, "save", color=DarkTheme.BTN_PRIMARY_TEXT, size=14
+                btn_kaydet, "save", color="white", size=14
             )
         except Exception:
             pass
@@ -1430,7 +1441,9 @@ class _KalibrasyonGirisForm(QWidget):
 
     def _r(self, grid, row, label, widget):
         lbl = QLabel(label)
-        lbl.setStyleSheet(S["label"])
+        lbl.setProperty("color-role", "secondary")
+        lbl.style().unpolish(lbl)
+        lbl.style().polish(lbl)
         grid.addWidget(lbl, row, 0)
         grid.addWidget(widget, row, 1)
 
