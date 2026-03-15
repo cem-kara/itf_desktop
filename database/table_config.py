@@ -108,6 +108,39 @@ TABLES = {
         "date_fields": ["BaslangicTarihi"],
     },
 
+    "Cihaz_Teknik": {
+        "pk": "Cihazid",
+        "columns": [
+            "Cihazid",
+            "BirincilUrunNumarasi", "KurumUnvan", "MarkaAdi", "EtiketAdi",
+            "VersiyonModel", "UrunTipi", "Sinif", "KatalogNo",
+            "GmdnTerimKod", "GmdnTerimTurkceAd", "TemelUdiDi",
+            "UrunTanimi", "Aciklama",
+            "KurumGorunenAd", "KurumNo", "KurumTelefon", "KurumEposta",
+            "IthalImalBilgisi", "MenseiUlkeSet", "IthalEdilenUlkeSet",
+            "SutEslesmesiSet", "Durum", "CihazKayitTipi",
+            "UtsBaslangicTarihi", "KontroleGonderildigiTarih",
+            "KalibrasyonaTabiMi", "KalibrasyonPeriyodu",
+            "BakimaTabiMi", "BakimPeriyodu",
+            "MrgUyumlu", "IyonizeRadyasyonIcerir",
+            "TekHastayaKullanilabilir", "SinirliKullanimSayisiVar",
+            "SinirliKullanimSayisi", "BaskaImalatciyaUrettirildiMi",
+            "GmdnTerimTurkceAciklama",
+        ],
+        "date_fields": ["UtsBaslangicTarihi", "KontroleGonderildigiTarih"],
+        "sync": False,
+    },
+
+    "Cihaz_Teknik_Belge": {
+        "pk": ["Cihazid", "BelgeTuru", "Belge"],
+        "columns": [
+            "Cihazid", "BelgeTuru", "Belge",
+            "BelgeAdi", "YuklenmeTarihi", "DrivePath", "LocalPath",
+        ],
+        "date_fields": ["YuklenmeTarihi"],
+        "sync": False,
+    },
+
     "Ariza_Islem": {
         "pk": "Islemid",
         "columns": [                          # ← "colums" → "columns"

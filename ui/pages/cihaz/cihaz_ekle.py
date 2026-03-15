@@ -14,7 +14,6 @@ from core.logger import logger
 from core.di import get_cihaz_service as _get_cihaz_service
 from core.di import get_dokuman_service
 from ui.styles import DarkTheme
-from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 from ui.pages.cihaz.components.cihaz_teknik_uts_scraper import CihazTeknikUtsScraper
 from ui.pages.cihaz.components.cihaz_dokuman_panel import CihazDokumanPanel
@@ -45,7 +44,9 @@ class CihazEklePage(QWidget):
         self._uts_mode = False  # Cihaz kaydedildi, ÜTS bekliyor mu?
         self._dokuman_uploader = None
 
-        self.setStyleSheet(S["page"])
+        self.setProperty("bg-role", "page")
+        self.style().unpolish(self)
+        self.style().polish(self)
         self._setup_ui()
         self._load_sabitler()
 
@@ -63,13 +64,15 @@ class CihazEklePage(QWidget):
         hl.setContentsMargins(16, 0, 16, 0)
         title = QLabel("Cihaz Ekle")
         title.setProperty("color-role", "primary")
-        title.setStyleSheet("font-size: 14px; font-weight: 700; background: transparent;")
+        title.setProperty("style-role", "title")
+        title.style().unpolish(title)
+        title.style().polish(title)
         hl.addWidget(title)
         hl.addStretch()
         root.addWidget(header)
 
         self._tabs = QTabWidget()
-        self._tabs.setStyleSheet(cast(str, S.get("tabs", "") or ""))
+        # tema otomatik — QTabWidget
         root.addWidget(self._tabs, 1)
 
         # Tab 1: Cihaz Bilgileri (Personel ekle gibi iki sütun)
@@ -81,7 +84,7 @@ class CihazEklePage(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(S["scroll"])
+        # tema otomatik — QScrollArea
         tab_form_lay.addWidget(scroll, 1)
 
         content = QWidget()
@@ -102,7 +105,9 @@ class CihazEklePage(QWidget):
 
         # 1) Medya ve Dosyalar
         left_grp = QGroupBox("Medya ve Dosyalar")
-        left_grp.setStyleSheet(S["group"])
+        left_grp.setProperty("bg-role", "panel")
+        left_grp.style().unpolish(left_grp)
+        left_grp.style().polish(left_grp)
         left_lay = QGridLayout(left_grp)
         left_lay.setSpacing(8)
         left_lay.setColumnStretch(0, 1)
@@ -115,7 +120,9 @@ class CihazEklePage(QWidget):
 
         # 2) Kimlik Bilgileri
         kimlik_grp = QGroupBox("Kimlik Bilgileri")
-        kimlik_grp.setStyleSheet(S["group"])
+        kimlik_grp.setProperty("bg-role", "panel")
+        kimlik_grp.style().unpolish(kimlik_grp)
+        kimlik_grp.style().polish(kimlik_grp)
         kimlik_lay = QGridLayout(kimlik_grp)
         kimlik_lay.setSpacing(8)
         kimlik_lay.setColumnStretch(0, 1)
@@ -139,7 +146,9 @@ class CihazEklePage(QWidget):
 
         # NDK Lisans Bilgileri
         ndk_grp = QGroupBox("NDK Lisans Bilgileri")
-        ndk_grp.setStyleSheet(S["group"])
+        ndk_grp.setProperty("bg-role", "panel")
+        ndk_grp.style().unpolish(ndk_grp)
+        ndk_grp.style().polish(ndk_grp)
         ndk_lay = QGridLayout(ndk_grp)
         ndk_lay.setSpacing(8)
         ndk_lay.setColumnStretch(0, 1)
@@ -155,7 +164,9 @@ class CihazEklePage(QWidget):
 
         # Teknik Hizmetler
         teknik_grp = QGroupBox("Teknik Hizmetler")
-        teknik_grp.setStyleSheet(S["group"])
+        teknik_grp.setProperty("bg-role", "panel")
+        teknik_grp.style().unpolish(teknik_grp)
+        teknik_grp.style().polish(teknik_grp)
         teknik_lay = QGridLayout(teknik_grp)
         teknik_lay.setSpacing(8)
         teknik_lay.setColumnStretch(0, 1)
@@ -182,7 +193,9 @@ class CihazEklePage(QWidget):
         fl1.setContentsMargins(16, 0, 16, 0)
         fl1.addStretch()
         self.btn_save = QPushButton("Kaydet & ÜTS Sorgula")
-        self.btn_save.setStyleSheet(S["action_btn"])
+        self.btn_save.setProperty("style-role", "action")
+        self.btn_save.style().unpolish(self.btn_save)
+        self.btn_save.style().polish(self.btn_save)
         IconRenderer.set_button_icon(self.btn_save, "save", color=C.BTN_PRIMARY_TEXT, size=16)
         self.btn_save.clicked.connect(self._save)
         if self._action_guard:
@@ -190,12 +203,16 @@ class CihazEklePage(QWidget):
         fl1.addWidget(self.btn_save)
         # Temizle butonu
         btn_clear = QPushButton("Temizle")
-        btn_clear.setStyleSheet(S["btn_refresh"])
+        btn_clear.setProperty("style-role", "secondary")
+        btn_clear.style().unpolish(btn_clear)
+        btn_clear.style().polish(btn_clear)
         IconRenderer.set_button_icon(btn_clear, "refresh", color=C.TEXT_PRIMARY, size=14)
         btn_clear.clicked.connect(self._clear_form)
         fl1.addWidget(btn_clear)
         btn_cancel1 = QPushButton("İptal")
-        btn_cancel1.setStyleSheet(S["btn_refresh"])
+        btn_cancel1.setProperty("style-role", "secondary")
+        btn_cancel1.style().unpolish(btn_cancel1)
+        btn_cancel1.style().polish(btn_cancel1)
         btn_cancel1.clicked.connect(self.canceled.emit)
         fl1.addWidget(btn_cancel1)
         tab_form_lay.addWidget(footer1)
@@ -225,7 +242,9 @@ class CihazEklePage(QWidget):
         fl2.addStretch()
 
         btn_uts_cancel = QPushButton("İptal")
-        btn_uts_cancel.setStyleSheet(S["btn_refresh"])
+        btn_uts_cancel.setProperty("style-role", "secondary")
+        btn_uts_cancel.style().unpolish(btn_uts_cancel)
+        btn_uts_cancel.style().polish(btn_uts_cancel)
         btn_uts_cancel.clicked.connect(self._cancel_uts)
         fl2.addWidget(btn_uts_cancel)
 
@@ -253,7 +272,9 @@ class CihazEklePage(QWidget):
         fl3.addStretch()
 
         btn_belgeler_done = QPushButton("✓ Tamamla")
-        btn_belgeler_done.setStyleSheet(S["save_btn"])
+        btn_belgeler_done.setProperty("style-role", "action")
+        btn_belgeler_done.style().unpolish(btn_belgeler_done)
+        btn_belgeler_done.style().polish(btn_belgeler_done)
         btn_belgeler_done.clicked.connect(self._finish_belgeler)
         fl3.addWidget(btn_belgeler_done)
 
@@ -278,9 +299,9 @@ class CihazEklePage(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
         lbl = QLabel(label)
-        lbl.setStyleSheet(S["label_form"])
+        lbl.setProperty("color-role", "muted")
         edit = QLineEdit()
-        edit.setStyleSheet(S["input"])
+        edit.setProperty("bg-role", "input")
         edit.setReadOnly(read_only)
         self._fields[key] = edit
         layout.addWidget(lbl)
@@ -293,9 +314,9 @@ class CihazEklePage(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
         lbl = QLabel(label)
-        lbl.setStyleSheet(S["label_form"])
+        lbl.setProperty("color-role", "muted")
         combo = QComboBox()
-        combo.setStyleSheet(S["combo"])
+        combo.setProperty("bg-role", "input")
         combo.setProperty("db_kodu", db_kodu)
         self._fields[key] = combo
         layout.addWidget(lbl)
@@ -308,9 +329,9 @@ class CihazEklePage(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
         lbl = QLabel(label)
-        lbl.setStyleSheet(S["label_form"])
+        lbl.setProperty("color-role", "muted")
         date = QDateEdit()
-        date.setStyleSheet(S["date"])
+        date.setProperty("bg-role", "input")
         date.setCalendarPopup(True)
         date.setDisplayFormat("dd.MM.yyyy")
         date.setDate(QDate.currentDate())
@@ -325,12 +346,14 @@ class CihazEklePage(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
         lbl = QLabel(label)
-        lbl.setStyleSheet(S["label_form"])
+        lbl.setProperty("color-role", "muted")
         wrap = QHBoxLayout()
         line = QLineEdit()
-        line.setStyleSheet(S["input"])
+        line.setProperty("bg-role", "input")
         btn = QPushButton("Sec")
-        btn.setStyleSheet(S["btn_refresh"])
+        btn.setProperty("style-role", "secondary")
+        btn.style().unpolish(btn)
+        btn.style().polish(btn)
         btn.clicked.connect(lambda: self._pick_file(line))
         wrap.addWidget(line)
         wrap.addWidget(btn)

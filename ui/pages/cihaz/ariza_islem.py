@@ -18,7 +18,6 @@ from core.logger import logger
 from core.paths import DATA_DIR
 
 from ui.components.base_table_model import BaseTableModel
-from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 from ui.styles import DarkTheme
 from datetime import datetime
@@ -83,7 +82,9 @@ class ArizaIslemForm(QWidget):
         root.setSpacing(10)
 
         form = QGroupBox("Ariza İşlemi Kaydi")
-        form.setStyleSheet(S["group"])
+        form.setProperty("style-role", "section")
+        form.style().unpolish(form)
+        form.style().polish(form)
         grid = QGridLayout(form)
         grid.setContentsMargins(12, 12, 12, 12)
         grid.setHorizontalSpacing(16)
@@ -91,21 +92,29 @@ class ArizaIslemForm(QWidget):
 
         self.dt_tarih = QDateEdit()
         self.dt_tarih.setDate(QDate.currentDate())
-        self.dt_tarih.setStyleSheet(S["input"])
+        self.dt_tarih.setProperty("bg-role", "input")
+        self.dt_tarih.style().unpolish(self.dt_tarih)
+        self.dt_tarih.style().polish(self.dt_tarih)
         self._add_row(grid, 0, "Tarih", self.dt_tarih)
 
         self.txt_saat = QLineEdit()
-        self.txt_saat.setStyleSheet(S["input"])
+        self.txt_saat.setProperty("bg-role", "input")
+        self.txt_saat.style().unpolish(self.txt_saat)
+        self.txt_saat.style().polish(self.txt_saat)
         self.txt_saat.setPlaceholderText("HH:MM")
         self._add_row(grid, 1, "Saat", self.txt_saat)
 
         self.txt_islem_yapan = QLineEdit()
-        self.txt_islem_yapan.setStyleSheet(S["input"])
+        self.txt_islem_yapan.setProperty("bg-role", "input")
+        self.txt_islem_yapan.style().unpolish(self.txt_islem_yapan)
+        self.txt_islem_yapan.style().polish(self.txt_islem_yapan)
         self._add_row(grid, 2, "İşlem Yapan", self.txt_islem_yapan)
 
         self.cmb_islem_turu = QComboBox()
         self.cmb_islem_turu.setEditable(True)
-        self.cmb_islem_turu.setStyleSheet(S["combo"])
+        self.cmb_islem_turu.setProperty("bg-role", "input")
+        self.cmb_islem_turu.style().unpolish(self.cmb_islem_turu)
+        self.cmb_islem_turu.style().polish(self.cmb_islem_turu)
         self.cmb_islem_turu.addItems([
             "Elektrik Onarımı",
             "Mekanik Onarımı",
@@ -118,17 +127,19 @@ class ArizaIslemForm(QWidget):
         self._add_row(grid, 3, "İşlem Türü", self.cmb_islem_turu)
 
         self.txt_yapilan_islem = QTextEdit()
-        self.txt_yapilan_islem.setStyleSheet(S["input_text"])
+        # tema otomatik — self.txt_yapilan_islem.setStyleSheet(S["input_text"]) kaldırıldı
         self.txt_yapilan_islem.setFixedHeight(80)
         self._add_row(grid, 4, "Yapılan İşlem", self.txt_yapilan_islem)
 
         self.cmb_yeni_durum = QComboBox()
-        self.cmb_yeni_durum.setStyleSheet(S["combo"])
+        self.cmb_yeni_durum.setProperty("bg-role", "input")
+        self.cmb_yeni_durum.style().unpolish(self.cmb_yeni_durum)
+        self.cmb_yeni_durum.style().polish(self.cmb_yeni_durum)
         self.cmb_yeni_durum.addItems(["Açık", "Yakında Kapanacak", "Kapalı"])
         self._add_row(grid, 5, "Yeni Durum", self.cmb_yeni_durum)
 
         self.txt_rapor = QTextEdit()
-        self.txt_rapor.setStyleSheet(S["input_text"])
+        # tema otomatik — self.txt_rapor.setStyleSheet(S["input_text"]) kaldırıldı
         self.txt_rapor.setFixedHeight(70)
         self._add_row(grid, 6, "Rapor (Metin)", self.txt_rapor)
         
@@ -164,7 +175,9 @@ class ArizaIslemForm(QWidget):
         btn_lay.setSpacing(8)
 
         btn_kaydet = QPushButton("Kaydet")
-        btn_kaydet.setStyleSheet((S.get("success_btn", S["refresh_btn"]) or ""))
+        btn_kaydet.setProperty("style-role", "success")
+        btn_kaydet.style().unpolish(btn_kaydet)
+        btn_kaydet.style().polish(btn_kaydet)
         btn_kaydet.clicked.connect(self._save)
         if self._action_guard:
             self._action_guard.disable_if_unauthorized(btn_kaydet, "cihaz.write")
@@ -179,7 +192,9 @@ class ArizaIslemForm(QWidget):
 
     def _add_row(self, grid, row, label, widget):
         lbl = QLabel(label)
-        lbl.setStyleSheet(S["label"])
+        lbl.setProperty("color-role", "secondary")
+        lbl.style().unpolish(lbl)
+        lbl.style().polish(lbl)
         grid.addWidget(lbl, row, 0)
         grid.addWidget(widget, row, 1)
 
@@ -326,14 +341,16 @@ class ArizaIslemPenceresi(QWidget):
 
         # ── Tablo ───────────────────────────────────────
         grp_table = QGroupBox("Arıza İşlemleri")
-        grp_table.setStyleSheet(S["group"])
+        grp_table.setProperty("style-role", "section")
+        grp_table.style().unpolish(grp_table)
+        grp_table.style().polish(grp_table)
         tl = QVBoxLayout(grp_table)
         tl.setContentsMargins(10, 10, 10, 10)
         tl.setSpacing(6)
 
         self.table = QTableView()
         self.table.setModel(self._model)
-        self.table.setStyleSheet(S["table"])
+        # tema otomatik — self.table.setStyleSheet(S["table"]) kaldırıldı
         self.table.setAlternatingRowColors(True)
         self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
@@ -348,7 +365,7 @@ class ArizaIslemPenceresi(QWidget):
         tl.addWidget(self.table)
 
         self.lbl_count = QLabel("0 kayit")
-        self.lbl_count.setStyleSheet(S["footer_label"])
+        # tema otomatik — self.lbl_count.setStyleSheet(S["footer_label"]) kaldırıldı
         tl.addWidget(self.lbl_count)
         root.addWidget(grp_table)
 
@@ -394,7 +411,7 @@ class ArizaIslemPenceresi(QWidget):
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
-        sep.setStyleSheet("background:{};".format(border))
+        sep.setProperty("bg-role", "separator")
         fl.addWidget(sep)
 
         # Meta satırı: Tarih · Saat · İşlem Yapan · İşlem Türü · Yeni Durum

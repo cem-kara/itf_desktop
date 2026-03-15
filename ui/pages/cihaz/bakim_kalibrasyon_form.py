@@ -32,15 +32,15 @@ from ui.styles.icons import IconRenderer
 #  Renk sabitleri
 # ─────────────────────────────────────────────────────────────
 _C = {
-    "red":    getattr(DarkTheme, "DANGER",   "#f75f5f"),
-    "amber":  getattr(DarkTheme, "WARNING",  "#f5a623"),
-    "green":  getattr(DarkTheme, "SUCCESS",  "#3ecf8e"),
-    "accent": getattr(DarkTheme, "ACCENT",   "#4f8ef7"),
-    "muted":  getattr(DarkTheme, "TEXT_MUTED", "#5a6278"),
-    "surface":getattr(DarkTheme, "SURFACE",  "#13161d"),
-    "panel":  getattr(DarkTheme, "PANEL",    "#191d26"),
-    "border": getattr(DarkTheme, "BORDER",   "#242938"),
-    "text":   getattr(DarkTheme, "TEXT_PRIMARY", "#eef0f5"),
+    "red":    "#ef4444",
+    "amber":  "#f59e0b",
+    "green":  "#10b981",
+    "accent": "#00b4d8",
+    "muted":  "#9ca3af",
+    "surface":"#0e1e35",
+    "panel":  "#112240",
+    "border": "#1a3560",
+    "text":   "#eef0f5",
 }
 
 _BAKIM_DURUM_COLOR = {
@@ -240,7 +240,7 @@ class _BaseListDetailForm(QWidget):
         fb_l.setSpacing(8)
 
         self.txt_filter = QLineEdit()
-        self.txt_filter.setPlaceholderText("🔍  Ara…")
+        self.txt_filter.setPlaceholderText("Ara…")
         self.txt_filter.setMaximumWidth(200)
         self.txt_filter.textChanged.connect(self._apply_filters)
         fb_l.addWidget(self.txt_filter)
@@ -638,12 +638,12 @@ class BakimKayitForm(_BaseListDetailForm):
 
         plan_t  = to_ui_date(row.get("PlanlananTarih",""), "")
         bakim_t = to_ui_date(row.get("BakimTarihi",""), "")
-        self.lbl_det_plan.setText(f"📅 Plan: {plan_t}")
-        self.lbl_det_bakim.setText(f"🔧 Yapılan: {bakim_t}")
+        self.lbl_det_plan.setText(f"Plan: {plan_t}")
+        self.lbl_det_bakim.setText(f"Yapılan: {bakim_t}")
 
         durum = row.get("Durum","")
         dur_c = _BAKIM_DURUM_COLOR.get(durum, _C["muted"])
-        self.lbl_det_durum.setText(f"● {durum}" if durum else "—")
+        self.lbl_det_durum.setText(durum or "—")
         self.lbl_det_durum.setStyleSheet(
             f"font-size:11px;font-weight:700;color:{dur_c};"
             f"background:{_C['panel']};"
@@ -740,7 +740,7 @@ class _BakimGirisForm(QWidget):
         btn_kaydet.setProperty("style-role", "action")
         try:
             IconRenderer.set_button_icon(btn_kaydet, "save",
-                                         color=DarkTheme.BTN_PRIMARY_TEXT, size=14)
+                                         color="white", size=14)
         except Exception:
             pass
         btn_kaydet.clicked.connect(self._save)
@@ -921,7 +921,7 @@ class KalibrasyonKayitForm(_BaseListDetailForm):
         self.lbl_det_title.setText(f"{cihaz}  —  {firma}")
 
         self.lbl_det_yapilan.setText(
-            f"📅 Yapılan: {to_ui_date(row.get('YapilanTarih',''), '')}"
+            f"Yapılan: {to_ui_date(row.get('YapilanTarih',''), '')}"
         )
         bitis_str = to_ui_date(row.get("BitisTarihi",""), "")
         self.lbl_det_bitis.setText(f"⏱ Bitiş: {bitis_str}")
@@ -947,7 +947,7 @@ class KalibrasyonKayitForm(_BaseListDetailForm):
 
         durum = row.get("Durum","")
         dur_c = _KAL_DURUM_COLOR.get(durum, _C["muted"])
-        self.lbl_det_durum.setText(f"● {durum}" if durum else "—")
+        self.lbl_det_durum.setText(durum or "—")
         self.lbl_det_durum.setStyleSheet(
             f"font-size:11px;font-weight:700;color:{dur_c};background:{_C['panel']};"
         )
@@ -1032,7 +1032,7 @@ class _KalibrasyonGirisForm(QWidget):
         btn_kaydet.setProperty("style-role", "action")
         try:
             IconRenderer.set_button_icon(btn_kaydet, "save",
-                                         color=DarkTheme.BTN_PRIMARY_TEXT, size=14)
+                                         color="white", size=14)
         except Exception:
             pass
         btn_kaydet.clicked.connect(self._save)

@@ -16,7 +16,6 @@ from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtGui import QPixmap, QCursor
 
 from ui.styles import DarkTheme, Colors
-from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 from core.logger import logger
 
@@ -33,8 +32,9 @@ class CihazOverviewPanel(QWidget):
     
     def __init__(self, cihaz_data, db=None, sabitler_cache=None, parent=None):
         super().__init__(parent)
-        self.cihaz_data = cihaz_data or {}
-        self.db = db
+        self.cihaz_data    = cihaz_data or {}
+        self.cihaz_id       = str((cihaz_data or {}).get("Cihazid", "")).strip()
+        self.db             = db
         self.sabitler_cache = sabitler_cache
         self._widgets = {}  # Alan adı -> Widget
         self._groups = {}   # Grup ID -> {widget, btn_edit, btn_save, btn_cancel, fields}
@@ -47,12 +47,33 @@ class CihazOverviewPanel(QWidget):
     def _setup_ui(self):
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        # ── Özet kartlar şeridi (üst bant) ───────────────────────────────────
+        ozet_bar = QFrame()
+        ozet_bar.setProperty("bg-role", "elevated")
+        ozet_bar.style().unpolish(ozet_bar)
+        ozet_bar.style().polish(ozet_bar)
+        ozet_bar.setMaximumHeight(80)
+        ozet_lay = QHBoxLayout(ozet_bar)
+        ozet_lay.setContentsMargins(16, 10, 16, 10)
+        ozet_lay.setSpacing(12)
+
+        self._kart_ariza      = self._ozet_kart("Açık Arıza",       "—", "#ef4444")
+        self._kart_bakim      = self._ozet_kart("Son Bakım",         "—", "#10b981")
+        self._kart_kalibrasyon = self._ozet_kart("Kalibrasyon Bitiş","—", "#f59e0b")
+        self._kart_durum      = self._ozet_kart("Cihaz Durumu",      "—", "#9ca3af")
+
+        for k in [self._kart_ariza, self._kart_bakim,
+                  self._kart_kalibrasyon, self._kart_durum]:
+            ozet_lay.addWidget(k)
+        ozet_lay.addStretch()
+        main_layout.addWidget(ozet_bar)
 
         # Scroll Area
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(S["scroll"])
 
         content = QWidget()
         content.setStyleSheet("background: transparent;")
@@ -155,8 +176,9 @@ class CihazOverviewPanel(QWidget):
     def _create_editable_group(self, title, group_id):
         """Düzenlenebilir grup kutusu oluştur."""
         grp = QGroupBox(title)
-        from ui.styles.components import STYLES as S
-        grp.setStyleSheet(S["group_box"])
+        grp.setProperty("bg-role", "panel")
+        grp.style().unpolish(grp)
+        grp.style().polish(grp)
         
         vbox = QVBoxLayout(grp)
         vbox.setContentsMargins(12, 12, 12, 12)
@@ -222,7 +244,7 @@ class CihazOverviewPanel(QWidget):
     def _add_line(self, grid, row, col, label, key, group_id, read_only=False, colspan=1):
         """LineEdit ekle."""
         lbl = QLabel(label)
-        lbl.setStyleSheet(S["label_form"])
+        lbl.setProperty("color-role", "muted")
         edit = QLineEdit()
         edit.setPlaceholderText("-")
         edit.setReadOnly(True)
@@ -239,7 +261,7 @@ class CihazOverviewPanel(QWidget):
     def _add_combo(self, grid, row, col, label, key, group_id, db_kodu, colspan=1):
         """ComboBox ekle."""
         lbl = QLabel(label)
-        lbl.setStyleSheet(S["label_form"])
+        lbl.setProperty("color-role", "muted")
         combo = QComboBox()
         combo.setEnabled(False)
         combo.setProperty("db_kodu", db_kodu)
@@ -252,7 +274,7 @@ class CihazOverviewPanel(QWidget):
     def _add_date(self, grid, row, col, label, key, group_id, colspan=1):
         """DateEdit ekle."""
         lbl = QLabel(label)
-        lbl.setStyleSheet(S["label_form"])
+        lbl.setProperty("color-role", "muted")
         date = QDateEdit()
         date.setCalendarPopup(True)
         date.setDisplayFormat("dd.MM.yyyy")
@@ -266,7 +288,7 @@ class CihazOverviewPanel(QWidget):
     def _add_file(self, grid, row, col, label, key, group_id, colspan=1):
         """Dosya seçim alanı ekle."""
         lbl = QLabel(label)
-        lbl.setStyleSheet(S["label_form"])
+        lbl.setProperty("color-role", "muted")
         wrap = QHBoxLayout()
         line = QLineEdit()
         line.setReadOnly(True)
@@ -276,7 +298,7 @@ class CihazOverviewPanel(QWidget):
         line.style().unpolish(line)
         line.style().polish(line)
         btn = QPushButton("Sec")
-        btn.setStyleSheet(S["btn_refresh"])
+        btn
         btn.setEnabled(False)
         btn.clicked.connect(lambda: self._pick_file(line))
         wrap.setContentsMargins(0, 0, 0, 0)
@@ -296,6 +318,43 @@ class CihazOverviewPanel(QWidget):
         path, _ = QFileDialog.getOpenFileName(self, "Dosya Sec", "", "Tumu (*.*)")
         if path:
             line.setText(path)
+
+    def _ozet_kart(self, baslik: str, deger: str, renk: str) -> QFrame:
+        """Üst banttaki özet kart widget'ı."""
+        f = QFrame()
+        f.setStyleSheet(
+            f"QFrame {{ border-left: 3px solid {renk}; "
+            f"background: rgba(255,255,255,0.03); border-radius: 0; }}"
+        )
+        lay = QVBoxLayout(f)
+        lay.setContentsMargins(10, 4, 10, 4)
+        lay.setSpacing(1)
+        lbl_b = QLabel(baslik)
+        lbl_b.setStyleSheet("font-size:10px; color:#7a93ad; border:none;")
+        lbl_v = QLabel(str(deger))
+        lbl_v.setStyleSheet(f"font-size:16px; font-weight:700; color:{renk}; border:none;")
+        lay.addWidget(lbl_b)
+        lay.addWidget(lbl_v)
+        setattr(f, "_lbl_v", lbl_v)
+        setattr(f, "_renk", renk)
+        return f
+
+    def _ozet_guncelle(self, key: str, deger: str, renk: str = None):
+        """Özet kart değerini güncelle."""
+        kart_map = {
+            "ariza":      self._kart_ariza,
+            "bakim":      self._kart_bakim,
+            "kalibrasyon": self._kart_kalibrasyon,
+            "durum":      self._kart_durum,
+        }
+        kart = kart_map.get(key)
+        if not kart:
+            return
+        lbl_v = getattr(kart, "_lbl_v", None)
+        if lbl_v:
+            lbl_v.setText(str(deger))
+        if renk:
+            lbl_v.setStyleSheet(f"font-size:16px; font-weight:700; color:{renk}; border:none;")
 
     def _load_sabitler(self):
         """Sabitler tablosundan verileri yükle."""
@@ -350,6 +409,74 @@ class CihazOverviewPanel(QWidget):
                 else:
                     widget.setDate(QDate.currentDate())
 
+        # ── Özet kartları güncelle ─────────────────────────────────────────────
+        self._ozet_kartlari_guncelle()
+
+    def _ozet_kartlari_guncelle(self):
+        """Üst banttaki özet kartları cihaz bazlı istatistiklerle doldurur."""
+        if not self.db or not self.cihaz_id:
+            return
+        try:
+            from core.di import get_cihaz_service as _gs, get_ariza_service as _as
+            svc = _gs(self.db)
+
+            # Durum
+            durum = str(self.cihaz_data.get("Durum", "") or "—")
+            durum_renk = {
+                "Aktif": "#10b981", "Arızalı": "#ef4444",
+                "Bakımda": "#f59e0b", "Devre Dışı": "#9ca3af",
+            }.get(durum, "#9ca3af")
+            self._ozet_guncelle("durum", durum, durum_renk)
+
+            # Açık arıza sayısı
+            try:
+                ariza_svc = _as(self.db)
+                arizalar = ariza_svc.get_ariza_listesi(self.cihaz_id) or []
+                acik = sum(1 for a in arizalar if str(a.get("Durum","")).strip() not in ("Kapalı","Çözüldü"))
+                renk_a = "#ef4444" if acik > 0 else "#10b981"
+                self._ozet_guncelle("ariza", str(acik) if acik > 0 else "Yok", renk_a)
+            except Exception:
+                self._ozet_guncelle("ariza", "—")
+
+            # Son bakım tarihi
+            try:
+                bakimlar = svc.get_bakim_listesi(self.cihaz_id) or []
+                yapilan  = [b for b in bakimlar if b.get("BakimTarihi")]
+                if yapilan:
+                    son = max(yapilan, key=lambda b: str(b["BakimTarihi"]))
+                    self._ozet_guncelle("bakim", str(son["BakimTarihi"])[:10], "#10b981")
+                else:
+                    self._ozet_guncelle("bakim", "Yok", "#9ca3af")
+            except Exception:
+                self._ozet_guncelle("bakim", "—")
+
+            # Kalibrasyon bitiş
+            try:
+                kaller = svc.get_kalibrasyon_listesi(self.cihaz_id) or []
+                if kaller:
+                    son_k = max(kaller, key=lambda k: str(k.get("BitisTarihi","")))
+                    bitis = str(son_k.get("BitisTarihi",""))[:10]
+                    from datetime import date as _d, datetime as _dt
+                    bitis_d = _dt.strptime(bitis, "%Y-%m-%d").date() if bitis else None
+                    if bitis_d:
+                        delta = (bitis_d - _d.today()).days
+                        if delta < 0:
+                            renk_k = "#ef4444"
+                        elif delta <= 30:
+                            renk_k = "#f59e0b"
+                        else:
+                            renk_k = "#10b981"
+                        self._ozet_guncelle("kalibrasyon", bitis, renk_k)
+                    else:
+                        self._ozet_guncelle("kalibrasyon", "—")
+                else:
+                    self._ozet_guncelle("kalibrasyon", "Yok", "#9ca3af")
+            except Exception:
+                self._ozet_guncelle("kalibrasyon", "—")
+
+        except Exception as e:
+            logger.debug(f"Özet kartları güncellenemedi: {e}")
+
     def _toggle_edit(self, group_id, edit_mode):
         """Grup düzenleme modunu aç/kapat."""
         grp = self._groups[group_id]
@@ -370,10 +497,10 @@ class CihazOverviewPanel(QWidget):
                     widget.setStyleSheet(style_edit if edit_mode else style_read)
             elif isinstance(widget, QComboBox):
                 widget.setEnabled(edit_mode)
-                widget.setStyleSheet(S["combo"] if edit_mode else style_combo_read)
+                widget.setStyleSheet("" if edit_mode else style_combo_read)
             elif isinstance(widget, QDateEdit):
                 widget.setEnabled(edit_mode)
-                widget.setStyleSheet(S["date"] if edit_mode else style_date_read)
+                widget.setStyleSheet("" if edit_mode else style_date_read)
             
             # Dosya seçim butonları
             if key in self._file_buttons:

@@ -18,7 +18,6 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QColor, QCursor, QDesktopServices, QStandardItemModel, QStandardItem, QPalette
 
 from ui.styles.colors import C as _C
-from ui.styles.components import STYLES
 from ui.styles.icons import IconRenderer
 from ui.components.base_table_model import BaseTableModel
 from ui.pages.rke.components.toplu_muayene_dialog import TopluMuayeneDialog
@@ -69,45 +68,7 @@ except (ImportError, ModuleNotFoundError):  # type: ignore
         @staticmethod
         def uygula(w, key): pass
 
-try:
-    from ui.styles.colors import DarkTheme  # type: ignore
-except ImportError:  # type: ignore
-    class DarkTheme:  # type: ignore
-        BG_PRIMARY = "#0f1117"; BG_SECONDARY = "#13161d"; SURFACE = "#13161d"
-        PANEL = "#191d26"; BORDER_PRIMARY = "#242938"
-        TEXT_PRIMARY = "#eef0f5"; TEXT_SECONDARY = "#8b90a0"; TEXT_MUTED = "#5a6278"
-        ACCENT = "#4f8ef7"; ACCENT2 = "#20c0d8"
-        DANGER = "#f75f5f"; WARNING = "#f5a623"; SUCCESS = "#3ecf8e"
-        STATUS_SUCCESS = "#2ec98e"; STATUS_WARNING = "#e8a030"; STATUS_ERROR = "#e85555"; STATUS_INFO = "#3d8ef5"
-        MONOSPACE = "\"JetBrains Mono\", \"Consolas\", monospace"
-        RKE_PURP = "#a855f7"
-
-class _S(dict):  # type: ignore
-    def __missing__(self, k: str) -> str: return ""
-
-S = _S({
-    "page":         f"background:{DarkTheme.BG_PRIMARY};color:{DarkTheme.TEXT_PRIMARY};",
-    "group":        f"QGroupBox{{background:{DarkTheme.PANEL};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:6px;color:{DarkTheme.ACCENT};font-weight:600;padding-top:4px;margin-top:12px;}}QGroupBox::title{{subcontrol-origin:margin;left:10px;padding:0 4px;}}",
-    "table":        f"QTableView{{background:{DarkTheme.PANEL};alternate-background-color:{DarkTheme.BG_SECONDARY};border:none;gridline-color:{DarkTheme.BORDER_PRIMARY};}}QHeaderView::section{{background:{DarkTheme.BG_SECONDARY};color:{DarkTheme.TEXT_SECONDARY};padding:6px;border:none;font-weight:600;}}",
-    "input":        f"QLineEdit,QDateEdit{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;padding:0 8px;color:{DarkTheme.TEXT_PRIMARY};}}",
-    "combo":        f"QComboBox{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;padding:0 8px;color:{DarkTheme.TEXT_PRIMARY};}}",
-    "label":        f"color:{DarkTheme.TEXT_SECONDARY};font-size:11px;font-weight:600;",
-    "footer_label": f"color:{DarkTheme.TEXT_MUTED};font-size:11px;",
-    "refresh_btn":  f"QPushButton{{background:{DarkTheme.PANEL};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;color:{DarkTheme.TEXT_SECONDARY};padding:0 12px;}}QPushButton:hover{{color:{DarkTheme.TEXT_PRIMARY};}}",
-    "success_btn":  f"QPushButton{{background:{DarkTheme.STATUS_SUCCESS};border:none;border-radius:4px;color:#0f1117;font-weight:700;}}",
-    "cancel_btn":   f"QPushButton{{background:transparent;border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:4px;color:{DarkTheme.TEXT_SECONDARY};}}",
-    "info_label":   f"color:{DarkTheme.TEXT_MUTED};font-size:11px;",
-})
-
-# 
-# _S_PAGE kaldırıldı — global QSS kuralı geçerli
-# _S_INPUT kaldırıldı — global QSS kuralı geçerli
-# _S_DATE kaldırıldı — global QSS kuralı geçerli
-# _S_COMBO kaldırıldı — global QSS kuralı geçerli
-# _S_TEXTEDIT kaldırıldı — global QSS kuralı geçerli
-# _S_TABLE kaldırıldı — global QSS kuralı geçerli
-# _S_SCROLL kaldırıldı — global QSS kuralı geçerli
-# _S_PBAR kaldırıldı — global QSS kuralı geçerli
+from ui.styles.colors import DarkTheme
 
 
 # RKE envanter tablo kolonlari
@@ -131,55 +92,25 @@ _RKE_WIDTHS = [c[2] for c in _RKE_COLS]
 # ==================================================================
 #  FieldGroup - mockup'in fgroup bileseni
 # ==================================================================
-class FieldGroup(QWidget):
-    """Renkli sol serit + monospace baslik + icerik karti."""
-    def __init__(self, title: str, color: str, parent=None):
-        super().__init__(parent)
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.setStyleSheet(
-            f"FieldGroup{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:6px;}}"
-        )
-        root = QVBoxLayout(self)
-        root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(0)
-
-        # Header
-        hdr = QWidget()
-        hdr.setFixedHeight(30)
-        hdr.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        hdr.setStyleSheet(
-            f"QWidget{{background:rgba(255,255,255,12);border-bottom:1px solid {DarkTheme.BORDER_PRIMARY};"
-            f"border-top-left-radius:6px;border-top-right-radius:6px;}}"
-        )
-        hh = QHBoxLayout(hdr)
-        hh.setContentsMargins(10, 0, 10, 0)
-        hh.setSpacing(8)
-
-        bar = QFrame()
-        bar.setFixedSize(3, 14)
-        bar.setStyleSheet("border: none;")
-
-        lbl = QLabel(title.upper())
-        lbl.setStyleSheet(
-            f"color:{color};background:transparent;font-size:9px;font-weight:700;"
-            f"font-family:{DarkTheme.MONOSPACE};"
-        )
-        hh.addWidget(bar)
-        hh.addWidget(lbl)
-        hh.addStretch()
-        root.addWidget(hdr)
-
-        # Body
-        self._body = QWidget()
-        self._body.setStyleSheet("background:transparent;")
-        self._bl = QVBoxLayout(self._body)
+class FieldGroup(QGroupBox):
+    """
+    QGroupBox tabanlı grup kutusu — tema sistemiyle uyumlu.
+    color parametresi başlık aksan rengini belirler.
+    Arka plan ve kenarlık tema QSS tarafından otomatik uygulanır.
+    """
+    def __init__(self, title: str, color: str = "", parent=None):
+        super().__init__(title, parent)
+        # Başlık rengini sadece color özelliğiyle override et
+        if color:
+            self.setStyleSheet(f"QGroupBox::title {{ color: {color}; }}")
+        self._bl = QVBoxLayout(self)
         self._bl.setContentsMargins(10, 10, 10, 12)
         self._bl.setSpacing(8)
-        root.addWidget(self._body)
 
     def add_widget(self, w): self._bl.addWidget(w)
     def add_layout(self, l): self._bl.addLayout(l)
     def body_layout(self) -> QVBoxLayout: return self._bl
+
 
 
 # ----------------------------------------------------------------
@@ -777,8 +708,6 @@ class RKEMuayenePage(QWidget):
         bar = QWidget()
         bar.setFixedHeight(68)
         bar.setProperty("bg-role", "page")
-        bar.style().unpolish(bar)
-        bar.style().polish(bar)
         hl = QHBoxLayout(bar)
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setSpacing(1)
@@ -796,8 +725,6 @@ class RKEMuayenePage(QWidget):
     def _mk_kpi_card(self, key, title, val, color) -> QWidget:
         w = QWidget()
         w.setProperty("bg-role", "page")
-        w.style().unpolish(w)
-        w.style().polish(w)
         hl = QHBoxLayout(w)
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setSpacing(0)
@@ -809,22 +736,14 @@ class RKEMuayenePage(QWidget):
 
         content = QWidget()
         content.setProperty("bg-role", "page")
-        content.style().unpolish(content)
-        content.style().polish(content)
         vl = QVBoxLayout(content)
         vl.setContentsMargins(14, 8, 14, 8)
         vl.setSpacing(2)
 
         lt = QLabel(title)
-        lt.setStyleSheet(
-            f"color:{DarkTheme.TEXT_MUTED};background:transparent;font-family:{DarkTheme.MONOSPACE};"
-            f"font-size:8px;font-weight:700;"
-        )
+        lt.setProperty("color-role", "muted")
         lv = QLabel(val)
-        lv.setStyleSheet(
-            f"color:{color};background:transparent;font-family:{DarkTheme.MONOSPACE};"
-            f"font-size:20px;font-weight:700;"
-        )
+        lv.setStyleSheet(f"color:{color};background:transparent;font-size:20px;font-weight:700;")
         vl.addWidget(lt)
         vl.addWidget(lv)
         hl.addWidget(content, 1)
@@ -834,8 +753,6 @@ class RKEMuayenePage(QWidget):
     def _build_body(self) -> QWidget:
         body = QWidget()
         body.setProperty("bg-role", "page")
-        body.style().unpolish(body)
-        body.style().polish(body)
         hl = QHBoxLayout(body)
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setSpacing(0)
@@ -847,8 +764,6 @@ class RKEMuayenePage(QWidget):
         sep = QFrame()
         sep.setFixedWidth(1)
         sep.setProperty("bg-role", "separator")
-        sep.style().unpolish(sep)
-        sep.style().polish(sep)
         hl.addWidget(sep)
 
         hl.addWidget(self._build_list_panel(), 1)
@@ -857,8 +772,6 @@ class RKEMuayenePage(QWidget):
     def _build_form_panel(self) -> QWidget:
         panel = QWidget()
         panel.setProperty("bg-role", "page")
-        panel.style().unpolish(panel)
-        panel.style().polish(panel)
         vl = QVBoxLayout(panel)
         vl.setContentsMargins(0, 0, 0, 0)
         vl.setSpacing(0)
@@ -867,15 +780,11 @@ class RKEMuayenePage(QWidget):
         hdr = QWidget()
         hdr.setFixedHeight(36)
         hdr.setProperty("bg-role", "page")
-        hdr.style().unpolish(hdr)
-        hdr.style().polish(hdr)
         hh = QHBoxLayout(hdr)
         hh.setContentsMargins(14, 0, 14, 0)
         t1 = QLabel("MUAYENE FORMU")
         t1.setProperty("color-role", "muted")
-        t1.setStyleSheet("font-family: {}; font-size: 9px; font-weight: 700;".format(DarkTheme.MONOSPACE))
-        t1.style().unpolish(t1)
-        t1.style().polish(t1)
+        t1.setProperty("color-role", "muted")  # monospace font tema QSS ile belirlenir
         hh.addWidget(t1)
         hh.addStretch()
         vl.addWidget(hdr)
@@ -981,8 +890,6 @@ class RKEMuayenePage(QWidget):
         self.lbl_dosya = QLabel("Rapor secilmedi")
         self.lbl_dosya.setProperty("color-role", "muted")
         self.lbl_dosya.setStyleSheet("font-size: 10px;")
-        self.lbl_dosya.style().unpolish(self.lbl_dosya)
-        self.lbl_dosya.style().polish(self.lbl_dosya)
         btn_dosya = QPushButton("Rapor Yukle")
         btn_dosya.setProperty("style-role", "upload")
         btn_dosya.setFixedHeight(28)
@@ -1049,8 +956,6 @@ class RKEMuayenePage(QWidget):
     def _build_list_panel(self) -> QWidget:
         panel = QWidget()
         panel.setProperty("bg-role", "page")
-        panel.style().unpolish(panel)
-        panel.style().polish(panel)
         vl = QVBoxLayout(panel)
         vl.setContentsMargins(0, 0, 0, 0)
         vl.setSpacing(0)
@@ -1059,8 +964,6 @@ class RKEMuayenePage(QWidget):
         fbar = QWidget()
         fbar.setFixedHeight(52)
         fbar.setProperty("bg-role", "page")
-        fbar.style().unpolish(fbar)
-        fbar.style().polish(fbar)
         fl = QHBoxLayout(fbar)
         fl.setContentsMargins(12, 10, 12, 10)
         fl.setSpacing(8)
@@ -1124,16 +1027,12 @@ class RKEMuayenePage(QWidget):
         footer.setFixedHeight(44)
         footer.setProperty("bg-role", "panel")
         footer.setProperty("border-role", "top")
-        footer.style().unpolish(footer)
-        footer.style().polish(footer)
         fl = QHBoxLayout(footer)
         fl.setContentsMargins(12, 8, 12, 8)
         fl.setSpacing(8)
         
         self.lbl_sayi = QLabel("0 kayit")
-        self.lbl_sayi.setStyleSheet(
-            f"color:{DarkTheme.TEXT_MUTED};font-family:{DarkTheme.MONOSPACE};font-size:10px;font-weight:500;"
-        )
+        self.lbl_sayi.setProperty("color-role", "muted")
         fl.addStretch()
         fl.addWidget(self.lbl_sayi)
         vl.addWidget(footer)
@@ -1146,10 +1045,7 @@ class RKEMuayenePage(QWidget):
     @staticmethod
     def _lbl(text: str) -> QLabel:
         lbl = QLabel(text)
-        lbl.setStyleSheet(
-            f"color:{DarkTheme.TEXT_MUTED};font-family:{DarkTheme.MONOSPACE};"
-            f"font-size:10px;font-weight:500;"
-        )
+        lbl.setProperty("color-role", "muted")
         return lbl
 
     # ==================================================================
@@ -1360,7 +1256,6 @@ class RKEMuayenePage(QWidget):
             t = getattr(self, attr, None)
             if t and t.isRunning(): t.quit(); t.wait(500)
         event.accept()
-
 
 
 

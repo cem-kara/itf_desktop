@@ -31,7 +31,6 @@ from core.services.ariza_service import ArizaService
 from ui.components.base_table_model import BaseTableModel
 from ui.pages.cihaz.components.ariza_duzenle_form import ArizaDuzenleForm
 from ui.styles.colors import C as _C
-from ui.styles.components import STYLES as S
 from ui.styles import DarkTheme
 from ui.pages.cihaz.ariza_islem import ArizaIslemPenceresi, ArizaIslemForm
 
@@ -119,6 +118,8 @@ class ArizaTableModel(BaseTableModel):
 # ─────────────────────────────────────────────────────────────
 class ArizaKayitForm(QWidget):
     """Arıza listesi, detay paneli ve işlem geçmişi."""
+
+    bakima_gec = Signal(str)   # cihaz_id — arızadan bakım planına geç
 
     def __init__(self, db=None, cihaz_id: Optional[str] = None, action_guard=None, parent=None):
         super().__init__(parent)
@@ -335,14 +336,14 @@ class ArizaKayitForm(QWidget):
         # Arama
         self.txt_filter = QLineEdit()
         self.txt_filter.setPlaceholderText("🔍  Arıza No, Cihaz, Başlık…")
-        self.txt_filter.setStyleSheet(S["input"])
+        self.txt_filter.setProperty("bg-role", "input")
         self.txt_filter.setMaximumWidth(220)
         self.txt_filter.textChanged.connect(self._apply_filters)
         fb_layout.addWidget(self.txt_filter)
 
         # Durum filtresi
         self.cmb_durum_filter = QComboBox()
-        self.cmb_durum_filter.setStyleSheet(S["combo"])
+        self.cmb_durum_filter.setProperty("bg-role", "input")
         self.cmb_durum_filter.setFixedWidth(160)
         self.cmb_durum_filter.addItem("Tüm Durumlar", None)
         self.cmb_durum_filter.currentIndexChanged.connect(self._apply_filters)
@@ -350,7 +351,7 @@ class ArizaKayitForm(QWidget):
 
         # Öncelik filtresi
         self.cmb_oncelik_filter = QComboBox()
-        self.cmb_oncelik_filter.setStyleSheet(S["combo"])
+        self.cmb_oncelik_filter.setProperty("bg-role", "input")
         self.cmb_oncelik_filter.setFixedWidth(150)
         for lbl, val in [("Tüm Öncelikler", None), ("Kritik", "Kritik"),
                           ("Yüksek", "Yüksek"), ("Orta", "Orta"), ("Düşük", "Düşük")]:
@@ -360,7 +361,7 @@ class ArizaKayitForm(QWidget):
 
         # Cihaz filtresi — sadece genel görünümde (cihaz_id yokken)
         self.cmb_cihaz_filter = QComboBox()
-        self.cmb_cihaz_filter.setStyleSheet(S["combo"])
+        self.cmb_cihaz_filter.setProperty("bg-role", "input")
         self.cmb_cihaz_filter.setFixedWidth(150)
         self.cmb_cihaz_filter.addItem("Tüm Cihazlar", None)
         self.cmb_cihaz_filter.currentIndexChanged.connect(self._apply_filters)
@@ -376,6 +377,18 @@ class ArizaKayitForm(QWidget):
             self._action_guard.disable_if_unauthorized(self.btn_yeni_ariza, "cihaz.write")
         fb_layout.addWidget(self.btn_yeni_ariza)
 
+        # Bakım Planla butonu (arıza seçilince aktif olur)
+        self.btn_bakim_planla = QPushButton("Bakım Planla")
+        self.btn_bakim_planla.setProperty("style-role", "secondary")
+        self.btn_bakim_planla.style().unpolish(self.btn_bakim_planla)
+        self.btn_bakim_planla.style().polish(self.btn_bakim_planla)
+        self.btn_bakim_planla.setEnabled(False)
+        self.btn_bakim_planla.setToolTip("Seçili arıza için bakım planı oluştur")
+        self.btn_bakim_planla.clicked.connect(self._bakima_gec)
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(self.btn_bakim_planla, "cihaz.write")
+        fb_layout.addWidget(self.btn_bakim_planla)
+
         layout.addWidget(filter_bar)
 
         # Tablo
@@ -384,7 +397,7 @@ class ArizaKayitForm(QWidget):
         self.table.setModel(self._model)
         self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
-        self.table.setStyleSheet(S["table"])
+        # tema otomatik
         self.table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         self._model.setup_columns(self.table)
@@ -448,9 +461,7 @@ class ArizaKayitForm(QWidget):
         # Scroll alanı — form widget'ı buraya eklenir
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet(
-            S.get("scroll", "background:{};border:none;".format(surface)) or "background:{};border:none;".format(surface)
-        )
+        # tema otomatik — scroll
 
         self._form_inner = QWidget()
         self._form_inner.setProperty("bg-role", "surface")
@@ -544,9 +555,7 @@ class ArizaKayitForm(QWidget):
         bb_layout.addStretch()
 
         self.btn_islem_ekle = QPushButton("+ İşlem Ekle")
-        self.btn_islem_ekle.setStyleSheet(
-            S.get("btn_secondary", S.get("btn_primary", "") or "") or ""
-        )
+        self.btn_islem_ekle.setProperty("style-role", "secondary")
         self.btn_islem_ekle.setEnabled(False)
         self.btn_islem_ekle.clicked.connect(self._open_islem_form)
         if self._action_guard:
@@ -695,8 +704,10 @@ class ArizaKayitForm(QWidget):
         if ariza_id:
             self.islem_penceresi.set_ariza_id(ariza_id)
         self.btn_islem_ekle.setEnabled(bool(ariza_id))
+        self.btn_bakim_planla.setEnabled(bool(ariza_id))
         if self._action_guard and not self._action_guard.can_perform("cihaz.write"):
             self.btn_islem_ekle.setEnabled(False)
+            self.btn_bakim_planla.setEnabled(False)
 
     def _update_detail(self, row: Dict):
         """Sağ paneldeki detay alanlarını seçili arıza ile doldurur."""
@@ -758,6 +769,22 @@ class ArizaKayitForm(QWidget):
             self._active_form.setParent(None)
             self._active_form = None
         self._form_layout.addStretch()
+
+    def _bakima_gec(self):
+        """Seçili arızanın cihazı için bakım sekmesine geç."""
+        ariza_id = self._selected_ariza_id
+        if not ariza_id:
+            return
+        cihaz_id = self._cihaz_id
+        if not cihaz_id:
+            for row in self._model._data:
+                if row.get("Arizaid") == ariza_id:
+                    cihaz_id = str(row.get("Cihazid", "")).strip()
+                    break
+        if cihaz_id:
+            self.bakima_gec.emit(cihaz_id)
+        else:
+            QMessageBox.warning(self, "Hata", "Cihaz bilgisi alınamadı.")
 
     def _open_ariza_form(self):
         """Yeni Arıza formunu — tablo ile detay arasında — açar."""
@@ -863,7 +890,9 @@ class ArizaKayitForm(QWidget):
         dialog.setWindowTitle(f"Arıza Detayı — {row.get('Arizaid', '')}")
         dialog.setMinimumWidth(500)
         dialog.setMinimumHeight(400)
-        dialog.setStyleSheet(S["page"])
+        dialog.setProperty("bg-role", "page")
+        dialog.style().unpolish(dialog)
+        dialog.style().polish(dialog)
         
         layout = QVBoxLayout(dialog)
         layout.setContentsMargins(16, 16, 16, 16)
@@ -974,9 +1003,7 @@ class ArizaKayitForm(QWidget):
 
         outer = QScrollArea()
         outer.setWidgetResizable(True)
-        outer.setStyleSheet(
-            S.get("scroll", "background:{};border:none;".format(surface)) or "background:{};border:none;".format(surface)
-        )
+        # tema otomatik — outer scroll
 
         self._perf_inner = QWidget()
         self._perf_inner.setProperty("bg-role", "surface")
