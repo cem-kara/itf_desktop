@@ -38,22 +38,31 @@ class _InfoKart(QFrame):
     def __init__(self, baslik: str, deger: str = "", aciklama: str = "", vurgu=False):
         super().__init__()
         renk = "#1D75FE" if vurgu else "#457B9D"
-        self.setProperty("bg-role", "panel")
+        self.setStyleSheet(
+            f"QFrame {{ background:#1A2535; border:1px solid {renk}; "
+            f"border-radius:8px; padding:0px; }}"
+        )
         lay = QVBoxLayout(self)
         lay.setContentsMargins(14, 10, 14, 10)
         lay.setSpacing(2)
 
         lbl_baslik = QLabel(baslik)
-        lbl_baslik.setProperty("style-role", "section")
+        lbl_baslik.setStyleSheet("font-size:10px; color:#8fa3b8; border:none;")
         lay.addWidget(lbl_baslik)
 
         self.lbl_deger = QLabel(deger)
-        self.lbl_deger.setProperty("style-role", "stat-highlight" if vurgu else "stat-value")
+        font = QFont()
+        font.setPointSize(16 if vurgu else 13)
+        font.setBold(vurgu)
+        self.lbl_deger.setFont(font)
+        self.lbl_deger.setStyleSheet(
+            f"color:{'#FFD600' if vurgu else '#E0E0E0'}; border:none;"
+        )
         lay.addWidget(self.lbl_deger)
 
         if aciklama:
             lbl_ac = QLabel(aciklama)
-            lbl_ac.setProperty("style-role", "info")
+            lbl_ac.setStyleSheet("font-size:10px; color:#666; border:none;")
             lbl_ac.setWordWrap(True)
             lay.addWidget(lbl_ac)
 
@@ -68,7 +77,7 @@ class _InfoKart(QFrame):
 class DisAlanKurulumPage(QWidget):
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self.setProperty("bg-role", "page")
+        self.setStyleSheet(S["page"])
         self._db = db
         self._setup_ui()
         self._connect_signals()
@@ -82,10 +91,10 @@ class DisAlanKurulumPage(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setProperty("bg-role", "transparent")
+        scroll.setStyleSheet("QScrollArea { border:none; background:transparent; }")
 
         inner = QWidget()
-        inner.setProperty("bg-role", "transparent")
+        inner.setStyleSheet("background:transparent;")
         main = QVBoxLayout(inner)
         main.setContentsMargins(30, 20, 30, 30)
         main.setSpacing(20)
@@ -97,7 +106,9 @@ class DisAlanKurulumPage(QWidget):
 
         # ── Üst bilgi ─────────────────────────────────────────
         baslik = QLabel("Birim Kurulum Sihirbazı")
-        baslik.setProperty("style-role", "title")
+        baslik.setStyleSheet(
+            "font-size:18px; font-weight:bold; color:#1D75FE;"
+        )
         main.addWidget(baslik)
 
         aciklama = QLabel(
@@ -105,7 +116,7 @@ class DisAlanKurulumPage(QWidget):
             "Sistem katsayıyı otomatik hesaplar ve önümüzdeki yıl için "
             "tüm ayarları tek tıkla kaydeder."
         )
-        aciklama.setProperty("style-role", "info")
+        aciklama.setStyleSheet("font-size:11px; color:#8fa3b8;")
         aciklama.setWordWrap(True)
         main.addWidget(aciklama)
 
@@ -198,18 +209,21 @@ class DisAlanKurulumPage(QWidget):
         main.addWidget(self._bolum_baslik("4  —  Kaydet"))
 
         ozet_frame = QFrame()
-        ozet_frame.setProperty("bg-role", "panel")
+        ozet_frame.setStyleSheet(
+            "QFrame { background:#0D1A2A; border:1px solid #1D75FE; "
+            "border-radius:10px; }"
+        )
         ozet_lay = QVBoxLayout(ozet_frame)
         ozet_lay.setContentsMargins(16, 14, 16, 14)
         ozet_lay.setSpacing(6)
 
         self.lbl_ozet = QLabel("Verileri girdikten sonra özet burada görünecek.")
-        self.lbl_ozet.setProperty("style-role", "info")
+        self.lbl_ozet.setStyleSheet("font-size:11px; color:#8fa3b8;")
         self.lbl_ozet.setWordWrap(True)
         ozet_lay.addWidget(self.lbl_ozet)
 
         self.lbl_uyari = QLabel("")
-        self.lbl_uyari.setProperty("style-role", "warn")
+        self.lbl_uyari.setStyleSheet("font-size:11px; color:#FFB300;")
         self.lbl_uyari.setWordWrap(True)
         self.lbl_uyari.setVisible(False)
         ozet_lay.addWidget(self.lbl_uyari)
@@ -221,16 +235,36 @@ class DisAlanKurulumPage(QWidget):
         btn_lay.addStretch()
 
         self.btn_hesapla = QPushButton("Hesapla ve Önizle")
-        self.btn_hesapla.setProperty("style-role", "secondary")
+        self.btn_hesapla.setStyleSheet(S.get("secondary_btn", S["save_btn"]))
         self.btn_hesapla.setFixedHeight(40)
         self.btn_hesapla.setFixedWidth(160)
 
-        self.btn_kaydet = QPushButton("Kaydet ve Uygula")
-        self.btn_kaydet.setProperty("style-role", "action")
+        self.btn_sablon = QPushButton("📥  Şablon İndir")
+        self.btn_sablon.setStyleSheet(
+            "QPushButton { background:#1565C0; color:#fff; border-radius:8px; "
+            "font-size:12px; font-weight:bold; padding:0 18px; }"
+            "QPushButton:hover { background:#0D47A1; }"
+            "QPushButton:disabled { background:#1A1A2A; color:#556; }"
+        )
+        self.btn_sablon.setFixedHeight(40)
+        self.btn_sablon.setEnabled(False)
+        self.btn_sablon.setToolTip(
+            "Birim bilgileri dolu, kullanıma hazır Excel şablonu indir.\n"
+            "Önce 'Kaydet ve Uygula' ile birimi kaydedin."
+        )
+
+        self.btn_kaydet = QPushButton("✓  Kaydet ve Uygula")
+        self.btn_kaydet.setStyleSheet(
+            "QPushButton { background:#1D75FE; color:#fff; border-radius:8px; "
+            "font-size:13px; font-weight:bold; padding:0 24px; }"
+            "QPushButton:hover { background:#1558C0; }"
+            "QPushButton:disabled { background:#2A3A4A; color:#556; }"
+        )
         self.btn_kaydet.setFixedHeight(40)
         self.btn_kaydet.setEnabled(False)
 
         btn_lay.addWidget(self.btn_hesapla)
+        btn_lay.addWidget(self.btn_sablon)
         btn_lay.addWidget(self.btn_kaydet)
         main.addLayout(btn_lay)
 
@@ -242,7 +276,10 @@ class DisAlanKurulumPage(QWidget):
 
     def _bolum_baslik(self, metin: str) -> QLabel:
         lbl = QLabel(metin)
-        lbl.setProperty("style-role", "section-title")
+        lbl.setStyleSheet(
+            "font-size:12px; font-weight:bold; color:#457B9D; "
+            "padding:6px 0 2px 0; border-bottom:1px solid #1A2535;"
+        )
         return lbl
 
     # =========================================================
@@ -273,6 +310,7 @@ class DisAlanKurulumPage(QWidget):
             w.valueChanged.connect(self._canli_hesapla)
 
         self.btn_hesapla.clicked.connect(self._onizle)
+        self.btn_sablon.clicked.connect(self._sablon_indir)
         self.btn_kaydet.clicked.connect(self._kaydet)
 
     # =========================================================
@@ -329,7 +367,7 @@ class DisAlanKurulumPage(QWidget):
                 mevcut = get_dis_alan_katsayi_service(self._db).get_aktif_katsayi(ana, birim)
                 if mevcut:
                     uyari_metni = (
-                        f"Bu birim için zaten aktif bir protokol var "
+                        f"⚠  Bu birim için zaten aktif bir protokol var "
                         f"(Katsayı: {mevcut.get('Katsayi')}, "
                         f"Başlangıç: {mevcut.get('GecerlilikBaslangic')}). "
                         f"Önce Katsayı Protokolleri ekranından mevcut protokolü "
@@ -407,6 +445,7 @@ class DisAlanKurulumPage(QWidget):
                 f"Artık bu birimden Excel import yapabilirsiniz."
             )
             self.btn_kaydet.setEnabled(False)
+            self.btn_sablon.setEnabled(True)
             del self._onizle_veri
         else:
             QMessageBox.warning(
@@ -414,3 +453,149 @@ class DisAlanKurulumPage(QWidget):
                 f"{v['yil']}-01-01 başlangıç tarihli bir protokol zaten mevcut.\n"
                 "Önce Katsayı Protokolleri ekranından mevcut protokolü pasife alın."
             )
+
+    def _sablon_indir(self):
+        """
+        Birim bilgileri (B3/B4) ve dönem yılı önceden dolu
+        Excel şablonu oluşturup kaydeder.
+        """
+        from PySide6.QtWidgets import QFileDialog
+
+        ana   = self.cmb_anabilim.currentText().strip()
+        birim = self.cmb_birim.currentText().strip()
+        yil   = self.spn_veri_yil.value()
+
+        dosya_adi = (
+            f"Dis_Alan_Sablonu_{birim.replace(' ','_')[:20]}_{yil}.xlsx"
+        )
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Şablonu Kaydet", dosya_adi, "Excel (*.xlsx)"
+        )
+        if not path:
+            return
+
+        try:
+            import openpyxl
+            from openpyxl.styles import (
+                Font, PatternFill, Alignment, Border, Side
+            )
+
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            if ws is None:
+                # This should not happen with a new workbook, but as a safeguard
+                ws = wb.create_sheet()
+            ws.title = "Bildirim"
+
+            mavi   = "1D3557"
+            sari   = "FFD600"
+            gri_bg = "F0F4F8"
+
+            veri_f = Font(name="Calibri", size=10)
+            ince_border = Border(
+                left=Side(style="thin", color="CCCCCC"),
+                right=Side(style="thin", color="CCCCCC"),
+                top=Side(style="thin", color="CCCCCC"),
+                bottom=Side(style="thin", color="CCCCCC"),
+            )
+
+            # Kolon genişlikleri
+            ws.column_dimensions["A"].width = 16
+            ws.column_dimensions["B"].width = 22
+            ws.column_dimensions["C"].width = 22
+            ws.column_dimensions["D"].width = 14
+            ws.row_dimensions[1].height = 36
+            ws.row_dimensions[3].height = 24
+            ws.row_dimensions[4].height = 24
+            ws.row_dimensions[6].height = 24
+
+            # Satır 1 — Başlık
+            ws.merge_cells("A1:D1")
+            c = ws["A1"]
+            c.value = "DIŞ ALAN RADYASYON ÇALIŞMA BİLDİRİM ŞABLONU"
+            c.font  = Font(name="Calibri", bold=True, size=14, color="FFFFFF")
+            c.fill  = PatternFill("solid", fgColor=mavi)
+            c.alignment = Alignment(horizontal="center", vertical="center")
+
+            # Satır 3 — Anabilim Dalı + Dönem Ay
+            ws["A3"] = "Anabilim Dalı"
+            ws["A3"].font = Font(bold=True, size=10)
+            ws["B3"] = ana
+            ws["B3"].font = Font(size=10)
+            ws["C3"] = "Dönem Ay"
+            ws["C3"].font = Font(bold=True, size=10, color="FFFFFF")
+            ws["C3"].fill = PatternFill("solid", fgColor=mavi)
+            ws["C3"].alignment = Alignment(horizontal="center")
+            ws["D3"].font = Font(bold=True, size=11, color=sari)
+            ws["D3"].fill = PatternFill("solid", fgColor="1A2535")
+            ws["D3"].alignment = Alignment(horizontal="center")
+
+            # Satır 4 — Birim + Dönem Yıl
+            ws["A4"] = "Birim"
+            ws["A4"].font = Font(bold=True, size=10)
+            ws["B4"] = birim
+            ws["B4"].font = Font(size=10)
+            ws["C4"] = "Dönem Yıl"
+            ws["C4"].font = Font(bold=True, size=10, color="FFFFFF")
+            ws["C4"].fill = PatternFill("solid", fgColor=mavi)
+            ws["C4"].alignment = Alignment(horizontal="center")
+            ws["D4"] = yil
+            ws["D4"].font = Font(bold=True, size=11)
+            ws["D4"].alignment = Alignment(horizontal="center")
+
+            # Satır 6 — Sütun başlıkları
+            for col_i, bas in enumerate(
+                ["TC Kimlik No", "Ad Soyad *", "Çalışılan Alan *", "Vaka Sayısı *"], 1
+            ):
+                cell = ws.cell(row=6, column=col_i, value=bas)
+                cell.font  = Font(name="Calibri", bold=True, size=10, color="FFFFFF")
+                cell.fill  = PatternFill("solid", fgColor=mavi)
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+                cell.border = ince_border
+
+            # Satır 7-36 — 30 boş veri satırı
+            for row_i in range(7, 37):
+                ws.row_dimensions[row_i].height = 18
+                for col_i in range(1, 5):
+                    cell = ws.cell(row=row_i, column=col_i)
+                    cell.font   = veri_f
+                    cell.border = ince_border
+                    if row_i % 2 == 0:
+                        cell.fill = PatternFill("solid", fgColor=gri_bg)
+
+            # Kılavuz sayfası
+            ws2 = wb.create_sheet("Kılavuz")
+            ws2.column_dimensions["A"].width = 60
+            kilavuz = [
+                "DOLDURMA KILAVUZU", "",
+                "• TC Kimlik No: 11 haneli TC kimlik numarası (opsiyonel)",
+                "• Ad Soyad *: Zorunlu alan — tam isim yazın",
+                f"• Çalışılan Alan *: Bu birim için geçerli alan: {birim}",
+                "• Vaka Sayısı *: Bu dönemde yapılan toplam işlem sayısı",
+                "", "NOTLAR:",
+                "• D3 hücresine ay adı veya numarası yazın (örn: Ocak veya 1)",
+                "• D4 hücresine 4 haneli yılı yazın (örn: 2026)",
+                "• * işaretli alanlar zorunludur",
+                "• Katsayı ve saat hesabı sistem tarafından otomatik yapılır",
+                "", f"Bu şablon {ana} / {birim} birimi için hazırlanmıştır.",
+                f"Protokol yılı: {yil}",
+            ]
+            for i, sat in enumerate(kilavuz, 1):
+                cell = ws2.cell(row=i, column=1, value=sat)
+                if i == 1:
+                    cell.font = Font(bold=True, size=12, color="FFFFFF")
+                    cell.fill = PatternFill("solid", fgColor=mavi)
+
+            wb.save(path)
+            QMessageBox.information(
+                self, "Şablon Hazır",
+                f"Şablon kaydedildi:\n{path}\n\n"
+                f"Anabilim Dalı ve Birim bilgileri dolu.\n"
+                f"Dönem ayını D3 hücresine, yılı D4'e yazın."
+            )
+
+        except ImportError:
+            QMessageBox.critical(self, "Eksik Paket",
+                                 "openpyxl kurulu değil.\npip install openpyxl")
+        except Exception as e:
+            QMessageBox.critical(self, "Hata", f"Şablon oluşturulamadı:\n{e}")

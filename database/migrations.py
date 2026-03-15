@@ -391,7 +391,7 @@ class MigrationManager:
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Sabitler (
-            Rowid       INTEGER PRIMARY KEY,
+            Rowid       TEXT PRIMARY KEY,
             Kod         TEXT,
             MenuEleman  TEXT,
             Aciklama    TEXT,

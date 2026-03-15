@@ -594,6 +594,49 @@ class DisAlanImportService:
                 veri["HesaplananSaat"] = round(vaka * katsayi, 2)
                 veri["ToplamSureDk"]   = vaka * veri.get("OrtSureDk", 0)
 
+        # ── K1 Matematiksel Denetim ──────────────────────────
+        # HBYS gerekmez — sadece sayılarla fiziksel imkânsızlıkları yakala
+        if "VakaSayisi" in veri and donem_ay and donem_yil:
+            try:
+                import calendar as _cal
+                from datetime import date as _date
+                toplam_gun = _cal.monthrange(donem_yil, donem_ay)[1]
+                is_gunu    = sum(
+                    1 for g in range(1, toplam_gun + 1)
+                    if _date(donem_yil, donem_ay, g).weekday() < 5
+                )
+                vaka_k1     = veri["VakaSayisi"]
+                ort_sure_k1 = veri.get("OrtSureDk") or 0
+                saat_k1     = veri.get("HesaplananSaat") or 0
+
+                # Fiziksel imkânsız: tek kişinin toplam işlem süresi > aylık iş kapasitesi
+                if ort_sure_k1 > 0:
+                    toplam_islem_dk = vaka_k1 * ort_sure_k1
+                    kapasite_dk     = is_gunu * 8 * 60   # 8 saatlik iş günü
+                    if toplam_islem_dk > kapasite_dk:
+                        hatalar.append(
+                            f"K1 FİZİKSEL İMKÂNSIZ: {vaka_k1} vaka × {ort_sure_k1} dk = "
+                            f"{toplam_islem_dk} dk > {kapasite_dk} dk ({is_gunu} iş günü × 8 saat)"
+                        )
+
+                # Hesaplanan saat > günlük mesai × iş günü
+                if saat_k1 > is_gunu * 8:
+                    hatalar.append(
+                        f"K1 SAAT AŞIMI: {saat_k1:.1f} saat > "
+                        f"{is_gunu * 8} saat ({is_gunu} iş günü × 8 saat)"
+                    )
+
+                # Vaka sayısı makul uyarı sınırı (ort_sure biliniyorsa)
+                if ort_sure_k1 > 0:
+                    makul_vaka = (is_gunu * 8 * 60) // ort_sure_k1
+                    if vaka_k1 > makul_vaka * 0.8:
+                        uyarilar.append(
+                            f"K1 YÜKSEK VAKA: {vaka_k1} vaka, "
+                            f"bu dönem için makul üst sınır ~{int(makul_vaka)}"
+                        )
+            except Exception:
+                pass
+
         # TutanakNo ve TutanakTarihi → kaydet() aşamasında doldurulur
 
         return SatirSonucu(

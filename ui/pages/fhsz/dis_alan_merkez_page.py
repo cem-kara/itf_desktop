@@ -3,21 +3,24 @@
 """
 Dış Alan Radyasyon Yönetim Merkezi
 
-Sekmeler:
-  1. Excel Import          — Birimlerden gelen şablonları içe aktar
-  2. Puantaj Raporu        — Kişi/birim bazlı dönem raporu
-  3. Katsayı Protokolleri  — AnaBilimDali/Birim katsayı yönetimi
-  4. Birim Kurulum         — Sihirbaz: operasyonel veri gir, sistem kurar
+4 sekme:
+  1. Excel Import     — Dosya yükle, oku, kaydet.
+                        Alt sekme: Import Karşılaştırma
+  2. Puantaj ve Onay  — Kişi bazlı özet, RKS onay, PDF çıktısı
+  3. Dönem Geçmişi    — Açık / kapalı dönem takibi
+  4. Ayarlar          — Katsayı Protokolleri + Birim Kurulum Sihirbazı
 """
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QTabWidget, QFrame, QHBoxLayout, QLabel, QPushButton
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QTabWidget, QLabel
 from PySide6.QtCore import Qt
+
+from ui.styles.components import STYLES as S
 from core.logger import logger
 
 
 class DisAlanMerkezPage(QWidget):
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self.setProperty("bg-role", "page")
+        self.setStyleSheet(S["page"])
         self._db = db
         self._setup_ui()
 
@@ -25,106 +28,104 @@ class DisAlanMerkezPage(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
 
-        # Üst başlık barı
-        header = QFrame()
-        header.setProperty("bg-role", "transparent")
-        header_lay = QHBoxLayout(header)
-        header_lay.setContentsMargins(16, 10, 16, 0)
-        header_lay.setSpacing(0)
-
-        lbl_title = QLabel("Radyoloji Birimi Dışı Radyasyon Görevlisi FHSZ Yönetim Merkezi")
-        lbl_title.setProperty("style-role", "title")
-        lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        btn_close = QPushButton()
-        btn_close.setFixedSize(28, 28)
-        btn_close.setProperty("style-role", "close")
-        from ui.styles.icons import IconRenderer
-        IconRenderer.set_button_icon(btn_close, "x", size=18)
-        btn_close.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_close.setToolTip("Kapat")
-        btn_close.clicked.connect(self._on_close)
-
-        header_lay.addStretch()
-        header_lay.addWidget(lbl_title)
-        header_lay.addStretch()
-        header_lay.addWidget(btn_close)
-
-        root.addWidget(header)
-
-        from ui.styles.icons import Icons
         self.tabs = QTabWidget()
+        self.tabs.setStyleSheet(S.get("tab_widget", ""))
         self.tabs.setDocumentMode(True)
 
-        # ── Sekme 1: Excel Import ─────────────────────────────
+        # 1 — Excel Import (Import Karsilastirma alt sekme olarak icinde)
         try:
             from ui.pages.fhsz.dis_alan_import_page import DisAlanImportPage
-            self.tabs.addTab(DisAlanImportPage(db=self._db), "  Tutanak Yükleme")
-            self.tabs.setTabIcon(0, Icons.get("download", size=16))
+            self.tabs.addTab(DisAlanImportPage(db=self._db), "📥  Excel Import")
         except Exception as e:
-            logger.error(f"DisAlanImportPage yüklenemedi: {e}")
-            self.tabs.addTab(_HataWidget(str(e)), "  Tutanak Yükleme")
-            self.tabs.setTabIcon(0, Icons.get("download", size=16))
+            logger.error(f"DisAlanImportPage yuklenemedi: {e}")
+            self.tabs.addTab(_HataWidget(str(e)), "📥  Excel Import")
 
-        # ── Sekme 2: Puantaj Raporu ───────────────────────────
+        # 2 — Puantaj & Onay
         try:
-            from ui.pages.fhsz.puantaj_rapor_page import DisAlanPuantajRaporPage
-            self.tabs.addTab(DisAlanPuantajRaporPage(db=self._db), "  Puantaj Raporu")
-            self.tabs.setTabIcon(1, Icons.get("bar_chart", size=16))
+            from ui.pages.fhsz.dis_alan_puantaj_page import DisAlanPuantajPage
+            self.tabs.addTab(DisAlanPuantajPage(db=self._db), "📊  Puantaj & Onay")
         except Exception as e:
-            logger.error(f"DisAlanPuantajRaporPage yüklenemedi: {e}")
-            self.tabs.addTab(_HataWidget(str(e)), "  Puantaj Raporu")
-            self.tabs.setTabIcon(1, Icons.get("bar_chart", size=16))
+            logger.error(f"DisAlanPuantajPage yuklenemedi: {e}")
+            self.tabs.addTab(_HataWidget(str(e)), "📊  Puantaj & Onay")
 
-        # ── Sekme 3: Katsayı Protokolleri ────────────────────
+        # 3 — Dönem Geçmişi
         try:
-            from ui.pages.fhsz.dis_alan_katsayi_page import DisAlanKatsayiPage
-            self.tabs.addTab(DisAlanKatsayiPage(db=self._db), "  Katsayı Protokolleri")
-            self.tabs.setTabIcon(2, Icons.get("settings", size=16))
+            from ui.pages.fhsz.dis_alan_donem_gecmisi_page import DisAlanDonemGecmisiPage
+            self.tabs.addTab(DisAlanDonemGecmisiPage(db=self._db), "📅  Dönem Geçmişi")
         except Exception as e:
-            logger.error(f"DisAlanKatsayiPage yüklenemedi: {e}")
-            self.tabs.addTab(_HataWidget(str(e)), "  Katsayı Protokolleri")
-            self.tabs.setTabIcon(2, Icons.get("settings", size=16))
+            logger.error(f"DisAlanDonemGecmisiPage yuklenemedi: {e}")
+            self.tabs.addTab(_HataWidget(str(e)), "📅  Dönem Geçmişi")
 
-        # ── Sekme 4: Birim Kurulum Sihirbazı ─────────────────
-        try:
-            from ui.pages.fhsz.dis_alan_kurulum_page import DisAlanKurulumPage
-            self.tabs.addTab(DisAlanKurulumPage(db=self._db), "  Birim Kurulum")
-            self.tabs.setTabIcon(3, Icons.get("settings_sliders", size=16))
-        except Exception as e:
-            logger.error(f"DisAlanKurulumPage yüklenemedi: {e}")
-            self.tabs.addTab(_HataWidget(str(e)), "  Birim Kurulum")
-            self.tabs.setTabIcon(3, Icons.get("settings_sliders", size=16))
+        # 4 — Ayarlar (Katsayi + Kurulum)
+        self.tabs.addTab(_AyarlarWidget(db=self._db), "⚙  Ayarlar")
 
         root.addWidget(self.tabs)
         self.setLayout(root)
-    def _on_close(self):
-        self.close()
+        self.tabs.currentChanged.connect(self._sekme_yenile)
+
     def showEvent(self, event):
-        """Sayfa gösterildiğinde aktif sekmenin verilerini yenile."""
         super().showEvent(event)
+        self._sekme_yenile(self.tabs.currentIndex())
+
+    def _sekme_yenile(self, idx: int):
+        widget = self.tabs.widget(idx)
+        if not widget:
+            return
+        for metod in ("_load_data", "_yukle", "load_data"):
+            if hasattr(widget, metod):
+                try:
+                    getattr(widget, metod)()
+                except Exception as e:
+                    logger.warning(f"Sekme yenileme ({metod}): {e}")
+                return
+        # Alt sekme iceriyorsa (hem 'tabs' hem de '_tabs' kontrolü)
+        inner_tabs = getattr(widget, "tabs", None) or getattr(widget, "_tabs", None)
+        if inner_tabs:
+            inner = inner_tabs.currentWidget()
+            if inner:
+                for metod in ("_load_data", "_yukle", "load_data"):
+                    if hasattr(inner, metod):
+                        try:
+                            getattr(inner, metod)()
+                        except Exception as e:
+                            logger.warning(f"İç sekme yenileme ({metod}): {e}")
+                        return
+
+
+class _AyarlarWidget(QWidget):
+    def __init__(self, db=None, parent=None):
+        super().__init__(parent)
+        self._db = db
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+
+        self.tabs = QTabWidget()
+        self.tabs.setDocumentMode(True)
+
         try:
-            widget = self.tabs.currentWidget()
-            if hasattr(widget, "_load_data"):
-                widget._load_data()  # type: ignore[attr-defined]
-            elif hasattr(widget, "load_data"):
-                widget.load_data()  # type: ignore[attr-defined]
+            from ui.pages.fhsz.dis_alan_katsayi_page import DisAlanKatsayiPage
+            self.tabs.addTab(DisAlanKatsayiPage(db=self._db), "📋  Katsayı Protokolleri")
         except Exception as e:
-            logger.warning(f"DisAlanMerkezPage.showEvent yenileme: {e}")
+            logger.error(f"DisAlanKatsayiPage yuklenemedi: {e}")
+            self.tabs.addTab(_HataWidget(str(e)), "📋  Katsayı Protokolleri")
 
+        try:
+            from ui.pages.fhsz.dis_alan_kurulum_page import DisAlanKurulumPage
+            self.tabs.addTab(DisAlanKurulumPage(db=self._db), "🔧  Birim Kurulum")
+        except Exception as e:
+            logger.error(f"DisAlanKurulumPage yuklenemedi: {e}")
+            self.tabs.addTab(_HataWidget(str(e)), "🔧  Birim Kurulum")
 
-# ─────────────────────────────────────────────────────────────
-#  Hata widget — sekme yüklenemediğinde gösterilir
-# ─────────────────────────────────────────────────────────────
+        lay.addWidget(self.tabs)
+
 
 class _HataWidget(QWidget):
     def __init__(self, mesaj: str, parent=None):
         super().__init__(parent)
-        from PySide6.QtWidgets import QLabel
         lay = QVBoxLayout(self)
         lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lbl = QLabel(f"Sayfa yüklenemedi:\n{mesaj}")
-        lbl.setProperty("style-role", "err")
+        lbl = QLabel(f"⚠  Sayfa yuklenemedi:\n{mesaj}")
+        lbl.setStyleSheet("color:#EF9A9A; font-size:12px; padding:20px;")
         lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         lbl.setWordWrap(True)
         lay.addWidget(lbl)

@@ -36,7 +36,7 @@ YAZ_HATA     = QColor("#EF9A9A")
 SUTUNLAR = [
     ("",              40,  "onay"),          # Onay checkbox
     ("Satır",         48,  "satir_no"),
-    ("Durum",         100,  "durum"),
+    ("Durum",         72,  "durum"),
     ("TC Kimlik",    130,  "TCKimlik"),
     ("Ad Soyad",     200,  "AdSoyad"),
     ("Alan",         210,  "IslemTipi"),
@@ -74,26 +74,22 @@ class _OkuyucuWorker(QObject):
 class DisAlanImportPage(QWidget):
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self.setProperty("bg-role", "page")
+        self.setStyleSheet(S["page"])
         self._db     = db
         self._sonuc  = None   # Son okunan ImportSonucu
         self._thread = None
 
-
-        from ui.styles.icons import Icons
         self._tabs = QTabWidget()
         self._tabs.setDocumentMode(True)
 
-        # Sekme 1: Excel Import (ikonlu)
+        # Sekme 1: Excel Import
         self._import_widget = QWidget()
         self._setup_ui()
-        self._tabs.addTab(self._import_widget, "  Excel Import")
-        self._tabs.setTabIcon(0, Icons.get("download", size=16))
+        self._tabs.addTab(self._import_widget, "📥  Excel Import")
 
-        # Sekme 2: Import Karşılaştırma (ikonlu)
+        # Sekme 2: Import Karşılaştırma
         self._karsilastirma_widget = _KarsilastirmaWidget(db=self._db)
-        self._tabs.addTab(self._karsilastirma_widget, "  Import Karşılaştırma")
-        self._tabs.setTabIcon(1, Icons.get("search", size=16))
+        self._tabs.addTab(self._karsilastirma_widget, "🔍  Import Karşılaştırma")
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -110,26 +106,26 @@ class DisAlanImportPage(QWidget):
         root.setContentsMargins(20, 15, 20, 15)
 
         # Üst Bar
-        top = QFrame(); top.setProperty("bg-role", "panel"); top.setMaximumHeight(56)
+        top = QFrame(); top.setStyleSheet(S["filter_panel"]); top.setMaximumHeight(56)
         top_lay = QHBoxLayout(top); top_lay.setContentsMargins(12, 6, 12, 6); top_lay.setSpacing(12)
 
         lbl = QLabel("Dış Alan Excel Import — RKS Onay Ekranı")
-        lbl.setProperty("style-role", "title")
+        lbl.setStyleSheet("font-size:15px; font-weight:bold; color:#1D75FE;")
         top_lay.addWidget(lbl); top_lay.addStretch()
 
         # Dosya seçme
         self.btn_dosya = QPushButton("Excel Dosyası Seç")
-        self.btn_dosya.setProperty("style-role", "secondary")
+        self.btn_dosya.setStyleSheet(S.get("secondary_btn", S["save_btn"]))
         self.btn_dosya.setFixedHeight(36)
         IconRenderer.set_button_icon(self.btn_dosya, "folder", color="#FFFFFF")
         top_lay.addWidget(self.btn_dosya)
 
         self.lbl_dosya = QLabel("Dosya seçilmedi")
-        self.lbl_dosya.setProperty("style-role", "info")
+        self.lbl_dosya.setStyleSheet("font-size:11px; color:#888;")
         top_lay.addWidget(self.lbl_dosya)
 
         self.btn_oku = QPushButton("Dosyayı Oku ve Doğrula")
-        self.btn_oku.setProperty("style-role", "action")
+        self.btn_oku.setStyleSheet(S["save_btn"])
         self.btn_oku.setFixedHeight(36)
         self.btn_oku.setEnabled(False)
         top_lay.addWidget(self.btn_oku)
@@ -137,7 +133,7 @@ class DisAlanImportPage(QWidget):
         root.addWidget(top)
 
         # Araç çubuğu (tümünü seç / yalnızca geçerlileri seç / kaydet)
-        ara = QFrame(); ara.setProperty("bg-role", "panel"); ara.setMaximumHeight(48)
+        ara = QFrame(); ara.setStyleSheet(S["filter_panel"]); ara.setMaximumHeight(48)
         ara_lay = QHBoxLayout(ara); ara_lay.setContentsMargins(12, 4, 12, 4); ara_lay.setSpacing(10)
 
         self.btn_tumunu_sec   = QPushButton("Tümünü Seç")
@@ -146,21 +142,21 @@ class DisAlanImportPage(QWidget):
 
         for btn in [self.btn_tumunu_sec, self.btn_gecerlileri, self.btn_secimi_kaldir]:
             btn.setFixedHeight(30)
-            btn.setProperty("style-role", "secondary")
+            btn.setStyleSheet(S.get("secondary_btn", S["save_btn"]))
             btn.setEnabled(False)
             ara_lay.addWidget(btn)
 
         ara_lay.addStretch()
 
         self.lbl_ozet = QLabel("")
-        self.lbl_ozet.setProperty("style-role", "info")
+        self.lbl_ozet.setStyleSheet("font-size:11px; color:#aaa;")
         ara_lay.addWidget(self.lbl_ozet)
 
 
         ara_lay.addStretch()
 
         self.btn_kaydet = QPushButton("SEÇİLİLERİ KAYDET")
-        self.btn_kaydet.setProperty("style-role", "action")
+        self.btn_kaydet.setStyleSheet(S["save_btn"])
         self.btn_kaydet.setFixedHeight(34)
         self.btn_kaydet.setEnabled(False)
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color="#FFFFFF")
@@ -173,7 +169,7 @@ class DisAlanImportPage(QWidget):
         self.tablo.setColumnCount(len(SUTUNLAR))
         self.tablo.setHorizontalHeaderLabels([s[0] for s in SUTUNLAR])
         self.tablo.verticalHeader().setVisible(False)
-        self.tablo.setProperty("style-role", "table")
+        self.tablo.setStyleSheet(S["table"])
         self.tablo.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tablo.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
 
@@ -267,8 +263,10 @@ class DisAlanImportPage(QWidget):
         ay_adlari = ["", "Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",
                      "Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
         ay_ad = ay_adlari[sonuc.donem_ay] if 1 <= sonuc.donem_ay <= 12 else "?"
-        self.lbl_dosya.setText(f"{sonuc.dosya}   |   {ay_ad} {sonuc.donem_yil}")
-        self.lbl_dosya.setProperty("style-role", "stat-green")
+        self.lbl_dosya.setText(
+            f"{sonuc.dosya}   |   📅 {ay_ad} {sonuc.donem_yil}"
+        )
+        self.lbl_dosya.setStyleSheet("font-size:11px; color:#81C784; font-weight:bold;")
 
         for btn in [self.btn_tumunu_sec, self.btn_gecerlileri, self.btn_secimi_kaldir]:
             btn.setEnabled(True)
@@ -373,9 +371,9 @@ class DisAlanImportPage(QWidget):
         self.lbl_ozet.setText(
             f"{birim_str}  |  "
             f"Toplam: {s.toplam_satir}  |  "
-            f"Geçerli: {s.gecerli}  |  "
-            f"Uyarılı: {s.uyarili}  |  "
-            f"Hatalı: {s.hatali}"
+            f"✓ Geçerli: {s.gecerli}  |  "
+            f"⚠ Uyarılı: {s.uyarili}  |  "
+            f"✗ Hatalı: {s.hatali}"
         )
 
 
@@ -421,6 +419,34 @@ class DisAlanImportPage(QWidget):
         from core.di import get_registry
         from core.services.dis_alan_import_service import DisAlanImportService
         from core.auth.session_context import SessionContext
+
+        # Dönem kilidi — onaylı döneme import engeli
+        if self._db and self._sonuc:
+            try:
+                ana   = str(self._sonuc.anabilim_dali or "").strip()
+                birim = str(self._sonuc.birim or "").strip()
+                ay    = self._sonuc.donem_ay
+                yil   = self._sonuc.donem_yil
+                if ana and birim and ay and yil:
+                    kilitli = get_registry(self._db).get("Dis_Alan_Izin_Ozet").get_all() or []
+                    kilitli_donem = [
+                        r for r in kilitli
+                        if str(r.get("DonemAy",""))  == str(ay)
+                        and str(r.get("DonemYil","")) == str(yil)
+                        and int(r.get("RksOnay", 0)) == 1
+                    ]
+                    if kilitli_donem:
+                        kisi_n = len(kilitli_donem)
+                        QMessageBox.critical(
+                            self, "Dönem Kilitli",
+                            f"<b>{ana} / {birim}</b><br>"
+                            f"{ay}/{yil} dönemi için <b>{kisi_n} kişi RKS onaylı</b>.<br><br>"
+                            "Onaylanmış döneme yeni import yapılamaz.<br>"
+                            "Onayı kaldırmak için RKS yöneticisiyle iletişime geçin."
+                        )
+                        return
+            except Exception as e:
+                logger.warning(f"Dönem kilidi kontrolü: {e}")
 
         svc = DisAlanImportService(get_registry(self._db))
 
@@ -655,25 +681,25 @@ class _KarsilastirmaWidget(QWidget):
         tl.addWidget(lbl); tl.addStretch()
 
         tl.addWidget(QLabel("Anabilim Dalı:"))
-        self.cmb_ana = QComboBox(); self.cmb_ana.setFixedWidth(220)
+        self.cmb_ana = QComboBox(); self.cmb_ana.setFixedWidth(180)
         tl.addWidget(self.cmb_ana)
 
         tl.addWidget(QLabel("Birim:"))
-        self.cmb_bir = QComboBox(); self.cmb_bir.setFixedWidth(200)
+        self.cmb_bir = QComboBox(); self.cmb_bir.setFixedWidth(150)
         tl.addWidget(self.cmb_bir)
 
         tl.addWidget(QLabel("Dönem:"))
         self.cmb_ay = QComboBox()
         self.cmb_ay.addItems(self.AY_ADLARI)
         self.cmb_ay.setCurrentIndex(QDate.currentDate().month()-1)
-        self.cmb_ay.setFixedWidth(120)
+        self.cmb_ay.setFixedWidth(90)
         tl.addWidget(self.cmb_ay)
 
         self.cmb_yil = QComboBox()
         self.cmb_yil.addItems([str(y) for y in range(
             QDate.currentDate().year()-2, QDate.currentDate().year()+2)])
         self.cmb_yil.setCurrentText(str(QDate.currentDate().year()))
-        self.cmb_yil.setFixedWidth(100)
+        self.cmb_yil.setFixedWidth(80)
         tl.addWidget(self.cmb_yil)
 
         self.btn_yukle = QPushButton("Yükle")
@@ -735,9 +761,9 @@ class _KarsilastirmaWidget(QWidget):
         # Karşılaştırma tablosu
         self.tablo = QTableWidget()
         kolonlar = [
-            ("Durum", 120), ("TC Kimlik", 110), ("Ad Soyad", 120),
-            ("Vaka A", 90), ("Vaka B", 90), ("Saat A", 90), ("Saat B", 90),
-            ("Fark", 200),
+            ("Durum", 90), ("TC Kimlik", 115), ("Ad Soyad", 190),
+            ("Vaka A", 70), ("Vaka B", 70), ("Saat A", 75), ("Saat B", 75),
+            ("Fark", 120),
         ]
         self.tablo.setColumnCount(len(kolonlar))
         self.tablo.setHorizontalHeaderLabels([c[0] for c in kolonlar])
