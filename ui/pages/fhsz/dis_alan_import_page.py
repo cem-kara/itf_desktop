@@ -36,7 +36,7 @@ YAZ_HATA     = QColor("#EF9A9A")
 SUTUNLAR = [
     ("",              40,  "onay"),          # Onay checkbox
     ("Satır",         48,  "satir_no"),
-    ("Durum",         72,  "durum"),
+    ("Durum",         100,  "durum"),
     ("TC Kimlik",    130,  "TCKimlik"),
     ("Ad Soyad",     200,  "AdSoyad"),
     ("Alan",         210,  "IslemTipi"),
@@ -733,9 +733,9 @@ class _KarsilastirmaWidget(QWidget):
         # Karşılaştırma tablosu
         self.tablo = QTableWidget()
         kolonlar = [
-            ("Durum", 90), ("TC Kimlik", 115), ("Ad Soyad", 190),
-            ("Vaka A", 70), ("Vaka B", 70), ("Saat A", 75), ("Saat B", 75),
-            ("Fark", 120),
+            ("Durum", 120), ("TC Kimlik", 110), ("Ad Soyad", 120),
+            ("Vaka A", 90), ("Vaka B", 90), ("Saat A", 90), ("Saat B", 90),
+            ("Fark", 200),
         ]
         self.tablo.setColumnCount(len(kolonlar))
         self.tablo.setHorizontalHeaderLabels([c[0] for c in kolonlar])

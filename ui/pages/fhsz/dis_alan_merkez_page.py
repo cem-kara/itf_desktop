@@ -34,7 +34,7 @@ class DisAlanMerkezPage(QWidget):
         header_lay.setContentsMargins(16, 10, 16, 0)
         header_lay.setSpacing(0)
 
-        lbl_title = QLabel("Dış Alan Radyasyon Yönetim Merkezi")
+        lbl_title = QLabel("Radyoloji Birimi Dışı Radyasyon Görevlisi FHSZ Yönetim Merkezi")
         lbl_title.setStyleSheet("font-size:18px; font-weight:bold; color:#1D75FE;")
         lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -59,10 +59,10 @@ class DisAlanMerkezPage(QWidget):
         # ── Sekme 1: Excel Import ─────────────────────────────
         try:
             from ui.pages.fhsz.dis_alan_import_page import DisAlanImportPage
-            self.tabs.addTab(DisAlanImportPage(db=self._db), "📥  Excel Import")
+            self.tabs.addTab(DisAlanImportPage(db=self._db), "📥  Tutanak Yükleme")
         except Exception as e:
             logger.error(f"DisAlanImportPage yüklenemedi: {e}")
-            self.tabs.addTab(_HataWidget(str(e)), "📥  Excel Import")
+            self.tabs.addTab(_HataWidget(str(e)), "📥  Tutanak Yükleme")
 
         # ── Sekme 2: Puantaj Raporu ───────────────────────────
         try:
