@@ -38,31 +38,22 @@ class _InfoKart(QFrame):
     def __init__(self, baslik: str, deger: str = "", aciklama: str = "", vurgu=False):
         super().__init__()
         renk = "#1D75FE" if vurgu else "#457B9D"
-        self.setStyleSheet(
-            f"QFrame {{ background:#1A2535; border:1px solid {renk}; "
-            f"border-radius:8px; padding:0px; }}"
-        )
+        self.setProperty("bg-role", "panel")
         lay = QVBoxLayout(self)
         lay.setContentsMargins(14, 10, 14, 10)
         lay.setSpacing(2)
 
         lbl_baslik = QLabel(baslik)
-        lbl_baslik.setStyleSheet("font-size:10px; color:#8fa3b8; border:none;")
+        lbl_baslik.setProperty("style-role", "section")
         lay.addWidget(lbl_baslik)
 
         self.lbl_deger = QLabel(deger)
-        font = QFont()
-        font.setPointSize(16 if vurgu else 13)
-        font.setBold(vurgu)
-        self.lbl_deger.setFont(font)
-        self.lbl_deger.setStyleSheet(
-            f"color:{'#FFD600' if vurgu else '#E0E0E0'}; border:none;"
-        )
+        self.lbl_deger.setProperty("style-role", "stat-highlight" if vurgu else "stat-value")
         lay.addWidget(self.lbl_deger)
 
         if aciklama:
             lbl_ac = QLabel(aciklama)
-            lbl_ac.setStyleSheet("font-size:10px; color:#666; border:none;")
+            lbl_ac.setProperty("style-role", "info")
             lbl_ac.setWordWrap(True)
             lay.addWidget(lbl_ac)
 
@@ -77,7 +68,7 @@ class _InfoKart(QFrame):
 class DisAlanKurulumPage(QWidget):
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(S["page"])
+        self.setProperty("bg-role", "page")
         self._db = db
         self._setup_ui()
         self._connect_signals()
@@ -91,10 +82,10 @@ class DisAlanKurulumPage(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet("QScrollArea { border:none; background:transparent; }")
+        scroll.setProperty("bg-role", "transparent")
 
         inner = QWidget()
-        inner.setStyleSheet("background:transparent;")
+        inner.setProperty("bg-role", "transparent")
         main = QVBoxLayout(inner)
         main.setContentsMargins(30, 20, 30, 30)
         main.setSpacing(20)
@@ -106,9 +97,7 @@ class DisAlanKurulumPage(QWidget):
 
         # ── Üst bilgi ─────────────────────────────────────────
         baslik = QLabel("Birim Kurulum Sihirbazı")
-        baslik.setStyleSheet(
-            "font-size:18px; font-weight:bold; color:#1D75FE;"
-        )
+        baslik.setProperty("style-role", "title")
         main.addWidget(baslik)
 
         aciklama = QLabel(
@@ -116,7 +105,7 @@ class DisAlanKurulumPage(QWidget):
             "Sistem katsayıyı otomatik hesaplar ve önümüzdeki yıl için "
             "tüm ayarları tek tıkla kaydeder."
         )
-        aciklama.setStyleSheet("font-size:11px; color:#8fa3b8;")
+        aciklama.setProperty("style-role", "info")
         aciklama.setWordWrap(True)
         main.addWidget(aciklama)
 
@@ -209,21 +198,18 @@ class DisAlanKurulumPage(QWidget):
         main.addWidget(self._bolum_baslik("4  —  Kaydet"))
 
         ozet_frame = QFrame()
-        ozet_frame.setStyleSheet(
-            "QFrame { background:#0D1A2A; border:1px solid #1D75FE; "
-            "border-radius:10px; }"
-        )
+        ozet_frame.setProperty("bg-role", "panel")
         ozet_lay = QVBoxLayout(ozet_frame)
         ozet_lay.setContentsMargins(16, 14, 16, 14)
         ozet_lay.setSpacing(6)
 
         self.lbl_ozet = QLabel("Verileri girdikten sonra özet burada görünecek.")
-        self.lbl_ozet.setStyleSheet("font-size:11px; color:#8fa3b8;")
+        self.lbl_ozet.setProperty("style-role", "info")
         self.lbl_ozet.setWordWrap(True)
         ozet_lay.addWidget(self.lbl_ozet)
 
         self.lbl_uyari = QLabel("")
-        self.lbl_uyari.setStyleSheet("font-size:11px; color:#FFB300;")
+        self.lbl_uyari.setProperty("style-role", "warn")
         self.lbl_uyari.setWordWrap(True)
         self.lbl_uyari.setVisible(False)
         ozet_lay.addWidget(self.lbl_uyari)
@@ -235,17 +221,12 @@ class DisAlanKurulumPage(QWidget):
         btn_lay.addStretch()
 
         self.btn_hesapla = QPushButton("Hesapla ve Önizle")
-        self.btn_hesapla.setStyleSheet(S.get("secondary_btn", S["save_btn"]))
+        self.btn_hesapla.setProperty("style-role", "secondary")
         self.btn_hesapla.setFixedHeight(40)
         self.btn_hesapla.setFixedWidth(160)
 
-        self.btn_kaydet = QPushButton("✓  Kaydet ve Uygula")
-        self.btn_kaydet.setStyleSheet(
-            "QPushButton { background:#1D75FE; color:#fff; border-radius:8px; "
-            "font-size:13px; font-weight:bold; padding:0 24px; }"
-            "QPushButton:hover { background:#1558C0; }"
-            "QPushButton:disabled { background:#2A3A4A; color:#556; }"
-        )
+        self.btn_kaydet = QPushButton("Kaydet ve Uygula")
+        self.btn_kaydet.setProperty("style-role", "action")
         self.btn_kaydet.setFixedHeight(40)
         self.btn_kaydet.setEnabled(False)
 
@@ -261,10 +242,7 @@ class DisAlanKurulumPage(QWidget):
 
     def _bolum_baslik(self, metin: str) -> QLabel:
         lbl = QLabel(metin)
-        lbl.setStyleSheet(
-            "font-size:12px; font-weight:bold; color:#457B9D; "
-            "padding:6px 0 2px 0; border-bottom:1px solid #1A2535;"
-        )
+        lbl.setProperty("style-role", "section-title")
         return lbl
 
     # =========================================================
@@ -351,7 +329,7 @@ class DisAlanKurulumPage(QWidget):
                 mevcut = get_dis_alan_katsayi_service(self._db).get_aktif_katsayi(ana, birim)
                 if mevcut:
                     uyari_metni = (
-                        f"⚠  Bu birim için zaten aktif bir protokol var "
+                        f"Bu birim için zaten aktif bir protokol var "
                         f"(Katsayı: {mevcut.get('Katsayi')}, "
                         f"Başlangıç: {mevcut.get('GecerlilikBaslangic')}). "
                         f"Önce Katsayı Protokolleri ekranından mevcut protokolü "

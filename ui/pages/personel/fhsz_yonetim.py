@@ -598,7 +598,7 @@ class FHSZYonetimPage(QWidget):
                 if not birim:
                     continue
 
-                # 🔴 KRİTİK DÜZELTME BURASI
+                # KRİTİK DÜZELTME NOKTASI
                 if "KOŞULU A" in aciklama:
                     self._birim_kosul_map[birim] = "A"
                 elif "KOŞULU B" in aciklama:

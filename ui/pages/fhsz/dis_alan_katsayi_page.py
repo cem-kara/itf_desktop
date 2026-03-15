@@ -31,7 +31,7 @@ from core.logger import logger
 class DisAlanKatsayiPage(QWidget):
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(S["page"])
+        self.setProperty("bg-role", "page")
         self._db  = db
         self._svc = get_dis_alan_katsayi_service(db) if db else None
         self._tarihce_goster = False
@@ -49,30 +49,30 @@ class DisAlanKatsayiPage(QWidget):
 
         # Üst bar
         top = QFrame()
-        top.setStyleSheet(S["filter_panel"])
+        top.setProperty("bg-role", "panel")
         top.setMaximumHeight(56)
         top_lay = QHBoxLayout(top)
         top_lay.setContentsMargins(12, 6, 12, 6)
         top_lay.setSpacing(12)
 
         lbl = QLabel("Katsayı Protokol Yönetimi")
-        lbl.setStyleSheet("font-size:15px; font-weight:bold; color:#1D75FE;")
+        lbl.setProperty("style-role", "title")
         top_lay.addWidget(lbl)
         top_lay.addStretch()
 
         self.chk_tarihce = QCheckBox("Tarihçeyi Göster")
-        self.chk_tarihce.setStyleSheet("color:#aaa; font-size:11px;")
+        self.chk_tarihce.setProperty("style-role", "info")
         top_lay.addWidget(self.chk_tarihce)
 
         root.addWidget(top)
 
         # Bilgi şeridi
         info = QLabel(
-            "ℹ  Katsayı = Ortalama Işın Süresi (dk) ÷ 60  |  "
+            "Katsayı = Ortalama Işın Süresi (dk) ÷ 60  |  "
             "Her AnaBilimDali + Birim ikilisi için ayrı protokol tanımlanır  |  "
             "Geçmiş protokoller tarihçe olarak korunur."
         )
-        info.setStyleSheet("font-size:10px; color:#888; padding:4px 8px;")
+        info.setProperty("style-role", "info")
         info.setWordWrap(True)
         root.addWidget(info)
 
@@ -80,7 +80,7 @@ class DisAlanKatsayiPage(QWidget):
         self.model = DisAlanKatsayiModel()
         self.table = QTableView()
         self.table.setModel(self.model)
-        self.table.setStyleSheet(S["table"])
+        self.table.setProperty("style-role", "table")
         self.table.verticalHeader().setVisible(False)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -90,24 +90,24 @@ class DisAlanKatsayiPage(QWidget):
 
         # Alt butonlar
         btn_frame = QFrame()
-        btn_frame.setStyleSheet(S.get("filter_panel", ""))
+        btn_frame.setProperty("bg-role", "panel")
         btn_frame.setMaximumHeight(50)
         btn_lay = QHBoxLayout(btn_frame)
         btn_lay.setContentsMargins(12, 6, 12, 6)
         btn_lay.setSpacing(10)
 
         self.btn_yeni = QPushButton("Yeni Protokol Ekle")
-        self.btn_yeni.setStyleSheet(S["save_btn"])
+        self.btn_yeni.setProperty("style-role", "action")
         self.btn_yeni.setFixedHeight(34)
         IconRenderer.set_button_icon(self.btn_yeni, "plus", color="#FFFFFF")
 
         self.btn_pasife_al = QPushButton("Pasife Al")
-        self.btn_pasife_al.setStyleSheet(S.get("danger_btn", S["save_btn"]))
+        self.btn_pasife_al.setProperty("style-role", "danger")
         self.btn_pasife_al.setFixedHeight(34)
         self.btn_pasife_al.setEnabled(False)
 
         self.btn_yenile = QPushButton("Yenile")
-        self.btn_yenile.setStyleSheet(S.get("secondary_btn", S["save_btn"]))
+        self.btn_yenile.setProperty("style-role", "secondary")
         self.btn_yenile.setFixedHeight(34)
         IconRenderer.set_button_icon(self.btn_yenile, "refresh", color="#FFFFFF")
 
@@ -116,7 +116,7 @@ class DisAlanKatsayiPage(QWidget):
         btn_lay.addStretch()
 
         self.lbl_durum = QLabel("")
-        self.lbl_durum.setStyleSheet("font-size:11px; color:#aaa;")
+        self.lbl_durum.setProperty("style-role", "info")
         btn_lay.addWidget(self.lbl_durum)
 
         btn_lay.addWidget(self.btn_yenile)
@@ -235,7 +235,7 @@ class _ProtokolDialog(QDialog):
 
         # Başlık
         baslik = QLabel("Yeni Katsayı Protokolü Ekle")
-        baslik.setStyleSheet("font-size:14px; font-weight:bold; color:#1D75FE; padding:4px 0;")
+        baslik.setProperty("style-role", "section-title")
         layout.addWidget(baslik)
 
         # Form
@@ -286,10 +286,8 @@ class _ProtokolDialog(QDialog):
         layout.addLayout(form)
 
         # Uyarı
-        uyari = QLabel(
-            "⚠  Aynı birim için mevcut aktif protokol varsa önce pasife alınmalıdır."
-        )
-        uyari.setStyleSheet("font-size:10px; color:#FFB300; padding:4px 8px;")
+        uyari = QLabel("Aynı birim için mevcut aktif protokol varsa önce pasife alınmalıdır.")
+        uyari.setProperty("style-role", "warn")
         uyari.setWordWrap(True)
         layout.addWidget(uyari)
 

@@ -51,7 +51,7 @@ class DisAlanKatsayiModel(QAbstractTableModel):
 
         if role == Qt.ItemDataRole.DisplayRole:
             if key == "Aktif":
-                return "✓ Aktif" if val else "✗ Pasif"
+                return "Aktif" if val else "Pasif"
             if key == "Katsayi" and val is not None:
                 return f"{float(val):.2f}"
             return str(val) if val is not None else ""

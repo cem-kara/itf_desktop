@@ -97,19 +97,19 @@ class DisAlanPuantajRaporPage(QWidget):
 
         top_lay.addWidget(QLabel("Anabilim Dalı:"))
         self.cmb_anabilim = QComboBox()
-        self.cmb_anabilim.setFixedWidth(180)
+        self.cmb_anabilim.setFixedWidth(220)
         top_lay.addWidget(self.cmb_anabilim)
 
         top_lay.addWidget(QLabel("Birim:"))
         self.cmb_birim = QComboBox()
-        self.cmb_birim.setFixedWidth(150)
+        self.cmb_birim.setFixedWidth(200)
         top_lay.addWidget(self.cmb_birim)
 
         top_lay.addWidget(QLabel("Dönem:"))
         self.cmb_ay = QComboBox()
         self.cmb_ay.addItems(AY_ADLARI)
         self.cmb_ay.setCurrentIndex(QDate.currentDate().month() - 1)
-        self.cmb_ay.setFixedWidth(90)
+        self.cmb_ay.setFixedWidth(110)
         top_lay.addWidget(self.cmb_ay)
 
         self.cmb_yil = QComboBox()
@@ -118,7 +118,7 @@ class DisAlanPuantajRaporPage(QWidget):
                                    QDate.currentDate().year() + 2)
         ])
         self.cmb_yil.setCurrentText(str(QDate.currentDate().year()))
-        self.cmb_yil.setFixedWidth(80)
+        self.cmb_yil.setFixedWidth(100)
         top_lay.addWidget(self.cmb_yil)
 
         self.btn_analiz = QPushButton("Analiz Et")
@@ -186,10 +186,8 @@ class DisAlanPuantajRaporPage(QWidget):
         self.txt_log = QTextEdit()
         self.txt_log.setReadOnly(True)
         self.txt_log.setMaximumHeight(180)
-        self.txt_log.setStyleSheet(
-            "QTextEdit { background:#0D1A2A; color:#8fa3b8; "
-            "font-family:monospace; font-size:11px; border:none; }"
-        )
+        self.txt_log.setProperty("bg-role", "panel")
+        self.txt_log.setProperty("style-role", "log")
         splitter.addWidget(self.txt_log)
         splitter.setSizes([450, 180])
 
@@ -197,25 +195,20 @@ class DisAlanPuantajRaporPage(QWidget):
 
         # ── Alt buton çubuğu ──────────────────────────────────
         bot = QFrame()
-        bot.setStyleSheet(S.get("filter_panel", ""))
+        bot.setProperty("bg-role", "panel")
         bot.setMaximumHeight(50)
         bot_lay = QHBoxLayout(bot)
         bot_lay.setContentsMargins(12, 6, 12, 6)
         bot_lay.setSpacing(10)
 
         self.btn_pdf = QPushButton("PDF Rapor Oluştur")
-        self.btn_pdf.setStyleSheet(
-            "QPushButton { background:#C62828; color:#fff; border-radius:6px; "
-            "font-weight:bold; padding:0 14px; }"
-            "QPushButton:hover { background:#B71C1C; }"
-            "QPushButton:disabled { background:#2A1A1A; color:#556; }"
-        )
+        self.btn_pdf.setProperty("style-role", "danger")
         self.btn_pdf.setFixedHeight(34)
         self.btn_pdf.setEnabled(False)
         IconRenderer.set_button_icon(self.btn_pdf, "download", color="#FFFFFF")
 
         self.btn_excel = QPushButton("Excel'e Aktar")
-        self.btn_excel.setStyleSheet(S.get("secondary_btn", S["save_btn"]))
+        self.btn_excel.setProperty("style-role", "secondary")
         self.btn_excel.setFixedHeight(34)
         self.btn_excel.setEnabled(False)
 
@@ -224,26 +217,22 @@ class DisAlanPuantajRaporPage(QWidget):
         bot_lay.addStretch()
 
         self.lbl_durum = QLabel("")
-        self.lbl_durum.setStyleSheet("font-size:11px; color:#aaa;")
+        self.lbl_durum.setProperty("style-role", "footer")
         bot_lay.addWidget(self.lbl_durum)
 
         root.addWidget(bot)
 
     def _kart(self, baslik, deger, renk="#457B9D"):
         f = _KartFrame()
-        f.setStyleSheet(
-            f"QFrame {{ background:#1A2535; border-radius:8px; "
-            f"border-left:3px solid {renk}; }}"
-        )
+        f.setProperty("bg-role", "panel")
+        f.setProperty("border-role", "accent")
         lay = QVBoxLayout(f)
         lay.setContentsMargins(12, 8, 12, 8)
         lay.setSpacing(2)
         lb = QLabel(baslik)
-        lb.setStyleSheet("font-size:10px; color:#8fa3b8; border:none;")
+        lb.setProperty("style-role", "stat-label")
         lv = QLabel(deger)
-        lv.setStyleSheet(
-            f"font-size:20px; font-weight:bold; color:{renk}; border:none;"
-        )
+        lv.setProperty("style-role", "stat-value")
         lay.addWidget(lb)
         lay.addWidget(lv)
         f._lv = lv
@@ -477,13 +466,15 @@ class DisAlanPuantajRaporPage(QWidget):
                     it.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 return it
 
-            durum_icons = {
-                "MÜKERRER": "⚠  Mükerrer",
-                "EKSİK":    "✗  Eksik",
-                "UYARI":    "!  Uyarı",
-                "TAMAM":    "✓  Tamam",
+            # Emoji yerine plain text, ikon render UI'da yapılmalı (ör: QLabel/QTableWidgetItem'da ikon desteği varsa eklenebilir)
+            # Burada sadece metin gösteriyoruz, ikon için ileride IconRenderer ile ekleme yapılabilir.
+            durum_labels = {
+                "MÜKERRER": "Mükerrer",
+                "EKSİK":    "Eksik",
+                "UYARI":    "Uyarı",
+                "TAMAM":    "Tamam",
             }
-            self.tablo.setItem(i, 0, _it(durum_icons.get(s["durum"], s["durum"]), center=True))
+            self.tablo.setItem(i, 0, _it(durum_labels.get(s["durum"], s["durum"]), center=True))
             self.tablo.setItem(i, 1, _it(r.get("TCKimlik",""), center=True))
             self.tablo.setItem(i, 2, _it(r.get("AdSoyad","")))
             self.tablo.setItem(i, 3, _it(r.get("Birim","")))
@@ -544,21 +535,22 @@ class DisAlanPuantajRaporPage(QWidget):
         lines.append(f"  Uyarı         : {len(a['uyari'])}")
         lines.append(f"  Temiz kayıt   : {len(a['temiz'])}")
 
+
         if a["mukerrer"]:
-            lines.append(f"")
-            lines.append("  ⚠  MÜKERRER KAYITLAR:")
+            lines.append("")
+            lines.append("  [MÜKERRER] KAYITLAR:")
             for s in a["sonuclar"]:
                 if s["durum"] == "MÜKERRER":
                     r = s["temsil"]
-                    lines.append(f"    - {r.get('AdSoyad','')} ({r.get('TCKimlik','')}) → {s['sorun']}")
+                    lines.append(f"    - {r.get('TCKimlik','')} {r.get('AdSoyad','')}: {s['sorun']}")
 
         if a["eksik"]:
-            lines.append(f"")
-            lines.append("  ✗  EKSİK KAYITLAR:")
+            lines.append("")
+            lines.append("  [EKSİK] KAYITLAR:")
             for s in a["sonuclar"]:
                 if s["durum"] == "EKSİK":
                     r = s["temsil"]
-                    lines.append(f"    - {r.get('AdSoyad','')} ({r.get('TCKimlik','')}) → {s['sorun']}")
+                    lines.append(f"    - {r.get('TCKimlik','')} {r.get('AdSoyad','')}: {s['sorun']}")
 
         self.txt_log.setPlainText("\n".join(lines))
 
