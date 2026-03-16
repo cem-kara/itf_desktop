@@ -102,6 +102,16 @@ class AdminPanel(QWidget):
         self._tabs.addTab(self.backup_page, "Yedekleme")
         self._tabs.setTabIcon(6, Icons.get("database"))
         
+        # Toplu Personel Import sekmesi
+        try:
+            from ui.pages.personel.personel_import import PersonelImportPage
+            self.personel_import = PersonelImportPage(db=self._db)
+            self._tabs.addTab(self.personel_import, "Toplu Personel İçe Aktar")
+            self._tabs.setTabIcon(self._tabs.count()-1, Icons.get("upload"))
+        except Exception as e:
+            import traceback
+            print("Personel import sekmesi eklenemedi:", e, traceback.format_exc())
+
         layout.addWidget(self._tabs)
     
     def _build_header(self):

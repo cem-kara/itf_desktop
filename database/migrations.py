@@ -970,17 +970,34 @@ class MigrationManager:
             logger.info(f"  Tatiller: {added_t} kayit eklendi")
 
     def _seed_auth_data(self, cur):
-        permissions = [
-            ("personel.read",   "Personel okuma"),
-            ("personel.write",  "Personel yazma"),
-            ("cihaz.read",      "Cihaz okuma"),
-            ("cihaz.write",     "Cihaz yazma"),
-            ("admin.panel",     "Admin panel erisimi"),
-            ("admin.logs.view", "Log goruntuleme"),
-            ("admin.backup",    "Yedek yonetimi"),
-            ("admin.settings",  "Ayarlar yonetimi"),
-        ]
-        for key, desc in permissions:
+        # Tüm RBAC anahtarlarını PermissionKeys.all() ile ekle
+        from core.auth.permission_keys import PermissionKeys
+        desc_map = {
+            "personel.read": "Personel okuma",
+            "personel.write": "Personel yazma",
+            "cihaz.read": "Cihaz okuma",
+            "cihaz.write": "Cihaz yazma",
+            "admin.panel": "Admin panel erişimi",
+            "admin.critical": "Kritik admin işlemleri",
+            "dis_alan.read": "Dış alan okuma",
+            "dis_alan.write": "Dış alan yazma",
+            "rke.read": "RKE okuma",
+            "rke.write": "RKE yazma",
+            "saglik.read": "Sağlık okuma",
+            "saglik.write": "Sağlık yazma",
+            "dozimetre.read": "Dozimetre okuma",
+            "dozimetre.write": "Dozimetre yazma",
+            "fhsz.read": "FHSZ okuma",
+            "fhsz.write": "FHSZ yazma",
+            "dokuman.read": "Doküman okuma",
+            "dokuman.write": "Doküman yazma",
+            "rapor.excel": "Rapor Excel",
+            "rapor.pdf": "Rapor PDF",
+            "backup.create": "Yedek oluşturma",
+            "backup.restore": "Yedek geri yükleme",
+        }
+        for key in PermissionKeys.all():
+            desc = desc_map.get(key, key)
             cur.execute("SELECT COUNT(*) FROM Permissions WHERE PermissionKey = ?", (key,))
             if cur.fetchone()[0] == 0:
                 cur.execute(

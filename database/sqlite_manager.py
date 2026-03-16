@@ -64,7 +64,15 @@ class SQLiteManager:
         )
 
     def get_permissions_for_user(self, user_id: int):
+        # Admin kullanıcısı ise tüm izinleri döndür
         cur = self.conn.cursor()
+        cur.execute("SELECT Username FROM Users WHERE UserId = ?", (user_id,))
+        row = cur.fetchone()
+        if row and row["Username"].lower() == "admin":
+            # Tüm izin anahtarlarını döndür
+            cur.execute("SELECT PermissionKey FROM Permissions")
+            return [r["PermissionKey"] for r in cur.fetchall()]
+        # Normal kullanıcılar için mevcut izinleri döndür
         cur.execute("""
             SELECT p.PermissionKey
             FROM Permissions p
