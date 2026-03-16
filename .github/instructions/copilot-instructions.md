@@ -871,29 +871,15 @@ EOF
 2026-03-05  izin_service.py — 5 yeni metod eklendi
 2026-03-07  setStyleSheet(f-string) 352 → 0 (TODO-6 tamamlandı)
 2026-03-05  Tüm proje Pylance hatasız — 20+ type-checker hatası düzeltildi
-2026-03-05  file_sync_service.py — Optional[list[dict]] cache type hints
-2026-03-05  personel_service.py — reportRedeclaration (get_personel_repo duplicate)
-2026-03-05  settings_service.py — Cursor None guards (2 metod)
-2026-03-05  bildirim_servisi.py — Optional[str] db_path type hint
-2026-03-05  hata_yonetici.py — QMessageBox override return types + ExceptHookArgs.exc_traceback
-2026-03-05  logger.py — Dynamic attribute access with getattr()
-2026-03-05  personel_ozet_servisi.py — Repository access + db/cursor guards (7 metod)
-2026-03-05  cloud_adapter.py — Abstract method get_folder_id implementation (Online+Offline)
-2026-03-05  sqlite_manager.py — execute() return type + lastrowid guards
-2026-03-06  UI katmanı toplu Pylance temizliği — theme/colors/components + personel/cihaz/rke sayfalarında Optional guard, enum ve override düzeltmeleri; proje yeniden hatasız
-2026-03-06  settings_service.add_tatil() — UNIQUE constraint önlemek için duplicate tarih kontrolü
-2026-03-06  TODO-3 tamamlandı (get_registry → DI)
-2026-03-06  TODO-6b tamamlandı (STYLES.get import temizleme)
-2026-03-06  TODO-6c tamamlandı (QPropertyAnimation enum dosyası zaten doğru)
-2026-03-06  TODO-7 tamamlandı (obselete dosyalar git rm ile silindi)
-2026-03-06  CHANGELOG.md + .gitmessage + copilot-instructions.md v2 deployed
-2026-03-06  İlk standardize commit: "refactor(core,ui,database): Achieve project-wide type-safety" (v0.3.0) 
 2026-03-07  personel_ekle.py + base_dokuman_panel.py — kayıt sonrası belge yükleme akışı ve form reset (Yeni Personel) düzeltildi
 2026-03-07  izin_service.py — yıllık hakediş/izin limit motoru + çakışma kontrolü + Izin_Bilgi None→0 normalize eklendi
 2026-03-07  izin_takip.py + hizli_izin_giris.py — limit kuralı servis katmanından ortak kullanılacak şekilde standardize edildi
 2026-03-07  izin_takip.py — açılış filtreleri (Ay/Yıl) Tümü varsayılanına alındı
 2026-03-07  tests/test_izin_service.py — hakediş, limit, normalize, çakışma senaryoları eklendi (59 passed)
 2026-03-07  README.md + CHANGELOG.md — v0.3.0 WIP dokümantasyon güncellendi
-── İLERİ AGENDA: TODO-8 (test infrastructure) ──
+2026-03-12  personel_ekle.py — Belgeler sekmeli yapı (QTabWidget): Tab1=Kişisel Bilgiler / Tab2=Belgeler, kayıt öncesi kilitli, sonrası otomatik açılır
+2026-03-12  personel_ekle.py — btn_kaydet "Evet" dalı bug fix (setEnabled(True) eksikti)
+2026-03-12  personel_ekle.py — QTabWidget import eksikliği düzeltildi
+── İLERİ AGENDA: TODO-3 son 2 çağrı, TODO-6b, TODO-8 (test infrastructure) ──
 ```
 

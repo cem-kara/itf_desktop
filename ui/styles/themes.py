@@ -1,159 +1,195 @@
-# ui/styles/themes.py  ─  REPYS v3 · Tema Renk Sözlüğü
+# ui/styles/themes.py  ─  REPYS v4 · Tema Renk Sistemi
 # ═══════════════════════════════════════════════════════════════
 #
-#  Tüm tema renkleri burada, sade Python dict olarak.
-#  Sınıf yok, metaclass yok, registry yok.
-#
-#  Diğer modüller buradan okur:
-#     from ui.styles.themes import get_tokens
-#     tokens = get_tokens("dark")   → dict
-#     tokens["BG_PRIMARY"]          → "#0d1117"
-#
-#  Yeni tema eklemek:
-#     1. THEMES dict'ine yeni key ekle
-#     2. get_tokens() otomatik bulur
+#  v4 yenilikleri:
+#  ──────────────────────────────────────────────────────────────
+#  • DARK ve LIGHT aynı mavi hue ailesinden türetildi (215-220°)
+#    → tema geçişlerinde tutarlı kimlik
+#  • BG katmanları 5 net adımda ayrıştırıldı (BG_DARK → ELEVATED)
+#  • Yeni opaklık token'ları: ACCENT_10/20/35, OVERLAY_LOW/MID/HIGH
+#    → QSS şablonlarındaki hardcoded rgba() değerleri kaldırıldı
+#  • Durum kenarlık token'ları: STATUS_*_BORDER
+#  • BTN_WARNING_TEXT token'ı eklendi
 #
 # ═══════════════════════════════════════════════════════════════
 
-# ── Koyu Tema ──────────────────────────────────────────────────
+
+# ── Koyu Tema ── "Midnight Blue" ───────────────────────────────
+#
+#  Hue ailesi : 215-220° (Derin Lacivert)
+#  BG katmanları: her adım ~L+3% → net görsel hiyerarşi
+#
 DARK: dict[str, str] = {
-    # Zemin katmanları
-    "BG_PRIMARY":    "#0d1117",
-    "BG_SECONDARY":  "#121820",
-    "BG_TERTIARY":   "#0d1117",
-    "BG_ELEVATED":   "#1a2030",
-    "BG_DARK":       "#060d1a",
-    "BG_HOVER":      "rgba(61,142,245,0.06)",
-    "BG_SELECTED":   "rgba(61,142,245,0.14)",
 
-    # Kenarlıklar
-    "BORDER_PRIMARY":   "#1e2d3d",
-    "BORDER_SECONDARY": "#253545",
-    "BORDER_STRONG":    "#253545",
-    "BORDER_FOCUS":     "#3d8ef5",
+    # ── Zemin Katmanları ──────────────────────────────────────
+    "BG_DARK":       "#060b14",   # status bar, sidebar şeridi  (L≈4%)
+    "BG_PRIMARY":    "#0c1220",   # sayfa zemini                (L≈7%)
+    "BG_SECONDARY":  "#12192e",   # kart, panel                 (L≈10%)
+    "BG_TERTIARY":   "#182436",   # filtre çubuğu, iç alan      (L≈13%)
+    "BG_ELEVATED":   "#1d2d44",   # açılır menü, tooltip        (L≈17%)
+    "BG_HOVER":      "rgba(64,128,224,0.08)",
+    "BG_SELECTED":   "rgba(64,128,224,0.15)",
 
-    # Metin
-    "TEXT_PRIMARY":       "#e8edf5",
-    "TEXT_SECONDARY":     "#8fa3b8",
-    "TEXT_MUTED":         "#4d6070",
-    "TEXT_DISABLED":      "#263850",
-    "TEXT_TABLE_HEADER":  "#ffffff",
+    # ── Kenarlıklar ───────────────────────────────────────────
+    "BORDER_PRIMARY":   "#192a42",   # varsayılan ince kenarlık
+    "BORDER_SECONDARY": "#203352",   # biraz daha belirgin
+    "BORDER_STRONG":    "#2a4068",   # ayırıcı, vurgulu
+    "BORDER_FOCUS":     "#4080e0",   # odak halkası
 
-    # Input
-    "INPUT_BG":            "#1a2030",
-    "INPUT_BORDER":        "#1e2d3d",
-    "INPUT_BORDER_FOCUS":  "#3d8ef5",
+    # ── Metin Hiyerarşisi ─────────────────────────────────────
+    "TEXT_PRIMARY":       "#d6e4f0",   # ana içerik
+    "TEXT_SECONDARY":     "#6a8ca8",   # etiket, açıklama
+    "TEXT_MUTED":         "#38526a",   # placeholder, dekoratif
+    "TEXT_DISABLED":      "#1a2a3e",   # devre dışı
+    "TEXT_TABLE_HEADER":  "#9ab8d0",   # tablo sütun başlığı
 
-    # Vurgu
-    "ACCENT":    "#3d8ef5",
-    "ACCENT2":   "#20c0d8",
-    "ACCENT_BG": "rgba(61,142,245,0.12)",
+    # ── Form Alanları ─────────────────────────────────────────
+    "INPUT_BG":            "#0f1724",
+    "INPUT_BORDER":        "#192a42",
+    "INPUT_BORDER_FOCUS":  "#4080e0",
 
-    # Butonlar
-    "BTN_PRIMARY_BG":       "#3d8ef5",
-    "BTN_PRIMARY_TEXT":     "#060d1a",
-    "BTN_PRIMARY_HOVER":    "#20c0d8",
-    "BTN_PRIMARY_BORDER":   "#3d8ef5",
-    "BTN_SECONDARY_BG":     "#1a2030",
-    "BTN_SECONDARY_TEXT":   "#8fa3b8",
-    "BTN_SECONDARY_BORDER": "#1e2d3d",
-    "BTN_SECONDARY_HOVER":  "#253545",
-    "BTN_DANGER_BG":        "rgba(232,85,85,0.15)",
-    "BTN_DANGER_TEXT":      "#e85555",
-    "BTN_DANGER_BORDER":    "rgba(232,85,85,0.30)",
-    "BTN_DANGER_HOVER":     "rgba(232,85,85,0.25)",
-    "BTN_SUCCESS_BG":       "rgba(46,201,142,0.15)",
-    "BTN_SUCCESS_TEXT":     "#2ec98e",
-    "BTN_SUCCESS_BORDER":   "rgba(46,201,142,0.30)",
-    "BTN_SUCCESS_HOVER":    "rgba(46,201,142,0.25)",
+    # ── Vurgu ─────────────────────────────────────────────────
+    "ACCENT":    "#4080e0",
+    "ACCENT2":   "#60a8f8",
+    "ACCENT_BG": "rgba(64,128,224,0.12)",
 
-    # Durum
-    "STATUS_SUCCESS": "#2ec98e",
-    "STATUS_SUCCESS_BG": "rgba(46,201,142,0.12)",
-    "STATUS_WARNING": "#e8a030",
-    "STATUS_WARNING_BG": "rgba(232,160,48,0.12)",
-    "STATUS_ERROR":   "#e85555",
-    "STATUS_ERROR_BG":  "rgba(232,85,85,0.12)",
-    "STATUS_INFO":    "#3d8ef5",
+    # ── Vurgu Opaklık Katmanları ──────────────────────────────
+    "ACCENT_10": "rgba(64,128,224,0.10)",
+    "ACCENT_20": "rgba(64,128,224,0.20)",
+    "ACCENT_35": "rgba(64,128,224,0.35)",
 
-    # Diğer
-    "MONOSPACE": "\"JetBrains Mono\", \"Consolas\", monospace",
-    "RKE_PURP":  "#a855f7",
+    # ── Beyaz Overlay Katmanları ──────────────────────────────
+    "OVERLAY_LOW":  "rgba(255,255,255,0.06)",
+    "OVERLAY_MID":  "rgba(255,255,255,0.11)",
+    "OVERLAY_HIGH": "rgba(255,255,255,0.18)",
 
-    # QSS şablon için placeholder değerleri
-    "PLACEHOLDER": "#4d6070",
-}
-
-# ── Açık Tema ──────────────────────────────────────────────────
-LIGHT: dict[str, str] = {
-    # Zemin katmanları
-    "BG_PRIMARY":    "#f0f4f8",
-    "BG_SECONDARY":  "#ffffff",
-    "BG_TERTIARY":   "#e8f0fe",
-    "BG_ELEVATED":   "#f8fafc",
-    "BG_DARK":       "#1e293b",
-    "BG_HOVER":      "#e8f0fe",
-    "BG_SELECTED":   "rgba(37,99,235,0.10)",
-
-    # Kenarlıklar
-    "BORDER_PRIMARY":   "#d1dce8",
-    "BORDER_SECONDARY": "#b8c8d9",
-    "BORDER_STRONG":    "#b8c8d9",
-    "BORDER_FOCUS":     "#2563eb",
-
-    # Metin
-    "TEXT_PRIMARY":       "#0f172a",
-    "TEXT_SECONDARY":     "#475569",
-    "TEXT_MUTED":         "#94a3b8",
-    "TEXT_DISABLED":      "#cbd5e1",
-    "TEXT_TABLE_HEADER":  "#0f172a",
-
-    # Input
-    "INPUT_BG":            "#ffffff",
-    "INPUT_BORDER":        "#d1dce8",
-    "INPUT_BORDER_FOCUS":  "#2563eb",
-
-    # Vurgu
-    "ACCENT":    "#2563eb",
-    "ACCENT2":   "#0891b2",
-    "ACCENT_BG": "rgba(37,99,235,0.08)",
-
-    # Butonlar
-    "BTN_PRIMARY_BG":       "#2563eb",
+    # ── Butonlar ──────────────────────────────────────────────
+    "BTN_PRIMARY_BG":       "#2b62c8",
     "BTN_PRIMARY_TEXT":     "#ffffff",
-    "BTN_PRIMARY_HOVER":    "#0891b2",
-    "BTN_PRIMARY_BORDER":   "#2563eb",
+    "BTN_PRIMARY_HOVER":    "#4080e0",
+    "BTN_PRIMARY_BORDER":   "#2b62c8",
     "BTN_SECONDARY_BG":     "transparent",
-    "BTN_SECONDARY_TEXT":   "#475569",
-    "BTN_SECONDARY_BORDER": "#d1dce8",
-    "BTN_SECONDARY_HOVER":  "#e8f0fe",
-    "BTN_DANGER_BG":        "rgba(220,38,38,0.10)",
-    "BTN_DANGER_TEXT":      "#dc2626",
-    "BTN_DANGER_BORDER":    "rgba(220,38,38,0.25)",
-    "BTN_DANGER_HOVER":     "rgba(220,38,38,0.18)",
-    "BTN_SUCCESS_BG":       "rgba(22,163,74,0.10)",
-    "BTN_SUCCESS_TEXT":     "#16a34a",
-    "BTN_SUCCESS_BORDER":   "rgba(22,163,74,0.25)",
-    "BTN_SUCCESS_HOVER":    "rgba(22,163,74,0.18)",
+    "BTN_SECONDARY_TEXT":   "#6a8ca8",
+    "BTN_SECONDARY_BORDER": "#192a42",
+    "BTN_SECONDARY_HOVER":  "#182436",
+    "BTN_DANGER_BG":        "rgba(232,85,85,0.12)",
+    "BTN_DANGER_TEXT":      "#e85555",
+    "BTN_DANGER_BORDER":    "rgba(232,85,85,0.28)",
+    "BTN_DANGER_HOVER":     "rgba(232,85,85,0.22)",
+    "BTN_SUCCESS_BG":       "rgba(46,201,142,0.12)",
+    "BTN_SUCCESS_TEXT":     "#2ec98e",
+    "BTN_SUCCESS_BORDER":   "rgba(46,201,142,0.28)",
+    "BTN_SUCCESS_HOVER":    "rgba(46,201,142,0.22)",
+    "BTN_WARNING_TEXT":     "#1a0f00",
 
-    # Durum
-    "STATUS_SUCCESS": "#16a34a",
-    "STATUS_SUCCESS_BG": "rgba(22,163,74,0.10)",
-    "STATUS_WARNING": "#d97706",
-    "STATUS_WARNING_BG": "rgba(217,119,6,0.10)",
-    "STATUS_ERROR":   "#dc2626",
-    "STATUS_ERROR_BG":  "rgba(220,38,38,0.10)",
-    "STATUS_INFO":    "#2563eb",
+    # ── Durum Renkleri ────────────────────────────────────────
+    "STATUS_SUCCESS":        "#2ec98e",
+    "STATUS_SUCCESS_BG":     "rgba(46,201,142,0.10)",
+    "STATUS_SUCCESS_BORDER": "rgba(46,201,142,0.28)",
+    "STATUS_WARNING":        "#e8a030",
+    "STATUS_WARNING_BG":     "rgba(232,160,48,0.10)",
+    "STATUS_WARNING_BORDER": "rgba(232,160,48,0.28)",
+    "STATUS_ERROR":          "#e85555",
+    "STATUS_ERROR_BG":       "rgba(232,85,85,0.10)",
+    "STATUS_ERROR_BORDER":   "rgba(232,85,85,0.28)",
+    "STATUS_INFO":           "#4080e0",
 
-    # Diğer
-    "MONOSPACE": "\"JetBrains Mono\", \"Consolas\", monospace",
-    "RKE_PURP":  "#7c3aed",
-
-    # QSS şablon için placeholder değerleri
-    "PLACEHOLDER": "#94a3b8",
+    # ── Diğer ─────────────────────────────────────────────────
+    "MONOSPACE":   "\"JetBrains Mono\", \"Consolas\", monospace",
+    "RKE_PURP":    "#a855f7",
+    "PLACEHOLDER": "#38526a",
 }
 
-# ── Ana sözlük ─────────────────────────────────────────────────
+
+# ── Açık Tema ── "Slate White" ─────────────────────────────────
+#
+#  Hue ailesi : 215-220° (DARK ile aynı → tutarlı kimlik)
+#  Zemin: hafif mavi-gri (Slate-100) üzerine beyaz paneller
+#  Status renkleri: WCAG AA uyumlu koyu tonlar (açık bg için)
+#
+LIGHT: dict[str, str] = {
+
+    # ── Zemin Katmanları ──────────────────────────────────────
+    "BG_DARK":       "#1e293b",
+    "BG_PRIMARY":    "#eef2f7",
+    "BG_SECONDARY":  "#ffffff",
+    "BG_TERTIARY":   "#e4ecf4",
+    "BG_ELEVATED":   "#ffffff",
+    "BG_HOVER":      "rgba(37,99,200,0.06)",
+    "BG_SELECTED":   "rgba(37,99,200,0.10)",
+
+    # ── Kenarlıklar ───────────────────────────────────────────
+    "BORDER_PRIMARY":   "#d0dce8",
+    "BORDER_SECONDARY": "#b8ccdc",
+    "BORDER_STRONG":    "#8aaec8",
+    "BORDER_FOCUS":     "#2563c8",
+
+    # ── Metin ─────────────────────────────────────────────────
+    "TEXT_PRIMARY":       "#0f1e2e",
+    "TEXT_SECONDARY":     "#3e6080",
+    "TEXT_MUTED":         "#7890a4",
+    "TEXT_DISABLED":      "#c4d0dc",
+    "TEXT_TABLE_HEADER":  "#1a2d3e",
+
+    # ── Form Alanları ─────────────────────────────────────────
+    "INPUT_BG":            "#ffffff",
+    "INPUT_BORDER":        "#d0dce8",
+    "INPUT_BORDER_FOCUS":  "#2563c8",
+
+    # ── Vurgu ─────────────────────────────────────────────────
+    "ACCENT":    "#2563c8",
+    "ACCENT2":   "#1e52a8",
+    "ACCENT_BG": "rgba(37,99,200,0.08)",
+
+    # ── Vurgu Opaklık Katmanları ──────────────────────────────
+    "ACCENT_10": "rgba(37,99,200,0.10)",
+    "ACCENT_20": "rgba(37,99,200,0.20)",
+    "ACCENT_35": "rgba(37,99,200,0.38)",
+
+    # ── Koyu Overlay Katmanları ───────────────────────────────
+    "OVERLAY_LOW":  "rgba(15,30,46,0.05)",
+    "OVERLAY_MID":  "rgba(15,30,46,0.10)",
+    "OVERLAY_HIGH": "rgba(15,30,46,0.16)",
+
+    # ── Butonlar ──────────────────────────────────────────────
+    "BTN_PRIMARY_BG":       "#2563c8",
+    "BTN_PRIMARY_TEXT":     "#ffffff",
+    "BTN_PRIMARY_HOVER":    "#1e52a8",
+    "BTN_PRIMARY_BORDER":   "#2563c8",
+    "BTN_SECONDARY_BG":     "transparent",
+    "BTN_SECONDARY_TEXT":   "#3e6080",
+    "BTN_SECONDARY_BORDER": "#d0dce8",
+    "BTN_SECONDARY_HOVER":  "#e4ecf4",
+    "BTN_DANGER_BG":        "rgba(192,32,32,0.08)",
+    "BTN_DANGER_TEXT":      "#b82020",
+    "BTN_DANGER_BORDER":    "rgba(192,32,32,0.22)",
+    "BTN_DANGER_HOVER":     "rgba(192,32,32,0.14)",
+    "BTN_SUCCESS_BG":       "rgba(15,122,64,0.08)",
+    "BTN_SUCCESS_TEXT":     "#0f7a40",
+    "BTN_SUCCESS_BORDER":   "rgba(15,122,64,0.22)",
+    "BTN_SUCCESS_HOVER":    "rgba(15,122,64,0.14)",
+    "BTN_WARNING_TEXT":     "#3a1800",
+
+    # ── Durum Renkleri (WCAG AA, açık arka plan) ──────────────
+    "STATUS_SUCCESS":        "#0f7a40",
+    "STATUS_SUCCESS_BG":     "rgba(15,122,64,0.08)",
+    "STATUS_SUCCESS_BORDER": "rgba(15,122,64,0.22)",
+    "STATUS_WARNING":        "#9a5800",
+    "STATUS_WARNING_BG":     "rgba(154,88,0,0.08)",
+    "STATUS_WARNING_BORDER": "rgba(154,88,0,0.22)",
+    "STATUS_ERROR":          "#b82020",
+    "STATUS_ERROR_BG":       "rgba(192,32,32,0.08)",
+    "STATUS_ERROR_BORDER":   "rgba(192,32,32,0.22)",
+    "STATUS_INFO":           "#2563c8",
+
+    # ── Diğer ─────────────────────────────────────────────────
+    "MONOSPACE":   "\"JetBrains Mono\", \"Consolas\", monospace",
+    "RKE_PURP":    "#7c3aed",
+    "PLACEHOLDER": "#7890a4",
+}
+
+
+# ── Ana Sözlük ─────────────────────────────────────────────────
 THEMES: dict[str, dict] = {
     "dark":  DARK,
     "light": LIGHT,
@@ -164,10 +200,6 @@ def get_tokens(name: str) -> dict[str, str]:
     """
     Tema adına göre token dict'ini döndür.
     Bilinmeyen tema adında DARK döner (güvenli fallback).
-
-    Örnek:
-        tokens = get_tokens("light")
-        tokens["ACCENT"]   → "#2563eb"
     """
     return THEMES.get(name.lower(), DARK)
 

@@ -262,9 +262,9 @@ class SettingsPage(QWidget):
             from database.repository_registry import RepositoryRegistry
             # SettingsService henüz registry kullanmıyor, direkt SQLiteManager kullanıyor
             # Bu yüzden şimdilik direkt instance oluşturuyoruz
-            self._service = SettingsService()
+            self._service = SettingsService(self._db)
         else:
-            self._service = SettingsService()
+            self._service = SettingsService(self._db)
         
         self._setup_ui()
         self._load_data()

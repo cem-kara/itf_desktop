@@ -1,3 +1,4 @@
+
 from datetime import datetime
 
 from PySide6.QtWidgets import (
@@ -247,6 +248,13 @@ class MainWindow(QMainWindow):
             page = IzinFHSZPuantajMerkezPage(db=self._db)
             page.kapat_istegi.connect(lambda: self._close_page("İzin Takip ve FHSZ Yönetim"))
             return page
+        
+        if baslik in ("Diğer Rad. Gör. FHSZ Yön."):
+            # Üç sayfayı birleştirilmiş merkez olarak göster
+            from ui.pages.fhsz.dis_alan_merkez_page import DisAlanMerkezPage
+            page = DisAlanMerkezPage(db=self._db)
+            #page.kapat_istegi.connect(lambda: self._close_page("Diğer Rad. Gör. FHSZ Yön"))
+            return page
 
         if baslik == "Sağlık Takip":
             from ui.pages.personel.saglik_takip import SaglikTakipPage
@@ -266,6 +274,7 @@ class MainWindow(QMainWindow):
                 fn()
             return page
         
+
         if baslik == "Cihaz Ekle":
             from ui.pages.cihaz.cihaz_ekle import CihazEklePage
             page = CihazEklePage(
@@ -274,6 +283,7 @@ class MainWindow(QMainWindow):
                 action_guard=self._action_guard
             )
             return page
+
 
         if baslik == "Cihaz Listesi":
             from ui.pages.cihaz.cihaz_listesi import CihazListesiPage
@@ -329,6 +339,7 @@ class MainWindow(QMainWindow):
             from ui.admin.settings_page import SettingsPage
             page = SettingsPage(db=self._db)
             return page
+        
         
         return PlaceholderPage(
             title=baslik,

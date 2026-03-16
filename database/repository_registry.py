@@ -36,6 +36,7 @@ class RepositoryRegistry:
             elif table_name == "RKE_Envanter":
                 from database.repositories.rke_repository import RKERepository
                 self._repos[table_name] = RKERepository(self.db)
+
             else:
                 # Generic BaseRepository
                 cfg = TABLES[table_name]

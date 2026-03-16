@@ -143,6 +143,7 @@ class RaporButon(QWidget):
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(btn, icon_name, color=DarkTheme.TEXT_PRIMARY, size=14)
         btn.setProperty("style-role", "action")
+        btn.setProperty("color-role", "primary")
         btn.clicked.connect(slot)
         return btn
 

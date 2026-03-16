@@ -12,6 +12,20 @@ from core.auth.session_context import SessionContext
 #   from core.di import get_cihaz_service
 #   svc = get_cihaz_service(self._db)
 # ────────────────────────────────────────────────────────────────
+def get_dis_alan_service(db):
+    from core.services.dis_alan_service import DisAlanService
+    return DisAlanService(get_registry(db))
+ 
+ 
+def get_dis_alan_import_service(db):
+    from core.services.dis_alan_import_service import DisAlanImportService
+    from core.paths import DATA_DIR
+    import os
+    arsiv = os.path.join(DATA_DIR, "dis_alan_tutanaklar")
+    return DisAlanImportService(
+        registry=get_registry(db),
+        arsiv_dizin=arsiv,
+    )
 
 def get_cihaz_service(db):
     from core.services.cihaz_service import CihazService
@@ -44,6 +58,14 @@ def get_izin_service(db):
 def get_ariza_service(db):
     from core.services.ariza_service import ArizaService
     return ArizaService(get_registry(db))
+
+
+
+
+
+def get_dis_alan_katsayi_service(db):
+    from core.services.dis_alan_katsayi_service import DisAlanKatsayiService
+    return DisAlanKatsayiService(get_registry(db))
 
 def get_bakim_service(db):
     from core.services.bakim_service import BakimService
@@ -117,3 +139,5 @@ def get_auth_services(db):
     auth_service = AuthService(db=db, hasher=hasher, session=session_context)
     authorization_service = AuthorizationService(db)
     return auth_service, authorization_service, session_context
+
+

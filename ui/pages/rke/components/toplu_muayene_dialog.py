@@ -57,16 +57,7 @@ class TopluMuayeneDialog(QDialog):
         root.setSpacing(12)
 
         grp_list = QGroupBox(f"Seçili Ekipmanlar ({len(self.ekipmanlar)})")
-        grp_list.setStyleSheet(
-            "QGroupBox{{background:{bg};border:1px solid {bd};"
-            "border-radius:5px;padding-top:16px;}}"
-            "QGroupBox::title{{color:{tx};font-family:{mono};font-size:10px;}}".format(
-                bg=DarkTheme.BG_SECONDARY,
-                bd=DarkTheme.BORDER_PRIMARY,
-                tx=DarkTheme.TEXT_SECONDARY,
-                mono=DarkTheme.MONOSPACE,
-            )
-        )
+        # tema otomatik — grp_list
         gl = QVBoxLayout(grp_list)
         lst = QListWidget()
         # setStyleSheet kaldırıldı (_S_TABLE) — global QSS
@@ -78,16 +69,7 @@ class TopluMuayeneDialog(QDialog):
         self.grp_fiz = QGroupBox("Fiziksel Muayene")
         self.grp_fiz.setCheckable(True)
         self.grp_fiz.setChecked(True)
-        self.grp_fiz.setStyleSheet(
-            "QGroupBox{{background:{bg};border:1px solid {bd};"
-            "border-radius:5px;padding-top:16px;}}"
-            "QGroupBox::title{{color:{tx};font-family:{mono};font-size:10px;}}".format(
-                bg=DarkTheme.BG_SECONDARY,
-                bd=DarkTheme.BORDER_PRIMARY,
-                tx=DarkTheme.TEXT_SECONDARY,
-                mono=DarkTheme.MONOSPACE,
-            )
-        )
+        # tema otomatik — self.grp_fiz
         hf = QHBoxLayout(self.grp_fiz)
         hf.setSpacing(12)
         self.dt_fiz = QDateEdit(QDate.currentDate())
@@ -100,12 +82,12 @@ class TopluMuayeneDialog(QDialog):
         self.cmb_fiz.addItems(["Kullanıma Uygun", "Kullanıma Uygun Değil"])
         lbl_t = QLabel("Tarih:")
         lbl_t.setProperty("color-role", "muted")
-        lbl_t.setStyleSheet("font-family: {mono}; font-size: 10px;".format(mono=DarkTheme.MONOSPACE))
+        lbl_t.setProperty("color-role", "muted")
         lbl_t.style().unpolish(lbl_t)
         lbl_t.style().polish(lbl_t)
         lbl_d = QLabel("Durum:")
         lbl_d.setProperty("color-role", "muted")
-        lbl_d.setStyleSheet("font-family: {mono}; font-size: 10px;".format(mono=DarkTheme.MONOSPACE))
+        lbl_d.setProperty("color-role", "muted")
         lbl_d.style().unpolish(lbl_d)
         lbl_d.style().polish(lbl_d)
         hf.addWidget(lbl_t)
@@ -118,16 +100,7 @@ class TopluMuayeneDialog(QDialog):
         self.grp_sko = QGroupBox("Skopi Muayene")
         self.grp_sko.setCheckable(True)
         self.grp_sko.setChecked(False)
-        self.grp_sko.setStyleSheet(
-            "QGroupBox{{background:{bg};border:1px solid {bd};"
-            "border-radius:5px;padding-top:16px;}}"
-            "QGroupBox::title{{color:{tx};font-family:{mono};font-size:10px;}}".format(
-                bg=DarkTheme.BG_SECONDARY,
-                bd=DarkTheme.BORDER_PRIMARY,
-                tx=DarkTheme.TEXT_SECONDARY,
-                mono=DarkTheme.MONOSPACE,
-            )
-        )
+        # tema otomatik — self.grp_sko
         hs = QHBoxLayout(self.grp_sko)
         hs.setSpacing(12)
         self.dt_sko = QDateEdit(QDate.currentDate())
@@ -140,12 +113,12 @@ class TopluMuayeneDialog(QDialog):
         self.cmb_sko.addItems(["Kullanıma Uygun", "Kullanıma Uygun Değil", "Yapılmadı"])
         lbl_t2 = QLabel("Tarih:")
         lbl_t2.setProperty("color-role", "muted")
-        lbl_t2.setStyleSheet("font-family: {mono}; font-size: 10px;".format(mono=DarkTheme.MONOSPACE))
+        lbl_t2.setProperty("color-role", "muted")
         lbl_t2.style().unpolish(lbl_t2)
         lbl_t2.style().polish(lbl_t2)
         lbl_d2 = QLabel("Durum:")
         lbl_d2.setProperty("color-role", "muted")
-        lbl_d2.setStyleSheet("font-family: {mono}; font-size: 10px;".format(mono=DarkTheme.MONOSPACE))
+        lbl_d2.setProperty("color-role", "muted")
         lbl_d2.style().unpolish(lbl_d2)
         lbl_d2.style().polish(lbl_d2)
         hs.addWidget(lbl_t2)
@@ -156,23 +129,14 @@ class TopluMuayeneDialog(QDialog):
         self.chk_sko = self.grp_sko
 
         grp_ortak = QGroupBox("Ortak Bilgiler")
-        grp_ortak.setStyleSheet(
-            "QGroupBox{{background:{bg};border:1px solid {bd};"
-            "border-radius:5px;padding-top:16px;}}"
-            "QGroupBox::title{{color:{tx};font-family:{mono};font-size:10px;}}".format(
-                bg=DarkTheme.BG_SECONDARY,
-                bd=DarkTheme.BORDER_PRIMARY,
-                tx=DarkTheme.TEXT_SECONDARY,
-                mono=DarkTheme.MONOSPACE,
-            )
-        )
+        # tema otomatik — grp_ortak
         og = QGridLayout(grp_ortak)
         og.setContentsMargins(8, 8, 8, 8)
         og.setSpacing(8)
 
         lbl_ke = QLabel("Kontrol Eden:")
         lbl_ke.setProperty("color-role", "muted")
-        lbl_ke.setStyleSheet("font-family: {mono}; font-size: 10px;".format(mono=DarkTheme.MONOSPACE))
+        lbl_ke.setProperty("color-role", "muted")
         lbl_ke.style().unpolish(lbl_ke)
         lbl_ke.style().polish(lbl_ke)
         self.cmb_kontrol = QComboBox()
@@ -185,7 +149,7 @@ class TopluMuayeneDialog(QDialog):
 
         lbl_bs = QLabel("Birim Sorumlusu:")
         lbl_bs.setProperty("color-role", "muted")
-        lbl_bs.setStyleSheet("font-family: {mono}; font-size: 10px;".format(mono=DarkTheme.MONOSPACE))
+        lbl_bs.setProperty("color-role", "muted")
         lbl_bs.style().unpolish(lbl_bs)
         lbl_bs.style().polish(lbl_bs)
         self.cmb_sorumlu = QComboBox()
@@ -201,7 +165,7 @@ class TopluMuayeneDialog(QDialog):
 
         lbl_acik = QLabel("Teknik Açıklama:")
         lbl_acik.setProperty("color-role", "muted")
-        lbl_acik.setStyleSheet("font-family: {mono}; font-size: 10px;".format(mono=DarkTheme.MONOSPACE))
+        lbl_acik.setProperty("color-role", "muted")
         lbl_acik.style().unpolish(lbl_acik)
         lbl_acik.style().polish(lbl_acik)
 
@@ -220,7 +184,7 @@ class TopluMuayeneDialog(QDialog):
         file_row = QHBoxLayout()
         self.lbl_file = QLabel("Dosya seçilmedi")
         self.lbl_file.setProperty("color-role", "muted")
-        self.lbl_file.setStyleSheet("font-size: 10px;")
+        self.lbl_file.setProperty("color-role", "muted")
         self.lbl_file.style().unpolish(self.lbl_file)
         self.lbl_file.style().polish(self.lbl_file)
         btn_file = QPushButton("Ortak Rapor")

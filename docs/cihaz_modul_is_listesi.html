@@ -1,0 +1,107 @@
+<div style="font-family:var(--font-sans);font-size:14px;color:var(--color-text-primary);padding:8px 0">
+
+<style>
+.section{margin-bottom:24px}
+.section-title{font-size:13px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--color-border-tertiary)}
+.item{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:4px;cursor:default}
+.item:hover{background:var(--color-background-secondary)}
+.badge{display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;white-space:nowrap;min-width:72px;text-align:center}
+.b-done{background:var(--color-background-success);color:var(--color-text-success)}
+.b-todo{background:var(--color-background-danger);color:var(--color-text-danger)}
+.b-nice{background:var(--color-background-info);color:var(--color-text-info)}
+.b-warn{background:var(--color-background-warning);color:var(--color-text-warning)}
+.item-text{flex:1;line-height:1.5}
+.item-sub{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:0 32px}
+@media(max-width:600px){.cols{grid-template-columns:1fr}}
+</style>
+
+<div class="section">
+  <div class="section-title">Az önce tamamlandı</div>
+  <div class="item"><span class="badge b-done">Bitti</span><div class="item-text">Eski tema kalıntıları temizlendi
+    <div class="item-sub">STYLES[...] → setProperty, emoji placeholder kaldırıldı, BTN_PRIMARY_TEXT düzeltildi — 11 dosya</div></div></div>
+</div>
+
+<div class="cols">
+<div>
+<div class="section">
+  <div class="section-title">Yapılması gereken — kritik</div>
+
+  <div class="item"><span class="badge b-todo">Kritik</span><div class="item-text">cihaz_ekle.py STYLES temizliği
+    <div class="item-sub">setStyleSheet(S["..."]) çağrıları hâlâ var — setProperty ile değiştirilmeli</div></div></div>
+
+  <div class="item"><span class="badge b-todo">Kritik</span><div class="item-text">Kalibrasyon tablosu eksik
+    <div class="item-sub">table_config.py'de Kalibrasyon tablosu yok, servis çalışsa da DB'ye yazamıyor</div></div></div>
+
+  <div class="item"><span class="badge b-todo">Kritik</span><div class="item-text">ArizaService / BakimService / KalibrasyonService di.py'de yok
+    <div class="item-sub">Sadece CihazService var — diğerleri hiçbir yerden inject edilemiyor</div></div></div>
+
+  <div class="item"><span class="badge b-todo">Kritik</span><div class="item-text">cihaz_merkez.py — UTS arama panele bağlanmıyor
+    <div class="item-sub">_search_uts() "TEKNIK" kodunu arıyor ama sekme kodu "ÜTS BİLGİLERİ" — hiçbir zaman tetiklenmiyor</div></div></div>
+
+  <div class="item"><span class="badge b-todo">Kritik</span><div class="item-text">bakim_form.py — S["input_text"] kalıntısı
+    <div class="item-sub">f-string içinde hâlâ S["..."] referansı var, çalışma zamanı DeprecationWarning üretiyor</div></div></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Yapılması gereken — önemli</div>
+
+  <div class="item"><span class="badge b-warn">Önemli</span><div class="item-text">Cihaz durum renkleri tutarsız
+    <div class="item-sub">cihaz_listesi.py hardcoded hex, cihaz_merkez.py setProperty — iki farklı sistem</div></div></div>
+
+  <div class="item"><span class="badge b-warn">Önemli</span><div class="item-text">bakim_kalibrasyon_form.py ikinci form
+    <div class="item-sub">bakim_form.py ile neredeyse aynı — hangisi kullanılıyor belirsiz, biri kaldırılmalı</div></div></div>
+
+  <div class="item"><span class="badge b-warn">Önemli</span><div class="item-text">Kalibrasyon migrations eksik
+    <div class="item-sub">Kalibrasyon tablosu migrations.py'de CREATE TABLE IF NOT EXISTS var ama table_config yok → insert başarısız</div></div></div>
+
+  <div class="item"><span class="badge b-warn">Önemli</span><div class="item-text">Arıza silme metodu yok
+    <div class="item-sub">ArizaService.sil() var ama UI'da hiç buton/bağlantı yok</div></div></div>
+
+  <div class="item"><span class="badge b-warn">Önemli</span><div class="item-text">Cihaz görseli yükleme — async tamamlanmıyor
+    <div class="item-sub">DriveUploadWorker bağlantısı bazen signal göndermeden düşüyor</div></div></div>
+</div>
+</div>
+
+<div class="cols">
+<div>
+<div class="section">
+  <div class="section-title">İyileştirme — olsa iyi olur</div>
+
+  <div class="item"><span class="badge b-nice">İyi olur</span><div class="item-text">Cihaz listesi — bakım uyarısı
+    <div class="item-sub">Yaklaşan veya gecikmiş bakımı olan cihazlar listede uyarı rozeti alsın</div></div></div>
+
+  <div class="item"><span class="badge b-nice">İyi olur</span><div class="item-text">Genel bakış paneli — özet kartlar
+    <div class="item-sub">Açık arıza sayısı, son bakım tarihi, kalan kalibrasyon günü — tek bakışta</div></div></div>
+
+  <div class="item"><span class="badge b-nice">İyi olur</span><div class="item-text">Toplu bakım planı — takvim görünümü
+    <div class="item-sub">Mevcut tablo yerine ay bazlı takvim grid'i</div></div></div>
+
+  <div class="item"><span class="badge b-nice">İyi olur</span><div class="item-text">Arıza → bakım zinciri
+    <div class="item-sub">Arıza kaydından direkt "bakım planla" butonu ile BakimForm'a geçiş</div></div></div>
+
+  <div class="item"><span class="badge b-nice">İyi olur</span><div class="item-text">Kalibrasyon bitiş uyarısı
+    <div class="item-sub">BitisTarihi 30 gün içindeyse listede ve merkez başlıkta uyarı</div></div></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Yeni özellik — ileride</div>
+
+  <div class="item"><span class="badge b-nice">İleride</span><div class="item-text">Cihaz geçmişi zaman çizelgesi
+    <div class="item-sub">Arıza + bakım + kalibrasyon tek timeline'da, filtrelenebilir</div></div></div>
+
+  <div class="item"><span class="badge b-nice">İleride</span><div class="item-text">QR / barkod desteği
+    <div class="item-sub">Cihaz ID'den QR üret, mobil tarama ile cihaz merkezine git</div></div></div>
+
+  <div class="item"><span class="badge b-nice">İleride</span><div class="item-text">Bakım hatırlatıcı
+    <div class="item-sub">Uygulama başlangıcında bu hafta/ay planlanmış bakımları göster</div></div></div>
+
+  <div class="item"><span class="badge b-nice">İleride</span><div class="item-text">Cihaz karşılaştırma
+    <div class="item-sub">Aynı tip iki cihazın arıza/bakım geçmişini yan yana göster</div></div></div>
+
+  <div class="item"><span class="badge b-nice">İleride</span><div class="item-text">Maliyet takibi
+    <div class="item-sub">Bakım ve kalibrasyon maliyetleri, cihaz başı yıllık harcama grafiği</div></div></div>
+</div>
+</div>
+
+</div>

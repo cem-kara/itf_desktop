@@ -206,7 +206,7 @@ class IstenAyrilikPage(QWidget):
 
     def __init__(self, db=None, personel_data=None, on_back=None, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(S["page"])
+        self.setProperty("bg-role", "page")
         self._db = db
         self._data = personel_data or {}
         self._on_back = on_back
@@ -231,20 +231,15 @@ class IstenAyrilikPage(QWidget):
 
         # ── HEADER ──
         header_frame = QFrame()
-        header_frame.setStyleSheet("""
-            QFrame {
-                background-color: rgba(30, 32, 44, 0.85);
-                border: 1px solid rgba(255, 255, 255, 0.08);
-                border-radius: 10px;
-            }
-        """)
+        header_frame.setProperty("bg-role", "elevated")
+        header_frame.setProperty("style-role", "header")
         hdr = QHBoxLayout(header_frame)
         hdr.setContentsMargins(16, 10, 16, 10)
         hdr.setSpacing(12)
 
         ad = self._data.get("AdSoyad", "")
         lbl = QLabel(f"Isten Ayrilis - {ad}")
-        lbl.setStyleSheet(S["header_name"])
+        lbl.setProperty("style-role", "header-name")
         hdr.addWidget(lbl)
         hdr.addStretch()
         main.addWidget(header_frame)
@@ -253,10 +248,10 @@ class IstenAyrilikPage(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(S["scroll"])
+        scroll.setProperty("style-role", "plain")
 
         content = QWidget()
-        content.setStyleSheet("background: transparent;")
+        content.setProperty("bg-role", "transparent")
         cl = QHBoxLayout(content)
         cl.setSpacing(16)
         cl.setContentsMargins(0, 0, 0, 0)
@@ -269,7 +264,7 @@ class IstenAyrilikPage(QWidget):
 
         # Personel Özet
         grp_ozet = QGroupBox("Personel Bilgileri")
-        grp_ozet.setStyleSheet(S["group"])
+        grp_ozet.setProperty("style-role", "group")
         og = QGridLayout(grp_ozet)
         og.setSpacing(6)
         og.setContentsMargins(12, 12, 12, 12)
@@ -284,16 +279,16 @@ class IstenAyrilikPage(QWidget):
         ]
         for i, (lbl_t, val) in enumerate(bilgiler):
             l = QLabel(lbl_t)
-            l.setStyleSheet(S["label"])
+            l.setProperty("style-role", "stat-label")
             v = QLabel(str(val))
-            v.setStyleSheet(S["value"])
+            v.setProperty("style-role", "stat-value")
             og.addWidget(l, i, 0)
             og.addWidget(v, i, 1)
         left_l.addWidget(grp_ozet)
 
         # Ayrılış Formu
         grp_form = QGroupBox("Ayrilis Bilgileri")
-        grp_form.setStyleSheet(S["group"])
+        grp_form.setProperty("style-role", "group")
         fg = QGridLayout(grp_form)
         fg.setSpacing(10)
         fg.setContentsMargins(12, 12, 12, 12)
@@ -438,6 +433,7 @@ class IstenAyrilikPage(QWidget):
 
         self.btn_onayla = QPushButton("ONAYLA VE BITIR")
         self.btn_onayla.setStyleSheet(S["danger_btn"])
+        self.btn_onayla.setFixedHeight(30)
         self.btn_onayla.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_onayla.clicked.connect(self._on_confirm)
         IconRenderer.set_button_icon(self.btn_onayla, "alert_triangle", color=C.TEXT_PRIMARY, size=14)

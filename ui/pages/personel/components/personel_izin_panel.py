@@ -7,7 +7,6 @@ from PySide6.QtCore import Qt
 from ui.components.base_table_model import BaseTableModel
 from core.di import get_izin_service
 from core.logger import logger
-from ui.styles.components import STYLES as S
 # datetime artık BaseTableModel içinde
 
 # İzin Listesi Tablo sütunları
@@ -57,7 +56,7 @@ class PersonelIzinPanel(QWidget):
 
         # Yıllık İzin
         grp_yillik = QGroupBox("Yıllık İzin Durumu")
-        grp_yillik.setStyleSheet(S["group"])
+        grp_yillik.setProperty("style-role", "group")
         g = QGridLayout(grp_yillik)
         g.setHorizontalSpacing(10)
         g.setVerticalSpacing(6)
@@ -66,13 +65,13 @@ class PersonelIzinPanel(QWidget):
         self.lbl_y_devir = self._add_stat(g, 0, "Devir Eden İzin", "stat_value")
         self.lbl_y_hak = self._add_stat(g, 1, "Bu Yıl Hak Edilen", "stat_value")
 
-        sep1 = QFrame(); sep1.setFixedHeight(1); sep1.setStyleSheet(S["separator"])
+        sep1 = QFrame(); sep1.setFixedHeight(1); sep1.setProperty("bg-role", "separator")
         g.addWidget(sep1, 2, 0, 1, 2)
 
         self.lbl_y_toplam = self._add_stat(g, 3, "TOPLAM İZİN HAKKI", "stat_highlight")
         self.lbl_y_kullanilan = self._add_stat(g, 4, "Kullanılan Yıllık İzin", "stat_red")
 
-        sep2 = QFrame(); sep2.setFixedHeight(1); sep2.setStyleSheet(S["separator"])
+        sep2 = QFrame(); sep2.setFixedHeight(1); sep2.setProperty("bg-role", "separator")
         g.addWidget(sep2, 5, 0, 1, 2)
 
         self.lbl_y_kalan = self._add_stat(g, 6, "KALAN YILLIK İZİN", "stat_green")
@@ -83,7 +82,7 @@ class PersonelIzinPanel(QWidget):
 
         # Şua ve Diğer
         grp_diger = QGroupBox("Şua ve Diğer İzinler")
-        grp_diger.setStyleSheet(S["group"])
+        grp_diger.setProperty("style-role", "group")
         g2 = QGridLayout(grp_diger)
         g2.setHorizontalSpacing(10)
         g2.setVerticalSpacing(6)
@@ -92,12 +91,12 @@ class PersonelIzinPanel(QWidget):
         self.lbl_s_hak = self._add_stat(g2, 0, "Hak Edilen Şua İzin", "stat_value")
         self.lbl_s_kul = self._add_stat(g2, 1, "Kullanılan Şua İzinleri", "stat_red")
 
-        sep3 = QFrame(); sep3.setFixedHeight(1); sep3.setStyleSheet(S["separator"])
+        sep3 = QFrame(); sep3.setFixedHeight(1); sep3.setProperty("bg-role", "separator")
         g2.addWidget(sep3, 2, 0, 1, 2)
 
         self.lbl_s_kalan = self._add_stat(g2, 3, "KALAN ŞUA İZNİ", "stat_green")
 
-        sep4 = QFrame(); sep4.setFixedHeight(1); sep4.setStyleSheet(S["separator"])
+        sep4 = QFrame(); sep4.setFixedHeight(1); sep4.setProperty("bg-role", "separator")
         g2.addWidget(sep4, 4, 0, 1, 2)
 
         self.lbl_s_cari = self._add_stat(g2, 5, "Cari Yıl Şua Kazanım", "stat_value")
@@ -109,13 +108,13 @@ class PersonelIzinPanel(QWidget):
 
         # Son 1 Yıllık İzinler Listesi
         grp_recent_leaves = QGroupBox("Geçmiş İzin Hareketleri")
-        grp_recent_leaves.setStyleSheet(S["group"])
+        grp_recent_leaves.setProperty("style-role", "group")
         v_recent_leaves = QVBoxLayout(grp_recent_leaves)
 
         self._leave_table_model = RecentLeaveTableModel()
         self._leave_table_view = QTableView()
         self._leave_table_view.setModel(self._leave_table_model)
-        self._leave_table_view.setStyleSheet(S["table"])
+        self._leave_table_view.setProperty("style-role", "table")
         self._leave_table_view.verticalHeader().setVisible(False)
         self._leave_table_view.setEditTriggers(QTableView.EditTrigger.NoEditTriggers)
         self._leave_table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
@@ -138,11 +137,11 @@ class PersonelIzinPanel(QWidget):
 
     def _add_stat(self, grid, row, text, style_key):
         lbl = QLabel(text)
-        lbl.setStyleSheet(S["stat_label"])
+        lbl.setProperty("style-role", "stat-label")
         grid.addWidget(lbl, row, 0)
         val = QLabel("—")
         val.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        val.setStyleSheet(S[style_key])
+        val.setProperty("style-role", style_key)
         grid.addWidget(val, row, 1)
         return val
 

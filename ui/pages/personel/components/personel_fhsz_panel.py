@@ -77,7 +77,7 @@ class PersonelFhszPanel(QWidget):
 
         # Toplam Kayıt Sayısı
         grp_toplam = QGroupBox("FHSZ Puantaj Özeti")
-        grp_toplam.setStyleSheet(S["group"])
+        grp_toplam.setProperty("style-role", "group")
         g = QGridLayout(grp_toplam)
         g.setHorizontalSpacing(10)
         g.setVerticalSpacing(6)
@@ -92,7 +92,7 @@ class PersonelFhszPanel(QWidget):
         summary_layout.addWidget(grp_toplam)
 
         grp_son_yil = QGroupBox("Yıl Bazlı Gösterge")
-        grp_son_yil.setStyleSheet(S["group"])
+        grp_son_yil.setProperty("style-role", "group")
         g2 = QGridLayout(grp_son_yil)
         g2.setHorizontalSpacing(10)
         g2.setVerticalSpacing(6)
@@ -105,7 +105,7 @@ class PersonelFhszPanel(QWidget):
 
         sep = QFrame()
         sep.setFixedHeight(1)
-        sep.setStyleSheet(S["separator"])
+        sep.setProperty("bg-role", "separator")
         g2.addWidget(sep, 4, 0, 1, 2)
 
         self.lbl_yillik_ort_saat = self._add_stat(g2, 5, "Yıllık Ortalama Fiili Saat", "stat_value")
@@ -119,13 +119,13 @@ class PersonelFhszPanel(QWidget):
 
         # 2. Puantaj Kayıtları Tablosu
         grp_kayitlar = QGroupBox("Puantaj Kayıtları")
-        grp_kayitlar.setStyleSheet(S["group"])
+        grp_kayitlar.setProperty("style-role", "group")
         v_kayitlar = QVBoxLayout(grp_kayitlar)
 
         self._table_model = FhszTableModel()
         self._table_view = QTableView()
         self._table_view.setModel(self._table_model)
-        self._table_view.setStyleSheet(S["table"])
+        self._table_view.setProperty("style-role", "table")
         self._table_view.verticalHeader().setVisible(False)
         self._table_view.setEditTriggers(QTableView.EditTrigger.NoEditTriggers)
         self._table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
@@ -148,11 +148,11 @@ class PersonelFhszPanel(QWidget):
     def _add_stat(self, grid, row, text, style_key):
         """İstatistik satırı ekle."""
         lbl = QLabel(text)
-        lbl.setStyleSheet(S["stat_label"])
+        lbl.setProperty("style-role", "stat-label")
         grid.addWidget(lbl, row, 0)
         val = QLabel("—")
         val.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        val.setStyleSheet(S[style_key])
+        val.setProperty("style-role", style_key)
         grid.addWidget(val, row, 1)
         return val
 

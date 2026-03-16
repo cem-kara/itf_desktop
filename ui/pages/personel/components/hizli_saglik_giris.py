@@ -33,7 +33,7 @@ class HizliSaglikGirisDialog(QDialog):
         self._exam_keys = ["Dermatoloji", "Dahiliye", "Goz", "Goruntuleme"]
         self._exam_widgets = {}
 
-        self.setStyleSheet(S["page"])
+        self.setProperty("bg-role", "page")
 
         self._setup_ui()
         self._connect_signals()
@@ -46,10 +46,10 @@ class HizliSaglikGirisDialog(QDialog):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(S.get("scroll") or "")
+        scroll.setProperty("style-role", "plain")
         
         form_content = QWidget()
-        form_content.setStyleSheet("background: transparent;")
+        form_content.setProperty("bg-role", "transparent")
         form_lay = QVBoxLayout(form_content)
         form_lay.setContentsMargins(0, 0, 12, 0)
         form_lay.setSpacing(10)
@@ -68,16 +68,16 @@ class HizliSaglikGirisDialog(QDialog):
 
         # Ek Bilgiler
         grp_ek = QGroupBox("Ek Bilgiler")
-        grp_ek.setStyleSheet(S["group"])
+        grp_ek.setProperty("style-role", "group")
         g3 = QVBoxLayout(grp_ek)
         g3.setContentsMargins(12, 12, 12, 12)
         g3.setSpacing(8)
         
         lbl_not = QLabel("Not")
-        lbl_not.setStyleSheet(S.get("label") or "")
+        lbl_not.setProperty("style-role", "label")
         g3.addWidget(lbl_not)
         self.inp_not = QLineEdit()
-        self.inp_not.setStyleSheet(S["input"])
+        self.inp_not.setProperty("style-role", "input")
         g3.addWidget(self.inp_not)
         form_lay.addWidget(grp_ek)
         
@@ -88,12 +88,12 @@ class HizliSaglikGirisDialog(QDialog):
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
         btn_iptal = QPushButton("İptal")
-        btn_iptal.setStyleSheet(S["cancel_btn"])
+        btn_iptal.setProperty("style-role", "danger")
         btn_iptal.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_iptal.clicked.connect(self.cancelled.emit)
         btn_layout.addWidget(btn_iptal)
         btn_kaydet = QPushButton("Kaydet")
-        btn_kaydet.setStyleSheet(S["save_btn"])
+        btn_kaydet.setProperty("style-role", "action")
         btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_kaydet.clicked.connect(self._on_save)
         btn_layout.addWidget(btn_kaydet)
@@ -103,7 +103,7 @@ class HizliSaglikGirisDialog(QDialog):
         """Muayene alanlarını sade biçimde ekle."""
         # Başlık
         lbl_title = QLabel(title)
-        lbl_title.setStyleSheet(S.get("section_title") or "")
+        lbl_title.setProperty("style-role", "section-title")
         layout.addWidget(lbl_title)
         
         # Grid layout for inputs
@@ -114,11 +114,11 @@ class HizliSaglikGirisDialog(QDialog):
         
         # Row 0: Labels
         lbl_tarih = QLabel("Tarih")
-        lbl_tarih.setStyleSheet(S.get("label") or "")
+        lbl_tarih.setProperty("style-role", "label")
         grid.addWidget(lbl_tarih, 0, 0)
         
         lbl_durum = QLabel("Durum")
-        lbl_durum.setStyleSheet(S.get("label") or "")
+        lbl_durum.setProperty("style-role", "label")
         grid.addWidget(lbl_durum, 0, 1)
         
         # Row 1: Inputs
@@ -127,14 +127,14 @@ class HizliSaglikGirisDialog(QDialog):
         de.setCalendarPopup(True)
         de.setMinimumWidth(140)
         de.setMinimumHeight(35)
-        de.setStyleSheet(S["date"])
+        de.setProperty("style-role", "date")
         grid.addWidget(de, 1, 0)
         
         cmb = QComboBox()
         cmb.addItems(STATUS_OPTIONS)
         cmb.setMinimumWidth(180)
         cmb.setMinimumHeight(35)
-        cmb.setStyleSheet(S["combo"])
+        cmb.setProperty("style-role", "combo")
         grid.addWidget(cmb, 1, 1)
         
         grid.setColumnStretch(0, 1)
@@ -146,7 +146,7 @@ class HizliSaglikGirisDialog(QDialog):
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFrameShadow(QFrame.Shadow.Sunken)
-        sep.setStyleSheet(S.get("separator") or "")
+        sep.setProperty("bg-role", "separator")
         layout.addWidget(sep)
         
         self._exam_widgets[key] = {"tarih": de, "durum": cmb}

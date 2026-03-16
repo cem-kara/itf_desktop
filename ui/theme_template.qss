@@ -1,10 +1,10 @@
-/* ===============================================================
-   REPYS v3 â€” Medikal Dark-Blue Tema (theme_template.qss)
+/* ---------------------------------------------------------------
+   REPYS v3 - Medikal Dark-Blue Tema (theme_template.qss)
    Palette: Deep Navy Â· Cyan accent
    
    âš  DİKKAT: Bu dosya şablondur. Sabit renkler {PLACEHOLDER} formatında.
    LoadTheme() işlevi Çalışma zamanında dynamik olarak doldurur.
-   =============================================================== */
+   --------------------------------------------------------------- */
 
 /* == Global ==================================================== */
 QWidget {
@@ -20,13 +20,13 @@ QMainWindow, QDialog {
 
 /* == Özel pencere ÇerÇevesi =================================== */
 QMainWindow {
-    border: 1px solid rgba(0,180,216,0.15);
+    border: 1px solid {ACCENT_10};
 }
 
 /* == MessageBox ================================================ */
 QMessageBox {
     background-color: {BG_SECONDARY};
-    border: 1px solid rgba(0,180,216,0.20);
+    border: 1px solid {ACCENT_20};
     border-radius: 12px;
 }
 QMessageBox QLabel {
@@ -50,13 +50,13 @@ QMessageBox QPushButton[text="İptal"],
 QMessageBox QPushButton[text="Cancel"],
 QMessageBox QPushButton[text="Hayır"],
 QMessageBox QPushButton[text="No"] {
-    background-color: rgba(255,255,255,0.06);
+    background-color: {OVERLAY_LOW};
     color: {TEXT_SECONDARY};
-    border: 1px solid rgba(255,255,255,0.10);
+    border: 1px solid {OVERLAY_MID};
 }
 QMessageBox QPushButton[text="İptal"]:hover,
 QMessageBox QPushButton[text="Cancel"]:hover {
-    background-color: rgba(255,255,255,0.09);
+    background-color: {OVERLAY_LOW};
     color: {TEXT_PRIMARY};
 }
 
@@ -64,9 +64,9 @@ QMessageBox QPushButton[text="Cancel"]:hover {
 QToolTip {
     background-color: {BG_ELEVATED};
     color: {TEXT_PRIMARY};
-    border: 1px solid rgba(0,180,216,0.30);
+    border: 1px solid {ACCENT_20};
     border-radius: 7px;
-    padding: 6px 8px;
+    padding: 6px 10px;
     font-size: 12px;
 }
 
@@ -77,11 +77,11 @@ QScrollBar:vertical {
     padding: 4px 2px;
 }
 QScrollBar::handle:vertical {
-    background: rgba(255,255,255,0.12);
+    background: {OVERLAY_MID};
     border-radius: 4px;
     min-height: 32px;
 }
-QScrollBar::handle:vertical:hover  { background: rgba(0,180,216,0.35); }
+QScrollBar::handle:vertical:hover  { background: {ACCENT_35}; }
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
 QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }
 
@@ -91,11 +91,11 @@ QScrollBar:horizontal {
     padding: 2px 4px;
 }
 QScrollBar::handle:horizontal {
-    background: rgba(255,255,255,0.12);
+    background: {OVERLAY_MID};
     border-radius: 4px;
     min-width: 32px;
 }
-QScrollBar::handle:horizontal:hover { background: rgba(0,180,216,0.35); }
+QScrollBar::handle:horizontal:hover { background: {ACCENT_35}; }
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0; }
 
 /* == Splitter ================================================== */
@@ -106,7 +106,7 @@ QSplitter::handle {
 
 /* == QProgressBar ============================================== */
 QProgressBar {
-    background-color: rgba(255,255,255,0.06);
+    background-color: {OVERLAY_LOW};
     border: none;
     border-radius: 5px;
     height: 6px;
@@ -192,11 +192,10 @@ QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
     height: 10px;
 }
 
-
 /* == QTextBrowser ============================================== */
 QTextBrowser {
     background-color: {BG_SECONDARY};
-    border: 1px solid rgba(255,255,255,0.07);
+    border: 1px solid {OVERLAY_LOW};
     border-radius: 10px;
     color: {TEXT_PRIMARY};
     padding: 10px;
@@ -206,30 +205,30 @@ QTextBrowser {
 /* == QMenuBar / QMenu ========================================== */
 QMenuBar {
     background-color: {BG_SECONDARY};
-    border-bottom: 1px solid rgba(255,255,255,0.07);
+    border-bottom: 1px solid {OVERLAY_LOW};
     color: {TEXT_PRIMARY};
     padding: 2px;
 }
 QMenuBar::item { padding: 5px 10px; border-radius: 5px; }
 QMenuBar::item:selected {
-    background-color: rgba(0,180,216,0.10);
+    background-color: {ACCENT_10};
     color: {ACCENT2};
 }
 
 QMenu {
     background-color: {BG_ELEVATED};
-    border: 1px solid rgba(0,180,216,0.20);
+    border: 1px solid {ACCENT_20};
     border-radius: 10px;
     padding: 4px;
     color: {TEXT_PRIMARY};
 }
 QMenu::item { padding: 7px 16px; border-radius: 6px; font-size: 13px; }
 QMenu::item:selected {
-    background-color: rgba(0,180,216,0.12);
+    background-color: {ACCENT_10};
     color: {ACCENT2};
 }
 QMenu::separator {
-    background-color: rgba(255,255,255,0.07);
+    background-color: {OVERLAY_LOW};
     height: 1px;
     padding: 4px 8px;
 }
@@ -237,91 +236,16 @@ QMenu::separator {
 /* == QStatusBar ================================================ */
 QStatusBar {
     background-color: {BG_DARK};
-    border-top: 1px solid rgba(0,180,216,0.15);
+    border-top: 1px solid {ACCENT_10};
     color: {TEXT_MUTED};
     font-size: 11px;
 }
 QStatusBar QLabel { color: {TEXT_MUTED}; font-size: 11px; }
 
-/* == QCalendarWidget =========================================== */
-QCalendarWidget {
-    background-color: {BG_SECONDARY};
-    color: {TEXT_PRIMARY};
-    border: 1px solid rgba(0,180,216,0.20);
-    border-radius: 10px;
-}
-QCalendarWidget QToolButton {
-    background-color: transparent;
-    color: {TEXT_PRIMARY};
-    border: none;
-    padding: 5px 10px;
-    font-size: 13px;
-    font-weight: 600;
-}
-QCalendarWidget QToolButton:hover {
-    background-color: rgba(0,180,216,0.10);
-    border-radius: 6px;
-    color: {ACCENT2};
-}
-QCalendarWidget QAbstractItemView {
-    background-color: {BG_PRIMARY};
-    color: {TEXT_PRIMARY};
-    selection-background-color: {ACCENT};
-    selection-color: {TEXT_PRIMARY};
-    font-size: 13px;
-    outline: none;
-    gridline-color: {BORDER_PRIMARY};
-}
-QCalendarWidget QAbstractItemView:enabled {
-    color: {TEXT_PRIMARY};
-}
-QCalendarWidget QAbstractItemView:disabled {
-    color: {TEXT_MUTED};
-}
-QCalendarWidget QWidget#qt_calendar_calendarview {
-    background-color: {BG_PRIMARY};
-    alternate-background-color: {BG_SECONDARY};
-}
-QCalendarWidget QTableView {
-    background-color: {BG_PRIMARY};
-    color: {TEXT_PRIMARY};
-    selection-background-color: {ACCENT};
-    selection-color: {TEXT_PRIMARY};
-    alternate-background-color: {BG_SECONDARY};
-}
-QCalendarWidget QTableView::item:hover {
-    background-color: {ACCENT_BG};
-    color: {TEXT_PRIMARY};
-}
-QCalendarWidget QAbstractItemView:disabled {
-    color: {TEXT_MUTED};
-}
-QCalendarWidget QWidget#qt_calendar_calendarview {
-    background-color: {BG_PRIMARY};
-    alternate-background-color: {BG_SECONDARY};
-}
-QCalendarWidget QTableView {
-    background-color: {BG_PRIMARY};
-    color: {TEXT_PRIMARY};
-    selection-background-color: {ACCENT};
-    selection-color: {TEXT_PRIMARY};
-    alternate-background-color: {BG_SECONDARY};
-}
-QCalendarWidget QTableView::item:hover {
-    background-color: {ACCENT_BG};
-    color: {TEXT_PRIMARY};
-}
-QCalendarWidget #qt_calendar_navigationbar {
-    background-color: {BG_TERTIARY};
-    border-bottom: 1px solid rgba(255,255,255,0.07);
-    border-radius: 10px 10px 0 0;
-    padding: 4px;
-}
-
 /* == QDialog =================================================== */
 QDialog {
     background-color: {BG_SECONDARY};
-    border: 1px solid rgba(0,180,216,0.20);
+    border: 1px solid {ACCENT_20};
     border-radius: 14px;
 }
 QDialogButtonBox QPushButton {
@@ -342,7 +266,7 @@ QLabel { background: transparent; color: {TEXT_PRIMARY}; }
 /* == QGroupBox (fallback) ====================================== */
 QGroupBox {
     background-color: {BG_SECONDARY};
-    border: 1px solid rgba(255,255,255,0.07);
+    border: 1px solid {OVERLAY_LOW};
     border-radius: 10px;
     margin-top: 14px;
     padding-top: 10px;
@@ -355,7 +279,7 @@ QGroupBox::title {
     left: 12px;
     padding: 2px 10px;
     background-color: {BG_SECONDARY};
-    border: 1px solid rgba(255,255,255,0.07);
+    border: 1px solid {OVERLAY_LOW};
     border-radius: 6px;
     color: {TEXT_SECONDARY};
     font-size: 11px;
@@ -366,7 +290,7 @@ QGroupBox::title {
 /* == QTabWidget ================================================ */
 QTabWidget::pane {
     background-color: {BG_SECONDARY};
-    border: 1px solid rgba(255,255,255,0.07);
+    border: 1px solid {OVERLAY_LOW};
     border-radius: 10px;
     top: -1px;
 }
@@ -380,7 +304,7 @@ QTabBar::tab {
     font-weight: 500;
     margin-right: 2px;
 }
-QTabBar::tab:hover { color: {TEXT_PRIMARY}; border-bottom-color: rgba(255,255,255,0.15); }
+QTabBar::tab:hover { color: {TEXT_PRIMARY}; border-bottom-color: {OVERLAY_MID}; }
 QTabBar::tab:selected {
     color: {ACCENT2};
     border-bottom-color: {ACCENT};
@@ -497,12 +421,12 @@ QWidget[nav-role="bar"] {
 
 /* ── İkon Buton ─────────────────────────────────────────────── */
 QPushButton[btn-role="icon"] {
-    background: rgba(255,255,255,0.08);
+    background: {OVERLAY_LOW};
     border: none;
     border-radius: 4px;
 }
 QPushButton[btn-role="icon"]:hover {
-    background: rgba(255,255,255,0.18);
+    background: {OVERLAY_HIGH};
 }
 
 /* ── Status badge label ──────────────────────────────────────── */
@@ -701,7 +625,7 @@ QScrollArea[style-role="plain"] {
 /* Turuncu / uyarı butonu (kaydet=güncelle modu vb.) */
 QPushButton[style-role="warning"] {
     background-color: {STATUS_WARNING};
-    color: #1a0f00;
+    color: {BTN_WARNING_TEXT};
     border: none;
     border-radius: 5px;
     padding: 4px 14px;
@@ -735,7 +659,7 @@ QPushButton[style-role="close"] {
     background: transparent;
     border: none;
     color: {TEXT_SECONDARY};
-    font-size: 12px;
+    font-size: 14px;
     border-radius: 4px;
 }
 QPushButton[style-role="close"]:hover {
@@ -970,25 +894,6 @@ QTableView::item:selected, QTableWidget::item:selected {
 }
 QTableView::item:hover, QTableWidget::item:hover { background-color: {BG_HOVER}; }
 
-/* Calendar popup için genel table kurallarını override et */
-QCalendarWidget QTableView::item {
-    color: {TEXT_PRIMARY};
-    padding: 4px 6px;
-}
-QCalendarWidget QTableView::item:selected {
-    background-color: {ACCENT};
-    color: {TEXT_PRIMARY};
-}
-QCalendarWidget QTableView::item:hover {
-    background-color: {ACCENT_BG};
-    color: {TEXT_PRIMARY};
-}
-QCalendarWidget QHeaderView::section {
-    background-color: {BG_TERTIARY};
-    color: {TEXT_PRIMARY};
-    border-bottom: 1px solid {BORDER_PRIMARY};
-}
-
 /* ── QHeaderView ────────────────────────────────────────────── */
 QHeaderView::section {
     background-color: {BG_ELEVATED};
@@ -1031,7 +936,7 @@ QProgressBar::chunk { background-color: {INPUT_BORDER_FOCUS}; border-radius: 2px
 QLabel[style-role="header-durum-aktif"] {
     background-color: {STATUS_SUCCESS_BG};
     color: {STATUS_SUCCESS};
-    border: 1px solid rgba(46,201,142,0.30);
+    border: 1px solid {STATUS_SUCCESS_BORDER};
     border-radius: 6px;
     padding: 4px 10px;
     font-size: 11px;
@@ -1040,7 +945,7 @@ QLabel[style-role="header-durum-aktif"] {
 QLabel[style-role="header-durum-pasif"] {
     background-color: {STATUS_ERROR_BG};
     color: {STATUS_ERROR};
-    border: 1px solid rgba(232,85,85,0.30);
+    border: 1px solid {STATUS_ERROR_BORDER};
     border-radius: 6px;
     padding: 4px 10px;
     font-size: 11px;
@@ -1049,15 +954,168 @@ QLabel[style-role="header-durum-pasif"] {
 QLabel[style-role="header-durum-izinli"] {
     background-color: {STATUS_WARNING_BG};
     color: {STATUS_WARNING};
-    border: 1px solid rgba(232,160,48,0.30);
+    border: 1px solid {STATUS_WARNING_BORDER};
     border-radius: 6px;
     padding: 4px 10px;
     font-size: 11px;
     font-weight: 700;
 }
 
-/* Doğru: color-role ve style-role ile
-lbl.setProperty("color-role", "ok")
-lbl.setProperty("style-role", "info")
-lbl.style().unpolish(lbl)
-lbl.style().polish(lbl) */
+/* ══════════════════════════════════════════════════════════════
+   QCalendarWidget
+   IMPORTANT: Bu blok dosyanın EN SONUNDA olmalı!
+   Qt QSS'de specificity yoktur — son kural kazanır.
+   QTableView::item genel kuralı bu bloğu ezmemeli.
+   ══════════════════════════════════════════════════════════════ */
+QCalendarWidget {
+    background-color: {BG_SECONDARY};
+    color: {TEXT_PRIMARY};
+    border: 1px solid {ACCENT_20};
+    border-radius: 10px;
+}
+
+/* ── Navigation bar (ay/yıl + oklar) ── */
+QCalendarWidget #qt_calendar_navigationbar {
+    background-color: {BG_TERTIARY};
+    border-bottom: 1px solid {ACCENT_20};
+    border-radius: 10px 10px 0 0;
+    padding: 4px 8px;
+    min-height: 32px;
+}
+
+/* ── Ay/yıl dropdown butonları ── */
+QCalendarWidget QToolButton {
+    background-color: transparent;
+    color: {TEXT_PRIMARY};
+    border: none;
+    border-radius: 5px;
+    padding: 4px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    min-width: 20px;
+}
+QCalendarWidget QToolButton:hover {
+    background-color: {ACCENT_10};
+    color: {ACCENT2};
+}
+QCalendarWidget QToolButton::menu-indicator { image: none; width: 0; }
+
+/* ── Önceki/sonraki ay ok butonları ── */
+QCalendarWidget QToolButton#qt_calendar_prevmonth {
+    qproperty-icon: none;
+    image: url("{ICON_CHEVRON_LEFT}");
+    width: 24px; height: 24px;
+    padding: 4px;
+}
+QCalendarWidget QToolButton#qt_calendar_nextmonth {
+    qproperty-icon: none;
+    image: url("{ICON_CHEVRON_RIGHT}");
+    width: 24px; height: 24px;
+    padding: 4px;
+}
+QCalendarWidget QToolButton#qt_calendar_prevmonth:hover,
+QCalendarWidget QToolButton#qt_calendar_nextmonth:hover {
+    background-color: {ACCENT_10};
+    border-radius: 5px;
+}
+
+/* ── Ay/yıl seçim spin kutusu ── */
+QCalendarWidget QSpinBox {
+    background-color: transparent;
+    color: {TEXT_PRIMARY};
+    border: none;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 2px 4px;
+    selection-background-color: {ACCENT_10};
+    selection-color: {ACCENT2};
+}
+QCalendarWidget QSpinBox::up-button,
+QCalendarWidget QSpinBox::down-button { width: 0; height: 0; border: none; }
+
+/* ── Takvim görünümü (iç QTableView) ── */
+QCalendarWidget QWidget {
+    background-color: {BG_SECONDARY};
+    color: {TEXT_PRIMARY};
+    alternate-background-color: {BG_SECONDARY};
+}
+QCalendarWidget QWidget#qt_calendar_calendarview {
+    background-color: {BG_SECONDARY};
+}
+QCalendarWidget QTableView {
+    background-color: {BG_SECONDARY};
+    color: {TEXT_PRIMARY};
+    gridline-color: transparent;
+    border: none;
+    outline: none;
+    alternate-background-color: {BG_SECONDARY};
+    selection-background-color: {ACCENT_10};
+    selection-color: {ACCENT2};
+}
+
+/* ── Gün hücreleri ── */
+QCalendarWidget QTableView::item {
+    color: {TEXT_PRIMARY};
+    background-color: transparent;
+    padding: 2px;
+    border-radius: 4px;
+    border: none;
+    min-width: 28px;
+    min-height: 24px;
+}
+QCalendarWidget QTableView::item:hover {
+    background-color: {ACCENT_10};
+    color: {TEXT_PRIMARY};
+}
+QCalendarWidget QTableView::item:selected {
+    background-color: {ACCENT_20};
+    color: {ACCENT2};
+    font-weight: 700;
+}
+
+/* ── Önceki/sonraki aya ait soluk günler ── */
+QCalendarWidget QAbstractItemView {
+    background-color: {BG_SECONDARY};
+    color: {TEXT_PRIMARY};
+    selection-background-color: {ACCENT_20};
+    selection-color: {ACCENT2};
+    font-size: 13px;
+    outline: none;
+    alternate-background-color: {BG_SECONDARY};
+}
+QCalendarWidget QAbstractItemView:enabled  { color: {TEXT_PRIMARY}; }
+QCalendarWidget QAbstractItemView:disabled { color: {TEXT_MUTED};   }
+
+/* ── Hafta sonu: Cumartesi (sütun 6) ── */
+QCalendarWidget QAbstractItemView#qt_calendar_calendarview[column="6"] {
+    color: {STATUS_WARNING};
+}
+/* Qt QSS'de column/row pseudo-class olmadığından
+   weekend rengi için setStyleSheet ile
+   özel property kullanılır — bkz. uygulama notu */
+
+/* ── Gün adları başlığı (Pzt Sal Çar...) ── */
+QCalendarWidget QHeaderView {
+    background-color: {BG_TERTIARY};
+    color: {TEXT_SECONDARY};
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+QCalendarWidget QHeaderView::section {
+    background-color: {BG_TERTIARY};
+    color: {TEXT_SECONDARY};
+    border: none;
+    border-bottom: 1px solid {ACCENT_20};
+    padding: 5px 2px;
+    font-size: 11px;
+    font-weight: 700;
+}
+/* Cumartesi başlığı (7. section = index 5) */
+QCalendarWidget QHeaderView::section:last-child {
+    color: {STATUS_WARNING};
+}
+/* Pazar başlığı (1. section = index 0) */
+QCalendarWidget QHeaderView::section:first-child {
+    color: {STATUS_ERROR};
+}

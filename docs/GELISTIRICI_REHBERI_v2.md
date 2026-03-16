@@ -39,74 +39,7 @@ Bunlar yalnızca özel repository sınıflarında (PersonelRepository, CihazRepo
 | `ariza_service.py` | 180 | `.delete(ariza_id)` | `Cihaz_Ariza` | BaseRepo'da yok |
 | `izin_service.py` | 222 | `.delete(izin_id)` | `Izin_Giris` | BaseRepo'da yok |
 
-**✅ DÜZELTME YAPILDI — `BaseRepository`'ye eklenen metotlar:**
-
-```python
-def get_by_pk(self, pk_value):
-    """
-    PK'ye göre kayıt getir (get_by_id ile aynı, explicit naming).
-    
-    Args:
-        pk_value: Tekli değer veya dict (composite PK için)
-        
-    Returns:
-        dict: Kayıt veya None
-    """
-    return self.get_by_id(pk_value)
-
-def delete(self, pk_value) -> bool:
-    """
-    PK'ye göre kayıt sil.
-    
-    has_sync=True ise: sync_status 'deleted' olarak işaretlenir
-    has_sync=False ise: Kayıt direkt silinir
-    
-    Args:
-        pk_value: Tekli değer veya dict/list (composite PK için)
-        
-    Returns:
-        bool: Başarı durumu
-    """
-    where_vals = self._resolve_pk_params(pk_value)
-    
-    try:
-        if self.has_sync and "sync_status" in self.columns:
-            # Soft delete: sync_status='deleted' işaretle
-            sql = f"""
-            UPDATE {self.table}
-            SET sync_status='deleted'
-            WHERE {self._pk_where()}
-            """
-            self.db.execute(sql, where_vals)
-            logger.info(f"BaseRepository.delete: {self.table} → soft delete (sync)")
-        else:
-            # Hard delete: direkt kayıt sil
-            sql = f"""
-            DELETE FROM {self.table}
-            WHERE {self._pk_where()}
-            """
-            self.db.execute(sql, where_vals)
-            logger.info(f"BaseRepository.delete: {self.table} → hard delete (no sync)")
-        
-        return True
-    except Exception as exc:
-        logger.error(
-            f"BaseRepository.delete hatası — "
-            f"tablo={self.table}, pk_value={pk_value}: {exc}"
-        )
-        return False
-```
-
-**📍 Konum:** `database/base_repository.py` — CRUD bölümünün (`get_where()` sonrası) sonuna ve SYNC bölümü başlığından önce eklendi.
-
-**✅ Durum:** YAPILDI — Tüm 21 servis çağrısı artık çalışıyor.
-
-**Doğrulama:**
-- ✅ `get_by_pk()`: 10 servis çağrısında kullanılıyor
-- ✅ `delete()`: 11 servis çağrısında kullanılıyor
-- ✅ Error check: `No errors found`
-- ✅ Composite PK desteği: `_resolve_pk_params()` üzerinden sağlanıyor
-- ✅ Sync desteği: has_sync flag'ına göre soft/hard delete yapılıyor
+> ✅ **TAMAMLANDI** — `database/base_repository.py`'ye `get_by_pk()` (get_by_id alias) ve `delete()` (soft/hard, sync flag'ına göre) eklendi. Tüm 21 servis çağrısı çalışıyor.
 
 ### 0.2 Sync Pull-Only'de Transaction Yok — Veri Kaybı Riski
 
@@ -118,21 +51,7 @@ self.db.execute(f"DELETE FROM {table_name}")
 self.db.execute(sql, values)
 ```
 
-**Düzeltme — transaction ile sarmalama:**
-```python
-# Güvenli versiyon
-try:
-    self.db.conn.execute("BEGIN")
-    self.db.conn.execute(f"DELETE FROM {table_name}")
-    for row in valid_records:
-        values = [row.get(col, "") for col in columns]
-        self.db.conn.execute(sql, values)
-    self.db.conn.commit()
-except Exception as e:
-    self.db.conn.rollback()
-    logger.error(f"[{table_name}] Pull transaction hatası, rollback yapıldı: {e}")
-    raise
-```
+> ✅ **TAMAMLANDI** (TODO-5) — `database/sync_service.py` satır 390–428. DELETE + INSERT işlemleri BEGIN/COMMIT/ROLLBACK transaction içine alındı.
 
 ### 0.3 SQLiteManager Her Sorguda Commit Yapıyor
 
@@ -861,82 +780,13 @@ model.status_bg(durum)             # → QColor | None
 
 ---
 
-### 🔴 TODO-1 — BaseRepository: `delete()` ve `get_by_pk()` ekle
-**Dosya:** `database/base_repository.py`  
-**Neden:** 14 servis çağrısı crash üretiyor  
-**Tahmini süre:** 15 dakika
-
-```python
-# BaseRepository sınıfına ekle (get_by_id'nin hemen altına)
-
-def get_by_pk(self, pk_value):
-    """get_by_id alias — servis katmanı uyumluluğu."""
-    return self.get_by_id(pk_value)
-
-def delete(self, pk_value) -> bool:
-    """PK'ya göre kayıt sil."""
-    try:
-        where_vals = self._resolve_pk_params(pk_value)
-        sql = f"DELETE FROM {self.table} WHERE {self._pk_where()}"
-        self.db.execute(sql, where_vals)
-        logger.info(f"{self.table} silindi: {pk_value}")
-        return True
-    except Exception as e:
-        logger.error(f"{self.table}.delete hatası [{pk_value}]: {e}")
-        return False
-```
+### ✅ TODO-1 — BaseRepository `delete()` + `get_by_pk()` [TAMAMLANDI]
+> `database/base_repository.py`'ye eklendi. Bkz. BÖLÜM 0.1.
 
 ---
 
-### 🔴 TODO-2 — DI'ya 9 Eksik Servis Fabrikası Ekle
-**Dosya:** `core/di.py`  
-**Neden:** Bu servisler kullanılamıyor, UI hala get_registry ile erişiyor  
-**Tahmini süre:** 20 dakika
-
-✅ **DÜZELTME YAPILDI** — `core/di.py`'ye eklenen 9 fabrika:
-
-```python
-def get_izin_service(db):
-    from core.services.izin_service import IzinService
-    return IzinService(get_registry(db))
-
-def get_ariza_service(db):
-    from core.services.ariza_service import ArizaService
-    return ArizaService(get_registry(db))
-
-def get_bakim_service(db):
-    from core.services.bakim_service import BakimService
-    return BakimService(get_registry(db))
-
-def get_kalibrasyon_service(db):
-    from core.services.kalibrasyon_service import KalibrasyonService
-    return KalibrasyonService(get_registry(db))
-
-def get_dokuman_service(db):
-    from core.services.dokuman_service import DokumanService
-    return DokumanService(get_registry(db))
-
-def get_backup_service(db):
-    from core.services.backup_service import BackupService
-    return BackupService()  # registry almıyor (internal config)
-
-def get_log_service(db):
-    from core.services.log_service import LogService
-    return LogService()  # registry almıyor (static log reader)
-
-def get_settings_service(db):
-    from core.services.settings_service import SettingsService
-    return SettingsService()  # registry almıyor (internal SQLiteManager)
-
-def get_file_sync_service(db):
-    from core.services.file_sync_service import FileSyncService
-    return FileSyncService(db, get_registry(db))
-```
-
-**📍 Konum:** `core/di.py` — get_dashboard_service() sonrası, _fallback_registry_cache tanımından önce
-
-**✅ Durum:** YAPILDI  
-**Doğrulama:** `No errors found` — Tüm 9 fabrika doğru şekilde eklendi
+### ✅ TODO-2 — DI 9 Eksik Servis Fabrikası [TAMAMLANDI]
+> `core/di.py`'ye eklendi: get_izin_service, get_ariza_service, get_bakim_service, get_kalibrasyon_service, get_dokuman_service, get_backup_service, get_log_service, get_settings_service, get_file_sync_service. Toplam: 15/15.
 
 ---
 
@@ -957,12 +807,12 @@ def get_file_sync_service(db):
 | `personel/isten_ayrilik.py` | ✅ Tamamlandı | `get_izin_service(db)` |
 | `personel/personel_ekle.py` | ✅ Tamamlandı | `get_personel_service(db)` |
 | `personel/personel_listesi.py` | ✅ Tamamlandı | `get_personel_service(db)` + `get_izin_service(db)` |
-| `personel/personel_overview_panel.py` | ✅ Tamamlandı | `get_personel_service(db)` + `get_izin_service(db)` |
+| `personel/personel_overview_panel.py` | ⚠️ 1 çağrı kaldı (satır 67) | `get_registry` → `get_personel_service` |
 | `personel/components/hizli_izin_giris.py` | ⚠️ Partial | Lokal registry scope (future: SabitlerService gerekli) |
 | `personel/components/personel_izin_panel.py` | ✅ Tamamlandı | `get_izin_service(db)` + repository accessor |
 | `personel/components/personel_ozet_servisi.py` | ✅ Tamamlandı | `get_personel_service(db)` + `get_izin_service(db)` |
 | `personel/puantaj_rapor.py` | ⚠️ Lokal | Lokal registry (future: FhszService) |
-| `personel/components/personel_overview_panel.py` | ✅ Tamamlandı | Services factory setup |
+| `personel/components/personel_overview_panel.py` | ⚠️ 1 çağrı kaldı (satır 71-72) | `get_registry` → `get_personel_service` |
 
 **Eklenen Servis Repository Accessor'ları:**
 ```python
@@ -996,215 +846,28 @@ rows = izin_svc.get_izin_giris_repo().get_all()
 
 ---
 
-### ✅ TODO-4 — RKE UI → Servis Katmanına Bağla
-**Neden:** 5 get_registry çağrısı  
-**Tahmini süre:** 1 saat
+### ✅ TODO-4 — RKE UI → Servis Katmanına Bağla [TAMAMLANDI]
+> rke_yonetim.py, rke_rapor.py, rke_muayene.py — 5 get_registry çağrısı → get_rke_service(db). 0 errors.
 
-✅ **DÜZELTME YAPILDI** — 3 dosya refactor edildi:
+### ✅ TODO-4b — Cihaz UI Anti-Pattern Temizliği [TAMAMLANDI]
+> 3 anti-pattern düzeltildi:
+> 1. `svc._r.get()` bypass → CihazService'e 9 accessor metod eklendi (insert_ariza_islem, update_cihaz_ariza, insert_cihaz_belge, insert_periyodik_bakim, get_cihaz_teknik vb.)
+> 2. `_gcf/_gcf2/_gcf3` alias kaos → standart `from core.di import get_cihaz_service`
+> 3. Metod içi servis init → `__init__`'te single `self._svc` init
+>
+> Düzeltilen dosyalar: ariza_islem.py, bakim_form.py, cihaz_teknik_uts_scraper.py, kalibrasyon_form.py, ariza_kayit.py, cihaz_ekle.py, ariza_girisi_form.py.
 
-| Dosya | Durum | Yöntem |
-|---|---|---|
-| rke_yonetim.py | ✅ Tamamlandı | `get_rke_service(db)` factory |
-| rke_rapor.py | ✅ Tamamlandı | Top-level import + factory |
-| rke_muayene.py | ✅ Tamamlandı | 3 lokal scope refactor |
-
-**Doğrulama:** ✅ 0 errors  
-**Rapor:** `/docs/TODO-4_COZUM_RAPORU.md`
-
-### ✅ TODO-4b — Cihaz UI Anti-Pattern Temizliği [TAMAMLANDI — KOD ONAYLANDI]
-**Neden:** Cihaz UI servise bağlı ama içinde 3 kritik kötü pattern var  
-**Tahmini süre:** 2 saat
-
-#### ✅ Anti-Pattern 1 — `svc._r.get()` ile servis bypass (EN KRİTİK) [DÜZELTME YAPILDI]
-
-**DÜZELTME ÖZET:**
-- CihazService'e 9 yeni repository accessor metodu eklendi
-- Tüm direct `_r.get()` çağrıları service metodlarına dönüştürüldü
-- Dosyalar: ariza_islem.py, bakim_form.py, cihaz_teknik_uts_scraper.py
-
-**Eklenen CihazService metodları:**
-```python
-def insert_ariza_islem(data: dict) → Ariza_Islem tablosuna kayıt ekle
-def update_cihaz_ariza(ariza_id, data) → Cihaz_Ariza güncellemeleri
-def insert_cihaz_belge(data) → Cihaz_Belgeler ekle
-def insert_periyodik_bakim(data) → Periyodik_Bakim ekle
-def update_periyodik_bakim(data) → Periyodik_Bakim güncelle  
-def get_cihaz_teknik(cihaz_id) → Cihaz_Teknik getir
-def insert_cihaz_teknik(data) → Cihaz_Teknik ekle
-def update_cihaz_teknik(cihaz_id, data) → Cihaz_Teknik güncelle
-def get_periyodik_bakim_listesi(cihaz_id) → Periyodik bakım listesi
-```
-
-```python
-# ❌ YANLIŞ (ESKI) — ariza_islem.py satır 251, bakim_form.py satır 90
-svc = _get_cihaz_service(self._db)
-repo_islem = svc._r.get("Ariza_Islem")   # private erişim!
-rows = repo_islem.get_all()
-
-# ✅ DOĞRU (YENİ) — CihazService metodları kullanılıyor
-svc = get_cihaz_service(db)
-svc.insert_ariza_islem(data)   # Direkt service metodu
-svc.insert_cihaz_belge(data)
-svc.insert_periyodik_bakim(kayit)
-```
-
-**Düzeltilen dosyalar:**
-
-| Dosya | Satır | Bypass edilen tablo | Durum |
-|---|---|---|---|
-| `ariza_islem.py` | 251, 256, 277 | `Ariza_Islem`, `Cihaz_Ariza`, `Cihaz_Belgeler` | ✅ Düzeltildi |
-| `bakim_form.py` | 90 | `Periyodik_Bakim` | ✅ Düzeltildi |
-| `cihaz_teknik_uts_scraper.py` | 415 | `Cihaz_Teknik` | ✅ Düzeltildi |
-
-#### ✅ Anti-Pattern 2 — `_gcf` / `_gcf2` / `_gcf3` alias kaos [DÜZELTME YAPILDI]
-
-**DÜZELTME ÖZET:**
-- Tüm lokal `_gcf*` alias'ları kaldırıldı
-- Standart top-level import paterni uygulandı: `from core.di import get_cihaz_service`
-- Metod içi lazy import'lar kaldırıldı, __init__ kuruluşu standardize edildi
-
-```python
-# ❌ YANLIŞ (ESKI) — 5 farklı yapı
-from core.di import get_cihaz_service as _gcf    # kalibrasyon_form.py
-from core.di import get_cihaz_service as _gcf2   # bakim_form.py line 90
-from core.di import get_cihaz_service as _gcf3   # bakim_form.py line 217
-from core.di import get_cihaz_service as _gcf4   # ariza_kayit.py
-from core.di import get_cihaz_service as _gcf5   # scraper.py
-
-# ✅ DOĞRU (YENİ) — standart single import
-from core.di import get_cihaz_service
-
-class XxxSayfa(QWidget):
-    def __init__(self, db=None, parent=None):
-        super().__init__(parent)
-        self._db  = db
-        self._svc = get_cihaz_service(db) if db else None
-```
-
-**Düzeltilen dosyalar:**
-
-| Dosya | Alias Sayısı | Durum |
-|---|---|---|
-| `kalibrasyon_form.py` | 1 (_gcf) | ✅ Düzeltildi |
-| `bakim_form.py` | 2 (_gcf2, _gcf3) | ✅ Düzeltildi |
-| `ariza_kayit.py` | 1 (_gcf4) | ✅ Düzeltildi |
-| `cihaz_teknik_uts_scraper.py` | 1 (_gcf5) | ✅ Düzeltildi |
-
-#### ✅ Anti-Pattern 3 — `__init__`'te servis kurulmayıp her metod içinde çağrılıyor [DÜZELTME YAPILDI]
-
-**DÜZELTME ÖZET:**
-- Self._svc single initialization __init__'te yapılıyor
-- Tüm metod içi `_get_cihaz_service()` çağrıları kaldırıldı
-- None guard'lar eklendi güvenli erişim için
-
-```python
-# ❌ YANLIŞ (ESKI) — cihaz_ekle.py, ariza_girisi_form.py
-class CihazEkleSayfa(QWidget):
-    def __init__(self, db=None, parent=None):
-        self._db = db
-        # self._svc YOK — her metod kendi servisi kuruyor
-
-    def _load_sabitler(self):
-        svc = _get_cihaz_service(self._db)   # yeni nesne her seferinde
-        svc.get_sabitler()
-
-    def _calc_next(self):
-        svc = _get_cihaz_service(self._db)   # tekrar yeni nesne
-        svc.get_next_cihaz_sequence()
-
-# ✅ DOĞRU (YENİ) — __init__'te bir kere kur
-class CihazEkleSayfa(QWidget):
-    def __init__(self, db=None, parent=None):
-        super().__init__(parent)
-        self._db  = db
-        self._svc = get_cihaz_service(db) if db else None  # ← SINGLE INIT
-
-    def _load_sabitler(self):
-        if not self._svc: return
-        self._svc.get_sabitler()   # ← Direkt self._svc
-
-    def _calc_next(self):
-        if not self._svc: return
-        self._svc.get_next_cihaz_sequence()   # ← Direkt self._svc
-```
-
-**Düzeltilen dosyalar:**
-
-| Dosya | Metod Sayısı | Durum |
-|---|---|---|
-| `cihaz_ekle.py` | 3 (_load_sabitler, _calc_next_sequence, _on_save) | ✅ Düzeltildi |
-| `ariza_girisi_form.py` | 1 (_save) | ✅ Düzeltildi |
-| `kalibrasyon_form.py` | implicit (top-level kurulum) | ✅ Düzeltildi |
-| `bakim_form.py` | implicit (top-level kurulum) | ✅ Düzeltildi |
-| `ariza_kayit.py` | implicit (top-level kurulum) | ✅ Düzeltildi |
-| `cihaz_teknik_uts_scraper.py` | implicit (top-level kurulum) | ✅ Düzeltildi |
-
----
 
 ### ✅ TODO-5 — Sync Pull-Only Transaction [TAMAMLANDI]
-**Dosya:** `database/sync_service.py` satır 393–440  
-**Durum:** ✅ TAMAMLANDI  
-**Sorun:** DELETE sonrası INSERT hatası → tablo boş kalır  
-**Çözüm:** Transaction (BEGIN/COMMIT/ROLLBACK) mekanizması kuruldu
+> `database/sync_service.py` satır 390–428. DELETE + tüm INSERT'lar BEGIN/COMMIT/ROLLBACK transaction içine alındı. Hata durumunda tablo başlangıç durumuna döner (rollback). Bkz. BÖLÜM 0.2.
 
-#### Sorun Analizi
-```python
-# ❌ YANLIŞ (ESKI) — Atomik olmayan işlem
-self.db.execute(f"DELETE FROM {table_name}")  # ← COMMIT AKLI
-# ... hata riski ...
-for row in valid_records:
-    self.db.execute(sql, values)  # ← INSERT hata olursa, tablo boş kalır!
-```
-
-#### Çözüm — Atomik Transaction
-```python
-# ✅ DOĞRU (YENİ) — BEGIN/COMMIT/ROLLBACK
-try:
-    self.db.conn.execute("BEGIN")  # ← Transaction başlat
-    self.db.conn.execute(f"DELETE FROM {table_name}")
-    
-    for row in valid_records:
-        self.db.conn.execute(sql, values)  # Hata olsa da transaction içinde kalır
-        inserted += 1
-    
-    self.db.conn.commit()  # ← Hepsi başarılı: kalıcı yap
-    logger.info(f"[{table_name}] Transaction commit: {inserted} kayıt yazıldı")
-    
-except Exception as txn_error:
-    self.db.conn.rollback()  # ← Hata: DELETE ve kısmi INSERTs geri al
-    logger.error(f"[{table_name}] Transaction rollback: {txn_error}")
-    raise
-```
-
-#### Değişim Detayları
-
-**Satırlar 390–428 (Eski):**
-- Satır 393: `self.db.execute(f"DELETE FROM {table_name}")` — immediate commit ❌
-- Satır 398–425: for loop with individual `self.db.execute(sql)` calls — her biri auto-commit ❌
-- Satır 411–424: try-except only for **row-level errors**, transaction güvenliği YOK ❌
-
-**Satırlar 390–428 (Yeni):**
-- `self.db.conn.execute("BEGIN")` — transaction açılır
-- DELETE ve tüm INSERTs same transaction içinde
-- Hata olursa `self.db.conn.rollback()` ile tablo başlangıç durumuna döner
-- Başarılıysa `self.db.conn.commit()` ile kalıcı hale gelir
-
-#### Test Senaryo
-
-| Scenario | Eski Davranış | Yeni Davranış |
-|---|---|---|
-| **Başarılı pull:** 100 kayıt ✓ | Tablo 100 kayıt | Tablo 100 kayıt ✓ |
-| **50. satırda hata:** | Tablo 49 kayıt (boş kalır) ❌ | Eski haline döner (0 kayıt) ✓ |
-| **DELETE hata** | Rollback yok, exception | Transaction rollback ✓ |
-
----
 
 ### 🟡 TODO-6 — Kod İçi Temizlik (Fırsatçı, setStyleSheet kısmı tamamlandı)
 
 Bir dosyaya girdiğinde gördüklerini düzelt:
 
 ```
-[x] setStyleSheet(f"...C.TOKEN") → setProperty("color-role", "...")  (kalan: 0)
+[x] setStyleSheet(f"...C.TOKEN") → setProperty("color-role", "...")  ✅ 0 kaldı
 [ ] _DURUM_COLOR lokal dict     → self.status_fg() kullan, dict'i sil
 [ ] def set_rows(self, rows)... → sil (BaseTableModel'de var)
 [ ] from core.date_utils import to_ui_date (model içinde) → DATE_KEYS veya _fmt_date
@@ -1227,13 +890,8 @@ Bir dosyaya girdiğinde gördüklerini düzelt:
 
 ---
 
-### 🟢 TODO-7 — Kullanılmayan Dosyaları Sil
-
-```bash
-git rm core/cihaz_ozet_servisi.py    # CihazService tarafından ikame edildi
-git rm ui/components/data_table.py   # Hiçbir yerden import edilmiyor
-git commit -m "chore: kullanılmayan dosyalar silindi"
-```
+### ✅ TODO-7 — Kullanılmayan Dosyaları Sil [TAMAMLANDI]
+> `core/cihaz_ozet_servisi.py` ve `ui/components/data_table.py` git rm ile silindi.
 
 ---
 
@@ -1620,5 +1278,24 @@ SERVİS / VERİ
 
 ---
 
-*Rehber REPYS v3 — Mart 2026 durumunu yansıtır.*  
-*Sonraki kritik adımlar: TODO-1 (BaseRepo) → TODO-2 (DI) → TODO-3 (Personel UI)*
+## BÖLÜM 13 — SON DEĞİŞİKLİKLER (2026-03-12)
+
+### personel_ekle.py — Sekmeli Belge Paneli
+
+`ui/pages/personel/personel_ekle.py` sekmeli yapıya (QTabWidget) geçirildi:
+
+| Durum | Tab 1 — Kişisel Bilgiler | Tab 2 — 📎 Belgeler |
+|---|---|---|
+| Yeni kayıt (öncesi) | Aktif | `setTabEnabled(1, False)` — kilitli |
+| Kayıt sonrası ("Evet") | Aktif | Açılır + `setCurrentIndex(1)` ile otomatik geçer |
+| Düzenleme modu | Aktif | Baştan açık (`_activate_belge_tab` ile) |
+| "Yeni Personel" reset | Aktif | Tekrar kilitlenir, Tab 1'e döner |
+
+**Yeni metodlar:**
+- `_activate_belge_tab(tc_no)` — Sekmeyi aç, kilidi kaldır, paneli bağla
+- TC textChanged sinyali Belgeler sekmesini **açmaz** — sadece kayıt sonrası açılır
+
+---
+
+*Rehber REPYS v3 — 12 Mart 2026 durumunu yansıtır.*  
+*Sonraki kritik adımlar: TODO-3 (2 çağrı kaldı) → TODO-6b → TODO-8 (test altyapısı)*

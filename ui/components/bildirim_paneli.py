@@ -54,20 +54,8 @@ class _BildirimChip(QPushButton):
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setToolTip(bildirim["mesaj"])
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.setStyleSheet("""
-            QPushButton {{
-                background-color: {};
-                color: {};
-                border: 1px solid {};
-                border-radius: 10px;
-                font-size: 12px;
-                font-weight: 600;
-                padding: 3px 10px;
-            }}
-            QPushButton:hover {{
-                background-color: {};
-            }}
-        """.format(chip_bg, text_c, text_c, chip_h))
+        self.setProperty("style-role", "stat-highlight")
+        self.setProperty("color-role", "err" if mod == "kritik" else "warn")
 
 
 class BildirimPaneli(QWidget):
@@ -105,12 +93,7 @@ class BildirimPaneli(QWidget):
         self._uyari_frame = self._satir_olustur("uyari")
         outer.addWidget(self._uyari_frame)
 
-        self.setStyleSheet("""
-            QWidget#bildirimPaneli {{
-                background-color: {};
-                border-bottom: 1px solid rgba(255,255,255,0.06);
-            }}
-        """.format(_PANEL_BG))
+        self.setProperty("bg-role", "panel")
 
     def _satir_olustur(self, mod: str) -> QFrame:
         border = _KRITIK_BORDER if mod == "kritik" else _UYARI_BORDER
@@ -120,13 +103,8 @@ class BildirimPaneli(QWidget):
 
         frame = QFrame()
         frame.setVisible(False)
-        frame.setStyleSheet("""
-            QFrame {{
-                background-color: {};
-                border: 1px solid {};
-                border-radius: 6px;
-            }}
-        """.format(bg, border))
+        frame.setProperty("bg-role", "panel")
+        frame.setProperty("border-role", "danger" if mod == "kritik" else "warning")
 
         row = QHBoxLayout(frame)
         row.setContentsMargins(10, 4, 10, 4)
@@ -134,19 +112,14 @@ class BildirimPaneli(QWidget):
 
         # İkon + etiket
         lbl_icon = QLabel(f"{icon} {label}")
-        lbl_icon.setStyleSheet("""
-            color: {};
-            font-size: 11px;
-            font-weight: 700;
-            background: transparent;
-            border: none;
-            min-width: 64px;
-        """.format(border))
+        lbl_icon.setProperty("color-role", "err" if mod == "kritik" else "warn")
+        lbl_icon.setProperty("style-role", "section-title")
+        lbl_icon.setMinimumWidth(64)
         row.addWidget(lbl_icon)
 
         # Chip alanı (scroll olmadan, flex-wrap gibi yatay)
         chip_widget = QWidget()
-        chip_widget.setStyleSheet("background: transparent; border: none;")
+        chip_widget.setProperty("bg-role", "transparent")
         chip_layout = QHBoxLayout(chip_widget)
         chip_layout.setContentsMargins(0, 0, 0, 0)
         chip_layout.setSpacing(6)

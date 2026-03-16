@@ -36,7 +36,35 @@ from core.logger import logger
 from core.date_utils import parse_date, to_db_date, to_ui_date
 from core.services.dokuman_service import DokumanService
 from ui.components.base_table_model import BaseTableModel
-from ui.styles.icons import IconRenderer, IconColors
+from ui.styles.icons import IconRenderer, IconColors, Icons
+
+# =============================================================================
+# Delegate: IconCellDelegate — [icon:check] ve [icon:x] stringlerini svg ikon olarak çizer
+# =============================================================================
+from PySide6.QtGui import QPainter
+class IconCellDelegate(QStyledItemDelegate):
+    def paint(self, painter, option, index):
+        value = index.data()
+        if isinstance(value, str) and value.startswith('[icon:'):
+            icon_key = value[6:-1]
+            color = None
+            if icon_key == 'check':
+                color = '#22c55e'
+            elif icon_key == 'x':
+                color = '#ef4444'
+            elif icon_key == 'tilde':
+                color = '#f59e0b'
+            else:
+                color = '#6b7280'
+            pixmap = Icons.pixmap(icon_key, size=16, color=color)
+            rect = option.rect
+            x = rect.x() + (rect.width() - 16) // 2
+            y = rect.y() + (rect.height() - 16) // 2
+            painter.save()
+            painter.drawPixmap(x, y, pixmap)
+            painter.restore()
+        else:
+            super().paint(painter, option, index)
 
 def _compute_durum(durum_db: str, sonraki_tarih_str: str) -> str:
     """
@@ -72,12 +100,12 @@ STATUS_OPTIONS = ["Uygun", "Şartlı Uygun", "Uygun Değil"]
 TABLE_COLUMNS = [
     ("AdSoyad",              "Ad Soyad",         175),
     ("Birim",                "Birim",             155),
-    ("MuayeneTarihi",        "Muayene",          120),
-    ("SonrakiKontrolTarihi", "Sonraki Kontrol",  120),
-    ("Dermat",               "Derm.",              52),
-    ("Dahiliye",             "Dah.",               52),
-    ("Goz",                  "Göz",               52),
-    ("Goruntuleme",          "Görünt.",            52),
+    ("MuayeneTarihi",        "Muayene",          150),
+    ("SonrakiKontrolTarihi", "Sonraki Kontrol",  150),
+    ("Dermat",               "Derm.",              60),
+    ("Dahiliye",             "Dah.",               60),
+    ("Goz",                  "Göz",               60),
+    ("Goruntuleme",          "Görünt.",            60),
     ("Sonuc",                "Sonuç",            130),
     ("Durum",                "Durum",            100),
     ("Rapor",                "Rapor",             80),
@@ -111,11 +139,11 @@ class SaglikTakipTableModel(BaseTableModel):
             if not val:
                 return "–"
             if val.lower() in ("uygun", "normal", "ok"):
-                return "✓"
+                return "[icon:check]"
             if val.lower() in ("uygun değil", "anormal"):
-                return "✗"
+                return "[icon:x]"
             # Şartlı Uygun veya bilinmeyen kısaltılmış göster
-            return "~"
+            return "[icon:tilde]"
         if key == "Rapor":
             # İlk Muayene satırında rapor gösterme — henüz kaydı yok
             if row.get("Durum") == "IlkMuayene":
@@ -322,6 +350,17 @@ class _SaglikSaver(QThread):
 # =============================================================================
 
 class SaglikTakipPage(QWidget):
+    def _set_icon_delegate(self):
+        # Sadece muayene sütunları için uygula
+        exam_cols = ["Dermat", "Dahiliye", "Goz", "Goruntuleme"]
+        for col in exam_cols:
+            idx = None
+            for i, c in enumerate(TABLE_COLUMNS):
+                if c[0] == col:
+                    idx = i
+                    break
+            if idx is not None:
+                self.table.setItemDelegateForColumn(idx, IconCellDelegate(self.table))
     def _fill_hizmet_sinifi_combo(self):
         """Hizmet sınıfı combobox'unu Sabitler tablosundan doldur."""
         try:
@@ -380,6 +419,7 @@ class SaglikTakipPage(QWidget):
         self._exam_status_dot = {}
         self._setup_ui()
         self._connect_signals()
+        self._set_icon_delegate()
 
     # -------------------------------------------------------------------------
     # UI Kurulum
@@ -427,7 +467,7 @@ class SaglikTakipPage(QWidget):
         frame = QFrame()
         lay = QHBoxLayout(frame)
         lay.setContentsMargins(0, 0, 0, 0)
-        lay.setSpacing(10)
+        lay.setSpacing(20)
 
         lbl = QLabel("Sağlık Takip")
         lbl.setProperty("style-role", "title")
@@ -437,28 +477,28 @@ class SaglikTakipPage(QWidget):
 
         self.btn_yeni = QPushButton("Yeni Muayene Kaydı")
         self.btn_yeni.setProperty("style-role", "action")
-        self.btn_yeni.setFixedHeight(34)
+        self.btn_yeni.setFixedHeight(30)
         self.btn_yeni.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_yeni, "plus", color=IconColors.PRIMARY, size=14)
         lay.addWidget(self.btn_yeni)
 
         self.btn_yenile = QPushButton("Yenile")
         self.btn_yenile.setProperty("style-role", "refresh")
-        self.btn_yenile.setFixedHeight(34)
+        self.btn_yenile.setFixedHeight(30)
         self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_yenile, "sync", color=IconColors.PRIMARY, size=14)
         lay.addWidget(self.btn_yenile)
 
         self.btn_export = QPushButton("Excel'e Aktar")
         self.btn_export.setProperty("style-role", "secondary")
-        self.btn_export.setFixedHeight(34)
+        self.btn_export.setFixedHeight(30)
         self.btn_export.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_export, "download", color=IconColors.PRIMARY, size=14)
         lay.addWidget(self.btn_export)
 
         self.btn_kapat = QPushButton("Kapat")
         self.btn_kapat.setProperty("style-role", "danger")
-        self.btn_kapat.setFixedHeight(34)
+        self.btn_kapat.setFixedHeight(30)
         self.btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_kapat, "x", color=IconColors.DANGER, size=14)
         lay.addWidget(self.btn_kapat)
@@ -522,7 +562,7 @@ class SaglikTakipPage(QWidget):
 
         # Yıl
         self.cmb_yil = QComboBox()
-        self.cmb_yil.setFixedWidth(110)
+        self.cmb_yil.setFixedWidth(150)
         self.cmb_yil.addItem("Tüm Yıllar", 0)
         this_year = date.today().year
         for y in range(this_year + 1, this_year - 4, -1):
@@ -532,7 +572,7 @@ class SaglikTakipPage(QWidget):
 
         # Birim
         self.cmb_birim_filter = QComboBox()
-        self.cmb_birim_filter.setMinimumWidth(140)
+        self.cmb_birim_filter.setMinimumWidth(300)
         self.cmb_birim_filter.addItem("Tüm Birimler")
         lay.addWidget(self.cmb_birim_filter)
 
@@ -614,7 +654,7 @@ class SaglikTakipPage(QWidget):
         self.btn_form_kapat.setFixedSize(28, 28)
         self.btn_form_kapat.setToolTip("Formu Kapat")
         self.btn_form_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_form_kapat, "x", color=IconColors.DANGER, size=12)
+        IconRenderer.set_button_icon(self.btn_form_kapat, "x", color=IconColors.DANGER, size=16)
         top_row.addWidget(self.btn_form_kapat)
         form_lay.addLayout(top_row)
 

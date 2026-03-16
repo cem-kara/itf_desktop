@@ -20,17 +20,18 @@ from dateutil.relativedelta import relativedelta
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QFrame, QTableWidget, QTableWidgetItem,
-    QHeaderView, QMessageBox, QProgressBar, QStyledItemDelegate,
-    QAbstractItemView, QStyle
+    QHeaderView, QProgressBar, QStyledItemDelegate,
+    QAbstractItemView, QStyle, QSpinBox, QApplication
 )
-from PySide6.QtCore import Qt, QRectF, QTimer
-from PySide6.QtGui import QColor, QCursor, QFont, QPainter, QBrush, QPen, QPainterPath
+from PySide6.QtCore import Qt, QRectF, QTimer, QSize, QPointF
+from PySide6.QtGui import QColor, QCursor, QFont, QPainter, QBrush, QPen, QPainterPath, QPolygonF
 
 from core.logger import logger
+from ui.dialogs.mesaj_kutusu import MesajKutusu
+from core.di import get_fhsz_service
 from core.date_utils import parse_date
 from core.hesaplamalar import sua_hak_edis_hesapla, is_gunu_hesapla, tr_upper
 from ui.styles import Colors, DarkTheme
-from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 
 def _parse_date_as_datetime(val):
@@ -57,7 +58,7 @@ AY_ISIMLERI = [
 
 TABLO_KOLONLARI = [
     "Kimlik No", "Adı Soyadı", "Birim", "Çalışma Koşulu",
-    "Ait Yıl", "Dönem", "Aylık Gün", "Kullanılan İzin",
+    "Ait Yıl", "Dönem", "Aylık Çalışma Gün Sayısı", "Kullanılan İzin",
     "Fiili Çalışma (Saat)",
 ]
 
@@ -66,55 +67,122 @@ C_KIMLIK, C_AD, C_BIRIM, C_KOSUL = 0, 1, 2, 3
 C_YIL, C_DONEM, C_GUN, C_IZIN, C_SAAT = 4, 5, 6, 7, 8
 
 
-# ═══════════════════════════════════════════════
-#  DELEGATE: Çalışma Koşulu ComboBox  (Kolon 3)
-# ═══════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════
+#  DELEGATE: Çalışma Koşulu  (Kolon 3)
+#  — Paint: temiz renkli badge + küçük ok ikonu
+#  — Edit : tek tıkta büyük, net QComboBox popup
+# ═══════════════════════════════════════════════════════════════════
+
+_KOSUL_ITEMS = ["Çalışma Koşulu A", "Çalışma Koşulu B"]
+
+# Renk tanımları
+_K_A = {
+    "badge_bg":  QColor(30, 90, 40, 200),
+    "badge_brd": QColor("#4caf50"),
+    "text":      QColor("#c8f7c5"),
+    "dot":       QColor("#66bb6a"),
+}
+_K_B = {
+    "badge_bg":  QColor(20, 70, 150, 200),
+    "badge_brd": QColor("#42a5f5"),
+    "text":      QColor("#bbdefb"),
+    "dot":       QColor("#42a5f5"),
+}
+
 
 class KosulDelegate(QStyledItemDelegate):
     """
-    Orijinaldeki ComboDelegate'in birebir karşılığı.
-    Çalışma Koşulu A / B seçtirip badge olarak gösterir.
+    Çalışma Koşulu A / B seçici delegate.
+    Her satırda badge olarak görünür; tek tıkla büyük açılan combo sunar.
     """
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.items = ["Çalışma Koşulu A", "Çalışma Koşulu B"]
+    def paint(self, painter, option, index):
+        text = str(index.data(Qt.ItemDataRole.DisplayRole) or "Çalışma Koşulu B")
+        is_a = "KOŞULU A" in text.upper()
+        clr  = _K_A if is_a else _K_B
+
+        # Satır seçili arka plan
+        if option.state & QStyle.StateFlag.State_Selected:
+            painter.fillRect(option.rect, QColor(29, 117, 254, 50))
+        else:
+            painter.fillRect(option.rect, QColor("transparent"))
+
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        # Badge alanı (tüm hücreyi doldurur, kenar boşluklu)
+        r = QRectF(option.rect).adjusted(8, 6, -28, -6)   # sağda ok için yer bırak
+        path = QPainterPath()
+        path.addRoundedRect(r, 6, 6)
+        painter.setBrush(QBrush(clr["badge_bg"]))
+        painter.setPen(QPen(clr["badge_brd"], 1.5))
+        painter.drawPath(path)
+
+        # Badge metni
+        painter.setPen(clr["text"])
+        painter.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
+        painter.drawText(r, Qt.AlignmentFlag.AlignCenter, text)
+        painter.setBrush(QBrush(clr["badge_brd"]))
+        painter.restore()
 
     def createEditor(self, parent, option, index):
+        from PySide6.QtWidgets import QListView
         editor = QComboBox(parent)
-        editor.addItems(self.items)
-        editor.setStyleSheet("""
+        editor.addItems(_KOSUL_ITEMS)
+        # Büyük popup için özel view
+        view = QListView()
+        view.setStyleSheet(f"""
+            QListView {{
+                background-color: {DarkTheme.BG_SECONDARY};
+                color: {DarkTheme.TEXT_PRIMARY};
+                border: 1.5px solid {DarkTheme.INPUT_BORDER_FOCUS};
+                font-size: 12px;
+                font-weight: 700;
+                outline: none;
+            }}
+            QListView::item {{
+                min-height: 54px;
+                padding: 0 24px;
+                font-size: 12px;
+                font-weight: 700;
+            }}
+            QListView::item:selected {{
+                background-color: rgba(29,117,254,0.18);
+                color: #fff;
+            }}
+        """)
+        view.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        view.setUniformItemSizes(True)
+        editor.setView(view)
+        editor.setMinimumHeight(48)
+        editor.setFixedHeight(54)
+        editor.setStyleSheet(f"""
             QComboBox {{
-                background-color: {}; color: {};
-                border: 2px solid {}; border-radius: 4px;
-                padding: 4px 8px; font-size: 12px; min-height: 24px;
+                background-color: {DarkTheme.INPUT_BG};
+                color: {DarkTheme.TEXT_PRIMARY};
+                border: 2px solid {DarkTheme.INPUT_BORDER_FOCUS};
+                border-radius: 5px;
+                padding: 8px 16px;
+                font-size: 16px;
+                font-weight: 700;
             }}
-            QComboBox::drop-down {{ border: none; width: 26px; }}
+            QComboBox::drop-down {{ border: none; width: 32px; }}
             QComboBox::down-arrow {{
-                image: none;
-                border-left: 5px solid transparent;
-                border-right: 5px solid transparent;
-                border-top: 6px solid {};
-                margin-right: 8px;
+                border-left: 7px solid transparent;
+                border-right: 7px solid transparent;
+                border-top: 9px solid {DarkTheme.INPUT_BORDER_FOCUS};
+                margin-right: 10px;
             }}
-            QComboBox QAbstractItemView {{
-                background-color: {}; color: {};
-                selection-background-color: rgba(29,117,254,0.4);
-                selection-color: {}; border: 1px solid {};
-            }}
-            QComboBox QAbstractItemView::item {{ min-height: 28px; padding: 4px; }}
-        """.format(
-            DarkTheme.INPUT_BG, DarkTheme.TEXT_PRIMARY, DarkTheme.INPUT_BORDER_FOCUS,
-            DarkTheme.INPUT_BORDER_FOCUS, DarkTheme.INPUT_BG, DarkTheme.TEXT_SECONDARY,
-            Colors.WHITE, DarkTheme.INPUT_BORDER_FOCUS
-        ))
-        # Editor konumlandiktan sonra listeyi ac (tek tikta, flash olmadan)
+        """)
+        # Tek tıkta popup açılsın
         QTimer.singleShot(0, editor.showPopup)
         return editor
 
     def setEditorData(self, editor, index):
-        text = index.data(Qt.ItemDataRole.EditRole)
-        if text in self.items:
-            editor.setCurrentText(text)
+        text = index.data(Qt.ItemDataRole.EditRole) or _KOSUL_ITEMS[1]
+        editor.blockSignals(True)
+        editor.setCurrentText(text if text in _KOSUL_ITEMS else _KOSUL_ITEMS[1])
+        editor.blockSignals(False)
 
     def setModelData(self, editor, model, index):
         model.setData(index, editor.currentText(), Qt.ItemDataRole.EditRole)
@@ -122,43 +190,15 @@ class KosulDelegate(QStyledItemDelegate):
     def updateEditorGeometry(self, editor, option, index):
         editor.setGeometry(option.rect)
 
-    def paint(self, painter, option, index):
-        """Badge çizimi: Koşul A → yeşil, Koşul B → mavi."""
-        bg = QColor(29, 117, 254, 60) if option.state & QStyle.StateFlag.State_Selected \
-            else QColor("transparent")
-        painter.fillRect(option.rect, bg)
 
-        text = str(index.data(Qt.ItemDataRole.DisplayRole) or "")
-        if "KOŞULU A" in str(text).upper():
-            badge_bg = QColor(46, 125, 50, 140)
-            border_c = QColor("#66bb6a")
-        else:
-            badge_bg = QColor(21, 101, 192, 140)
-            border_c = QColor("#42a5f5")
-
-        painter.save()
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        rect = QRectF(option.rect)
-        rect.adjust(5, 4, -5, -4)
-        path = QPainterPath()
-        path.addRoundedRect(rect, 4, 4)
-        painter.setBrush(QBrush(badge_bg))
-        painter.setPen(QPen(border_c, 1.5))
-        painter.drawPath(path)
-        painter.setPen(QColor("#ffffff"))
-        painter.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
-        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
-        painter.restore()
-
-
-# ═══════════════════════════════════════════════
-#  DELEGATE: Fiili Çalışma sonuç badge  (Kolon 8)
-# ═══════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════
+#  DELEGATE: Fiili Çalışma saati sonuç badge  (Kolon 8 — read-only)
+# ═══════════════════════════════════════════════════════════════════
 
 class SonucDelegate(QStyledItemDelegate):
-    """Orijinaldeki SonucDelegate'in birebir karşılığı."""
+    """Hesaplanan fiili çalışma saatini renkli badge olarak gösterir."""
     def paint(self, painter, option, index):
-        bg = QColor(29, 117, 254, 60) if option.state & QStyle.StateFlag.State_Selected \
+        bg = QColor(29, 117, 254, 55) if option.state & QStyle.StateFlag.State_Selected \
             else QColor("transparent")
         painter.fillRect(option.rect, bg)
 
@@ -169,23 +209,31 @@ class SonucDelegate(QStyledItemDelegate):
 
         painter.save()
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        rect = QRectF(option.rect)
-        rect.adjust(8, 5, -8, -5)
+        rect = QRectF(option.rect).adjusted(10, 6, -10, -6)
 
         if deger > 0:
-            c_bg, c_border, c_text = QColor(27, 94, 32, 140), QColor("#66bb6a"), QColor("#ffffff")
+            c_bg   = QColor(27, 94, 32, 150)
+            c_bord = QColor("#66bb6a")
+            c_txt  = QColor("#ffffff")
+            label  = f"✓  {deger:.0f} saat"
         else:
-            c_bg, c_border, c_text = QColor(62, 62, 62, 80), QColor("#555"), QColor("#aaaaaa")
+            c_bg   = QColor(62, 62, 62, 70)
+            c_bord = QColor("#444")
+            c_txt  = QColor("#888888")
+            label  = "— saat"
 
         path = QPainterPath()
-        path.addRoundedRect(rect, 4, 4)
+        path.addRoundedRect(rect, 5, 5)
         painter.setBrush(QBrush(c_bg))
-        painter.setPen(QPen(c_border, 1))
+        painter.setPen(QPen(c_bord, 1))
         painter.drawPath(path)
-        painter.setPen(c_text)
+        painter.setPen(c_txt)
         painter.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
-        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, f"{deger:.0f}")
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, label)
         painter.restore()
+
+    def sizeHint(self, option, index):
+        return QSize(option.rect.width(), 38)
 
 
 # ═══════════════════════════════════════════════
@@ -194,10 +242,29 @@ class SonucDelegate(QStyledItemDelegate):
 
 class FHSZYonetimPage(QWidget):
 
+    def _show_context_menu(self, pos):
+        from PySide6.QtWidgets import QMenu, QTableWidgetItem
+        idx = self.tablo.indexAt(pos)
+        if not idx.isValid() or idx.column() != C_KOSUL:
+            return
+        menu = QMenu(self)
+        action_a = menu.addAction("Çalışma Koşulu A")
+        action_b = menu.addAction("Çalışma Koşulu B")
+        action = menu.exec(self.tablo.viewport().mapToGlobal(pos))
+        if action == action_a:
+            self.tablo.setItem(idx.row(), idx.column(), QTableWidgetItem("Çalışma Koşulu A"))
+            self._satir_hesapla(idx.row())
+        elif action == action_b:
+            self.tablo.setItem(idx.row(), idx.column(), QTableWidgetItem("Çalışma Koşulu B"))
+            self._satir_hesapla(idx.row())
+
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(S["page"])
+        self.setProperty("bg-role", "page")
+        self.style().unpolish(self)
+        self.style().polish(self)
         self._db = db
+        self._svc = get_fhsz_service(db) if db else None
         self._all_personel = []
         self._all_izin = []
         self._tatil_listesi_np = []       # ["YYYY-MM-DD", ...] numpy formatı
@@ -217,28 +284,24 @@ class FHSZYonetimPage(QWidget):
 
         # ── ÜST BAR: Dönem Seçimi ──
         filter_frame = QFrame()
-        filter_frame.setStyleSheet(S["filter_panel"])
+        filter_frame.setProperty("bg-role", "panel")
+        filter_frame.style().unpolish(filter_frame)
+        filter_frame.style().polish(filter_frame)
         fp = QHBoxLayout(filter_frame)
         fp.setContentsMargins(12, 8, 12, 8)
         fp.setSpacing(8)
 
-        lbl_t = QLabel("FHSZ Hesaplama ve Duzenleme")
-        lbl_t.setStyleSheet(S.get("section_title") or "")
-        fp.addWidget(lbl_t)
-
-        self._add_sep(fp)
-
         # Dönem Seçimi: Ay · Yıl
         fp.addWidget(self._make_label("Dönem:"))
         self.cmb_ay = QComboBox()
-        self.cmb_ay.setStyleSheet(S["combo"])
+        # self.cmb_ay.setStyleSheet kaldırıldı (global QSS yönetir)
         self.cmb_ay.setFixedWidth(140)
         self.cmb_ay.addItems(AY_ISIMLERI)
         self.cmb_ay.setCurrentIndex(max(0, datetime.now().month - 1))
         fp.addWidget(self.cmb_ay)
         
         self.cmb_yil = QComboBox()
-        self.cmb_yil.setStyleSheet(S["combo"])
+        # self.cmb_yil.setStyleSheet kaldırıldı (global QSS yönetir)
         self.cmb_yil.setFixedWidth(100)
         by = datetime.now().year
         for y in range(by - 5, by + 5):
@@ -258,53 +321,98 @@ class FHSZYonetimPage(QWidget):
         fp.addStretch()
 
         self.btn_hesapla = QPushButton("HESAPLA")
-        self.btn_hesapla.setStyleSheet(S["calc_btn"])
+        self.btn_hesapla.setProperty("style-role", "action")
+        self.btn_hesapla.style().unpolish(self.btn_hesapla)
+        self.btn_hesapla.style().polish(self.btn_hesapla)
         self.btn_hesapla.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_hesapla, "bar_chart", color=DarkTheme.TEXT_PRIMARY, size=14)
         fp.addWidget(self.btn_hesapla)
 
         main.addWidget(filter_frame)
 
+        # -- Bilgi alani: aylik ozet
+        info_frame = QFrame()
+        info_frame.setProperty("bg-role", "panel")
+        info_frame.style().unpolish(info_frame)
+        info_frame.style().polish(info_frame)
+        info_layout = QHBoxLayout(info_frame)
+        info_layout.setContentsMargins(12, 8, 12, 8)
+        info_layout.setSpacing(24)
+
+        self.lbl_aylik_gun = QLabel("—")
+        info_layout.addWidget(self._make_stat_block("Aylık çalışma gün sayısı", self.lbl_aylik_gun))
+
+        self.lbl_aylik_saat = QLabel("—")
+        info_layout.addWidget(self._make_stat_block("Aylık çalışma saati", self.lbl_aylik_saat))
+
+        self.lbl_aylik_tatil = QLabel("—")
+        info_layout.addWidget(self._make_stat_block("Toplam tatil gün sayısı", self.lbl_aylik_tatil))
+
+        self.lbl_aylik_tatil_is_gunu = QLabel("—")
+        info_layout.addWidget(
+            self._make_stat_block("İş gününe denk gelen tatil sayısı", self.lbl_aylik_tatil_is_gunu)
+        )
+
+        info_layout.addStretch()
+        main.addWidget(info_frame)
+
         # ── TABLO (QTableWidget — orijinaldeki gibi) ──
         self.tablo = QTableWidget()
         self.tablo.setColumnCount(len(TABLO_KOLONLARI))
         self.tablo.setHorizontalHeaderLabels(TABLO_KOLONLARI)
         self.tablo.verticalHeader().setVisible(False)
+        self.tablo.verticalHeader().setDefaultSectionSize(40)
         self.tablo.setAlternatingRowColors(True)
         self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.tablo.setStyleSheet(S["table"])
+        # self.tablo.setStyleSheet kaldırıldı (global QSS yönetir)
         self.tablo.setEditTriggers(
             QAbstractItemView.EditTrigger.SelectedClicked
             | QAbstractItemView.EditTrigger.DoubleClicked
         )
 
         h = self.tablo.horizontalHeader()
+        h.setDefaultSectionSize(90)
         h.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         h.setSectionResizeMode(C_KIMLIK, QHeaderView.ResizeMode.ResizeToContents)
         h.setSectionResizeMode(C_KOSUL, QHeaderView.ResizeMode.Fixed)
-        self.tablo.setColumnWidth(C_KOSUL, 170)
+        self.tablo.setColumnWidth(C_KOSUL, 180)
+        h.setSectionResizeMode(C_GUN,  QHeaderView.ResizeMode.Fixed)
+        self.tablo.setColumnWidth(C_GUN, 160)
+        h.setSectionResizeMode(C_IZIN, QHeaderView.ResizeMode.Fixed)
+        self.tablo.setColumnWidth(C_IZIN, 110)
         h.setSectionResizeMode(C_SAAT, QHeaderView.ResizeMode.Fixed)
-        self.tablo.setColumnWidth(C_SAAT, 130)
+        self.tablo.setColumnWidth(C_SAAT, 150)
 
         # AitYıl + Dönem gizli
         self.tablo.setColumnHidden(C_YIL, True)
         self.tablo.setColumnHidden(C_DONEM, True)
 
         # Delegate'ler
-        self.tablo.setItemDelegateForColumn(C_KOSUL, KosulDelegate(self.tablo))
-        self.tablo.setItemDelegateForColumn(C_SAAT, SonucDelegate(self.tablo))
+        self._kosul_del = KosulDelegate(self.tablo)
+        self._saat_del  = SonucDelegate(self.tablo)
+        self.tablo.setItemDelegateForColumn(C_KOSUL, self._kosul_del)
+        # Sağ tık context menu: Çalışma Koşulu A/B
+        self.tablo.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.tablo.customContextMenuRequested.connect(self._show_context_menu)
 
+        self.tablo.setItemDelegateForColumn(C_SAAT,  self._saat_del)
+
+        # Tabloyu layout'a ekle (görünmesi için şart)
         main.addWidget(self.tablo, 1)
 
         # ── ALT BAR ──
         bot_frame = QFrame()
-        bot_frame.setStyleSheet(S["filter_panel"])
+        bot_frame.setProperty("bg-role", "panel")
+        bot_frame.style().unpolish(bot_frame)
+        bot_frame.style().polish(bot_frame)
         bf = QHBoxLayout(bot_frame)
         bf.setContentsMargins(12, 8, 12, 8)
         bf.setSpacing(12)
 
         self.lbl_durum = QLabel("Hazır")
-        self.lbl_durum.setStyleSheet(S["footer_label"])
+        self.lbl_durum.setProperty("color-role", "muted")
+        self.lbl_durum.style().unpolish(self.lbl_durum)
+        self.lbl_durum.style().polish(self.lbl_durum)
         bf.addWidget(self.lbl_durum)
 
         bf.addStretch()
@@ -326,9 +434,10 @@ class FHSZYonetimPage(QWidget):
         """.format(DarkTheme.TEXT_MUTED))
         bf.addWidget(self.progress)
 
-
         self.btn_kaydet = QPushButton("KAYDET / GUNCELLE")
-        self.btn_kaydet.setStyleSheet(S["save_btn"])
+        self.btn_kaydet.setProperty("style-role", "action")
+        self.btn_kaydet.style().unpolish(self.btn_kaydet)
+        self.btn_kaydet.style().polish(self.btn_kaydet)
         self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
         bf.addWidget(self.btn_kaydet)
@@ -340,7 +449,9 @@ class FHSZYonetimPage(QWidget):
 
     def _make_label(self, text):
         lbl = QLabel(text)
-        lbl.setStyleSheet(S["label"])
+        lbl.setProperty("color-role", "muted")
+        lbl.style().unpolish(lbl)
+        lbl.style().polish(lbl)
         return lbl
 
     def _add_sep(self, layout):
@@ -351,6 +462,24 @@ class FHSZYonetimPage(QWidget):
         sep.style().unpolish(sep)
         sep.style().polish(sep)
         layout.addWidget(sep)
+
+    def _make_stat_block(self, title: str, value_label: QLabel) -> QWidget:
+        block = QFrame()
+        bl = QVBoxLayout(block)
+        bl.setContentsMargins(0, 0, 0, 0)
+        bl.setSpacing(2)
+
+        lbl_title = QLabel(title)
+        lbl_title.setProperty("style-role", "stat-label")
+        lbl_title.style().unpolish(lbl_title)
+        lbl_title.style().polish(lbl_title)
+        bl.addWidget(lbl_title)
+
+        value_label.setProperty("style-role", "stat-value")
+        value_label.style().unpolish(value_label)
+        value_label.style().polish(value_label)
+        bl.addWidget(value_label)
+        return block
 
     # ═══════════════════════════════════════════
     #  SİNYALLER
@@ -384,6 +513,39 @@ class FHSZYonetimPage(QWidget):
             self.lbl_donem.setText(
                 f"Dönem: {donem_bas.strftime('%d.%m.%Y')} — {donem_bit.strftime('%d.%m.%Y')}"
             )
+        self._update_aylik_bilgi()
+
+    def _update_aylik_bilgi(self):
+        donem_bas, donem_bit = self._get_donem_aralik()
+        if not donem_bas or not donem_bit:
+            self.lbl_aylik_gun.setText("—")
+            self.lbl_aylik_saat.setText("—")
+            self.lbl_aylik_tatil.setText("—")
+            self.lbl_aylik_tatil_is_gunu.setText("—")
+            return
+
+        try:
+            is_gunu = is_gunu_hesapla(donem_bas, donem_bit, self._tatil_listesi_np)
+        except Exception:
+            is_gunu = 0
+
+        tatil_sayisi = 0
+        tatil_is_gunu = 0
+        if self._tatil_listesi_np:
+            for d in self._tatil_listesi_np:
+                try:
+                    dt = datetime.strptime(d, "%Y-%m-%d")
+                except Exception:
+                    continue
+                if donem_bas <= dt <= donem_bit:
+                    tatil_sayisi += 1
+                    if dt.weekday() < 5:
+                        tatil_is_gunu += 1
+
+        self.lbl_aylik_gun.setText(str(is_gunu))
+        self.lbl_aylik_saat.setText(str(is_gunu * KOSUL_A_SAAT))
+        self.lbl_aylik_tatil.setText(str(tatil_sayisi))
+        self.lbl_aylik_tatil_is_gunu.setText(str(tatil_is_gunu))
 
     # ═══════════════════════════════════════════
     #  VERİ YÜKLEME  (sayfa açılışında)
@@ -398,18 +560,18 @@ class FHSZYonetimPage(QWidget):
         self.progress.setVisible(True)
 
         try:
-            from core.di import get_fhsz_service as _fhsz_factory
-            _svc4 = _fhsz_factory(self._db)
+            if not self._svc:
+                return
 
             # 1. Personeller
-            self._all_personel = _svc4._r.get("Personel").get_all()
+            self._all_personel = self._svc._r.get("Personel").get_all()
 
             # 2. İzinler
-            self._all_izin = _svc4.get_izin_listesi()
+            self._all_izin = self._svc.get_izin_listesi()
 
             # 3. Tatiller → numpy busday_count formatı
             try:
-                tatiller = _svc4.get_tatil_gunleri()
+                tatiller = self._svc.get_tatil_gunleri()
                 self._tatil_listesi_np = []
                 for r in tatiller:
                     d = parse_date(r.get("Tarih", ""))
@@ -420,7 +582,7 @@ class FHSZYonetimPage(QWidget):
 
             # 4. Sabitler → Kod="Gorev_Yeri"
             #    MenuEleman = birim adı | Aciklama = "Çalışma Koşulu A / B"
-            sabitler_raw = _svc4._r.get("Sabitler").get_all()
+            sabitler_raw = self._svc._r.get("Sabitler").get_all()
             sabitler = sabitler_raw
 
             self._birim_kosul_map = {}
@@ -436,7 +598,7 @@ class FHSZYonetimPage(QWidget):
                 if not birim:
                     continue
 
-                # 🔴 KRİTİK DÜZELTME BURASI
+                # KRİTİK DÜZELTME NOKTASI
                 if "KOŞULU A" in aciklama:
                     self._birim_kosul_map[birim] = "A"
                 elif "KOŞULU B" in aciklama:
@@ -455,6 +617,7 @@ class FHSZYonetimPage(QWidget):
                 f"{len(self._all_izin)} izin, {len(self._tatil_listesi_np)} tatil, "
                 f"{len(self._birim_kosul_map)} birim koşul"
             )
+            self._update_aylik_bilgi()
 
 
         except Exception as e:
@@ -472,6 +635,8 @@ class FHSZYonetimPage(QWidget):
         item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
         self.tablo.setItem(row, col, item)
 
+
+
     def _item_text(self, row, col, default: str = "") -> str:
         item = self.tablo.item(row, col)
         return item.text() if item else default
@@ -479,7 +644,7 @@ class FHSZYonetimPage(QWidget):
     def _satir_hesapla(self, row):
         """
         Orijinaldeki _satir_hesapla — Koşul değişince puanı yeniden hesapla.
-        Koşul A → (is_gunu - izin) × 7
+        Koşul A → (iş_günü - izin) × 7
         Koşul B → 0
         """
         try:
@@ -500,8 +665,8 @@ class FHSZYonetimPage(QWidget):
             pass
 
     def _hucre_degisti(self, item):
-        """Koşul kolonu değiştiğinde puanı yeniden hesapla."""
-        if item.column() == C_KOSUL:
+        """Koşul / Gün / İzin değiştiğinde fiili saati yeniden hesapla."""
+        if item.column() in (C_KOSUL, C_GUN, C_IZIN):
             self._satir_hesapla(item.row())
 
     # ═══════════════════════════════════════════
@@ -536,6 +701,30 @@ class FHSZYonetimPage(QWidget):
 
         return toplam
 
+    def _calc_personel_is_gunu(self, kimlik, donem_bas, donem_bit):
+        """Personel için dönem iş günü (gross) hesabı."""
+        try:
+            kimlik_str = str(kimlik).strip()
+            kisi_bit = donem_bit
+            durum = ""
+            ayrilis = None
+
+            for p in self._all_personel:
+                if str(p.get("KimlikNo", "")).strip() == kimlik_str:
+                    durum = str(p.get("Durum", "Aktif")).strip()
+                    ayrilis = _parse_date_as_datetime(p.get("AyrilisTarihi", ""))
+                    break
+
+            if durum == "Pasif" and ayrilis:
+                if ayrilis < donem_bas:
+                    return 0
+                if ayrilis < donem_bit:
+                    kisi_bit = ayrilis
+
+            return is_gunu_hesapla(donem_bas, kisi_bit, self._tatil_listesi_np)
+        except Exception:
+            return 0
+
     # ═══════════════════════════════════════════
     #  ⚡ LİSTELE VE HESAPLA
     # ═══════════════════════════════════════════
@@ -553,7 +742,7 @@ class FHSZYonetimPage(QWidget):
 
         # 26.04.2022 eşik kontrolü
         if donem_bit < FHSZ_ESIK:
-            QMessageBox.warning(self, "Uyarı", "26.04.2022 öncesi hesaplanamaz.")
+            MesajKutusu.uyari(self, "26.04.2022 öncesi hesaplanamaz.")
             return
 
         self.tablo.setRowCount(0)
@@ -565,11 +754,11 @@ class FHSZYonetimPage(QWidget):
         ay_str = self.cmb_ay.currentText()
 
         try:
-            from core.di import get_fhsz_service as _fhsz_factory
-            _svc4 = _fhsz_factory(self._db)
+            if not self._svc:
+                return
 
             # Mevcut kayıtları kontrol et
-            tum_puantaj = _svc4._r.get("FHSZ_Puantaj").get_all()
+            tum_puantaj = self._svc._r.get("FHSZ_Puantaj").get_all()
             mevcut = [
                 r for r in tum_puantaj
                 if str(r.get("AitYil", "")).strip() == yil_str
@@ -583,7 +772,7 @@ class FHSZYonetimPage(QWidget):
 
         except Exception as e:
             logger.error(f"FHSZ kontrol hatası: {e}")
-            QMessageBox.critical(self, "Hata", str(e))
+            MesajKutusu.hata(self, str(e))
 
         self.progress.setVisible(False)
         self.btn_hesapla.setEnabled(True)
@@ -598,6 +787,7 @@ class FHSZYonetimPage(QWidget):
         self.tablo.blockSignals(True)
         self.tablo.setRowCount(0)
         mevcut_tcler = []
+        donem_bas, donem_bit = self._get_donem_aralik()
 
         for row_data in mevcut_rows:
             row_idx = self.tablo.rowCount()
@@ -616,8 +806,12 @@ class FHSZYonetimPage(QWidget):
 
             self._set_item(row_idx, C_YIL, self.cmb_yil.currentText())
             self._set_item(row_idx, C_DONEM, self.cmb_ay.currentText())
-            self._set_item(row_idx, C_GUN, str(row_data.get("AylikGun", "0")))
-            self._set_item(row_idx, C_IZIN, str(row_data.get("KullanilanIzin", "0")))
+            izin_gunu = int(str(row_data.get("KullanilanIzin", "0")))
+            gross_gun = 0
+            if donem_bas and donem_bit:
+                gross_gun = self._calc_personel_is_gunu(kimlik, donem_bas, donem_bit)
+            self._set_item(row_idx, C_GUN, str(gross_gun))
+            self._set_item(row_idx, C_IZIN, str(izin_gunu))
             self._set_item(row_idx, C_SAAT, str(row_data.get("FiiliCalismaSaat", "0")))
 
         # ── EKSİK PERSONEL SENKRONİZASYONU ──
@@ -633,10 +827,7 @@ class FHSZYonetimPage(QWidget):
             )
 
             if yeni_sayi > 0:
-                QMessageBox.information(
-                    self, "Bilgi",
-                    f"Listede olmayan {yeni_sayi} yeni personel eklendi."
-                )
+                MesajKutusu.bilgi(self, f"Listede olmayan {yeni_sayi} yeni personel eklendi.")
         except Exception:
             pass
 
@@ -713,10 +904,9 @@ class FHSZYonetimPage(QWidget):
 
                 # İş günü (numpy busday_count)
                 ozel_is_gunu = is_gunu_hesapla(hesap_bas, kisi_bit, self._tatil_listesi_np)
-                self._set_item(row_idx, C_GUN, str(ozel_is_gunu))
-
                 # İzin kesişim
                 izin_gunu = self._kesisim_izin_gunu(kimlik, hesap_bas, kisi_bit)
+                self._set_item(row_idx, C_GUN, str(ozel_is_gunu))
                 self._set_item(row_idx, C_IZIN, str(izin_gunu))
 
                 # Puan hesapla
@@ -724,7 +914,7 @@ class FHSZYonetimPage(QWidget):
 
         except Exception as e:
             logger.error(f"FHSZ sıfırdan hesaplama hatası: {e}")
-            QMessageBox.critical(self, "Hata", str(e))
+            MesajKutusu.hata(self, str(e))
 
         self.tablo.blockSignals(False)
 
@@ -785,9 +975,8 @@ class FHSZYonetimPage(QWidget):
             self._set_item(row_idx, C_DONEM, self.cmb_ay.currentText())
 
             ozel_is_gunu = is_gunu_hesapla(hesap_bas, kisi_bit, self._tatil_listesi_np)
-            self._set_item(row_idx, C_GUN, str(ozel_is_gunu))
-
             izin_gunu = self._kesisim_izin_gunu(kimlik, hesap_bas, kisi_bit)
+            self._set_item(row_idx, C_GUN, str(ozel_is_gunu))
             self._set_item(row_idx, C_IZIN, str(izin_gunu))
 
             self._satir_hesapla(row_idx)
@@ -820,9 +1009,9 @@ class FHSZYonetimPage(QWidget):
         ay_str = self.cmb_ay.currentText()
 
         try:
-            from core.di import get_fhsz_service as _fhsz_factory
-            _svc3 = _fhsz_factory(self._db)
-            repo = _svc3._r.get("FHSZ_Puantaj")
+            if not self._svc:
+                return
+            repo = self._svc._r.get("FHSZ_Puantaj")
 
             # Mevcut kayıt kontrol
             tum = repo.get_all()
@@ -834,15 +1023,14 @@ class FHSZYonetimPage(QWidget):
 
             # Onay
             if mevcut_sayisi > 0:
-                cevap = QMessageBox.question(
-                    self, "Veri Güncelleme",
+                cevap = MesajKutusu.soru(
+                    self,
                     f"Bu dönem ({ay_str} {yil_str}) için {mevcut_sayisi} kayıt zaten var.\n\n"
                     f"'Evet' derseniz:\n"
                     f"1. Mevcut kayıtlar silinecek.\n"
-                    f"2. Tablodaki GÜNCEL veriler kaydedilecek.",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
+                    f"2. Tablodaki GÜNCEL veriler kaydedilecek."
                 )
-                if cevap != QMessageBox.StandardButton.Yes:
+                if not cevap:
                     self.lbl_durum.setText("İptal edildi.")
                     return
 
@@ -892,14 +1080,14 @@ class FHSZYonetimPage(QWidget):
             self.lbl_durum.setText(f"{kayit_sayisi} kayit kaydedildi  -  {ay_str} {yil_str}")
 
             logger.info(f"FHSZ kaydedildi: {ay_str} {yil_str}, {kayit_sayisi} kayıt")
-            QMessageBox.information(self, "Başarılı", "Kayıt işlemi tamamlandı.")
+            MesajKutusu.bilgi(self, "Kayıt işlemi tamamlandı.")
 
         except Exception as e:
             self.progress.setVisible(False)
             self.btn_kaydet.setEnabled(True)
             self.lbl_durum.setText(f"Hata: {e}")
             logger.error(f"FHSZ kayıt hatası: {e}")
-            QMessageBox.critical(self, "Hata", str(e))
+            MesajKutusu.hata(self, str(e))
 
     # ═══════════════════════════════════════════
     #  ŞUA BAKİYESİ GÜNCELLE  (Izin_Bilgi → SuaCariYilKazanim)
@@ -913,8 +1101,8 @@ class FHSZYonetimPage(QWidget):
         3. sua_hak_edis_hesapla → İzin_Bilgi.SuaCariYilKazanim güncelle
         """
         try:
-            from core.di import get_fhsz_service as _fhsz_factory
-            _svc4 = _fhsz_factory(self._db)
+            if not self._svc:
+                return
 
             tum = repo_puantaj.get_all()
             personel_toplam = {}
@@ -928,7 +1116,7 @@ class FHSZYonetimPage(QWidget):
                     saat = 0
                 personel_toplam[tc] = personel_toplam.get(tc, 0) + saat
 
-            izin_bilgi = _svc4._r.get("Izin_Bilgi")
+            izin_bilgi = self._svc._r.get("Izin_Bilgi")
             for tc, toplam_saat in personel_toplam.items():
                 yeni_hak = sua_hak_edis_hesapla(toplam_saat)
                 try:
@@ -947,5 +1135,3 @@ class FHSZYonetimPage(QWidget):
 
         except Exception as e:
             logger.error(f"Şua bakiye güncelleme hatası: {e}")
-
-

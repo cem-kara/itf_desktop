@@ -103,10 +103,10 @@ class PersonelOverviewPanel(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
+        scroll.setProperty("bg-role", "plain")
 
         content = QWidget()
-        content.setStyleSheet("background: transparent;")
+        content.setProperty("bg-role", "plain")
         content_vbox = QVBoxLayout(content)
         content_vbox.setSpacing(16)
         content_vbox.setContentsMargins(16, 16, 16, 16)
@@ -139,9 +139,7 @@ class PersonelOverviewPanel(QWidget):
         self.lbl_resim.setFixedSize(160, 180)
         self.lbl_resim.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_resim.setProperty("bg-role", "panel")
-        self.lbl_resim.setStyleSheet(
-            "border: 2px solid rgba(61,142,245,0.25); border-radius: 8px;"
-        )
+        self.lbl_resim.setProperty("style-role", "profile-photo")  # QSS'de tanımlı olmalı
         pw_l.addWidget(self.lbl_resim, alignment=Qt.AlignmentFlag.AlignCenter)
         left_l.addWidget(photo_wrap)
 

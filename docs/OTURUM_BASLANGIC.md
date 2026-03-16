@@ -1,6 +1,6 @@
 # REPYS — Oturum Başlangıç Dosyası
 > Bu dosyayı her yeni Claude oturumunda GELISTIRICI_REHBERI_v2.md ile birlikte ver.
-> Son güncelleme: 2026-03-05 (REPYS.zip analizi ile doğrulandı)
+> Son güncelleme: 2026-03-12
 
 ---
 
@@ -32,6 +32,8 @@
 | — | migrations.py squash — CURRENT_VERSION=1 | ✅ KOD ONAYLANDI |
 | — | MesajKutusu (native QMessageBox yerine) | ✅ KOD ONAYLANDI |
 | — | HakkindaDialog + LGPL bildirimi | ✅ KOD ONAYLANDI |
+| — | personel_ekle.py — Belgeler sekmeli yapı (QTabWidget) | ✅ TAMAMLANDI |
+| — | personel_ekle.py — btn_kaydet "Evet" dalı bug fix | ✅ TAMAMLANDI |
 
 ---
 
@@ -358,7 +360,9 @@ DOKUNMA: [değişmeyecek kısımlar]
 2026-03-05: TODO-6b neredeyse bitti — 1 kaldı (teknik_hizmetler.py)
 2026-03-05: migrations.py squash — CURRENT_VERSION=1
 2026-03-05: MesajKutusu + HakkindaDialog eklendi
-[YENİ SATIRLARI BURAYA EKLE]
+2026-03-12: personel_ekle.py — Belgeler sekmeli yapı: Tab1=Kişisel Bilgiler / Tab2=Belgeler (kayıt öncesi kilitli, sonrası otomatik açılır ve geçer; edit modunda baştan açık)
+2026-03-12: personel_ekle.py — btn_kaydet bug fix: "Evet" dalında setEnabled(True) eksikti
+2026-03-12: personel_ekle.py — QTabWidget import eksikti, düzeltildi
 ```
 
 ---

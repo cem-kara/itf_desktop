@@ -108,6 +108,39 @@ TABLES = {
         "date_fields": ["BaslangicTarihi"],
     },
 
+    "Cihaz_Teknik": {
+        "pk": "Cihazid",
+        "columns": [
+            "Cihazid",
+            "BirincilUrunNumarasi", "KurumUnvan", "MarkaAdi", "EtiketAdi",
+            "VersiyonModel", "UrunTipi", "Sinif", "KatalogNo",
+            "GmdnTerimKod", "GmdnTerimTurkceAd", "TemelUdiDi",
+            "UrunTanimi", "Aciklama",
+            "KurumGorunenAd", "KurumNo", "KurumTelefon", "KurumEposta",
+            "IthalImalBilgisi", "MenseiUlkeSet", "IthalEdilenUlkeSet",
+            "SutEslesmesiSet", "Durum", "CihazKayitTipi",
+            "UtsBaslangicTarihi", "KontroleGonderildigiTarih",
+            "KalibrasyonaTabiMi", "KalibrasyonPeriyodu",
+            "BakimaTabiMi", "BakimPeriyodu",
+            "MrgUyumlu", "IyonizeRadyasyonIcerir",
+            "TekHastayaKullanilabilir", "SinirliKullanimSayisiVar",
+            "SinirliKullanimSayisi", "BaskaImalatciyaUrettirildiMi",
+            "GmdnTerimTurkceAciklama",
+        ],
+        "date_fields": ["UtsBaslangicTarihi", "KontroleGonderildigiTarih"],
+        "sync": False,
+    },
+
+    "Cihaz_Teknik_Belge": {
+        "pk": ["Cihazid", "BelgeTuru", "Belge"],
+        "columns": [
+            "Cihazid", "BelgeTuru", "Belge",
+            "BelgeAdi", "YuklenmeTarihi", "DrivePath", "LocalPath",
+        ],
+        "date_fields": ["YuklenmeTarihi"],
+        "sync": False,
+    },
+
     "Ariza_Islem": {
         "pk": "Islemid",
         "columns": [                          # ← "colums" → "columns"
@@ -209,9 +242,53 @@ TABLES = {
             "DermatolojiMuayeneTarihi", "DahiliyeMuayeneTarihi",
             "GozMuayeneTarihi", "GoruntulemeMuayeneTarihi"
         ],
-    }
+    },
+    
+"Dis_Alan_Calisma": {
+    # Personel tablosundan BAĞIMSIZ — dış alan personeli sisteme kayıtlı değil.
+    # PK: TCKimlik + DonemAy + DonemYil + TutanakNo
+    # TCKimlik boş gelebilir (opsiyonel), o zaman AdSoyad + TutanakNo benzersizlik sağlar.
+    "pk": ["TCKimlik", "DonemAy", "DonemYil", "TutanakNo"],
+    "columns": [
+        "TCKimlik",          # Opsiyonel — 11 haneli TC (TEXT)
+        "AdSoyad",           # Zorunlu
+        "DonemAy",           # 1–12
+        "DonemYil",          # 2024, 2025 …
+        "AnaBilimDali",      # Zorunlu"
+        "Birim",             # Zorunlu
+        "IslemTipi",         # Alan adı
+        "Katsayi",           # Kayıt anındaki katsayı (REAL)
+        "OrtSureDk",         # Ortalama işlem süresi dk
+        "VakaSayisi",        # INTEGER > 0
+        "HesaplananSaat",    # VakaSayisi * Katsayi (REAL)
+        "ToplamSureDk",      # VakaSayisi * OrtSureDk
+        "TutanakNo",         # Zorunlu
+        "TutanakTarihi",     # Import tarihi (YYYY-MM-DD)
+        "KayitTarihi",       # Otomatik
+        "KaydedenKullanici",
+    ],
+    "date_fields": ["TutanakTarihi", "KayitTarihi"],
+    "sync": False,
+},
+ 
+"Dis_Alan_Izin_Ozet": {
+    "pk": ["TCKimlik", "AdSoyad", "DonemAy", "DonemYil"],
+    "columns": [
+        "TCKimlik",
+        "AdSoyad",
+        "DonemAy",
+        "DonemYil",
+        "ToplamSaat",
+        "IzinGunHakki",
+        "HesaplamaTarihi",
+        "RksOnay",
+        "Notlar",
+    ],
+    "date_fields": ["HesaplamaTarihi"],
+    "sync": False,
+},
 
-    ,"Dozimetre_Olcum": {
+    "Dozimetre_Olcum": {
         "pk": "KayitNo",
         "columns": [
             "KayitNo", "SiraNo", "RaporNo",
@@ -223,6 +300,29 @@ TABLES = {
         ],
         "date_fields": ["OlusturmaTarihi"],
         "sync": False
-    }
+    },
+
+
+    "Dis_Alan_Katsayi_Protokol": {
+        "pk": ["AnaBilimDali", "Birim", "GecerlilikBaslangic"],
+        "columns": [
+            "AnaBilimDali",           # TEXT, PK
+            "Birim",                  # TEXT, PK
+            "GecerlilikBaslangic",    # TEXT, PK
+            "Katsayi",                # REAL
+            "OrtSureDk",              # INTEGER
+            "AlanTipAciklama",        # TEXT
+            "AciklamaFormul",         # TEXT
+            "ProtokolRef",            # TEXT
+            "GecerlilikBitis",        # TEXT, NULL olabilir
+            "Aktif",                  # INTEGER, 1/0
+            "KayitTarihi",            # TEXT, otomatik
+            "KaydedenKullanici"       # TEXT
+        ],
+        "date_fields": ["GecerlilikBaslangic", "GecerlilikBitis", "KayitTarihi"],
+        "sync":False
+    },
+
 
 }
+

@@ -7,6 +7,7 @@ Hardcoded renk yok.
 """
 import os
 import threading
+from datetime import date, datetime
 import asyncio
 from pathlib import Path
 from typing import Optional, cast, Any
@@ -142,6 +143,10 @@ class CihazMerkezPage(QWidget):
         self.lbl_durum = QLabel("")
         self.lbl_durum.setFixedHeight(22)
         top_lay.addWidget(self.lbl_durum)
+
+        self.lbl_kal_uyari = QLabel("")
+        self.lbl_kal_uyari.setVisible(False)
+        top_lay.addWidget(self.lbl_kal_uyari)
 
         top_lay.addStretch()
 
@@ -315,6 +320,11 @@ class CihazMerkezPage(QWidget):
             elif code == "ARIZA":
                 # Arıza kayıtları paneli
                 w = CihazArizaPanel(self.db, cihaz_id=self.cihaz_id)
+                # Arıza → bakım zinciri: arıza formundan bakım sekmesine geç
+                if hasattr(w, "ariza_form") and hasattr(w.ariza_form, "bakima_gec"):
+                    w.ariza_form.bakima_gec.connect(
+                        lambda _: self._switch_tab("BAKIM")
+                    )
             else:
                 raise ValueError(f"Bilinmeyen sekme: {code}")
 
@@ -339,7 +349,7 @@ class CihazMerkezPage(QWidget):
             QMessageBox.warning(self, "Hata", "Lütfen ürün numarası girin.")
             return
         
-        panel = self._modules.get("TEKNIK")
+        panel = self._modules.get("ÜTS BİLGİLERİ")
         if not panel:
             return
         
@@ -372,7 +382,7 @@ class CihazMerkezPage(QWidget):
 
     def _on_search_complete(self, data: dict, success: bool, message: str):
         """ÜTS sorgusunun tamamlandığını işle (main thread)."""
-        panel = self._modules.get("TEKNIK")
+        panel = self._modules.get("ÜTS BİLGİLERİ")
         if not panel:
             return
         

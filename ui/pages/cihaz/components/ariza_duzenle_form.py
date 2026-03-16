@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
 
 from core.logger import logger
 
-from ui.styles.components import STYLES as S
 
 
 class ArizaDuzenleForm(QWidget):
@@ -31,7 +30,9 @@ class ArizaDuzenleForm(QWidget):
         root.setSpacing(10)
 
         form = QGroupBox("Arıza Düzenleme")
-        form.setStyleSheet(S["group"])
+        form.setProperty("style-role", "section")
+        form.style().unpolish(form)
+        form.style().polish(form)
         grid = QGridLayout(form)
         grid.setContentsMargins(12, 12, 12, 12)
         grid.setHorizontalSpacing(16)
@@ -41,14 +42,16 @@ class ArizaDuzenleForm(QWidget):
 
         grid.addWidget(self._lbl("Arıza ID"), row, 0)
         self.lbl_arizaid = QLabel(self._ariza_id)
-        self.lbl_arizaid.setStyleSheet(S["label"] + "font-weight:600;")
+        self.lbl_arizaid.setStyleSheet("font-weight:600;")
         grid.addWidget(self.lbl_arizaid, row, 1)
         row += 1
 
         grid.addWidget(self._lbl("Arıza Tipi *"), row, 0)
         self.cmb_ariza_tipi = QComboBox()
         self.cmb_ariza_tipi.setEditable(True)
-        self.cmb_ariza_tipi.setStyleSheet(S["combo"])
+        self.cmb_ariza_tipi.setProperty("bg-role", "input")
+        self.cmb_ariza_tipi.style().unpolish(self.cmb_ariza_tipi)
+        self.cmb_ariza_tipi.style().polish(self.cmb_ariza_tipi)
         self.cmb_ariza_tipi.addItems([
             "Elektrik Arızası", "Mekanik Arızası", "Yazılım Arızası",
             "Kalibrasyonu Yapılması Gerek", "Diğer",
@@ -58,27 +61,33 @@ class ArizaDuzenleForm(QWidget):
 
         grid.addWidget(self._lbl("Öncelik *"), row, 0)
         self.cmb_oncelik = QComboBox()
-        self.cmb_oncelik.setStyleSheet(S["combo"])
+        self.cmb_oncelik.setProperty("bg-role", "input")
+        self.cmb_oncelik.style().unpolish(self.cmb_oncelik)
+        self.cmb_oncelik.style().polish(self.cmb_oncelik)
         self.cmb_oncelik.addItems(["Düşük", "Orta", "Yüksek", "Kritik"])
         grid.addWidget(self.cmb_oncelik, row, 1)
         row += 1
 
         grid.addWidget(self._lbl("Başlık *"), row, 0)
         self.txt_baslik = QLineEdit()
-        self.txt_baslik.setStyleSheet(S["input"])
+        self.txt_baslik.setProperty("bg-role", "input")
+        self.txt_baslik.style().unpolish(self.txt_baslik)
+        self.txt_baslik.style().polish(self.txt_baslik)
         grid.addWidget(self.txt_baslik, row, 1)
         row += 1
 
         grid.addWidget(self._lbl("Açıklama"), row, 0)
         self.txt_aciklama = QTextEdit()
-        self.txt_aciklama.setStyleSheet(S["input_text"])
+        # tema otomatik — self.txt_aciklama.setStyleSheet(S["input_text"]) kaldırıldı
         self.txt_aciklama.setFixedHeight(100)
         grid.addWidget(self.txt_aciklama, row, 1)
         row += 1
 
         grid.addWidget(self._lbl("Durum"), row, 0)
         self.cmb_durum = QComboBox()
-        self.cmb_durum.setStyleSheet(S["combo"])
+        self.cmb_durum.setProperty("bg-role", "input")
+        self.cmb_durum.style().unpolish(self.cmb_durum)
+        self.cmb_durum.style().polish(self.cmb_durum)
         self.cmb_durum.addItems(["Açık", "Devam Ediyor", "Kapalı", "Hatalı Giriş"])
         grid.addWidget(self.cmb_durum, row, 1)
 
@@ -101,7 +110,9 @@ class ArizaDuzenleForm(QWidget):
 
     def _lbl(self, text: str) -> QLabel:
         lbl = QLabel(text)
-        lbl.setStyleSheet(S["label"])
+        lbl.setProperty("color-role", "secondary")
+        lbl.style().unpolish(lbl)
+        lbl.style().polish(lbl)
         return lbl
 
     def _load_form(self):

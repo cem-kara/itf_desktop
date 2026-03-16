@@ -18,6 +18,7 @@ from core.logger import logger
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
+from ui.styles.icons import Icons
 
 PREVIEW_COLS = [
     ("SiraNo",         "No",         48),
@@ -168,7 +169,7 @@ class _PdfLoader(QThread):
                     r["AdSoyad"]        = str(p["AdSoyad"]).strip()
                     r["TCKimlikNo"]     = str(p["KimlikNo"]).strip()
                     r["_eslesti"]       = True
-                    r["_eslesti_label"] = "✓ Eşleşti"
+                    r["_eslesti_label"] = "[icon:check] Eşleşti"
                     eslesen += 1
                 else:
                     r["PersonelID"]     = ""
@@ -392,8 +393,10 @@ class DozimetreImportPage(QWidget):
         self._rows   = rows
         self._update_info_card(eslesen, eslesmez)
         self._model.set_data(rows)
+        icon = Icons.pixmap("check_circle", size=16, color=DarkTheme.STATUS_SUCCESS)
+        self.lbl_status.setPixmap(icon)
         self.lbl_status.setText(
-            f"✅  {len(rows)} satır okundu — {eslesen} personel eşleşti, {eslesmez} eşleşmedi.")
+            f" {len(rows)} satır okundu — {eslesen} personel eşleşti, {eslesmez} eşleşmedi.")
         self.lbl_status.setStyleSheet(f"color:{DarkTheme.STATUS_SUCCESS};font-size:12px;")
         if rows: self.btn_kaydet.setEnabled(True)
 
@@ -401,7 +404,9 @@ class DozimetreImportPage(QWidget):
         self.progress.hide()
         self.btn_sec.setEnabled(True)
         logger.error(f"Dozimetre PDF okuma hatası: {msg}")
-        self.lbl_status.setText(f"❌  Okuma hatası: {msg}")
+        icon = Icons.pixmap("x_circle", size=16, color=DarkTheme.STATUS_ERROR)
+        self.lbl_status.setPixmap(icon)
+        self.lbl_status.setText(f" Okuma hatası: {msg}")
         self.lbl_status.setStyleSheet(f"color:{DarkTheme.STATUS_ERROR};font-size:12px;")
 
     def _save(self):
@@ -482,7 +487,9 @@ class DozimetreImportPage(QWidget):
         self.btn_sec.setEnabled(True); self.btn_temizle.setEnabled(True)
         self.btn_kaydet.setEnabled(True)
         logger.error(f"Dozimetre kaydetme hatası: {msg}")
-        self.lbl_status.setText(f"❌  Kaydetme hatası: {msg}")
+        icon = Icons.pixmap("x_circle", size=16, color=DarkTheme.STATUS_ERROR)
+        self.lbl_status.setPixmap(icon)
+        self.lbl_status.setText(f" Kaydetme hatası: {msg}")
         self.lbl_status.setStyleSheet(f"color:{DarkTheme.STATUS_ERROR};font-size:12px;")
         QMessageBox.critical(self,"Hata",f"Kayıt sırasında hata oluştu:\n{msg}")
 
