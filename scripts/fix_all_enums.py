@@ -10,10 +10,10 @@ Bu script projedeki tüm .py dosyalarını tarar ve eski PySide6 enum kullanıml
 modern API formatına çevirir.
 
 Örnek dönüşümler:
-    Qt.AlignCenter          -> Qt.AlignmentFlag.AlignCenter
-    Qt.DisplayRole          -> Qt.ItemDataRole.DisplayRole
-    QPainter.Antialiasing   -> QPainter.RenderHint.Antialiasing
-    QFont.Bold              -> QFont.Weight.Bold
+    Qt.AlignmentFlag.AlignCenter          -> Qt.AlignmentFlag.AlignCenter
+    Qt.ItemDataRole.DisplayRole          -> Qt.ItemDataRole.DisplayRole
+    QPainter.RenderHint.Antialiasing   -> QPainter.RenderHint.Antialiasing
+    QFont.Weight.Bold              -> QFont.Weight.Bold
     vb.
 """
 
