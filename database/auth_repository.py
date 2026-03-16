@@ -17,6 +17,10 @@ class AuthRepository:
     def __init__(self, sqlite_manager) -> None:
         self._db = sqlite_manager
 
+    def prune_auth_audit(self, retention_days: int) -> int:
+        """AuthAudit tablosunda belirtilen günden eski kayıtları siler."""
+        return self._db.prune_auth_audit(retention_days)
+
     def get_user_by_username(self, username: str) -> Optional[DbUser]:
         user = self._db.get_user_by_username(username)
         if not user:
@@ -99,4 +103,12 @@ class AuthRepository:
             username_filter=username_filter,
             success_filter=success_filter,
         )
+    def record_auth_audit(self, username: str, success: bool, reason: str = "") -> None:
+        self._db.record_auth_audit(username, success, reason)
+
+    def get_recent_auth_failures(self, username: str, window_minutes: int) -> int:
+        return self._db.get_recent_auth_failures(username, window_minutes)
+
+    def update_user_must_change_password(self, user_id: int, must_change: bool) -> None:
+        self._db.update_user_must_change_password(user_id, must_change)
 

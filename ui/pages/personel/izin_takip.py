@@ -1068,7 +1068,3 @@ class IzinTakipPage(QWidget):
         except Exception as e:
             logger.error(f"İzin durum hatası: {e}")
             MesajKutusu.hata(self, f"İşlem hatası:\n{e}")
-
-
-
-

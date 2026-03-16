@@ -6,7 +6,7 @@ Sorumluluklar:
 - Arıza kaydı (INSERT/UPDATE/DELETE)
 """
 from typing import Optional, List, Dict
-from core.logger import logger
+from core.hata_yonetici import SonucYonetici
 from database.repository_registry import RepositoryRegistry
 
 
@@ -24,7 +24,7 @@ class ArizaService:
             raise ValueError("RepositoryRegistry boş olamaz")
         self._r = registry
     
-    def get_ariza_listesi(self, cihaz_id: Optional[str] = None) -> List[Dict]:
+    def get_ariza_listesi(self, cihaz_id: Optional[str] = None) -> SonucYonetici:
         """
         Arıza listesini getir.
         
@@ -32,29 +32,25 @@ class ArizaService:
             cihaz_id: Filtreleme için cihaz ID'si (isteğe bağlı)
         
         Returns:
-            Arıza kayıtları
+            SonucYonetici
         """
         try:
             rows = self._r.get("Cihaz_Ariza").get_all() or []
-            
-            # Cihaz ID'sine göre filtrele
             if cihaz_id:
                 rows = [
-                    r for r in rows 
+                    r for r in rows
                     if str(r.get("Cihazid", "")).strip() == str(cihaz_id).strip()
                 ]
-            
-            return rows
+            return SonucYonetici.tamam(data=rows)
         except Exception as e:
-            logger.error(f"Arıza listesi yükleme hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "ArizaService.get_ariza_listesi")
     
-    def get_ariza_tipleri(self) -> List[str]:
+    def get_ariza_tipleri(self) -> SonucYonetici:
         """
         Arıza türlerini getir.
         
         Returns:
-            Arıza türleri listesi
+            SonucYonetici
         """
         try:
             sabitler = self._r.get("Sabitler").get_all() or []
@@ -64,17 +60,16 @@ class ArizaService:
                 if str(s.get("Kod", "")).strip() == "ArızaTipi"
                 and str(s.get("MenuEleman", "")).strip()
             ]
-            return sorted(list(set(tipleri)))
+            return SonucYonetici.tamam(data=sorted(list(set(tipleri))))
         except Exception as e:
-            logger.error(f"Arıza türleri yükleme hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "ArizaService.get_ariza_tipleri")
     
-    def get_ariza_durumlari(self) -> List[str]:
+    def get_ariza_durumlari(self) -> SonucYonetici:
         """
         Arıza durumlarını getir.
         
         Returns:
-            Arıza durumları listesi
+            SonucYonetici
         """
         try:
             sabitler = self._r.get("Sabitler").get_all() or []
@@ -84,17 +79,16 @@ class ArizaService:
                 if str(s.get("Kod", "")).strip() == "ArızaDurumu"
                 and str(s.get("MenuEleman", "")).strip()
             ]
-            return sorted(list(set(durumlar)))
+            return SonucYonetici.tamam(data=sorted(list(set(durumlar))))
         except Exception as e:
-            logger.error(f"Arıza durumları yükleme hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "ArizaService.get_ariza_durumlari")
     
-    def get_oncelik_seviyeleri(self) -> List[str]:
+    def get_oncelik_seviyeleri(self) -> SonucYonetici:
         """
         Arıza öncelik seviyelerini getir.
         
         Returns:
-            Öncelik seviyeleri listesi
+            SonucYonetici
         """
         try:
             sabitler = self._r.get("Sabitler").get_all() or []
@@ -104,25 +98,24 @@ class ArizaService:
                 if str(s.get("Kod", "")).strip() == "Oncelik"
                 and str(s.get("MenuEleman", "")).strip()
             ]
-            return sorted(list(set(seviyeler)))
+            return SonucYonetici.tamam(data=sorted(list(set(seviyeler))))
         except Exception as e:
-            logger.error(f"Öncelik seviyeleri yükleme hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "ArizaService.get_oncelik_seviyeleri")
     
-    def get_cihaz_listesi(self) -> List[Dict]:
+    def get_cihaz_listesi(self) -> SonucYonetici:
         """
         Cihaz listesini getir.
         
         Returns:
-            Tüm cihazlar
+            SonucYonetici
         """
         try:
-            return self._r.get("Cihazlar").get_all() or []
+            rows = self._r.get("Cihazlar").get_all() or []
+            return SonucYonetici.tamam(data=rows)
         except Exception as e:
-            logger.error(f"Cihaz listesi yükleme hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "ArizaService.get_cihaz_listesi")
     
-    def get_cihaz(self, cihaz_id: str) -> Optional[Dict]:
+    def get_cihaz(self, cihaz_id: str) -> SonucYonetici:
         """
         Tek bir cihazı getir.
         
@@ -130,15 +123,15 @@ class ArizaService:
             cihaz_id: Cihaz ID'si
         
         Returns:
-            Cihaz kaydı veya None
+            SonucYonetici
         """
         try:
-            return self._r.get("Cihazlar").get_by_pk(cihaz_id)
+            row = self._r.get("Cihazlar").get_by_pk(cihaz_id)
+            return SonucYonetici.tamam(data=row)
         except Exception as e:
-            logger.error(f"Cihaz '{cihaz_id}' yükleme hatası: {e}")
-            return None
+            return SonucYonetici.hata(e, "ArizaService.get_cihaz")
     
-    def kaydet(self, veri: Dict, guncelle: bool = False) -> bool:
+    def kaydet(self, veri: Dict, guncelle: bool = False) -> SonucYonetici:
         """
         Arıza kaydı ekle veya güncelle.
         
@@ -147,26 +140,23 @@ class ArizaService:
             guncelle: True ise UPDATE, False ise INSERT
         
         Returns:
-            Başarılı ise True
+            SonucYonetici
         """
         try:
             repo = self._r.get("Cihaz_Ariza")
             if guncelle:
                 ariza_id = veri.get("ArizaId")
                 if not ariza_id:
-                    logger.error("UPDATE için ArizaId gerekli")
-                    return False
+                    return SonucYonetici.hata("UPDATE için ArizaId gerekli", "ArizaService.kaydet")
                 repo.update(ariza_id, veri)
-                logger.info(f"Arıza #{ariza_id} güncellendi")
+                return SonucYonetici.tamam(f"Arıza #{ariza_id} güncellendi.")
             else:
                 repo.insert(veri)
-                logger.info("Yeni arıza kaydı oluşturuldu")
-            return True
+                return SonucYonetici.tamam("Yeni arıza kaydı oluşturuldu.")
         except Exception as e:
-            logger.error(f"Arıza kaydet hatası: {e}")
-            return False
+            return SonucYonetici.hata(e, "ArizaService.kaydet")
     
-    def sil(self, ariza_id: str) -> bool:
+    def sil(self, ariza_id: str) -> SonucYonetici:
         """
         Arıza kaydını sil.
         
@@ -174,12 +164,10 @@ class ArizaService:
             ariza_id: Arıza ID'si
         
         Returns:
-            Başarılı ise True
+            SonucYonetici
         """
         try:
             self._r.get("Cihaz_Ariza").delete(ariza_id)
-            logger.info(f"Arıza #{ariza_id} silindi")
-            return True
+            return SonucYonetici.tamam(f"Arıza #{ariza_id} silindi.")
         except Exception as e:
-            logger.error(f"Arıza silme hatası: {e}")
-            return False
+            return SonucYonetici.hata(e, "ArizaService.sil")

@@ -25,6 +25,7 @@ from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 from core.di import get_dis_alan_service
 from core.services.dis_alan_service import _izin_gunu_hesapla
+from core.hata_yonetici import servis_calistir, soru_sor, bilgi_goster, hata_goster
 from core.logger import logger
 
 AY_ADLARI = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",
@@ -46,7 +47,7 @@ def _kisi_key(r):
 class DisAlanPuantajPage(QWidget):
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(S["page"])
+        self.setProperty("bg-role", "page")
         self._db   = db
         self._svc  = get_dis_alan_service(db) if db else None
         self._rows_cache: list[dict] = []
@@ -64,13 +65,13 @@ class DisAlanPuantajPage(QWidget):
 
         # Filtre
         top = QFrame()
-        top.setStyleSheet(S["filter_panel"])
+        top.setProperty("bg-role", "panel")
         top.setMaximumHeight(56)
         tl = QHBoxLayout(top)
         tl.setContentsMargins(12,6,12,6); tl.setSpacing(10)
 
         lbl = QLabel("Puantaj Raporu")
-        lbl.setStyleSheet("font-size:15px; font-weight:bold; color:#1D75FE;")
+        lbl.setProperty("style-role", "section-title")
         tl.addWidget(lbl); tl.addStretch()
 
         tl.addWidget(QLabel("Anabilim Dalı:"))
@@ -96,7 +97,7 @@ class DisAlanPuantajPage(QWidget):
         tl.addWidget(self.cmb_yil)
 
         self.btn_getir = QPushButton("Getir")
-        self.btn_getir.setStyleSheet(S["save_btn"])
+        self.btn_getir.setProperty("style-role", "action")
         self.btn_getir.setFixedHeight(36); self.btn_getir.setFixedWidth(80)
         tl.addWidget(self.btn_getir)
         root.addWidget(top)
@@ -125,7 +126,7 @@ class DisAlanPuantajPage(QWidget):
         self.tablo.setColumnCount(len(kolonlar))
         self.tablo.setHorizontalHeaderLabels([c[0] for c in kolonlar])
         self.tablo.verticalHeader().setVisible(False)
-        self.tablo.setStyleSheet(S["table"])
+        self.tablo.setProperty("style-role", "table")
         self.tablo.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tablo.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -140,39 +141,29 @@ class DisAlanPuantajPage(QWidget):
 
         # Alt butonlar
         bot = QFrame()
-        bot.setStyleSheet(S.get("filter_panel",""))
+        bot.setProperty("bg-role", "panel")
         bot.setMaximumHeight(50)
         bl = QHBoxLayout(bot)
         bl.setContentsMargins(12,6,12,6); bl.setSpacing(10)
 
         self.btn_ozet = QPushButton("Dönem Özetini Kaydet")
-        self.btn_ozet.setStyleSheet(S["save_btn"])
+        self.btn_ozet.setProperty("style-role", "action")
         self.btn_ozet.setFixedHeight(34)
         self.btn_ozet.setEnabled(False)
         IconRenderer.set_button_icon(self.btn_ozet, "save", color="#FFFFFF")
 
         self.btn_onayla = QPushButton("RKS Onayla")
-        self.btn_onayla.setStyleSheet(
-            "QPushButton { background:#2E7D32; color:#fff; border-radius:6px; "
-            "font-weight:bold; padding:0 14px; } "
-            "QPushButton:hover { background:#1B5E20; } "
-            "QPushButton:disabled { background:#1A2A1A; color:#556; }"
-        )
+        self.btn_onayla.setProperty("style-role", "success-filled")
         self.btn_onayla.setFixedHeight(34)
         self.btn_onayla.setEnabled(False)
 
         self.btn_pdf = QPushButton("PDF Rapor")
-        self.btn_pdf.setStyleSheet(
-            "QPushButton { background:#C62828; color:#fff; border-radius:6px; "
-            "font-weight:bold; padding:0 14px; } "
-            "QPushButton:hover { background:#B71C1C; } "
-            "QPushButton:disabled { background:#2A1A1A; color:#556; }"
-        )
+        self.btn_pdf.setProperty("style-role", "danger")
         self.btn_pdf.setFixedHeight(34)
         self.btn_pdf.setEnabled(False)
 
         self.btn_excel = QPushButton("Excel'e Aktar")
-        self.btn_excel.setStyleSheet(S.get("secondary_btn", S["save_btn"]))
+        self.btn_excel.setProperty("style-role", "secondary")
         self.btn_excel.setFixedHeight(34)
         self.btn_excel.setEnabled(False)
 
@@ -183,22 +174,19 @@ class DisAlanPuantajPage(QWidget):
         bl.addWidget(self.btn_excel)
 
         self.lbl_durum = QLabel("")
-        self.lbl_durum.setStyleSheet("font-size:11px; color:#aaa;")
+        self.lbl_durum.setProperty("style-role", "info")
         bl.addWidget(self.lbl_durum)
         root.addWidget(bot)
 
     def _kart(self, baslik, val, renk="#457B9D"):
         f = QFrame()
-        f.setStyleSheet(
-            f"QFrame {{ background:#1A2535; border-radius:8px; "
-            f"border-left:3px solid {renk}; }}"
-        )
+        f.setProperty("bg-role", "panel")
         lay = QVBoxLayout(f)
         lay.setContentsMargins(10,6,10,6); lay.setSpacing(2)
         lb = QLabel(baslik)
-        lb.setStyleSheet("font-size:10px; color:#8fa3b8; border:none;")
+        lb.setProperty("style-role", "stat-label")
         lv = QLabel(str(val))
-        lv.setStyleSheet(f"font-size:18px; font-weight:bold; color:{renk}; border:none;")
+        lv.setProperty("style-role", "stat-value")
         lay.addWidget(lb); lay.addWidget(lv)
         setattr(f, "_lv", lv)
         return f
@@ -391,18 +379,19 @@ class DisAlanPuantajPage(QWidget):
             return
         ay, yil = self._ay, self._yil
         ok = err = 0
+        hatalar = []
         for o in self._tablo_rows:
-            try:
-                if self._svc.ozet_hesapla_ve_kaydet(o["tc"], o["ad"], ay, yil):
-                    ok += 1
-                else:
-                    err += 1
-            except Exception:
+            sonuc = self._svc.ozet_hesapla_ve_kaydet(o["tc"], o["ad"], ay, yil)
+            if sonuc.basarili:
+                ok += 1
+            else:
                 err += 1
+                hatalar.append(f"- {o['ad']}: {sonuc.mesaj}")
+
         msg = f"{ok} kişi için dönem özeti kaydedildi."
         if err:
-            msg += f"\n{err} kayıt atlandı (zaten onaylı olabilir)."
-        QMessageBox.information(self, "Dönem Özeti", msg)
+            msg += f"\n{err} kayıt atlandı (onaylı veya hatalı)."
+        bilgi_goster(self, msg)
         self._load_data()
 
     # ── RKS Onayla ─────────────────────────────────────────────
@@ -417,25 +406,25 @@ class DisAlanPuantajPage(QWidget):
             return
         o   = self._tablo_rows[idx]
         ay, yil = self._ay, self._yil
-        cevap = QMessageBox.question(
-            self, "RKS Onayı",
+        if not soru_sor(self,
             f"<b>{o['ad']}</b> — {AY_ADLARI[ay-1]} {yil}<br><br>"
             f"Aylık saat: {o['saat']:.2f}  |  "
             f"Kümülatif: {o['kum']:.2f}  |  "
             f"İzin hakkı: {o['izin']} gün<br><br>"
             "Onaylanan kayıt değiştirilemez. Devam etmek istiyor musunuz?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        if cevap != QMessageBox.StandardButton.Yes:
+            baslik="RKS Onayı"):
             return
-        if not self._svc.get_ozet(o["tc"], ay, yil):
+
+        ozet_sonuc = self._svc.get_ozet(o["tc"], ay, yil)
+        if ozet_sonuc.basarili and not ozet_sonuc.data:
             self._svc.ozet_hesapla_ve_kaydet(o["tc"], o["ad"], ay, yil)
-        if self._svc.ozet_onayla(o["tc"], ay, yil):
-            QMessageBox.information(self, "Onaylandı",
-                                    f"{o['ad']} — {AY_ADLARI[ay-1]} {yil} onaylandı.")
+
+        onay_sonuc = self._svc.ozet_onayla(o["tc"], ay, yil)
+        if onay_sonuc.basarili:
+            bilgi_goster(self, f"{o['ad']} — {AY_ADLARI[ay-1]} {yil} onaylandı.")
             self._load_data()
         else:
-            QMessageBox.warning(self, "Hata", "Onay işlemi başarısız.")
+            hata_goster(self, f"Onay işlemi başarısız: {onay_sonuc.mesaj}")
 
     # ── PDF ────────────────────────────────────────────────────
 

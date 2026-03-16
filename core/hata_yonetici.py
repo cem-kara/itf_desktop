@@ -29,6 +29,8 @@ Merkezi hata yönetimi — 4 katman:
        hata_goster(parent, msg)
        uyari_goster(parent, msg)
        hata_logla_goster(parent, konum, exc)
+       servis_calistir(parent, konum, lambda: ..., "Başarılı")
+       soru_sor(parent, "Emin misiniz?")
 
 Kullanım (main.pyw veya main.py):
 
@@ -46,6 +48,7 @@ Kullanım (main.pyw veya main.py):
 import sys
 import traceback
 import threading
+from typing import Any, Optional
 
 from core.logger import logger
 
@@ -219,6 +222,57 @@ def hata_logla_goster(parent, konum: str, exc: Exception,
     exc_logla(konum, exc)
     _msgbox_critical(parent, baslik, str(exc))
 
+def servis_calistir(parent, konum: str, service_call, basari_msg: str = ""):
+    """
+    Servis metodunu çalıştırır, başarı/hata durumlarını yönetir.
+    UI'daki try/except bloklarını azaltır.
+
+    Args:
+        parent: QWidget ebeveyni (dialoglar için)
+        konum: Hata loglaması için konum (örn: "SayfaAdi._metod")
+        service_call: Çalıştırılacak servis fonksiyonu (lambda)
+        basari_msg: Başarı durumunda gösterilecek mesaj. Boş ise gösterilmez.
+    """
+    try:
+        sonuc = service_call()
+        # Servis SonucYonetici döndürüyorsa
+        if isinstance(sonuc, SonucYonetici):
+            if sonuc.basarili:
+                if basari_msg:
+                    bilgi_goster(parent, basari_msg)
+            else:
+                hata_goster(parent, sonuc.mesaj)
+        # Servis bool döndürüyorsa
+        elif isinstance(sonuc, bool):
+            if sonuc and basari_msg:
+                bilgi_goster(parent, basari_msg)
+            elif not sonuc:
+                hata_goster(parent, f"{konum} işlemi başarısız oldu.")
+        # Servis bir şey döndürmüyorsa (sadece exception fırlatır)
+        else:
+            if basari_msg:
+                bilgi_goster(parent, basari_msg)
+    except Exception as e:
+        hata_logla_goster(parent, konum, e)
+
+def soru_sor(parent, mesaj: str, baslik: str = "Onay") -> bool:
+    """
+    Kullanıcıya onay sorusu sorar (MesajKutusu.soru).
+
+    Returns:
+        bool: Evet ise True, Hayır ise False
+    """
+    try:
+        from ui.dialogs.mesaj_kutusu import MesajKutusu
+        return MesajKutusu.soru(parent, mesaj, baslik=baslik)
+    except Exception as _e:
+        logger.debug(f"MesajKutusu.soru gösterilemedi — {baslik}: {_e}")
+        try:
+            from PySide6.QtWidgets import QMessageBox
+            yanit = QMessageBox.question(parent, baslik, mesaj, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+            return yanit == QMessageBox.StandardButton.Yes
+        except Exception:
+            return False
 
 # ── Dahili yardımcılar ────────────────────────────────────────
 
@@ -246,3 +300,23 @@ def _msgbox_warning(parent, baslik: str, mesaj: str) -> None:
             QMessageBox.warning(parent, baslik, mesaj)
         except Exception:
             pass
+class SonucYonetici:
+    def __init__(self, basarili: bool, mesaj: str = "", data: Optional[Any] = None):
+        self.basarili = basarili
+        self.mesaj = mesaj
+        self.data = data
+
+    @staticmethod
+    def tamam(mesaj: str = "", data: Optional[Any] = None):
+        return SonucYonetici(True, mesaj, data)
+
+    @staticmethod
+    def hata(exc: Exception | str, konum: str = ""):
+        import traceback
+        msg = str(exc)
+        if konum:
+            msg = f"{konum}: {msg}"
+        # Otomatik log
+        logger.error(msg)
+        logger.debug(traceback.format_exc())
+        return SonucYonetici(False, msg)

@@ -37,6 +37,7 @@ from typing import Optional, List, Dict
 from core.logger import logger
 from core.paths import DATA_DIR
 from database.repository_registry import RepositoryRegistry
+from core.hata_yonetici import SonucYonetici
 
 
 # Drive'da tüm REPYS klasörlerinin üst klasörü.
@@ -80,7 +81,7 @@ class DokumanService:
         iliskili_id: Optional[str] = None,
         iliskili_tip: Optional[str] = None,
         custom_name: Optional[str] = None,
-    ) -> dict:
+    ) -> SonucYonetici:
         """
         Dosyayı yükle ve Dokumanlar tablosuna kaydet.
 
@@ -106,15 +107,8 @@ class DokumanService:
               "belge_adi":  str,  # DB'ye yazılan dosya adı
             }
         """
-        result = {
-            "ok": False, "mode": "none",
-            "drive_link": "", "local_path": "", "error": "", "belge_adi": "",
-        }
-
         if not file_path or not os.path.exists(file_path):
-            result["error"] = f"Dosya bulunamadı: {file_path}"
-            logger.warning(result["error"])
-            return result
+            return SonucYonetici.hata(Exception(f"Dosya bulunamadı: {file_path}"), "DokumanService.upload_and_save")
 
         # 1 — Dosya adı üret
         if not custom_name:
@@ -122,22 +116,14 @@ class DokumanService:
             ts = datetime.now().strftime("%Y%m%d_%H%M%S")
             safe_tur = belge_turu.replace(" ", "_")
             custom_name = f"{entity_id}_{safe_tur}_{ts}{ext}"
-
-        result["belge_adi"] = custom_name
-
+        
         # 2 — Hibrit yükleme
-        upload = self._upload(file_path, folder_name, custom_name, entity_type, entity_id)
-
-        if upload["mode"] == "none":
-            result["error"] = upload.get("error", "Yükleme başarısız")
-            return result
-
-        result.update({
-            "mode":       upload["mode"],
-            "drive_link": upload.get("drive_link", ""),
-            "local_path": upload.get("local_path", ""),
-        })
-
+        upload_sonuc = self._upload(file_path, folder_name, custom_name, entity_type, entity_id)
+        if not upload_sonuc.basarili:
+            return upload_sonuc
+        
+        upload_data = upload_sonuc.data or {}
+        
         # 3 — Dokumanlar tablosuna kaydet (DokumanId atama)
         try:
             dokuman_id = str(uuid.uuid4())
@@ -149,27 +135,31 @@ class DokumanService:
                 "Belge":            custom_name,
                 "DocType":          doc_type,
                 "DisplayName":      os.path.basename(file_path),
-                "LocalPath":        upload.get("local_path") or "",
-                "DrivePath":        upload.get("drive_link") or "",
+                "LocalPath":        upload_data.get("local_path") or "",
+                "DrivePath":        upload_data.get("drive_link") or "",
                 "BelgeAciklama":    aciklama,
                 "YuklenmeTarihi":   datetime.now().isoformat(),
                 "IliskiliBelgeID":  iliskili_id,
                 "IliskiliBelgeTipi": iliskili_tip,
             })
             # expose DokumanId to caller
-            result["dokuman_id"] = dokuman_id
-            result["ok"] = True
             logger.info(
                 f"DokumanService: kayıt oluşturuldu "
-                f"[{entity_type}/{entity_id}] {custom_name} ({upload['mode']})"
+                f"[{entity_type}/{entity_id}] {custom_name} ({upload_data.get('mode')})"
             )
+            return SonucYonetici.tamam(
+                f"Belge başarıyla yüklendi: {custom_name}",
+                data={
+                    "dokuman_id": dokuman_id,
+                    "mode": upload_data.get("mode"),
+                    "drive_link": upload_data.get("drive_link"),
+                    "local_path": upload_data.get("local_path"),
+                    "belge_adi": custom_name,
+                })
         except Exception as e:
-            logger.error(f"DokumanService: Dokumanlar kaydı eklenemedi: {e}")
-            result["error"] = f"DB kaydı başarısız: {e}"
+            return SonucYonetici.hata(e, "DokumanService.upload_and_save")
 
-        return result
-
-    def get_belgeler(self, entity_type: str, entity_id: Optional[str] = None) -> List[dict]:
+    def get_belgeler(self, entity_type: str, entity_id: Optional[str] = None) -> SonucYonetici:
         """Entity'e ait tüm belgeleri döner.
 
         If `entity_id` is None, returns all documents matching `EntityType`.
@@ -177,22 +167,17 @@ class DokumanService:
         try:
             repo = self._registry.get("Dokumanlar")
             if not entity_id or str(entity_id).lower() == "all":
-                return repo.get_where({"EntityType": entity_type})
-            return repo.get_where({
+                data = repo.get_where({"EntityType": entity_type})
+            else:
+                data = repo.get_where({
                 "EntityType": entity_type,
                 "EntityId":   str(entity_id),
             })
+            return SonucYonetici.tamam(data=data)
         except Exception as e:
-            logger.error(f"DokumanService: get_belgeler hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "DokumanService.get_belgeler")
 
-    def sil(
-        self,
-        entity_type: str,
-        entity_id: str,
-        belge_turu: str,
-        belge: str,
-    ) -> bool:
+    def sil(self, entity_type: str, entity_id: str, belge_turu: str, belge: str) -> SonucYonetici:
         """Belge kaydını DB'den sil (fiziksel dosyaya dokunmaz)."""
         try:
             repo = self._registry.get("Dokumanlar")
@@ -203,24 +188,20 @@ class DokumanService:
                 "Belge":      belge,
             }
             repo.delete(pk)
-            logger.info(f"DokumanService: silindi [{entity_type}/{entity_id}] {belge}")
-            return True
+            return SonucYonetici.tamam(f"Belge silindi: [{entity_type}/{entity_id}] {belge}")
         except Exception as e:
-            logger.error(f"DokumanService: silme hatası: {e}")
-            return False
+            return SonucYonetici.hata(e, "DokumanService.sil")
 
     # ──────────────────────────────────────────────────────────
     #  İç metodlar
     # ──────────────────────────────────────────────────────────
 
-    def _upload(
-        self,
-        file_path: str,
-        folder_name: str,
-        custom_name: str,
-        entity_type: str,
-        entity_id: str,
-    ) -> dict:
+    def _upload(self,
+                file_path: str,
+                folder_name: str,
+                custom_name: str,
+                entity_type: str,
+                entity_id: str) -> SonucYonetici:
         """
         Online modda Drive'a, offline modda local'e yükler.
 
@@ -228,8 +209,6 @@ class DokumanService:
         Sabitler tablosuna yazmaz — ID'ler process memory'de cache'lenir.
         """
         from core.config import AppConfig
-
-        result = {"mode": "none", "drive_link": "", "local_path": "", "error": ""}
 
         if AppConfig.is_online_mode():
             try:
@@ -242,20 +221,19 @@ class DokumanService:
                     custom_name=custom_name,
                 )
                 if link:
-                    result.update({"mode": "drive", "drive_link": link})
-                    return result
+                    return SonucYonetici.tamam(data={"mode": "drive", "drive_link": link})
                 logger.warning("Drive upload link döndürmedi, local'e düşülüyor")
             except Exception as e:
                 logger.warning(f"Drive yükleme başarısız, local'e düşülüyor: {e}")
 
         # Offline veya Drive başarısız → local'e kaydet
-        local_path = self._save_local(file_path, folder_name, custom_name, entity_type, entity_id)
-        if local_path:
-            result.update({"mode": "local", "local_path": local_path})
+        local_save_sonuc = self._save_local(file_path, folder_name, custom_name, entity_type, entity_id)
+        if local_save_sonuc.basarili:
+            return SonucYonetici.tamam(data={"mode": "local", "local_path": local_save_sonuc.data})
         else:
-            result["error"] = "Local kopyalama başarısız"
+            return SonucYonetici.hata(Exception("Local kopyalama başarısız"), "DokumanService._upload")
 
-        return result
+
 
     def _get_or_create_drive_folder(self, folder_name: str) -> str:
         """
@@ -286,7 +264,7 @@ class DokumanService:
         custom_name: str,
         entity_type: str,
         entity_id: str,
-    ) -> Optional[str]:
+    ) -> SonucYonetici:
         """Dosyayı local offline_uploads klasörüne kopyalar."""
         import shutil
         try:
@@ -313,7 +291,6 @@ class DokumanService:
 
             shutil.copy2(file_path, dest)
             logger.info(f"DokumanService: local kayıt → {dest}")
-            return dest
+            return SonucYonetici.tamam(data=dest)
         except Exception as e:
-            logger.error(f"DokumanService: local kayıt hatası: {e}")
-            return None
+            return SonucYonetici.hata(e, "DokumanService._save_local")

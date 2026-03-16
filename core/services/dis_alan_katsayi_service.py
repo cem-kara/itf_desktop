@@ -1,5 +1,5 @@
 from typing import Optional, List, Tuple
-from core.logger import logger
+from core.hata_yonetici import SonucYonetici, logger
 from database.repository_registry import RepositoryRegistry
 from datetime import date, datetime
 
@@ -9,7 +9,7 @@ class DisAlanKatsayiService:
             raise ValueError("Registry boş olamaz")
         self._r = registry
 
-    def get_aktif_katsayi(self, anabilim_dali: str, birim: str) -> Optional[dict]:
+    def get_aktif_katsayi(self, anabilim_dali: str, birim: str) -> SonucYonetici:
         try:
             repo = self._r.get("Dis_Alan_Katsayi_Protokol")
             today = date.today().isoformat()
@@ -22,15 +22,14 @@ class DisAlanKatsayiService:
             # Filtre: GecerlilikBitis NULL veya >= today
             gecerli = [p for p in protokoller if not p.get("GecerlilikBitis") or p["GecerlilikBitis"] >= today]
             if not gecerli:
-                return None
+                return SonucYonetici.tamam(data=None)
             # En güncel GecerlilikBaslangic
             gecerli.sort(key=lambda x: x["GecerlilikBaslangic"], reverse=True)
-            return gecerli[0]
+            return SonucYonetici.tamam(data=gecerli[0])
         except Exception as e:
-            logger.error(f"DisAlanKatsayiService.get_aktif_katsayi: {e}")
-            return None
+            return SonucYonetici.hata(e, "DisAlanKatsayiService.get_aktif_katsayi")
 
-    def get_tum_aktif_dict(self) -> dict:
+    def get_tum_aktif_dict(self) -> SonucYonetici:
         """
         Tüm aktif katsayı protokollerini {(AnaBilimDali, Birim): kayit} dict'i olarak döner.
         Worker thread'e geçirilmek üzere ana thread'de önceden çekilir — DB'ye thread'den erişilmez.
@@ -50,58 +49,54 @@ class DisAlanKatsayiService:
                 mevcut = sonuc.get(key)
                 if mevcut is None or p.get("GecerlilikBaslangic", "") > mevcut.get("GecerlilikBaslangic", ""):
                     sonuc[key] = p
-            return sonuc
+            return SonucYonetici.tamam(data=sonuc)
         except Exception as e:
-            logger.error(f"DisAlanKatsayiService.get_tum_aktif_dict: {e}")
-            return {}
+            return SonucYonetici.hata(e, "DisAlanKatsayiService.get_tum_aktif_dict")
 
-    def get_tum_protokoller(self) -> List[dict]:
+    def get_tum_protokoller(self) -> SonucYonetici:
         try:
-            return self._r.get("Dis_Alan_Katsayi_Protokol").get_all() or []
+            data = self._r.get("Dis_Alan_Katsayi_Protokol").get_all() or []
+            return SonucYonetici.tamam(data=data)
         except Exception as e:
-            logger.error(f"DisAlanKatsayiService.get_tum_protokoller: {e}")
-            return []
+            return SonucYonetici.hata(e, "DisAlanKatsayiService.get_tum_protokoller")
 
-    def get_birim_listesi(self) -> List[Tuple[str, str]]:
+    def get_birim_listesi(self) -> SonucYonetici:
         try:
             rows = self._r.get("Dis_Alan_Katsayi_Protokol").get_all() or []
-            return list({(r["AnaBilimDali"], r["Birim"]) for r in rows})
+            data = list({(r["AnaBilimDali"], r["Birim"]) for r in rows})
+            return SonucYonetici.tamam(data=data)
         except Exception as e:
-            logger.error(f"DisAlanKatsayiService.get_birim_listesi: {e}")
-            return []
+            return SonucYonetici.hata(e, "DisAlanKatsayiService.get_birim_listesi")
 
-    def protokol_ekle(self, veri: dict) -> bool:
+    def protokol_ekle(self, veri: dict) -> SonucYonetici:
         try:
             repo = self._r.get("Dis_Alan_Katsayi_Protokol")
             pk = (veri.get("AnaBilimDali"), veri.get("Birim"), veri.get("GecerlilikBaslangic"))
             if repo.get_by_id(pk):
-                logger.warning("Aynı protokol zaten mevcut")
-                return False
+                return SonucYonetici.hata(Exception("Aynı protokol zaten mevcut"), "DisAlanKatsayiService.protokol_ekle")
             repo.insert(veri)
-            return True
+            return SonucYonetici.tamam("Protokol eklendi.")
         except Exception as e:
-            logger.error(f"DisAlanKatsayiService.protokol_ekle: {e}")
-            return False
+            return SonucYonetici.hata(e, "DisAlanKatsayiService.protokol_ekle")
 
-    def protokol_guncelle(self, pk: tuple, veri: dict) -> bool:
+    def protokol_guncelle(self, pk: tuple, veri: dict) -> SonucYonetici:
         try:
             repo = self._r.get("Dis_Alan_Katsayi_Protokol")
             kayit = repo.get_by_id(pk)
             if not kayit:
-                return False
+                return SonucYonetici.hata(Exception("Güncellenecek protokol bulunamadı"), "DisAlanKatsayiService.protokol_guncelle")
             # Geçmişe dönük kayıt ise sadece açıklama ve referans güncellenebilir
             today = date.today().isoformat()
             if kayit["GecerlilikBaslangic"] < today:
                 veri = {k: v for k, v in veri.items() if k in ("AciklamaFormul", "ProtokolRef")}
                 if not veri:
-                    return False
+                    return SonucYonetici.hata(Exception("Geçmişe dönük kayıtta sadece açıklama/referans güncellenebilir"), "DisAlanKatsayiService.protokol_guncelle")
             repo.update(pk, veri)
-            return True
+            return SonucYonetici.tamam("Protokol güncellendi.")
         except Exception as e:
-            logger.error(f"DisAlanKatsayiService.protokol_guncelle: {e}")
-            return False
+            return SonucYonetici.hata(e, "DisAlanKatsayiService.protokol_guncelle")
 
-    def protokol_pasife_al(self, anabilim_dali: str, birim: str) -> bool:
+    def protokol_pasife_al(self, anabilim_dali: str, birim: str) -> SonucYonetici:
         try:
             repo = self._r.get("Dis_Alan_Katsayi_Protokol")
             today = date.today().isoformat()
@@ -109,7 +104,6 @@ class DisAlanKatsayiService:
             for kayit in aktifler:
                 pk = (kayit["AnaBilimDali"], kayit["Birim"], kayit["GecerlilikBaslangic"])
                 repo.update(pk, {"Aktif": 0, "GecerlilikBitis": today})
-            return True
+            return SonucYonetici.tamam("Protokol pasife alındı.")
         except Exception as e:
-            logger.error(f"DisAlanKatsayiService.protokol_pasife_al: {e}")
-            return False
+            return SonucYonetici.hata(e, "DisAlanKatsayiService.protokol_pasife_al")

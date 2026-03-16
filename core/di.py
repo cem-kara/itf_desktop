@@ -132,12 +132,16 @@ def get_cloud_adapter(mode=None):
 
 def get_auth_services(db):
     """
-    Auth servislerini ortak sekilde kurar.
+    Auth servislerini kurar.
+    AuthRepository ve PermissionRepository uzerinden calisir;
+    SQLiteManager'a auth SQL'i birakmaz.
     """
+    from database.auth_repository import AuthRepository
     session_context = SessionContext()
     hasher = PasswordHasher()
-    auth_service = AuthService(db=db, hasher=hasher, session=session_context)
-    authorization_service = AuthorizationService(db)
+    auth_repo = AuthRepository(db)
+    auth_service = AuthService(repo=auth_repo, hasher=hasher, session=session_context)
+    authorization_service = AuthorizationService(auth_repo)
     return auth_service, authorization_service, session_context
 
 

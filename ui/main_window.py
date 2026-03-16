@@ -253,7 +253,7 @@ class MainWindow(QMainWindow):
             # Üç sayfayı birleştirilmiş merkez olarak göster
             from ui.pages.fhsz.dis_alan_merkez_page import DisAlanMerkezPage
             page = DisAlanMerkezPage(db=self._db)
-            #page.kapat_istegi.connect(lambda: self._close_page("Diğer Rad. Gör. FHSZ Yön"))
+            page.kapat_istegi.connect(lambda: self._close_page("Diğer Rad. Gör. FHSZ Yön."))
             return page
 
         if baslik == "Sağlık Takip":

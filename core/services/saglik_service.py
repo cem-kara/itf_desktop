@@ -7,7 +7,7 @@ Sorumluluklar:
 - Yeni kayıt ekleme / güncelleme
 """
 from typing import Optional
-from core.logger import logger
+from core.hata_yonetici import SonucYonetici
 from database.repository_registry import RepositoryRegistry
 
 
@@ -22,16 +22,12 @@ class SaglikService:
     # ───────────────────────────────────────────────────────────
     #  Repository Accessors
     # ───────────────────────────────────────────────────────────
-    
-    def get_saglik_takip_repo(self):
-        """Personel Sağlık Takip repository'sine eriş."""
-        return self._r.get("Personel_Saglik_Takip")
 
     # ───────────────────────────────────────────────────────────
     #  Sağlık Kayıtları
     # ───────────────────────────────────────────────────────────
 
-    def get_saglik_kayitlari(self, personel_id: Optional[str] = None) -> list[dict]:
+    def get_saglik_kayitlari(self, personel_id: Optional[str] = None) -> SonucYonetici:
         """
         Sağlık takip kayıtlarını getir.
 
@@ -45,54 +41,47 @@ class SaglikService:
                     r for r in tum
                     if str(r.get("Personelid", "")).strip() == str(personel_id).strip()
                 ]
-            return tum
+            return SonucYonetici.tamam(data=tum)
         except Exception as e:
-            logger.error(f"Sağlık kayıtları yükleme hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "SaglikService.get_saglik_kayitlari")
 
-    def get_saglik_kaydi(self, kayit_no: str) -> Optional[dict]:
+    def get_saglik_kaydi(self, kayit_no: str) -> SonucYonetici:
         """Tek sağlık kaydını getir."""
         try:
-            return self._r.get("Personel_Saglik_Takip").get_by_pk(kayit_no)
+            data = self._r.get("Personel_Saglik_Takip").get_by_pk(kayit_no)
+            return SonucYonetici.tamam(data=data)
         except Exception as e:
-            logger.error(f"Sağlık kaydı '{kayit_no}' yükleme hatası: {e}")
-            return None
+            return SonucYonetici.hata(e, f"SaglikService.get_saglik_kaydi({kayit_no})")
 
-    def saglik_kaydi_ekle(self, veri: dict) -> bool:
+    def saglik_kaydi_ekle(self, veri: dict) -> SonucYonetici:
         """Yeni sağlık takip kaydı ekle."""
         try:
             self._r.get("Personel_Saglik_Takip").insert(veri)
-            logger.info(f"Sağlık kaydı eklendi: {veri.get('KayitNo', '?')} ({veri.get('Personelid', '?')})")
-            return True
+            return SonucYonetici.tamam(f"Sağlık kaydı eklendi: {veri.get('KayitNo', '?')}")
         except Exception as e:
-            logger.error(f"Sağlık kaydı ekleme hatası: {e}")
-            return False
+            return SonucYonetici.hata(e, "SaglikService.saglik_kaydi_ekle")
 
-    def saglik_kaydi_guncelle(self, kayit_no: str, veri: dict) -> bool:
+    def saglik_kaydi_guncelle(self, kayit_no: str, veri: dict) -> SonucYonetici:
         """Sağlık kaydını güncelle."""
         try:
             self._r.get("Personel_Saglik_Takip").update(kayit_no, veri)
-            logger.info(f"Sağlık kaydı güncellendi: {kayit_no}")
-            return True
+            return SonucYonetici.tamam(f"Sağlık kaydı güncellendi: {kayit_no}")
         except Exception as e:
-            logger.error(f"Sağlık kaydı güncelleme hatası: {e}")
-            return False
+            return SonucYonetici.hata(e, "SaglikService.saglik_kaydi_guncelle")
 
-    def saglik_kaydi_sil(self, kayit_no: str) -> bool:
+    def saglik_kaydi_sil(self, kayit_no: str) -> SonucYonetici:
         """Sağlık kaydını sil."""
         try:
             self._r.get("Personel_Saglik_Takip").delete(kayit_no)
-            logger.info(f"Sağlık kaydı silindi: {kayit_no}")
-            return True
+            return SonucYonetici.tamam(f"Sağlık kaydı silindi: {kayit_no}")
         except Exception as e:
-            logger.error(f"Sağlık kaydı silme hatası: {e}")
-            return False
+            return SonucYonetici.hata(e, "SaglikService.saglik_kaydi_sil")
 
     # ───────────────────────────────────────────────────────────
     #  Personel + Sağlık Birleşik Sorgu
     # ───────────────────────────────────────────────────────────
 
-    def get_personel_saglik_ozeti(self, personel_id: str) -> dict:
+    def get_personel_saglik_ozeti(self, personel_id: str) -> SonucYonetici:
         """
         Bir personelin son sağlık durumunu özetle.
 
@@ -105,7 +94,10 @@ class SaglikService:
         """
         try:
             personel = self._r.get("Personel").get_by_pk(personel_id)
-            kayitlar = self.get_saglik_kayitlari(personel_id)
+            kayitlar_sonuc = self.get_saglik_kayitlari(personel_id)
+            if not kayitlar_sonuc.basarili:
+                return kayitlar_sonuc
+            kayitlar = kayitlar_sonuc.data or []
 
             son_kayit = None
             if kayitlar:
@@ -115,16 +107,16 @@ class SaglikService:
                     reverse=True
                 )[0]
 
-            return {
+            data = {
                 "personel": personel or {},
                 "son_kayit": son_kayit,
                 "toplam_kayit": len(kayitlar),
             }
+            return SonucYonetici.tamam(data=data)
         except Exception as e:
-            logger.error(f"Personel sağlık özeti hatası ({personel_id}): {e}")
-            return {"personel": {}, "son_kayit": None, "toplam_kayit": 0}
+            return SonucYonetici.hata(e, f"SaglikService.get_personel_saglik_ozeti({personel_id})")
 
-    def get_personel_listesi(self, aktif_only: bool = True) -> list[dict]:
+    def get_personel_listesi(self, aktif_only: bool = True) -> SonucYonetici:
         """
         Sağlık paneli için personel listesi.
         Sağlık takip sayfasında personel seçici olarak kullanılır.
@@ -133,12 +125,11 @@ class SaglikService:
             rows = self._r.get("Personel").get_all() or []
             if aktif_only:
                 rows = [r for r in rows if str(r.get("Durum", "")).strip().lower() != "pasif"]
-            return rows
+            return SonucYonetici.tamam(data=rows)
         except Exception as e:
-            logger.error(f"Personel listesi (sağlık) yükleme hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "SaglikService.get_personel_listesi")
 
-    def get_dokumanlar(self, personel_id: str, belge_turu: Optional[str] = None) -> list[dict]:
+    def get_dokumanlar(self, personel_id: str, belge_turu: Optional[str] = None) -> SonucYonetici:
         """
         Personele ait sağlık belgelerini getir.
 
@@ -155,7 +146,6 @@ class SaglikService:
             ]
             if belge_turu:
                 result = [r for r in result if str(r.get("BelgeTuru", "")) == belge_turu]
-            return result
+            return SonucYonetici.tamam(data=result)
         except Exception as e:
-            logger.error(f"Sağlık belgeleri yükleme hatası ({personel_id}): {e}")
-            return []
+            return SonucYonetici.hata(e, f"SaglikService.get_dokumanlar({personel_id})")

@@ -1,4 +1,24 @@
 """
+            "levels": levels_count
+        try:
+            with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                for line in f:
+                    if not line.strip():
+                        continue
+                    total_lines += 1
+
+                    parsed_sonuc = LogService.parse_log_line(line)
+                    parsed = parsed_sonuc.data if parsed_sonuc.data is not None else {}
+                    level = parsed.get("level")
+                    if isinstance(level, str) and level in levels_count:
+                        levels_count[level] += 1
+        except Exception as e:
+            logger.error(f"Log özet hatası ({log_file_path}): {e}")
+
+        return SonucYonetici.tamam(data={
+            "total_lines": total_lines,
+            "levels": levels_count
+        })
 LogService — Log dosyalarını okuma ve filtreleme servisi
 
 Sorumluluklar:
@@ -14,6 +34,7 @@ import re
 from datetime import datetime
 from typing import Optional
 from pathlib import Path
+from core.hata_yonetici import SonucYonetici
 
 from core.logger import logger, LOG_FILE, SYNC_LOG_FILE, ERROR_LOG_FILE, UI_LOG_FILE
 from core.paths import LOG_DIR
@@ -32,7 +53,7 @@ class LogService:
     }
 
     @staticmethod
-    def get_available_log_files() -> list[dict]:
+    def get_available_log_files() -> SonucYonetici:
         """
         Mevcut log dosyalarını döndürür.
         
@@ -53,12 +74,12 @@ class LogService:
                     "modified": datetime.fromtimestamp(os.path.getmtime(log_file)).strftime("%Y-%m-%d %H:%M:%S")
                 })
             except Exception as e:
-                logger.error(f"Log dosyası bilgisi alınamadı ({log_file}): {e}")
+                return SonucYonetici.hata(e, f"LogService.get_available_log_files ({log_file})")
                 
-        return sorted(log_files, key=lambda x: x["name"])
+        return SonucYonetici.tamam(data=sorted(log_files, key=lambda x: x["name"]))
 
     @staticmethod
-    def parse_log_line(line: str) -> Optional[dict]:
+    def parse_log_line(line: str) -> SonucYonetici:
         """
         Bir log satırını parse eder.
         
@@ -71,24 +92,24 @@ class LogService:
         pattern = r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),\d+ - (\w+) - (.+)$'
         match = re.match(pattern, line.strip())
         
-        if match:
-            return {
+        if match: # SonucYonetici.data için dict döndür
+            return SonucYonetici.tamam(data={
                 "timestamp": match.group(1),
                 "level": match.group(2),
                 "message": match.group(3),
                 "raw": line.strip()
-            }
+            })
         
-        # Eğer parse edilemezse, raw olarak döndür
-        return {
+        # Eğer parse edilemezse, raw olarak döndür # SonucYonetici.data için dict döndür
+        return SonucYonetici.tamam(data={
             "timestamp": "",
             "level": "",
             "message": line.strip(),
             "raw": line.strip()
-        }
+        })
 
     @staticmethod
-    def read_logs(
+    def read_logs( # SonucYonetici.data için list[dict] döndür
         log_file_path: str,
         level_filter: Optional[str] = None,
         search_text: Optional[str] = None,
@@ -96,7 +117,7 @@ class LogService:
         end_date: Optional[str] = None,
         max_lines: int = 1000,
         reverse: bool = True
-    ) -> list[dict]:
+    ) -> SonucYonetici:
         """
         Log dosyasını okur ve filtreler.
         
@@ -113,8 +134,7 @@ class LogService:
             List[Dict]: Parse edilmiş log kayıtları
         """
         if not os.path.exists(log_file_path):
-            logger.warning(f"Log dosyası bulunamadı: {log_file_path}")
-            return []
+            return SonucYonetici.hata(Exception(f"Log dosyası bulunamadı: {log_file_path}"), "LogService.read_logs")
 
         logs = []
         
@@ -133,20 +153,19 @@ class LogService:
                 if not line.strip():
                     continue
                     
-                parsed = LogService.parse_log_line(line)
-                if not parsed:
+                parsed_sonuc = LogService.parse_log_line(line)
+                if not parsed_sonuc.basarili:
+                    logger.warning(f"Log satırı parse edilemedi: {line}")
                     continue
                 
+                parsed = parsed_sonuc.data if parsed_sonuc.data is not None else {}
                 # Level filtresi
-                if level_filter and parsed["level"]:
-                    if parsed["level"] != level_filter:
+                if level_filter and parsed.get("level"):
+                    if parsed.get("level") != level_filter:
                         continue
-                
-                # Tarih filtresi
-                if (start_date or end_date) and parsed["timestamp"]:
+                if (start_date or end_date) and parsed.get("timestamp"):
                     try:
                         log_date = parsed["timestamp"].split()[0]  # YYYY-MM-DD
-                        
                         if start_date and log_date < start_date:
                             continue
                         if end_date and log_date > end_date:
@@ -162,12 +181,12 @@ class LogService:
                 logs.append(parsed)
                 
         except Exception as e:
-            logger.error(f"Log okuma hatası ({log_file_path}): {e}")
+            return SonucYonetici.hata(e, f"LogService.read_logs ({log_file_path})")
             
-        return logs
+        return SonucYonetici.tamam(data=logs)
 
     @staticmethod
-    def get_log_summary(log_file_path: str) -> dict:
+    def get_log_summary(log_file_path: str) -> SonucYonetici:
         """
         Log dosyasının özet istatistiklerini döndürür.
         
@@ -175,7 +194,7 @@ class LogService:
             Dict: {"total_lines": 1000, "levels": {"INFO": 500, "ERROR": 10, ...}}
         """
         if not os.path.exists(log_file_path):
-            return {"total_lines": 0, "levels": {}}
+            return SonucYonetici.tamam(data={"total_lines": 0, "levels": {}})
 
         levels_count = {level: 0 for level in LogService.LOG_LEVELS.keys()}
         total_lines = 0
@@ -186,15 +205,16 @@ class LogService:
                     if not line.strip():
                         continue
                     total_lines += 1
-                    
-                    parsed = LogService.parse_log_line(line)
-                    if parsed and parsed["level"] in levels_count:
-                        levels_count[parsed["level"]] += 1
-                        
+
+                    parsed_sonuc = LogService.parse_log_line(line)
+                    parsed = parsed_sonuc.data if parsed_sonuc.data is not None else {}
+                    level = parsed.get("level")
+                    if isinstance(level, str) and level in levels_count:
+                        levels_count[level] += 1
         except Exception as e:
             logger.error(f"Log özet hatası ({log_file_path}): {e}")
-            
-        return {
+
+        return SonucYonetici.tamam(data={
             "total_lines": total_lines,
             "levels": levels_count
-        }
+        })

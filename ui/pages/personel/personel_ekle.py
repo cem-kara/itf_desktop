@@ -17,6 +17,7 @@ from core.auth.password_hasher import PasswordHasher
 from core.di import get_personel_service, get_izin_service, get_dokuman_service
 from core.validators import validate_tc_kimlik_no, validate_email, validate_phone_number
 from core.text_utils import turkish_title_case
+from core.services.personel_service import PersonelService
 from core.services.dokuman_service import DokumanService
 from database.auth_repository import AuthRepository
 from ui.styles import DarkTheme
@@ -54,12 +55,12 @@ class DokumanUploadWorker(QThread):
                 doc_type=self._job["doc_type"],
                 custom_name=self._job["custom_name"],
             )
-            if sonuc.get("ok"):
-                self.upload_finished.emit(self._job["db_field"], sonuc)
+            if sonuc.basarili:
+                self.upload_finished.emit(self._job["db_field"], sonuc.data)
             else:
                 self.upload_error.emit(
                     self._job["db_field"],
-                    sonuc.get("error", "Bilinmeyen yükleme hatası")
+                    sonuc.mesaj
                 )
         except Exception as e:
             self.upload_error.emit(self._job.get("db_field", ""), str(e))
@@ -148,7 +149,7 @@ class PersonelEklePage(QWidget):
         self.lbl_baslik: QLabel | None = None
         
         # Service layer
-        self._personel_svc = get_personel_service(db)
+        self._personel_svc: PersonelService | None = get_personel_service(db)
         self._izin_svc = get_izin_service(db) if db else None
         self._dokuman_svc = get_dokuman_service(db) if db else None
 
@@ -1221,7 +1222,7 @@ class PersonelEklePage(QWidget):
                             ad_soyad=data.get("AdSoyad", ""),
                             baslama_tarihi=data.get("MemuriyeteBaslamaTarihi", ""),
                         )
-                        if not ok_izin:
+                        if not ok_izin.basarili: # SonucYonetici.basarili kontrolü
                             logger.warning(f"Izin_Bilgi kaydı oluşturulamadı: {data.get('KimlikNo', '')}")
                 except Exception as e_izin:
                     logger.error(f"Izin_Bilgi oluşturma hatası: {e_izin}")

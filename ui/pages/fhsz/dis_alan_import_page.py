@@ -21,7 +21,9 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QThread, QObject, Signal, QDate
 from PySide6.QtGui import QColor, QBrush, QFont
 
+from typing import Optional
 from core.logger import logger
+from core.hata_yonetici import hata_goster
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 
@@ -52,7 +54,7 @@ class _OkuyucuWorker(QObject):
     bitti  = Signal(object)   # ImportSonucu
     hata   = Signal(str)
 
-    def __init__(self, svc, dosya, ay, yil, katsayi_cache=None):
+    def __init__(self, svc, dosya, ay, yil, katsayi_cache: Optional[dict] = None):
         super().__init__()
         self._svc           = svc
         self._dosya         = dosya
@@ -62,11 +64,14 @@ class _OkuyucuWorker(QObject):
 
     def calistir(self):
         try:
-            sonuc = self._svc.excel_oku(
+            sonuc_yonetici = self._svc.excel_oku(
                 self._dosya, self._ay, self._yil,
                 katsayi_cache=self._katsayi_cache,
             )
-            self.bitti.emit(sonuc)
+            if sonuc_yonetici.basarili:
+                self.bitti.emit(sonuc_yonetici.data)
+            else:
+                self.hata.emit(sonuc_yonetici.mesaj)
         except Exception as e:
             self.hata.emit(str(e))
 
@@ -74,7 +79,7 @@ class _OkuyucuWorker(QObject):
 class DisAlanImportPage(QWidget):
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(S["page"])
+        self.setProperty("bg-role", "page")
         self._db     = db
         self._sonuc  = None   # Son okunan ImportSonucu
         self._thread = None
@@ -85,11 +90,11 @@ class DisAlanImportPage(QWidget):
         # Sekme 1: Excel Import
         self._import_widget = QWidget()
         self._setup_ui()
-        self._tabs.addTab(self._import_widget, "📥  Excel Import")
+        self._tabs.addTab(self._import_widget, "Excel Import")
 
         # Sekme 2: Import Karşılaştırma
         self._karsilastirma_widget = _KarsilastirmaWidget(db=self._db)
-        self._tabs.addTab(self._karsilastirma_widget, "🔍  Import Karşılaştırma")
+        self._tabs.addTab(self._karsilastirma_widget, "Import Karşılaştırma")
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -106,26 +111,26 @@ class DisAlanImportPage(QWidget):
         root.setContentsMargins(20, 15, 20, 15)
 
         # Üst Bar
-        top = QFrame(); top.setStyleSheet(S["filter_panel"]); top.setMaximumHeight(56)
+        top = QFrame(); top.setProperty("bg-role", "panel"); top.setMaximumHeight(56)
         top_lay = QHBoxLayout(top); top_lay.setContentsMargins(12, 6, 12, 6); top_lay.setSpacing(12)
 
         lbl = QLabel("Dış Alan Excel Import — RKS Onay Ekranı")
-        lbl.setStyleSheet("font-size:15px; font-weight:bold; color:#1D75FE;")
+        lbl.setProperty("style-role", "section-title")
         top_lay.addWidget(lbl); top_lay.addStretch()
 
         # Dosya seçme
         self.btn_dosya = QPushButton("Excel Dosyası Seç")
-        self.btn_dosya.setStyleSheet(S.get("secondary_btn", S["save_btn"]))
+        self.btn_dosya.setProperty("style-role", "secondary")
         self.btn_dosya.setFixedHeight(36)
         IconRenderer.set_button_icon(self.btn_dosya, "folder", color="#FFFFFF")
         top_lay.addWidget(self.btn_dosya)
 
         self.lbl_dosya = QLabel("Dosya seçilmedi")
-        self.lbl_dosya.setStyleSheet("font-size:11px; color:#888;")
+        self.lbl_dosya.setProperty("style-role", "info")
         top_lay.addWidget(self.lbl_dosya)
 
         self.btn_oku = QPushButton("Dosyayı Oku ve Doğrula")
-        self.btn_oku.setStyleSheet(S["save_btn"])
+        self.btn_oku.setProperty("style-role", "action")
         self.btn_oku.setFixedHeight(36)
         self.btn_oku.setEnabled(False)
         top_lay.addWidget(self.btn_oku)
@@ -133,7 +138,7 @@ class DisAlanImportPage(QWidget):
         root.addWidget(top)
 
         # Araç çubuğu (tümünü seç / yalnızca geçerlileri seç / kaydet)
-        ara = QFrame(); ara.setStyleSheet(S["filter_panel"]); ara.setMaximumHeight(48)
+        ara = QFrame(); ara.setProperty("bg-role", "panel"); ara.setMaximumHeight(48)
         ara_lay = QHBoxLayout(ara); ara_lay.setContentsMargins(12, 4, 12, 4); ara_lay.setSpacing(10)
 
         self.btn_tumunu_sec   = QPushButton("Tümünü Seç")
@@ -142,21 +147,21 @@ class DisAlanImportPage(QWidget):
 
         for btn in [self.btn_tumunu_sec, self.btn_gecerlileri, self.btn_secimi_kaldir]:
             btn.setFixedHeight(30)
-            btn.setStyleSheet(S.get("secondary_btn", S["save_btn"]))
+            btn.setProperty("style-role", "secondary")
             btn.setEnabled(False)
             ara_lay.addWidget(btn)
 
         ara_lay.addStretch()
 
         self.lbl_ozet = QLabel("")
-        self.lbl_ozet.setStyleSheet("font-size:11px; color:#aaa;")
+        self.lbl_ozet.setProperty("style-role", "info")
         ara_lay.addWidget(self.lbl_ozet)
 
 
         ara_lay.addStretch()
 
         self.btn_kaydet = QPushButton("SEÇİLİLERİ KAYDET")
-        self.btn_kaydet.setStyleSheet(S["save_btn"])
+        self.btn_kaydet.setProperty("style-role", "action")
         self.btn_kaydet.setFixedHeight(34)
         self.btn_kaydet.setEnabled(False)
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color="#FFFFFF")
@@ -169,7 +174,7 @@ class DisAlanImportPage(QWidget):
         self.tablo.setColumnCount(len(SUTUNLAR))
         self.tablo.setHorizontalHeaderLabels([s[0] for s in SUTUNLAR])
         self.tablo.verticalHeader().setVisible(False)
-        self.tablo.setStyleSheet(S["table"])
+        self.tablo.setProperty("style-role", "table")
         self.tablo.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tablo.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
 
@@ -235,7 +240,11 @@ class DisAlanImportPage(QWidget):
         if self._db:
             try:
                 registry = get_registry(self._db)
-                katsayi_cache = DisAlanKatsayiService(registry).get_tum_aktif_dict()
+                katsayi_sonuc = DisAlanKatsayiService(registry).get_tum_aktif_dict()
+                if katsayi_sonuc.basarili:
+                    katsayi_cache = katsayi_sonuc.data or {}
+                else:
+                    logger.warning(f"Katsayı cache yüklenemedi: {katsayi_sonuc.mesaj}")
             except Exception as e:
                 logger.warning(f"Katsayı cache yüklenemedi: {e}")
 
@@ -455,29 +464,36 @@ class DisAlanImportPage(QWidget):
         except Exception:
             kaydeden = "Import"
 
-        guncellenmis = svc.kaydet(
+        sonuc_yonetici = svc.kaydet(
             self._sonuc,
             dosya_yolu=self._dosya_yolu,
             kaydeden=kaydeden,
         )
 
-        tutanak_ozet = (
-            f"Tutanak No : {guncellenmis.tutanak_no[:18]}…\n"
-            if guncellenmis.tutanak_no else ""
-        )
-        QMessageBox.information(
-            self,
-            "Import Tamamlandı",
-            f"Kaydedilen : {guncellenmis.kaydedilen} satır\n"
-            f"Atlanan    : {guncellenmis.atlanan} satır\n"
-            f"{tutanak_ozet}"
-            f"\nExcel dosyası Dokumanlar arşivine eklendi.\n"
-            f"Dönem özeti için 'Dönem Özeti Hesapla' butonunu kullanın."
-        )
+        if not sonuc_yonetici.basarili:
+            hata_goster(self, sonuc_yonetici.mesaj)
+            return
 
-        # Tabloyu yenile (kayıt durumunu göster)
-        self._tabloyu_doldur(guncellenmis)
-        self.btn_kaydet.setEnabled(False)
+        guncellenmis = sonuc_yonetici.data
+        if guncellenmis is not None:
+            tutanak_ozet = (
+                f"Tutanak No : {guncellenmis.tutanak_no[:18]}…\n"
+                if guncellenmis.tutanak_no else ""
+            )
+
+            QMessageBox.information(
+                self,
+                "Import Tamamlandı",
+                f"Kaydedilen : {guncellenmis.kaydedilen} satır\n"
+                f"Atlanan    : {guncellenmis.atlanan} satır\n"
+                f"{tutanak_ozet}"
+                f"\nExcel dosyası Dokumanlar arşivine eklendi.\n"
+                f"Dönem özeti için 'Dönem Özeti Hesapla' butonunu kullanın."
+            )
+
+            # Tabloyu yenile (kayıt durumunu göster)
+            self._tabloyu_doldur(guncellenmis)
+            self.btn_kaydet.setEnabled(False)
 
         # Aynı dönem/birim için önceki import var mı kontrol et
         self._onceki_import_kontrol(guncellenmis, sadece_uyari=False)

@@ -10,6 +10,7 @@ Sorumluluklar:
 from typing import Optional, List, Dict, Tuple
 from datetime import date
 import re
+from core.hata_yonetici import SonucYonetici
 from core.logger import logger
 from core.date_utils import parse_date, to_ui_date
 from database.repository_registry import RepositoryRegistry
@@ -32,16 +33,16 @@ class IzinService:
     # ───────────────────────────────────────────────────────────
     #  Repository Accessors
     # ───────────────────────────────────────────────────────────
-    
-    def get_izin_bilgi_repo(self):
-        """İzin Bilgi repository'sine eriş."""
-        return self._r.get("Izin_Bilgi")
-    
-    def get_izin_giris_repo(self):
-        """İzin Giriş repository'sine eriş."""
-        return self._r.get("Izin_Giris")
 
-    def insert_izin_giris(self, data: dict) -> None:
+    def get_izin_bilgi_repo(self) -> SonucYonetici:
+        """İzin Bilgi repository'sine eriş."""
+        return SonucYonetici.tamam(data=self._r.get("Izin_Bilgi"))
+
+    def get_izin_giris_repo(self) -> SonucYonetici:
+        """İzin Giriş repository'sine eriş."""
+        return SonucYonetici.tamam(data=self._r.get("Izin_Giris"))
+
+    def insert_izin_giris(self, data: dict) -> SonucYonetici:
         """İzin giriş kaydı ekle."""
         try:
             tc = str(data.get("Personelid", "")).strip()
@@ -52,23 +53,24 @@ class IzinService:
                 gun = 0
 
             if tc and izin_tipi and gun > 0:
-                ok, msg = self.validate_izin_sure_limit(tc=tc, izin_tipi=izin_tipi, gun=gun)
-                if not ok:
-                    raise ValueError(msg)
+                validation_sonuc = self.validate_izin_sure_limit(tc=tc, izin_tipi=izin_tipi, gun=gun)
+                if not validation_sonuc.basarili:
+                    return validation_sonuc
 
             self._r.get("Izin_Giris").insert(data)
+            return SonucYonetici.tamam("İzin giriş kaydı eklendi.")
         except Exception as e:
-            logger.error(f"İzin giriş ekleme hatası: {e}")
-            raise
+            return SonucYonetici.hata(e, "IzinService.insert_izin_giris")
 
-    def update_izin_giris(self, izin_id: str, data: dict) -> None:
+    def update_izin_giris(self, izin_id: str, data: dict) -> SonucYonetici:
         """İzin giriş kaydını güncelle."""
         try:
             self._r.get("Izin_Giris").update(izin_id, data)
+            return SonucYonetici.tamam(f"İzin giriş kaydı güncellendi: {izin_id}")
         except Exception as e:
             logger.error(f"İzin giriş güncelleme hatası: {e}")
-            raise
-    
+            return SonucYonetici.hata(e, "IzinService.update_izin_giris")
+
     # ───────────────────────────────────────────────────────────
     #  İş Kuralları
     # ───────────────────────────────────────────────────────────
@@ -187,23 +189,23 @@ class IzinService:
             logger.error(f"Max izin gün hesaplama hatası: {e}")
             return None
 
-    def validate_izin_sure_limit(self, tc: str, izin_tipi: str, gun: int) -> tuple[bool, str]:
+    def validate_izin_sure_limit(self, tc: str, izin_tipi: str, gun: int) -> SonucYonetici:
         """İzin süresi limitini doğrular; limit aşımı varsa kaydı engeller."""
         try:
             if gun <= 0:
-                return False, "İzin gün sayısı 0'dan büyük olmalıdır."
+                return SonucYonetici.hata(Exception("İzin gün sayısı 0'dan büyük olmalıdır."), "IzinService.validate_izin_sure_limit")
 
             max_gun = self.get_izin_max_gun(tc=tc, izin_tipi=izin_tipi)
             if max_gun is None:
-                return True, ""
+                return SonucYonetici.tamam()
 
             if gun > max_gun:
-                return False, f"{izin_tipi} için maksimum {max_gun} gün girilebilir."
+                return SonucYonetici.hata(Exception(f"{izin_tipi} için maksimum {max_gun} gün girilebilir."), "IzinService.validate_izin_sure_limit")
 
-            return True, ""
+            return SonucYonetici.tamam()
         except Exception as e:
             logger.error(f"İzin limit doğrulama hatası: {e}")
-            return False, "İzin limit doğrulama sırasında hata oluştu."
+            return SonucYonetici.hata(e, "IzinService.validate_izin_sure_limit")
 
     def hesapla_yillik_hak(self, baslama_tarihi: str) -> float:
         """
@@ -233,7 +235,7 @@ class IzinService:
             logger.error(f"Yıllık hak hesaplama hatası: {e}")
             return 0.0
 
-    def create_or_update_izin_bilgi(self, tc: str, ad_soyad: str, baslama_tarihi: str) -> bool:
+    def create_or_update_izin_bilgi(self, tc: str, ad_soyad: str, baslama_tarihi: str) -> SonucYonetici:
         """
         Personel için Izin_Bilgi kaydını oluşturur/günceller.
         Yıllık hak ve kalan alanlarını hizmet süresine göre set eder.
@@ -241,7 +243,7 @@ class IzinService:
         try:
             tc = str(tc or "").strip()
             if not tc:
-                return False
+                return SonucYonetici.hata(Exception("TC Kimlik No boş olamaz."), "IzinService.create_or_update_izin_bilgi")
 
             yillik_hak = self._to_float(self.hesapla_yillik_hak(baslama_tarihi), 0.0)
             payload = {
@@ -265,24 +267,19 @@ class IzinService:
             if mevcut:
                 repo.update(tc, payload)
                 logger.info(f"Izin_Bilgi güncellendi: {tc} (Yıllık Hak: {yillik_hak})")
+                return SonucYonetici.tamam(f"Izin_Bilgi güncellendi: {tc}")
             else:
                 repo.insert(payload)
                 logger.info(f"Izin_Bilgi oluşturuldu: {tc} (Yıllık Hak: {yillik_hak})")
-            return True
+                return SonucYonetici.tamam(f"Izin_Bilgi oluşturuldu: {tc}")
         except Exception as e:
-            logger.error(f"Izin_Bilgi oluşturma/güncelleme hatası: {e}")
-            return False
-    
+            return SonucYonetici.hata(e, "IzinService.create_or_update_izin_bilgi")
+
     # ───────────────────────────────────────────────────────────
     #  Veri Yükleme
     # ───────────────────────────────────────────────────────────
-    
-    def get_izin_listesi(
-        self,
-        ay: Optional[int] = None,
-        yil: Optional[int] = None,
-        tc: Optional[str] = None
-    ) -> List[Dict]:
+
+    def get_izin_listesi(self, ay: Optional[int] = None, yil: Optional[int] = None, tc: Optional[str] = None) -> SonucYonetici:
         """
         İzin listesini getir.
         
@@ -311,12 +308,11 @@ class IzinService:
             elif yil:
                 rows = [r for r in rows if str(r.get("Yil", "")).strip() == str(yil).strip()]
             
-            return rows
+            return SonucYonetici.tamam(data=rows)
         except Exception as e:
-            logger.error(f"İzin listesi yükleme hatası: {e}")
-            return []
-    
-    def get_izin_tipleri(self) -> List[str]:
+            return SonucYonetici.hata(e, "IzinService.get_izin_listesi")
+
+    def get_izin_tipleri(self) -> SonucYonetici:
         """
         İzin türlerini getir.
         
@@ -331,12 +327,11 @@ class IzinService:
                 if str(s.get("Kod", "")).strip() == "IzinTipi"
                 and str(s.get("MenuEleman", "")).strip()
             ]
-            return sorted(list(set(tipleri)))
+            return SonucYonetici.tamam(data=sorted(list(set(tipleri))))
         except Exception as e:
-            logger.error(f"İzin türleri yükleme hatası: {e}")
-            return []
-    
-    def get_personel_listesi(self) -> List[Dict]:
+            return SonucYonetici.hata(e, "IzinService.get_izin_tipleri")
+
+    def get_personel_listesi(self) -> SonucYonetici:
         """
         Personel listesini getir.
         
@@ -344,12 +339,12 @@ class IzinService:
             Tüm personeller
         """
         try:
-            return self._r.get("Personel").get_all() or []
+            data = self._r.get("Personel").get_all() or []
+            return SonucYonetici.tamam(data=data)
         except Exception as e:
-            logger.error(f"Personel listesi yükleme hatası: {e}")
-            return []
-    
-    def get_izinli_personeller_bugun(self) -> Dict[str, List[Tuple[str, str]]]:
+            return SonucYonetici.hata(e, "IzinService.get_personel_listesi")
+
+    def get_izinli_personeller_bugun(self) -> SonucYonetici:
         """
         Bugün izinli olan personellerin detaylı listesini getir.
         
@@ -388,16 +383,15 @@ class IzinService:
             for tc in izinli_map:
                 izinli_map[tc].sort(key=lambda x: x[0])
             
-            return izinli_map
+            return SonucYonetici.tamam(data=izinli_map)
         except Exception as e:
-            logger.error(f"İzinli personel sorgusu hatası: {e}")
-            return {}
-    
+            return SonucYonetici.hata(e, "IzinService.get_izinli_personeller_bugun")
+
     # ───────────────────────────────────────────────────────────
     #  CRUD İşlemleri
     # ───────────────────────────────────────────────────────────
-    
-    def kaydet(self, veri: Dict, guncelle: bool = False) -> bool:
+
+    def kaydet(self, veri: Dict, guncelle: bool = False) -> SonucYonetici:
         """
         İzin kaydı ekle veya güncelle.
         
@@ -413,19 +407,16 @@ class IzinService:
             if guncelle:
                 izin_id = veri.get("Izinid")
                 if not izin_id:
-                    logger.error("UPDATE için IzinId gerekli")
-                    return False
+                    return SonucYonetici.hata(Exception("UPDATE için Izinid gerekli"), "IzinService.kaydet")
                 repo.update(izin_id, veri)
-                logger.info(f"İzin #{izin_id} güncellendi")
+                return SonucYonetici.tamam(f"İzin #{izin_id} güncellendi")
             else:
                 repo.insert(veri)
-                logger.info("Yeni izin kaydı oluşturuldu")
-            return True
+                return SonucYonetici.tamam("Yeni izin kaydı oluşturuldu")
         except Exception as e:
-            logger.error(f"İzin kaydet hatası: {e}")
-            return False
-    
-    def iptal_et(self, izin_id: str) -> bool:
+            return SonucYonetici.hata(e, "IzinService.kaydet")
+
+    def iptal_et(self, izin_id: str) -> SonucYonetici:
         """
         İzin kaydını iptal et (sil).
         
@@ -437,35 +428,33 @@ class IzinService:
         """
         try:
             self._r.get("Izin_Giris").delete(izin_id)
-            logger.info(f"İzin #{izin_id} iptal edildi")
-            return True
+            return SonucYonetici.tamam(f"İzin #{izin_id} iptal edildi")
         except Exception as e:
-            logger.error(f"İzin iptal hatası: {e}")
-            return False
+            return SonucYonetici.hata(e, "IzinService.iptal_et")
 
-    def get_sabitler_raw(self) -> list:
+    def get_sabitler_raw(self) -> SonucYonetici:
         """Tüm sabitler kayıtlarını döner (ham liste)."""
         try:
-            return self._r.get("Sabitler").get_all() or []
+            data = self._r.get("Sabitler").get_all() or []
+            return SonucYonetici.tamam(data=data)
         except Exception as e:
-            logger.error(f"Sabitler yükleme hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "IzinService.get_sabitler_raw")
 
-    def get_tatiller_raw(self) -> list:
+    def get_tatiller_raw(self) -> SonucYonetici:
         """Tüm tatil kayıtlarını döner (ham liste)."""
         try:
-            return self._r.get("Tatiller").get_all() or []
+            data = self._r.get("Tatiller").get_all() or []
+            return SonucYonetici.tamam(data=data)
         except Exception as e:
-            logger.error(f"Tatiller yükleme hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "IzinService.get_tatiller_raw")
 
-    def get_tum_izin_giris(self) -> list:
+    def get_tum_izin_giris(self) -> SonucYonetici:
         """Tüm izin giriş kayıtlarını döner."""
         try:
-            return self._r.get("Izin_Giris").get_all() or []
+            data = self._r.get("Izin_Giris").get_all() or []
+            return SonucYonetici.tamam(data=data)
         except Exception as e:
-            logger.error(f"İzin giriş listesi hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "IzinService.get_tum_izin_giris")
 
     def has_izin_cakisma(
         self,
@@ -473,7 +462,7 @@ class IzinService:
         baslama_tarihi: str,
         bitis_tarihi: str,
         ignore_izin_id: Optional[str] = None,
-    ) -> bool:
+    ) -> SonucYonetici:
         """
         Verilen tarih aralığı için personelde izin çakışması var mı?
 
@@ -486,12 +475,12 @@ class IzinService:
         try:
             tc_str = str(tc or "").strip()
             if not tc_str:
-                return False
+                return SonucYonetici.tamam(data=False)
 
             yeni_bas = parse_date(baslama_tarihi or "")
             yeni_bit = parse_date(bitis_tarihi or "")
             if not yeni_bas or not yeni_bit:
-                return False
+                return SonucYonetici.tamam(data=False)
 
             all_izin = self._r.get("Izin_Giris").get_all() or []
             for kayit in all_izin:
@@ -512,12 +501,11 @@ class IzinService:
                     vt_bit = vt_bas
 
                 if (yeni_bas <= vt_bit) and (yeni_bit >= vt_bas):
-                    return True
+                    return SonucYonetici.tamam(data=True)
 
-            return False
+            return SonucYonetici.tamam(data=False)
         except Exception as e:
-            logger.error(f"İzin çakışma kontrolü hatası: {e}")
-            return False
+            return SonucYonetici.hata(e, "IzinService.has_izin_cakisma")
 
     def calculate_carryover(self, mevcut_kalan: float, yillik_hakedis: float) -> float:
         """
@@ -556,7 +544,7 @@ class IzinService:
             logger.error(f"IzinService.calculate_carryover: {e}")
             return 0.0
 
-    def bakiye_dus(self, tc: str, izin_tipi: str, gun: int) -> None:
+    def bakiye_dus(self, tc: str, izin_tipi: str, gun: int) -> SonucYonetici:
         """
         İzin kaydedilince bakiyeden otomatik düş.
         Yıllık İzin, Şua İzni, Rapor/Mazeret için çalışır.
@@ -564,7 +552,7 @@ class IzinService:
         try:
             izin_bilgi = self._r.get("Izin_Bilgi").get_by_id(tc)
             if not izin_bilgi:
-                return
+                return SonucYonetici.hata(Exception("İzin bilgisi bulunamadı."), "IzinService.bakiye_dus")
 
             if izin_tipi == "Yıllık İzin":
                 yeni_kul = float(izin_bilgi.get("YillikKullanilan", 0)) + gun
@@ -573,7 +561,7 @@ class IzinService:
                     "YillikKullanilan": yeni_kul,
                     "YillikKalan": yeni_kal,
                 })
-                logger.info(f"Yıllık izin bakiye düştü: {tc} → {gun} gün (Kalan: {yeni_kal})")
+                return SonucYonetici.tamam(f"Yıllık izin bakiye düştü: {tc} → {gun} gün (Kalan: {yeni_kal})")
 
             elif izin_tipi == "Şua İzni":
                 yeni_kul = float(izin_bilgi.get("SuaKullanilan", 0)) + gun
@@ -582,25 +570,25 @@ class IzinService:
                     "SuaKullanilan": yeni_kul,
                     "SuaKalan": yeni_kal,
                 })
-                logger.info(f"Şua izin bakiye düştü: {tc} → {gun} gün (Kalan: {yeni_kal})")
+                return SonucYonetici.tamam(f"Şua izin bakiye düştü: {tc} → {gun} gün (Kalan: {yeni_kal})")
 
             elif izin_tipi in ("Rapor", "Mazeret İzni"):
                 yeni_top = float(izin_bilgi.get("RaporMazeretTop", 0)) + gun
                 self._r.get("Izin_Bilgi").update(tc, {"RaporMazeretTop": yeni_top})
-                logger.info(f"Rapor/Mazeret toplam arttı: {tc} → +{gun} gün (Toplam: {yeni_top})")
-
+                return SonucYonetici.tamam(f"Rapor/Mazeret toplam arttı: {tc} → +{gun} gün (Toplam: {yeni_top})")
+            return SonucYonetici.tamam("Bakiye düşme işlemi tamamlandı.")
         except Exception as e:
-            logger.error(f"Bakiye düşme hatası: {e}")
+            return SonucYonetici.hata(e, "IzinService.bakiye_dus")
 
-    def set_personel_pasif(self, tc: str, izin_tipi: str, gun: int) -> None:
+    def set_personel_pasif(self, tc: str, izin_tipi: str, gun: int) -> SonucYonetici:
         """
         Uzun/ücretsiz izin kaydedilince personeli pasif yap.
         should_set_pasif() koşulunu kontrol eder.
         """
         if not tc or not self.should_set_pasif(izin_tipi, gun):
-            return
+            return SonucYonetici.tamam("Personel pasif yapılmadı (koşul sağlanmadı).")
         try:
             self._r.get("Personel").update(tc, {"Durum": "Pasif"})
-            logger.info(f"Personel pasif yapıldı: {tc} — {izin_tipi} — {gun} gün")
+            return SonucYonetici.tamam(f"Personel pasif yapıldı: {tc} — {izin_tipi} — {gun} gün")
         except Exception as e:
-            logger.error(f"Personel durum güncelleme hatası: {e}")
+            return SonucYonetici.hata(e, "IzinService.set_personel_pasif")

@@ -6,7 +6,8 @@ Sorumluluklar:
 - Personel kaydı (INSERT/UPDATE/DELETE)
 """
 from typing import Optional, List, Dict
-from core.logger import logger
+from database.base_repository import BaseRepository
+from core.hata_yonetici import SonucYonetici, logger
 from core.validators import validate_tc_kimlik_no
 from database.repository_registry import RepositoryRegistry
 
@@ -29,7 +30,7 @@ class PersonelService:
     #  Repository Accessors
     # ───────────────────────────────────────────────────────────
     
-    def get_personel_repo(self):
+    def get_personel_repo(self) -> BaseRepository:
         """Personel repository'sine eriş."""
         return self._r.get("Personel")
     
@@ -47,14 +48,13 @@ class PersonelService:
             tc = str(tc).strip()
             return validate_tc_kimlik_no(tc)
         except Exception as e:
-            logger.error(f"TC doğrulama hatası: {e}")
             return False
     
     # ───────────────────────────────────────────────────────────
     #  Veri Yükleme
     # ───────────────────────────────────────────────────────────
     
-    def get_personel_listesi(self, aktif_only: bool = False) -> List[Dict]:
+    def get_personel_listesi(self, aktif_only: bool = False) -> SonucYonetici:
         """
         Personel listesini getir.
         
@@ -73,12 +73,11 @@ class PersonelService:
                     if str(r.get("Durum", "")).strip().lower() != "pasif"
                 ]
             
-            return rows
+            return SonucYonetici.tamam(data=rows)
         except Exception as e:
-            logger.error(f"Personel listesi yükleme hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "PersonelService.get_personel_listesi")
     
-    def get_personel(self, tc: str) -> Optional[Dict]:
+    def get_personel(self, tc: str) -> SonucYonetici:
         """
         Tek bir personeli TC Kimlik No'ya göre getir.
         
@@ -89,12 +88,12 @@ class PersonelService:
             Personel kaydı veya None
         """
         try:
-            return self._r.get("Personel").get_by_pk(tc)
+            data = self._r.get("Personel").get_by_pk(tc)
+            return SonucYonetici.tamam(data=data)
         except Exception as e:
-            logger.error(f"Personel '{tc}' yükleme hatası: {e}")
-            return None
+            return SonucYonetici.hata(e, f"PersonelService.get_personel({tc})")
     
-    def get_bolumler(self) -> List[str]:
+    def get_bolumler(self) -> SonucYonetici:
         """
         Bölüm listesini getir.
         
@@ -108,12 +107,11 @@ class PersonelService:
                 for s in sabitler
                 if str(s.get("Kod", "")).strip() == "Bölüm"
             ]
-            return sorted(list(set(bolumler)))
+            return SonucYonetici.tamam(data=sorted(list(set(bolumler))))
         except Exception as e:
-            logger.error(f"Bölüm listesi yükleme hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "PersonelService.get_bolumler")
     
-    def get_gorev_yerleri(self) -> List[str]:
+    def get_gorev_yerleri(self) -> SonucYonetici:
         """
         Görev yeri listesini getir.
         
@@ -128,12 +126,11 @@ class PersonelService:
                 if str(s.get("Kod", "")).strip() == "Gorev_Yeri"
                 and str(s.get("MenuEleman", "")).strip()
             ]
-            return sorted(list(set(gorev_yerleri)))
+            return SonucYonetici.tamam(data=sorted(list(set(gorev_yerleri))))
         except Exception as e:
-            logger.error(f"Görev yeri listesi yükleme hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "PersonelService.get_gorev_yerleri")
     
-    def get_hizmet_siniflari(self) -> List[str]:
+    def get_hizmet_siniflari(self) -> SonucYonetici:
         """
         Hizmet sınıfı listesini getir.
         
@@ -148,16 +145,15 @@ class PersonelService:
                 if str(s.get("Kod", "")).strip() == "Hizmet_Sinifi"
                 and str(s.get("MenuEleman", "")).strip()
             ]
-            return sorted(list(set(siniflar)))
+            return SonucYonetici.tamam(data=sorted(list(set(siniflar))))
         except Exception as e:
-            logger.error(f"Hizmet sınıfı listesi yükleme hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "PersonelService.get_hizmet_siniflari")
     
     # ───────────────────────────────────────────────────────────
     #  CRUD İşlemleri
     # ───────────────────────────────────────────────────────────
     
-    def ekle(self, veri: Dict) -> bool:
+    def ekle(self, veri: Dict) -> SonucYonetici:
         """
         Yeni personel ekle.
         
@@ -165,23 +161,20 @@ class PersonelService:
             veri: Personel verisi (TC Kimlik No içermelidir)
         
         Returns:
-            Başarılı ise True
+            SonucYonetici
         """
         try:
             # KimlikNo (yeni akış) veya TC (geri uyumluluk) doğrula
             tc = str(veri.get("KimlikNo") or veri.get("TC") or "").strip()
             if not self.validate_tc(tc):
-                logger.error(f"Geçersiz TC Kimlik No: {tc}")
-                return False
+                return SonucYonetici.hata(Exception(f"Geçersiz TC Kimlik No: {tc}"), "PersonelService.ekle")
             
             self._r.get("Personel").insert(veri)
-            logger.info(f"Personel {tc} eklendi")
-            return True
+            return SonucYonetici.tamam(f"Personel {tc} eklendi")
         except Exception as e:
-            logger.error(f"Personel ekleme hatası: {e}")
-            return False
+            return SonucYonetici.hata(e, "PersonelService.ekle")
     
-    def guncelle(self, tc: str, veri: Dict) -> bool:
+    def guncelle(self, tc: str, veri: Dict) -> SonucYonetici:
         """
         Personel bilgilerini güncelle.
         
@@ -190,17 +183,15 @@ class PersonelService:
             veri: Güncellenecek veriler
         
         Returns:
-            Başarılı ise True
+            SonucYonetici
         """
         try:
             self._r.get("Personel").update(tc, veri)
-            logger.info(f"Personel {tc} güncellendi")
-            return True
+            return SonucYonetici.tamam(f"Personel {tc} güncellendi")
         except Exception as e:
-            logger.error(f"Personel güncelleme hatası: {e}")
-            return False
+            return SonucYonetici.hata(e, "PersonelService.guncelle")
     
-    def sil(self, tc: str) -> bool:
+    def sil(self, tc: str) -> SonucYonetici:
         """
         Personel kaydını sil.
         
@@ -208,21 +199,19 @@ class PersonelService:
             tc: TC Kimlik No
         
         Returns:
-            Başarılı ise True
+            SonucYonetici
         """
         try:
             self._r.get("Personel").delete(tc)
-            logger.info(f"Personel {tc} silindi")
-            return True
+            return SonucYonetici.tamam(f"Personel {tc} silindi")
         except Exception as e:
-            logger.error(f"Personel silme hatası: {e}")
-            return False
+            return SonucYonetici.hata(e, "PersonelService.sil")
 
     # ───────────────────────────────────────────────────────────
     #  Repository Accessor Methods
     # ───────────────────────────────────────────────────────────
 
-    def get_sabitler_repo(self):
+    def get_sabitler_repo(self) -> Optional[BaseRepository]:
         """Sabitler repository'sini döndür (combo verisi için)."""
         try:
             return self._r.get("Sabitler")
@@ -230,20 +219,20 @@ class PersonelService:
             logger.error(f"Sabitler repository erişim hatası: {e}")
             return None
 
-    def get_personel_by_tc(self, tc: str) -> Optional[Dict]:
+    def get_personel_by_tc(self, tc: str) -> SonucYonetici:
         """TC'ye göre personel kaydını getir."""
         try:
             repo = self._r.get("Personel")
-            return repo.get_by_id(tc)
+            data = repo.get_by_id(tc)
+            return SonucYonetici.tamam(data=data)
         except Exception as e:
-            logger.error(f"Personel TC getirme hatası: {e}")
-            return None
+            return SonucYonetici.hata(e, "PersonelService.get_personel_by_tc")
 
-    def get_all_sabitler(self) -> list[Dict]:
+    def get_all_sabitler(self) -> SonucYonetici:
         """Tüm Sabitler kaydını getir."""
         try:
             repo = self._r.get("Sabitler")
-            return repo.get_all() or []
+            data = repo.get_all() or []
+            return SonucYonetici.tamam(data=data)
         except Exception as e:
-            logger.error(f"Sabitler getirme hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "PersonelService.get_all_sabitler")

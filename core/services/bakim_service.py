@@ -7,7 +7,7 @@ Sorumluluklar:
 - Bakım kaydı (INSERT/UPDATE)
 """
 from typing import Optional, List, Dict
-from core.logger import logger
+from core.hata_yonetici import SonucYonetici
 from database.repository_registry import RepositoryRegistry
 
 
@@ -25,7 +25,7 @@ class BakimService:
             raise ValueError("RepositoryRegistry boş olamaz")
         self._r = registry
     
-    def get_bakim_listesi(self, cihaz_id: Optional[str] = None) -> List[Dict]:
+    def get_bakim_listesi(self, cihaz_id: Optional[str] = None) -> SonucYonetici:
         """
         Bakım listesini getir.
         
@@ -33,34 +33,30 @@ class BakimService:
             cihaz_id: Filtreleme için cihaz ID'si (isteğe bağlı)
         
         Returns:
-            Bakım kayıtları, planlanan tarihe göre DESC sıralanmış
+            SonucYonetici
         """
         try:
             rows = self._r.get("Periyodik_Bakim").get_all() or []
-            
-            # Cihaz ID'sine göre filtrele
             if cihaz_id:
                 rows = [
-                    r for r in rows 
+                    r for r in rows
                     if str(r.get("Cihazid", "")).strip() == str(cihaz_id).strip()
                 ]
-            
-            # Planlanan tarihe göre DESC sırala
-            return sorted(
+            rows = sorted(
                 rows,
                 key=lambda r: r.get("PlanlananTarih") or "",
                 reverse=True
             )
+            return SonucYonetici.tamam(data=rows)
         except Exception as e:
-            logger.error(f"Bakım listesi yükleme hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "BakimService.get_bakim_listesi")
     
-    def get_bakim_tipleri(self) -> List[str]:
+    def get_bakim_tipleri(self) -> SonucYonetici:
         """
         Bakım türlerini getir.
         
         Returns:
-            Bakım türleri listesi
+            SonucYonetici
         """
         try:
             sabitler = self._r.get("Sabitler").get_all() or []
@@ -70,24 +66,21 @@ class BakimService:
                 if str(s.get("Kod", "")).strip() == "BakimTipi"
                 and str(s.get("MenuEleman", "")).strip()
             ]
-            return sorted(list(set(tipleri)))  # Tekrarları temizle, A-Z'ye sırala
+            return SonucYonetici.tamam(data=sorted(list(set(tipleri))))
         except Exception as e:
-            logger.error(f"Bakım türleri yükleme hatası: {e}")
-            return []
+            return SonucYonetici.hata(e, "BakimService.get_bakim_tipleri")
     
-    def get_cihaz_listesi(self) -> List[Dict]:
+    def get_cihaz_listesi(self) -> SonucYonetici:
         """
         Cihaz listesini getir.
-        
         Returns:
-            Tüm cihazlar
+            SonucYonetici
         """
         try:
-            return self._r.get("Cihazlar").get_all() or []
+            rows = self._r.get("Cihazlar").get_all() or []
+            return SonucYonetici.tamam(data=rows)
         except Exception as e:
-            logger.error(f"Cihaz listesi yükleme hatası: {e}")
-            return []
-    
+            return SonucYonetici.hata(e, "BakimService.get_cihaz_listesi")
     def get_cihaz_adlari(self) -> List[str]:
         """
         Cihaz adlarını getir (formlar için).
@@ -95,15 +88,17 @@ class BakimService:
         Returns:
             Cihaz adları listesi
         """
-        cihazlar = self.get_cihaz_listesi()
+        sonuc = self.get_cihaz_listesi()
+        if not sonuc.basarili or not sonuc.data:
+            return []
         adlar = [
             str(c.get("CihazAdi", "")).strip()
-            for c in cihazlar
+            for c in sonuc.data
             if str(c.get("CihazAdi", "")).strip()
         ]
         return sorted(list(set(adlar)))
     
-    def get_cihaz(self, cihaz_id: str) -> Optional[Dict]:
+    def get_cihaz(self, cihaz_id: str) -> SonucYonetici:
         """
         Tek bir cihazı getir.
         
@@ -111,15 +106,15 @@ class BakimService:
             cihaz_id: Cihaz ID'si
         
         Returns:
-            Cihaz kaydı veya None
+            SonucYonetici
         """
         try:
-            return self._r.get("Cihazlar").get_by_pk(cihaz_id)
+            row = self._r.get("Cihazlar").get_by_pk(cihaz_id)
+            return SonucYonetici.tamam(data=row)
         except Exception as e:
-            logger.error(f"Cihaz '{cihaz_id}' yükleme hatası: {e}")
-            return None
+            return SonucYonetici.hata(e, "BakimService.get_cihaz")
     
-    def kaydet(self, veri: Dict, guncelle: bool = False) -> bool:
+    def kaydet(self, veri: Dict, guncelle: bool = False) -> SonucYonetici:
         """
         Bakım kaydı ekle veya güncelle.
         
@@ -128,26 +123,23 @@ class BakimService:
             guncelle: True ise UPDATE, False ise INSERT
         
         Returns:
-            Başarılı ise True
+            SonucYonetici
         """
         try:
             repo = self._r.get("Periyodik_Bakim")
             if guncelle:
                 plan_id = veri.get("Planid")
                 if not plan_id:
-                    logger.error("UPDATE için Planid gerekli")
-                    return False
+                    return SonucYonetici.hata("UPDATE için Planid gerekli", "BakimService.kaydet")
                 repo.update(plan_id, veri)
-                logger.info(f"Bakım planı #{plan_id} güncellendi")
+                return SonucYonetici.tamam(f"Bakım planı #{plan_id} güncellendi.")
             else:
                 repo.insert(veri)
-                logger.info("Yeni bakım planı oluşturuldu")
-            return True
+                return SonucYonetici.tamam("Yeni bakım planı oluşturuldu.")
         except Exception as e:
-            logger.error(f"Bakım kaydet hatası: {e}")
-            return False
+            return SonucYonetici.hata(e, "BakimService.kaydet")
     
-    def sil(self, plan_id: str) -> bool:
+    def sil(self, plan_id: str) -> SonucYonetici:
         """
         Bakım planını sil.
         
@@ -155,12 +147,10 @@ class BakimService:
             plan_id: Bakım planı ID'si
         
         Returns:
-            Başarılı ise True
+            SonucYonetici
         """
         try:
             self._r.get("Periyodik_Bakim").delete(plan_id)
-            logger.info(f"Bakım planı #{plan_id} silindi")
-            return True
+            return SonucYonetici.tamam(f"Bakım planı #{plan_id} silindi.")
         except Exception as e:
-            logger.error(f"Bakım silme hatası: {e}")
-            return False
+            return SonucYonetici.hata(e, "BakimService.sil")

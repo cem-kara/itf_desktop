@@ -24,6 +24,9 @@ from pathlib import Path
 from typing import Optional
 
 from core.logger import logger
+from database.repository_registry import RepositoryRegistry
+from core.hata_yonetici import SonucYonetici
+from core.services.dis_alan_katsayi_service import DisAlanKatsayiService
 
 
 KOLON_HARITA = {
@@ -218,13 +221,12 @@ def _parse_int(deger) -> Optional[int]:
 
 
 class DisAlanImportService:
-    def __init__(self, registry=None, arsiv_dizin: Optional[str] = None, katsayi_service=None):
+    def __init__(self, registry: Optional[RepositoryRegistry] = None, arsiv_dizin: Optional[str] = None, katsayi_service: Optional[DisAlanKatsayiService] = None):
         self._r          = registry
         self._arsiv_dizin = Path(arsiv_dizin) if arsiv_dizin else None
         if katsayi_service:
             self._katsayi_service = katsayi_service
         elif registry:
-            from core.services.dis_alan_katsayi_service import DisAlanKatsayiService
             self._katsayi_service = DisAlanKatsayiService(registry)
         else:
             self._katsayi_service = None
@@ -237,8 +239,8 @@ class DisAlanImportService:
         dosya_yolu: str,
         donem_ay: int = 0,
         donem_yil: int = 0,
-        katsayi_cache: dict = None,
-    ) -> ImportSonucu:
+        katsayi_cache: Optional[dict] = None,
+    ) -> SonucYonetici:
         """
         Excel şablonunu okur ve doğrular. DB'ye yazmaz.
 
@@ -255,7 +257,7 @@ class DisAlanImportService:
         try:
             import openpyxl
         except ImportError:
-            raise RuntimeError("openpyxl kurulu değil: pip install openpyxl")
+            return SonucYonetici.hata(RuntimeError("openpyxl kurulu değil: pip install openpyxl"), "DisAlanImportService.excel_oku")
 
         import_tarihi = datetime.now().strftime("%Y-%m-%d")
         sonuc = ImportSonucu(
@@ -266,13 +268,13 @@ class DisAlanImportService:
         try:
             wb = openpyxl.load_workbook(dosya_yolu, data_only=True)
         except Exception as e:
-            raise ValueError(f"Dosya açılamadı: {e}")
+            return SonucYonetici.hata(ValueError(f"Dosya açılamadı: {e}"), "DisAlanImportService.excel_oku")
 
         if "Veri Girişi" not in wb.sheetnames:
-            raise ValueError(
+            return SonucYonetici.hata(ValueError(
                 "'Veri Girişi' sayfası bulunamadı — "
                 "lütfen resmi şablonu kullanın."
-            )
+            ), "DisAlanImportService.excel_oku")
 
         ws = wb["Veri Girişi"]
 
@@ -296,12 +298,12 @@ class DisAlanImportService:
             donem_ay = _parse_ay(d3_val)
 
         if not (donem_ay and donem_yil):
-            raise ValueError(
+            return SonucYonetici.hata(ValueError(
                 f"Dönem bilgisi okunamadı.\n"
                 f"D3 hücresine ay adını (ör: Ocak) veya numarasını (ör: 1),\n"
                 f"D4 hücresine yılı (ör: 2026) girin.\n"
                 f"Okunan — D3: '{d3_val}'  D4: '{d4_val}'"
-            )
+            ), "DisAlanImportService.excel_oku")
 
         donem_et = f"{donem_ay}/{donem_yil}"
 
@@ -314,10 +316,10 @@ class DisAlanImportService:
         # Kolon haritası
         kolon_idx = self._kolon_haritasi_bul(ws, baslik_satiri=6)
         if not kolon_idx:
-            raise ValueError(
+            return SonucYonetici.hata(ValueError(
                 "Başlık satırı tanınamadı. "
                 "Lütfen resmi şablonu kullanın."
-            )
+            ), "DisAlanImportService.excel_oku")
 
         # Veri satırları
         # Aynı kişi (TCKimlik) + dönem için tutarlılık kontrolü
@@ -502,7 +504,7 @@ class DisAlanImportService:
             f"Hatalı:{sonuc.hatali} "
             f"Uyarılı:{sonuc.uyarili}"
         )
-        return sonuc
+        return SonucYonetici.tamam(data=sonuc)
 
     def _kolon_haritasi_bul(self, ws, baslik_satiri: int) -> dict[str, int]:
         harita = {}
@@ -527,7 +529,7 @@ class DisAlanImportService:
         donem_yil: int,
         anabilim_dali: str = "",
         birim: str = "",
-        katsayi_cache: dict = None,
+        katsayi_cache: Optional[dict] = None,
     ) -> SatirSonucu:
         hatalar, uyarilar = [], []
         veri = {
@@ -562,19 +564,19 @@ class DisAlanImportService:
         if katsayi_cache is not None:
             katsayi_kayit = katsayi_cache.get((anabilim_dali, birim))
         elif self._katsayi_service:
-            katsayi_kayit = self._katsayi_service.get_aktif_katsayi(anabilim_dali, birim)
+            sonuc_katsayi = self._katsayi_service.get_aktif_katsayi(anabilim_dali, birim)
+            if sonuc_katsayi.basarili:
+                katsayi_kayit = sonuc_katsayi.data
 
         if katsayi_kayit:
             veri["Katsayi"]   = katsayi_kayit.get("Katsayi")
             veri["OrtSureDk"] = katsayi_kayit.get("OrtSureDk", 0)
-        elif katsayi_cache is not None or self._katsayi_service:
+        else:
             hatalar.append(
                 f"{anabilim_dali} / {birim} için aktif katsayı protokolü yok. "
                 f"Lütfen önce Katsayı Protokolleri ekranından protokol tanımlayın."
             )
-        else:
-            hatalar.append("Katsayı servisi bağlı değil — sistem yöneticisiyle iletişime geçin.")
-
+        
         # Vaka Sayısı — zorunlu
         vaka = _parse_int(row_vals.get("VakaSayisi"))
         if vaka is None:
@@ -658,7 +660,7 @@ class DisAlanImportService:
         sonuc: ImportSonucu,
         dosya_yolu: str,
         kaydeden: Optional[str] = None,
-    ) -> ImportSonucu:
+    ) -> SonucYonetici:
         """
         Onaylanan satırları DB'ye yazar.
 
@@ -670,69 +672,72 @@ class DisAlanImportService:
         """
 
         if not self._r:
-            raise RuntimeError("RepositoryRegistry bağlı değil")
+            return SonucYonetici.hata(RuntimeError("RepositoryRegistry bağlı değil"), "DisAlanImportService.kaydet")
 
-        # ── Adım 1: Dokumanlar kaydı ─────────────────────────
-        dokuman_id    = self._dokumanlar_kaydet(sonuc, dosya_yolu, kaydeden)
-        tutanak_no    = dokuman_id
-        tutanak_tarihi = datetime.now().strftime("%Y-%m-%d")
+        try:
+            # ── Adım 1: Dokumanlar kaydı ─────────────────────────
+            dokuman_id    = self._dokumanlar_kaydet(sonuc, dosya_yolu, kaydeden)
+            tutanak_no    = dokuman_id
+            tutanak_tarihi = datetime.now().strftime("%Y-%m-%d")
 
-        sonuc.dokuman_id   = dokuman_id
-        sonuc.tutanak_no   = tutanak_no
-        sonuc.import_tarihi = tutanak_tarihi
+            sonuc.dokuman_id   = dokuman_id
+            sonuc.tutanak_no   = tutanak_no
+            sonuc.import_tarihi = tutanak_tarihi
 
-        logger.info(f"Tutanak oluşturuldu | DokumanId: {dokuman_id}")
+            logger.info(f"Tutanak oluşturuldu | DokumanId: {dokuman_id}")
 
-        # ── Adım 2–3: Satır kayıtları ─────────────────────────
-        repo = self._r.get("Dis_Alan_Calisma")
-        kaydedilen = atlanan = 0
+            # ── Adım 2–3: Satır kayıtları ─────────────────────────
+            repo = self._r.get("Dis_Alan_Calisma")
+            kaydedilen = atlanan = 0
 
-        for satir in sonuc.satirlar:
-            if not satir.gecerli and not satir.kullanici_onayladi:
-                atlanan += 1
-                continue
-
-            veri = {
-                **satir.veri,
-                "TutanakNo":          tutanak_no,
-                "TutanakTarihi":      tutanak_tarihi,
-                "KaydedenKullanici":  kaydeden or "Import",
-            }
-
-            try:
-                pk = (
-                    str(veri.get("TCKimlik",  "")),
-                    str(veri.get("DonemAy",   "")),
-                    str(veri.get("DonemYil",  "")),
-                    str(veri.get("TutanakNo", "")),
-                )
-                if repo.get_by_pk(pk):
-                    satir.uyarilar.append("Zaten kayıtlı — atlandı")
+            for satir in sonuc.satirlar:
+                if not satir.gecerli and not satir.kullanici_onayladi:
                     atlanan += 1
                     continue
 
-                repo.insert(veri)
-                kaydedilen += 1
-                logger.info(
-                    f"Import | {veri.get('AdSoyad')} | "
-                    f"{veri.get('IslemTipi')} | "
-                    f"Vaka:{veri.get('VakaSayisi')} | "
-                    f"{veri.get('HesaplananSaat', 0):.2f} saat"
-                )
-            except Exception as e:
-                satir.hatalar.append(f"DB hatası: {e}")
-                satir.gecerli = False
-                atlanan += 1
-                logger.error(f"Import satır {satir.satir_no}: {e}")
+                veri = {
+                    **satir.veri,
+                    "TutanakNo":          tutanak_no,
+                    "TutanakTarihi":      tutanak_tarihi,
+                    "KaydedenKullanici":  kaydeden or "Import",
+                }
 
-        sonuc.kaydedilen = kaydedilen
-        sonuc.atlanan    = atlanan
-        logger.info(
-            f"Import tamamlandı | "
-            f"TutanakNo:{tutanak_no[:8]}… | "
-            f"Kaydedilen:{kaydedilen} Atlanan:{atlanan}"
-        )
-        return sonuc
+                try:
+                    pk = (
+                        str(veri.get("TCKimlik",  "")),
+                        str(veri.get("DonemAy",   "")),
+                        str(veri.get("DonemYil",  "")),
+                        str(veri.get("TutanakNo", "")),
+                    )
+                    if repo.get_by_pk(pk):
+                        satir.uyarilar.append("Zaten kayıtlı — atlandı")
+                        atlanan += 1
+                        continue
+
+                    repo.insert(veri)
+                    kaydedilen += 1
+                    logger.info(
+                        f"Import | {veri.get('AdSoyad')} | "
+                        f"{veri.get('IslemTipi')} | "
+                        f"Vaka:{veri.get('VakaSayisi')} | "
+                        f"{veri.get('HesaplananSaat', 0):.2f} saat"
+                    )
+                except Exception as e:
+                    satir.hatalar.append(f"DB hatası: {e}")
+                    satir.gecerli = False
+                    atlanan += 1
+                    logger.error(f"Import satır {satir.satir_no}: {e}")
+
+            sonuc.kaydedilen = kaydedilen
+            sonuc.atlanan    = atlanan
+            logger.info(
+                f"Import tamamlandı | "
+                f"TutanakNo:{tutanak_no[:8]}… | "
+                f"Kaydedilen:{kaydedilen} Atlanan:{atlanan}"
+            )
+            return SonucYonetici.tamam(data=sonuc)
+        except Exception as e:
+            return SonucYonetici.hata(e, "DisAlanImportService.kaydet")
 
     def _dokumanlar_kaydet(
         self,

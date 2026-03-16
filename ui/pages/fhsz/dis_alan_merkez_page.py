@@ -10,54 +10,87 @@ Dış Alan Radyasyon Yönetim Merkezi
   3. Dönem Geçmişi    — Açık / kapalı dönem takibi
   4. Ayarlar          — Katsayı Protokolleri + Birim Kurulum Sihirbazı
 """
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QTabWidget, QLabel
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QLabel, QFrame, QPushButton
 from PySide6.QtCore import Qt
 
 from ui.styles.components import STYLES as S
 from core.logger import logger
 
 
+
+from PySide6.QtCore import Signal
+from PySide6.QtGui import QCursor
+from ui.styles import DarkTheme
+from ui.styles.icons import IconRenderer
+
 class DisAlanMerkezPage(QWidget):
+    kapat_istegi = Signal()
+
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(S["page"])
+        self.setProperty("bg-role", "page")
         self._db = db
+        self.btn_kapat = None
         self._setup_ui()
 
     def _setup_ui(self):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
 
+        # Modern başlık alanı (izin_fhsz_puantaj_merkez.py tarzı)
+        header = QFrame()
+        header.setProperty("bg-role", "panel")
+        header.setFixedHeight(52)
+        header_lay = QHBoxLayout(header)
+        header_lay.setContentsMargins(16, 0, 16, 0)
+        header_lay.setSpacing(10)
+        lbl_title = QLabel("Radyoloji Harici Personel Fiili Hizmet Yönetimi")
+        lbl_title.setProperty("style-role", "section-title")
+        lbl_title.setProperty("color-role", "primary")
+        header_lay.addWidget(lbl_title)
+        header_lay.addStretch()
+        # Kapat butonu
+        btn_kapat = QPushButton("Kapat")
+        btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        btn_kapat.setToolTip("Kapat")
+        btn_kapat.setProperty("style-role", "danger")
+        btn_kapat.style().unpolish(btn_kapat)
+        btn_kapat.style().polish(btn_kapat)
+        btn_kapat.clicked.connect(self.kapat_istegi.emit)
+        IconRenderer.set_button_icon(btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
+        self.btn_kapat = btn_kapat
+        header_lay.addWidget(btn_kapat)
+        root.addWidget(header)
+
         self.tabs = QTabWidget()
-        self.tabs.setStyleSheet(S.get("tab_widget", ""))
         self.tabs.setDocumentMode(True)
 
         # 1 — Excel Import (Import Karsilastirma alt sekme olarak icinde)
         try:
             from ui.pages.fhsz.dis_alan_import_page import DisAlanImportPage
-            self.tabs.addTab(DisAlanImportPage(db=self._db), "📥  Excel Import")
+            self.tabs.addTab(DisAlanImportPage(db=self._db), "Excel Import")
         except Exception as e:
             logger.error(f"DisAlanImportPage yuklenemedi: {e}")
-            self.tabs.addTab(_HataWidget(str(e)), "📥  Excel Import")
+            self.tabs.addTab(_HataWidget(str(e)), "Excel Import")
 
         # 2 — Puantaj & Onay
         try:
             from ui.pages.fhsz.dis_alan_puantaj_page import DisAlanPuantajPage
-            self.tabs.addTab(DisAlanPuantajPage(db=self._db), "📊  Puantaj & Onay")
+            self.tabs.addTab(DisAlanPuantajPage(db=self._db), "Puantaj & Onay")
         except Exception as e:
             logger.error(f"DisAlanPuantajPage yuklenemedi: {e}")
-            self.tabs.addTab(_HataWidget(str(e)), "📊  Puantaj & Onay")
+            self.tabs.addTab(_HataWidget(str(e)), "Puantaj & Onay")
 
         # 3 — Dönem Geçmişi
         try:
             from ui.pages.fhsz.dis_alan_donem_gecmisi_page import DisAlanDonemGecmisiPage
-            self.tabs.addTab(DisAlanDonemGecmisiPage(db=self._db), "📅  Dönem Geçmişi")
+            self.tabs.addTab(DisAlanDonemGecmisiPage(db=self._db), "Dönem Geçmişi")
         except Exception as e:
             logger.error(f"DisAlanDonemGecmisiPage yuklenemedi: {e}")
-            self.tabs.addTab(_HataWidget(str(e)), "📅  Dönem Geçmişi")
+            self.tabs.addTab(_HataWidget(str(e)), "Dönem Geçmişi")
 
         # 4 — Ayarlar (Katsayi + Kurulum)
-        self.tabs.addTab(_AyarlarWidget(db=self._db), "⚙  Ayarlar")
+        self.tabs.addTab(_AyarlarWidget(db=self._db), "Ayarlar")
 
         root.addWidget(self.tabs)
         self.setLayout(root)
@@ -104,17 +137,17 @@ class _AyarlarWidget(QWidget):
 
         try:
             from ui.pages.fhsz.dis_alan_katsayi_page import DisAlanKatsayiPage
-            self.tabs.addTab(DisAlanKatsayiPage(db=self._db), "📋  Katsayı Protokolleri")
+            self.tabs.addTab(DisAlanKatsayiPage(db=self._db), "Katsayı Protokolleri")
         except Exception as e:
             logger.error(f"DisAlanKatsayiPage yuklenemedi: {e}")
-            self.tabs.addTab(_HataWidget(str(e)), "📋  Katsayı Protokolleri")
+            self.tabs.addTab(_HataWidget(str(e)), "Katsayı Protokolleri")
 
         try:
             from ui.pages.fhsz.dis_alan_kurulum_page import DisAlanKurulumPage
-            self.tabs.addTab(DisAlanKurulumPage(db=self._db), "🔧  Birim Kurulum")
+            self.tabs.addTab(DisAlanKurulumPage(db=self._db), "Birim Kurulum")
         except Exception as e:
             logger.error(f"DisAlanKurulumPage yuklenemedi: {e}")
-            self.tabs.addTab(_HataWidget(str(e)), "🔧  Birim Kurulum")
+            self.tabs.addTab(_HataWidget(str(e)), "Birim Kurulum")
 
         lay.addWidget(self.tabs)
 
@@ -124,8 +157,10 @@ class _HataWidget(QWidget):
         super().__init__(parent)
         lay = QVBoxLayout(self)
         lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lbl = QLabel(f"⚠  Sayfa yuklenemedi:\n{mesaj}")
-        lbl.setStyleSheet("color:#EF9A9A; font-size:12px; padding:20px;")
+        lbl = QLabel(f"Sayfa yüklenemedi:\n{mesaj}")
+        lbl.setProperty("color-role", "err")
+        lbl.setProperty("style-role", "info")
+        lbl.setProperty("bg-role", "panel")
         lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         lbl.setWordWrap(True)
         lay.addWidget(lbl)
