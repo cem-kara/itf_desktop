@@ -31,7 +31,7 @@ class RkeService:
         """Tüm RKE envanter kayıtlarını döndür."""
         try:
             data = self._r.get("RKE_List").get_all() or []
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, "RkeService.get_rke_listesi")
 
@@ -39,7 +39,7 @@ class RkeService:
         """Tek RKE kaydını ekipman no'ya göre getir."""
         try:
             data = self._r.get("RKE_List").get_by_pk(ekipman_no)
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, f"RkeService.get_rke({ekipman_no})")
 
@@ -86,7 +86,7 @@ class RkeService:
                     r for r in tum
                     if str(r.get("EkipmanNo", "")).strip() == str(ekipman_no).strip()
                 ]
-            return SonucYonetici.tamam(data=tum)
+            return SonucYonetici.tamam(veri=tum)
         except Exception as e:
             return SonucYonetici.hata(e, "RkeService.get_muayene_listesi")
 
@@ -94,7 +94,7 @@ class RkeService:
         """Tek muayene kaydını getir."""
         try:
             data = self._r.get("RKE_Muayene").get_by_pk(kayit_no)
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, f"RkeService.get_muayene({kayit_no})")
 
@@ -167,7 +167,7 @@ class RkeService:
                 if durum:
                     rke_list = [r for r in rke_list if str(r.get("Durum", "")) == durum]
 
-            return SonucYonetici.tamam(data={"rke_list": rke_list, "muayene_list": muayene_list})
+            return SonucYonetici.tamam(veri={"rke_list": rke_list, "muayene_list": muayene_list})
 
         except Exception as e:
             return SonucYonetici.hata(e, "RkeService.get_rapor_verisi")

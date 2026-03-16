@@ -41,7 +41,7 @@ class ArizaService:
                     r for r in rows
                     if str(r.get("Cihazid", "")).strip() == str(cihaz_id).strip()
                 ]
-            return SonucYonetici.tamam(data=rows)
+            return SonucYonetici.tamam(veri=rows)
         except Exception as e:
             return SonucYonetici.hata(e, "ArizaService.get_ariza_listesi")
     
@@ -60,7 +60,7 @@ class ArizaService:
                 if str(s.get("Kod", "")).strip() == "ArızaTipi"
                 and str(s.get("MenuEleman", "")).strip()
             ]
-            return SonucYonetici.tamam(data=sorted(list(set(tipleri))))
+            return SonucYonetici.tamam(veri=sorted(list(set(tipleri))))
         except Exception as e:
             return SonucYonetici.hata(e, "ArizaService.get_ariza_tipleri")
     
@@ -79,7 +79,7 @@ class ArizaService:
                 if str(s.get("Kod", "")).strip() == "ArızaDurumu"
                 and str(s.get("MenuEleman", "")).strip()
             ]
-            return SonucYonetici.tamam(data=sorted(list(set(durumlar))))
+            return SonucYonetici.tamam(veri=sorted(list(set(durumlar))))
         except Exception as e:
             return SonucYonetici.hata(e, "ArizaService.get_ariza_durumlari")
     
@@ -98,7 +98,7 @@ class ArizaService:
                 if str(s.get("Kod", "")).strip() == "Oncelik"
                 and str(s.get("MenuEleman", "")).strip()
             ]
-            return SonucYonetici.tamam(data=sorted(list(set(seviyeler))))
+            return SonucYonetici.tamam(veri=sorted(list(set(seviyeler))))
         except Exception as e:
             return SonucYonetici.hata(e, "ArizaService.get_oncelik_seviyeleri")
     
@@ -111,7 +111,7 @@ class ArizaService:
         """
         try:
             rows = self._r.get("Cihazlar").get_all() or []
-            return SonucYonetici.tamam(data=rows)
+            return SonucYonetici.tamam(veri=rows)
         except Exception as e:
             return SonucYonetici.hata(e, "ArizaService.get_cihaz_listesi")
     
@@ -127,7 +127,7 @@ class ArizaService:
         """
         try:
             row = self._r.get("Cihazlar").get_by_pk(cihaz_id)
-            return SonucYonetici.tamam(data=row)
+            return SonucYonetici.tamam(veri=row)
         except Exception as e:
             return SonucYonetici.hata(e, "ArizaService.get_cihaz")
     

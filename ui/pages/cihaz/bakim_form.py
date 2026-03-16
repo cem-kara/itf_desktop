@@ -814,7 +814,7 @@ class BakimKayitForm(QWidget):
             self._update_kpi()
             return
         try:
-            rows = self._svc.get_bakim_listesi(self._cihaz_id)
+            rows = self._svc.get_bakim_listesi(self._cihaz_id).veri or []
             self._all_rows = rows
             self._refresh_cihaz_filter()
             self._update_kpi()
@@ -851,7 +851,7 @@ class BakimKayitForm(QWidget):
         
         try:
             # Sabitler tablosundan Kod="Marka" olan kayıtları çek
-            cihazlar = self._svc.get_cihaz_listesi()
+            cihazlar = self._svc.get_cihaz_listesi().veri or []
             markalar = sorted(set([
                 str(c.get("Marka", "")).strip()
                 for c in cihazlar
@@ -883,7 +883,7 @@ class BakimKayitForm(QWidget):
             if sel_marka and self._db and self._svc:
                 # Cihazlar tablosundan seçili markaya ait cihaz ID'lerini bul
                 try:
-                    cihazlar = self._svc.get_cihaz_listesi()
+                    cihazlar = self._svc.get_cihaz_listesi().veri or []
                     marka_cihaz_ids = {
                         str(c.get("Cihazid","")) 
                         for c in cihazlar 
@@ -1250,7 +1250,7 @@ class BakimKayitForm(QWidget):
         if not self._db or not self._svc:
             return cihaz_marka_map, tum_markalar
         try:
-            cihazlar = self._svc.get_cihaz_listesi()
+            cihazlar = self._svc.get_cihaz_listesi().veri or []
             for c in (cihazlar or []):
                 cid   = str(c.get("Cihazid","") or "").strip()
                 marka = str(c.get("Marka","")   or "").strip()
@@ -2309,7 +2309,7 @@ class _BakimGirisForm(QWidget):
             self.cmb_cihaz_sec.addItem("⚠️ Veritabanı bağlantısı yok", None)
             return
         try:
-            cihazlar = self._svc.get_cihaz_listesi()
+            cihazlar = self._svc.get_cihaz_listesi().veri or []
             
             self.cmb_cihaz_sec.clear()
             self.cmb_cihaz_sec.addItem("-- Cihaz Seçiniz --", None)

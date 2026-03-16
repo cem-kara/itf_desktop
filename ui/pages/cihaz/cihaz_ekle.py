@@ -374,7 +374,7 @@ class CihazEklePage(QWidget):
         if not self._db or not self._svc:
             return
         try:
-            sabitler = self._svc.get_sabitler()
+            sabitler = self._svc.get_sabitler().veri or []
             grouped: dict[str, list[str]] = {}
             for row in sabitler:
                 kod = str(row.get("Kod", "")).strip()
@@ -410,7 +410,7 @@ class CihazEklePage(QWidget):
         if not self._svc:
             return 1
         try:
-            return self._svc.get_next_cihaz_sequence()
+            return self._svc.get_next_cihaz_sequence().veri or 1
         except Exception as e:
             logger.debug(f"Cihaz ID hesaplama hatasi: {e}")
             return 1

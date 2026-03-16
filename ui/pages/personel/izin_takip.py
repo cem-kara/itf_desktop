@@ -609,7 +609,7 @@ class IzinTakipPage(QWidget):
             personel_svc = get_personel_service(self._db)
 
             # ── Personeller ──
-            self._all_personel = personel_svc.get_personel_listesi()
+            self._all_personel = personel_svc.get_personel_listesi().veri or []
             aktif = [p for p in self._all_personel
                      if str(p.get("Durum", "")).strip() == "Aktif"]
             aktif.sort(key=lambda p: str(p.get("AdSoyad", "")))

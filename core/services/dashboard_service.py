@@ -82,7 +82,7 @@ class DashboardService:
                 data.update(izin_stats_sonuc.data) # Ensure it's a dict, not None
             else:
                 logger.warning(f"Aylık izin istatistikleri alınamadı: {izin_stats_sonuc.mesaj}")
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, "DashboardService.get_dashboard_data")
 
@@ -98,7 +98,7 @@ class DashboardService:
                 "Cihazlar",
                 lambda r: today_str <= str(r.get("BitisTarihi", "")) <= six_months
             ).data or 0
-            return SonucYonetici.tamam(data=count)
+            return SonucYonetici.tamam(veri=count)
         except Exception as e:
             return SonucYonetici.hata(e, "DashboardService._yaklasan_ndk")
 
@@ -113,7 +113,7 @@ class DashboardService:
                     and str(r.get("Durum", "")).strip() == "Planlandı"
                 )
             ).data or 0
-            return SonucYonetici.tamam(data=count)
+            return SonucYonetici.tamam(veri=count)
         except Exception as e:
             return SonucYonetici.hata(e, "DashboardService._aylik_bakim")
 
@@ -128,7 +128,7 @@ class DashboardService:
                     and str(r.get("Durum", "")).strip() == "Tamamlandı"
                 )
             ).data or 0
-            return SonucYonetici.tamam(data=count)
+            return SonucYonetici.tamam(veri=count)
         except Exception as e:
             return SonucYonetici.hata(e, "DashboardService._aylik_kalibrasyon")
 
@@ -143,7 +143,7 @@ class DashboardService:
                     and str(r.get("Durum", "")).strip() != "Kapatıldı"
                 )
             ).data or 0
-            return SonucYonetici.tamam(data=count)
+            return SonucYonetici.tamam(veri=count)
         except Exception as e:
             return SonucYonetici.hata(e, "DashboardService._yeni_arizalar")
 
@@ -154,7 +154,7 @@ class DashboardService:
                 "Personel",
                 lambda r: str(r.get("Durum", "")).strip() == "Aktif"
             ).data or 0
-            return SonucYonetici.tamam(data=count)
+            return SonucYonetici.tamam(veri=count)
         except Exception as e:
             return SonucYonetici.hata(e, "DashboardService._aktif_personel")
 
@@ -169,7 +169,7 @@ class DashboardService:
                     and str(r.get("Durum", "")).strip() == "Planlandı"
                 )
             ).data or 0
-            return SonucYonetici.tamam(data=count)
+            return SonucYonetici.tamam(veri=count)
         except Exception as e:
             return SonucYonetici.hata(e, "DashboardService._yaklasan_rke")
 
@@ -184,7 +184,7 @@ class DashboardService:
                     and str(r.get("Durum", "")).strip() != "Pasif"
                 )
             ).data or 0
-            return SonucYonetici.tamam(data=count)
+            return SonucYonetici.tamam(veri=count)
         except Exception as e:
             return SonucYonetici.hata(e, "DashboardService._yaklasan_saglik")
 
@@ -199,7 +199,7 @@ class DashboardService:
                     and str(r.get("Durum", "")).strip() != "Pasif"
                 )
             ).data or 0
-            return SonucYonetici.tamam(data=count)
+            return SonucYonetici.tamam(veri=count)
         except Exception as e:
             return SonucYonetici.hata(e, "DashboardService._gecmis_saglik")
 
@@ -210,7 +210,7 @@ class DashboardService:
                 "Cihaz_Ariza",
                 lambda r: str(r.get("Durum", "")).strip() == "Açık"
             ).data or 0
-            return SonucYonetici.tamam(data=count)
+            return SonucYonetici.tamam(veri=count)
         except Exception as e:
             return SonucYonetici.hata(e, "DashboardService._acik_arizalar")
 
@@ -225,7 +225,7 @@ class DashboardService:
                     and str(r.get("Durum", "")).strip() == "Tamamlandı"
                 )
             ).data or 0
-            return SonucYonetici.tamam(data=count)
+            return SonucYonetici.tamam(veri=count)
         except Exception as e:
             return SonucYonetici.hata(e, "DashboardService._gecmis_kalibrasyon")
 
@@ -264,7 +264,7 @@ class DashboardService:
             stats["aylik_izinli_sua"]    = len(by_type["sua"])
             stats["aylik_izinli_rapor"]  = len(by_type["rapor"])
             stats["aylik_izinli_diger"]  = len(by_type["diger"])
-            return SonucYonetici.tamam(data=stats)
+            return SonucYonetici.tamam(veri=stats)
         except Exception as e:
             return SonucYonetici.hata(e, "DashboardService._aylik_izin_stats")
 
@@ -275,7 +275,7 @@ class DashboardService:
     def _count_where(self, table: str, predicate) -> SonucYonetici:
         """Bir tablodaki kayıtları filtre fonksiyonu ile say."""
         rows = self._r.get(table).get_all() or []
-        return SonucYonetici.tamam(data=sum(1 for r in rows if predicate(r)))
+        return SonucYonetici.tamam(veri=sum(1 for r in rows if predicate(r)))
 
     def _month_range(self, today: datetime) -> tuple[str, str]:
         """Ayın ilk ve son günü string olarak döndür."""

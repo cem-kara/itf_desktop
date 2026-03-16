@@ -369,14 +369,14 @@ class SaglikTakipPage(QWidget):
             sinifler = []
             if svc:
                 # Sabitler tablosunda Kod='HizmetSinifi' olanları çek
-                sabitler = svc.get_sabitler() if hasattr(svc, 'get_sabitler') else []
+                sabitler = svc.get_sabitler().veri or [] if hasattr(svc, 'get_sabitler') else []
                 sinifler = [s.get("MenuEleman", "").strip() for s in sabitler if s.get("Kod") == "Hizmet_Sinifi" and s.get("MenuEleman")]
-            siniflar = sorted(set(sinifler))
+            sinifler = sorted(set(sinifler))
             current = self.cmb_hizmet_sinifi.currentText() if hasattr(self, 'cmb_hizmet_sinifi') else None
             self.cmb_hizmet_sinifi.blockSignals(True)
             self.cmb_hizmet_sinifi.clear()
             self.cmb_hizmet_sinifi.addItem("Tümü")
-            self.cmb_hizmet_sinifi.addItems(siniflar)
+            self.cmb_hizmet_sinifi.addItems(sinifler)
             if current:
                 idx = self.cmb_hizmet_sinifi.findText(current)
                 if idx >= 0:

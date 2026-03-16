@@ -47,7 +47,7 @@ class BakimService:
                 key=lambda r: r.get("PlanlananTarih") or "",
                 reverse=True
             )
-            return SonucYonetici.tamam(data=rows)
+            return SonucYonetici.tamam(veri=rows)
         except Exception as e:
             return SonucYonetici.hata(e, "BakimService.get_bakim_listesi")
     
@@ -66,7 +66,7 @@ class BakimService:
                 if str(s.get("Kod", "")).strip() == "BakimTipi"
                 and str(s.get("MenuEleman", "")).strip()
             ]
-            return SonucYonetici.tamam(data=sorted(list(set(tipleri))))
+            return SonucYonetici.tamam(veri=sorted(list(set(tipleri))))
         except Exception as e:
             return SonucYonetici.hata(e, "BakimService.get_bakim_tipleri")
     
@@ -78,7 +78,7 @@ class BakimService:
         """
         try:
             rows = self._r.get("Cihazlar").get_all() or []
-            return SonucYonetici.tamam(data=rows)
+            return SonucYonetici.tamam(veri=rows)
         except Exception as e:
             return SonucYonetici.hata(e, "BakimService.get_cihaz_listesi")
     def get_cihaz_adlari(self) -> List[str]:
@@ -110,7 +110,7 @@ class BakimService:
         """
         try:
             row = self._r.get("Cihazlar").get_by_pk(cihaz_id)
-            return SonucYonetici.tamam(data=row)
+            return SonucYonetici.tamam(veri=row)
         except Exception as e:
             return SonucYonetici.hata(e, "BakimService.get_cihaz")
     

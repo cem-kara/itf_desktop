@@ -41,7 +41,7 @@ class SaglikService:
                     r for r in tum
                     if str(r.get("Personelid", "")).strip() == str(personel_id).strip()
                 ]
-            return SonucYonetici.tamam(data=tum)
+            return SonucYonetici.tamam(veri=tum)
         except Exception as e:
             return SonucYonetici.hata(e, "SaglikService.get_saglik_kayitlari")
 
@@ -49,7 +49,7 @@ class SaglikService:
         """Tek sağlık kaydını getir."""
         try:
             data = self._r.get("Personel_Saglik_Takip").get_by_pk(kayit_no)
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, f"SaglikService.get_saglik_kaydi({kayit_no})")
 
@@ -112,7 +112,7 @@ class SaglikService:
                 "son_kayit": son_kayit,
                 "toplam_kayit": len(kayitlar),
             }
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, f"SaglikService.get_personel_saglik_ozeti({personel_id})")
 
@@ -125,7 +125,7 @@ class SaglikService:
             rows = self._r.get("Personel").get_all() or []
             if aktif_only:
                 rows = [r for r in rows if str(r.get("Durum", "")).strip().lower() != "pasif"]
-            return SonucYonetici.tamam(data=rows)
+            return SonucYonetici.tamam(veri=rows)
         except Exception as e:
             return SonucYonetici.hata(e, "SaglikService.get_personel_listesi")
 
@@ -146,6 +146,6 @@ class SaglikService:
             ]
             if belge_turu:
                 result = [r for r in result if str(r.get("BelgeTuru", "")) == belge_turu]
-            return SonucYonetici.tamam(data=result)
+            return SonucYonetici.tamam(veri=result)
         except Exception as e:
             return SonucYonetici.hata(e, f"SaglikService.get_dokumanlar({personel_id})")

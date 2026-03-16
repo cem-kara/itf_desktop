@@ -79,7 +79,7 @@ class FileSyncService:
         result["total"] = len(pending) # SonucYonetici.data için
         if not pending:
             logger.info("FileSyncService: Bekleyen dosya yok, atlanıyor.")
-            return SonucYonetici.tamam(data=result)
+            return SonucYonetici.tamam(veri=result)
 
         logger.info(f"FileSyncService: {len(pending)} bekleyen dosya bulundu.")
 
@@ -111,7 +111,7 @@ class FileSyncService:
               AND  LocalPath  != ''
               AND  (DrivePath IS NULL OR DrivePath = '')
         """)
-            return SonucYonetici.tamam(data=[dict(row) for row in cur.fetchall()])
+            return SonucYonetici.tamam(veri=[dict(row) for row in cur.fetchall()])
         except Exception as e:
             return SonucYonetici.hata(e, "FileSyncService._get_pending_records")
 
@@ -137,7 +137,7 @@ class FileSyncService:
                 f"FileSyncService: Diskte bulunamadı, atlanıyor: "
                 f"'{local_path}' [{entity_info}]"
             )
-            return SonucYonetici.tamam(data="skipped")
+            return SonucYonetici.tamam(veri="skipped")
         # 2 — Drive klasörünü belirle
         folder_name = DOCTYPE_FOLDER_MAP.get(doc_type, doc_type)
         if not folder_name:
@@ -145,7 +145,7 @@ class FileSyncService:
                 f"FileSyncService: DocType için klasör tanımı yok: "
                 f"'{doc_type}' [{entity_info}]"
             )
-            return SonucYonetici.tamam(data="failed")
+            return SonucYonetici.tamam(veri="failed")
         # 3 — Sabitler'den Drive klasör ID'sini çöz
         drive_folder_id = self._resolve_drive_folder_id(folder_name)
         if not drive_folder_id:
@@ -153,7 +153,7 @@ class FileSyncService:
                 f"FileSyncService: Sabitler'de Drive ID bulunamadı: "
                 f"klasör='{folder_name}' [{entity_info}]"
             )
-            return SonucYonetici.tamam(data="failed")
+            return SonucYonetici.tamam(veri="failed")
         # 4 — Drive'a yükle
         try:
             from database.google.drive import get_drive_service
@@ -173,7 +173,7 @@ class FileSyncService:
         # 5 — DrivePath'i güncelle (LocalPath korunur, sync_status=dirty)
         update_sonuc = self._update_drive_path(record, drive_link)
         if update_sonuc.basarili:
-            return SonucYonetici.tamam(data="uploaded")
+            return SonucYonetici.tamam(veri="uploaded")
         else:
             return SonucYonetici.hata(Exception(f"DrivePath güncellenemedi: {update_sonuc.mesaj}"), f"FileSyncService._upload_one [{entity_info}]")
 
@@ -192,7 +192,7 @@ class FileSyncService:
                 self._sabitler_cache = self._registry.get("Sabitler").get_all()
             except Exception as e:
                 return SonucYonetici.hata(e, "FileSyncService._get_sabitler")
-        return SonucYonetici.tamam(data=self._sabitler_cache)
+        return SonucYonetici.tamam(veri=self._sabitler_cache)
 
     def _update_drive_path(self, record: dict, drive_link: str) -> SonucYonetici:
         """

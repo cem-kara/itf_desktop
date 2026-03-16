@@ -60,7 +60,7 @@ class DisAlanService:
                 ad = str(r.get("AdSoyad", "")).strip()
                 if tc and tc not in unique:
                     unique[tc] = {"TCKimlik": tc, "AdSoyad": ad}
-            return SonucYonetici.tamam(data=list(unique.values()))
+            return SonucYonetici.tamam(veri=list(unique.values()))
         except Exception as e:
             return SonucYonetici.hata(e, "DisAlanService.get_dis_alan_personeli")
 
@@ -85,7 +85,7 @@ class DisAlanService:
             if donem_yil is not None:
                 rows = [r for r in rows if str(r.get("DonemYil", "")) == str(donem_yil)]
 
-            return SonucYonetici.tamam(data=rows)
+            return SonucYonetici.tamam(veri=rows)
         except Exception as e:
             return SonucYonetici.hata(e, "DisAlanService.get_calisma_listesi")
 
@@ -161,7 +161,7 @@ class DisAlanService:
             return sonuc
         kayitlar = sonuc.data or []
         toplam = round(sum(float(k.get("HesaplananSaat", 0)) for k in kayitlar), 2)
-        return SonucYonetici.tamam(data=toplam)
+        return SonucYonetici.tamam(veri=toplam)
 
     def yillik_toplam_saat(self, tckimlik: str, yil: int) -> SonucYonetici:
         """Personelin o yılki tüm ayların toplam saatini döndürür."""
@@ -173,7 +173,7 @@ class DisAlanService:
             return sonuc
         kayitlar = sonuc.data or []
         toplam = round(sum(float(k.get("HesaplananSaat", 0)) for k in kayitlar), 2)
-        return SonucYonetici.tamam(data=toplam)
+        return SonucYonetici.tamam(veri=toplam)
 
     def izin_hakki_hesapla(self, tckimlik: str, yil: int) -> SonucYonetici:
         """
@@ -184,7 +184,7 @@ class DisAlanService:
         if not sonuc.basarili:
             return sonuc
         izin_gunu = _izin_gunu_hesapla(sonuc.data or 0.0)
-        return SonucYonetici.tamam(data=izin_gunu)
+        return SonucYonetici.tamam(veri=izin_gunu)
 
     # ─────────────────────────────────────────────────────────
     #  Dönem Özeti  (Dis_Alan_Izin_Ozet)
@@ -199,7 +199,7 @@ class DisAlanService:
         """Dönem özetini döndürür. Yoksa None."""
         try:
             pk = (str(tckimlik), str(donem_ay), str(donem_yil))
-            return SonucYonetici.tamam(data=self._r.get("Dis_Alan_Izin_Ozet").get_by_pk(pk))
+            return SonucYonetici.tamam(veri=self._r.get("Dis_Alan_Izin_Ozet").get_by_pk(pk))
         except Exception as e:
             return SonucYonetici.hata(e, "DisAlanService.get_ozet")
 
@@ -307,6 +307,6 @@ class DisAlanService:
             rows = [r for r in rows if str(r.get("DonemYil", "")) == str(yil)]
             if sadece_onaysiz:
                 rows = [r for r in rows if int(r.get("RksOnay", 0)) == 0]
-            return SonucYonetici.tamam(data=rows)
+            return SonucYonetici.tamam(veri=rows)
         except Exception as e:
             return SonucYonetici.hata(e, "DisAlanService.get_yillik_ozet_listesi")

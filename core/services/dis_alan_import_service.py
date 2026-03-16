@@ -504,7 +504,7 @@ class DisAlanImportService:
             f"Hatalı:{sonuc.hatali} "
             f"Uyarılı:{sonuc.uyarili}"
         )
-        return SonucYonetici.tamam(data=sonuc)
+        return SonucYonetici.tamam(veri=sonuc)
 
     def _kolon_haritasi_bul(self, ws, baslik_satiri: int) -> dict[str, int]:
         harita = {}
@@ -735,7 +735,7 @@ class DisAlanImportService:
                 f"TutanakNo:{tutanak_no[:8]}… | "
                 f"Kaydedilen:{kaydedilen} Atlanan:{atlanan}"
             )
-            return SonucYonetici.tamam(data=sonuc)
+            return SonucYonetici.tamam(veri=sonuc)
         except Exception as e:
             return SonucYonetici.hata(e, "DisAlanImportService.kaydet")
 

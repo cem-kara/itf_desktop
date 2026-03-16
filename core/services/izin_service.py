@@ -36,11 +36,11 @@ class IzinService:
 
     def get_izin_bilgi_repo(self) -> SonucYonetici:
         """İzin Bilgi repository'sine eriş."""
-        return SonucYonetici.tamam(data=self._r.get("Izin_Bilgi"))
+        return SonucYonetici.tamam(veri=self._r.get("Izin_Bilgi"))
 
     def get_izin_giris_repo(self) -> SonucYonetici:
         """İzin Giriş repository'sine eriş."""
-        return SonucYonetici.tamam(data=self._r.get("Izin_Giris"))
+        return SonucYonetici.tamam(veri=self._r.get("Izin_Giris"))
 
     def insert_izin_giris(self, data: dict) -> SonucYonetici:
         """İzin giriş kaydı ekle."""
@@ -308,7 +308,7 @@ class IzinService:
             elif yil:
                 rows = [r for r in rows if str(r.get("Yil", "")).strip() == str(yil).strip()]
             
-            return SonucYonetici.tamam(data=rows)
+            return SonucYonetici.tamam(veri=rows)
         except Exception as e:
             return SonucYonetici.hata(e, "IzinService.get_izin_listesi")
 
@@ -327,7 +327,7 @@ class IzinService:
                 if str(s.get("Kod", "")).strip() == "IzinTipi"
                 and str(s.get("MenuEleman", "")).strip()
             ]
-            return SonucYonetici.tamam(data=sorted(list(set(tipleri))))
+            return SonucYonetici.tamam(veri=sorted(list(set(tipleri))))
         except Exception as e:
             return SonucYonetici.hata(e, "IzinService.get_izin_tipleri")
 
@@ -340,7 +340,7 @@ class IzinService:
         """
         try:
             data = self._r.get("Personel").get_all() or []
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, "IzinService.get_personel_listesi")
 
@@ -383,7 +383,7 @@ class IzinService:
             for tc in izinli_map:
                 izinli_map[tc].sort(key=lambda x: x[0])
             
-            return SonucYonetici.tamam(data=izinli_map)
+            return SonucYonetici.tamam(veri=izinli_map)
         except Exception as e:
             return SonucYonetici.hata(e, "IzinService.get_izinli_personeller_bugun")
 
@@ -436,7 +436,7 @@ class IzinService:
         """Tüm sabitler kayıtlarını döner (ham liste)."""
         try:
             data = self._r.get("Sabitler").get_all() or []
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, "IzinService.get_sabitler_raw")
 
@@ -444,7 +444,7 @@ class IzinService:
         """Tüm tatil kayıtlarını döner (ham liste)."""
         try:
             data = self._r.get("Tatiller").get_all() or []
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, "IzinService.get_tatiller_raw")
 
@@ -452,7 +452,7 @@ class IzinService:
         """Tüm izin giriş kayıtlarını döner."""
         try:
             data = self._r.get("Izin_Giris").get_all() or []
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, "IzinService.get_tum_izin_giris")
 
@@ -475,12 +475,12 @@ class IzinService:
         try:
             tc_str = str(tc or "").strip()
             if not tc_str:
-                return SonucYonetici.tamam(data=False)
+                return SonucYonetici.tamam(veri=False)
 
             yeni_bas = parse_date(baslama_tarihi or "")
             yeni_bit = parse_date(bitis_tarihi or "")
             if not yeni_bas or not yeni_bit:
-                return SonucYonetici.tamam(data=False)
+                return SonucYonetici.tamam(veri=False)
 
             all_izin = self._r.get("Izin_Giris").get_all() or []
             for kayit in all_izin:
@@ -501,9 +501,9 @@ class IzinService:
                     vt_bit = vt_bas
 
                 if (yeni_bas <= vt_bit) and (yeni_bit >= vt_bas):
-                    return SonucYonetici.tamam(data=True)
+                    return SonucYonetici.tamam(veri=True)
 
-            return SonucYonetici.tamam(data=False)
+            return SonucYonetici.tamam(veri=False)
         except Exception as e:
             return SonucYonetici.hata(e, "IzinService.has_izin_cakisma")
 

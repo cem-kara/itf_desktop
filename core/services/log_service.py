@@ -15,7 +15,7 @@
         except Exception as e:
             logger.error(f"Log özet hatası ({log_file_path}): {e}")
 
-        return SonucYonetici.tamam(data={
+        return SonucYonetici.tamam(veri={
             "total_lines": total_lines,
             "levels": levels_count
         })
@@ -76,7 +76,7 @@ class LogService:
             except Exception as e:
                 return SonucYonetici.hata(e, f"LogService.get_available_log_files ({log_file})")
                 
-        return SonucYonetici.tamam(data=sorted(log_files, key=lambda x: x["name"]))
+        return SonucYonetici.tamam(veri=sorted(log_files, key=lambda x: x["name"]))
 
     @staticmethod
     def parse_log_line(line: str) -> SonucYonetici:
@@ -93,7 +93,7 @@ class LogService:
         match = re.match(pattern, line.strip())
         
         if match: # SonucYonetici.data için dict döndür
-            return SonucYonetici.tamam(data={
+            return SonucYonetici.tamam(veri={
                 "timestamp": match.group(1),
                 "level": match.group(2),
                 "message": match.group(3),
@@ -101,7 +101,7 @@ class LogService:
             })
         
         # Eğer parse edilemezse, raw olarak döndür # SonucYonetici.data için dict döndür
-        return SonucYonetici.tamam(data={
+        return SonucYonetici.tamam(veri={
             "timestamp": "",
             "level": "",
             "message": line.strip(),
@@ -183,7 +183,7 @@ class LogService:
         except Exception as e:
             return SonucYonetici.hata(e, f"LogService.read_logs ({log_file_path})")
             
-        return SonucYonetici.tamam(data=logs)
+        return SonucYonetici.tamam(veri=logs)
 
     @staticmethod
     def get_log_summary(log_file_path: str) -> SonucYonetici:
@@ -194,7 +194,7 @@ class LogService:
             Dict: {"total_lines": 1000, "levels": {"INFO": 500, "ERROR": 10, ...}}
         """
         if not os.path.exists(log_file_path):
-            return SonucYonetici.tamam(data={"total_lines": 0, "levels": {}})
+            return SonucYonetici.tamam(veri={"total_lines": 0, "levels": {}})
 
         levels_count = {level: 0 for level in LogService.LOG_LEVELS.keys()}
         total_lines = 0
@@ -214,7 +214,7 @@ class LogService:
         except Exception as e:
             logger.error(f"Log özet hatası ({log_file_path}): {e}")
 
-        return SonucYonetici.tamam(data={
+        return SonucYonetici.tamam(veri={
             "total_lines": total_lines,
             "levels": levels_count
         })

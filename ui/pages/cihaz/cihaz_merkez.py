@@ -197,7 +197,7 @@ class CihazMerkezPage(QWidget):
             svc = self._cihaz_svc or _get_cihaz_service(self.db)
             self._cihaz_svc = svc
             # Cihaz verisini çek
-            cihaz = svc.get_cihaz(self.cihaz_id)
+            cihaz = svc.get_cihaz(self.cihaz_id).veri or []
             if not cihaz:
                 QMessageBox.warning(self, "Hata", f"Cihaz bulunamadı: {self.cihaz_id}")
                 self.kapat_istegi.emit()

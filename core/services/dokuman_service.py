@@ -173,7 +173,7 @@ class DokumanService:
                 "EntityType": entity_type,
                 "EntityId":   str(entity_id),
             })
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, "DokumanService.get_belgeler")
 
@@ -221,7 +221,7 @@ class DokumanService:
                     custom_name=custom_name,
                 )
                 if link:
-                    return SonucYonetici.tamam(data={"mode": "drive", "drive_link": link})
+                    return SonucYonetici.tamam(veri={"mode": "drive", "drive_link": link})
                 logger.warning("Drive upload link döndürmedi, local'e düşülüyor")
             except Exception as e:
                 logger.warning(f"Drive yükleme başarısız, local'e düşülüyor: {e}")
@@ -229,7 +229,7 @@ class DokumanService:
         # Offline veya Drive başarısız → local'e kaydet
         local_save_sonuc = self._save_local(file_path, folder_name, custom_name, entity_type, entity_id)
         if local_save_sonuc.basarili:
-            return SonucYonetici.tamam(data={"mode": "local", "local_path": local_save_sonuc.data})
+            return SonucYonetici.tamam(veri={"mode": "local", "local_path": local_save_sonuc.data})
         else:
             return SonucYonetici.hata(Exception("Local kopyalama başarısız"), "DokumanService._upload")
 
@@ -291,6 +291,6 @@ class DokumanService:
 
             shutil.copy2(file_path, dest)
             logger.info(f"DokumanService: local kayıt → {dest}")
-            return SonucYonetici.tamam(data=dest)
+            return SonucYonetici.tamam(veri=dest)
         except Exception as e:
             return SonucYonetici.hata(e, "DokumanService._save_local")

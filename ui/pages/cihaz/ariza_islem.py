@@ -508,7 +508,7 @@ class ArizaIslemPenceresi(QWidget):
 
         try:
             svc = _get_cihaz_service(self._db)
-            rows = svc.get_ariza_islemler(self._ariza_id)
+            rows = svc.get_ariza_islemler(self._ariza_id).veri or []
             # En yeni işlemler altta olacak şekilde ters sırala
             rows.sort(key=lambda r: (r.get("Tarih", "") or "", r.get("Saat", "") or ""), reverse=True)
             self._model.set_data(rows)

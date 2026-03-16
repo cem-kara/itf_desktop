@@ -73,7 +73,7 @@ class PersonelService:
                     if str(r.get("Durum", "")).strip().lower() != "pasif"
                 ]
             
-            return SonucYonetici.tamam(data=rows)
+            return SonucYonetici.tamam(veri=rows)
         except Exception as e:
             return SonucYonetici.hata(e, "PersonelService.get_personel_listesi")
     
@@ -89,7 +89,7 @@ class PersonelService:
         """
         try:
             data = self._r.get("Personel").get_by_pk(tc)
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, f"PersonelService.get_personel({tc})")
     
@@ -107,7 +107,7 @@ class PersonelService:
                 for s in sabitler
                 if str(s.get("Kod", "")).strip() == "Bölüm"
             ]
-            return SonucYonetici.tamam(data=sorted(list(set(bolumler))))
+            return SonucYonetici.tamam(veri=sorted(list(set(bolumler))))
         except Exception as e:
             return SonucYonetici.hata(e, "PersonelService.get_bolumler")
     
@@ -126,7 +126,7 @@ class PersonelService:
                 if str(s.get("Kod", "")).strip() == "Gorev_Yeri"
                 and str(s.get("MenuEleman", "")).strip()
             ]
-            return SonucYonetici.tamam(data=sorted(list(set(gorev_yerleri))))
+            return SonucYonetici.tamam(veri=sorted(list(set(gorev_yerleri))))
         except Exception as e:
             return SonucYonetici.hata(e, "PersonelService.get_gorev_yerleri")
     
@@ -145,7 +145,7 @@ class PersonelService:
                 if str(s.get("Kod", "")).strip() == "Hizmet_Sinifi"
                 and str(s.get("MenuEleman", "")).strip()
             ]
-            return SonucYonetici.tamam(data=sorted(list(set(siniflar))))
+            return SonucYonetici.tamam(veri=sorted(list(set(siniflar))))
         except Exception as e:
             return SonucYonetici.hata(e, "PersonelService.get_hizmet_siniflari")
     
@@ -224,7 +224,7 @@ class PersonelService:
         try:
             repo = self._r.get("Personel")
             data = repo.get_by_id(tc)
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, "PersonelService.get_personel_by_tc")
 
@@ -233,6 +233,6 @@ class PersonelService:
         try:
             repo = self._r.get("Sabitler")
             data = repo.get_all() or []
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, "PersonelService.get_all_sabitler")

@@ -29,7 +29,7 @@ class CihazService:
         """Tüm cihaz kayıtlarını döndür."""
         try:
             rows = self._r.get("Cihazlar").get_all() or []
-            return SonucYonetici.tamam(data=rows)
+            return SonucYonetici.tamam(veri=rows)
         except Exception as e:
             return SonucYonetici.hata(e, "CihazService.get_cihaz_listesi")
 
@@ -42,7 +42,7 @@ class CihazService:
         """
         try:
             data = self._r.get("Cihazlar").get_paginated(page=page, page_size=page_size)
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, "CihazService.get_cihaz_paginated")
 
@@ -51,7 +51,7 @@ class CihazService:
         try:
             rows = self._r.get("Cihazlar").get_by_kod(cihaz_id, "Cihazid")
             row = rows[0] if rows else None
-            return SonucYonetici.tamam(data=row)
+            return SonucYonetici.tamam(veri=row)
         except Exception as e:
             return SonucYonetici.hata(e, "CihazService.get_cihaz")
 
@@ -85,7 +85,7 @@ class CihazService:
                     if 0 < num < 900000 and num > max_id:
                         max_id = num
             next_seq = max_id + 1 if max_id else 1
-            return SonucYonetici.tamam(data=next_seq)
+            return SonucYonetici.tamam(veri=next_seq)
         except Exception as e:
             return SonucYonetici.hata(e, "CihazService.get_next_cihaz_sequence")
 
@@ -98,7 +98,7 @@ class CihazService:
         try:
             tum = self._r.get("Cihaz_Ariza").get_all() or []
             data = [r for r in tum if str(r.get("Cihazid", "")).strip() == str(cihaz_id).strip()]
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, f"CihazService.get_ariza_listesi({cihaz_id})")
 
@@ -106,7 +106,7 @@ class CihazService:
         """Tek arıza kaydını getir."""
         try:
             data = self._r.get("Cihaz_Ariza").get_by_pk(ariza_id)
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, f"CihazService.get_ariza({ariza_id})")
 
@@ -131,7 +131,7 @@ class CihazService:
         try:
             tum = self._r.get("Ariza_Islem").get_all() or []
             data = [r for r in tum if str(r.get("Arizaid", "")).strip() == str(ariza_id).strip()]
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, f"CihazService.get_ariza_islemler({ariza_id})")
 
@@ -160,7 +160,7 @@ class CihazService:
         try:
             tum = self._r.get("Periyodik_Bakim").get_all() or []
             data = [r for r in tum if str(r.get("Cihazid", "")).strip() == str(cihaz_id).strip()]
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, f"CihazService.get_bakim_listesi({cihaz_id})")
 
@@ -168,7 +168,7 @@ class CihazService:
         """Tüm bakım kayıtlarını döndür."""
         try:
             data = self._r.get("Periyodik_Bakim").get_all() or []
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, "CihazService.get_tum_bakimlar")
 
@@ -197,7 +197,7 @@ class CihazService:
         try:
             tum = self._r.get("Kalibrasyon").get_all() or []
             data = [r for r in tum if str(r.get("Cihazid", "")).strip() == str(cihaz_id).strip()]
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, f"CihazService.get_kalibrasyon_listesi({cihaz_id})")
 
@@ -225,7 +225,7 @@ class CihazService:
         """Tüm sabit kayıtlarını döndür."""
         try:
             data = self._r.get("Sabitler").get_all() or []
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, "CihazService.get_sabitler")
 
@@ -242,7 +242,7 @@ class CihazService:
                 if str(s.get("Kod", "")).strip() == kod
                    and str(s.get("MenuEleman", "")).strip()
             })
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, f"CihazService.get_sabitler_by_kod({kod})")
 
@@ -259,7 +259,7 @@ class CihazService:
                 eleman = str(row.get("MenuEleman", "")).strip()
                 if kod and eleman:
                     grouped.setdefault(kod, []).append(eleman)
-            return SonucYonetici.tamam(data=grouped)
+            return SonucYonetici.tamam(veri=grouped)
         except Exception as e:
             return SonucYonetici.hata(e, "CihazService.get_sabitler_grouped")
 
@@ -298,7 +298,7 @@ class CihazService:
             data = []
             if hasattr(repo, 'filter'):
                 data = repo.filter({"Cihazid": cihaz_id}) or []
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, f"CihazService.get_periyodik_bakim_listesi({cihaz_id})")
 
@@ -306,7 +306,7 @@ class CihazService:
         """Cihaz teknik tablosundan tüm kayıtları al."""
         try:
             data = self._r.get("Cihaz_Teknik").get_all() or []
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, "CihazService.get_cihaz_teknik_listesi")
 
@@ -336,7 +336,7 @@ class CihazService:
             data = None
             if hasattr(repo, 'get_by_cihaz_id'):
                 data = repo.get_by_cihaz_id(cihaz_id)
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, f"CihazService.get_cihaz_teknik({cihaz_id})")
 

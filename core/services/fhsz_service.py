@@ -26,7 +26,7 @@ class FhszService:
 
     def get_sabitler_repo(self) -> SonucYonetici:
         """Sabitler repository'sine eriş."""
-        return SonucYonetici.tamam(data=self._r.get("Sabitler"))
+        return SonucYonetici.tamam(veri=self._r.get("Sabitler"))
 
     # ───────────────────────────────────────────────────────────
     #  Puantaj Kayıtları
@@ -56,7 +56,7 @@ class FhszService:
             if personel_id is not None:
                 tum = [r for r in tum if str(r.get("Personelid", "")).strip() == str(personel_id).strip()]
 
-            return SonucYonetici.tamam(data=tum)
+            return SonucYonetici.tamam(veri=tum)
         except Exception as e:
             return SonucYonetici.hata(e, "FhszService.get_puantaj_listesi")
 
@@ -101,7 +101,7 @@ class FhszService:
             rows = self._r.get("Personel").get_all() or []
             if aktif_only:
                 rows = [r for r in rows if str(r.get("Durum", "")).strip().lower() != "pasif"]
-            return SonucYonetici.tamam(data=rows)
+            return SonucYonetici.tamam(veri=rows)
         except Exception as e:
             return SonucYonetici.hata(e, "FhszService.get_personel_listesi")
 
@@ -115,7 +115,7 @@ class FhszService:
                     if str(yil) in str(r.get("BaslamaTarihi", ""))
                        or str(yil) in str(r.get("BitisTarihi", ""))
                 ]
-            return SonucYonetici.tamam(data=tum)
+            return SonucYonetici.tamam(veri=tum)
         except Exception as e:
             return SonucYonetici.hata(e, "FhszService.get_izin_listesi")
 
@@ -125,7 +125,7 @@ class FhszService:
             tum = self._r.get("Tatiller").get_all() or []
             if yil is not None:
                 tum = [r for r in tum if str(yil) in str(r.get("Tarih", ""))]
-            return SonucYonetici.tamam(data=tum)
+            return SonucYonetici.tamam(veri=tum)
         except Exception as e:
             return SonucYonetici.hata(e, "FhszService.get_tatil_gunleri")
 
@@ -139,7 +139,7 @@ class FhszService:
                 if str(s.get("Kod", "")).strip() == kod
                    and str(s.get("MenuEleman", "")).strip()
             })
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, "FhszService.get_sabitler_by_kod")
 
@@ -147,7 +147,7 @@ class FhszService:
         """Personelin izin bakiye bilgisini getir."""
         try:
             data = self._r.get("Izin_Bilgi").get_by_pk(tc_no)
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, "FhszService.get_izin_bilgi")
 

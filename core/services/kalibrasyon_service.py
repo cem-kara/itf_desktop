@@ -24,7 +24,7 @@ class KalibrasyonService:
             rows = self._r.get("Kalibrasyon").get_all() or []
             if cihaz_id:
                 rows = [r for r in rows if str(r.get("Cihazid", "")).strip() == str(cihaz_id).strip()]
-            return SonucYonetici.tamam(data=rows)
+            return SonucYonetici.tamam(veri=rows)
         except Exception as e:
             return SonucYonetici.hata(e, "KalibrasyonService.get_kalibrasyon_listesi")
     
@@ -37,7 +37,7 @@ class KalibrasyonService:
                 for s in sabitler
                 if str(s.get("Kod", "")).strip() == "KalibrasyonTipi"
             ]
-            return SonucYonetici.tamam(data=sorted(list(set(tipleri))))
+            return SonucYonetici.tamam(veri=sorted(list(set(tipleri))))
         except Exception as e:
             return SonucYonetici.hata(e, "KalibrasyonService.get_kalibrasyon_tipleri")
     
@@ -45,7 +45,7 @@ class KalibrasyonService:
         """Cihaz listesini getir."""
         try:
             rows = self._r.get("Cihazlar").get_all() or []
-            return SonucYonetici.tamam(data=rows)
+            return SonucYonetici.tamam(veri=rows)
         except Exception as e:
             return SonucYonetici.hata(e, "KalibrasyonService.get_cihaz_listesi")
     

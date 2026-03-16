@@ -611,7 +611,7 @@ class ArizaKayitForm(QWidget):
         self.cmb_durum_filter.addItem("Tüm Durumlar", None)
         if self._db and self._svc:
             try:
-                durumlar = self._svc.get_ariza_durumlari()
+                durumlar = self._svc.get_ariza_durumlari().veri or []
                 for durum in durumlar:
                     self.cmb_durum_filter.addItem(durum, durum)
             except Exception as e:
@@ -643,7 +643,7 @@ class ArizaKayitForm(QWidget):
             self._update_kpi()
             return
         try:
-            rows = self._svc.get_ariza_listesi(self._cihaz_id)
+            rows = self._svc.get_ariza_listesi(self._cihaz_id).veri or []
             self._all_rows = rows
             self._refresh_cihaz_filter()
             self._update_kpi()

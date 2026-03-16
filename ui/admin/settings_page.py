@@ -623,7 +623,7 @@ class SettingsPage(QWidget):
     def _load_sabitler(self):
         """Sabitleri yükle — Sol tarafta unique Kod'lar listele"""
         try:
-            sabitler = self._service.get_sabitler()
+            sabitler = self._service.get_sabitler().veri or []
             
             # Benzersiz Kod'ları bul
             unique_kodlar = {}
@@ -686,7 +686,7 @@ class SettingsPage(QWidget):
             if not kod:
                 return
             
-            sabitler = self._service.get_sabitler()
+            sabitler = self._service.get_sabitler().veri or []
             
             # Seçili Kod'a ait MenuElemanları göster
             for sabit in sabitler:

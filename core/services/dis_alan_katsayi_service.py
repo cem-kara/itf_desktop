@@ -22,10 +22,10 @@ class DisAlanKatsayiService:
             # Filtre: GecerlilikBitis NULL veya >= today
             gecerli = [p for p in protokoller if not p.get("GecerlilikBitis") or p["GecerlilikBitis"] >= today]
             if not gecerli:
-                return SonucYonetici.tamam(data=None)
+                return SonucYonetici.tamam(veri=None)
             # En güncel GecerlilikBaslangic
             gecerli.sort(key=lambda x: x["GecerlilikBaslangic"], reverse=True)
-            return SonucYonetici.tamam(data=gecerli[0])
+            return SonucYonetici.tamam(veri=gecerli[0])
         except Exception as e:
             return SonucYonetici.hata(e, "DisAlanKatsayiService.get_aktif_katsayi")
 
@@ -49,14 +49,14 @@ class DisAlanKatsayiService:
                 mevcut = sonuc.get(key)
                 if mevcut is None or p.get("GecerlilikBaslangic", "") > mevcut.get("GecerlilikBaslangic", ""):
                     sonuc[key] = p
-            return SonucYonetici.tamam(data=sonuc)
+            return SonucYonetici.tamam(veri=sonuc)
         except Exception as e:
             return SonucYonetici.hata(e, "DisAlanKatsayiService.get_tum_aktif_dict")
 
     def get_tum_protokoller(self) -> SonucYonetici:
         try:
             data = self._r.get("Dis_Alan_Katsayi_Protokol").get_all() or []
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, "DisAlanKatsayiService.get_tum_protokoller")
 
@@ -64,7 +64,7 @@ class DisAlanKatsayiService:
         try:
             rows = self._r.get("Dis_Alan_Katsayi_Protokol").get_all() or []
             data = list({(r["AnaBilimDali"], r["Birim"]) for r in rows})
-            return SonucYonetici.tamam(data=data)
+            return SonucYonetici.tamam(veri=data)
         except Exception as e:
             return SonucYonetici.hata(e, "DisAlanKatsayiService.get_birim_listesi")
 
