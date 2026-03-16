@@ -250,15 +250,15 @@ class BackupPage(QWidget):
         try:
             # Yedek istatistikleri
             stats = self._service.get_backup_stats()
-            self._lbl_backup_count.setText(f"Yedek Sayısı: {stats['backup_count']}")
-            self._lbl_total_size.setText(f"Toplam Boyut: {stats['total_size_mb']:.2f} MB")
+            self._lbl_backup_count.setText(f"Yedek Sayısı: {stats.get('backup_count', 0)}")
+            self._lbl_total_size.setText(f"Toplam Boyut: {stats.get('total_size_mb', 0):.2f} MB")
             
             # Disk bilgisi
             disk = self._service.get_disk_space_info()
-            if disk["total_mb"] > 0:
-                free_gb = disk["free_mb"] / 1024
+            if disk.get("total_mb", 0) > 0:
+                free_gb = disk.get("free_mb", 0) / 1024
                 self._lbl_disk_free.setText(
-                    f"Disk Alanı: {free_gb:.2f} GB boş ({disk['percent_used']:.1f}% kullanılıyor)"
+                    f"Disk Alanı: {free_gb:.2f} GB boş ({disk.get('percent_used', 0):.1f}% kullanılıyor)"
                 )
             else:
                 self._lbl_disk_free.setText("Disk Alanı: Bilgi alınamadı")

@@ -19,10 +19,23 @@ class RkeService:
             raise ValueError("RepositoryRegistry boş olamaz")
         self._r = registry
 
+
     # ───────────────────────────────────────────────────────────
     #  Repository Accessor'ları (UI için güvenli geçiş)
     # ───────────────────────────────────────────────────────────
-    
+
+    def get_rke_repo(self):
+        """RKE_List repository'sine eriş."""
+        return self._r.get("RKE_List")
+
+    def get_muayene_repo(self):
+        """RKE_Muayene repository'sine eriş."""
+        return self._r.get("RKE_Muayene")
+
+    def get_dokuman_repo(self):
+        """Dokumanlar repository'sine eriş."""
+        return self._r.get("Dokumanlar")
+
     # ───────────────────────────────────────────────────────────
     #  RKE Envanter
     # ───────────────────────────────────────────────────────────
@@ -140,12 +153,12 @@ class RkeService:
             rke_list_sonuc = self.get_rke_listesi()
             if not rke_list_sonuc.basarili:
                 return rke_list_sonuc
-            rke_list = rke_list_sonuc.data or []
+            rke_list = rke_list_sonuc.veri or []
 
             muayene_list_sonuc = self.get_muayene_listesi()
             if not muayene_list_sonuc.basarili:
                 return muayene_list_sonuc
-            muayene_list = muayene_list_sonuc.data or []
+            muayene_list = muayene_list_sonuc.veri or []
 
             if filtre:
                 birim = filtre.get("birim")

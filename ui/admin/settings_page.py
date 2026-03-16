@@ -712,7 +712,7 @@ class SettingsPage(QWidget):
     def _load_tatiller(self):
         """Tatilleri yükle"""
         try:
-            tatiller = self._service.get_tatiller()
+            tatiller = self._service.get_tatiller().veri or []
 
             # Yıl filtresi seçeneklerini güncelle
             selected_year = self._cmb_tatil_yil.currentData() if hasattr(self, "_cmb_tatil_yil") else None
@@ -766,7 +766,7 @@ class SettingsPage(QWidget):
     def _get_unique_tatil_adlari(self) -> list[str]:
         """Tatiller tablosundaki benzersiz tatil adlarını döndür."""
         try:
-            tatiller = self._service.get_tatiller()
+            tatiller = self._service.get_tatiller().veri or []
             return sorted(
                 {
                     (t.get("ResmiTatil", "") or "").strip()

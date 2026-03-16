@@ -234,7 +234,7 @@ class LogViewerPage(QWidget):
 
     def _load_available_files(self):
         """Mevcut log dosyalarını combo'ya yükle"""
-        files = self._service.get_available_log_files()
+        files = self._service.get_available_log_files().veri or []
         
         self._combo_file.clear()
         for file_info in files:
@@ -279,7 +279,7 @@ class LogViewerPage(QWidget):
                 end_date=end_date,
                 max_lines=max_lines,
                 reverse=True
-            )
+            ).veri or []
             
             self._model.set_data(logs)
             

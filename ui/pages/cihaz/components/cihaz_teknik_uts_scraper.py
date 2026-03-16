@@ -419,7 +419,7 @@ class CihazTeknikUtsScraper(QWidget):
             svc = get_cihaz_service(self.db)
             
             # Mevcut kaydı kontrol et
-            existing = svc.get_cihaz_teknik(self.cihaz_id)
+            existing = svc.get_cihaz_teknik(self.cihaz_id).veri or []
             if existing:
                 svc.update_cihaz_teknik(self.cihaz_id, self._parsed)
             else:

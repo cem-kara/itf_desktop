@@ -48,7 +48,7 @@ def personel_ozet_getir(db, personel_id: str) -> dict:
         saglik_svc = get_saglik_service(db)
 
         # Personel Temel Bilgisi
-        p_kayit = personel_svc.get_personel(tc)
+        p_kayit = personel_svc.get_personel(tc).veri or []
         ozet["personel"] = p_kayit
         if not p_kayit:
             logger.warning(f"personel_ozet_getir: Personel kaydı bulunamadı! (tc={tc})")

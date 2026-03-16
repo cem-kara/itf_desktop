@@ -158,7 +158,7 @@ class LogService:
                     logger.warning(f"Log satırı parse edilemedi: {line}")
                     continue
                 
-                parsed = parsed_sonuc.data if parsed_sonuc.data is not None else {}
+                parsed = parsed_sonuc.veri if parsed_sonuc.veri is not None else {}
                 # Level filtresi
                 if level_filter and parsed.get("level"):
                     if parsed.get("level") != level_filter:
@@ -207,7 +207,7 @@ class LogService:
                     total_lines += 1
 
                     parsed_sonuc = LogService.parse_log_line(line)
-                    parsed = parsed_sonuc.data if parsed_sonuc.data is not None else {}
+                    parsed = parsed_sonuc.veri if parsed_sonuc.veri is not None else {}
                     level = parsed.get("level")
                     if isinstance(level, str) and level in levels_count:
                         levels_count[level] += 1

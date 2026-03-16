@@ -431,7 +431,7 @@ class CihazOverviewPanel(QWidget):
             # Açık arıza sayısı
             try:
                 ariza_svc = _as(self.db)
-                arizalar = ariza_svc.get_ariza_listesi(self.cihaz_id) or []
+                arizalar = ariza_svc.get_ariza_listesi(self.cihaz_id).veri or []
                 acik = sum(1 for a in arizalar if str(a.get("Durum","")).strip() not in ("Kapalı","Çözüldü"))
                 renk_a = "#ef4444" if acik > 0 else "#10b981"
                 self._ozet_guncelle("ariza", str(acik) if acik > 0 else "Yok", renk_a)
@@ -440,7 +440,7 @@ class CihazOverviewPanel(QWidget):
 
             # Son bakım tarihi
             try:
-                bakimlar = svc.get_bakim_listesi(self.cihaz_id) or []
+                bakimlar = svc.get_bakim_listesi(self.cihaz_id).veri or []
                 yapilan  = [b for b in bakimlar if b.get("BakimTarihi")]
                 if yapilan:
                     son = max(yapilan, key=lambda b: str(b["BakimTarihi"]))
@@ -452,7 +452,7 @@ class CihazOverviewPanel(QWidget):
 
             # Kalibrasyon bitiş
             try:
-                kaller = svc.get_kalibrasyon_listesi(self.cihaz_id) or []
+                kaller = svc.get_kalibrasyon_listesi(self.cihaz_id).veri or []
                 if kaller:
                     son_k = max(kaller, key=lambda k: str(k.get("BitisTarihi","")))
                     bitis = str(son_k.get("BitisTarihi",""))[:10]

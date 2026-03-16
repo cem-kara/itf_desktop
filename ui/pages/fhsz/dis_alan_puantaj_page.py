@@ -415,7 +415,7 @@ class DisAlanPuantajPage(QWidget):
             baslik="RKS Onayı"):
             return
 
-        ozet_sonuc = self._svc.get_ozet(o["tc"], ay, yil)
+        ozet_sonuc = self._svc.get_ozet(o["tc"], ay, yil).veri or []
         if ozet_sonuc.basarili and not ozet_sonuc.data:
             self._svc.ozet_hesapla_ve_kaydet(o["tc"], o["ad"], ay, yil)
 

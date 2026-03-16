@@ -902,7 +902,7 @@ class PersonelListesiPage(QWidget):
             return
         try:
             # Görev yerleri
-            gorev_yerleri = self._svc.get_gorev_yerleri()
+            gorev_yerleri = self._svc.get_gorev_yerleri().veri or []
             self.cmb_gorev_yeri.blockSignals(True)
             self.cmb_gorev_yeri.clear()
             self.cmb_gorev_yeri.addItem("Tüm Birimler")
@@ -910,7 +910,7 @@ class PersonelListesiPage(QWidget):
             self.cmb_gorev_yeri.blockSignals(False)
 
             # Hizmet sınıfları
-            hizmet_siniflari = self._svc.get_hizmet_siniflari()
+            hizmet_siniflari = self._svc.get_hizmet_siniflari().veri or []
             self.cmb_hizmet.blockSignals(True)
             self.cmb_hizmet.clear()
             self.cmb_hizmet.addItem("Tüm Sınıflar")
@@ -995,7 +995,7 @@ class PersonelListesiPage(QWidget):
         if not self._izin_svc:
             return {}
         try:
-            return self._izin_svc.get_izinli_personeller_bugun()
+            return self._izin_svc.get_izinli_personeller_bugun().veri or {}
         except Exception as e:
             logger.error(f"İzinli sorgu: {e}")
             return {}

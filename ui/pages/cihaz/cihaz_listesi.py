@@ -618,11 +618,11 @@ class CihazListesiPage(QWidget):
             page_data, total = svc.get_cihaz_paginated(
                 page=self._current_page,
                 page_size=self._page_size
-            )
+            ).veri or ([], 0 )
             # Bakım ve kalibrasyon tarihlerini zenginleştir (uyarı rozetleri için)
             try:
-                tum_bakimlar  = svc.get_tum_bakimlar() or []
-                tum_kal       = svc.get_kalibrasyon_listesi(cihaz_id=None) if hasattr(svc, 'get_kalibrasyon_listesi') else []
+                tum_bakimlar  = svc.get_tum_bakimlar().veri or []
+                tum_kal       = svc.get_kalibrasyon_listesi(cihaz_id=None).veri if hasattr(svc, 'get_kalibrasyon_listesi') else []
                 # Son planlanan bakım tarihi
                 bakim_map: dict[str, str] = {}
                 for b in tum_bakimlar:
@@ -669,7 +669,7 @@ class CihazListesiPage(QWidget):
             page_data, _ = svc.get_cihaz_paginated(
                 page=self._current_page,
                 page_size=self._page_size
-            )
+            ).veri or []
 
             if not page_data:
                 self._current_page -= 1
@@ -726,7 +726,7 @@ class CihazListesiPage(QWidget):
     def _populate_combos(self, svc):
         sabitler = []
         try:
-            sabitler = svc.get_sabitler()
+            sabitler = svc.get_sabitler().veri or []
         except Exception as e:
             logger.debug(f"Sabitler okunamadi: {e}")
 

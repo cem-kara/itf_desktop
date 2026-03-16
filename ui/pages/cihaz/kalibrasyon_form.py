@@ -572,7 +572,7 @@ class KalibrasyonKayitForm(QWidget):
             self._update_kpi()
             return
         try:
-            rows = self._svc.get_kalibrasyon_listesi(self._cihaz_id)
+            rows = self._svc.get_kalibrasyon_listesi(self._cihaz_id).veri or []
             self._all_rows = rows
             self._refresh_cihaz_filter()
             self._update_kpi()
@@ -867,7 +867,7 @@ class KalibrasyonKayitForm(QWidget):
         if not self._db or not self._svc:
             return cihaz_marka_map, tum_markalar
         try:
-            cihazlar = self._svc.get_cihaz_listesi()
+            cihazlar = self._svc.get_cihaz_listesi().veri or []
             for c in (cihazlar or []):
                 cid   = str(c.get("Cihazid","") or "").strip()
                 marka = str(c.get("Marka","")   or "").strip()

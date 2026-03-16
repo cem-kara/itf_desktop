@@ -163,7 +163,7 @@ class PersonelFhszPanel(QWidget):
 
         try:
             fhsz_svc = get_fhsz_service(self.db)
-            raw_records = fhsz_svc.get_puantaj_listesi(personel_id=self.personel_id)
+            raw_records = fhsz_svc.get_puantaj_listesi(personel_id=self.personel_id).veri or []
 
             def safe_int(val):
                 try:

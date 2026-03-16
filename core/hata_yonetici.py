@@ -83,22 +83,19 @@ def qmessagebox_yakala() -> None:
 
         class _LoggedQMessageBox(_Orj):
             @staticmethod
-            def critical(parent, title, msg, *args, **kwargs):  # type: ignore[override]
+            def critical(parent, title, msg, *args, **kwargs):
                 logger.error(f"[UI ❌] {title}: {msg}")
-                _msgbox_critical(parent, title, msg)
-                return _Orj.StandardButton.Ok
+                return _msgbox_critical(parent, title, msg)
 
             @staticmethod
-            def warning(parent, title, msg, *args, **kwargs):  # type: ignore[override]
+            def warning(parent, title, msg, *args, **kwargs):
                 logger.warning(f"[UI ⚠️] {title}: {msg}")
-                _msgbox_warning(parent, title, msg)
-                return _Orj.StandardButton.Ok
+                return _msgbox_warning(parent, title, msg)
 
             @staticmethod
-            def information(parent, title, msg, *args, **kwargs):  # type: ignore[override]
+            def information(parent, title, msg, *args, **kwargs):
                 logger.info(f"[UI ℹ️] {title}: {msg}")
-                _msgbox_bilgi(parent, title, msg)
-                return _Orj.StandardButton.Ok
+                return _msgbox_bilgi(parent, title, msg)
 
         _qw.QMessageBox = _LoggedQMessageBox
         logger.info("QMessageBox log yakalayıcısı aktif edildi.")
@@ -184,7 +181,7 @@ class SonucYonetici:
     mesaj: str = ""
     veri: Any = None
     hata_turu: str = ""
-    tb: str = field(default="", repr=False, compare=False)
+    _tb: str = field(default="", repr=False)
 
     # ── Fabrika metodları ─────────────────────────────────────
 
@@ -229,7 +226,7 @@ class SonucYonetici:
             basarili=False,
             mesaj=gosterilecek,
             hata_turu=hata_turu,
-            tb=tb,
+            _tb=tb,
         )
 
     @classmethod
@@ -306,6 +303,27 @@ def hata_logla_goster(
 # ══════════════════════════════════════════════════════════════
 # 6. servis_calistir() — UI'da try/except bloğunu tek satıra indirir
 # ══════════════════════════════════════════════════════════════
+
+
+def soru_sor(parent, mesaj: str, baslik: str = "Onay") -> bool:
+    """
+    Evet/Hayır onay diyalogu gösterir. Evet → True döner.
+
+    Kullanım:
+        if soru_sor(self, "Silmek istiyor musunuz?"):
+            ...
+    """
+    try:
+        from PySide6.QtWidgets import QMessageBox
+        cevap = QMessageBox.question(
+            parent, baslik, mesaj,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        return cevap == QMessageBox.StandardButton.Yes
+    except Exception:
+        return False
+
 
 def servis_calistir(
     parent,

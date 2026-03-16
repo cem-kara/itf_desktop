@@ -184,7 +184,7 @@ class TopluBakimPlanPanel(QWidget):
         self.cmb_marka_filter.addItem("Tüm Markalar", None)
         try:
             svc = _get_cihaz_service(self._db)
-            self._all_cihazlar = svc.get_cihaz_listesi()
+            self._all_cihazlar = svc.get_cihaz_listesi().veri or []
         except Exception as e:
             logger.error(f"Cihaz listesi yüklenemedi: {e}")
             self._all_cihazlar = []
@@ -198,7 +198,7 @@ class TopluBakimPlanPanel(QWidget):
         try:
             from core.di import get_dokuman_service
             svc = get_dokuman_service(self._db)
-            sozler = svc.get_belgeler("sozlesme") or []
+            sozler = svc.get_belgeler("sozlesme").veri or []
             # Expecting each row to have DokumanId and DisplayName
             self.cmb_sozlesme.clear()
             self.cmb_sozlesme.addItem("(Yok)", None)

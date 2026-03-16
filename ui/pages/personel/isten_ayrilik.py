@@ -342,7 +342,7 @@ class IstenAyrilikPage(QWidget):
         else:
             try:
                 svc = DokumanService(self._db)
-                doks = svc.get_belgeler("personel", tc) or []
+                doks = svc.get_belgeler("personel", tc).veri or []
 
                 table = QTableWidget()
                 table.setColumnCount(4)

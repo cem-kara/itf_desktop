@@ -1149,7 +1149,7 @@ class PersonelEklePage(QWidget):
             try:
                 if not self._personel_svc:
                     return
-                existing = self._personel_svc.get_personel_by_tc(tc_no)
+                existing = self._personel_svc.get_personel_by_tc(tc_no).veri or []
                 if existing:
                     MesajKutusu.uyari(
                         self,

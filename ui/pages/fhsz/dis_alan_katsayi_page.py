@@ -147,11 +147,10 @@ class DisAlanKatsayiPage(QWidget):
             if not sonuc.basarili:
                 hata_goster(self, sonuc.mesaj)
                 return
-            tum = sonuc.data or []
+            tum = sonuc.veri or []
             if self._tarihce_goster:
                 rows = tum
             else:
-                # Sadece aktif olanları göster
                 rows = [r for r in tum if r.get("Aktif", 1)]
             self.model.set_data(rows)
             self.lbl_durum.setText(

@@ -567,11 +567,11 @@ class FHSZYonetimPage(QWidget):
             self._all_personel = self._svc._r.get("Personel").get_all()
 
             # 2. İzinler
-            self._all_izin = self._svc.get_izin_listesi()
+            self._all_izin = self._svc.get_izin_listesi().veri or []
 
             # 3. Tatiller → numpy busday_count formatı
             try:
-                tatiller = self._svc.get_tatil_gunleri()
+                tatiller = self._svc.get_tatil_gunleri().veri or []
                 self._tatil_listesi_np = []
                 for r in tatiller:
                     d = parse_date(r.get("Tarih", ""))

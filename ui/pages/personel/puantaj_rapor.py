@@ -296,7 +296,7 @@ class PuantajRaporPage(QWidget):
             from core.di import get_fhsz_service
             fhsz_svc = get_fhsz_service(self._db)
             
-            tum = fhsz_svc.get_puantaj_listesi()
+            tum = fhsz_svc.get_puantaj_listesi().veri or []
 
             # Yıla ait kayıtları filtrele
             yil_kayitlar = [

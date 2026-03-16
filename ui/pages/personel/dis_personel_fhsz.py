@@ -373,7 +373,7 @@ class TutanakliGirisPage(QWidget):
             return
         from core.di import get_dis_alan_service
         svc = get_dis_alan_service(self._db)
-        self._all_personel = svc.get_dis_alan_personeli()
+        self._all_personel = svc.get_dis_alan_personeli().veri or []
         self._listeyi_doldur(self._all_personel)
 
     def _listeyi_doldur(self, data: list[dict]):

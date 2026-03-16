@@ -158,7 +158,7 @@ class HizliIzinGirisDialog(QDialog):
         try:
             izin_svc = get_izin_service(self._db)
             if izin_svc and tip_text and tc:
-                max_gun = izin_svc.get_izin_max_gun(tc=tc, izin_tipi=tip_text)
+                max_gun = izin_svc.get_izin_max_gun(tc=tc, izin_tipi=tip_text).veri or []
         except Exception as e:
             logger.error(f"Hızlı izin max gün hesaplama hatası: {e}")
 
