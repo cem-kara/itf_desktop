@@ -68,76 +68,7 @@ class DashboardWorker(QThread):
             if db:
                 db.close()
 
-    def _get_count(self, registry, table_name, where_clause, distinct_col=None):
-        try:
-            repo = registry.get(table_name)
-            query = f"SELECT COUNT(*) FROM {table_name} WHERE {where_clause}"
-            cursor = repo.db.execute(query)
-            return cursor.fetchone()[0]
-        except Exception as e:
-            logger.warning(f"Dashboard sayım hatası ({table_name}): {e}")
-            return -1
-
-    # parse_date + to_db_date kullan (merkezi date_utils'tan)
-
-    def _classify_leave_type(self, leave_type):
-        leave_type = str(leave_type).strip().lower()
-        if "yıllık" in leave_type or "yillik" in leave_type:
-            return "yillik"
-        if "şua" in leave_type or "sua" in leave_type:
-            return "sua"
-        if "rapor" in leave_type or "sağlık" in leave_type or "saglik" in leave_type:
-            return "rapor"
-        return "diger"
-
-    def _get_monthly_leave_stats(self, registry):
-        stats = {
-            "aylik_izinli_personel_toplam": 0,
-            "aylik_izinli_yillik": 0,
-            "aylik_izinli_sua": 0,
-            "aylik_izinli_rapor": 0,
-            "aylik_izinli_diger": 0,
-        }
-        try:
-            today = datetime.now()
-            month_start_dt = today.replace(day=1)
-            if today.month == 12:
-                month_end_dt = datetime(today.year + 1, 1, 1)
-            else:
-                next_month = today.replace(day=28) + timedelta(days=4)
-                month_end_dt = next_month.replace(day=1)
-
-            month_start = to_db_date(month_start_dt)
-            month_end = to_db_date(month_end_dt)
-            month_start_date = month_start_dt.date()
-            month_end_date = month_end_dt.date()
-
-            records = registry.get("Izin_Giris").get_all()
-            by_type = {"yillik": set(), "sua": set(), "rapor": set(), "diger": set()}
-            all_personnel = set()
-
-            for row in records:
-                status = str(row.get("Durum", "")).strip().lower()
-                if status == "iptal":
-                    continue
-                personel_id = str(row.get("Personelid", "")).strip()
-                start_date = parse_date(row.get("BaslamaTarihi", ""))
-                if not personel_id or not start_date:
-                    continue
-                end_date = parse_date(row.get("BitisTarihi", "")) or start_date
-                if start_date < month_end_date and end_date >= month_start_date:
-                    leave_type = self._classify_leave_type(row.get("IzinTipi", ""))
-                    by_type[leave_type].add(personel_id)
-                    all_personnel.add(personel_id)
-
-            stats["aylik_izinli_personel_toplam"] = len(all_personnel)
-            stats["aylik_izinli_yillik"] = len(by_type["yillik"])
-            stats["aylik_izinli_sua"] = len(by_type["sua"])
-            stats["aylik_izinli_rapor"] = len(by_type["rapor"])
-            stats["aylik_izinli_diger"] = len(by_type["diger"])
-        except Exception as e:
-            logger.warning(f"Aylık izinli personel hesaplama hatası: {e}")
-        return stats
+    # Kod tekrarını önlemek için DashboardService kullanılmaktadır.
 
 
 # ══════════════════════════════════════════════════════════════
