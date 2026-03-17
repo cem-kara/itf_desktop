@@ -754,8 +754,31 @@ class FHSZYonetimPage(QWidget):
         ay_str = self.cmb_ay.currentText()
 
         try:
+            # Servis yoksa yeniden oluşturmayı dene
             if not self._svc:
-                return
+                if self._db:
+                    self._svc = get_fhsz_service(self._db)
+                if not self._svc:
+                    MesajKutusu.uyari(self, "Veritabanı bağlantısı yok.")
+                    return
+
+            # Veriler yüklenmediyse otomatik yükle
+            if not self._all_personel:
+                self.lbl_durum.setText("Veriler yükleniyor...")
+                QApplication.processEvents()
+                try:
+                    self.load_data()
+                except Exception as ld_err:
+                    logger.error(f"load_data hatası: {ld_err}")
+                    self.lbl_durum.setText(f"Veri yükleme hatası: {ld_err}")
+                    return
+
+            # Personel yüklendi mi?
+            self.lbl_durum.setText(
+                f"{len(self._all_personel)} personel, "
+                f"{len(self._tatil_listesi_np)} tatil yüklendi. Hesaplanıyor..."
+            )
+            QApplication.processEvents()
 
             # Mevcut kayıtları kontrol et
             tum_puantaj = self._svc._r.get("FHSZ_Puantaj").get_all()
@@ -773,9 +796,10 @@ class FHSZYonetimPage(QWidget):
         except Exception as e:
             logger.error(f"FHSZ kontrol hatası: {e}")
             MesajKutusu.hata(self, str(e))
-
-        self.progress.setVisible(False)
-        self.btn_hesapla.setEnabled(True)
+        finally:
+            # Her durumda UI'yi sıfırla
+            self.progress.setVisible(False)
+            self.btn_hesapla.setEnabled(True)
 
     # ───────────────────────────────────────────
     #  Kayıtlı veriyi yükle + eksik personel ekle
@@ -854,6 +878,7 @@ class FHSZYonetimPage(QWidget):
             hesap_bas = donem_bas if donem_bas >= FHSZ_ESIK else FHSZ_ESIK
 
             if not self._all_personel:
+                self.lbl_durum.setText("Personel listesi boş — önce load_data() çağrılmalı.")
                 self.tablo.blockSignals(False)
                 return
 
@@ -862,10 +887,13 @@ class FHSZYonetimPage(QWidget):
                 key=lambda p: str(p.get("AdSoyad", ""))
             )
 
+            eklenen = 0
+            atlanan_sinif = 0
             for p in sorted_personel:
                 kimlik = str(p.get("KimlikNo", "")).strip()
                 sinif = str(p.get("HizmetSinifi", "")).strip()
                 if sinif not in IZIN_VERILEN_SINIFLAR:
+                    atlanan_sinif += 1
                     continue
 
                 ad = p.get("AdSoyad", "")
@@ -884,6 +912,7 @@ class FHSZYonetimPage(QWidget):
 
                 row_idx = self.tablo.rowCount()
                 self.tablo.insertRow(row_idx)
+                eklenen += 1
 
                 self._set_item(row_idx, C_KIMLIK, kimlik)
                 self._set_item(row_idx, C_AD, ad)
@@ -917,6 +946,19 @@ class FHSZYonetimPage(QWidget):
             MesajKutusu.hata(self, str(e))
 
         self.tablo.blockSignals(False)
+        logger.info(
+            f"FHSZ hesaplama: {eklenen} satır eklendi, "
+            f"{atlanan_sinif} personel HizmetSınıfı filtresiyle atlandı. "
+            f"Filtre: {IZIN_VERILEN_SINIFLAR}"
+        )
+        if eklenen == 0 and atlanan_sinif > 0:
+            self.lbl_durum.setText(
+                f"Tablo boş: {len(sorted_personel)} personelden {atlanan_sinif} tanesi "
+                f"izin verilen hizmet sınıfında değil. "
+                f"({', '.join(IZIN_VERILEN_SINIFLAR)})"
+            )
+        elif eklenen > 0:
+            self.lbl_durum.setText(f"{eklenen} personel hesaplandı.")
 
     # ───────────────────────────────────────────
     #  Eksik personel ekle  (mevcut kayıtlarda olmayan)
@@ -1010,7 +1052,10 @@ class FHSZYonetimPage(QWidget):
 
         try:
             if not self._svc:
-                return
+                if self._db:
+                    self._svc = get_fhsz_service(self._db)
+                if not self._svc:
+                    return
             repo = self._svc._r.get("FHSZ_Puantaj")
 
             # Mevcut kayıt kontrol
@@ -1083,11 +1128,12 @@ class FHSZYonetimPage(QWidget):
             MesajKutusu.bilgi(self, "Kayıt işlemi tamamlandı.")
 
         except Exception as e:
-            self.progress.setVisible(False)
-            self.btn_kaydet.setEnabled(True)
             self.lbl_durum.setText(f"Hata: {e}")
             logger.error(f"FHSZ kayıt hatası: {e}")
             MesajKutusu.hata(self, str(e))
+        finally:
+            self.progress.setVisible(False)
+            self.btn_kaydet.setEnabled(True)
 
     # ═══════════════════════════════════════════
     #  ŞUA BAKİYESİ GÜNCELLE  (Izin_Bilgi → SuaCariYilKazanim)

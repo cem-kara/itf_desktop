@@ -33,7 +33,8 @@ class SettingsService:
                     Exception("Kod ve Menü Elemanı zorunludur"),
                     "SettingsService.add_sabit"
                 )
-            rowid = f"{menu_eleman}_{int(datetime.now().timestamp() * 1000)}"
+            # Rowid: sbt001, sbt002 ... şeklinde üret
+            rowid = self._next_sabit_rowid()
             self._db.execute(
                 "INSERT INTO Sabitler (Rowid, Kod, MenuEleman, Aciklama, sync_status, updated_at) "
                 "VALUES (?, ?, ?, ?, 'dirty', ?)",
@@ -46,6 +47,22 @@ class SettingsService:
             )
         except Exception as e:
             return SonucYonetici.hata(e, "SettingsService.add_sabit")
+
+    def _next_sabit_rowid(self) -> str:
+        """sbt001, sbt002 ... formatında bir Rowid üret."""
+        try:
+            cur = self._db.execute(
+                "SELECT Rowid FROM Sabitler WHERE Rowid LIKE 'sbt%' ORDER BY Rowid DESC LIMIT 1"
+            )
+            row = cur.fetchone() if cur else None
+            if row:
+                last = str(row[0] if not isinstance(row, dict) else row.get("Rowid", ""))
+                num = int(last.replace("sbt", "")) if last.startswith("sbt") else 0
+            else:
+                num = 0
+        except Exception:
+            num = 0
+        return f"sbt{num + 1:03d}"
 
     def update_sabit(self, rowid: str, kod: str, menu_eleman: str, aciklama: str) -> SonucYonetici:
         try:

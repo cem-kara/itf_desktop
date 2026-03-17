@@ -18,7 +18,6 @@ from core.logger import logger
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
-from ui.styles.icons import Icons
 
 PREVIEW_COLS = [
     ("AdSoyad",        "Ad Soyad",  200),
@@ -42,9 +41,10 @@ def _match_tc(masked: str, real: str) -> bool:
 
 def _name_score(pdf_name: str, real_name: str) -> int:
     """
-    PDF'deki kısmi isim ile DB'deki tam isim arasında eşleşme skoru döner.
-    Her PDF parçası için görünür kısım (yıldız öncesi) DB parçalarıyla karşılaştırılır.
-    Eşleşen karakter sayısı toplanır — daha uzun örtüşme = daha yüksek skor.
+    PDF'deki kısmi isim ile DB'deki tam isim arasında eşleşme skoru.
+    Her PDF parçasındaki yıldız-arası segmentlerin tamamı değerlendirilir.
+    Örnek: 'ZEYN**TÜRKDÖNM**' → ['ZEYN', 'TÜRKDÖNM'] her ikisi de aranır.
+    Eşleşen karakter sayısı toplanır.
     """
     import unicodedata
 
@@ -52,31 +52,33 @@ def _name_score(pdf_name: str, real_name: str) -> int:
         s = unicodedata.normalize("NFKD", s.upper())
         return s.encode("ascii", "ignore").decode()
 
-    pdf_parts  = pdf_name.upper().split()
-    real_parts = real_name.upper().split()
-    if not pdf_parts or not real_parts:
+    real_parts = [norm(p) for p in real_name.split() if p]
+    if not real_parts:
         return 0
 
     score = 0
-    for pp in pdf_parts:
-        visible = norm(pp.rstrip("*"))
-        if not visible:
-            continue
-        for rp in real_parts:
-            rp_n = norm(rp)
-            if rp_n.startswith(visible):
-                score += len(visible)   # eşleşen karakter sayısı
-                break
+    for pp in pdf_name.split():
+        # Yıldız arasındaki TÜM görünür segmentleri çıkar
+        segs = [s for s in pp.split("*") if s]
+        for seg in segs:
+            seg_n = norm(seg)
+            if not seg_n:
+                continue
+            for rp in real_parts:
+                if rp.startswith(seg_n):
+                    score += len(seg_n)
+                    break   # bu segment için tek eşleşme yeterli
     return score
 
 
 def match_personel(row: dict, personel_list: list[dict]) -> Optional[dict]:
     """
-    Personel tablosundaki gerçek TC'lerle masked TC'yi karşılaştırır.
-    - Eşleşme yok → None (masked TC PersonelID'de kalır)
-    - Tek eşleşme → o kişiyi döndür (PersonelID = gerçek TC)
-    - Birden fazla eşleşme → isim skoru ile ayırt et
-    - Skor 0 → tahmin etme, None döndür (masked TC kalır)
+    1. TC maskesiyle DB'de aday bul.
+    2. Aday yoksa → None (masked TC kalır).
+    3. Adaylar arasında PDF ismiyle skor hesapla:
+       - En yüksek skor > 0 → o kişiyi döndür (PersonelID = gerçek TC)
+       - Tüm skorlar 0 → isim örtüşmesi yok, None döndür (masked TC kalır)
+       Bu sayede tek aday olsa bile isim uyuşmuyorsa yanlış eşleşme olmaz.
     """
     tc_masked = row.get("PersonelID", "")
     pdf_name  = row.get("AdSoyad", "")
@@ -85,22 +87,17 @@ def match_personel(row: dict, personel_list: list[dict]) -> Optional[dict]:
                   if _match_tc(tc_masked, str(p.get("KimlikNo", "")))]
     if not candidates:
         return None
-    if len(candidates) == 1:
-        return candidates[0]
 
-    # Birden fazla TC eşleşmesi → isim skoru ile ayırt et
-    scored = sorted(
-        candidates,
-        key=lambda p: _name_score(pdf_name, str(p.get("AdSoyad", ""))),
-        reverse=True,
-    )
-    best_score = _name_score(pdf_name, str(scored[0].get("AdSoyad", "")))
+    # Tek aday olsa bile isim skoru kontrol et
+    en_iyi: Optional[dict] = None
+    en_iyi_skor = 0
+    for aday in candidates:
+        skor = _name_score(pdf_name, str(aday.get("AdSoyad", "")))
+        if skor > en_iyi_skor:
+            en_iyi_skor = skor
+            en_iyi = aday
 
-    # Skor 0 → isim örtüşmesi yok, tahmin etme
-    if best_score == 0:
-        return None
-
-    return scored[0]
+    return en_iyi if en_iyi_skor > 0 else None
 
 # ─── PDF Parser ─────────────────────────────────────────────────
 def _parse_hp(raw) -> Optional[float]:
@@ -114,9 +111,33 @@ def _parse_hp(raw) -> Optional[float]:
     except ValueError:
         return None
 
+def _is_tc_masked(s: str) -> bool:
+    """Maskelenmiş TC formatını tanı: rakam + yıldız + rakam"""
+    import re
+    return bool(re.match(r"^\d+\*+\d+$", str(s).strip()))
+
+
 def _smart_parse_row(row: list) -> dict:
     birim = vucut = dzm_no = durum = ""
     hp10 = hp007 = None
+
+    # row[1] ve row[2] arasında TC ile ad tespiti
+    # PDF'de bazı satırlarda TC önce, ad sonra gelebiliyor
+    r1 = str(row[1] or "").strip().replace("\n", " ")
+    r2 = str(row[2] or "").strip().replace("\n", " ")
+
+    if _is_tc_masked(r1.split()[0] if r1.split() else ""):
+        # row[1] TC, row[2] ad
+        tc_raw  = r1.split()[0]   # ilk token TC
+        ad_soyad = r2
+        # row[1]'in geri kalanı birim olabilir, col[3]'e ek
+        birim_oneki = " ".join(r1.split()[1:])
+    else:
+        # Normal düzen: row[1] ad, row[2] TC
+        ad_soyad = r1
+        tc_raw   = r2.split()[0] if r2.split() else r2
+        birim_oneki = ""
+
     for i in range(3, len(row)):
         v = row[i]
         if not v: continue
@@ -132,9 +153,10 @@ def _smart_parse_row(row: list) -> dict:
         elif _parse_hp(s) is not None and dzm_no:
             if hp10 is None: hp10 = _parse_hp(s)
             elif hp007 is None: hp007 = _parse_hp(s)
+
     return {
-        "AdSoyad":      str(row[1] or "").strip().replace("\n"," "),
-        "PersonelID":   str(row[2] or "").strip(),   # PDF'deki masked TC → başlangıç değeri
+        "AdSoyad":      ad_soyad,
+        "PersonelID":   tc_raw,
         "CalistiBirim": birim or "Radyoloji A.B.D.",
         "VucutBolgesi": vucut,
         "DozimetreNo":  dzm_no,
@@ -237,7 +259,7 @@ class _PdfLoader(QThread):
                     r["PersonelID"]     = str(p["KimlikNo"]).strip()
                     r["AdSoyad"]        = str(p["AdSoyad"]).strip()
                     r["_eslesti"]       = True
-                    r["_eslesti_label"] = "[icon:check] Eşleşti"
+                    r["_eslesti_label"] = "✔ Eşleşti"
                     eslesen += 1
                 else:
                     # Eşleşme bulunamadı — PDF'deki masked TC PersonelID'de kalır
@@ -462,10 +484,8 @@ class DozimetrePdfImportPage(QWidget):
         self._rows   = rows
         self._update_info_card(eslesen, eslesmez)
         self._model.set_data(rows)
-        icon = Icons.pixmap("check_circle", size=16, color=DarkTheme.STATUS_SUCCESS)
-        self.lbl_status.setPixmap(icon)
         self.lbl_status.setText(
-            f" {len(rows)} satır okundu — {eslesen} personel eşleşti, {eslesmez} eşleşmedi.")
+            f"✔  {len(rows)} satır okundu — {eslesen} personel eşleşti, {eslesmez} eşleşmedi.")
         self.lbl_status.setStyleSheet(f"color:{DarkTheme.STATUS_SUCCESS};font-size:12px;")
         if rows: self.btn_kaydet.setEnabled(True)
 
@@ -473,9 +493,7 @@ class DozimetrePdfImportPage(QWidget):
         self.progress.hide()
         self.btn_sec.setEnabled(True)
         logger.error(f"Dozimetre PDF okuma hatası: {msg}")
-        icon = Icons.pixmap("x_circle", size=16, color=DarkTheme.STATUS_ERROR)
-        self.lbl_status.setPixmap(icon)
-        self.lbl_status.setText(f" Okuma hatası: {msg}")
+        self.lbl_status.setText(f"✗  Okuma hatası: {msg}")
         self.lbl_status.setStyleSheet(f"color:{DarkTheme.STATUS_ERROR};font-size:12px;")
 
     def _save(self):
@@ -550,9 +568,7 @@ class DozimetrePdfImportPage(QWidget):
         self.btn_sec.setEnabled(True); self.btn_temizle.setEnabled(True)
         self.btn_kaydet.setEnabled(True)
         logger.error(f"Dozimetre kaydetme hatası: {msg}")
-        icon = Icons.pixmap("x_circle", size=16, color=DarkTheme.STATUS_ERROR)
-        self.lbl_status.setPixmap(icon)
-        self.lbl_status.setText(f" Kaydetme hatası: {msg}")
+        self.lbl_status.setText(f"✗  Kaydetme hatası: {msg}")
         self.lbl_status.setStyleSheet(f"color:{DarkTheme.STATUS_ERROR};font-size:12px;")
         QMessageBox.critical(self,"Hata",f"Kayıt sırasında hata oluştu:\n{msg}")
 

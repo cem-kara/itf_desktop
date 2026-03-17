@@ -217,7 +217,8 @@ class HizliIzinGirisDialog(QDialog):
                 return
             
             # Çakışma kontrolü
-            all_izin = izin_svc.get_izin_giris_repo().get_all()
+            giris_repo = izin_svc.get_izin_giris_repo().veri
+            all_izin = giris_repo.get_all() if giris_repo else []
             yeni_bas = parse_date(baslama_str)
             yeni_bit = parse_date(bitis_str)
             for kayit in all_izin:

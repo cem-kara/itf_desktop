@@ -495,7 +495,8 @@ class IstenAyrilikPage(QWidget):
         try:
             from core.di import get_fhsz_service
             fhsz_svc = get_fhsz_service(self._db)
-            all_sabit = fhsz_svc.get_sabitler_repo().get_all() or []
+            sabit_repo = fhsz_svc.get_sabitler_repo().veri
+            all_sabit = sabit_repo.get_all() if sabit_repo else []
             self._drive_folders = {
                 str(r.get("MenuEleman") or "").strip(): str(r.get("Aciklama") or "").strip()
                 for r in all_sabit
@@ -512,7 +513,8 @@ class IstenAyrilikPage(QWidget):
             return
         try:
             izin_svc = get_izin_service(self._db)
-            izin = izin_svc.get_izin_bilgi_repo().get_by_id(tc)
+            izin_repo = izin_svc.get_izin_bilgi_repo().veri
+            izin = izin_repo.get_by_id(tc) if izin_repo else None
             if izin:
                 self.lbl_y_toplam.setText(str(izin.get("YillikToplamHak", "0")))
                 self.lbl_y_kul.setText(str(izin.get("YillikKullanilan", "0")))

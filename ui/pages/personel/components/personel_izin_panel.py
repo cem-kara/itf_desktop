@@ -153,10 +153,12 @@ class PersonelIzinPanel(QWidget):
             izin_svc = get_izin_service(self.db)
 
             # İzin Bilgisi
-            self.izin_data = izin_svc.get_izin_bilgi_repo().get_by_id(self.personel_id) or {}
+            izin_repo = izin_svc.get_izin_bilgi_repo().veri
+            self.izin_data = (izin_repo.get_by_id(self.personel_id) if izin_repo else {}) or {}
 
             # Tüm İzin Hareketleri
-            all_leaves = izin_svc.get_izin_giris_repo().get_all()
+            giris_repo = izin_svc.get_izin_giris_repo().veri
+            all_leaves = giris_repo.get_all() if giris_repo else []
             self.recent_leaves = [
                 l for l in all_leaves if str(l.get("Personelid", "")).strip() == self.personel_id
             ]

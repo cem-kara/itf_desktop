@@ -48,15 +48,17 @@ def personel_ozet_getir(db, personel_id: str) -> dict:
         saglik_svc = get_saglik_service(db)
 
         # Personel Temel Bilgisi
-        p_kayit = personel_svc.get_personel(tc).veri or []
+        p_sonuc = personel_svc.get_personel(tc)
+        p_kayit = p_sonuc.veri if p_sonuc else None
         ozet["personel"] = p_kayit
         if not p_kayit:
             logger.warning(f"personel_ozet_getir: Personel kaydı bulunamadı! (tc={tc})")
 
-        # Izin ozetleri
+        # Izin ozetleri — servisin kendi metodunu kullan (repo'ya direkt erişme)
+        izin_sonuc = izin_svc.get_tum_izin_giris()
+        izin_kayitlari = izin_sonuc.veri or [] if izin_sonuc else []
         izinler = [
-            r
-            for r in izin_svc.get_izin_giris_repo().get_all()
+            r for r in izin_kayitlari
             if str(r.get("Personelid", "")).strip() == tc
         ]
         ozet["izin_kayit_sayisi"] = len(izinler)
@@ -79,12 +81,9 @@ def personel_ozet_getir(db, personel_id: str) -> dict:
             )
             ozet["kritikler"].append("Personel su an izinli.")
 
-        # Saglik takip ozeti
-        saglik_kayitlari = [
-            r
-            for r in saglik_svc.get_saglik_takip_repo().get_all()
-            if str(r.get("Personelid", "")).strip() == tc
-        ]
+        # Saglik takip ozeti — servisin kendi metodunu kullan
+        saglik_sonuc = saglik_svc.get_saglik_kayitlari(personel_id=tc)
+        saglik_kayitlari = saglik_sonuc.veri or [] if saglik_sonuc else []
         en_yakin = None
         for kayit in saglik_kayitlari:
             durum = str(kayit.get("Durum", "")).strip()

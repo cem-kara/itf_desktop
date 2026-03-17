@@ -807,7 +807,8 @@ class IzinTakipPage(QWidget):
             return
         try:
             izin_svc = get_izin_service(self._db)
-            izin = izin_svc.get_izin_bilgi_repo().get_by_id(tc)
+            izin_repo = izin_svc.get_izin_bilgi_repo().veri
+            izin = izin_repo.get_by_id(tc) if izin_repo else None
             if izin:
                 self.lbl_y_devir.setText(str(izin.get("YillikDevir", "0")))
                 self.lbl_y_hak.setText(str(izin.get("YillikHakedis", "0")))
