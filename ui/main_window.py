@@ -14,6 +14,7 @@ from core.paths import DB_PATH
 from ui.sidebar import Sidebar
 from ui.guards import ActionGuard, PageGuard
 from ui.pages.placeholder import WelcomePage, PlaceholderPage 
+from ui.pages.imports.import_center import ImportCenterPage
 from ui.styles.colors import DarkTheme
 from database.sync_worker import SyncWorker
 from database.sqlite_manager import SQLiteManager
@@ -216,6 +217,9 @@ class MainWindow(QMainWindow):
         #     page.btn_kapat.clicked.connect(lambda: self._close_page("Genel Bakış"))
         #     page.load_data()
         #     return page
+        if baslik == "İmportlar":
+            page = ImportCenterPage(db=self._db)
+            return page
 
         if baslik == "Personel Listesi":
             from ui.pages.personel.personel_listesi import PersonelListesiPage

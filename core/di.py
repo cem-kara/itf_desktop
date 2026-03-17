@@ -59,10 +59,6 @@ def get_ariza_service(db):
     from core.services.ariza_service import ArizaService
     return ArizaService(get_registry(db))
 
-
-
-
-
 def get_dis_alan_katsayi_service(db):
     from core.services.dis_alan_katsayi_service import DisAlanKatsayiService
     return DisAlanKatsayiService(get_registry(db))
@@ -95,6 +91,9 @@ def get_file_sync_service(db):
     from core.services.file_sync_service import FileSyncService
     return FileSyncService(db, get_registry(db))
 
+def get_excel_import_service():
+    from core.services.excel_import_service import ExcelImportService
+    return ExcelImportService()
 
 _fallback_registry_cache = {}
 

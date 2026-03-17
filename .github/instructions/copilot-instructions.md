@@ -880,6 +880,274 @@ EOF
 2026-03-12  personel_ekle.py — Belgeler sekmeli yapı (QTabWidget): Tab1=Kişisel Bilgiler / Tab2=Belgeler, kayıt öncesi kilitli, sonrası otomatik açılır
 2026-03-12  personel_ekle.py — btn_kaydet "Evet" dalı bug fix (setEnabled(True) eksikti)
 2026-03-12  personel_ekle.py — QTabWidget import eksikliği düzeltildi
+2026-03-16  SQLiteManager auth metodları AuthRepository'ye taşındı (ayrıştırma)
+2026-03-16  SonucYonetici standart servis dönüş tipi olarak tüm servislere uygulandı
+2026-03-16  QMessageBox → hata_yonetici (hata_goster/uyari_goster/bilgi_goster) 44 UI dosyası
+2026-03-16  soru_sor(), servis_calistir() hata_yonetici.py'ye eklendi
 ── İLERİ AGENDA: TODO-3 son 2 çağrı, TODO-6b, TODO-8 (test infrastructure) ──
 ```
+
+
+---
+
+## HATA YÖNETİMİ SİSTEMİ (Mart 2026)
+
+### Merkezi Modül: `core/hata_yonetici.py`
+
+Tüm hata yönetimi bu modül üzerinden yapılır. `QMessageBox` doğrudan kullanılmaz.
+
+#### UI'da Kullanım
+
+```python
+from core.hata_yonetici import (
+    hata_goster,        # ERROR log + hata diyalogu
+    uyari_goster,       # WARNING log + uyarı diyalogu
+    bilgi_goster,       # INFO log + bilgi diyalogu
+    hata_logla_goster,  # exc_logla + hata_goster kombosu
+    exc_logla,          # Sadece log, dialog yok
+    soru_sor,           # Evet/Hayır onay diyalogu → bool
+    servis_calistir,    # try/except bloğunu tek satıra indirir
+    SonucYonetici,      # Servis dönüş tipi
+)
+
+# ❌ YASAK
+QMessageBox.critical(self, "Hata", mesaj)
+QMessageBox.warning(self, "Uyarı", mesaj)
+QMessageBox.information(self, "Bilgi", mesaj)
+
+# ✅ DOĞRU
+hata_goster(self, mesaj)
+uyari_goster(self, mesaj)
+bilgi_goster(self, mesaj)
+
+# Onay diyalogu
+if soru_sor(self, "Silmek istiyor musunuz?"):
+    ...
+
+# Hata + log kombosu
+except Exception as e:
+    hata_logla_goster(self, "SayfaAdi._metod", e)
+
+# try/except bloğunu tek satıra indirme
+sonuc = servis_calistir(
+    self, "PersonelEkle._kaydet",
+    lambda: self._svc.ekle(veri),
+    basari_msg="Personel eklendi.",
+)
+```
+
+---
+
+### SonucYonetici — Standart Servis Dönüş Tipi
+
+Tüm servis metodları `SonucYonetici` döndürür.
+
+#### Servis Tarafı
+
+```python
+from core.hata_yonetici import SonucYonetici, logger
+
+def get_listesi(self) -> SonucYonetici:
+    try:
+        rows = self._r.get("TABLO").get_all() or []
+        return SonucYonetici.tamam(veri=rows)       # liste
+    except Exception as e:
+        return SonucYonetici.hata(e, "ServisAdi.get_listesi")
+
+def get_tek(self, pk: str) -> SonucYonetici:
+    try:
+        row = self._r.get("TABLO").get_by_pk(pk)
+        return SonucYonetici.tamam(veri=row)        # dict veya None
+    except Exception as e:
+        return SonucYonetici.hata(e, "ServisAdi.get_tek")
+
+def kaydet(self, veri: dict) -> SonucYonetici:
+    try:
+        self._r.get("TABLO").insert(veri)
+        return SonucYonetici.tamam("Kayıt eklendi.")
+    except Exception as e:
+        return SonucYonetici.hata(e, "ServisAdi.kaydet")
+```
+
+**Önemli:** `veri=` parametresi kullanılır, `data=` değil.
+
+#### UI Tarafı
+
+```python
+# Liste dönen metodlar
+rows = self._svc.get_listesi().veri or []
+
+# Tekil nesne dönen metodlar
+kayit = self._svc.get_tek(pk).veri  # None olabilir
+
+# Başarı/hata kontrolü
+sonuc = self._svc.kaydet(veri)
+if sonuc.basarili:
+    bilgi_goster(self, sonuc.mesaj)
+else:
+    hata_goster(self, sonuc.mesaj)
+
+# Hem veri hem başarı kontrolü gerekiyorsa
+sonuc = self._svc.get_listesi()
+if not sonuc.basarili:
+    hata_goster(self, sonuc.mesaj)
+    return
+rows = sonuc.veri or []
+```
+
+#### SonucYonetici Alanları
+
+| Alan | Tip | Açıklama |
+|---|---|---|
+| `basarili` | `bool` | İşlem başarılı mı |
+| `mesaj` | `str` | Kullanıcıya gösterilecek mesaj |
+| `veri` | `Any` | Liste, dict veya tekil nesne |
+| `hata_turu` | `str` | Exception sınıf adı |
+| `tb` | `str` | Traceback (log için) |
+
+`bool(sonuc)` → `sonuc.basarili` döner. `if sonuc:` kullanılabilir.
+
+---
+
+### Servis Şablonu (Güncel)
+
+```python
+# core/services/xxx_service.py
+from core.hata_yonetici import SonucYonetici, logger
+from database.repository_registry import RepositoryRegistry
+
+class XxxService:
+    def __init__(self, registry: RepositoryRegistry):
+        if not registry:
+            raise ValueError("Registry boş olamaz")
+        self._r = registry
+
+    def get_listesi(self) -> SonucYonetici:
+        try:
+            rows = self._r.get("TABLO").get_all() or []
+            return SonucYonetici.tamam(veri=rows)
+        except Exception as e:
+            return SonucYonetici.hata(e, "XxxService.get_listesi")
+
+    def kaydet(self, veri: dict) -> SonucYonetici:
+        try:
+            self._r.get("TABLO").insert(veri)
+            return SonucYonetici.tamam("Kayıt eklendi.")
+        except Exception as e:
+            return SonucYonetici.hata(e, "XxxService.kaydet")
+
+    def sil(self, pk: str) -> SonucYonetici:
+        try:
+            self._r.get("TABLO").delete(pk)
+            return SonucYonetici.tamam("Kayıt silindi.")
+        except Exception as e:
+            return SonucYonetici.hata(e, "XxxService.sil")
+```
+
+---
+
+### UI Sayfası Şablonu (Güncel)
+
+```python
+from core.di import get_xxx_service
+from core.hata_yonetici import hata_goster, bilgi_goster, hata_logla_goster
+
+class XxxPage(QWidget):
+    def __init__(self, db=None, parent=None):
+        super().__init__(parent)
+        self._db  = db
+        self._svc = get_xxx_service(db) if db else None
+        self._setup_ui()
+        self._load_data()
+
+    def _load_data(self):
+        if not self._svc:
+            return
+        try:
+            self._model.set_data(self._svc.get_listesi().veri or [])
+        except Exception as e:
+            hata_logla_goster(self, "XxxPage._load_data", e)
+
+    def _on_save(self):
+        if not self._svc:
+            return
+        sonuc = self._svc.kaydet(veri)
+        if sonuc.basarili:
+            bilgi_goster(self, sonuc.mesaj)
+            self._load_data()
+        else:
+            hata_goster(self, sonuc.mesaj)
+```
+
+---
+
+### Tekrar Eden Hata Kalıpları (Hata Yönetimi)
+
+#### 8. `.veri` eksik — SonucYonetici liste/dict olarak kullanılıyor
+
+```python
+# ❌ — SonucYonetici iterable değil
+rows = self._svc.get_listesi()
+for r in rows: ...
+
+# ✅
+rows = self._svc.get_listesi().veri or []
+for r in rows: ...
+```
+
+#### 9. `.veri` fazladan — servis zaten liste döndürüyor
+
+```python
+# ❌ — get_backups() liste döndürüyor, .veri yok
+backups = self._service.get_backups().veri
+
+# ✅
+backups = self._service.get_backups()
+```
+
+**Kontrol yöntemi:** Servis dosyasını açın. Metod `SonucYonetici.tamam(veri=...)` ile bitiyorsa `.veri` **ekleyin**. `return []` veya `return {}` ile bitiyorsa `.veri` **eklemeyın**.
+
+#### 10. `.data` yerine `.veri` kullanılmalı
+
+```python
+# ❌ — SonucYonetici'de 'data' alanı yok
+sonuc.data
+
+# ✅
+sonuc.veri
+```
+
+#### 11. `QMessageBox` yerine `hata_yonetici` fonksiyonları
+
+```python
+# ❌ YASAK
+QMessageBox.critical(self, "Hata", str(e))
+
+# ✅
+hata_goster(self, str(e))
+# veya tek satırda log + dialog:
+hata_logla_goster(self, "SayfaAdi._metod", e)
+```
+
+#### 12. `_repo()` metodları SonucYonetici döndürmez
+
+```python
+# ✅ — repository accessor'lar SonucYonetici DEĞİL, doğrudan repo döndürür
+repo = self._svc.get_personel_repo()   # .veri ekleme
+repo = self._svc.get_rke_repo()        # .veri ekleme
+```
+
+---
+
+### Auth Katmanı (SQLiteManager Ayrıştırması — Mart 2026)
+
+`SQLiteManager` artık sadece bağlantı ve sorgu yürütme yapar. Tüm auth SQL'i `AuthRepository`'de.
+
+```
+SQLiteManager  →  execute() / executemany() / close()
+AuthRepository →  Kullanıcı, rol, izin, audit tüm SQL
+PermissionRepository → Rol-izin yönetimi SQL
+```
+
+`get_auth_services(db)` → `AuthRepository(db)` oluşturup `AuthService` ve `AuthorizationService`'e enjekte eder.
 

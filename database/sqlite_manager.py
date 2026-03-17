@@ -16,7 +16,7 @@ class DbUser:
 
 
 class SQLiteManager:
-    def __init__(self, db_path=None, check_same_thread=True):
+    def __init__(self, db_path=None, check_same_thread=False):
         self.db_path = db_path or DB_PATH
         logger.info("SQLite baglantisi aciliyor")
         self.conn = sqlite3.connect(self.db_path, check_same_thread=check_same_thread, timeout=30)

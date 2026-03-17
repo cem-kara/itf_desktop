@@ -75,6 +75,11 @@
         "baslik": "Ayarlar",
         "implemented": true,
         "note": "Kullanıcı tercihleri ve sistem ayarları"
+      },
+      {
+        "baslik": "İmportlar",
+        "implemented": true,
+        "note": "Toplu veri içe aktarma işlemleri"
       }
     ]
   }

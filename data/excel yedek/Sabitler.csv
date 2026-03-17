@@ -1,233 +1,175 @@
-﻿Rowid;Kod;MenuEleman;Aciklama;sync_status;updated_at
-8;Amac;Defibrilator;;;
-9;Amac;EKG Cihazı;;;
-10;Amac;Grafi;;;
-11;Amac;Kaset Okuyucu;;;
-12;Amac;Manyetik Rezonans;;;
-13;Amac;Skopi;;;
-14;Amac;Skopi (Ercp);;;
-15;Amac;Skopi (Eswl);;;
-16;Amac;Ultrasonografi;;;
-17;AnaBilimDali;Anesteziyoloji ve Reanimasyon ABD;ANZ;;
-18;AnaBilimDali;Beyin ve Sinir Cerrahisi ABD;NRŞ;;
-19;AnaBilimDali;Cerrahi Tıp Bilimleri;CTB;;
-20;AnaBilimDali;Çocuk Sağlığı ve Hastalıkları ABD;CSH;;
-21;AnaBilimDali;Fiziksel Tıp ve Rehabilitasyon ABD;FTR;;
-22;AnaBilimDali;Genel Cerrahi ABD;GCA;;
-23;AnaBilimDali;Göğüs Hastalıkları ABD;GHA;;
-24;AnaBilimDali;İç Hastalıkları ABD;DHL;;
-25;AnaBilimDali;Kalp ve Damar Cerrahisi ABD;KDC;;
-26;AnaBilimDali;Kardiyoloji ABD;KRD;;
-27;AnaBilimDali;KBB, Göz ve Cerrahi Hastanesi;KBB;;
-28;AnaBilimDali;Mediko Sosyal Başhekimliği;MSB;;
-29;AnaBilimDali;Ortopedi ve Travmatoloji ABD;ORT;;
-30;AnaBilimDali;Radyoloji ABD;RAD;;
-31;AnaBilimDali;Üroloji ABD;URO;;
-32;Ariza_Durum;İşlemde;;;
-33;Ariza_Durum;Parça Bekliyor;;;
-34;Ariza_Durum;Dış Serviste;;;
-35;Ariza_Durum;Kapalı (Çözüldü);;;
-36;Ariza_Durum;Kapalı (İptal);;;
-37;Ariza_Islem_Turu;Arıza Tespiti / İnceleme;;;
-38;Ariza_Islem_Turu;Onarım / Tamirat;;;
-39;Ariza_Islem_Turu;Parça Değişimi;;;
-40;Ariza_Islem_Turu;Yazılım Güncelleme;;;
-41;Ariza_Islem_Turu;Kalibrasyon;;;
-42;Ariza_Islem_Turu;Dış Servis Gönderimi;;;
-43;Ariza_Islem_Turu;Kapatma / Sonlandırma;;;
-44;Bakim_Durum;Evet;;;
-45;Bakim_Durum;Hayır;;;
-46;Bedeni;L;;;
-47;Bedeni;M;;;
-48;Bedeni;Pediatrik;;;
-49;Bedeni;S;;;
-50;Bedeni;STN;;;
-51;Bedeni;XL;;;
-52;Bedeni;XS;;;
-53;Bedeni;Yetişkin;;;
-54;Birim;Acil Endoskopi Ünitesi;AEU;;
-55;Birim;Acil Radyoloji;ARAD;;
-56;Birim;Algoloji Servis;ALG;;
-57;Birim;Ameliyathane;AML;;
-58;Birim;Anjiografi;ANJ;;
-59;Birim;Endoskopi Ünitesi;ENU;;
-60;Birim;Gamma Knife Ünitesi;GKU;;
-61;Birim;Girişimsel Radyoloji Anjiografi;RANJ;;
-62;Birim;Kemik Yoğunluğu Ölçümü;KYO;;
-63;Birim;Koroner Anjiografi;KANJ;;
-64;Birim;Mamografi;MAM;;
-65;Birim;Manyetik Rezonans Ünitesi;MRI;;
-66;Birim;Nöroradyoloji Anjiografi;NANJ;;
-67;Birim;Pediatrik Radyoloji;PRAD;;
-68;Birim;Poliklinik;POL;;
-69;Birim;Radyoloji Depo;RDP;;
-70;Birim;Radyoloji USG;USG;;
-71;Birim;Sevisler;SER;;
-72;Birim;Vatan Yerleşkesi;KBB;;
-73;Birim;Voiding;VOI;;
-74;Birim;Yoğun Bakım Ünitesi;YBÜ;;
-75;Cihaz_Belge_Tur;NDK Lisansı;Cihazın NDK (Uygunluk Beyanı) Lisansı;;
-76;Cihaz_Belge_Tur;RKS Belgesi;Cihazın RKS (Radyasyon Koruma) Belgesi;;
-77;Cihaz_Belge_Tur;Sorumlu Diploması;Sorumlu kişinin diploması;;
-78;Cihaz_Belge_Tur;Kullanım Klavuzu;Cihaz kullanım kılavuzu;;
-79;Cihaz_Belge_Tur;Cihaz Sertifikası;Cihaz sertifikası/belgelendirmesi;;
-80;Cihaz_Belge_Tur;Teknik Veri Sayfası;Cihazın teknik özellikleri;;
-81;Cihaz_Belge_Tur;Garantı Belgesi;Cihaz garanti belgesi;;
-82;Cihaz_Tipi;Görüntüleme (Diğer);GOR;;
-83;Cihaz_Tipi;Görüntüleme (Radyasyon Kaynaklı);XRY;;
-84;Cihaz_Tipi;Medikal Cihazlar;MED;;
-85;Çalışma Koşulu;Çalışma Koşulu A;;;
-86;Çalışma Koşulu;Çalışma Koşulu B;;;
-87;Garanti_Durum;Evet;;;
-88;Garanti_Durum;Hayır;;;
-89;Gorev_Yeri;Acil Radyoloji;Çalışma Koşulu A;;
-90;Gorev_Yeri;AnaBilim Dalı Başkanı;Çalışma Koşulu B;;
-91;Gorev_Yeri;AnaBilim Dalı Sekreteri;Çalışma Koşulu B;;
-92;Gorev_Yeri;Anjiografi Kayıt;Çalışma Koşulu B;;
-93;Gorev_Yeri;Bakım Onarım;Çalışma Koşulu B;;
-94;Gorev_Yeri;Başhemşire;Çalışma Koşulu B;;
-95;Gorev_Yeri;Bilim Dalı Başkanı;Çalışma Koşulu B;;
-96;Gorev_Yeri;Dahiliye;Çalışma Koşulu A;;
-97;Gorev_Yeri;Danışma;Çalışma Koşulu B;;
-98;Gorev_Yeri;Esnaf Has. Yerleşkesi;Çalışma Koşulu A;;
-99;Gorev_Yeri;Girişimsel Radyoloji;Çalışma Koşulu A;;
-100;Gorev_Yeri;Gögüs Hastalıkları;Çalışma Koşulu B;;
-101;Gorev_Yeri;Mamografi;Çalışma Koşulu A;;
-102;Gorev_Yeri;Mamografi Kayıt;Çalışma Koşulu B;;
-103;Gorev_Yeri;Manyetik Rezonans;Çalışma Koşulu B;;
-104;Gorev_Yeri;Ortopedi Ameliyathane;Çalışma Koşulu A;;
-105;Gorev_Yeri;Pediatrik Radyoloji;Çalışma Koşulu B;;
-106;Gorev_Yeri;Poliklinik;Çalışma Koşulu A;;
-107;Gorev_Yeri;Radyoloji;Çalışma Koşulu B;;
-108;Gorev_Yeri;Radyoloji Kayıt Şef;Çalışma Koşulu B;;
-109;Gorev_Yeri;Radyoloji Kayit;Çalışma Koşulu B;;
-110;Gorev_Yeri;Rapor Sekreteri;Çalışma Koşulu B;;
-111;Gorev_Yeri;Seyyar Grafi;Çalışma Koşulu A;;
-112;Gorev_Yeri;Tomografi;Çalışma Koşulu A;;
-113;Gorev_Yeri;Ultrasonografi;Çalışma Koşulu B;;
-114;Gorev_Yeri;Ultrasonografi Kayıt;Çalışma Koşulu B;;
-115;Gorev_Yeri;Vatan Yerleşkesi;Çalışma Koşulu A;;
-116;Hizmet_Sinifi;Akademik Personel;;;
-117;Hizmet_Sinifi;Asistan Doktor;;;
-118;Hizmet_Sinifi;Hasta Bakımı / Temizlik Hizmetleri;;;
-119;Hizmet_Sinifi;Hemşire;;;
-120;Hizmet_Sinifi;Radyasyon Görevlisi;;;
-121;Hizmet_Sinifi;Sekreterya / Memur;;;
-122;İzin_Tipi;Aylıksız İzin - Askerlik Nedeniyle;;;
-123;İzin_Tipi;Aylıksız İzin - Doğum Nedeniyle;;;
-124;İzin_Tipi;Doğum İzni (Eşinin);10;;
-125;İzin_Tipi;Doğum Öncesi İzin;42;;
-126;İzin_Tipi;Doğum Sonrası İzin;42;;
-127;İzin_Tipi;Evlenme-Ölüm İzni;;;
-128;İzin_Tipi;Evlilik İzni;;;
-129;İzin_Tipi;Heyet Raporu;;;
-130;İzin_Tipi;İdari İzin;;;
-131;İzin_Tipi;İdari İzin (COVID-19);;;
-132;İzin_Tipi;Kongre izni: 3 aya kadar;;;
-133;İzin_Tipi;Mazeret;;;
-134;İzin_Tipi;Rapor İzni;;;
-135;İzin_Tipi;Refakatçı İzni;;;
-136;İzin_Tipi;Şua İzni;30;;
-137;İzin_Tipi;Tedavi İzni (Yatış Ve Ayaktan);;;
-138;İzin_Tipi;Yıllık İzin;30;;
-139;Kadro_Unvani;4D Sürekli İşçi (Temizlik);;;
-140;Kadro_Unvani;Araştırma Görevlisi;;;
-141;Kadro_Unvani;Bilgisayar İşletmeni;;;
-142;Kadro_Unvani;Büro Personeli;;;
-143;Kadro_Unvani;Destek Personeli;;;
-144;Kadro_Unvani;Doçent Doktor;;;
-145;Kadro_Unvani;Doktor;;;
-146;Kadro_Unvani;Doktor Öğretim Üyesi;;;
-147;Kadro_Unvani;Ebe;;;
-148;Kadro_Unvani;Esnaf Hastanesi;;;
-149;Kadro_Unvani;Hasta Bakıcı;;;
-150;Kadro_Unvani;Hemşire;;;
-151;Kadro_Unvani;Hizmetli;;;
-152;Kadro_Unvani;Laborant;;;
-153;Kadro_Unvani;Profesör Doktor;;;
-154;Kadro_Unvani;Radyoloji Teknik Personeli;;;
-155;Kadro_Unvani;Radyoloji Teknikeri;;;
-156;Kadro_Unvani;Radyoloji Teknisyeni;;;
-157;Kadro_Unvani;Sağlık Memuru;;;
-158;Kadro_Unvani;Sağlık Teknikeri;;;
-159;Kadro_Unvani;Sağlık Teknisyeni;;;
-160;Kadro_Unvani;Söz.Sağlık Teknikeri;;;
-161;Kadro_Unvani;Söz.Sağlık Teknisyeni;;;
-162;Kadro_Unvani;Şef;;;
-163;Kadro_Unvani;Teknisyen;;;
-164;Kadro_Unvani;Teknisyen Yardımcısı;;;
-165;Kadro_Unvani;Temizlik Görevlisi;;;
-166;Kadro_Unvani;Tıbbi Sekreter;;;
-167;Kadro_Unvani;Uzman Doktor;;;
-168;Kadro_Unvani;Veri Analisti;;;
-169;Kadro_Unvani;Veri Giriş Kayıt Ve Analiz Hizmetleri;;;
-170;Kadro_Unvani;Veri Hazırlama Kontrol İşletmeni;;;
-171;Kalibrasyon_Durum;Evet;;;
-172;Kalibrasyon_Durum;Hayır;;;
-173;Kaynak;Anjiyo;ANJ;;
-174;Kaynak;C-Kollu;CKL;;
-175;Kaynak;CR Cihazı;CRC;;
-176;Kaynak;Mamografi;MAM;;
-177;Kaynak;Manyetik Rezonans;MRI;;
-178;Kaynak;Medikal Cihaz;MED;;
-179;Kaynak;Mobil Bilgisayarlı Tomografi;MCT;;
-180;Kaynak;Mobil Tek Tüplü Röntgen;MTTR;;
-181;Kaynak;Tek Tüplü Röntgen;TTR;;
-182;Kaynak;Tomografi;CT;;
-183;Kaynak;Ultrasonografi;USG;;
-184;Koruyucu_Cinsi;Gonad Koruyucu;GK;;
-185;Koruyucu_Cinsi;Kurşun Başlık;KB;;
-186;Koruyucu_Cinsi;Kurşun Eldiven;KE;;
-187;Koruyucu_Cinsi;Kurşun Gözlük;KG;;
-188;Koruyucu_Cinsi;Kurşun Paravan;KP;;
-189;Koruyucu_Cinsi;Palto (Önlük);O;;
-190;Koruyucu_Cinsi;Tiroid Koruyucu;TK;;
-191;Koruyucu_Cinsi;Uyarı İşaretleri;UI;;
-192;Koruyucu_Cinsi;Yelek - Etek;YE;;
-193;Lisans_Durum;Devir;;;
-194;Lisans_Durum;Eksik Husus;;;
-195;Lisans_Durum;Kullanım Dışı (Depo);;;
-196;Lisans_Durum;Kullanım Dışı (HEK);;;
-197;Lisans_Durum;Lisans Gerekli Değil;;;
-198;Lisans_Durum;Lisansız;;;
-199;Lisans_Durum;Lisanslı;;;
-200;Marka;Canon;;;
-201;Marka;CARDİOLİNE S.P.A;;;
-202;Marka;Dornier;;;
-203;Marka;DR-RAD;;;
-204;Marka;Drager;;;
-205;Marka;DRGEM;;;
-206;Marka;FUJİFİLM;;;
-207;Marka;Gammacell;;;
-208;Marka;General Electic;;;
-209;Marka;Gıotto;;;
-210;Marka;Leksell;;;
-211;Marka;Mindray;;;
-212;Marka;Neurologica;;;
-213;Marka;Philps;;;
-214;Marka;Samsung;;;
-215;Marka;Shimadzu;;;
-216;Marka;Siemens;;;
-217;Marka;Toshiba;;;
-218;Marka;Üzümcü;;;
-219;Marka;Ziehm;;;
-220;RKE_Teknik;Çok kirli, deforme olmuş, yırtık;;;
-221;RKE_Teknik;Dikiş yerlerinde hasar var;;;
-222;RKE_Teknik;Kullanım Ömrünü Doldurmuş;;;
-223;RKE_Teknik;Kullanım ve bakım koşullarına uyulmamış;;;
-224;RKE_Teknik;Kurşun, etek kısımlarında (aşağıya) toplanmış;;;
-225;RKE_Teknik;Sabitleyici bantlar ve/veya tokalar deforme;;;
-226;RKE_Teknik;Skopi altında kırık tespit edildi;;;
-227;RKE_Teknik;Tüm testler normal ekipman kullanıma uygun;;;
-228;Sistem_DriveID;Ariza_Raporlari;1ZrpeqPU6-lFN7Nhisg3SdO7QN7IvIkn3;;
-229;Sistem_DriveID;Cihaz_Kunye;19kx3IHTg4XWrYrF-_LzT3BpY5gRy-CH5;;
-230;Sistem_DriveID;Cihaz_Resim;1-PznDkBqOHTbE3rWBlS8g2HjZXaK6Sdh;;
-231;Sistem_DriveID;Kalibrasyon_Raporlari;1VNVa0ZMfadpgAqJE6wfvkAw0XIHDv4-J;;
-232;Sistem_DriveID;Cihaz_Lisanslar;1eOq_NfrjN_XwKirUuX_0uyOonk137HjF;;
-233;Sistem_DriveID;Personel_Diploma;1YlFMqoKwcSsB_fv9osU3sWsTlAlGHF3L;;
-234;Sistem_DriveID;Personel_Dosya;1R7EjtH9gg9hgaJbCrqRX9DBdEHtmCPNN;;
-235;Sistem_DriveID;Personel_Resim;1GLp4IongyBjr0yPd789ryrFdN2Ml6yCG;;
-236;Sistem_DriveID;RKE_Raporlari;1tRoXh5eMUGWUFw0mG9CKvyWxWg5kdxGi;;
-237;Sistem_DriveID;Eski_Personel_Dosyalari;1j9Tyw21yV-wtOcSUr_SO9gULxaPUjOBa;;
-238;Sistem_DriveID;RKE_Muayene;;;
-239;Sistem_DriveID;Saglik_Raporlari;1CAa2cb7PWGXMPkvofBWq1y45SANOjXtq;;
+﻿Rowid,Kod,MenuEleman,Aciklama,sync_status,updated_at
+,Izin_Tipi,Aylıksız İzin - Askerlik Nedeniyle,,clean,
+,Izin_Tipi,Aylıksız İzin - Doğum Nedeniyle,,clean,
+,Izin_Tipi,Doğum İzni (Eşinin),10,clean,
+,Izin_Tipi,Doğum Öncesi İzin,42,clean,
+,Izin_Tipi,Doğum Sonrası İzin,42,clean,
+,Izin_Tipi,Evlenme-Ölüm İzni,,clean,
+,Izin_Tipi,Evlilik İzni,,clean,
+,Izin_Tipi,Heyet Raporu,,clean,
+,Izin_Tipi,İdari İzin,,clean,
+,Izin_Tipi,Kongre izni: 3 aya kadar,,clean,
+,Izin_Tipi,Mazeret,,clean,
+,Izin_Tipi,Rapor İzni,,clean,
+,Izin_Tipi,Refakatçı İzni,,clean,
+,Izin_Tipi,Şua İzni,30,clean,
+,Izin_Tipi,Tedavi İzni (Yatış Ve Ayaktan),,clean,
+,Izin_Tipi,Yıllık İzin,30,clean,
+,Amac,Defibrilator,,clean,
+,Amac,EKG Cihazı,,clean,
+,Amac,Grafi,,clean,
+,Amac,Kaset Okuyucu,,clean,
+,Amac,Manyetik Rezonans,,clean,
+,Amac,Skopi,,clean,
+,Amac,Skopi (Ercp),,clean,
+,Amac,Skopi (Eswl),,clean,
+,Amac,Ultrasonografi,,clean,
+,AnaBilimDali,Beyin ve Sinir Cerrahisi ABD,NRS,clean,
+,AnaBilimDali,Göğüs Hastalıkları ABD,GHA,clean,
+,AnaBilimDali,İç Hastalıkları ABD,DHL,clean,
+,AnaBilimDali,Kalp ve Damar Cerrahisi ABD,KDC,clean,
+,AnaBilimDali,Kardiyoloji ABD,KRD,clean,
+,AnaBilimDali,Ortopedi ve Travmatoloji ABD,ORT,clean,
+,AnaBilimDali,Radyoloji ABD,RAD,clean,
+,AnaBilimDali,Üroloji ABD,URO,clean,
+,Ariza_Durum,İşlemde,,clean,
+,Ariza_Durum,Parça Bekliyor,,clean,
+,Ariza_Durum,Dış Serviste,,clean,
+,Ariza_Durum,Kapalı (Çözüldü),,clean,
+,Ariza_Durum,Kapalı (İptal),,clean,
+,Ariza_Islem_Turu,Arıza Tespiti / İnceleme,,clean,
+,Ariza_Islem_Turu,Onarım / Tamirat,,clean,
+,Ariza_Islem_Turu,Parça Değişimi,,clean,
+,Ariza_Islem_Turu,Yazılım Güncelleme,,clean,
+,Ariza_Islem_Turu,Kalibrasyon,,clean,
+,Ariza_Islem_Turu,Dış Servis Gönderimi,,clean,
+,Ariza_Islem_Turu,Kapatma / Sonlandırma,,clean,
+,Bedeni,L,,clean,
+,Bedeni,M,,clean,
+,Bedeni,Pediatrik,,clean,
+,Bedeni,S,,clean,
+,Bedeni,STN,,clean,
+,Bedeni,XL,,clean,
+,Bedeni,XS,,clean,
+,Bedeni,Yetişkin,,clean,
+,Birim,Acil Radyoloji,ARAD,clean,
+,Birim,Ameliyathane,AML,clean,
+,Birim,Anjiografi,ANJ,clean,
+,Birim,Endoskopi Ünitesi,ENU,clean,
+,Birim,Girişimsel Radyoloji Anjiografi,RANJ,clean,
+,Birim,Koroner Anjiografi,KANJ,clean,
+,Birim,Mamografi,MAM,clean,
+,Birim,Manyetik Rezonans Ünitesi,MRI,clean,
+,Birim,Nöroradyoloji Anjiografi,NANJ,clean,
+,Birim,Poliklinik,POL,clean,
+,Birim,Radyoloji USG,USG,clean,
+,Birim,Yoğun Bakım Ünitesi,YBU,clean,
+,Cihaz_Belge_Tur,NDK Lisansı,,clean,
+,Cihaz_Belge_Tur,RKS Belgesi,,clean,
+,Cihaz_Belge_Tur,Sorumlu Diploması,,clean,
+,Cihaz_Belge_Tur,Kullanım Kılavuzu,,clean,
+,Cihaz_Belge_Tur,Cihaz Sertifikası,,clean,
+,Cihaz_Belge_Tur,Teknik Veri Sayfası,,clean,
+,Cihaz_Belge_Tur,Garanti Belgesi,,clean,
+,Cihaz_Belge_Tur,Diğer,,clean,
+,Personel_Belge_Tur,Diploma,,clean,
+,Personel_Belge_Tur,Sertifika,,clean,
+,Personel_Belge_Tur,Periyodik Muayene Raporu,,clean,
+,Personel_Belge_Tur,İşe Giriş Muayenesi,,clean,
+,Personel_Belge_Tur,Hastalık Raporu,,clean,
+,Personel_Belge_Tur,Dozimetre Sonuçları,,clean,
+,Personel_Belge_Tur,Diğer,,clean,
+,RKE_Belge_Tur,Muayene Raporu,,clean,
+,RKE_Belge_Tur,Kalibrasyon Sertifikası,,clean,
+,RKE_Belge_Tur,Teknik Doküman,,clean,
+,RKE_Belge_Tur,Diğer,,clean,
+,Satin_Alma_Belge_Tur,Teklif,,clean,
+,Satin_Alma_Belge_Tur,Sözleşme,,clean,
+,Satin_Alma_Belge_Tur,Fatura,,clean,
+,Satin_Alma_Belge_Tur,İrsaliye,,clean,
+,Satin_Alma_Belge_Tur,Şartname,,clean,
+,Satin_Alma_Belge_Tur,Diğer,,clean,
+,Kurumsal_Belge_Tur,Yönetmelik,,clean,
+,Kurumsal_Belge_Tur,Prosedür,,clean,
+,Kurumsal_Belge_Tur,Sözleşme,,clean,
+,Kurumsal_Belge_Tur,Akreditasyon Belgesi,,clean,
+,Kurumsal_Belge_Tur,Yazışma,,clean,
+,Kurumsal_Belge_Tur,Diğer,,clean,
+,Cihaz_Tipi,Görüntüleme (Diğer),GOR,clean,
+,Cihaz_Tipi,Görüntüleme (Radyasyon Kaynaklı),XRY,clean,
+,Cihaz_Tipi,Medikal Cihazlar,MED,clean,
+,Gorev_Yeri,Acil Radyoloji,Çalışma Koşulu A,clean,
+,Gorev_Yeri,Esnaf Has. Yerleşkesi,Çalışma Koşulu B,clean,
+,Gorev_Yeri,Girişimsel Radyoloji,Çalışma Koşulu A,clean,
+,Gorev_Yeri,Gögüs Hastalıkları,Çalışma Koşulu B,clean,
+,Hizmet_Sinifi,Akademik Personel,,clean,
+,Hizmet_Sinifi,Asistan Doktor,,clean,
+,Hizmet_Sinifi,Hemşire,,clean,
+,Hizmet_Sinifi,Radyasyon Görevlisi,,clean,
+,Kadro_Unvani,Araştırma Görevlisi,,clean,
+,Kadro_Unvani,Doçent Doktor,,clean,
+,Kadro_Unvani,Doktor,,clean,
+,Kadro_Unvani,Doktor Öğretim Üyesi,,clean,
+,Kadro_Unvani,Ebe,,clean,
+,Kadro_Unvani,Hasta Bakıcı,,clean,
+,Kadro_Unvani,Hemşire,,clean,
+,Kadro_Unvani,Profesör Doktor,,clean,
+,Kadro_Unvani,Radyoloji Teknikeri,,clean,
+,Kadro_Unvani,Radyoloji Teknisyeni,,clean,
+,Kadro_Unvani,Sağlık Memuru,,clean,
+,Kadro_Unvani,Sağlık Teknikeri,,clean,
+,Kadro_Unvani,Sağlık Teknisyeni,,clean,
+,Kadro_Unvani,Teknisyen,,clean,
+,Kadro_Unvani,Uzman Doktor,,clean,
+,Kaynak,Anjiyo,ANJ,clean,
+,Kaynak,C-Kollu,CKL,clean,
+,Kaynak,CR Cihazı,CRC,clean,
+,Kaynak,Mamografi,MAM,clean,
+,Kaynak,Manyetik Rezonans,MRI,clean,
+,Kaynak,Medikal Cihaz,MED,clean,
+,Kaynak,Mobil Bilgisayarlı Tomografi,MCT,clean,
+,Kaynak,Mobil Tek Tüplü Röntgen,MTTR,clean,
+,Kaynak,Tek Tüplü Röntgen,TTR,clean,
+,Kaynak,Tomografi,CT,clean,
+,Kaynak,Ultrasonografi,USG,clean,
+,Koruyucu_Cinsi,Gonad Koruyucu,GK,clean,
+,Koruyucu_Cinsi,Kurşun Başlık,KB,clean,
+,Koruyucu_Cinsi,Kurşun Eldiven,KE,clean,
+,Koruyucu_Cinsi,Kurşun Gözlük,KG,clean,
+,Koruyucu_Cinsi,Kurşun Paravan,KP,clean,
+,Koruyucu_Cinsi,Palto (Önlük),O,clean,
+,Koruyucu_Cinsi,Tiroid Koruyucu,TK,clean,
+,Koruyucu_Cinsi,Uyarı İşaretleri,UI,clean,
+,Koruyucu_Cinsi,Yelek - Etek,YE,clean,
+,Lisans_Durum,Devir,,clean,
+,Lisans_Durum,Eksik Husus,,clean,
+,Lisans_Durum,Kullanım Dışı (Depo),,clean,
+,Lisans_Durum,Kullanım Dışı (HEK),,clean,
+,Lisans_Durum,Lisans Gerekli Değil,,clean,
+,Lisans_Durum,Lisansız,,clean,
+,Lisans_Durum,Lisanslı,,clean,
+,RKE_Teknik,Dikiş yerlerinde hasar var,,clean,
+,RKE_Teknik,Kullanım Ömrünü Doldurmuş,,clean,
+,RKE_Teknik,Kullanım ve bakım koşullarına uyulmamış,,clean,
+,RKE_Teknik,"Kurşun, etek kısımlarında toplanmış",,clean,
+,RKE_Teknik,Sabitleyici bantlar ve tokalar deforme,,clean,
+,RKE_Teknik,Skopi altında kırık tespit edildi,,clean,
+,RKE_Teknik,Tüm testler normal ekipman kullanıma uygun,,clean,
+,Sistem_DriveID,Ariza_Raporlari,,clean,
+,Sistem_DriveID,Cihaz_Kunye,,clean,
+,Sistem_DriveID,Cihaz_Resim,,clean,
+,Sistem_DriveID,Kalibrasyon_Raporlari,,clean,
+,Sistem_DriveID,Cihaz_Lisanslar,,clean,
+,Sistem_DriveID,Personel_Diploma,,clean,
+,Sistem_DriveID,Personel_Dosya,,clean,
+,Sistem_DriveID,Personel_Resim,,clean,
+,Sistem_DriveID,RKE_Raporlari,,clean,
+,Sistem_DriveID,Eski_Personel_Dosyalari,,clean,
+,Sistem_DriveID,RKE_Muayene,,clean,
+,Sistem_DriveID,Saglik_Raporlari,,clean,
+,Sistem_DriveID,Cihaz_Belgeler,,clean,
+,Sistem_DriveID,Personel_Belge,,clean,
+,Sistem_DriveID,RKE_Rapor,,clean,
+,Sistem_DriveID,Sozlesme,,clean,
+,Sistem_DriveID,Satin_Alma_Belge,,clean,
+,Sistem_DriveID,Kurumsal_Belge,,clean,
