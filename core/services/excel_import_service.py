@@ -182,7 +182,7 @@ def alanlar_tam_listesi(konfig: "ImportKonfig") -> list[AlanTanimi]:
     (Resim, Diploma1, Diploma2, OzlukDosyasi, Img vb. binary/dosya kolonlar).
     """
     try:
-        from core.table_config import TABLES
+        from database.table_config import TABLES
     except ImportError:
         return konfig.alanlar   # table_config yoksa konfig alanlarını kullan
 

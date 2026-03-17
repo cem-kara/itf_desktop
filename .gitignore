@@ -133,3 +133,4 @@ dmypy.json
 *.pid.lock
 .python-version
 *.xlsx
+/data/excel yedek/

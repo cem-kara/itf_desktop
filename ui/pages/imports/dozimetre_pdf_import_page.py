@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-dozimetre_import.py — RADAT PDF içe aktarma sayfası
-Yenilikler: mükerrer önleme (UNIQUE RaporNo+SiraNo) + personel eşleştirme
+dozimetre_pdf_import_page.py — RADAT PDF içe aktarma sayfası
+Özellikler: mükerrer önleme (RaporNo bazlı) + personel eşleştirme
 """
 from __future__ import annotations
 import re, sqlite3, uuid
@@ -21,9 +21,8 @@ from ui.styles.components import STYLES as S
 from ui.styles.icons import Icons
 
 PREVIEW_COLS = [
-    ("SiraNo",         "No",         48),
     ("AdSoyad",        "Ad Soyad",  200),
-    ("TCKimlikNo",     "TC Kimlik", 120),
+    ("PersonelID",     "TC / ID",   130),
     ("CalistiBirim",   "Birim",     140),
     ("DozimetreNo",    "Dzm. No",    80),
     ("Hp10",           "Hp(10)",     70),
@@ -41,33 +40,67 @@ def _match_tc(masked: str, real: str) -> bool:
     expected = len(prefix) + len(stars) + len(suffix)
     return len(real) == expected and real.startswith(prefix) and real.endswith(suffix)
 
-def _match_name(pdf_name: str, real_name: str) -> bool:
+def _name_score(pdf_name: str, real_name: str) -> int:
+    """
+    PDF'deki kısmi isim ile DB'deki tam isim arasında eşleşme skoru döner.
+    Her PDF parçası için görünür kısım (yıldız öncesi) DB parçalarıyla karşılaştırılır.
+    Eşleşen karakter sayısı toplanır — daha uzun örtüşme = daha yüksek skor.
+    """
+    import unicodedata
+
+    def norm(s):
+        s = unicodedata.normalize("NFKD", s.upper())
+        return s.encode("ascii", "ignore").decode()
+
     pdf_parts  = pdf_name.upper().split()
     real_parts = real_name.upper().split()
     if not pdf_parts or not real_parts:
-        return False
-    matched = 0
+        return 0
+
+    score = 0
     for pp in pdf_parts:
-        visible = pp.rstrip("*")
+        visible = norm(pp.rstrip("*"))
         if not visible:
             continue
         for rp in real_parts:
-            if rp.startswith(visible):
-                matched += 1
+            rp_n = norm(rp)
+            if rp_n.startswith(visible):
+                score += len(visible)   # eşleşen karakter sayısı
                 break
-    return matched >= max(1, len(pdf_parts) - 1)
+    return score
+
 
 def match_personel(row: dict, personel_list: list[dict]) -> Optional[dict]:
-    tc_masked = row.get("TCKimlikNo", "")
+    """
+    Personel tablosundaki gerçek TC'lerle masked TC'yi karşılaştırır.
+    - Eşleşme yok → None (masked TC PersonelID'de kalır)
+    - Tek eşleşme → o kişiyi döndür (PersonelID = gerçek TC)
+    - Birden fazla eşleşme → isim skoru ile ayırt et
+    - Skor 0 → tahmin etme, None döndür (masked TC kalır)
+    """
+    tc_masked = row.get("PersonelID", "")
     pdf_name  = row.get("AdSoyad", "")
+
     candidates = [p for p in personel_list
                   if _match_tc(tc_masked, str(p.get("KimlikNo", "")))]
     if not candidates:
         return None
     if len(candidates) == 1:
         return candidates[0]
-    name_ok = [p for p in candidates if _match_name(pdf_name, str(p.get("AdSoyad", "")))]
-    return name_ok[0] if name_ok else candidates[0]
+
+    # Birden fazla TC eşleşmesi → isim skoru ile ayırt et
+    scored = sorted(
+        candidates,
+        key=lambda p: _name_score(pdf_name, str(p.get("AdSoyad", ""))),
+        reverse=True,
+    )
+    best_score = _name_score(pdf_name, str(scored[0].get("AdSoyad", "")))
+
+    # Skor 0 → isim örtüşmesi yok, tahmin etme
+    if best_score == 0:
+        return None
+
+    return scored[0]
 
 # ─── PDF Parser ─────────────────────────────────────────────────
 def _parse_hp(raw) -> Optional[float]:
@@ -100,9 +133,8 @@ def _smart_parse_row(row: list) -> dict:
             if hp10 is None: hp10 = _parse_hp(s)
             elif hp007 is None: hp007 = _parse_hp(s)
     return {
-        "SiraNo":       int(str(row[0]).strip()),
         "AdSoyad":      str(row[1] or "").strip().replace("\n"," "),
-        "TCKimlikNo":   str(row[2] or "").strip(),
+        "PersonelID":   str(row[2] or "").strip(),   # PDF'deki masked TC → başlangıç değeri
         "CalistiBirim": birim or "Radyoloji A.B.D.",
         "VucutBolgesi": vucut,
         "DozimetreNo":  dzm_no,
@@ -118,9 +150,9 @@ def parse_radat_pdf(pdf_path: str) -> tuple[dict, list[dict]]:
         for idx, page in enumerate(pdf.pages):
             text = page.extract_text() or ""
 
-            # ── Header bilgileri: tüm sayfalarda ara (ilkinde bulunamazsa sonrakilerde) ──
+            # ── Header: tüm sayfalarda ara, ilkinde bulunamazsa sonrakine geç ──
             if "RaporNo" not in header:
-                # Öncelik 1: "Rapor No" veya "Rapor Numarası" etiketinin yanındaki sayı
+                # Öncelik 1: "Rapor No" etiketi yanındaki sayı
                 m = re.search(
                     r"Rapor\s*(?:No|Numaras[ıiIİ])\s*[:\s]+([0-9]{3,12})",
                     text, re.IGNORECASE
@@ -129,7 +161,7 @@ def parse_radat_pdf(pdf_path: str) -> tuple[dict, list[dict]]:
                     header["RaporNo"] = m.group(1).strip()
                 else:
                     # Öncelik 2: Satırda tek başına duran 3-12 haneli sayı
-                    # AB-0730-T gibi tire içindeki sayılar ve tarih formatları (04-24) atlanır
+                    # AB-0730-T gibi tire içindekiler ve 04-24 gibi tarihler atlanır
                     for line in text.splitlines():
                         line = line.strip()
                         if re.fullmatch(r"\d{3,12}", line):
@@ -146,7 +178,6 @@ def parse_radat_pdf(pdf_path: str) -> tuple[dict, list[dict]]:
                     header["PeriyotAdi"] = m.group(2).strip()
                     header["Yil"]        = int(m.group(3))
                 else:
-                    # Alternatif format: "1. Periyot / 2024" veya "Periyot: 1 / 2024"
                     m = re.search(r"(\d+)[.\s]*\s*Periyot\s*/\s*(\d{4})", text, re.IGNORECASE)
                     if m:
                         header["Periyot"] = int(m.group(1))
@@ -157,26 +188,19 @@ def parse_radat_pdf(pdf_path: str) -> tuple[dict, list[dict]]:
                 if m:
                     header["DozimetriTipi"] = m.group(1)
 
-            # ── Tablo satırları ──────────────────────────────────────────
+            # ── Tablo satırları ──────────────────────────────────────────────
             for table in page.extract_tables():
                 for row in table:
                     if not row or not row[0]: continue
                     if not str(row[0]).strip().isdigit(): continue
                     all_rows.append(_smart_parse_row(row))
 
-    seen: set[int] = set()
-    unique: list[dict] = []
-    for r in sorted(all_rows, key=lambda x: x["SiraNo"]):
-        if r["SiraNo"] not in seen:
-            seen.add(r["SiraNo"])
-            unique.append(r)
-    return header, unique
+    return header, all_rows
 
 # ─── Workers ────────────────────────────────────────────────────
 class _PdfLoader(QThread):
     finished = _Signal(dict, list, int, int)
     error    = _Signal(str)
-
     def __init__(self, pdf_path: str, db):
         super().__init__()
         self._path = pdf_path
@@ -184,7 +208,6 @@ class _PdfLoader(QThread):
 
     @staticmethod
     def _db_path(db) -> str:
-        """SQLiteManager, string veya diğer nesnelerden db yolunu çıkarır."""
         if isinstance(db, str):
             return db
         for attr in ("db_path", "_db_path", "path", "_path"):
@@ -213,12 +236,11 @@ class _PdfLoader(QThread):
                 if p:
                     r["PersonelID"]     = str(p["KimlikNo"]).strip()
                     r["AdSoyad"]        = str(p["AdSoyad"]).strip()
-                    r["TCKimlikNo"]     = str(p["KimlikNo"]).strip()
                     r["_eslesti"]       = True
-                    r["_eslesti_label"] = "✔ Eşleşti"
+                    r["_eslesti_label"] = "[icon:check] Eşleşti"
                     eslesen += 1
                 else:
-                    r["PersonelID"]     = ""
+                    # Eşleşme bulunamadı — PDF'deki masked TC PersonelID'de kalır
                     r["_eslesti"]       = False
                     r["_eslesti_label"] = "? Bulunamadı"
                     eslesmez += 1
@@ -229,7 +251,6 @@ class _PdfLoader(QThread):
 class _DbSaver(QThread):
     finished = _Signal(int, int)   # yeni, atlanan
     error    = _Signal(str)
-
     def __init__(self, db, header: dict, rows: list[dict]):
         super().__init__()
         self._db = db; self._header = header; self._rows = rows
@@ -243,38 +264,25 @@ class _DbSaver(QThread):
             if val and isinstance(val, str):
                 return val
         return str(db)
+
     def run(self):
         try:
             conn = sqlite3.connect(self._db_path(self._db), check_same_thread=False)
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS Dozimetre_Olcum (
-                    KayitNo TEXT PRIMARY KEY, SiraNo INTEGER,
-                    RaporNo TEXT, Periyot INTEGER, PeriyotAdi TEXT,
-                    Yil INTEGER, DozimetriTipi TEXT,
-                    AdSoyad TEXT, TCKimlikNo TEXT, CalistiBirim TEXT,
-                    PersonelID TEXT, DozimetreNo TEXT, VucutBolgesi TEXT,
-                    Hp10 REAL, Hp007 REAL,
-                    DozSiniri_Hp10 REAL, DozSiniri_Hp007 REAL,
-                    Durum TEXT,
-                    OlusturmaTarihi TEXT DEFAULT (date('now')),
-                    UNIQUE(RaporNo, SiraNo)
-                )""")
-            conn.commit()
             rno = self._header.get("RaporNo", "")
             yeni = atlanan = 0
             for r in self._rows:
                 try:
                     conn.execute("""
                         INSERT INTO Dozimetre_Olcum
-                            (KayitNo,SiraNo,RaporNo,Periyot,PeriyotAdi,Yil,
-                             DozimetriTipi,AdSoyad,TCKimlikNo,CalistiBirim,
-                             PersonelID,DozimetreNo,VucutBolgesi,Hp10,Hp007,Durum)
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                        (uuid.uuid4().hex[:12].upper(), r["SiraNo"], rno,
+                            (KayitNo,RaporNo,Periyot,PeriyotAdi,Yil,
+                             DozimetriTipi,AdSoyad,PersonelID,CalistiBirim,
+                             DozimetreNo,VucutBolgesi,Hp10,Hp007,Durum)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                        (uuid.uuid4().hex[:12].upper(), rno,
                          self._header.get("Periyot"), self._header.get("PeriyotAdi",""),
                          self._header.get("Yil"), self._header.get("DozimetriTipi",""),
-                         r["AdSoyad"], r["TCKimlikNo"], r["CalistiBirim"],
-                         r.get("PersonelID",""), r["DozimetreNo"], r["VucutBolgesi"],
+                         r["AdSoyad"], r.get("PersonelID",""), r["CalistiBirim"],
+                         r["DozimetreNo"], r["VucutBolgesi"],
                          r["Hp10"], r["Hp007"], r["Durum"]))
                     yeni += 1
                 except sqlite3.IntegrityError:
@@ -286,10 +294,14 @@ class _DbSaver(QThread):
 
 # ─── Model ──────────────────────────────────────────────────────
 class _PreviewModel(BaseTableModel):
-    ALIGN_CENTER = frozenset({"SiraNo","Hp10","Hp007","_eslesti_label"})
+    ALIGN_CENTER = frozenset({"Hp10","Hp007","_eslesti_label"})
     def _fg(self, key: str, row: dict):
         if key == "_eslesti_label":
             return QColor("#4ade80") if row.get("_eslesti") else QColor("#facc15")
+        if key == "PersonelID":
+            # Gerçek TC (sadece rakam, 11 hane) → yeşil | masked (yıldız var) → sarı
+            pid = str(row.get("PersonelID", ""))
+            return QColor("#4ade80") if pid.isdigit() else QColor("#facc15")
         if key == "Durum" and "Aşım" in str(row.get("Durum","")):
             return QColor("#f87171")
         return None
@@ -470,41 +482,35 @@ class DozimetrePdfImportPage(QWidget):
         if not self._rows or not self._db: return
         rapor_no = self._header.get("RaporNo", "")
 
-        # Tam SiraNo karşılaştırması — COUNT(*) yeterli değil,
-        # hangi SiraNo'ların zaten kayıtlı olduğunu buluyoruz.
-        mevcut_siralar: set = set()
+        mevcut_sayisi: int = 0
         try:
             db_path: str = _DbSaver._db_path(self._db)
             conn = sqlite3.connect(db_path, check_same_thread=False)
             try:
-                rows_db = conn.execute(
-                    "SELECT SiraNo FROM Dozimetre_Olcum WHERE RaporNo=?",
+                row = conn.execute(
+                    "SELECT COUNT(*) FROM Dozimetre_Olcum WHERE RaporNo=?",
                     (rapor_no,)
-                ).fetchall()
-                mevcut_siralar = {r[0] for r in rows_db}
+                ).fetchone()
+                mevcut_sayisi = row[0] if row else 0
             except sqlite3.OperationalError:
                 pass
             conn.close()
         except Exception:
             pass
 
-        pdf_siralar   = {r["SiraNo"] for r in self._rows}
-        gercek_yeni   = pdf_siralar - mevcut_siralar
-        gercek_mevcut = pdf_siralar & mevcut_siralar
-
-        if gercek_mevcut:
-            if not gercek_yeni:
+        if mevcut_sayisi > 0:
+            if mevcut_sayisi >= len(self._rows):
                 QMessageBox.information(
                     self, "Zaten Kayıtlı",
-                    f"<b>{rapor_no}</b> raporunun tüm {len(gercek_mevcut)} kaydı "
+                    f"<b>{rapor_no}</b> raporunun tüm kayıtları "
                     f"zaten veritabanında mevcut.<br>Herhangi bir ekleme yapılmadı."
                 )
                 return
             cevap = QMessageBox.question(
                 self, "Mükerrer Kayıt Uyarısı",
                 f"<b>{rapor_no}</b> raporu için:<br><br>"
-                f"&nbsp;&nbsp;• <b>{len(gercek_yeni)}</b> yeni kayıt eklenecek<br>"
-                f"&nbsp;&nbsp;• <b>{len(gercek_mevcut)}</b> kayıt zaten mevcut, atlanacak<br><br>"
+                f"&nbsp;&nbsp;• <b>{len(self._rows) - mevcut_sayisi}</b> yeni kayıt eklenecek<br>"
+                f"&nbsp;&nbsp;• <b>{mevcut_sayisi}</b> kayıt zaten mevcut<br><br>"
                 f"Devam edilsin mi?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )

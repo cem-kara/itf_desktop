@@ -46,36 +46,11 @@ class DozimetreService:
         Aciklama     → Durum alanına ek olarak yazılır
     """
 
-    # CREATE TABLE — PDF import'ta da aynı şema kullanılıyor.
-    _DDL = """
-        CREATE TABLE IF NOT EXISTS Dozimetre_Olcum (
-            KayitNo          TEXT PRIMARY KEY,
-            SiraNo           INTEGER,
-            RaporNo          TEXT,
-            Periyot          INTEGER,
-            PeriyotAdi       TEXT,
-            Yil              INTEGER,
-            DozimetriTipi    TEXT,
-            AdSoyad          TEXT,
-            TCKimlikNo       TEXT,
-            CalistiBirim     TEXT,
-            PersonelID       TEXT,
-            DozimetreNo      TEXT,
-            VucutBolgesi     TEXT,
-            Hp10             REAL,
-            Hp007            REAL,
-            DozSiniri_Hp10   REAL,
-            DozSiniri_Hp007  REAL,
-            Durum            TEXT,
-            OlusturmaTarihi  TEXT DEFAULT (date('now')),
-            UNIQUE(RaporNo, SiraNo)
-        )
-    """
-
     def __init__(self, db):
         """
         db: sqlite3 bağlantısı veya db_path string'i.
         Projedeki DB yöneticisiyle uyumlu olması için her iki biçimi de kabul eder.
+        Tablo oluşturma migrations.py tarafından yönetilir.
         """
         self._db = db
 
@@ -106,30 +81,16 @@ class DozimetreService:
     # ------------------------------------------------------------------
     # Tablo oluştur (gerekirse)
     # ------------------------------------------------------------------
-
-    def tablo_olustur(self):
-        conn, kapat = self._baglanti()
-        try:
-            conn.execute(self._DDL)
-            conn.commit()
-        finally:
-            if kapat:
-                conn.close()
-
-    # ------------------------------------------------------------------
     # Tekil kayıt ekle  ← BaseImportPage motoru bu metodu çağırır
     # ------------------------------------------------------------------
 
     def olcum_ekle(self, kayit: dict) -> _Sonuc:
         """
         Bir Excel satırını Dozimetre_Olcum tablosuna ekler.
-        Eğer TCKimlikNo + Periyot + Yil zaten mevcutsa hata döner
-        (pk_cakisma="raporla" ile uyumlu).
+        Tablo migrations.py tarafından oluşturulur.
         """
         conn, kapat = self._baglanti()
         try:
-            # Tablo yoksa oluştur
-            conn.execute(self._DDL)
 
             kayit_no = uuid.uuid4().hex[:12].upper()
 

@@ -291,11 +291,11 @@ TABLES = {
     "Dozimetre_Olcum": {
         "pk": "KayitNo",
         "columns": [
-            "KayitNo", "SiraNo", "RaporNo",
+            "KayitNo", "RaporNo",
             "Periyot", "PeriyotAdi", "Yil", "DozimetriTipi",
-            "AdSoyad", "TCKimlikNo", "CalistiBirim", "PersonelID",
+            "AdSoyad", "CalistiBirim", "PersonelID",
             "DozimetreNo", "VucutBolgesi",
-            "Hp10", "Hp007", "DozSiniri_Hp10", "DozSiniri_Hp007", "Durum",
+            "Hp10", "Hp007", "Durum",
             "OlusturmaTarihi",
         ],
         "date_fields": ["OlusturmaTarihi"],

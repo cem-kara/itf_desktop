@@ -9,10 +9,10 @@ from core.logger import logger
 class MigrationManager:
     """
     Versiyon tabanlı migration yöneticisi.
-    v1: Tüm tablolar (temiz kurulum)
+    v1: Tüm tablolar — güncel şema (temiz kurulum)
     """
 
-    CURRENT_VERSION = 3
+    CURRENT_VERSION = 1
 
     def __init__(self, db_path):
         self.db_path = db_path
@@ -122,113 +122,6 @@ class MigrationManager:
     # ════════════════════════════════════════════════════════
     #  MIGRATION METODLARI
     # ════════════════════════════════════════════════════════
-
-    def _migrate_to_v3(self):
-        """
-        v3: Cihaz_Teknik ve Cihaz_Teknik_Belge tablolari eklendi.
-        UTS (Ulusal Tuketici Sicili) teknik bilgi verileri icin.
-        """
-        conn = self.connect()
-        cur  = conn.cursor()
-        try:
-            cur.execute("""
-            CREATE TABLE IF NOT EXISTS Cihaz_Teknik (
-                Cihazid                     TEXT    PRIMARY KEY,
-                BirincilUrunNumarasi        TEXT,
-                KurumUnvan                  TEXT,
-                MarkaAdi                    TEXT,
-                EtiketAdi                   TEXT,
-                VersiyonModel               TEXT,
-                UrunTipi                    TEXT,
-                Sinif                       TEXT,
-                KatalogNo                   TEXT,
-                GmdnTerimKod                TEXT,
-                GmdnTerimTurkceAd           TEXT,
-                TemelUdiDi                  TEXT,
-                UrunTanimi                  TEXT,
-                Aciklama                    TEXT,
-                KurumGorunenAd              TEXT,
-                KurumNo                     TEXT,
-                KurumTelefon                TEXT,
-                KurumEposta                 TEXT,
-                IthalImalBilgisi            TEXT,
-                MenseiUlkeSet               TEXT,
-                IthalEdilenUlkeSet          TEXT,
-                SutEslesmesiSet             TEXT,
-                Durum                       TEXT,
-                CihazKayitTipi              TEXT,
-                UtsBaslangicTarihi          TEXT,
-                KontroleGonderildigiTarih   TEXT,
-                KalibrasyonaTabiMi          TEXT,
-                KalibrasyonPeriyodu         TEXT,
-                BakimaTabiMi                TEXT,
-                BakimPeriyodu               TEXT,
-                MrgUyumlu                   TEXT,
-                IyonizeRadyasyonIcerir      TEXT,
-                TekHastayaKullanilabilir    TEXT,
-                SinirliKullanimSayisiVar    TEXT,
-                SinirliKullanimSayisi       TEXT,
-                BaskaImalatciyaUrettirildiMi TEXT,
-                GmdnTerimTurkceAciklama     TEXT
-            )
-            """)
-            logger.info("v3: Cihaz_Teknik tablosu olusturuldu")
-
-            cur.execute("""
-            CREATE TABLE IF NOT EXISTS Cihaz_Teknik_Belge (
-                Cihazid         TEXT    NOT NULL,
-                BelgeTuru       TEXT    NOT NULL,
-                Belge           TEXT    NOT NULL,
-                BelgeAdi        TEXT,
-                YuklenmeTarihi  TEXT,
-                DrivePath       TEXT,
-                LocalPath       TEXT,
-                PRIMARY KEY (Cihazid, BelgeTuru, Belge)
-            )
-            """)
-            logger.info("v3: Cihaz_Teknik_Belge tablosu olusturuldu")
-
-            conn.commit()
-        except Exception as e:
-            conn.rollback()
-            logger.error(f"v3 migration hatasi: {e}")
-            raise
-        finally:
-            conn.close()
-
-    def _migrate_to_v2(self):
-        """
-        v2: Dis_Alan_Calisma tablosuna eksik kolonlar eklendi.
-        Birim, OrtSureDk, ToplamSureDk — table_config ile senkronize.
-        ALTER TABLE IF NOT EXISTS kullanılamaz, önce kolon var mı kontrol edilir.
-        """
-        conn = self.connect()
-        cur  = conn.cursor()
-        try:
-            cur.execute("PRAGMA table_info(Dis_Alan_Calisma)")
-            mevcut = {row[1] for row in cur.fetchall()}
-
-            eklenecekler = [
-                ("Birim",       "TEXT    NOT NULL DEFAULT ''"),
-                ("OrtSureDk",   "INTEGER"),
-                ("ToplamSureDk","REAL"),
-            ]
-            for kolon, tip in eklenecekler:
-                if kolon not in mevcut:
-                    cur.execute(
-                        f"ALTER TABLE Dis_Alan_Calisma ADD COLUMN {kolon} {tip}"
-                    )
-                    logger.info(f"v2: Dis_Alan_Calisma.{kolon} eklendi")
-                else:
-                    logger.info(f"v2: Dis_Alan_Calisma.{kolon} zaten var")
-
-            conn.commit()
-        except Exception as e:
-            conn.rollback()
-            logger.error(f"v2 migration hatasi: {e}")
-            raise
-        finally:
-            conn.close()
 
     def _migrate_to_v1(self):
         """v1: Tum tablolar - temiz kurulum."""
@@ -561,22 +454,18 @@ class MigrationManager:
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Dozimetre_Olcum (
             KayitNo            TEXT PRIMARY KEY,
-            SiraNo             INTEGER,
             RaporNo            TEXT,
             Periyot            INTEGER,
             PeriyotAdi         TEXT,
             Yil                INTEGER,
             DozimetriTipi      TEXT,
             AdSoyad            TEXT,
-            TCKimlikNo         TEXT,
             CalistiBirim       TEXT,
             PersonelID         TEXT,
             DozimetreNo        TEXT,
             VucutBolgesi       TEXT,
             Hp10               REAL,
             Hp007              REAL,
-            DozSiniri_Hp10     REAL,
-            DozSiniri_Hp007    REAL,
             Durum              TEXT,
             OlusturmaTarihi    TEXT DEFAULT (date('now')),
             sync_status        TEXT DEFAULT 'clean',

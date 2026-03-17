@@ -53,11 +53,11 @@ from core.services.excel_import_service import (
 # ---------------------------------------------------------------------------
 # Renk sabitleri
 # ---------------------------------------------------------------------------
-RENK_KIRMIZI = QColor("#FFCCCC")   # pk_duplicate
-RENK_SARI    = QColor("#FFFACC")   # yumusak_duplicate
-RENK_GRI     = QColor("#E0E0E0")   # zorunlu_eksik
-RENK_YESIL   = QColor("#CCFFCC")   # basarili
-RENK_TURUNCU = QColor("#FFE5CC")   # hatali
+RENK_KIRMIZI = QColor("#6E6CC9")   # pk_duplicate
+RENK_SARI    = QColor("#F8E21D")   # yumusak_duplicate
+RENK_GRI     = QColor("#F35050A9")   # zorunlu_eksik
+RENK_YESIL   = QColor("#04D304")   # basarili
+RENK_TURUNCU = QColor("#FC4902")   # hatali
 
 
 # ---------------------------------------------------------------------------
