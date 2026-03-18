@@ -1,8 +1,0 @@
-pip freeze > current.txt
-pip install --upgrade $(pip freeze | ForEach-Object { $_.split('==')[0] })
-pip freeze > requirements.txt
-
-
-pip install --upgrade pdfplumber pdfminer.six
-pip freeze > requirements.txt
-
