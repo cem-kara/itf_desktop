@@ -14,7 +14,6 @@ Kullanım
 """
 from __future__ import annotations
 
-import sqlite3
 from typing import Optional
 
 from PySide6.QtCore import Qt, QThread, Signal as _Signal
@@ -230,21 +229,16 @@ class _Loader(QThread):
 
     def run(self):
         try:
-            db_path = getattr(self._db, "db_path", None) or str(self._db)
-            conn = sqlite3.connect(db_path)
-            conn.row_factory = sqlite3.Row
-            try:
-                rows = [dict(r) for r in conn.execute(
-                    """
-                    SELECT * FROM Dozimetre_Olcum
-                    WHERE PersonelID = ?
-                    ORDER BY Yil ASC, Periyot ASC
-                    """,
-                    (self._personel_id,),
-                ).fetchall()]
-            except sqlite3.OperationalError:
-                rows = []
-            conn.close()
+            from database.sqlite_manager import SQLiteManager
+            from core.di import get_dozimetre_service
+            from core.paths import DB_PATH
+
+            db_path = getattr(self._db, "db_path", None) or str(self._db) if self._db else DB_PATH
+            db = SQLiteManager(db_path=db_path, check_same_thread=False)
+            svc = get_dozimetre_service(db)
+
+            rows = svc.get_olcumler_by_personel(self._personel_id).veri or []
+            db.close()
             self.finished.emit(rows)
         except Exception as exc:
             self.error.emit(str(exc))

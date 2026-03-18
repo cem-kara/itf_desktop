@@ -1,24 +1,3 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# DOSYA 1: core/di.py — Eklenecek tek satır
-#
-# Mevcut son get_*_service() tanımından hemen sonraya ekleyin:
-# ─────────────────────────────────────────────────────────────────────────────
-
-def get_dis_alan_service(db):
-    from core.services.dis_alan_service import DisAlanService
-    return DisAlanService(get_registry(db))
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# DOSYA 2: ui/pages/fhsz/dis_personel_fhsz.py — Tam yeniden yazım
-#
-# Değişiklikler:
-#   - load_data() artık servis üzerinden personel çekiyor
-#   - _kaydet() gerçek DB insert yapıyor, tutanak no benzersizliği kontrol ediliyor
-#   - Dönem özeti hesapla butonu eklendi
-#   - session_context üzerinden kaydeden kullanıcı alınıyor
-# ─────────────────────────────────────────────────────────────────────────────
-
 # -*- coding: utf-8 -*-
 """
 Tutanaklı Çalışma Giriş Ekranı — Dış Alan RKS Kayıt Modülü

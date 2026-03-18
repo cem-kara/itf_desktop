@@ -23,7 +23,6 @@ NDK Doz Limitleri (Radyasyon Güvenliği Yönetmeliği)
 """
 from __future__ import annotations
 
-import sqlite3
 from typing import Optional
 
 from PySide6.QtCore import Qt, QThread, Signal as _Signal
@@ -404,85 +403,35 @@ class _Loader(QThread):
         super().__init__()
         self._db = db
 
-    def _conn(self) -> tuple[sqlite3.Connection, bool]:
-        db = self._db
-        if isinstance(db, str):
-            c = sqlite3.connect(db, check_same_thread=False)
-            c.row_factory = sqlite3.Row
-            return c, True
-        for attr in ("db_path", "_db_path", "path", "_path"):
-            val = getattr(db, attr, None)
-            if val and isinstance(val, str):
-                c = sqlite3.connect(val, check_same_thread=False)
-                c.row_factory = sqlite3.Row
-                return c, True
-        db.row_factory = sqlite3.Row
-        return db, False
-
     def run(self):
         try:
-            conn, kapat = self._conn()
-            try:
-                rows = [dict(r) for r in conn.execute(
-                    """
-                    SELECT o.*
-                    FROM Dozimetre_Olcum o
-                    INNER JOIN Personel p ON p.KimlikNo = o.PersonelID
-                    ORDER BY o.Yil DESC, o.Periyot DESC, o.AdSoyad
-                    """
-                ).fetchall()]
-            except sqlite3.OperationalError:
-                rows = []
+            from database.sqlite_manager import SQLiteManager
+            from core.di import get_dozimetre_service
+            from core.paths import DB_PATH
 
-            stats = {}
-            if rows:
-                try:
-                    s = conn.execute("""
-                        SELECT
-                            COUNT(*)                                    as toplam,
-                            COUNT(DISTINCT o.PersonelID)                as personel,
-                            COUNT(DISTINCT o.RaporNo)                   as rapor,
-                            ROUND(MAX(o.Hp10), 4)                       as max_hp10,
-                            SUM(CASE WHEN o.Hp10 >= ? THEN 1 ELSE 0 END) as uyari_say,
-                            SUM(CASE WHEN o.Hp10 >= ? THEN 1 ELSE 0 END) as tehlike_say
-                        FROM Dozimetre_Olcum o
-                        INNER JOIN Personel p ON p.KimlikNo = o.PersonelID
-                    """, (HP10_UYARI, HP10_TEHLIKE)).fetchone()
-                    stats = dict(s)
-                except Exception:
-                    pass
+            db_path = getattr(self._db, "db_path", None) or str(self._db) if self._db else DB_PATH
+            db = SQLiteManager(db_path=db_path, check_same_thread=False)
+            svc = get_dozimetre_service(db)
 
-                # Anomali tespiti — kişi ortalamasının ANOMALI_KATSAYI katı üstü
-                from collections import defaultdict
-                kisi_hp10: dict[str, list[float]] = defaultdict(list)
-                for r in rows:
-                    v = _hp(r.get("Hp10"))
-                    pid = r.get("PersonelID","")
-                    if v is not None and v > 0 and pid:
-                        kisi_hp10[pid].append(v)
+            sonuc = svc.get_tum_olcumler()
+            rows = sonuc.veri or []
 
-                kisi_ort: dict[str, float] = {
-                    pid: sum(vals)/len(vals)
-                    for pid, vals in kisi_hp10.items() if vals
-                }
+            # Yıl DESC, Periyot DESC, AdSoyad sıralaması
+            rows.sort(key=lambda r: (
+                -(int(r.get("Yil") or 0)),
+                -(int(r.get("Periyot") or 0)),
+                str(r.get("AdSoyad") or ""),
+            ))
 
-                anomali_say = 0
-                for r in rows:
-                    v   = _hp(r.get("Hp10"))
-                    pid = r.get("PersonelID","")
-                    ort = kisi_ort.get(pid, 0.0)
-                    if v is not None and ort > 0 and v >= ort * ANOMALI_KATSAYI:
-                        r["_anomali"]  = True
-                        r["kisi_ort"]  = round(ort, 4)
-                        r["kat"]       = round(v / ort, 2)
-                        anomali_say += 1
-                    else:
-                        r["_anomali"]  = False
-                        r["kisi_ort"]  = round(ort, 4) if ort else None
-                        r["kat"]       = None
-                stats["anomali_say"] = anomali_say
-            if kapat:
-                conn.close()
+            stats_sonuc = svc.get_istatistikler(
+                rows,
+                hp10_uyari=HP10_UYARI,
+                hp10_tehlike=HP10_TEHLIKE,
+                anomali_katsayi=ANOMALI_KATSAYI,
+            )
+            stats = stats_sonuc.veri or {}
+
+            db.close()
             self.finished.emit(rows, stats)
         except Exception as exc:
             self.error.emit(str(exc))

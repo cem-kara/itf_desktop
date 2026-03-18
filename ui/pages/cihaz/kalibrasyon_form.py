@@ -25,8 +25,7 @@ from PySide6.QtGui import QColor, QPainter, QBrush
 
 from core.date_utils import to_ui_date
 from core.logger import logger
-from core.di import get_cihaz_service
-from core.services.kalibrasyon_service import KalibrasyonService
+from core.di import get_cihaz_service, get_kalibrasyon_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.colors import C as _C
 from ui.styles import DarkTheme
@@ -124,7 +123,7 @@ class KalibrasyonKayitForm(QWidget):
         # Service layer
         if db:
             self._cihaz_svc = get_cihaz_service(db)
-            self._svc = KalibrasyonService(self._cihaz_svc._r)
+            self._svc = get_kalibrasyon_service(db)
         else:
             self._svc = None
 
@@ -1321,8 +1320,8 @@ class _KalibrasyonGirisForm(QWidget):
         self._cihaz_id = cihaz_id
         self._action_guard = action_guard
         if db:
-            from core.di import get_cihaz_service
-            self._svc = KalibrasyonService(get_cihaz_service(db)._r)
+            from core.di import get_kalibrasyon_service
+            self._svc = get_kalibrasyon_service(db)
         else:
             self._svc = None
         self._setup_ui()

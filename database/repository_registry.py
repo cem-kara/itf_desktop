@@ -33,10 +33,9 @@ class RepositoryRegistry:
             elif table_name == "Dokumanlar":
                 from database.repositories.dokumanlar_repository import DokumanlarRepository
                 self._repos[table_name] = DokumanlarRepository(self.db)
-            elif table_name == "RKE_Envanter":
+            elif table_name == "RKE_List":
                 from database.repositories.rke_repository import RKERepository
                 self._repos[table_name] = RKERepository(self.db)
-
             else:
                 # Generic BaseRepository
                 cfg = TABLES[table_name]

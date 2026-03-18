@@ -25,11 +25,17 @@ class SQLiteManager:
         self.conn.row_factory = sqlite3.Row
 
     def execute(self, query, params=()) -> sqlite3.Cursor:
+        # Yalnızca yazma işlemlerinde commit yap — SELECT'te gereksiz I/O yükü engellenir
+        stripped = query.strip().upper()
+        is_write = any(stripped.startswith(k) for k in (
+            "INSERT", "UPDATE", "DELETE", "CREATE", "DROP", "ALTER", "REPLACE", "BEGIN", "COMMIT", "ROLLBACK"
+        ))
         for attempt in range(5):
             try:
                 cur = self.conn.cursor()
                 cur.execute(query, params)
-                self.conn.commit()
+                if is_write:
+                    self.conn.commit()
                 return cur
             except sqlite3.OperationalError as exc:
                 if "database is locked" in str(exc).lower() and attempt < 4:

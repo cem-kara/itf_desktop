@@ -34,7 +34,6 @@ class RaporButtonDelegate(QStyledItemDelegate):
 
 from core.logger import logger
 from core.date_utils import parse_date, to_db_date, to_ui_date
-from core.services.dokuman_service import DokumanService
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.icons import IconRenderer, IconColors, Icons
 
@@ -212,7 +211,7 @@ class _SaglikLoader(QThread):
 
     def run(self):
         try:
-            from core.di import get_saglik_service as _svc_factory
+            from core.di import get_saglik_service as _svc_factory, get_dokuman_service
             from core.paths import DATA_DIR, DB_PATH
             from database.sqlite_manager import SQLiteManager
             db_path = self._db_path or DB_PATH
@@ -1444,7 +1443,8 @@ class SaglikTakipPage(QWidget):
         try:
             ext         = os.path.splitext(self._selected_report_path)[1]
             custom_name = f"{tc_no}_{kayit_no}_SaglikRapor{ext}"
-            svc         = DokumanService(self._db)
+            from core.di import get_dokuman_service
+            svc         = get_dokuman_service(self._db)
             sonuc       = svc.upload_and_save(
                 file_path    = self._selected_report_path,
                 entity_type  = "personel",

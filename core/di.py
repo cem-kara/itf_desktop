@@ -95,6 +95,10 @@ def get_excel_import_service():
     from core.services.excel_import_service import ExcelImportService
     return ExcelImportService()
 
+def get_dozimetre_service(db):
+    from core.services.dozimetre_service import DozimetreService
+    return DozimetreService(get_registry(db))
+
 _fallback_registry_cache = {}
 
 

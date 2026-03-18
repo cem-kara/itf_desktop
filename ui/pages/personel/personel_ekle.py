@@ -18,7 +18,6 @@ from core.di import get_personel_service, get_izin_service, get_dokuman_service
 from core.validators import validate_tc_kimlik_no, validate_email, validate_phone_number
 from core.text_utils import turkish_title_case
 from core.services.personel_service import PersonelService
-from core.services.dokuman_service import DokumanService
 from database.auth_repository import AuthRepository
 from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
@@ -45,7 +44,7 @@ class DokumanUploadWorker(QThread):
             # Her thread kendi DB connection'ını oluşturur (SQLite thread güvenliği için)
             from database.sqlite_manager import SQLiteManager
             db = SQLiteManager(self._db_path, check_same_thread=False)
-            svc = DokumanService(db)
+            svc = get_dokuman_service(db)
             sonuc = svc.upload_and_save(
                 file_path=self._job["file_path"],
                 entity_type="personel",

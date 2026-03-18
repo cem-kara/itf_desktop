@@ -20,12 +20,11 @@ from PySide6.QtGui import QCursor
 
 from core.logger import logger
 from core.hata_yonetici import exc_logla
-from core.di import get_izin_service
+from core.di import get_izin_service, get_dokuman_service
 from core.date_utils import to_ui_date
 from ui.styles.colors import DarkTheme as C
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
-from core.services.dokuman_service import DokumanService
 
 
 # ═══════════════════════════════════════════════
@@ -341,7 +340,7 @@ class IstenAyrilikPage(QWidget):
             dg.addWidget(fallback)
         else:
             try:
-                svc = DokumanService(self._db)
+                svc = get_dokuman_service(self._db)
                 doks = svc.get_belgeler("personel", tc).veri or []
 
                 table = QTableWidget()

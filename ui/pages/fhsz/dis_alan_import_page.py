@@ -231,16 +231,13 @@ class DisAlanImportPage(QWidget):
         self.tablo.setRowCount(0)
         self.lbl_ozet.setText("")
 
-        from core.di import get_registry
-        from core.services.dis_alan_import_service import DisAlanImportService
-        from core.services.dis_alan_katsayi_service import DisAlanKatsayiService
+        from core.di import get_dis_alan_katsayi_service, get_dis_alan_import_service
 
         # Katsayı verisini ANA THREAD'de çek — worker thread'de DB'ye dokunulmaz
         katsayi_cache = {}
         if self._db:
             try:
-                registry = get_registry(self._db)
-                katsayi_sonuc = DisAlanKatsayiService(registry).get_tum_aktif_dict()
+                katsayi_sonuc = get_dis_alan_katsayi_service(self._db).get_tum_aktif_dict()
                 if katsayi_sonuc.basarili:
                     katsayi_cache = katsayi_sonuc.data or {}
                 else:
@@ -248,7 +245,7 @@ class DisAlanImportPage(QWidget):
             except Exception as e:
                 logger.warning(f"Katsayı cache yüklenemedi: {e}")
 
-        svc = DisAlanImportService(get_registry(self._db) if self._db else None)
+        svc = get_dis_alan_import_service(self._db) if self._db else None
 
         # Dönem F3'ten okunacak — 0 geçiyoruz
         self._worker = _OkuyucuWorker(svc, self._dosya_yolu, 0, 0, katsayi_cache)
@@ -425,8 +422,7 @@ class DisAlanImportPage(QWidget):
             if cevap != QMessageBox.StandardButton.Yes:
                 return
 
-        from core.di import get_registry
-        from core.services.dis_alan_import_service import DisAlanImportService
+        from core.di import get_registry, get_dis_alan_import_service
         from core.auth.session_context import SessionContext
 
         # Dönem kilidi — onaylı döneme import engeli
@@ -457,7 +453,7 @@ class DisAlanImportPage(QWidget):
             except Exception as e:
                 logger.warning(f"Dönem kilidi kontrolü: {e}")
 
-        svc = DisAlanImportService(get_registry(self._db))
+        svc = get_dis_alan_import_service(self._db)
 
         try:
             kaydeden = getattr(SessionContext(), "current_user", None) or "Import"

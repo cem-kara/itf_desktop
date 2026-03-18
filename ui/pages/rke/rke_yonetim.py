@@ -60,27 +60,23 @@ class FieldGroup(QGroupBox):
 #  YARDIMCIlar - Sabitler
 # ══════════════════════════════════════════════════════════════════
 def _load_sabitler_from_db(db) -> Dict:
-    """Sabitler tablosundan verileri oku ve kısaltmaları döndür."""
+    """Sabitler tablosundan verileri registry üzerinden oku ve kısaltma map'ini döndür."""
     if not db:
         return {}
     try:
-        sql = "SELECT Kod, MenuEleman, Aciklama FROM Sabitler"
-        rows = db.execute(sql).fetchall()
-        
-        result = {}
-        maps = {"AnaBilimDali":{}, "Birim":{}, "Koruyucu_Cinsi":{}, "Beden":{}}
-        
-        for row in rows:
-            kod = str(row["Kod"] or "").strip()
-            eleman = str(row["MenuEleman"] or "").strip()
-            kis = str(row["Aciklama"] or "").strip()
-            
-            if kod and eleman:
-                result.setdefault(kod, []).append(eleman)
-                if kis and kod in maps:
-                    maps[kod][eleman] = kis
-        
-        # Kısaltmaları döndür
+        from core.di import get_registry
+        sabitler = get_registry(db).get("Sabitler").get_all() or []
+
+        maps = {"AnaBilimDali": {}, "Birim": {}, "Koruyucu_Cinsi": {}, "Beden": {}}
+
+        for row in sabitler:
+            kod    = str(row.get("Kod") or "").strip()
+            eleman = str(row.get("MenuEleman") or "").strip()
+            kis    = str(row.get("Aciklama") or "").strip()
+
+            if kod and eleman and kis and kod in maps:
+                maps[kod][eleman] = kis
+
         return maps
     except Exception as e:
         from core.logger import logger

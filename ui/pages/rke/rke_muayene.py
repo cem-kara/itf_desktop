@@ -286,13 +286,13 @@ class VeriYukleyici(QThread):
                     if str(s.get('Kod', '')).strip() == "RKE_Teknik":
                         eleman = str(s.get('MenuEleman', '')).strip()
                         if eleman: teknik_aciklamalar.append(eleman)
-            elif db:
+            elif rke_svc:
                 try:
-                    rows = db.execute("SELECT Kod, MenuEleman FROM Sabitler").fetchall()  # type: ignore
-                    for s in rows:
-                        if str(s["Kod"]).strip() == "RKE_Teknik":
-                            eleman = str(s["MenuEleman"]).strip()
-                            if eleman: teknik_aciklamalar.append(eleman)
+                    sabitler_rke = rke_svc._r.get("Sabitler").get_by_kod("RKE_Teknik")
+                    for s in sabitler_rke:
+                        eleman = str(s.get("MenuEleman", "")).strip()
+                        if eleman:
+                            teknik_aciklamalar.append(eleman)
                 except Exception:
                     pass
 

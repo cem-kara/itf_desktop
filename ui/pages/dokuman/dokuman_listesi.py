@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import os
 import platform
-import sqlite3
 import subprocess
 from datetime import datetime
 from typing import Optional
@@ -101,16 +100,23 @@ class _Loader(QThread):
 
     def run(self):
         try:
-            db_path: str = getattr(self._db, "db_path", None) or str(self._db)
-            conn = sqlite3.connect(db_path)
-            conn.row_factory = sqlite3.Row
+            from database.sqlite_manager import SQLiteManager
+            from core.di import get_registry
+            from core.paths import DB_PATH
+
+            db_path: str = getattr(self._db, "db_path", None) or str(self._db) if self._db else DB_PATH
+            db = SQLiteManager(db_path=db_path, check_same_thread=False)
             try:
-                rows = [dict(r) for r in conn.execute(
-                    "SELECT * FROM Dokumanlar ORDER BY YuklenmeTarihi DESC"
-                ).fetchall()]
-            except sqlite3.OperationalError:
+                repo = get_registry(db).get("Dokumanlar")
+                rows = repo.get_all() or []
+                # Yükleme tarihi DESC sırala
+                rows.sort(
+                    key=lambda r: str(r.get("YuklenmeTarihi") or ""),
+                    reverse=True,
+                )
+            except Exception:
                 rows = []
-            conn.close()
+            db.close()
             self.finished.emit(rows)
         except Exception as exc:
             self.error.emit(str(exc))

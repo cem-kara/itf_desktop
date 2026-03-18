@@ -32,8 +32,8 @@ from ui.dialogs.mesaj_kutusu import MesajKutusu
 
 from ui.styles import DarkTheme
 from core.logger import logger
-from core.services.dokuman_service import DokumanService
 from database.repository_registry import RepositoryRegistry
+from core.di import get_dokuman_service
 
 C = DarkTheme
 _ACCENT   = getattr(C, "ACCENT",         "#4d9de0")
@@ -84,7 +84,7 @@ class BaseDokumanPanel(QWidget):
         self._iliskili_id  = None
         self._iliskili_tip = None
 
-        self._svc = DokumanService(db) if db else None
+        self._svc = get_dokuman_service(db) if db else None
 
         self._setup_ui()
         self._load_belge_turleri()
@@ -97,7 +97,7 @@ class BaseDokumanPanel(QWidget):
     def set_entity_id(self, entity_id: str):
         """Entity ID'yi güncelle ve veriyi yenile (cihaz kaydedilince çağrılır)."""
         self._entity_id = str(entity_id) if entity_id else ""
-        self._svc = DokumanService(self._db) if self._db else None
+        self._svc = get_dokuman_service(self._db) if self._db else None
         if self._entity_id:
             self.setEnabled(True)
             # Form kontrollerini enable et

@@ -13,7 +13,6 @@ geri kalanı alanlar_tam_listesi() ile otomatik eklenir.
 PDF tabanlı import için: dozimetre_pdf_import_page.py (DozimetrePdfImportPage)
 """
 
-from core.services.dozimetre_service import DozimetreService
 from core.services.excel_import_service import AlanTanimi, DuplicateKontrol, ImportKonfig
 from core.validators import validate_tc_kimlik_no
 from core.text_utils import turkish_title_case
@@ -30,7 +29,8 @@ def _normalize(kayit: dict) -> dict:
 
 
 def _get_servis(db):
-    return DozimetreService(db)
+    from core.di import get_dozimetre_service
+    return get_dozimetre_service(db)
 
 
 KONFIG = ImportKonfig(

@@ -4,7 +4,7 @@ dozimetre_import.py — RADAT PDF içe aktarma sayfası
 Yenilikler: mükerrer önleme (UNIQUE RaporNo+SiraNo) + personel eşleştirme
 """
 from __future__ import annotations
-import re, sqlite3, uuid
+import re, uuid
 from typing import Optional
 import pdfplumber
 from PySide6.QtCore import Qt, QThread, Signal as _Signal
@@ -154,11 +154,12 @@ class _PdfLoader(QThread):
             personel_list: list[dict] = []
             if self._db:
                 try:
-                    conn = sqlite3.connect(self._db)
-                    conn.row_factory = sqlite3.Row
-                    personel_list = [dict(r) for r in
-                        conn.execute("SELECT KimlikNo, AdSoyad FROM Personel").fetchall()]
-                    conn.close()
+                    from database.sqlite_manager import SQLiteManager
+                    from core.di import get_registry
+                    db_path = getattr(self._db, "db_path", None) or str(self._db)
+                    db = SQLiteManager(db_path=db_path, check_same_thread=False)
+                    personel_list = get_registry(db).get("Personel").get_all() or []
+                    db.close()
                 except Exception:
                     pass
             eslesen = eslesmez = 0
@@ -188,41 +189,37 @@ class _DbSaver(QThread):
         self._db = db; self._header = header; self._rows = rows
     def run(self):
         try:
-            conn = sqlite3.connect(self._db)
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS Dozimetre_Olcum (
-                    KayitNo TEXT PRIMARY KEY, SiraNo INTEGER,
-                    RaporNo TEXT, Periyot INTEGER, PeriyotAdi TEXT,
-                    Yil INTEGER, DozimetriTipi TEXT,
-                    AdSoyad TEXT, TCKimlikNo TEXT, CalistiBirim TEXT,
-                    PersonelID TEXT, DozimetreNo TEXT, VucutBolgesi TEXT,
-                    Hp10 REAL, Hp007 REAL,
-                    DozSiniri_Hp10 REAL, DozSiniri_Hp007 REAL,
-                    Durum TEXT,
-                    OlusturmaTarihi TEXT DEFAULT (date('now')),
-                    UNIQUE(RaporNo, SiraNo)
-                )""")
-            conn.commit()
+            from database.sqlite_manager import SQLiteManager
+            from core.di import get_dozimetre_service
+            db_path = getattr(self._db, "db_path", None) or str(self._db)
+            db = SQLiteManager(db_path=db_path, check_same_thread=False)
+            svc = get_dozimetre_service(db)
             rno = self._header.get("RaporNo", "")
             yeni = atlanan = 0
             for r in self._rows:
-                try:
-                    conn.execute("""
-                        INSERT INTO Dozimetre_Olcum
-                            (KayitNo,SiraNo,RaporNo,Periyot,PeriyotAdi,Yil,
-                             DozimetriTipi,AdSoyad,TCKimlikNo,CalistiBirim,
-                             PersonelID,DozimetreNo,VucutBolgesi,Hp10,Hp007,Durum)
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                        (uuid.uuid4().hex[:12].upper(), r["SiraNo"], rno,
-                         self._header.get("Periyot"), self._header.get("PeriyotAdi",""),
-                         self._header.get("Yil"), self._header.get("DozimetriTipi",""),
-                         r["AdSoyad"], r["TCKimlikNo"], r["CalistiBirim"],
-                         r.get("PersonelID",""), r["DozimetreNo"], r["VucutBolgesi"],
-                         r["Hp10"], r["Hp007"], r["Durum"]))
+                kayit = {
+                    "KayitNo":       uuid.uuid4().hex[:12].upper(),
+                    "RaporNo":       rno,
+                    "Periyot":       self._header.get("Periyot"),
+                    "PeriyotAdi":    self._header.get("PeriyotAdi", ""),
+                    "Yil":           self._header.get("Yil"),
+                    "DozimetriTipi": self._header.get("DozimetriTipi", ""),
+                    "AdSoyad":       r["AdSoyad"],
+                    "TCKimlikNo":    r.get("TCKimlikNo", ""),
+                    "CalistiBirim":  r["CalistiBirim"],
+                    "PersonelID":    r.get("PersonelID", ""),
+                    "DozimetreNo":   r["DozimetreNo"],
+                    "VucutBolgesi":  r["VucutBolgesi"],
+                    "Hp10":          r["Hp10"],
+                    "Hp007":         r["Hp007"],
+                    "Durum":         r["Durum"],
+                }
+                sonuc = svc.olcum_ekle(kayit)
+                if sonuc.basarili:
                     yeni += 1
-                except sqlite3.IntegrityError:
+                else:
                     atlanan += 1
-            conn.commit(); conn.close()
+            db.close()
             self.finished.emit(yeni, atlanan)
         except Exception as exc:
             self.error.emit(str(exc))
@@ -413,48 +410,46 @@ class DozimetreImportPage(QWidget):
         if not self._rows or not self._db: return
         rapor_no = self._header.get("RaporNo", "")
 
-        # Tam SiraNo karşılaştırması — COUNT(*) yeterli değil,
-        # hangi SiraNo'ların zaten kayıtlı olduğunu buluyoruz.
-        mevcut_siralar: set = set()
+        mevcut_sayisi: int = 0
         try:
+            from database.sqlite_manager import SQLiteManager
+            from core.di import get_registry
             db_path: str = getattr(self._db, "db_path", None) or str(self._db)
-            conn = sqlite3.connect(db_path)
+            db = SQLiteManager(db_path=db_path, check_same_thread=False)
             try:
-                rows_db = conn.execute(
-                    "SELECT SiraNo FROM Dozimetre_Olcum WHERE RaporNo=?",
-                    (rapor_no,)
-                ).fetchall()
-                mevcut_siralar = {r[0] for r in rows_db}
-            except sqlite3.OperationalError:
+                mevcut_kayitlar = get_registry(db).get("Dozimetre_Olcum").get_where(
+                    {"RaporNo": rapor_no}
+                )
+                mevcut_sayisi = len(mevcut_kayitlar)
+            except Exception:
                 pass
-            conn.close()
+            db.close()
         except Exception:
             pass
 
-        pdf_siralar   = {r["SiraNo"] for r in self._rows}
-        gercek_yeni   = pdf_siralar - mevcut_siralar
-        gercek_mevcut = pdf_siralar & mevcut_siralar
+        yeni_sayisi = len(self._rows)
 
-        if gercek_mevcut:
-            if not gercek_yeni:
+        if mevcut_sayisi > 0:
+            if mevcut_sayisi >= yeni_sayisi:
                 QMessageBox.information(
                     self, "Zaten Kayıtlı",
-                    f"<b>{rapor_no}</b> raporunun tüm {len(gercek_mevcut)} kaydı "
+                    f"<b>{rapor_no}</b> raporunun tüm {mevcut_sayisi} kaydı "
                     f"zaten veritabanında mevcut.<br>Herhangi bir ekleme yapılmadı."
                 )
                 return
             cevap = QMessageBox.question(
                 self, "Mükerrer Kayıt Uyarısı",
                 f"<b>{rapor_no}</b> raporu için:<br><br>"
-                f"&nbsp;&nbsp;• <b>{len(gercek_yeni)}</b> yeni kayıt eklenecek<br>"
-                f"&nbsp;&nbsp;• <b>{len(gercek_mevcut)}</b> kayıt zaten mevcut, atlanacak<br><br>"
+                f"&nbsp;&nbsp;• <b>{yeni_sayisi}</b> satır okundu<br>"
+                f"&nbsp;&nbsp;• <b>{mevcut_sayisi}</b> kayıt zaten mevcut<br>"
+                f"&nbsp;&nbsp;• <b>{yeni_sayisi - mevcut_sayisi}</b> yeni kayıt eklenecek<br><br>"
                 f"Devam edilsin mi?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
         else:
             cevap = QMessageBox.question(
                 self, "Kaydet",
-                f"{len(self._rows)} kayıt veritabanına eklenecek. Devam edilsin mi?",
+                f"{yeni_sayisi} kayıt veritabanına eklenecek. Devam edilsin mi?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
         if cevap != QMessageBox.StandardButton.Yes: return

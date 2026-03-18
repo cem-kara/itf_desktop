@@ -4,7 +4,7 @@ dozimetre_pdf_import_page.py — RADAT PDF içe aktarma sayfası
 Özellikler: mükerrer önleme (RaporNo bazlı) + personel eşleştirme
 """
 from __future__ import annotations
-import re, sqlite3, uuid
+import re, uuid
 from typing import Optional
 import pdfplumber
 from PySide6.QtCore import Qt, QThread, Signal as _Signal
@@ -245,11 +245,11 @@ class _PdfLoader(QThread):
             db_path = self._db_path(self._db)
             if db_path:
                 try:
-                    conn = sqlite3.connect(db_path, check_same_thread=False)
-                    conn.row_factory = sqlite3.Row
-                    personel_list = [dict(r) for r in
-                        conn.execute("SELECT KimlikNo, AdSoyad FROM Personel").fetchall()]
-                    conn.close()
+                    from database.sqlite_manager import SQLiteManager
+                    from core.di import get_registry
+                    db = SQLiteManager(db_path=db_path, check_same_thread=False)
+                    personel_list = get_registry(db).get("Personel").get_all() or []
+                    db.close()
                 except Exception:
                     pass
             eslesen = eslesmez = 0
@@ -289,27 +289,35 @@ class _DbSaver(QThread):
 
     def run(self):
         try:
-            conn = sqlite3.connect(self._db_path(self._db), check_same_thread=False)
+            from database.sqlite_manager import SQLiteManager
+            from core.di import get_dozimetre_service
+            db = SQLiteManager(db_path=self._db_path(self._db), check_same_thread=False)
+            svc = get_dozimetre_service(db)
             rno = self._header.get("RaporNo", "")
             yeni = atlanan = 0
             for r in self._rows:
-                try:
-                    conn.execute("""
-                        INSERT INTO Dozimetre_Olcum
-                            (KayitNo,RaporNo,Periyot,PeriyotAdi,Yil,
-                             DozimetriTipi,AdSoyad,PersonelID,CalistiBirim,
-                             DozimetreNo,VucutBolgesi,Hp10,Hp007,Durum)
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                        (uuid.uuid4().hex[:12].upper(), rno,
-                         self._header.get("Periyot"), self._header.get("PeriyotAdi",""),
-                         self._header.get("Yil"), self._header.get("DozimetriTipi",""),
-                         r["AdSoyad"], r.get("PersonelID",""), r["CalistiBirim"],
-                         r["DozimetreNo"], r["VucutBolgesi"],
-                         r["Hp10"], r["Hp007"], r["Durum"]))
+                kayit = {
+                    "KayitNo":       uuid.uuid4().hex[:12].upper(),
+                    "RaporNo":       rno,
+                    "Periyot":       self._header.get("Periyot"),
+                    "PeriyotAdi":    self._header.get("PeriyotAdi", ""),
+                    "Yil":           self._header.get("Yil"),
+                    "DozimetriTipi": self._header.get("DozimetriTipi", ""),
+                    "AdSoyad":       r["AdSoyad"],
+                    "PersonelID":    r.get("PersonelID", ""),
+                    "CalistiBirim":  r["CalistiBirim"],
+                    "DozimetreNo":   r["DozimetreNo"],
+                    "VucutBolgesi":  r["VucutBolgesi"],
+                    "Hp10":          r["Hp10"],
+                    "Hp007":         r["Hp007"],
+                    "Durum":         r["Durum"],
+                }
+                sonuc = svc.olcum_ekle(kayit)
+                if sonuc.basarili:
                     yeni += 1
-                except sqlite3.IntegrityError:
+                else:
                     atlanan += 1
-            conn.commit(); conn.close()
+            db.close()
             self.finished.emit(yeni, atlanan)
         except Exception as exc:
             self.error.emit(str(exc))
@@ -502,17 +510,18 @@ class DozimetrePdfImportPage(QWidget):
 
         mevcut_sayisi: int = 0
         try:
+            from database.sqlite_manager import SQLiteManager
+            from core.di import get_registry
             db_path: str = _DbSaver._db_path(self._db)
-            conn = sqlite3.connect(db_path, check_same_thread=False)
+            db = SQLiteManager(db_path=db_path, check_same_thread=False)
             try:
-                row = conn.execute(
-                    "SELECT COUNT(*) FROM Dozimetre_Olcum WHERE RaporNo=?",
-                    (rapor_no,)
-                ).fetchone()
-                mevcut_sayisi = row[0] if row else 0
-            except sqlite3.OperationalError:
+                mevcut_kayitlar = get_registry(db).get("Dozimetre_Olcum").get_where(
+                    {"RaporNo": rapor_no}
+                )
+                mevcut_sayisi = len(mevcut_kayitlar)
+            except Exception:
                 pass
-            conn.close()
+            db.close()
         except Exception:
             pass
 
