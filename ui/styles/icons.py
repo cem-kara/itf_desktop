@@ -23,10 +23,36 @@
 #
 # -------------------------------------------------------------
 
+
 from PySide6.QtGui import QIcon, QPixmap, QPainter, QColor
 from PySide6.QtCore import Qt, QSize, QByteArray
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QPushButton, QLabel
+
+# ================================================================
+# ROL → RENK HEX MAP (QSS ile uyumlu)
+# ================================================================
+ROLE_COLOR_MAP = {
+    "primary":   "#e0e2ea",   # TEXT_PRIMARY
+    "secondary": "#8b8fa3",   # TEXT_SECONDARY
+    "muted":     "#5a5d6e",   # TEXT_MUTED
+    "disabled":  "#3a3c47",   # TEXT_DISABLED
+    "accent":    "#6bd3ff",   # ACCENT
+    "accent2":   "#60a5fa",   # ACCENT2
+    "ok":        "#4ade80",   # STATUS_SUCCESS
+    "warn":      "#facc15",   # STATUS_WARNING
+    "err":       "#f87171",   # STATUS_ERROR
+    "info":      "#60a5fa",   # STATUS_INFO
+}
+
+def resolve_icon_color(color: str) -> str:
+    """
+    Eğer color bir rol ismi ise hex koda çevirir.
+    Değilse olduğu gibi döner.
+    """
+    if not color:
+        return Icons.DEFAULT_COLOR
+    return ROLE_COLOR_MAP.get(color, color)
 
 
 # ================================================================
@@ -614,17 +640,18 @@ class Icons:
         size:  int = DEFAULT_SIZE,
         color: str = DEFAULT_COLOR,
     ) -> QPixmap:
-        """kon adndan QPixmap dndrr. Bulunamazsa bo pixmap."""
-        key = (name, size, color)
+        """İkon adından QPixmap döndürür. Bulunamazsa boş pixmap."""
+        hex_color = resolve_icon_color(color)
+        key = (name, size, hex_color)
         if key in cls._cache:
             return cls._cache[key]
 
         paths = _SVG_PATHS.get(name)
         if paths is None:
-            # Bilinmeyen ikon  soru iareti benzeri minimal placeholder
-            paths = '<circle cx="12" cy="12" r="8"/><text x="12" y="17" text-anchor="middle" font-size="12" fill="{c}" stroke="none">?</text>'.replace("{c}", color)
+            # Bilinmeyen ikon için soru işareti benzeri minimal placeholder
+            paths = '<circle cx="12" cy="12" r="8"/><text x="12" y="17" text-anchor="middle" font-size="12" fill="{c}" stroke="none">?</text>'.replace("{c}", hex_color)
 
-        svg = _build_svg(paths, color, size)
+        svg = _build_svg(paths, hex_color, size)
         pm = _render_svg(svg, size)
         cls._cache[key] = pm
         return pm
@@ -636,7 +663,7 @@ class Icons:
         size:  int = DEFAULT_SIZE,
         color: str = DEFAULT_COLOR,
     ) -> QIcon:
-        """kon adndan QIcon dndrr (QPushButton.setIcon iin)."""
+        """İkon adından QIcon döndürür (QPushButton.setIcon için)."""
         return QIcon(cls.pixmap(name, size, color))
 
     @classmethod
@@ -834,3 +861,209 @@ class IconColors:
     PDF            = "#fca5a5"
     # Sync butonu
     SYNC           = "#6bd3ff"
+
+
+# ================================================================
+# RENKLI İKON SİSTEMİ — Emoji tarzı badge ikonlar
+#
+# Kullanım:
+#   # Badge tarzı (dolu zemin + beyaz ikon):
+#   btn.setIcon(Icons.badge("users", "#22d3ee"))          # cyan badge
+#   label.setPixmap(Icons.badge_pixmap("save", "#4ade80")) # yeşil badge
+#
+#   # Menü öğesi rengi ile otomatik badge:
+#   btn.setIcon(Icons.menu_badge("Personel Listesi"))
+#
+#   # Özel arka plan + ikon rengi:
+#   Icons.badge("settings", bg="#1e3a5f", icon_color="#22d3ee")
+# ================================================================
+
+# ── Menü öğesi → badge renk tanımları ──────────────────────────
+MENU_BADGE_COLORS: dict[str, str] = {
+    # PERSONEL  —  cyan ailesi
+    "Personel Listesi":              "#22d3ee",
+    "Personel Ekle":                 "#06b6d4",
+    "Sağlık Takip":                  "#4ade80",
+    "Dozimetre Takip":               "#a78bfa",
+    "İzin Takip ve FHSZ Yönetim":   "#38bdf8",
+    "Diğer Rad. Gör. FHSZ Yön.":    "#7dd3fc",
+
+    # CİHAZ  —  mavi ailesi
+    "Cihaz Listesi":                 "#4080e0",
+    "Cihaz Ekle":                    "#60a5fa",
+    "Teknik Hizmetler":              "#818cf8",
+
+    # RKE  —  mor ailesi
+    "RKE Envanter":                  "#a855f7",
+    "RKE Muayene":                   "#c084fc",
+    "RKE Raporlama":                 "#e879f9",
+
+    # YÖNETİCİ  —  turuncu ailesi
+    "Admin Panel":                   "#f59e0b",
+    "Doküman Yönetimi":              "#fb923c",
+
+    # AYARLAR  —  gri-mavi ailesi
+    "Ayarlar":                       "#64748b",
+    "İmportlar":                     "#475569",
+}
+
+# ── Grup → badge renk tanımları ────────────────────────────────
+GROUP_BADGE_COLORS: dict[str, str] = {
+    "PERSONEL":            "#22d3ee",
+    "CİHAZ":               "#4080e0",
+    "RKE":                 "#a855f7",
+    "YÖNETİCİ İŞLEMLERİ": "#f59e0b",
+    "AYARLAR":             "#64748b",
+}
+
+
+def _build_badge_svg(paths: str, bg_color: str, icon_color: str, size: int) -> str:
+    """
+    Emoji tarzı badge SVG oluşturur:
+    - Dolu renkli yuvarlak köşeli kare arka plan
+    - Üzerinde beyaz/açık renkli ikon
+    """
+    # Arka plan: yuvarlak köşeli dikdörtgen, %85 büyüklüğünde
+    corner = size * 0.22
+    pad    = size * 0.10
+    s      = size - pad * 2
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg"'
+        f' width="{size}" height="{size}" viewBox="0 0 {size} {size}">'
+        # Gradient arka plan — tek renkten %70'ine
+        f'<defs>'
+        f'<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">'
+        f'<stop offset="0%" stop-color="{bg_color}" stop-opacity="1"/>'
+        f'<stop offset="100%" stop-color="{bg_color}" stop-opacity="0.70"/>'
+        f'</linearGradient>'
+        f'</defs>'
+        # Arka plan kutusu
+        f'<rect x="{pad}" y="{pad}" width="{s}" height="{s}"'
+        f' rx="{corner}" ry="{corner}" fill="url(#bg)"/>'
+        # İkon — 0 0 24 24 koordinatlarını size'a scale et
+        f'<g transform="translate({pad},{pad}) scale({s/24})"'
+        f' fill="none"'
+        f' stroke="{icon_color}"'
+        f' stroke-width="1.9"'
+        f' stroke-linecap="round"'
+        f' stroke-linejoin="round">'
+        f'{paths}'
+        f'</g>'
+        f'</svg>'
+    )
+
+
+class _BadgeIconCache:
+    """Badge ikon önbelleği — aynı parametreler için yeniden render etme."""
+    _cache: dict[tuple, QPixmap] = {}
+
+    @classmethod
+    def get(cls, name: str, bg_color: str, icon_color: str, size: int) -> QPixmap:
+        key = (name, bg_color, icon_color, size)
+        if key in cls._cache:
+            return cls._cache[key]
+        paths = _SVG_PATHS.get(name, '<circle cx="12" cy="12" r="6"/>')
+        svg   = _build_badge_svg(paths, bg_color, icon_color, size)
+        pm    = _render_svg(svg, size)
+        cls._cache[key] = pm
+        return pm
+
+
+# ── Icons sınıfına badge metodları ekle ────────────────────────
+def _icons_badge_pixmap(
+    cls,
+    name:       str,
+    bg_color:   str = "#22d3ee",
+    icon_color: str = "#ffffff",
+    size:       int = 20,
+) -> "QPixmap":
+    """
+    Emoji tarzı badge QPixmap döndürür.
+
+    Parametreler
+    ------------
+    name       : İkon adı (_SVG_PATHS içindeki)
+    bg_color   : Arka plan rengi (badge zemin)
+    icon_color : İkon çizgi rengi (genellikle beyaz)
+    size       : Piksel boyutu
+    """
+    return _BadgeIconCache.get(name, bg_color, icon_color, size)
+
+
+def _icons_badge(
+    cls,
+    name:       str,
+    bg_color:   str = "#22d3ee",
+    icon_color: str = "#ffffff",
+    size:       int = 20,
+) -> "QIcon":
+    """Badge tarzı QIcon döndürür."""
+    return QIcon(_BadgeIconCache.get(name, bg_color, icon_color, size))
+
+
+def _icons_menu_badge(
+    cls,
+    menu_title: str,
+    size:       int = 20,
+    icon_color: str = "#ffffff",
+) -> "QIcon | None":
+    """
+    Menü başlığından otomatik renkli badge QIcon döndürür.
+    MENU_BADGE_COLORS ve MENU_ICON_MAP kullanır.
+    """
+    icon_key = MENU_ICON_MAP.get(menu_title)
+    bg_color = MENU_BADGE_COLORS.get(menu_title)
+    if not icon_key or not bg_color:
+        return None
+    return QIcon(_BadgeIconCache.get(icon_key, bg_color, icon_color, size))
+
+
+def _icons_group_badge(
+    cls,
+    group_name: str,
+    size:       int = 18,
+    icon_color: str = "#ffffff",
+) -> "QIcon | None":
+    """Grup başlığından otomatik renkli badge QIcon döndürür."""
+    icon_key = GROUP_ICON_MAP.get(group_name)
+    bg_color = GROUP_BADGE_COLORS.get(group_name)
+    if not icon_key or not bg_color:
+        return None
+    return QIcon(_BadgeIconCache.get(icon_key, bg_color, icon_color, size))
+
+
+# Metodları Icons sınıfına doğrudan bağla
+Icons.badge_pixmap = classmethod(lambda cls, name, bg_color="#22d3ee", icon_color="#ffffff", size=20: _BadgeIconCache.get(name, bg_color, icon_color, size))  # type: ignore
+Icons.badge        = classmethod(lambda cls, name, bg_color="#22d3ee", icon_color="#ffffff", size=20: QIcon(_BadgeIconCache.get(name, bg_color, icon_color, size)))  # type: ignore
+Icons.menu_badge   = classmethod(lambda cls, menu_title, size=20, icon_color="#ffffff": QIcon(_BadgeIconCache.get(MENU_ICON_MAP[menu_title], MENU_BADGE_COLORS[menu_title], icon_color, size)) if (MENU_ICON_MAP.get(menu_title) and MENU_BADGE_COLORS.get(menu_title)) else None)  # type: ignore
+Icons.group_badge  = classmethod(lambda cls, group_name, size=18, icon_color="#ffffff": QIcon(_BadgeIconCache.get(GROUP_ICON_MAP[group_name], GROUP_BADGE_COLORS[group_name], icon_color, size)) if (GROUP_ICON_MAP.get(group_name) and GROUP_BADGE_COLORS.get(group_name)) else None)  # type: ignore
+
+
+# ================================================================
+# YARDIMCI  IconRenderer — badge metodları doğrudan eklendi
+# ================================================================
+
+def _ir_set_button_badge(btn, name, bg_color="#22d3ee", icon_color="#ffffff", size=20):
+    """QPushButton'a emoji tarzı badge ikon ata."""
+    icon = QIcon(_BadgeIconCache.get(name, bg_color, icon_color, size))
+    btn.setIcon(icon)
+    btn.setIconSize(QSize(size, size))
+
+def _ir_set_menu_badge(btn, menu_title, size=20):
+    """Menü butonuna otomatik renkli badge ikon ata."""
+    icon_key = MENU_ICON_MAP.get(menu_title)
+    bg_color = MENU_BADGE_COLORS.get(menu_title)
+    if icon_key and bg_color:
+        btn.setIcon(QIcon(_BadgeIconCache.get(icon_key, bg_color, "#ffffff", size)))
+        btn.setIconSize(QSize(size, size))
+
+def _ir_set_label_badge(label, name, bg_color="#22d3ee", icon_color="#ffffff", size=20):
+    """QLabel'a emoji tarzı badge pixmap ata."""
+    pm = _BadgeIconCache.get(name, bg_color, icon_color, size)
+    label.setPixmap(pm)
+    label.setFixedSize(size, size)
+
+# IconRenderer'a yeni static metodları bağla
+IconRenderer.set_button_badge = staticmethod(_ir_set_button_badge)  # type: ignore
+IconRenderer.set_menu_badge   = staticmethod(_ir_set_menu_badge)    # type: ignore
+IconRenderer.set_label_badge  = staticmethod(_ir_set_label_badge)   # type: ignore

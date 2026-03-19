@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
 from core.logger import logger
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
-from ui.styles.components import STYLES as S
+#from ui.styles.components import STYLES as S
 
 PREVIEW_COLS = [
     ("AdSoyad",        "Ad Soyad",  200),
@@ -372,7 +372,9 @@ class DozimetrePdfImportPage(QWidget):
             border-radius:6px;padding:6px 12px;color:{DarkTheme.TEXT_MUTED};font-size:12px;""")
         self.lbl_path.setMinimumWidth(300)
         self.btn_sec = QPushButton("📂  PDF Seç")
-        self.btn_sec.setStyleSheet(str(S.get("btn_default","") or ""))
+        self.btn_sec.setProperty("style-role", "secondary")
+        self.btn_sec.style().unpolish(self.btn_sec)
+        self.btn_sec.style().polish(self.btn_sec)
         self.btn_sec.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_sec.clicked.connect(self._pick_file)
         file_row.addWidget(self.lbl_path,1); file_row.addWidget(self.btn_sec)
@@ -412,12 +414,16 @@ class DozimetrePdfImportPage(QWidget):
 
         btn_row = QHBoxLayout(); btn_row.setSpacing(8); btn_row.addStretch()
         self.btn_temizle = QPushButton("Temizle")
-        self.btn_temizle.setStyleSheet(str(S.get("btn_default","") or ""))
+        self.btn_temizle.setProperty("style-role", "secondary")
+        self.btn_temizle.style().unpolish(self.btn_temizle)
+        self.btn_temizle.style().polish(self.btn_temizle)
         self.btn_temizle.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_temizle.clicked.connect(self._clear)
         self.btn_temizle.setEnabled(False)
         self.btn_kaydet = QPushButton("💾  Veritabanına Kaydet")
-        self.btn_kaydet.setStyleSheet(str(S.get("btn_action","") or ""))
+        self.btn_kaydet.setProperty("style-role", "action")
+        self.btn_kaydet.style().unpolish(self.btn_kaydet)
+        self.btn_kaydet.style().polish(self.btn_kaydet)
         self.btn_kaydet.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_kaydet.clicked.connect(self._save)
         self.btn_kaydet.setEnabled(False)

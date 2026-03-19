@@ -282,32 +282,7 @@ class CihazDelegate(QStyledItemDelegate):
         p.setPen(Qt.PenStyle.NoPen)
         p.drawEllipse(dot_x - dot_r, dot_y - dot_r, dot_r * 2, dot_r * 2)
 
-    # def _draw_action_btns(self, p, rect, row):
-    #     labels = [
-    #         ("detay", "Detay", "#0ea5e9", "#fff"),
-    #         ("edit", "Duzenle", "#e5e7eb", "#222"),
-    #         ("bakim", "Bakim", "#10b981", "#fff"),
-    #     ]
-    #     x = rect.x() + 8
-    #     y = rect.center().y() - int(self.BTN_H / 2)
-    #     for key, label, bg, fg in labels:
-    #         btn_rect = QRect(x, y, self.BTN_W, self.BTN_H)
-    #         p.setBrush(QBrush(QColor(bg)))
-    #         p.setPen(QPen(QColor("#1e293b")))
-    #         p.drawRoundedRect(btn_rect, 6, 6)
-    #         p.setPen(QColor(fg))
-    #         p.setFont(QFont("Segoe UI", 9, QFont.Weight.Medium))
-    #         p.drawText(btn_rect, Qt.AlignmentFlag.AlignCenter, label)
-    #         self._btn_rects[(row, key)] = btn_rect
-    #         x += self.BTN_W + self.BTN_GAP
-
-    # def get_action_at(self, row: int, pos: QPoint) -> str | None:
-    #     for (r, key), rect in self._btn_rects.items():
-    #         if r == row and rect.contains(pos):
-    #             return key
-    #     return None
-
-
+    
 # ═══════════════════════════════════════════════════════════
 #  SAYFA
 # ═══════════════════════════════════════════════════════════

@@ -169,8 +169,14 @@ class CollapsibleSection(QWidget):
         btn._icon_key = resolved
         if resolved:
             try:
-                btn.setIcon(Icons.get(resolved, size=14, color=ITEM_TEXT))
-                btn.setIconSize(QSize(14, 14))
+                # Badge ikonu dene (emoji tarzı renkli); olmazsa klasik ikon
+                badge = Icons.menu_badge(baslik, size=20)
+                if badge:
+                    btn.setIcon(badge)
+                    btn.setIconSize(QSize(20, 20))
+                else:
+                    btn.setIcon(Icons.get(resolved, size=14, color=ITEM_TEXT))
+                    btn.setIconSize(QSize(14, 14))
             except Exception:
                 pass
 
@@ -218,13 +224,19 @@ class CollapsibleSection(QWidget):
             active = btn._baslik == baslik
             btn.setChecked(active)
             btn.setStyleSheet(self._item_css(active))
-            key = getattr(btn, "_icon_key", None) or MENU_ICON_MAP.get(btn._baslik)
-            if key:
-                try:
-                    color = self._accent if active else ITEM_TEXT
-                    btn.setIcon(Icons.get(key, size=14, color=color))
-                except Exception:
-                    pass
+            # Badge ikonu varsa aktif/pasif'te değiştirme — rengi zaten içinde
+            try:
+                badge = Icons.menu_badge(btn._baslik, size=20)
+                if badge:
+                    btn.setIcon(badge)
+                    btn.setIconSize(QSize(20, 20))
+                else:
+                    key = getattr(btn, "_icon_key", None) or MENU_ICON_MAP.get(btn._baslik)
+                    if key:
+                        color = self._accent if active else ITEM_TEXT
+                        btn.setIcon(Icons.get(key, size=14, color=color))
+            except Exception:
+                pass
 
     def ensure_visible(self, baslik: str):
         """Aktif öğe bu gruptaysa grubu aç."""
