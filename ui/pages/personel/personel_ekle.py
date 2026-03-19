@@ -188,7 +188,7 @@ class PersonelEklePage(QWidget):
         scroll.setProperty("bg-role", "transparent")
 
         content = QWidget()
-        content.setStyleSheet("background: transparent;")
+        content.setProperty("bg-role", "panel")
         content_layout = QHBoxLayout(content)
         content_layout.setSpacing(16)
         content_layout.setContentsMargins(0, 8, 0, 8)
@@ -221,7 +221,7 @@ class PersonelEklePage(QWidget):
         btn_resim.setFixedHeight(28)
         btn_resim.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_resim.clicked.connect(self._select_photo)
-        btn_resim.setIcon(Icons.get("upload", size=13, color=DarkTheme.TEXT_PRIMARY))
+        btn_resim.setIcon(Icons.get("upload", size=13, color="primary"))
         btn_resim.setIconSize(QSize(13, 13))
         left_l.addWidget(btn_resim, alignment=Qt.AlignmentFlag.AlignCenter)
         left_l.addSpacing(10)
@@ -256,7 +256,7 @@ class PersonelEklePage(QWidget):
 
         # TC alanı (doğrulama göstergesiyle birlikte)
         tc_container = QWidget()
-        tc_container.setStyleSheet("background: transparent;")
+        tc_container.setProperty("bg-role", "panel")
         tc_h = QHBoxLayout(tc_container)
         tc_h.setContentsMargins(0, 0, 0, 0)
         tc_h.setSpacing(4)
@@ -318,7 +318,7 @@ class PersonelEklePage(QWidget):
             grid.addWidget(lbl, 0, col)
             if status_lbl:
                 row_w = QWidget()
-                row_w.setStyleSheet("background: transparent;")
+                row_w.setProperty("bg-role", "panel")
                 rh = QHBoxLayout(row_w)
                 rh.setContentsMargins(0, 0, 0, 0)
                 rh.setSpacing(4)
@@ -419,7 +419,7 @@ class PersonelEklePage(QWidget):
         # ── 1. Eğitim ──
         edu1_label = QLabel("Lise / Önlisans / Lisans")
         edu1_label.setProperty("color-role", "accent")
-        edu1_label.setStyleSheet("font-weight: 600; font-size: 11px; background: transparent;")
+        edu1_label.setProperty("bg-role", "panel")
         edu1_label.style().unpolish(edu1_label); edu1_label.style().polish(edu1_label)
         edu_lay.addWidget(edu1_label)
         _edu_col_headers(edu_lay)
@@ -470,7 +470,7 @@ class PersonelEklePage(QWidget):
         # ── 2. Eğitim ──
         edu2_label = QLabel("Önlisans / Lisans / Yüksek Lisans / Doktora")
         edu2_label.setProperty("color-role", "accent")
-        edu2_label.setStyleSheet("font-weight: 600; font-size: 11px; background: transparent;")
+        edu2_label.setProperty("bg-role", "panel")
         edu2_label.style().unpolish(edu2_label); edu2_label.style().polish(edu2_label)
         edu_lay.addWidget(edu2_label)
         _edu_col_headers(edu_lay)
@@ -544,11 +544,11 @@ class PersonelEklePage(QWidget):
         self._lbl_belge_lock = QLabel()
         self._lbl_belge_lock.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._lbl_belge_lock.setProperty("color-role", "muted")
-        self._lbl_belge_lock.setStyleSheet("font-size: 13px; padding: 40px; background: transparent;")
+        self._lbl_belge_lock.setProperty("bg-role", "panel")
         # Kilit ikonu + metin
         # QWidget, QHBoxLayout importları dosya başında mevcut
         lock_row = QWidget()
-        lock_row.setStyleSheet("background: transparent;")
+        lock_row.setProperty("bg-role", "panel")
         lock_layout = QHBoxLayout(lock_row)
         lock_layout.setContentsMargins(0, 0, 0, 0)
         lock_layout.setSpacing(8)
@@ -557,14 +557,14 @@ class PersonelEklePage(QWidget):
         lock_layout.addWidget(lbl_icon)
         lbl_text = QLabel("Belge yükleyebilmek için önce kişisel bilgileri kaydedin.")
         lbl_text.setProperty("color-role", "muted")
-        lbl_text.setStyleSheet("font-size: 13px; background: transparent;")
+        lbl_text.setProperty("bg-role", "panel")
         lock_layout.addWidget(lbl_text)
         lock_layout.addStretch()
         tab_belgeler_lay.addWidget(lock_row)
         self._lbl_belge_lock = lbl_text
 
         self._dokuman_panel_container = QWidget()
-        self._dokuman_panel_container.setStyleSheet("background: transparent;")
+        self._dokuman_panel_container.setProperty("bg-role", "panel")
         self._dokuman_panel_layout = QVBoxLayout(self._dokuman_panel_container)
         self._dokuman_panel_layout.setContentsMargins(0, 0, 0, 0)
         self._dokuman_panel_container.setVisible(False)
@@ -594,7 +594,7 @@ class PersonelEklePage(QWidget):
         btn_iptal.style().unpolish(btn_iptal); btn_iptal.style().polish(btn_iptal)
         btn_iptal.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_iptal.clicked.connect(self._on_cancel)
-        IconRenderer.set_button_icon(btn_iptal, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(btn_iptal, "x", color="primary", size=14)
         footer.addWidget(btn_iptal)
 
         # Yeni Personel Ekle butonu (sadece edit mode'da görünür)
@@ -604,7 +604,7 @@ class PersonelEklePage(QWidget):
         self.btn_yeni_personel.style().polish(self.btn_yeni_personel)
         self.btn_yeni_personel.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_yeni_personel.clicked.connect(self._reset_form_for_new_personel)
-        IconRenderer.set_button_icon(self.btn_yeni_personel, "plus", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self.btn_yeni_personel, "plus", color="primary", size=14)
         self.btn_yeni_personel.setVisible(self._is_edit)  # Sadece edit mode'da görünür
         if self._action_guard:
             self._action_guard.disable_if_unauthorized(self.btn_yeni_personel, "personel.write")
@@ -616,7 +616,7 @@ class PersonelEklePage(QWidget):
         self.btn_kaydet.style().unpolish(self.btn_kaydet); self.btn_kaydet.style().polish(self.btn_kaydet)
         self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_kaydet.clicked.connect(self._on_save)
-        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self.btn_kaydet, "save", color="primary", size=14)
         if self._action_guard:
             self._action_guard.disable_if_unauthorized(self.btn_kaydet, "personel.write")
         footer.addWidget(self.btn_kaydet)
@@ -661,7 +661,7 @@ class PersonelEklePage(QWidget):
 
     def _make_input(self, label, parent_layout, required=False, placeholder="", stretch=0, auto_format=True):
         container = QWidget()
-        container.setStyleSheet("background: transparent;")
+        container.setProperty("bg-role", "panel")
         lay = QVBoxLayout(container)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(4)
@@ -683,7 +683,7 @@ class PersonelEklePage(QWidget):
 
     def _make_combo(self, label, parent_layout, required=False, editable=False, stretch=0, auto_format=True):
         container = QWidget()
-        container.setStyleSheet("background: transparent;")
+        container.setProperty("bg-role", "panel")
         lay = QVBoxLayout(container)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(4)
@@ -706,7 +706,7 @@ class PersonelEklePage(QWidget):
 
     def _make_date(self, label, parent_layout, required=False):
         container = QWidget()
-        container.setStyleSheet("background: transparent;")
+        container.setProperty("bg-role", "panel")
         lay = QVBoxLayout(container)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(4)
@@ -1031,15 +1031,15 @@ class PersonelEklePage(QWidget):
         style = "font-size: 16px;"
         if is_valid is None:
             # Boş/kontrol edilmemiş
-            label_widget.setPixmap(Icons.pixmap("info", size=16, color=DarkTheme.TEXT_MUTED))
+            label_widget.setPixmap(Icons.pixmap("info", size=16, color="muted"))
             label_widget.setProperty("color-role", "muted")
         elif is_valid:
             # Geçerli
-            label_widget.setPixmap(Icons.pixmap("check", size=16, color=DarkTheme.STATUS_SUCCESS))
+            label_widget.setPixmap(Icons.pixmap("check", size=16, color="ok"))
             label_widget.setProperty("color-role", "ok")
         else:
             # Geçersiz
-            label_widget.setPixmap(Icons.pixmap("x", size=16, color=DarkTheme.STATUS_ERROR))
+            label_widget.setPixmap(Icons.pixmap("x", size=16, color="err"))
             label_widget.setProperty("color-role", "err")
         label_widget.setStyleSheet(style)
         label_widget.style().unpolish(label_widget)

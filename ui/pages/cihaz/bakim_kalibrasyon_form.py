@@ -188,9 +188,9 @@ class _BaseListDetailForm(QWidget):
         t = QLabel(title)
         t.setProperty("color-role", "muted")
         t.setProperty("style-role", "form")
-        t.setStyleSheet("font-size:9px;font-weight:600;letter-spacing:0.06em;background:transparent;")
+        t.setProperty("bg-role", "panel")
         v = QLabel(default)
-        v.setStyleSheet(f"font-size:18px;font-weight:700;color:{color};background:transparent;")
+        v.setProperty("bg-role", "panel")
         vl.addWidget(t)
         vl.addWidget(v)
         self._kpi_labels[key] = v
@@ -258,7 +258,7 @@ class _BaseListDetailForm(QWidget):
         # Sayaç
         self.lbl_count = QLabel("0 kayıt")
         self.lbl_count.setProperty("color-role", "muted")
-        self.lbl_count.setStyleSheet("font-size:11px;padding:4px 10px;background:transparent;")
+        self.lbl_count.setProperty("bg-role", "panel")
         layout.addWidget(self.lbl_count)
         return panel
 
@@ -454,7 +454,7 @@ class _BaseListDetailForm(QWidget):
     def _meta_label(self, text: str, color: str | None = None) -> QLabel:
         lbl = QLabel(text)
         lbl.setProperty("color-role", "muted")
-        lbl.setStyleSheet("font-size:11px;background:transparent;")
+        lbl.setProperty("bg-role", "panel")
         return lbl
 
     def _field_widget(self, title: str, value: str = "—") -> QWidget:

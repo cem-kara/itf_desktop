@@ -60,7 +60,7 @@ class CollapsibleSection(QWidget):
     """
     def __init__(self, group_name: str, collapsed: bool = False, parent=None):
         super().__init__(parent)
-        self.setStyleSheet("background: transparent;")
+        self.setProperty("bg-role", "panel")
         self.group_name = group_name
         self._buttons: list[MenuButton] = []
         self._collapsed = collapsed
@@ -86,7 +86,7 @@ class CollapsibleSection(QWidget):
 
         # ── İçerik alanı ───────────────────────────────────────
         self.content = QWidget()
-        self.content.setStyleSheet("background: transparent;")
+        self.content.setProperty("bg-role", "panel")
         self._content_lay = QVBoxLayout(self.content)
         self._content_lay.setContentsMargins(8, 2, 8, 6)
         self._content_lay.setSpacing(1)
@@ -294,7 +294,7 @@ class Sidebar(QWidget):
             hl.addWidget(logo_lbl)
         except Exception:
             dot = QLabel("+")
-            dot.setStyleSheet("font-size: 18px; font-weight: 900; background: transparent;")
+            dot.setProperty("bg-role", "panel")
             hl.addWidget(dot)
 
         name_col = QVBoxLayout()
@@ -340,7 +340,7 @@ class Sidebar(QWidget):
             QScrollBar::sub-line:vertical { height: 0; }
         """)
         menu_w = QWidget()
-        menu_w.setStyleSheet("background: transparent;")
+        menu_w.setProperty("bg-role", "panel")
         self._menu_layout = QVBoxLayout(menu_w)
         self._menu_layout.setContentsMargins(0, 6, 0, 8)
         self._menu_layout.setSpacing(2)
@@ -408,7 +408,7 @@ class Sidebar(QWidget):
         bl.addWidget(self.sync_btn)
 
         status_row = QWidget()
-        status_row.setStyleSheet("background: transparent;")
+        status_row.setProperty("bg-role", "panel")
         sl = QHBoxLayout(status_row)
         sl.setContentsMargins(4, 2, 0, 0)
         sl.setSpacing(6)

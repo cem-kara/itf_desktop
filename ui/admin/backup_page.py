@@ -35,8 +35,7 @@ from core.logger import logger
 from core.services.backup_service import BackupService
 from core.paths import DATA_DIR, LOG_DIR
 from ui.components.base_table_model import BaseTableModel
-from ui.styles.colors import DarkTheme as C
-from ui.styles.components import STYLES
+
 from ui.styles.icons import Icons, IconRenderer
 
 

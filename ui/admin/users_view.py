@@ -12,8 +12,7 @@ from core.logger import logger
 from database.auth_repository import AuthRepository
 from database.permission_repository import PermissionRepository
 from core.auth.password_hasher import PasswordHasher
-from ui.styles.colors import DarkTheme as C
-from ui.styles.components import STYLES
+
 from ui.styles.icons import Icons, IconRenderer
 
 

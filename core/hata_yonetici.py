@@ -45,6 +45,7 @@ KATMANLAR
 
 KULLANIM (main.pyw):
     from core.hata_yonetici import (
+
         qmessagebox_yakala,
         global_exception_hook_kur,
         threading_exception_hook_kur,

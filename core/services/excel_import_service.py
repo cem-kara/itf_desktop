@@ -183,6 +183,7 @@ def alanlar_tam_listesi(konfig: "ImportKonfig") -> list[AlanTanimi]:
     """
     try:
         from database.table_config import TABLES
+
     except ImportError:
         return konfig.alanlar   # table_config yoksa konfig alanlarını kullan
 

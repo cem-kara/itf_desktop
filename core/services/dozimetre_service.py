@@ -16,6 +16,7 @@ from typing import Optional
 from collections import defaultdict
 
 from core.hata_yonetici import SonucYonetici, logger
+
 from database.repository_registry import RepositoryRegistry
 
 
@@ -24,7 +25,7 @@ class DozimetreService:
     Dozimetre_Olcum tablosu için servis katmanı.
 
     Kullanım:
-        from core.di import get_dozimetre_service
+from core.di import get_dozimetre_service
         svc = get_dozimetre_service(db)
         sonuc = svc.get_tum_olcumler()
     """

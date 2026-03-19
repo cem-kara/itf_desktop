@@ -334,7 +334,7 @@ class DozimetreImportPage(QWidget):
         root.setSpacing(16)
 
         lbl = QLabel("Dozimetre Raporu İçe Aktar")
-        lbl.setStyleSheet(f"font-size:18px;font-weight:700;color:{DarkTheme.TEXT_PRIMARY};")
+        lbl.setProperty("color-role", "primary")
         root.addWidget(lbl)
 
         self._info_card = self._make_info_card()
@@ -343,8 +343,8 @@ class DozimetreImportPage(QWidget):
         file_row = QHBoxLayout(); file_row.setSpacing(8)
         self.lbl_path = QLabel("Henüz dosya seçilmedi")
         self.lbl_path.setStyleSheet(f"""
-            background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};
-            border-radius:6px;padding:6px 12px;color:{DarkTheme.TEXT_MUTED};font-size:12px;""")
+            background:{"panel"};border:1px solid {"primary"};
+            border-radius:6px;padding:6px 12px;color:{"muted"};font-size:12px;""")
         self.lbl_path.setMinimumWidth(300)
         self.btn_sec = QPushButton("📂  PDF Seç")
         self.btn_sec.setStyleSheet(str(S.get("btn_default","") or ""))
@@ -358,12 +358,12 @@ class DozimetreImportPage(QWidget):
         self.progress.setTextVisible(False)
         self.progress.setStyleSheet(f"""
             QProgressBar{{background:{DarkTheme.BG_TERTIARY};border-radius:2px;border:none;}}
-            QProgressBar::chunk{{background:{DarkTheme.ACCENT};border-radius:2px;}}""")
+            QProgressBar::chunk{{background:{"accent"};border-radius:2px;}}""")
         self.progress.hide()
         root.addWidget(self.progress)
 
         self.lbl_status = QLabel("")
-        self.lbl_status.setStyleSheet(f"color:{DarkTheme.TEXT_MUTED};font-size:12px;")
+        self.lbl_status.setProperty("color-role", "primary")
         root.addWidget(self.lbl_status)
 
         self.table = QTableView()
@@ -372,14 +372,14 @@ class DozimetreImportPage(QWidget):
         self.table.verticalHeader().setVisible(False)
         self.table.setAlternatingRowColors(True)
         self.table.setStyleSheet(f"""
-            QTableView{{background:{DarkTheme.BG_SECONDARY};
+            QTableView{{background:{"panel"};
                 alternate-background-color:{DarkTheme.BG_TERTIARY};
-                border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:8px;
-                gridline-color:{DarkTheme.BORDER_PRIMARY};font-size:12px;color:{DarkTheme.TEXT_PRIMARY};}}
-            QTableView::item:selected{{background:{DarkTheme.ACCENT};color:#ffffff;}}
-            QHeaderView::section{{background:{DarkTheme.BG_TERTIARY};color:{DarkTheme.TEXT_MUTED};
+                border:1px solid {"primary"};border-radius:8px;
+                gridline-color:{"primary"};font-size:12px;color:{"primary"};}}
+            QTableView::item:selected{{background:{"accent"};color:#ffffff;}}
+            QHeaderView::section{{background:{DarkTheme.BG_TERTIARY};color:{"muted"};
                 font-size:11px;font-weight:600;padding:6px;border:none;
-                border-bottom:1px solid {DarkTheme.BORDER_PRIMARY};}}""")
+                border-bottom:1px solid {"primary"};}}""")
         self._model = _PreviewModel(PREVIEW_COLS)
         self.table.setModel(self._model)
         self._model.setup_columns(self.table, stretch_keys=["AdSoyad"])
@@ -401,8 +401,8 @@ class DozimetreImportPage(QWidget):
 
     def _make_info_card(self) -> QFrame:
         card = QFrame()
-        card.setStyleSheet(f"""QFrame{{background:{DarkTheme.BG_SECONDARY};
-            border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:8px;}}""")
+        card.setStyleSheet(f"""QFrame{{background:{"panel"};
+            border:1px solid {"primary"};border-radius:8px;}}""")
         lay = QHBoxLayout(card)
         lay.setContentsMargins(16,12,16,12); lay.setSpacing(32)
         def _lbl(t):
@@ -423,8 +423,8 @@ class DozimetreImportPage(QWidget):
         return card
 
     def _rich(self, title: str, value: str, color: str = "") -> str:
-        c = color or DarkTheme.TEXT_PRIMARY
-        return (f"<span style='color:{DarkTheme.TEXT_MUTED};font-size:10px;'>{title}</span><br>"
+        c = color or "primary"
+        return (f"<span style='color:{"muted"};font-size:10px;'>{title}</span><br>"
                 f"<span style='color:{c};font-size:13px;font-weight:600;'>{value}</span>")
 
     def _update_info_card(self, eslesen: int = 0, eslesmez: int = 0):
@@ -434,7 +434,7 @@ class DozimetreImportPage(QWidget):
         self._i_periyot.setText(self._rich("Periyot",  periyot))
         self._i_yil.setText(self._rich("Yıl",          str(h.get("Yil","—"))))
         self._i_tip.setText(self._rich("Tip",           h.get("DozimetriTipi","—")))
-        self._i_adet.setText(self._rich("Toplam",       str(len(self._rows)), DarkTheme.ACCENT))
+        self._i_adet.setText(self._rich("Toplam",       str(len(self._rows)), "accent"))
         self._i_eslesen.setText(self._rich("Eşleşen",   str(eslesen),  "#4ade80"))
         eksik_renk = "#facc15" if eslesmez else "#4ade80"
         self._i_eksik.setText(self._rich("Eşleşmeyen",  str(eslesmez), eksik_renk))
@@ -453,7 +453,7 @@ class DozimetreImportPage(QWidget):
         self.btn_temizle.setEnabled(False)
         self.progress.show()
         self.lbl_status.setText("PDF okunuyor ve personel eşleştiriliyor...")
-        self.lbl_status.setStyleSheet(f"color:{DarkTheme.TEXT_MUTED};font-size:12px;")
+        self.lbl_status.setProperty("color-role", "primary")
         self._loader = _PdfLoader(path, self._db)
         self._loader.finished.connect(self._on_load_finished)
         self._loader.error.connect(self._on_load_error)
@@ -469,7 +469,7 @@ class DozimetreImportPage(QWidget):
         self._model.set_data(rows)
         self.lbl_status.setText(
             f"✔  {len(rows)} satır okundu — {eslesen} personel eşleşti, {eslesmez} eşleşmedi.")
-        self.lbl_status.setStyleSheet(f"color:{DarkTheme.STATUS_SUCCESS};font-size:12px;")
+        self.lbl_status.setProperty("color-role", "primary")
         if rows: self.btn_kaydet.setEnabled(True)
 
     def _on_load_error(self, msg: str):
@@ -477,7 +477,7 @@ class DozimetreImportPage(QWidget):
         self.btn_sec.setEnabled(True)
         logger.error(f"Dozimetre PDF okuma hatası: {msg}")
         self.lbl_status.setText(f"✗  Okuma hatası: {msg}")
-        self.lbl_status.setStyleSheet(f"color:{DarkTheme.STATUS_ERROR};font-size:12px;")
+        self.lbl_status.setProperty("color-role", "primary")
 
     def _save(self):
         if not self._rows or not self._db: return
@@ -529,7 +529,7 @@ class DozimetreImportPage(QWidget):
         self.btn_sec.setEnabled(False)
         self.progress.show()
         self.lbl_status.setText("Kaydediliyor...")
-        self.lbl_status.setStyleSheet(f"color:{DarkTheme.TEXT_MUTED};font-size:12px;")
+        self.lbl_status.setProperty("color-role", "primary")
         self._saver = _DbSaver(self._db, self._header, self._rows)
         self._saver.finished.connect(self._on_save_finished)
         self._saver.error.connect(self._on_save_error)
@@ -542,7 +542,7 @@ class DozimetreImportPage(QWidget):
         msg = f"✅  {yeni} kayıt eklendi."
         if atlanan: msg += f"  {atlanan} mükerrer atlandı."
         self.lbl_status.setText(msg)
-        self.lbl_status.setStyleSheet(f"color:{DarkTheme.STATUS_SUCCESS};font-size:12px;")
+        self.lbl_status.setProperty("color-role", "primary")
         detail = f"{yeni} yeni kayıt veritabanına eklendi."
         if atlanan: detail += f"\n{atlanan} kayıt zaten mevcuttu, atlandı."
         QMessageBox.information(self,"Başarılı", detail)
@@ -553,7 +553,7 @@ class DozimetreImportPage(QWidget):
         self.btn_kaydet.setEnabled(True)
         logger.error(f"Dozimetre kaydetme hatası: {msg}")
         self.lbl_status.setText(f"✗  Kaydetme hatası: {msg}")
-        self.lbl_status.setStyleSheet(f"color:{DarkTheme.STATUS_ERROR};font-size:12px;")
+        self.lbl_status.setProperty("color-role", "primary")
         QMessageBox.critical(self,"Hata",f"Kayıt sırasında hata oluştu:\n{msg}")
 
     def _clear(self):

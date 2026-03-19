@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path.cwd()))
 # Migration'ı test et
 from database.migrations import MigrationManager
 
+
 mgr = MigrationManager(str(test_db))
 print("1. Migration başlatılıyor...")
 mgr.run_migrations()

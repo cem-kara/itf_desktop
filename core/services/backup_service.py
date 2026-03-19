@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Optional
 
 from core.logger import logger
+
 from core.paths import DB_PATH, DATA_DIR, LOG_DIR
 
 

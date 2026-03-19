@@ -9,6 +9,7 @@ except ImportError:
 from core.paths import BASE_DIR
 
 
+
 class AppConfig:
     APP_NAME = "Radyoloji Envanter ve Personel Yönetim Sistemi"
     VERSION = "3.0.0"

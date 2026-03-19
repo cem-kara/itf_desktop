@@ -6,6 +6,7 @@ from __future__ import annotations
 from datetime import date
 
 from core.date_utils import parse_date, to_ui_date
+
 from core.logger import logger
 from core.di import get_personel_service, get_izin_service
 from database.repository_registry import RepositoryRegistry

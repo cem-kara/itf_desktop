@@ -234,7 +234,7 @@ class KalibrasyonKayitForm(QWidget):
         t.style().unpolish(t)
         t.style().polish(t)
         v = QLabel(default)
-        v.setStyleSheet("font-size: 18px; font-weight: 700; background: transparent;")
+        v.setProperty("bg-role", "panel")
         vl.addWidget(t); vl.addWidget(v)
         self._kpi_labels[key] = v
         return card
@@ -825,7 +825,7 @@ class KalibrasyonKayitForm(QWidget):
         gecersiz_pct = f"%{round(gecersiz / toplam * 100)}" if toplam else "—"
 
         container = QWidget()
-        container.setStyleSheet("background:transparent;")
+        container.setProperty("bg-role", "panel")
         hl = QHBoxLayout(container)
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setSpacing(8)
@@ -947,7 +947,7 @@ class KalibrasyonKayitForm(QWidget):
             return lbl
 
         container = QWidget()
-        container.setStyleSheet("background:transparent;")
+        container.setProperty("bg-role", "panel")
         grid = QGridLayout(container)
         grid.setContentsMargins(0, 0, 0, 0)
         grid.setSpacing(10)
@@ -1018,7 +1018,7 @@ class KalibrasyonKayitForm(QWidget):
         if remainder:
             for c in range(remainder, cols):
                 ph = QWidget()
-                ph.setStyleSheet("background:transparent;")
+                ph.setProperty("bg-role", "panel")
                 grid.addWidget(ph, len(marka_data) // cols, c)
 
         return container
@@ -1050,7 +1050,7 @@ class KalibrasyonKayitForm(QWidget):
         cl.addLayout(hdr)
 
         wrap = QWidget()
-        wrap.setStyleSheet("background:transparent;")
+        wrap.setProperty("bg-role", "panel")
         wrap_l = QHBoxLayout(wrap)
         wrap_l.setContentsMargins(0, 0, 0, 0)
         wrap_l.setSpacing(8)
@@ -1086,7 +1086,7 @@ class KalibrasyonKayitForm(QWidget):
 
     def _bar_row(self, label: str, value: int, pct: int, fill_color: str) -> QWidget:
         w = QWidget()
-        w.setStyleSheet("background:transparent;")
+        w.setProperty("bg-role", "panel")
         hl = QHBoxLayout(w)
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setSpacing(6)
@@ -1211,7 +1211,7 @@ class KalibrasyonKayitForm(QWidget):
         ilgili.sort(key=lambda x: x[0])
 
         container = QWidget()
-        container.setStyleSheet("background:transparent;")
+        container.setProperty("bg-role", "panel")
         cl = QVBoxLayout(container)
         cl.setContentsMargins(0, 0, 0, 0)
         cl.setSpacing(6)

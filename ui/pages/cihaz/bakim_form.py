@@ -683,7 +683,7 @@ class BakimKayitForm(QWidget):
         # Form içeriğinin yerleşeceği scroll alanı
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet(f"background:{surface};border:none;")
+        scroll.setProperty("bg-role", "panel")
 
         self._form_inner = QWidget()
         self._form_inner.setProperty("bg-role", "surface")
@@ -734,7 +734,7 @@ class BakimKayitForm(QWidget):
 
         bulk_scroll = QScrollArea()
         bulk_scroll.setWidgetResizable(True)
-        bulk_scroll.setStyleSheet(f"background:{surface};border:none;")
+        bulk_scroll.setProperty("bg-role", "panel")
 
         self._bulk_inner = QWidget()
         self._bulk_inner.setProperty("bg-role", "surface")
@@ -1078,7 +1078,7 @@ class BakimKayitForm(QWidget):
         surface = _C["surface"]
         outer = QScrollArea()
         outer.setWidgetResizable(True)
-        outer.setStyleSheet(f"background:{surface};border:none;")
+        outer.setProperty("bg-role", "panel")
         self._perf_inner = QWidget()
         self._perf_inner.setProperty("bg-role", "surface")
         self._perf_inner.style().unpolish(self._perf_inner)
@@ -1826,7 +1826,7 @@ class _BakimTakvimWidget(QWidget):
                 f"min-height:12px; max-height:12px;"
             )
             lbl = QLabel(durum)
-            lbl.setStyleSheet("font-size:10px; color:#8fa3b8;")
+            lbl.setProperty("color-role", "primary")
             lejant.addWidget(dot)
             lejant.addWidget(lbl)
             lejant.addSpacing(6)
@@ -1849,7 +1849,7 @@ class _BakimTakvimWidget(QWidget):
         scroll.setFrameShape(QFrame.Shape.NoFrame)
 
         self._grid_container = QWidget()
-        self._grid_container.setStyleSheet("background: transparent;")
+        self._grid_container.setProperty("bg-role", "panel")
         self._grid_layout = QGridLayout(self._grid_container)
         self._grid_layout.setSpacing(2)
         self._grid_layout.setContentsMargins(0, 0, 0, 0)

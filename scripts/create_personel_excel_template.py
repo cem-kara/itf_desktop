@@ -20,6 +20,7 @@ from openpyxl.styles import (
 from core.paths import BASE_DIR
 
 
+
 def create_personel_template_excel():
     """Personel bilgi Excel şablonunu oluşturur."""
     

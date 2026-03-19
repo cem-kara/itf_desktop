@@ -13,6 +13,7 @@ if ROOT not in sys.path:
 from core.paths import DB_PATH
 
 
+
 def migrate(db_path: str) -> None:
     conn = sqlite3.connect(db_path)
     try:

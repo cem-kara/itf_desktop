@@ -1,6 +1,7 @@
 from core.auth.authorization_service import AuthorizationService
 
 
+
 class FakeDb:
     def __init__(self, permissions):
         self._permissions = permissions

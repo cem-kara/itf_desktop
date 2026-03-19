@@ -21,6 +21,7 @@ Neden sync_all'dan ÖNCE?
 
 from typing import Optional
 from core.logger import logger
+
 from core.hata_yonetici import SonucYonetici
 
 

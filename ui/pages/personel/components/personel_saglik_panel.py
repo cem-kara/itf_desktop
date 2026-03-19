@@ -413,7 +413,7 @@ class PersonelSaglikPanel(QWidget):
         self._table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self._table.setAlternatingRowColors(True)
         self._table.verticalHeader().setDefaultSectionSize(32)
-        self._table.setStyleSheet("QTableView::item:selected { color: #ffffff; }")
+        self._table.setProperty("color-role", "primary")
         self._table.doubleClicked.connect(self._on_double_click)
 
         hdr_h = self._table.horizontalHeader()
@@ -490,9 +490,9 @@ class PersonelSaglikPanel(QWidget):
 
         snr = parse_date(str(latest.get("SonrakiKontrolTarihi","") or ""))
         if snr and snr < date.today():
-            self._lbl_sonraki.setStyleSheet("font-size:13px; font-weight:700; color:#f87171;")
+            self._lbl_sonraki.setProperty("color-role", "primary")
         elif snr and snr <= date.today() + timedelta(days=_RISKLI_GUN):
-            self._lbl_sonraki.setStyleSheet("font-size:13px; font-weight:700; color:#f59e0b;")
+            self._lbl_sonraki.setProperty("color-role", "primary")
         else:
             self._lbl_sonraki.setStyleSheet("font-size:13px; font-weight:600;")
 

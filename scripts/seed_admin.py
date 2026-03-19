@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from getpass import getpass
 
 from core.auth.password_hasher import PasswordHasher
+
 from core.auth.permission_keys import PermissionKeys
 from core.logger import logger
 from database.sqlite_manager import SQLiteManager

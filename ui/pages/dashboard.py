@@ -24,16 +24,16 @@ from ui.styles.components import STYLES
 S = STYLES
 
 # ─── Renk sabitleri (açık tema) ──────────────────────────────────
-BG       = DarkTheme.BG_PRIMARY
-CARD_BG  = DarkTheme.BG_SECONDARY
-BORDER   = DarkTheme.BORDER_PRIMARY
-TXT      = DarkTheme.TEXT_PRIMARY
+BG       = "page"
+CARD_BG  = "panel"
+BORDER   = "primary"
+TXT      = "primary"
 TXT2     = DarkTheme.TEXT_SECONDARY
-TXT_DIM  = DarkTheme.TEXT_MUTED
-ACCENT   = DarkTheme.ACCENT
-SUCCESS  = DarkTheme.STATUS_SUCCESS
-WARN     = DarkTheme.STATUS_WARNING
-DANGER   = DarkTheme.STATUS_ERROR
+TXT_DIM  = "muted"
+ACCENT   = "accent"
+SUCCESS  = "ok"
+WARN     = "warn"
+DANGER   = "err"
 
 
 # ══════════════════════════════════════════════════════════════
@@ -314,7 +314,7 @@ class DashboardPage(QWidget):
             "QScrollArea { border: none; background: transparent; }"
         )
         content = QWidget()
-        content.setStyleSheet("background: transparent;")
+        content.setProperty("bg-role", "panel")
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(0, 4, 0, 20)
         content_layout.setSpacing(16)

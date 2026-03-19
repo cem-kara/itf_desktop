@@ -60,10 +60,10 @@ class AdminPanel(QWidget):
                 background: {};
             }}
         """.format(
-            DarkTheme.BORDER_PRIMARY, DarkTheme.BG_PRIMARY,
-            DarkTheme.BG_SECONDARY, DarkTheme.TEXT_SECONDARY,
-            DarkTheme.BORDER_PRIMARY, DarkTheme.BG_PRIMARY,
-            DarkTheme.TEXT_PRIMARY, DarkTheme.BG_PRIMARY,
+            "primary", "page",
+            "panel", DarkTheme.TEXT_SECONDARY,
+            "primary", "page",
+            "primary", "page",
             DarkTheme.BG_HOVER
         ))
         
@@ -104,7 +104,7 @@ class AdminPanel(QWidget):
         
         # Toplu Personel Import sekmesi
         try:
-            from ui.pages.personel.personel_import import PersonelImportPage
+            from ui.pages.imports.personel_import_page import PersonelImportPage
             self.personel_import = PersonelImportPage(db=self._db)
             self._tabs.addTab(self.personel_import, "Toplu Personel İçe Aktar")
             self._tabs.setTabIcon(self._tabs.count()-1, Icons.get("upload"))
@@ -123,7 +123,7 @@ class AdminPanel(QWidget):
                 border-bottom: 2px solid {};
                 padding: 8px;
             }}
-        """.format(DarkTheme.BG_SECONDARY, DarkTheme.BORDER_PRIMARY))
+        """.format("panel", "primary"))
         
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(20, 8, 20, 8)

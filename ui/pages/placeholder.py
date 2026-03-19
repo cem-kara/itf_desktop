@@ -9,7 +9,7 @@ class PlaceholderPage(QWidget):
 
     def __init__(self, title="", subtitle="", parent=None):
         super().__init__(parent)
-        self.setStyleSheet("background-color: transparent;")
+        self.setProperty("bg-role", "panel")
 
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -25,10 +25,10 @@ class PlaceholderPage(QWidget):
             pixmap = QPixmap(img_path)
             scaled = pixmap.scaledToWidth(300, Qt.TransformationMode.SmoothTransformation)
             icon.setPixmap(scaled)
-            icon.setStyleSheet("background: transparent;")
+            icon.setProperty("bg-role", "panel")
         else:
             icon.setPixmap(Icons.pixmap("wrench", size=48, color="#5f6380"))
-            icon.setStyleSheet("background: transparent;")
+            icon.setProperty("bg-role", "panel")
 
         layout.addWidget(icon)
 
@@ -41,7 +41,7 @@ class PlaceholderPage(QWidget):
 
         lbl_sub = QLabel(subtitle or "Bu sayfa henüz geliştirme aşamasında.")
         lbl_sub.setProperty("color-role", "muted")
-        lbl_sub.setStyleSheet("font-size: 14px; background: transparent;")
+        lbl_sub.setProperty("bg-role", "panel")
         lbl_sub.style().unpolish(lbl_sub)
         lbl_sub.style().polish(lbl_sub)
         lbl_sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -52,7 +52,7 @@ class WelcomePage(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setStyleSheet("background-color: transparent;")
+        self.setProperty("bg-role", "panel")
 
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -68,10 +68,10 @@ class WelcomePage(QWidget):
             pixmap = QPixmap(img_path)
             scaled = pixmap.scaledToWidth(800, Qt.TransformationMode.SmoothTransformation)
             icon.setPixmap(scaled)
-            icon.setStyleSheet("background: transparent;")
+            icon.setProperty("bg-role", "panel")
         else:
             icon.setPixmap(Icons.pixmap("hospital", size=48, color="#4f7ef8"))
-            icon.setStyleSheet("font-size: 56px; background: transparent;")
+            icon.setProperty("bg-role", "panel")
 
         layout.addWidget(icon)
 

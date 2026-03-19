@@ -4,7 +4,7 @@ kurumsal_dokuman_panel.py
 Kurumsal belgeleri yönetir (Yönetmelik, Prosedür, Yazışma vb.)
 
 Kullanım:
-    from ui.pages.kurumsal.kurumsal_dokuman_panel import KurumsalDokumanPanel
+from ui.pages.kurumsal.kurumsal_dokuman_panel import KurumsalDokumanPanel
     panel = KurumsalDokumanPanel(db=self._db)
 """
 from ui.components.base_dokuman_panel import BaseDokumanPanel

@@ -63,7 +63,7 @@ class DisAlanDonemGecmisiPage(QWidget):
         tl.setContentsMargins(12, 6, 12, 6); tl.setSpacing(10)
 
         lbl = QLabel("Dönem Geçmişi")
-        lbl.setStyleSheet("font-size:15px; font-weight:bold; color:#1D75FE;")
+        lbl.setProperty("color-role", "primary")
         tl.addWidget(lbl); tl.addStretch()
 
         tl.addWidget(QLabel("Anabilim Dalı:"))
@@ -145,7 +145,7 @@ class DisAlanDonemGecmisiPage(QWidget):
         bl = QHBoxLayout(bot)
         bl.setContentsMargins(12, 4, 12, 4)
         self.lbl_durum = QLabel("")
-        self.lbl_durum.setStyleSheet("font-size:11px; color:#8fa3b8;")
+        self.lbl_durum.setProperty("color-role", "primary")
         bl.addWidget(self.lbl_durum)
         bl.addStretch()
         root.addWidget(bot)
@@ -159,7 +159,7 @@ class DisAlanDonemGecmisiPage(QWidget):
         lay = QVBoxLayout(f)
         lay.setContentsMargins(10, 6, 10, 6); lay.setSpacing(2)
         lb = QLabel(baslik)
-        lb.setStyleSheet("font-size:10px; color:#8fa3b8; border:none;")
+        lb.setProperty("color-role", "primary")
         lv = QLabel(str(val))
         lv.setStyleSheet(
             f"font-size:18px; font-weight:bold; color:{renk}; border:none;"

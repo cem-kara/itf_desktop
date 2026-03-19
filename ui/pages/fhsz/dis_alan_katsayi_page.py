@@ -239,7 +239,7 @@ class _ProtokolDialog(QDialog):
 
         # Başlık
         baslik = QLabel("Yeni Katsayı Protokolü Ekle")
-        baslik.setStyleSheet("font-size:14px; font-weight:bold; color:#1D75FE; padding:4px 0;")
+        baslik.setProperty("color-role", "primary")
         layout.addWidget(baslik)
 
         # Form
@@ -293,7 +293,7 @@ class _ProtokolDialog(QDialog):
         uyari = QLabel(
             "⚠  Aynı birim için mevcut aktif protokol varsa önce pasife alınmalıdır."
         )
-        uyari.setStyleSheet("font-size:10px; color:#FFB300; padding:4px 8px;")
+        uyari.setProperty("color-role", "primary")
         uyari.setWordWrap(True)
         layout.addWidget(uyari)
 

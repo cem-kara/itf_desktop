@@ -8,6 +8,7 @@ from typing import Optional
 from core.logger import logger
 
 
+
 def validate_tc_kimlik_no(tc_str: str) -> bool:
     """
     TC Kimlik No algoritması uygulaması.

@@ -344,7 +344,7 @@ class CihazListesiPage(QWidget):
 
         title = QLabel("Cihaz Listesi")
         title.setProperty("color-role", "primary")
-        title.setStyleSheet("font-size: 13px; font-weight: 600; background: transparent;")
+        title.setProperty("bg-role", "panel")
         title.style().unpolish(title)
         title.style().polish(title)
         lay.addWidget(title)
@@ -435,14 +435,14 @@ class CihazListesiPage(QWidget):
 
         lbl = QLabel("FİLTRE:")
         lbl.setProperty("color-role", "disabled")
-        lbl.setStyleSheet("font-size: 11px; background: transparent;")
+        lbl.setProperty("bg-role", "panel")
         lbl.style().unpolish(lbl)
         lbl.style().polish(lbl)
         lay.addWidget(lbl)
 
         lbl_abd = QLabel("Birim:")
         lbl_abd.setProperty("color-role", "disabled")
-        lbl_abd.setStyleSheet("font-size: 11px; background: transparent;")
+        lbl_abd.setProperty("bg-role", "panel")
         lbl_abd.style().unpolish(lbl_abd)
         lbl_abd.style().polish(lbl_abd)
         lay.addWidget(lbl_abd)
@@ -455,7 +455,7 @@ class CihazListesiPage(QWidget):
 
         lbl_kaynak = QLabel("Kaynak:")
         lbl_kaynak.setProperty("color-role", "disabled")
-        lbl_kaynak.setStyleSheet("font-size: 11px; background: transparent;")
+        lbl_kaynak.setProperty("bg-role", "panel")
         lbl_kaynak.style().unpolish(lbl_kaynak)
         lbl_kaynak.style().polish(lbl_kaynak)
         lay.addWidget(lbl_kaynak)

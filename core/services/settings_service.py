@@ -9,6 +9,7 @@ from typing import Optional
 from core.hata_yonetici import SonucYonetici, logger
 
 
+
 class SettingsService:
 
     def __init__(self, db):

@@ -22,8 +22,6 @@ from core.logger import logger
 from core.hata_yonetici import exc_logla
 from core.di import get_izin_service, get_dokuman_service
 from core.date_utils import to_ui_date
-from ui.styles.colors import DarkTheme as C
-from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 
 
@@ -293,35 +291,35 @@ class IstenAyrilikPage(QWidget):
         fg.setContentsMargins(12, 12, 12, 12)
 
         lbl_t = QLabel("Ayrılış Tarihi")
-        lbl_t.setStyleSheet(S["label"])
+        lbl_t.setProperty("style-role", "form")
         fg.addWidget(lbl_t, 0, 0)
         self.dt_tarih = QDateEdit(QDate.currentDate())
         self.dt_tarih.setCalendarPopup(True)
         self.dt_tarih.setDisplayFormat("dd.MM.yyyy")
-        self.dt_tarih.setStyleSheet(S["date"])
+        self.dt_tarih.setProperty("style-role", "form")
         fg.addWidget(self.dt_tarih, 0, 1)
 
         lbl_n = QLabel("Ayrılma Nedeni")
-        lbl_n.setStyleSheet(S["label"])
+        lbl_n.setProperty("style-role", "form")
         fg.addWidget(lbl_n, 1, 0)
         self.cmb_neden = QComboBox()
         self.cmb_neden.setEditable(True)
         self.cmb_neden.addItems(["Emekli", "Vefat", "İstifa", "Tayin", "Diğer"])
-        self.cmb_neden.setStyleSheet(S["combo"])
+        self.cmb_neden.setProperty("style-role", "form")
         fg.addWidget(self.cmb_neden, 1, 1)
 
         lbl_d = QLabel("Ek Dosya")
-        lbl_d.setStyleSheet(S["label"])
+        lbl_d.setProperty("style-role", "form")
         fg.addWidget(lbl_d, 2, 0)
         dosya_h = QHBoxLayout()
         self.btn_dosya = QPushButton("Dosya Sec")
-        self.btn_dosya.setStyleSheet(S["file_btn"])
+        self.btn_dosya.setProperty("style-role", "upload")
         self.btn_dosya.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_dosya.clicked.connect(self._select_file)
-        IconRenderer.set_button_icon(self.btn_dosya, "upload", color=C.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self.btn_dosya, "upload", color="primary", size=14)
         dosya_h.addWidget(self.btn_dosya)
         self.lbl_dosya = QLabel("")
-        self.lbl_dosya.setStyleSheet("font-size: 11px; background: transparent;")
+        self.lbl_dosya.setProperty("bg-role", "panel")
         dosya_h.addWidget(self.lbl_dosya, 1)
         fg.addLayout(dosya_h, 2, 1)
 
@@ -329,14 +327,14 @@ class IstenAyrilikPage(QWidget):
 
         # Mevcut Dosyalar (Doküman tablosundaki tüm belgeler — sadece liste)
         grp_dosya = QGroupBox("Mevcut Drive Dosyalari")
-        grp_dosya.setStyleSheet(S["group"])
+        grp_dosya.setProperty("style-role", "group")
         dg = QVBoxLayout(grp_dosya)
         dg.setContentsMargins(12, 12, 12, 12)
 
         tc = self._data.get("KimlikNo", "")
         if not tc or not self._db:
             fallback = QLabel("Doküman listesi yüklenemedi.")
-            fallback.setStyleSheet(f"font-size:12px; color: {C.TEXT_MUTED}; background: transparent;")
+            fallback.setProperty("bg-role", "panel")
             dg.addWidget(fallback)
         else:
             try:
@@ -369,7 +367,7 @@ class IstenAyrilikPage(QWidget):
             except Exception as e:
                 logger.error(f"Dokumanlar yüklenemedi: {e}")
                 fallback = QLabel("Doküman listesi yüklenemedi.")
-                fallback.setStyleSheet(f"font-size:12px; color: {C.TEXT_MUTED}; background: transparent;")
+                fallback.setProperty("bg-role", "panel")
                 dg.addWidget(fallback)
 
         left_l.addWidget(grp_dosya)
@@ -384,37 +382,37 @@ class IstenAyrilikPage(QWidget):
 
         # İzin Özeti
         grp_izin = QGroupBox("Izin Ozeti")
-        grp_izin.setStyleSheet(S["group"])
+        grp_izin.setProperty("style-role", "group")
         ig = QGridLayout(grp_izin)
         ig.setSpacing(4)
         ig.setContentsMargins(12, 12, 12, 12)
 
         lbl_y = QLabel("YILLIK İZİN")
-        lbl_y.setStyleSheet(S["section_title"])
+        lbl_y.setProperty("style-role", "section-title")
         ig.addWidget(lbl_y, 0, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
         self.lbl_y_toplam = self._add_stat(ig, 1, "Toplam Hak", "stat_value")
         self.lbl_y_kul = self._add_stat(ig, 2, "Kullanılan", "stat_red")
         self.lbl_y_kal = self._add_stat(ig, 3, "Kalan", "stat_green")
 
-        sep = QFrame(); sep.setFixedHeight(1); sep.setStyleSheet(S["separator"])
+        sep = QFrame(); sep.setFixedHeight(1); sep.setProperty("bg-role", "separator")
         ig.addWidget(sep, 4, 0, 1, 2)
 
         lbl_s = QLabel("ŞUA İZNİ")
-        lbl_s.setStyleSheet(S["section_title"])
+        lbl_s.setProperty("style-role", "section-title")
         ig.addWidget(lbl_s, 5, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
         self.lbl_s_kul = self._add_stat(ig, 6, "Kullanılan", "stat_red")
         self.lbl_s_kal = self._add_stat(ig, 7, "Kalan", "stat_green")
 
-        sep2 = QFrame(); sep2.setFixedHeight(1); sep2.setStyleSheet(S["separator"])
+        sep2 = QFrame(); sep2.setFixedHeight(1); sep2.setProperty("bg-role", "separator")
         ig.addWidget(sep2, 8, 0, 1, 2)
-        self.lbl_diger = self._add_stat(ig, 9, "Rapor / Mazeret", "stat_value")
+        self.lbl_diger = self._add_stat(ig, 9, "Rapor / Mazeret", "stat-value")
 
         ig.setRowStretch(10, 1)
         right_l.addWidget(grp_izin)
 
         # Uyarı + Buton
         grp_onay = QGroupBox("Islemi Onayla")
-        grp_onay.setStyleSheet(S["group"])
+        grp_onay.setProperty("style-role", "group")
         onay_l = QVBoxLayout(grp_onay)
         onay_l.setSpacing(12)
         onay_l.setContentsMargins(12, 12, 12, 12)
@@ -427,15 +425,15 @@ class IstenAyrilikPage(QWidget):
             "• Eski Drive dosyalarını silecek"
         )
         uyari.setWordWrap(True)
-        uyari.setStyleSheet("font-size: 12px; background: transparent;")
+        uyari.setProperty("bg-role", "panel")
         onay_l.addWidget(uyari)
 
         self.btn_onayla = QPushButton("ONAYLA VE BITIR")
-        self.btn_onayla.setStyleSheet(S["danger_btn"])
+        self.btn_onayla.setProperty("style-role", "danger")
         self.btn_onayla.setFixedHeight(30)
         self.btn_onayla.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_onayla.clicked.connect(self._on_confirm)
-        IconRenderer.set_button_icon(self.btn_onayla, "alert_triangle", color=C.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self.btn_onayla, "alert_triangle", color="primary", size=14)
         onay_l.addWidget(self.btn_onayla)
 
         right_l.addWidget(grp_onay)
@@ -451,33 +449,23 @@ class IstenAyrilikPage(QWidget):
         self.progress.setFixedHeight(16)
         self.progress.setVisible(False)
         self.progress.setRange(0, 0)
-        self.progress.setStyleSheet("""
-            QProgressBar {{
-                background-color: rgba(255,255,255,0.05);
-                border: 1px solid rgba(255,255,255,0.08);
-                border-radius: 4px; color: {}; font-size: 11px;
-            }}
-            QProgressBar::chunk {{
-                background-color: rgba(239, 68, 68, 0.6);
-                border-radius: 3px;
-            }}
-        """.format(C.TEXT_MUTED))
+        self.progress.setProperty("style-role", "danger")
         main.addWidget(self.progress)
 
         self.lbl_status = QLabel("")
         self.lbl_status.setProperty("color-role", "muted")
-        self.lbl_status.setStyleSheet("font-size: 12px; background: transparent;")
+        self.lbl_status.setProperty("bg-role", "panel")
         self.lbl_status.style().unpolish(self.lbl_status)
         self.lbl_status.style().polish(self.lbl_status)
         main.addWidget(self.lbl_status)
 
     def _add_stat(self, grid, row, text, style_key):
         lbl = QLabel(text)
-        lbl.setStyleSheet(S["stat_label"])
+        lbl.setProperty("style-role", "stat-label")
         grid.addWidget(lbl, row, 0)
         val = QLabel("—")
         val.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        val.setStyleSheet(S[style_key])
+        val.setProperty("style-role", style_key)
         grid.addWidget(val, row, 1)
         return val
 

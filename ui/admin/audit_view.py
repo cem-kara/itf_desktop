@@ -16,8 +16,7 @@ from PySide6.QtWidgets import (
 
 from core.logger import logger
 from database.auth_repository import AuthRepository
-from ui.styles.colors import DarkTheme as C
-from ui.styles.components import STYLES
+
 
 
 class AuditView(QWidget):

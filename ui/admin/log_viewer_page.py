@@ -33,8 +33,7 @@ from PySide6.QtGui import QColor
 from core.logger import logger
 from core.services.log_service import LogService
 from ui.components.base_table_model import BaseTableModel
-from ui.styles.colors import DarkTheme as C
-from ui.styles.components import STYLES
+
 from ui.styles.icons import Icons, IconRenderer
 
 
@@ -47,11 +46,11 @@ LOG_COLUMNS = [
 
 # Seviye renkleri
 LEVEL_COLORS = {
-    "DEBUG": "#888888",
-    "INFO": "#3ecf8e",
-    "WARNING": "#f7b731",
-    "ERROR": "#f75f5f",
-    "CRITICAL": "#d63031",
+    "DEBUG": "muted",
+    "INFO": "accent",
+    "WARNING": "warn",
+    "ERROR": "err",
+    "CRITICAL": "err",
 }
 
 

@@ -147,7 +147,7 @@ class PuantajRaporPage(QWidget):
         self.btn_getir.style().unpolish(self.btn_getir)
         self.btn_getir.style().polish(self.btn_getir)
         self.btn_getir.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_getir, "clipboard_list", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self.btn_getir, "clipboard_list", color="primary", size=14)
         fp.addWidget(self.btn_getir)
 
         main.addWidget(filter_frame)
@@ -212,7 +212,7 @@ class PuantajRaporPage(QWidget):
             QProgressBar::chunk {{
                 background-color: rgba(29,117,254,0.5); border-radius: 2px;
             }}
-        """.format(DarkTheme.TEXT_MUTED))
+        """.format("muted"))
         bf.addWidget(self.progress)
 
 
@@ -222,7 +222,7 @@ class PuantajRaporPage(QWidget):
         self.btn_excel.style().polish(self.btn_excel)
         self.btn_excel.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_excel.setEnabled(False)
-        IconRenderer.set_button_icon(self.btn_excel, "download", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self.btn_excel, "download", color="primary", size=14)
         bf.addWidget(self.btn_excel)
 
         self.btn_pdf = QPushButton("PDF Indir")
@@ -231,7 +231,7 @@ class PuantajRaporPage(QWidget):
         self.btn_pdf.style().polish(self.btn_pdf)
         self.btn_pdf.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_pdf.setEnabled(False)
-        IconRenderer.set_button_icon(self.btn_pdf, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self.btn_pdf, "save", color="primary", size=14)
         bf.addWidget(self.btn_pdf)
 
         main.addWidget(bot_frame)

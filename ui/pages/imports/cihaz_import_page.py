@@ -12,6 +12,7 @@ Cihazlar tablosu kolonları (table_config'den otomatik gelir):
 """
 
 from core.services.excel_import_service import AlanTanimi, DuplicateKontrol, ImportKonfig
+
 from core.text_utils import turkish_title_case
 from ui.pages.imports.components.base_import_page import BaseImportPage
 

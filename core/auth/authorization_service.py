@@ -16,6 +16,7 @@ class AuthorizationService:
         else:
             # SQLiteManager geldi — AuthRepository sarmala
             from database.auth_repository import AuthRepository
+
             self._repo = AuthRepository(repo_or_db)
 
     def has_permission(self, user_id: int, permission_key: str) -> bool:

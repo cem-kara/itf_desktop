@@ -534,13 +534,13 @@ class SaglikTakipPage(QWidget):
             lbl_num = QLabel(init_val)
             lbl_num.setAlignment(Qt.AlignmentFlag.AlignLeft)
             lbl_num.setProperty("color-role", color_role)
-            lbl_num.setStyleSheet("font-size: 22px; font-weight: 700; background: transparent;")
+            lbl_num.setProperty("bg-role", "panel")
             lbl_num.style().unpolish(lbl_num); lbl_num.style().polish(lbl_num)
             cl.addWidget(lbl_num)
 
             lbl_lbl = QLabel(label)
             lbl_lbl.setProperty("color-role", "muted")
-            lbl_lbl.setStyleSheet("font-size: 11px; background: transparent;")
+            lbl_lbl.setProperty("bg-role", "panel")
             lbl_lbl.style().unpolish(lbl_lbl); lbl_lbl.style().polish(lbl_lbl)
             cl.addWidget(lbl_lbl)
 
@@ -667,7 +667,7 @@ class SaglikTakipPage(QWidget):
 
         # ── 4 muayene kartı ──
         self.exam_section = QWidget()
-        self.exam_section.setStyleSheet("background: transparent;")
+        self.exam_section.setProperty("bg-role", "panel")
         exam_lay = QVBoxLayout(self.exam_section)
         exam_lay.setContentsMargins(0, 0, 0, 0)
         exam_lay.setSpacing(4)
@@ -796,7 +796,7 @@ class SaglikTakipPage(QWidget):
         title_row.addStretch()
         # Durum göstergesi (sonradan güncellenecek)
         dot = QLabel("●")
-        dot.setStyleSheet("font-size: 10px; color: #555; background: transparent; border: none;")
+        dot.setProperty("bg-role", "panel")
         dot.setToolTip("Durum seçilmedi")
         title_row.addWidget(dot)
         self._exam_status_dot[key] = dot
@@ -842,7 +842,7 @@ class SaglikTakipPage(QWidget):
         }
         color = color_map.get(durum, "#555")
         tip   = durum if durum else "Seçilmedi"
-        dot.setStyleSheet(f"font-size: 10px; color: {color}; background: transparent; border: none;")
+        dot.setProperty("bg-role", "panel")
         dot.setToolTip(tip)
 
     # -- Tablo ----------------------------------------------------------------

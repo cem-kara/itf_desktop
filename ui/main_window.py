@@ -21,10 +21,8 @@ from database.sqlite_manager import SQLiteManager
 from ui.dialogs.about_dialog import HakkindaDialog
 
 
+
 class MainWindow(QMainWindow):
-    STATUS_READY_COLOR = DarkTheme.STATUS_SUCCESS
-    STATUS_SYNCING_COLOR = DarkTheme.STATUS_WARNING
-    STATUS_ERROR_COLOR = DarkTheme.STATUS_ERROR
 
     def __init__(self, db=None, authorization_service=None, session_context=None):
         super().__init__()
@@ -113,30 +111,19 @@ class MainWindow(QMainWindow):
 
     def _build_status_bar(self):
         self.status = QStatusBar()
-        # Status bar özel widget - MainWindow'a özgü stil (kabul edilebilir)
-        self.status.setStyleSheet("""
-            QStatusBar {{
-                background-color: {};
-                border-top: 1px solid {};
-                padding: 2px 8px;
-            }}
-            QStatusBar QLabel {{
-                font-size: 12px; 
-                color: {}; 
-                padding: 0 8px;
-            }}
-        """.format(DarkTheme.BG_SECONDARY, DarkTheme.BORDER_PRIMARY, DarkTheme.TEXT_DISABLED))
+        self.status.setProperty("bg-role", "panel")
+        self.status.setProperty("border-role", "primary")
         self.setStatusBar(self.status)
 
         self.sync_status_label = QLabel("Hazır")
-        self._set_sync_status_label("Hazır", self.STATUS_READY_COLOR)
+        self.sync_status_label.setProperty("color-role", "ok")
         self.status.addWidget(self.sync_status_label)
 
         self.last_sync_label = QLabel("")
         self.status.addWidget(self.last_sync_label, 1)
 
         version_label = QLabel(
-            f'<a href="#" style="color:{DarkTheme.TEXT_MUTED}; '
+            f'<a href="#" style="color:{"muted"}; '
             f'text-decoration:none;">v{AppConfig.VERSION}</a>'
         )
         version_label.setToolTip("Hakkında — lisans bilgileri için tıklayın")
@@ -547,8 +534,8 @@ class MainWindow(QMainWindow):
         if not AppConfig.is_online_mode():
             self.sidebar.sync_btn.setEnabled(False)
             self.sidebar.sync_btn.setText("  Offline Mod")
-            self.sidebar.set_sync_status("Offline mod", self.STATUS_SYNCING_COLOR)
-            self._set_sync_status_label("Offline mod", self.STATUS_SYNCING_COLOR)
+            self.sidebar.set_sync_status("Offline mod", "warn")
+            self._set_sync_status_label("Offline mod", "warn")
             return
         if AppConfig.get_auto_sync():
             QTimer.singleShot(3000, self._start_sync)
@@ -566,8 +553,8 @@ class MainWindow(QMainWindow):
         
         logger.info("Sync başlatılıyor...")
         self.sidebar.set_sync_enabled(False)
-        self.sidebar.set_sync_status("Senkronize ediliyor...", self.STATUS_SYNCING_COLOR)
-        self._set_sync_status_label("Senkronize ediliyor...", self.STATUS_SYNCING_COLOR)
+        self.sidebar.set_sync_status("Senkronize ediliyor...", "warn")
+        self._set_sync_status_label("Senkronize ediliyor...", "warn")
 
         self._sync_worker = SyncWorker()
         self._sync_worker.finished.connect(self._on_sync_finished)

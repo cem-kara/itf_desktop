@@ -1,9 +1,7 @@
 # core/auth/auth_service.py
 # -*- coding: utf-8 -*-
 from __future__ import annotations
-
 from typing import Optional
-
 from .models import SessionUser
 from .password_hasher import PasswordHasher
 from .session_context import SessionContext
@@ -23,6 +21,7 @@ class AuthService:
             self._repo = repo
         elif db is not None:
             from database.auth_repository import AuthRepository
+
             self._repo = AuthRepository(db)
         else:
             raise ValueError("AuthService: 'repo' veya 'db' parametrelerinden biri zorunlu")

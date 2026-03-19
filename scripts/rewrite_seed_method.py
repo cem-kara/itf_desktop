@@ -114,8 +114,8 @@ def create_fixed_method():
 '''
 
 def main():
-    from pathlib import Path
-    import re
+from pathlib import Path
+import re
     
     migrations_path = Path("database/migrations.py")
     

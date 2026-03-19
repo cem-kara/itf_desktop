@@ -67,7 +67,7 @@ def create_template():
 
     # Çalışılan Alan dropdown
     birimler = get_aktif_birimler()
-    from openpyxl.worksheet.datavalidation import DataValidation
+from openpyxl.worksheet.datavalidation import DataValidation
     dv = DataValidation(type="list", formula1=f'"{','.join(birimler)}"', allow_blank=True)
     ws.add_data_validation(dv)
     dv.add("C2:C100")

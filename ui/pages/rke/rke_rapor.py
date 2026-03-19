@@ -25,11 +25,11 @@ from ui.styles.icons import IconRenderer
 # ==================================================================
 #  PALETTE
 # ==================================================================
-_BG0  = DarkTheme.BG_PRIMARY; _BG1 = DarkTheme.BG_PRIMARY; _BG2 = DarkTheme.BG_SECONDARY; _BG3 = DarkTheme.BG_ELEVATED
-_BD   = DarkTheme.BORDER_PRIMARY; _BD2 = DarkTheme.BORDER_PRIMARY
-_TX0  = DarkTheme.TEXT_PRIMARY; _TX1 = DarkTheme.TEXT_SECONDARY; _TX2 = DarkTheme.TEXT_MUTED
-_RED  = DarkTheme.STATUS_ERROR; _AMBER= DarkTheme.STATUS_WARNING; _GREEN= DarkTheme.STATUS_SUCCESS
-_BLUE = DarkTheme.ACCENT; _CYAN = DarkTheme.ACCENT2; _PURP = DarkTheme.RKE_PURP
+_BG0  = "page"; _BG1 = "page"; _BG2 = "panel"; _BG3 = DarkTheme.BG_ELEVATED
+_BD   = "primary"; _BD2 = "primary"
+_TX0  = "primary"; _TX1 = DarkTheme.TEXT_SECONDARY; _TX2 = "muted"
+_RED  = "err"; _AMBER= "warn"; _GREEN= "ok"
+_BLUE = "accent"; _CYAN = "accent2"; _PURP = DarkTheme.RKE_PURP
 _MONO = DarkTheme.MONOSPACE
 
 # _S_COMBO kaldırıldı — global QSS kuralı geçerli
@@ -40,13 +40,13 @@ _MONO = DarkTheme.MONOSPACE
 #  PDF SABLONLARI (degismedi)
 # ==================================================================
 def _css():
-    return ("body{font-family:'Times New Roman',serif;font-size:11pt;color:#000;}"
+        return ("body{font-family:'Times New Roman',serif;font-size:11pt;color:#000;}"
             "h1{text-align:center;font-size:14pt;font-weight:bold;margin-bottom:5px;}"
             "h2{font-size:12pt;font-weight:bold;margin-top:15px;margin-bottom:5px;text-decoration:underline;}"
             ".c{text-align:center;}"
             "table{width:100%;border-collapse:collapse;margin-top:10px;font-size:10pt;}"
             "th,td{border:1px solid #000;padding:4px;text-align:center;vertical-align:middle;}"
-            "th{background:#f0f0f0;font-weight:bold;}.l{text-align:left;}"
+            "th{background:panel;font-weight:bold;}.l{text-align:left;}"
             ".sig{width:100%;border:none;margin-top:40px;}"
             ".sig td{border:none;text-align:center;vertical-align:top;padding:20px;}"
             ".line{border-top:1px solid #000;width:80%;margin:30px auto 0;}"
@@ -335,7 +335,7 @@ class RKERaporPenceresi(QWidget):
         hl=QHBoxLayout(outer); hl.setContentsMargins(16,10,16,10); hl.setSpacing(20)
 
         # Rapor Turu
-        sec_widget=QWidget(); sec_widget.setStyleSheet("background:transparent;")
+        sec_widget=QWidget(); sec_widget.setProperty("bg-role", "panel")
         sec_widget.setFixedWidth(280)
         sv=QVBoxLayout(sec_widget); sv.setContentsMargins(0,0,0,0); sv.setSpacing(6)
         sec_lbl=QLabel("RAPOR TURU")
@@ -363,7 +363,7 @@ class RKERaporPenceresi(QWidget):
         hl.addWidget(sep)
 
         # Filtreler
-        fil_widget=QWidget(); fil_widget.setStyleSheet("background:transparent;")
+        fil_widget=QWidget(); fil_widget.setProperty("bg-role", "panel")
         fv=QVBoxLayout(fil_widget); fv.setContentsMargins(0,0,0,0); fv.setSpacing(6)
         fil_lbl=QLabel("FİLTRELER")
         fil_lbl.setStyleSheet("color:{};font-family:{};font-size:8px;"
@@ -390,7 +390,7 @@ class RKERaporPenceresi(QWidget):
         hl.addWidget(sep2)
 
         # Butonlar
-        btn_widget=QWidget(); btn_widget.setStyleSheet("background:transparent;")
+        btn_widget=QWidget(); btn_widget.setProperty("bg-role", "panel")
         bv=QVBoxLayout(btn_widget); bv.setContentsMargins(0,0,0,0); bv.setSpacing(6)
         btn_lbl=QLabel("İŞLEMLER")
         btn_lbl.setStyleSheet("color:{};font-family:{};font-size:8px;"

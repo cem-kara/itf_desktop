@@ -44,75 +44,136 @@ def fix_admin_imports(content, filename):
     return content, False
 
 
+def fix_setstylesheet_and_darktheme(content):
+    """setStyleSheet(f...) ve DarkTheme referanslarını setProperty ile değiştir"""
+    modified = False
+    # setStyleSheet(f...) satırlarını tespit et ve uyarı/otomatik düzeltme uygula
+    pattern = r"(\w+)\.setStyleSheet\(f?['\"](.+?)['\"]\)"
+    matches = list(re.finditer(pattern, content))
+    for m in matches:
+        widget, style = m.group(1), m.group(2)
+        # Sadece renk veya stil ataması ise setProperty ile değiştir
+        if "background" in style or "color" in style:
+            # Renk türünü tespit et
+            if "background" in style:
+                repl = f"{widget}.setProperty(\"bg-role\", \"panel\")"
+            elif "color" in style:
+                repl = f"{widget}.setProperty(\"color-role\", \"primary\")"
+            else:
+                repl = f"# YAPILANDIRILAMADI: {widget}.setProperty(...)"
+            content = content.replace(m.group(0), repl)
+            modified = True
+    # DarkTheme.XXX referanslarını rol stringine çevir
+    darktheme_map = {
+        'DarkTheme.STATUS_SUCCESS': '"ok"',
+        'DarkTheme.STATUS_WARNING': '"warn"',
+        'DarkTheme.STATUS_ERROR': '"err"',
+        'DarkTheme.TEXT_MUTED': '"muted"',
+        'DarkTheme.TEXT_PRIMARY': '"primary"',
+        'DarkTheme.BG_SECONDARY': '"panel"',
+        'DarkTheme.BG_PRIMARY': '"page"',
+        'DarkTheme.ACCENT': '"accent"',
+        'DarkTheme.BORDER_PRIMARY': '"primary"',
+        'DarkTheme.BORDER_SECONDARY': '"secondary"',
+        'DarkTheme.ACCENT_SUCCESS': '"success"',
+        'DarkTheme.ACCENT_DANGER': '"err"',
+        'DarkTheme.ACCENT_WARNING': '"warn"',
+    }
+    for k, v in darktheme_map.items():
+        if k in content:
+            content = content.replace(k, v)
+            modified = True
+    return content, modified
+
 def fix_hardcoded_colors(content):
     """Hardcoded renkleri tema referanslarına çevir"""
     
     replacements = [
         # Uyarı/Hata (Kırmızı)
-        (r'"color: #e81123', r'"color: {DarkTheme.ACCENT_DANGER}', 'warning red'),
-        (r'color: #e81123', f'color: {{DarkTheme.ACCENT_DANGER}}', 'warning red'),
-        (r'#e81123', '{DarkTheme.ACCENT_DANGER}', 'warning red'),
+        (r'"color: {"accent"_DANGER}', r'"color: {"accent"_DANGER}', 'warning red'),
+        (r'color: {"accent"_DANGER}', f'color: {{"accent"_DANGER}}', 'warning red'),
+        (r'{"accent"_DANGER}', '{"accent"_DANGER}', 'warning red'),
         
         # Info/Mavi
-        (r'#3ecf8e', '{DarkTheme.ACCENT_SUCCESS}', 'info/success'),
+        (r'{"accent"_SUCCESS}', '{"accent"_SUCCESS}', 'info/success'),
         
         # Uyarı/Sarı
-        (r'#f7b731', '{DarkTheme.ACCENT_WARNING}', 'warning yellow'),
+        (r'{"accent"_WARNING}', '{"accent"_WARNING}', 'warning yellow'),
         
         # Hata/Kırmızı
-        (r'#f75f5f', '{DarkTheme.ACCENT_DANGER}', 'error red'),
-        (r'#d63031', '{DarkTheme.ACCENT_DANGER}', 'critical red'),
+        (r'{"accent"_DANGER}', '{"accent"_DANGER}', 'error red'),
+        (r'{"accent"_DANGER}', '{"accent"_DANGER}', 'critical red'),
         
         # Gri/Debug
-        (r'#888888', '{DarkTheme.TEXT_MUTED}', 'debug gray'),
+        (r'{"muted"}', '{"muted"}', 'debug gray'),
         
         # Açık gri/Muted
-        (r'#cccccc', '{DarkTheme.TEXT_SECONDARY}', 'light gray'),
+        (r'{DarkTheme.TEXT_SECONDARY}', '{DarkTheme.TEXT_SECONDARY}', 'light gray'),
         
         # Arka plan ışık
-        (r'#f0f0f0', '{DarkTheme.BG_SECONDARY}', 'light bg'),
+        (r'{"panel"}', '{"panel"}', 'light bg'),
         
         # Terminal/Console arka plan
-        (r'#1e1e1e', '{DarkTheme.BG_PRIMARY}', 'dark bg'),
+        (r'{"page"}', '{"page"}', 'dark bg'),
         
         # Terminal yazı (yeşil)
-        (r'#00ff00', '{DarkTheme.ACCENT_SUCCESS}', 'console green'),
+        (r'{"accent"_SUCCESS}', '{"accent"_SUCCESS}', 'console green'),
         
         # Microsoft Mavi
-        (r'#0078d4', '{DarkTheme.ACCENT}', 'ms blue'),
-        (r'#106ebe', '{DarkTheme.ACCENT}', 'ms blue hover'),
+        (r'{"accent"}', '{"accent"}', 'ms blue'),
+        (r'{"accent"}', '{"accent"}', 'ms blue hover'),
         
         # Microsoft Yeşil
-        (r'#107c10', '{DarkTheme.ACCENT_SUCCESS}', 'ms green'),
-        (r'#0d6e07', '{DarkTheme.ACCENT_SUCCESS}', 'ms green hover'),
+        (r'{"accent"_SUCCESS}', '{"accent"_SUCCESS}', 'ms green'),
+        (r'{"accent"_SUCCESS}', '{"accent"_SUCCESS}', 'ms green hover'),
         
         # Koyu Kırmızı
-        (r'#c70e1a', '{DarkTheme.ACCENT_DANGER}', 'dark red'),
+        (r'{"accent"_DANGER}', '{"accent"_DANGER}', 'dark red'),
     ]
     
     modified = False
-    for pattern, replacement, note in replacements[:3]:  # İlk 3'ü kontrol et
-        if pattern in content:
+    for pattern, replacement, note in replacements:
+        if re.search(pattern, content):
+            content = re.sub(pattern, replacement, content)
             modified = True
-            # Buraya replacement mantığı eklenecek
-    
     return content, modified
 
 
 def process_admin_file(file_path):
     """Admin dosyasını işle"""
     try:
+        # Kendi dosyasını asla işleme
+        if file_path.name == "fix_admin_theme.py":
+            return False
+
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        
+
         modified = False
-        
+
         # 1. Tema import'larını ekle
         new_content, imp_modified = fix_admin_imports(content, file_path.name)
         if imp_modified:
             modified = True
             content = new_content
-        
+
+        # 2. Hardcoded renkleri düzelt
+        new_content, color_modified = fix_hardcoded_colors(content)
+        if color_modified:
+            modified = True
+            content = new_content
+
+        # 3. setStyleSheet ve DarkTheme referanslarını düzelt
+        new_content, style_modified = fix_setstylesheet_and_darktheme(content)
+        if style_modified:
+            modified = True
+            content = new_content
+
+        # Eğer değişiklik olduysa dosyayı kaydet
+        if modified:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+
         return modified
     except Exception as e:
         print(f"❌ Hata ({file_path.name}): {e}")
@@ -120,27 +181,26 @@ def process_admin_file(file_path):
 
 
 def main():
-    admin_dir = Path(r'c:\Users\user\Desktop\Python Program\REPYS-main\REPYS\ui\admin')
-    
-    if not admin_dir.exists():
-        print("❌ Admin klasörü bulunamadı!")
+    root_dir = Path(r'c:\Users\user\Desktop\Python Program\REPYS-main\REPYS')
+
+    if not root_dir.exists():
+        print("❌ Proje klasörü bulunamadı!")
         return
-    
-    admin_files = list(admin_dir.glob('*.py'))
-    admin_files = [f for f in admin_files if f.name != '__init__.py']
-    
-    print(f"🔍 Admin klasöründe {len(admin_files)} dosya bulundu.")
-    print("📝 Tema import'ları kontrol ediliyor...\n")
-    
+
+    # Tüm .py dosyalarını (alt klasörler dahil) bul
+    all_py_files = [f for f in root_dir.rglob('*.py') if f.name != '__init__.py' and f.name != 'fix_admin_theme.py']
+
+    print(f"🔍 Projede {len(all_py_files)} .py dosyası bulundu.")
+    print("📝 Tema import ve hardcoded renkler kontrol ediliyor...\n")
+
     modified_count = 0
-    for file_path in admin_files:
+    for file_path in all_py_files:
         if process_admin_file(file_path):
             modified_count += 1
-            print(f"✅ {file_path.name}")
-    
+            print(f"✅ {file_path.relative_to(root_dir)}")
+
     print(f"\n{'='*60}")
-    print(f"📊 {modified_count} dosya güncelleme için işaretlendi")
-    print(f"⚠️  Hardcoded renklerin düzeltilmesi manuel olarak yapılacak")
+    print(f"📊 {modified_count} dosya güncellendi (import ve renkler dahil)")
     print(f"{'='*60}")
 
 

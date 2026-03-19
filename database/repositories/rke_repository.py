@@ -22,6 +22,7 @@ NOT: RepositoryRegistry'ye "RKE_List" -> RKERepository olarak
 from typing import Dict, List, Optional, Any
 
 from core.logger import logger
+
 from database.base_repository import BaseRepository
 from database.table_config import TABLES
 

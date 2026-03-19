@@ -8,6 +8,7 @@ alanlar_tam_listesi() tarafından otomatik eklenir.
 """
 
 from core.services.excel_import_service import AlanTanimi, DuplicateKontrol, ImportKonfig
+
 from core.validators import validate_tc_kimlik_no, validate_email, validate_phone_number
 from core.text_utils import turkish_title_case
 from ui.pages.imports.components.base_import_page import BaseImportPage

@@ -146,7 +146,7 @@ class PersonelOverviewPanel(QWidget):
         self._photo_upload_btn.setProperty("style-role", "upload")
         self._photo_upload_btn.setFixedHeight(28)
         self._photo_upload_btn.clicked.connect(self._on_photo_upload)
-        IconRenderer.set_button_icon(self._photo_upload_btn, "upload", color=DarkTheme.TEXT_PRIMARY, size=13)
+        IconRenderer.set_button_icon(self._photo_upload_btn, "upload", color="primary", size=13)
         left_l.addWidget(self._photo_upload_btn, alignment=Qt.AlignmentFlag.AlignCenter)
         left_l.addSpacing(10)
 

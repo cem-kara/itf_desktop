@@ -3,6 +3,7 @@ import os
 from PySide6.QtWidgets import QApplication, QPushButton
 
 from core.auth.authorization_service import AuthorizationService
+
 from core.auth.session_context import SessionContext
 from core.auth.models import SessionUser
 from ui.guards.action_guard import ActionGuard

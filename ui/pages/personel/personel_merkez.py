@@ -159,7 +159,7 @@ class PersonelMerkezPage(QWidget):
         btn_kapat.setFixedSize(28, 28)
         btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_kapat.setToolTip("Kapat")
-        btn_kapat.setStyleSheet("background:transparent; border:none;")
+        btn_kapat.setProperty("bg-role", "panel")
         btn_kapat.clicked.connect(self.kapat_istegi.emit)
         IconRenderer.set_button_icon(btn_kapat, "x", color=C.TEXT_MUTED, size=14)
         top_lay.addWidget(btn_kapat)
@@ -171,7 +171,7 @@ class PersonelMerkezPage(QWidget):
         self._nav_widget = nav
         nav.setFixedHeight(36)
         nav.setProperty("border-role", "top-secondary")
-        nav.setStyleSheet("background: transparent;")
+        nav.setProperty("bg-role", "panel")
         nav.style().unpolish(nav)
         nav.style().polish(nav)
         nav_lay = QHBoxLayout(nav)
@@ -225,7 +225,7 @@ class PersonelMerkezPage(QWidget):
         btn_form_kapat = QPushButton()
         self._btn_form_kapat = btn_form_kapat
         btn_form_kapat.setFixedSize(20, 20)
-        btn_form_kapat.setStyleSheet("background:transparent; border:none;")
+        btn_form_kapat.setProperty("bg-role", "panel")
         btn_form_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_form_kapat.clicked.connect(self._hide_form)
         IconRenderer.set_button_icon(btn_form_kapat, "x", color=C.TEXT_MUTED, size=11)
@@ -246,7 +246,7 @@ class PersonelMerkezPage(QWidget):
         scroll.style().polish(scroll)
 
         info_widget = QWidget()
-        info_widget.setStyleSheet("background:transparent;")
+        info_widget.setProperty("bg-role", "panel")
         info_lay = QVBoxLayout(info_widget)
         info_lay.setContentsMargins(14, 16, 14, 16)
         info_lay.setSpacing(14)
@@ -557,7 +557,7 @@ class PersonelMerkezPage(QWidget):
                 f"background:{C.BG_TERTIARY}; border-bottom:1px solid {C.BORDER_PRIMARY};"
             )
         if hasattr(self, "_nav_widget"):
-            self._nav_widget.setStyleSheet("background: transparent;")
+            self._nav_widget.setProperty("bg-role", "panel")
 
         # Hızlı işlem butonlarını tema sonrası yeniden boya
         for btn in getattr(self, "_quick_action_buttons", []):

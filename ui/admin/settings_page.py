@@ -41,8 +41,6 @@ from ui.components.formatted_widgets import (
     apply_title_case_formatting,
     apply_combo_title_case_formatting,
 )
-from ui.styles.colors import DarkTheme, get_current_theme
-from ui.styles.components import STYLES, refresh_styles
 from ui.styles.icons import Icons, IconRenderer
 
 
@@ -281,29 +279,7 @@ class SettingsPage(QWidget):
         
         # Tab widget
         tabs = QTabWidget()
-        tabs.setStyleSheet("""
-            QTabWidget::pane {{
-                border: 1px solid {};
-                background-color: {};
-            }}
-            QTabBar::tab {{
-                background-color: {};
-                color: {};
-                padding: 8px 20px;
-                border: 1px solid {};
-                border-bottom: none;
-            }}
-            QTabBar::tab:selected {{
-                background-color: {};
-                color: {};
-                border-bottom: 1px solid {};
-            }}
-        """.format(
-            DarkTheme.BORDER_PRIMARY, DarkTheme.BG_PRIMARY,
-            DarkTheme.BG_SECONDARY, DarkTheme.TEXT_SECONDARY,
-            DarkTheme.BORDER_PRIMARY, DarkTheme.BG_PRIMARY,
-            DarkTheme.TEXT_PRIMARY, DarkTheme.BG_PRIMARY
-        ))
+        # QTabWidget için setStyleSheet kullanımı kaldırıldı, tema QSS'den gelir
         
         # ======== SABÄ°TLER TAB ========
         sabitler_widget = QWidget()
@@ -1015,8 +991,6 @@ class SettingsPage(QWidget):
             logger.info(f"Tema değişimi sonucu: {success}")
             
             if success:
-                # STYLES cache'ini sıfırla (kalan STYLES kullanımları için)
-                refresh_styles()
                 logger.info(f"Tema başarıyla değiştirildi: {tema}")
                 QMessageBox.information(
                     self,
@@ -1037,67 +1011,26 @@ class SettingsPage(QWidget):
         Tema değişikliği sonrası bu sayfanın tüm inline stillerini yenile.
         ThemeManager, açık tüm sayfalarda bu metodu çağırmalıdır.
         """
-        C = DarkTheme
-        
         # Ana widget arkaplan
         self.setProperty("bg-role", "page"); self.style().unpolish(self); self.style().polish(self)
-        
-        # Tab widget
-        tabs_widget = getattr(self, '_tabs', None)
-        if tabs_widget:
-            from typing import cast
-            tabs_cast = cast(QTabWidget, tabs_widget)
-            tabs_cast.setStyleSheet("""
-                QTabWidget::pane {{
-                    border: 1px solid {};
-                    background-color: {};
-                }}
-                QTabBar::tab {{
-                    background-color: {};
-                    color: {};
-                    padding: 8px 20px;
-                    border: 1px solid {};
-                    border-bottom: none;
-                }}
-                QTabBar::tab:selected {{
-                    background-color: {};
-                    color: {};
-                    border-bottom: 1px solid {};
-                }}
-            """.format(
-                C.BORDER_PRIMARY, C.BG_PRIMARY,
-                C.BG_SECONDARY, C.TEXT_SECONDARY,
-                C.BORDER_PRIMARY, C.BG_PRIMARY,
-                C.TEXT_PRIMARY, C.BG_PRIMARY
-            ))
-        
-        # RadioButton'lar
+        # Tab widget ve diğer stiller QSS'den gelir, inline stil gereksiz
+        # RadioButton ve Checkbox'lar için sadece setProperty yeterli
         if hasattr(self, '_radio_dark'):
             self._radio_dark.setProperty("color-role", "primary")
-            self._radio_dark.setStyleSheet("font-size: 12px;")
             self._radio_dark.style().unpolish(self._radio_dark)
             self._radio_dark.style().polish(self._radio_dark)
         if hasattr(self, '_radio_light'):
             self._radio_light.setProperty("color-role", "primary")
-            self._radio_light.setStyleSheet("font-size: 12px;")
             self._radio_light.style().unpolish(self._radio_light)
             self._radio_light.style().polish(self._radio_light)
-        
-        # Checkbox'lar
         if hasattr(self, '_chk_online_mod'):
             self._chk_online_mod.setProperty("color-role", "primary")
-            self._chk_online_mod.setStyleSheet("font-size: 12px; font-weight: 500;")
             self._chk_online_mod.style().unpolish(self._chk_online_mod)
             self._chk_online_mod.style().polish(self._chk_online_mod)
         if hasattr(self, '_chk_auto_sync'):
             self._chk_auto_sync.setProperty("color-role", "primary")
-            self._chk_auto_sync.setStyleSheet("font-size: 12px; font-weight: 500;")
             self._chk_auto_sync.style().unpolish(self._chk_auto_sync)
             self._chk_auto_sync.style().polish(self._chk_auto_sync)
-        
-        # Tablo ve liste stiller â€” global QSS kuralları geçerli, ek setStyleSheet gerekmez
-        pass
-        
         logger.debug("SettingsPage tema stilleri yenilendi")
     
     def _on_online_mode_changed(self):

@@ -469,7 +469,7 @@ class PersonelListesiPage(QWidget):
 
         title = QLabel("Personel Listesi")
         title.setProperty("color-role", "primary")
-        title.setStyleSheet("font-size: 13px; font-weight: 600; background: transparent;")
+        title.setProperty("bg-role", "panel")
         title.style().unpolish(title)
         title.style().polish(title)
         lay.addWidget(title)
@@ -592,7 +592,7 @@ class PersonelListesiPage(QWidget):
 
         lbl = QLabel("FİLTRE:")
         lbl.setProperty("color-role", "disabled")
-        lbl.setStyleSheet("font-size: 11px; background: transparent;")
+        lbl.setProperty("bg-role", "panel")
         lbl.style().unpolish(lbl)
         lbl.style().polish(lbl)
         lay.addWidget(lbl)

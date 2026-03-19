@@ -6,7 +6,7 @@ Her liste/rapor sayfasına tek satırda "Excel" ve/veya "PDF" butonu ekler.
 
 ─── KULLANIM ────────────────────────────────────────────────────────────────
 
-  from ui.components.rapor_buton import RaporButon
+from ui.components.rapor_buton import RaporButon
 
   # 1) Hem Excel hem PDF butonu
   self.rapor_buton = RaporButon(
@@ -141,7 +141,7 @@ class RaporButon(QWidget):
         btn = QPushButton(metin)
         btn.setObjectName(obj_name)
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(btn, icon_name, color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(btn, icon_name, color="primary", size=14)
         btn.setProperty("style-role", "action")
         btn.setProperty("color-role", "primary")
         btn.clicked.connect(slot)

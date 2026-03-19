@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QLineEdit, QComboBox
 from core.text_utils import turkish_title_case
 
 
+
 def apply_title_case_formatting(line_edit: QLineEdit):
     """
     QLineEdit'e otomatik Title Case formatting ekler.

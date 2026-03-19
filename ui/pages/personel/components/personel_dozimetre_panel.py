@@ -7,7 +7,7 @@ Dozimetre_Olcum geçmişini gösteren panel.
 
 Kullanım
 --------
-    from ui.pages.personel.components.personel_dozimetre_panel import PersonelDozimetrePanel
+from ui.pages.personel.components.personel_dozimetre_panel import PersonelDozimetrePanel
 
     panel = PersonelDozimetrePanel(db=self.db, personel_id=self.personel_id)
     # personel_id → Personel.KimlikNo (TC kimlik no)
@@ -26,8 +26,6 @@ from PySide6.QtWidgets import (
 
 from core.logger import logger
 from ui.components.base_table_model import BaseTableModel
-from ui.styles.colors import DarkTheme as C
-from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer, IconColors
 
 # NDK Doz Limitleri (Radyasyon Güvenliği Yönetmeliği)
@@ -119,7 +117,7 @@ class _TrendWidget(QWidget):
                 pass
 
         if len(hp10s) < 2:
-            p.setPen(QColor(C.TEXT_MUTED))
+            p.setPen(QColor("#4d6070"))  # TEXT_MUTED
             p.setFont(QFont("", 9))
             p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter,
                        "Trend için en az 2 periyot gerekli")
@@ -140,7 +138,7 @@ class _TrendWidget(QWidget):
             p.drawLine(pl, py(HP10_UYARI), w - pr, py(HP10_UYARI))
 
         # Hp(10) — mavi, kalın
-        p.setPen(QPen(QColor(C.ACCENT), 2))
+        p.setPen(QPen(QColor("#3d8ef5"), 2))  # ACCENT
         for i in range(n - 1):
             p.drawLine(px(i), py(hp10s[i]), px(i + 1), py(hp10s[i + 1]))
         for i, v in enumerate(hp10s):
@@ -158,13 +156,13 @@ class _TrendWidget(QWidget):
             p.drawEllipse(px(i) - 2, py(v) - 2, 5, 5)
 
         # Etiketler
-        p.setPen(QColor(C.TEXT_MUTED))
+        p.setPen(QColor("#4d6070"))  # TEXT_MUTED
         if labels:
             p.drawText(pl, h - 5, labels[0])
             p.drawText(w - pr - 45, h - 5, labels[-1])
 
         # Legend
-        p.setPen(QColor(C.ACCENT))
+        p.setPen(QColor("#3d8ef5"))  # ACCENT
         p.drawText(w - pr - 90, pt + 10, "— Hp(10)")
         p.setPen(QColor("#fb923c"))
         p.drawText(w - pr - 90, pt + 20, "-- Hp(0,07)")
@@ -196,12 +194,12 @@ class _GaugeWidget(QWidget):
         oran = min(self._deger / self._limit, 1.0) if self._limit else 0.0
         w, h = self.width(), self.height()
 
-        p.setPen(QColor(C.TEXT_MUTED))
+        p.setPen(QColor("#4d6070"))  # TEXT_MUTED
         p.setFont(QFont("", 8))
         p.drawText(0, 12, self._baslik)
 
         bar_y, bar_h = 18, 10
-        p.setBrush(QColor(C.BG_TERTIARY)); p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QColor("#232a3a")); p.setPen(Qt.PenStyle.NoPen)  # BG_TERTIARY
         p.drawRoundedRect(0, bar_y, w, bar_h, 4, 4)
 
         if oran > 0:
@@ -211,7 +209,7 @@ class _GaugeWidget(QWidget):
             p.setBrush(renk)
             p.drawRoundedRect(0, bar_y, int(w * oran), bar_h, 4, 4)
 
-        p.setPen(QColor(C.TEXT_PRIMARY))
+        p.setPen(QColor("#e8edf5"))  # TEXT_PRIMARY
         p.setFont(QFont("", 8, QFont.Weight.Bold))
         p.drawText(0, bar_y + bar_h + 14,
                    f"{self._deger:.2f} / {self._limit:.0f} mSv  (%{oran*100:.0f})")
@@ -354,7 +352,7 @@ class PersonelDozimetrePanel(QWidget):
         # ── Durum / boş mesaj ──
         self.lbl_bos = QLabel("Bu personel için dozimetre kaydı bulunamadı.")
         self.lbl_bos.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.lbl_bos.setStyleSheet(f"color:{C.TEXT_MUTED};font-size:12px;")
+        self.lbl_bos.setProperty("color-role", "primary")
         self.lbl_bos.hide()
         root.addWidget(self.lbl_bos)
 
@@ -424,7 +422,7 @@ class PersonelDozimetrePanel(QWidget):
             return
 
         # Ölçüm sayısı
-        self._set_stat(self._s_periyot, str(len(rows)), C.ACCENT)
+        self._set_stat(self._s_periyot, str(len(rows)), "#3d8ef5")  # ACCENT
 
         # Son yıl / periyot
         son = rows[-1]
@@ -491,7 +489,7 @@ class PersonelDozimetrePanel(QWidget):
                              f"Eksik: {', '.join(str(e) for e in eksik)}. periyot")
             doluluk_renk = "#facc15"
         self.lbl_periyot_doluluk.setText(doluluk_metin)
-        self.lbl_periyot_doluluk.setStyleSheet(f"color:{doluluk_renk};font-size:11px;")
+        self.lbl_periyot_doluluk.setProperty("color-role", "primary")
 
     # ─── Dışarıdan ayarlama ─────────────────────────────────
     def set_personel(self, db: str, personel_id: str):

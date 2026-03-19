@@ -338,9 +338,9 @@ class CihazOverviewPanel(QWidget):
         lay.setContentsMargins(10, 4, 10, 4)
         lay.setSpacing(1)
         lbl_b = QLabel(baslik)
-        lbl_b.setStyleSheet("font-size:10px; color:#7a93ad; border:none;")
+        lbl_b.setProperty("color-role", "primary")
         lbl_v = QLabel(str(deger))
-        lbl_v.setStyleSheet(f"font-size:16px; font-weight:700; color:{renk}; border:none;")
+        lbl_v.setProperty("color-role", "primary")
         lay.addWidget(lbl_b)
         lay.addWidget(lbl_v)
         setattr(f, "_lbl_v", lbl_v)
@@ -362,7 +362,7 @@ class CihazOverviewPanel(QWidget):
         if lbl_v:
             lbl_v.setText(str(deger))
         if renk:
-            lbl_v.setStyleSheet(f"font-size:16px; font-weight:700; color:{renk}; border:none;")
+            lbl_v.setProperty("color-role", "primary")
 
     def _load_sabitler(self):
         """Sabitler tablosundan verileri yükle."""

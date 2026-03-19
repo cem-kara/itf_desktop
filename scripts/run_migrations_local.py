@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 from core.paths import DB_PATH
+
 from database.migrations import MigrationManager
 
 def main():

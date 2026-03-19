@@ -7,6 +7,7 @@
 #
 #  Kullanım:
 #     from core.settings import get, set as save
+
 #     tema = get("theme", "dark")     → "dark" | "light"
 #     save("theme", "light")          → True | False
 #

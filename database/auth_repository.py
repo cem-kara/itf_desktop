@@ -65,14 +65,7 @@ class AuthRepository:
         """Kullanıcının rollerini getir"""
         roles = self._db.get_user_roles(user_id)
         # Dict'leri dataclass'a çevir
-        from dataclasses import dataclass
-        
-        @dataclass
-        class Role:
-            id: int
-            name: str
-        
-        return [Role(id=r["id"], name=r["name"]) for r in roles]
+        return [self.Role(id=r["id"], name=r["name"]) for r in roles]
 
     def get_roles(self):
         return self._db.get_roles()
@@ -91,6 +84,12 @@ class AuthRepository:
     def delete_user(self, user_id: int) -> None:
         """Kullanıcıyı sil"""
         self._db.delete_user(user_id)
+
+    # Role dataclass fonksiyon dışında tanımlanmalı
+    @dataclass
+    class Role:
+        id: int
+        name: str
 
     def get_auth_audit_logs(
         self,

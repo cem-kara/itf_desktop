@@ -201,7 +201,7 @@ class CihazTeknikUtsScraper(QWidget):
         main = QVBoxLayout(self); main.setContentsMargins(0,0,0,0); main.setSpacing(0)
         scroll = QScrollArea(); scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        cnt = QWidget(); cnt.setStyleSheet("background:transparent;")
+        cnt = QWidget(); cnt.setProperty("bg-role", "panel")
         root = QVBoxLayout(cnt); root.setContentsMargins(20,20,20,20); root.setSpacing(14)
 
         root.addWidget(self._search_box())
@@ -217,7 +217,7 @@ class CihazTeknikUtsScraper(QWidget):
         )
         self._prog.hide(); root.addWidget(self._prog)
 
-        self._prev = QWidget(); self._prev.setStyleSheet("background:transparent;")
+        self._prev = QWidget(); self._prev.setProperty("bg-role", "panel")
         self._pvb  = QVBoxLayout(self._prev)
         self._pvb.setContentsMargins(0,0,0,0); self._pvb.setSpacing(14)
         self._prev.hide(); root.addWidget(self._prev)
@@ -243,7 +243,7 @@ class CihazTeknikUtsScraper(QWidget):
             "Birincil Ürün Numarasını (barkod) girin. ÜTS sistemi sorgulanarak\n"
             "tüm teknik bilgiler otomatik doldurulur."
         )
-        desc.setStyleSheet("font-size: 11px; border: none; background: transparent;")
+        desc.setProperty("bg-role", "panel")
         desc.setWordWrap(True); vb.addWidget(desc)
 
         row = QHBoxLayout(); row.setSpacing(8)
@@ -259,7 +259,7 @@ class CihazTeknikUtsScraper(QWidget):
         return box
 
     def _btn_bar(self):
-        bar = QWidget(); bar.setStyleSheet("background:transparent;")
+        bar = QWidget(); bar.setProperty("bg-role", "panel")
         h = QHBoxLayout(bar); h.setContentsMargins(0,0,0,0); h.setSpacing(10)
 
         self._btn_debug = QPushButton("Ham JSON")

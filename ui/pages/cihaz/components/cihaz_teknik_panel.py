@@ -219,7 +219,7 @@ class CihazTeknikPanel(QWidget):
         # tema otomatik — scroll
 
         content = QWidget()
-        content.setStyleSheet("background: transparent;")
+        content.setProperty("bg-role", "panel")
         root = QVBoxLayout(content)
         root.setContentsMargins(20, 20, 20, 20)
         root.setSpacing(14)

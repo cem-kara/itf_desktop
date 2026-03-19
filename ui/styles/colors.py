@@ -6,7 +6,7 @@
 #     from ui.styles.colors import DarkTheme, ThemeProxy, Colors
 #
 #  Nasıl çalışır (v3.1):
-#     DarkTheme.BG_PRIMARY  →  _LiveThemeMeta devreye girer
+#     "page"  →  _LiveThemeMeta devreye girer
 #                            →  ayarlar.json'dan aktif temayı okur
 #                            →  ui/styles/themes.py'den rengi döndürür
 #

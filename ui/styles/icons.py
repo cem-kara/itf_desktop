@@ -11,6 +11,7 @@
 #
 # Kullanm:
 #   from ui.styles.icons import Icons, IconRenderer
+
 #
 #   # QIcon olarak al (QPushButton, QAction iin):
 #   btn.setIcon(Icons.get("users"))

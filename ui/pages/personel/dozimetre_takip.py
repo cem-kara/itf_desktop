@@ -290,7 +290,7 @@ class _TrendWidget(QWidget):
         labels = [f"{r.get('Yil','')}-{r.get('Periyot','')}" for r in rows]
 
         if len(hp10s) < 2:
-            p.setPen(QColor(DarkTheme.TEXT_MUTED))
+            p.setPen(QColor("muted"))
             p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter,
                        "Trend için en az 2 periyot gerekli")
             return
@@ -311,7 +311,7 @@ class _TrendWidget(QWidget):
             p.drawLine(pl, py(HP10_UYARI), w - pr, py(HP10_UYARI))
 
         # Hp(10) — mavi, kalın
-        p.setPen(QPen(QColor(DarkTheme.ACCENT), 2))
+        p.setPen(QPen(QColor("accent"), 2))
         for i in range(n - 1):
             p.drawLine(px(i), py(hp10s[i]), px(i+1), py(hp10s[i+1]))
         for i, v in enumerate(hp10s):
@@ -327,13 +327,13 @@ class _TrendWidget(QWidget):
             p.drawEllipse(px(i)-2, py(v)-2, 5, 5)
 
         # X ekseni etiketleri
-        p.setPen(QColor(DarkTheme.TEXT_MUTED))
+        p.setPen(QColor("muted"))
         if labels:
             p.drawText(pl, h - 4, labels[0])
             p.drawText(w - pr - 40, h - 4, labels[-1])
 
         # Legend
-        p.setPen(QColor(DarkTheme.ACCENT))
+        p.setPen(QColor("accent"))
         p.drawText(w - pr - 90, pt + 10, "— Hp(10)")
         p.setPen(QColor("#fb923c"))
         p.drawText(w - pr - 90, pt + 20, "-- Hp(0,07)")
@@ -367,7 +367,7 @@ class _GaugeWidget(QWidget):
         w, h = self.width(), self.height()
 
         # Başlık
-        p.setPen(QColor(DarkTheme.TEXT_MUTED))
+        p.setPen(QColor("muted"))
         p.setFont(QFont("", 8))
         p.drawText(0, 12, self._baslik)
 
@@ -386,7 +386,7 @@ class _GaugeWidget(QWidget):
             p.drawRoundedRect(0, bar_y, int(w * oran), bar_h, 4, 4)
 
         # Değer
-        p.setPen(QColor(DarkTheme.TEXT_PRIMARY))
+        p.setPen(QColor("primary"))
         p.setFont(QFont("", 8, QFont.Weight.Bold))
         metin = f"{self._deger:.2f} / {self._limit:.0f} mSv  (%{oran*100:.0f})"
         p.drawText(0, bar_y + bar_h + 14, metin)
@@ -478,7 +478,7 @@ class DozimetreTakipPage(QWidget):
 
         # Özet kartlar
         stat_row = QHBoxLayout(); stat_row.setSpacing(10)
-        self._s_toplam   = self._stat("Toplam Ölçüm",        "—", DarkTheme.ACCENT)
+        self._s_toplam   = self._stat("Toplam Ölçüm",        "—", "accent")
         self._s_personel = self._stat("Personel",              "—", "#60a5fa")
         self._s_rapor    = self._stat("Rapor",                 "—", "#a78bfa")
         self._s_max_hp10 = self._stat("Maks. Hp(10)",         "—", "#fb923c")
@@ -991,7 +991,7 @@ class DozimetreTakipPage(QWidget):
             f"{ad}  —  {pid}  |  {len(gecmis)} periyot ölçümü"
         )
         self.lbl_alt_baslik.setStyleSheet(
-            f"font-size:13px;font-weight:600;color:{DarkTheme.TEXT_PRIMARY};"
+            f"font-size:13px;font-weight:600;color:{"primary"};"
         )
         self._gecmis_model.set_data(gecmis)
         self._trend.set_data(gecmis)
@@ -1023,7 +1023,7 @@ class DozimetreTakipPage(QWidget):
             )
             doluluk_renk = "#facc15"
         self.lbl_periyot_doluluk.setText(doluluk_metin)
-        self.lbl_periyot_doluluk.setStyleSheet(f"color:{doluluk_renk};font-size:11px;")
+        self.lbl_periyot_doluluk.setProperty("color-role", "primary")
 
         hp10s = [_hp(r.get("Hp10")) for r in gecmis if _hp(r.get("Hp10")) is not None]
         if hp10s:

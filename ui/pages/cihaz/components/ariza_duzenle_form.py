@@ -1,4 +1,5 @@
 from core.di import get_cihaz_service as _get_cihaz_service
+
 # -*- coding: utf-8 -*-
 from typing import Dict, cast, Any
 

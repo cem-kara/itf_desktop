@@ -4,6 +4,7 @@ from PySide6.QtCore import QThread, Signal
 from core.hata_yonetici import exc_logla
 
 
+
 class DriveUploadWorker(QThread):
     finished = Signal(str, str)
     error = Signal(str, str)

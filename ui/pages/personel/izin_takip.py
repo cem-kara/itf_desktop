@@ -53,9 +53,9 @@ DURUM_COLORS_BG = {
     "İptal":      QColor(239, 68, 68, 40),
 }
 DURUM_COLORS_FG = {
-    "Onaylandı": QColor(DarkTheme.STATUS_SUCCESS),
-    "Beklemede":  QColor(DarkTheme.STATUS_WARNING),
-    "İptal":      QColor(DarkTheme.STATUS_ERROR),
+    "Onaylandı": QColor("ok"),
+    "Beklemede":  QColor("warn"),
+    "İptal":      QColor("err"),
 }
 
 
@@ -145,7 +145,7 @@ class IzinTakipPage(QWidget):
 
         lbl_ay = QLabel("Ay:")
         lbl_ay.setProperty("color-role", "muted")
-        lbl_ay.setStyleSheet("font-size: 12px; background: transparent;")
+        lbl_ay.setProperty("bg-role", "panel")
         lbl_ay.style().unpolish(lbl_ay)
         lbl_ay.style().polish(lbl_ay)
         fp.addWidget(lbl_ay)
@@ -162,7 +162,7 @@ class IzinTakipPage(QWidget):
 
         lbl_yil = QLabel("Yıl:")
         lbl_yil.setProperty("color-role", "muted")
-        lbl_yil.setStyleSheet("font-size: 12px; background: transparent;")
+        lbl_yil.setProperty("bg-role", "panel")
         lbl_yil.style().unpolish(lbl_yil)
         lbl_yil.style().polish(lbl_yil)
         fp.addWidget(lbl_yil)
@@ -186,7 +186,7 @@ class IzinTakipPage(QWidget):
         self.btn_yeni.style().polish(self.btn_yeni)
         self.btn_yeni.setToolTip("Yeni İzin")
         self.btn_yeni.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_yeni, "plus", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self.btn_yeni, "plus", color="primary", size=14)
         fp.addWidget(self.btn_yeni)
 
         self.btn_yenile = QPushButton("Yenile")
@@ -195,7 +195,7 @@ class IzinTakipPage(QWidget):
         self.btn_yenile.style().polish(self.btn_yenile)
         self.btn_yenile.setToolTip("Yenile")
         self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_yenile, "sync", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self.btn_yenile, "sync", color="primary", size=14)
         fp.addWidget(self.btn_yenile)
 
         main.addWidget(filter_frame)
@@ -206,7 +206,7 @@ class IzinTakipPage(QWidget):
 
         # ── TABLO PANELİ ──
         right = QWidget()
-        right.setStyleSheet("background: transparent;")
+        right.setProperty("bg-role", "panel")
         right_l = QVBoxLayout(right)
         right_l.setContentsMargins(0, 0, 0, 0)
         right_l.setSpacing(8)
@@ -261,7 +261,7 @@ class IzinTakipPage(QWidget):
         # ── DRAWER: İzin Giriş Paneli ──
         self._drawer = QFrame()
         self._drawer.setStyleSheet(
-            f"background-color: {DarkTheme.BG_SECONDARY}; border-left: 1px solid {DarkTheme.BORDER_PRIMARY};"
+            f"background-color: {"panel"}; border-left: 1px solid {"primary"};"
         )
         self._drawer.setMaximumWidth(0)
         self._drawer.setMinimumWidth(0)
@@ -272,7 +272,7 @@ class IzinTakipPage(QWidget):
 
         drawer_header = QFrame()
         drawer_header.setStyleSheet(
-            f"background-color: {DarkTheme.BG_PRIMARY}; border-bottom: 1px solid {DarkTheme.BORDER_PRIMARY};"
+            f"background-color: {"page"}; border-bottom: 1px solid {"primary"};"
         )
         header_lay = QHBoxLayout(drawer_header)
         header_lay.setContentsMargins(12, 12, 12, 12)
@@ -291,7 +291,7 @@ class IzinTakipPage(QWidget):
         btn_drawer_close.style().unpolish(btn_drawer_close)
         btn_drawer_close.style().polish(btn_drawer_close)
         btn_drawer_close.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(btn_drawer_close, "x", color=DarkTheme.TEXT_PRIMARY, size=16)
+        IconRenderer.set_button_icon(btn_drawer_close, "x", color="primary", size=16)
         btn_drawer_close.clicked.connect(self._close_drawer)
         header_lay.addWidget(btn_drawer_close)
         drawer_lay.addWidget(drawer_header)
@@ -302,7 +302,7 @@ class IzinTakipPage(QWidget):
         # scroll.setStyleSheet kaldırıldı (global QSS yönetir)
 
         left = QWidget()
-        left.setStyleSheet("background: transparent;")
+        left.setProperty("bg-role", "panel")
         left_l = QVBoxLayout(left)
         left_l.setContentsMargins(12, 12, 12, 12)
         left_l.setSpacing(12)
@@ -440,7 +440,7 @@ class IzinTakipPage(QWidget):
         self.btn_kaydet.style().polish(self.btn_kaydet)
         self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_kaydet.setEnabled(False)
-        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self.btn_kaydet, "save", color="primary", size=14)
         fg.addWidget(self.btn_kaydet, 4, 0, 1, 2)
         left_l.addWidget(grp_giris)
 
@@ -568,7 +568,7 @@ class IzinTakipPage(QWidget):
         _COLOR_MAP = {
             "stat_green": DarkTheme.SUCCESS,
             "stat_red":   DarkTheme.DANGER,
-            "stat_value": DarkTheme.TEXT_PRIMARY,
+            "stat_value": "primary",
         }
         lbl = QLabel(text)
         lbl.setProperty("style-role", "stat-label")
@@ -577,8 +577,8 @@ class IzinTakipPage(QWidget):
         grid.addWidget(lbl, row, 0)
         val = QLabel("—")
         val.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        color = _COLOR_MAP.get(style_key, DarkTheme.TEXT_PRIMARY)
-        val.setStyleSheet(f"color: {color}; font-weight: 600; background: transparent;")
+        color = _COLOR_MAP.get(style_key, "primary")
+        val.setProperty("bg-role", "panel")
         grid.addWidget(val, row, 1)
         return val
 

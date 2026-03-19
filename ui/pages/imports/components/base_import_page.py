@@ -43,6 +43,7 @@ from PySide6.QtWidgets import (
 import pandas as pd
 
 from core.services.excel_import_service import (
+
     ExcelImportService,
     ImportKonfig,
     ImportSonucu,
@@ -127,7 +128,7 @@ class HataDuzeltmeWidget(QDialog):
         btn_yoksay_hepsi  = QPushButton("Tümünü Yoksay")
         btn_kapat         = QPushButton("Kapat")
 
-        btn_dene.setStyleSheet("background:#4CAF50; color:white; padding:6px 14px;")
+        btn_dene.setProperty("bg-role", "panel")
         btn_kapat.setStyleSheet("padding:6px 14px;")
 
         btn_dene.clicked.connect(self._secilenler_dene)
@@ -252,7 +253,7 @@ class BaseImportPage(QWidget):
         self._btn_geri  = QPushButton("◀  Geri")
         self._btn_ileri = QPushButton("İleri  ▶")
         self._btn_geri.setStyleSheet("padding:6px 18px;")
-        self._btn_ileri.setStyleSheet("padding:6px 18px; background:#1565C0; color:white;")
+        self._btn_ileri.setProperty("bg-role", "panel")
         self._btn_geri.clicked.connect(self._geri)
         self._btn_ileri.clicked.connect(self._ileri)
         nav.addWidget(self._btn_geri)
@@ -280,7 +281,7 @@ class BaseImportPage(QWidget):
             lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
             lbl.setFixedHeight(28)
             lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-            lbl.setStyleSheet("background:#E0E0E0; border-radius:4px; padding:2px 8px; color:#555;")
+            lbl.setProperty("bg-role", "panel")
             kutu.addWidget(lbl)
             self._adim_labels.append(lbl)
             if i < len(adimlar) - 1:
@@ -328,7 +329,7 @@ class BaseImportPage(QWidget):
         kutu.addWidget(btn_sec, alignment=Qt.AlignmentFlag.AlignLeft)
 
         self._dosya_bilgi = QLabel("")
-        self._dosya_bilgi.setStyleSheet("color:#1565C0; font-weight:bold;")
+        self._dosya_bilgi.setProperty("color-role", "primary")
         kutu.addWidget(self._dosya_bilgi)
 
         return w
@@ -487,13 +488,13 @@ class BaseImportPage(QWidget):
                 combo.setStyleSheet("")
                 continue
             if deger in secilen_excel:
-                combo.setStyleSheet("background:#FFCCCC;")
+                combo.setProperty("bg-role", "panel")
             else:
                 secilen_excel[deger] = db_alan
                 at = next(
                     (a for a in self._konfig_obj.alanlar if a.alan == db_alan), None
                 )
-                combo.setStyleSheet("background:#E8F5E9;" if (at and at.zorunlu) else "")
+                combo.setProperty("bg-role", "panel")
 
     def _haritayi_oku(self) -> dict[str, str]:
         """Combo seçimlerinden {excel_sutun: db_alan} haritası döndürür."""
@@ -646,9 +647,9 @@ class BaseImportPage(QWidget):
         self._btn_yeni    = QPushButton("🔄  Yeni Import")
         self._btn_kapat   = QPushButton("✔  Kapat")
 
-        self._btn_duzenle.setStyleSheet("background:#F57C00; color:white; padding:6px 14px;")
+        self._btn_duzenle.setProperty("bg-role", "panel")
         self._btn_yeni.setStyleSheet("padding:6px 14px;")
-        self._btn_kapat.setStyleSheet("background:#2E7D32; color:white; padding:6px 14px;")
+        self._btn_kapat.setProperty("bg-role", "panel")
 
         self._btn_duzenle.clicked.connect(self._hata_duzeltme_ac)
         self._btn_yeni.clicked.connect(self._sifirla)
@@ -706,11 +707,11 @@ class BaseImportPage(QWidget):
         f.setPointSize(22)
         f.setBold(True)
         sayi_lbl.setFont(f)
-        sayi_lbl.setStyleSheet(f"color:{on_renk};")
+        sayi_lbl.setProperty("color-role", "primary")
 
         etiket_lbl = QLabel(etiket)
         etiket_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        etiket_lbl.setStyleSheet(f"color:{on_renk}; font-size:11px;")
+        etiket_lbl.setProperty("color-role", "primary")
 
         kutu.addWidget(sayi_lbl)
         kutu.addWidget(etiket_lbl)

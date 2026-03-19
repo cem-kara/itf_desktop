@@ -11,7 +11,7 @@ NEDEN:
   Bu sınıf tamamen kendi stilimizle çalışır — temadan bağımsız.
 
 KULLANIM:
-  from ui.dialogs.mesaj_kutusu import MesajKutusu
+from ui.dialogs.mesaj_kutusu import MesajKutusu
 
   MesajKutusu.bilgi(parent, "Kayıt başarıyla eklendi.")
   MesajKutusu.uyari(parent, "Bu alan boş olamaz.")

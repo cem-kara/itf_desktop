@@ -46,7 +46,7 @@ class FieldGroup(QGroupBox):
         super().__init__(title, parent)
         # Başlık rengini sadece color özelliğiyle override et
         if color:
-            self.setStyleSheet(f"QGroupBox::title {{ color: {color}; }}")
+            self.setProperty("color-role", "primary")
         self._bl = QVBoxLayout(self)
         self._bl.setContentsMargins(10, 10, 10, 12)
         self._bl.setSpacing(8)
@@ -123,11 +123,11 @@ class RKETableModel(BaseTableModel):
         if key == "Durum":
             v = row.get(key, "")
             if "Değil" in v or "Hurda" in v:
-                return QColor(DarkTheme.STATUS_ERROR)
+                return QColor("err")
             if "Uygun" in v:
-                return QColor(DarkTheme.STATUS_SUCCESS)
+                return QColor("ok")
             if "Tamirde" in v:
-                return QColor(DarkTheme.STATUS_WARNING)
+                return QColor("warn")
         return None
 
     def _align(self, key):
@@ -157,9 +157,9 @@ class _GecmisModel(BaseTableModel):
         if key == "Sonuç":
             v = row.get("Sonuç", "")
             if "Değil" in v:
-                return QColor(DarkTheme.STATUS_ERROR)
+                return QColor("err")
             if "Uygun" in v:
-                return QColor(DarkTheme.STATUS_SUCCESS)
+                return QColor("ok")
         return None
 
     def set_rows(self, rows):
@@ -214,11 +214,11 @@ class RKEYonetimPenceresi(QWidget):
         hl.setSpacing(1)
 
         specs = [
-            ("toplam",  "TOPLAM EKİPMAN", "0", DarkTheme.ACCENT),
-            ("uygun",   "KULLANIMA UYGUN","0", DarkTheme.STATUS_SUCCESS),
-            ("uygun_d", "UYGUN DEĞİL",    "0", DarkTheme.STATUS_ERROR),
-            ("hurda",   "HURDA",          "0", DarkTheme.STATUS_WARNING),
-            ("tamirde", "TAMİRDE",        "0", DarkTheme.TEXT_MUTED),
+            ("toplam",  "TOPLAM EKİPMAN", "0", "accent"),
+            ("uygun",   "KULLANIMA UYGUN","0", "ok"),
+            ("uygun_d", "UYGUN DEĞİL",    "0", "err"),
+            ("hurda",   "HURDA",          "0", "warn"),
+            ("tamirde", "TAMİRDE",        "0", "muted"),
         ]
         for key, title, val, color in specs:
             hl.addWidget(self._mk_kpi_card(key, title, val, color), 1)
@@ -245,7 +245,7 @@ class RKEYonetimPenceresi(QWidget):
         lt = QLabel(title)
         lt.setProperty("color-role", "muted")
         lv = QLabel(val)
-        lv.setStyleSheet(f"color:{color};background:transparent;font-size:20px;font-weight:700;")
+        lv.setProperty("bg-role", "panel")
         vl.addWidget(lt)
         vl.addWidget(lv)
         hl.addWidget(content, 1)
@@ -299,7 +299,7 @@ class RKEYonetimPenceresi(QWidget):
         il.setSpacing(10)
 
         # ── Kimlik Bilgileri ─────────────────────────────────────
-        grp_id = FieldGroup("Kimlik Bilgileri", DarkTheme.STATUS_WARNING)
+        grp_id = FieldGroup("Kimlik Bilgileri", "warn")
         g = QGridLayout(); g.setContentsMargins(0,0,0,0)
         g.setHorizontalSpacing(10); g.setVerticalSpacing(6)
         
@@ -314,7 +314,7 @@ class RKEYonetimPenceresi(QWidget):
         grp_id.add_layout(g); il.addWidget(grp_id)
 
         # ── Ekipman Özellikleri ──────────────────────────────────
-        grp_oz = FieldGroup("Ekipman Özellikleri", DarkTheme.STATUS_SUCCESS)
+        grp_oz = FieldGroup("Ekipman Özellikleri", "ok")
         g2 = QGridLayout(); g2.setContentsMargins(0,0,0,0)
         g2.setHorizontalSpacing(10); g2.setVerticalSpacing(6)
         self._add_combo_row(g2, 0, "ANA BİLİM DALI", "AnaBilimDali")
@@ -341,7 +341,7 @@ class RKEYonetimPenceresi(QWidget):
         grp_oz.add_layout(g2); il.addWidget(grp_oz)
 
         # ── Durum ve Geçmiş ──────────────────────────────────────
-        grp_dur = FieldGroup("Durum ve Geçmiş", DarkTheme.STATUS_ERROR)
+        grp_dur = FieldGroup("Durum ve Geçmiş", "err")
         g3 = QGridLayout(); g3.setContentsMargins(0,0,0,0)
         g3.setHorizontalSpacing(10); g3.setVerticalSpacing(6)
         

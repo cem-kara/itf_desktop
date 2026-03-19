@@ -6,6 +6,7 @@
 from typing import Dict, Optional, Any
 
 from database.base_repository import BaseRepository
+
 from database.table_config import TABLES
 
 

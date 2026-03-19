@@ -7,6 +7,7 @@ Sorumluluklar:
 """
 from typing import Optional, List, Dict
 from database.base_repository import BaseRepository
+
 from core.hata_yonetici import SonucYonetici, logger
 from core.validators import validate_tc_kimlik_no
 from database.repository_registry import RepositoryRegistry

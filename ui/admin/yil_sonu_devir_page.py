@@ -25,8 +25,7 @@ from PySide6.QtCore import Qt, QThread, Signal
 
 from core.logger import logger
 from database.repository_registry import RepositoryRegistry
-from ui.styles.colors import DarkTheme as C
-from ui.styles.components import STYLES
+
 from ui.styles.icons import Icons, IconRenderer
 
 
@@ -189,22 +188,7 @@ class YilSonuDevirPage(QWidget):
         
         # Uyarı grubu
         grp_uyari = QGroupBox("DİKKAT: YIL SONU İŞLEMİ")
-        grp_uyari.setStyleSheet("""
-            QGroupBox {
-                border: 2px solid #e81123;
-                border-radius: 8px;
-                margin-top: 12px;
-                padding-top: 12px;
-                font-weight: bold;
-                color: #e81123;
-                font-size: 14px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 8px;
-            }
-        """)
+        grp_uyari.setProperty("style-role", "danger")
         
         v_uyari = QVBoxLayout(grp_uyari)
         
@@ -214,20 +198,16 @@ class YilSonuDevirPage(QWidget):
             "1. <b>Yıllık İzin:</b> Eski devirler silinir, sadece bu yılın artan hakkı devreder.<br>"
             "2. <b>Şua İzni:</b> 'Cari Yıl Kazanım' sütunundaki hak, 'Kullanılabilir Hak'ka taşınır.<br>"
             "3. <b>Genel:</b> Tüm 'Kullanılan' sayaçları sıfırlanır ve yeni yıl hakedişleri eklenir.<br><br>"
-            "<i style='color: #f7b731;'>Lütfen işlemden önce veritabanı yedeği alınız!</i>"
+            "<i style='color: orange;'>Lütfen işlemden önce veritabanı yedeği alınız!</i>"
         )
         lbl_bilgi.setWordWrap(True)
         lbl_bilgi.setProperty("color-role", "secondary")
-        lbl_bilgi.setStyleSheet("font-weight: normal; font-size: 13px; padding: 8px;")
-        lbl_bilgi.style().unpolish(lbl_bilgi)
-        lbl_bilgi.style().polish(lbl_bilgi)
+        lbl_bilgi.setProperty("style-role", "section")
         v_uyari.addWidget(lbl_bilgi)
         
         self.chk_onay = QCheckBox("Riskleri anladım, işlemi onaylıyorum.")
         self.chk_onay.setProperty("color-role", "err")
-        self.chk_onay.setStyleSheet("font-weight: bold; font-size: 13px;")
-        self.chk_onay.style().unpolish(self.chk_onay)
-        self.chk_onay.style().polish(self.chk_onay)
+        self.chk_onay.setProperty("style-role", "form")
         self.chk_onay.stateChanged.connect(self._onay_degisti)
         v_uyari.addWidget(self.chk_onay)
         
@@ -237,35 +217,15 @@ class YilSonuDevirPage(QWidget):
         layout.addWidget(QLabel("İşlem Logları:"))
         self.txt_log = QTextEdit()
         self.txt_log.setReadOnly(True)
-        self.txt_log.setStyleSheet("""
-            QTextEdit {{
-                background-color: {};
-                color: {};
-                font-family: 'Consolas', 'Courier New', monospace;
-                font-size: 12px;
-                border: 1px solid {};
-                border-radius: 4px;
-                padding: 8px;
-            }}
-        """.format(C.BG_SECONDARY, C.STATUS_SUCCESS, C.INPUT_BORDER))
+        self.txt_log.setProperty("bg-role", "panel")
+        self.txt_log.setProperty("color-role", "ok")
         layout.addWidget(self.txt_log)
         
         # Progress bar
         self.pbar = QProgressBar()
         self.pbar.setValue(0)
         self.pbar.setVisible(False)
-        self.pbar.setStyleSheet("""
-            QProgressBar {{
-                border: 1px solid {};
-                border-radius: 4px;
-                text-align: center;
-                height: 24px;
-            }}
-            QProgressBar::chunk {{
-                background-color: {};
-                border-radius: 3px;
-            }}
-        """.format(C.INPUT_BORDER, C.STATUS_ERROR))
+        self.pbar.setProperty("bg-role", "input")
         layout.addWidget(self.pbar)
         
         # Başlat butonu

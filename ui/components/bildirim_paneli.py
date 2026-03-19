@@ -15,6 +15,7 @@ from PySide6.QtGui import QCursor
 from core.logger import logger
 
 
+
 # ── Renk sabitleri ───────────────────────────────────────────────────────────
 _KRITIK_BG     = "rgba(248, 81, 73, 0.10)"
 _KRITIK_BORDER = "#f85149"

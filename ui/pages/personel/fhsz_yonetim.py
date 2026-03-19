@@ -132,8 +132,8 @@ class KosulDelegate(QStyledItemDelegate):
         view = QListView()
         view.setStyleSheet(f"""
             QListView {{
-                background-color: {DarkTheme.BG_SECONDARY};
-                color: {DarkTheme.TEXT_PRIMARY};
+                background-color: {"panel"};
+                color: {"primary"};
                 border: 1.5px solid {DarkTheme.INPUT_BORDER_FOCUS};
                 font-size: 12px;
                 font-weight: 700;
@@ -159,7 +159,7 @@ class KosulDelegate(QStyledItemDelegate):
         editor.setStyleSheet(f"""
             QComboBox {{
                 background-color: {DarkTheme.INPUT_BG};
-                color: {DarkTheme.TEXT_PRIMARY};
+                color: {"primary"};
                 border: 2px solid {DarkTheme.INPUT_BORDER_FOCUS};
                 border-radius: 5px;
                 padding: 8px 16px;
@@ -219,7 +219,7 @@ class SonucDelegate(QStyledItemDelegate):
         else:
             c_bg   = QColor(62, 62, 62, 70)
             c_bord = QColor("#444")
-            c_txt  = QColor("#888888")
+            c_txt  = QColor("muted")
             label  = "— saat"
 
         path = QPainterPath()
@@ -325,7 +325,7 @@ class FHSZYonetimPage(QWidget):
         self.btn_hesapla.style().unpolish(self.btn_hesapla)
         self.btn_hesapla.style().polish(self.btn_hesapla)
         self.btn_hesapla.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_hesapla, "bar_chart", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self.btn_hesapla, "bar_chart", color="primary", size=14)
         fp.addWidget(self.btn_hesapla)
 
         main.addWidget(filter_frame)
@@ -431,7 +431,7 @@ class FHSZYonetimPage(QWidget):
             QProgressBar::chunk {{
                 background-color: rgba(29,117,254,0.5); border-radius: 2px;
             }}
-        """.format(DarkTheme.TEXT_MUTED))
+        """.format("muted"))
         bf.addWidget(self.progress)
 
         self.btn_kaydet = QPushButton("KAYDET / GUNCELLE")
@@ -439,7 +439,7 @@ class FHSZYonetimPage(QWidget):
         self.btn_kaydet.style().unpolish(self.btn_kaydet)
         self.btn_kaydet.style().polish(self.btn_kaydet)
         self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(self.btn_kaydet, "save", color="primary", size=14)
         bf.addWidget(self.btn_kaydet)
 
         main.addWidget(bot_frame)

@@ -29,16 +29,11 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QUrl, Signal
 from PySide6.QtGui import QDesktopServices, QColor
 from ui.dialogs.mesaj_kutusu import MesajKutusu
-
-from ui.styles import DarkTheme
 from core.logger import logger
+from core.services.dokuman_service import DokumanService
 from database.repository_registry import RepositoryRegistry
-from core.di import get_dokuman_service
 
-C = DarkTheme
-_ACCENT   = getattr(C, "ACCENT",         "#4d9de0")
-_TEXT_SEC = getattr(C, "TEXT_SECONDARY", "#7a93ad")
-_ERROR    = "#e05c5c"
+
 
 
 class BaseDokumanPanel(QWidget):
@@ -84,7 +79,7 @@ class BaseDokumanPanel(QWidget):
         self._iliskili_id  = None
         self._iliskili_tip = None
 
-        self._svc = get_dokuman_service(db) if db else None
+        self._svc = DokumanService(db) if db else None
 
         self._setup_ui()
         self._load_belge_turleri()
@@ -97,7 +92,7 @@ class BaseDokumanPanel(QWidget):
     def set_entity_id(self, entity_id: str):
         """Entity ID'yi güncelle ve veriyi yenile (cihaz kaydedilince çağrılır)."""
         self._entity_id = str(entity_id) if entity_id else ""
-        self._svc = get_dokuman_service(self._db) if self._db else None
+        self._svc = DokumanService(self._db) if self._db else None
         if self._entity_id:
             self.setEnabled(True)
             # Form kontrollerini enable et
@@ -109,22 +104,6 @@ class BaseDokumanPanel(QWidget):
             if hasattr(self, '_form') and self._form:
                 self._form.setEnabled(False)
             self._tablo.setRowCount(0)
-
-    def set_default_belge_turu(self, tur: str):
-        """Varsayılan belge türünü combo'ya uygular (varsa)."""
-        if not tur:
-            return
-        try:
-            if hasattr(self, '_combo_tur') and self._combo_tur:
-                idx = self._combo_tur.findText(tur)
-                if idx >= 0:
-                    self._combo_tur.setCurrentIndex(idx)
-                else:
-                    # Eğer listede yoksa ekle ve seç
-                    self._combo_tur.addItem(tur)
-                    self._combo_tur.setCurrentIndex(self._combo_tur.count() - 1)
-        except Exception:
-            pass
 
     def load_data(self):
         """Belgeleri yeniden yükle."""
@@ -154,9 +133,10 @@ class BaseDokumanPanel(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setProperty("style-role", "plain")
 
         content = QWidget()
-        content.setStyleSheet("background: transparent;")
+        content.setProperty("bg-role", "transparent")
         root = QVBoxLayout(content)
         root.setContentsMargins(20, 20, 20, 20)
         root.setSpacing(14)
@@ -164,12 +144,8 @@ class BaseDokumanPanel(QWidget):
         # Uyarı (entity_id yoksa)
         if not self._entity_id:
             warn = QLabel("Lütfen önce kaydı kaydedin")
-            warn.setStyleSheet(
-                f"color:{_ERROR}; font-size:12px;"
-                f"background:rgba(224,92,92,.1);"
-                f"border:1px solid rgba(224,92,92,.3);"
-                f"border-radius:6px; padding:10px;"
-            )
+            warn.setProperty("color-role", "err")
+            warn.setProperty("style-role", "form")
             root.addWidget(warn)
 
         # ── Yükleme formu ──────────────────────────────────────
@@ -183,7 +159,7 @@ class BaseDokumanPanel(QWidget):
         fl.setContentsMargins(14, 12, 14, 12)
         fl.setSpacing(10)
 
-        fl.addWidget(self._lbl("Belge Yükle", bold=True, color=_ACCENT, size=13))
+        fl.addWidget(self._lbl("Belge Yükle", bold=True, size=13))
 
         # Belge Türü + Seçilen Dosya + Dosya Seç Butonu (yan yana)
         r1 = QHBoxLayout()
@@ -192,6 +168,7 @@ class BaseDokumanPanel(QWidget):
         # Belge Türü
         r1.addWidget(self._lbl("Belge Türü:", w=80))
         self._combo_tur = QComboBox()
+        self._combo_tur.setProperty("style-role", "form")
         self._combo_tur.setMinimumHeight(30)
         r1.addWidget(self._combo_tur, 1)
         
@@ -200,12 +177,13 @@ class BaseDokumanPanel(QWidget):
         self._inp_dosya = QLineEdit()
         self._inp_dosya.setPlaceholderText("Dosya seçilmedi...")
         self._inp_dosya.setReadOnly(True)
+        self._inp_dosya.setProperty("style-role", "form")
         self._inp_dosya.setMinimumHeight(30)
         r1.addWidget(self._inp_dosya, 2)
         
         # Dosya Seç Butonu
         btn_sec = QPushButton("Dosya Seç")
-        btn_sec.setProperty("style-role", "elevated")
+        btn_sec.setProperty("style-role", "action")
         btn_sec.setMinimumHeight(30)
         btn_sec.setMaximumWidth(120)
         btn_sec.clicked.connect(self._browse)
@@ -218,11 +196,12 @@ class BaseDokumanPanel(QWidget):
         r2.addWidget(self._lbl("Açıklama:", w=80))
         self._inp_aciklama = QLineEdit()
         self._inp_aciklama.setPlaceholderText("Belge hakkında notlar...")
+        self._inp_aciklama.setProperty("style-role", "form")
         self._inp_aciklama.setMinimumHeight(30)
         r2.addWidget(self._inp_aciklama, 2)
         
         self._btn_yukle = QPushButton("Belgeyi Yükle")
-        self._btn_yukle.setProperty("style-role", "elevated")
+        self._btn_yukle.setProperty("style-role", "action")
         self._btn_yukle.setMinimumHeight(30)
         self._btn_yukle.setMaximumWidth(140)
         self._btn_yukle.clicked.connect(self._upload)
@@ -235,13 +214,14 @@ class BaseDokumanPanel(QWidget):
         root.addWidget(self._form)
 
         # ── Belgeler listesi ───────────────────────────────────
-        root.addWidget(self._lbl("Yüklü Belgeler", bold=True, color=_ACCENT, size=12))
+        root.addWidget(self._lbl("Yüklü Belgeler", bold=True, size=12))
 
         self._tablo = QTableWidget()
         self._tablo.setColumnCount(4)
         self._tablo.setHorizontalHeaderLabels(
             ["Belge Türü", "Dosya Adı", "Açıklama", "Tarih"]
         )
+        self._tablo.setProperty("style-role", "form")
         self._tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._tablo.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self._tablo.setAlternatingRowColors(True)
@@ -274,7 +254,7 @@ class BaseDokumanPanel(QWidget):
             # Cache'den veya DB'den oku
             sabitler = self._sabitler
             if not sabitler:
-                from core.di import get_cihaz_service as _cs_f; sabitler = _cs_f(self._db).get_sabitler().veri or []
+                from core.di import get_cihaz_service as _cs_f; sabitler = _cs_f(self._db).get_sabitler()
 
             turleri = [
                 s.get("MenuEleman", "")
@@ -302,7 +282,7 @@ class BaseDokumanPanel(QWidget):
         try:
             self._dokumanlari = self._svc.get_belgeler(
                 self._entity_type, self._entity_id
-            ).veri or []
+            )
         except Exception as e:
             logger.error(f"BaseDokumanPanel: belgeler yüklenemedi: {e}")
             return
@@ -315,11 +295,9 @@ class BaseDokumanPanel(QWidget):
             except Exception:
                 tarih_str = tarih[:16] if len(tarih) > 16 else tarih or "-"
 
-            # Dosya adı sütununda önce DB'deki 'Belge' (dosya adı) gösterilsin;
-            # eğer yoksa 'DisplayName' fallback olarak kullanılır.
-            item_dosya = QTableWidgetItem(doc.get("Belge") or doc.get("DisplayName", ""))
+            item_dosya = QTableWidgetItem(doc.get("DisplayName") or doc.get("Belge", ""))
             item_dosya.setToolTip("Çift tıklayarak dosyayı aç")
-            item_dosya.setForeground(QColor(_ACCENT))
+            # Renk QSS'den gelir, foreground ayarlanmaz
 
             self._tablo.setItem(row, 0, QTableWidgetItem(doc.get("BelgeTuru", "")))
             self._tablo.setItem(row, 1, item_dosya)
@@ -357,11 +335,11 @@ class BaseDokumanPanel(QWidget):
         # ⚠️ DB'de entity gerçekten var mı kontrol et
         try:
             from core.di import get_registry; registry = get_registry(self._db)
-            # entity_type'a göre tablo adını belirle (TABLES anahtarlarıyla uyumlu olmalı)
+            # entity_type'a göre tablo adını belirle
             table_name_map = {
                 "personel": "Personel",
-                "cihaz": "Cihazlar",
-                "rke": "RKE_List",
+                "cihaz": "Cihaz",
+                "rke": "RKE",
             }
             table_name = table_name_map.get(self._entity_type)
             if table_name:
@@ -383,7 +361,6 @@ class BaseDokumanPanel(QWidget):
         self._btn_yukle.setText("Yükleniyor...")
 
         try:
-
             sonuc = self._svc.upload_and_save(
                 file_path   = file_path,
                 entity_type = self._entity_type,
@@ -396,40 +373,22 @@ class BaseDokumanPanel(QWidget):
                 iliskili_tip= self._iliskili_tip,
             )
 
-            if not sonuc.basarili:
-                MesajKutusu.hata(self, "Hata", f"Yükleme başarısız:\n{sonuc.mesaj}")
+            if not sonuc["ok"]:
+                MesajKutusu.hata(self, "Hata", f"Yükleme başarısız:\n{sonuc['error']}")
                 return
 
-            mod_text = "Drive'a yüklendi" if sonuc.veri and sonuc.veri.get("mode") == "drive" else "Yerel klasöre kaydedildi"
+            mod_text = "Drive'a yüklendi" if sonuc["mode"] == "drive" else "Yerel klasöre kaydedildi"
             self._inp_dosya.clear()
             self._inp_aciklama.clear()
             self._load_dokumanlari()
 
-            # Sadece "İşe Giriş Muayenesi" belgesi sağlık kaydını günceller.
-            # Diploma, Sertifika vb. diğer belgeler saglik tablosuna dokunmaz.
-            belge_tur_str = str(belge_tur).strip()
-            if (
-                self._iliskili_tip == "Personel_Saglik_Takip"
-                and self._iliskili_id
-                and belge_tur_str == "İşe Giriş Muayenesi"
-            ):
+            if self._iliskili_tip == "Personel_Saglik_Takip" and self._iliskili_id:
                 try:
-                    from datetime import date as _date
                     from core.di import get_registry; registry = get_registry(self._db)
                     saglik_repo = registry.get("Personel_Saglik_Takip")
-                    rapor_dosya = ""
-                    if sonuc.veri:
-                        rapor_dosya = sonuc.veri.get("drive_link") or sonuc.veri.get("belge_adi") or ""
                     saglik_repo.update(self._iliskili_id, {
-                        "RaporDosya":    rapor_dosya,
-                        "MuayeneTarihi": _date.today().isoformat(),
-                        "Durum":         "Gecerli",
-                        "Sonuc":         "Uygun",
+                        "RaporDosya": sonuc.get("drive_link") or sonuc.get("belge_adi") or ""
                     })
-                    logger.info(
-                        f"BaseDokumanPanel: Saglik_Takip güncellendi "
-                        f"(KayitNo={self._iliskili_id})"
-                    )
                 except Exception as upd_err:
                     logger.warning(f"BaseDokumanPanel: RaporDosya güncellenemedi: {upd_err}")
 
@@ -485,14 +444,12 @@ class BaseDokumanPanel(QWidget):
     @staticmethod
     def _lbl(text, bold=False, color=None, size=11, w=None):
         lbl = QLabel(text)
-        if w:
-            lbl.setMinimumWidth(w)
-        font = lbl.font()
-        font.setBold(bold)
-        font.setPointSize(size)
-        lbl.setFont(font)
+        style = f"font-size:{size}px;"
+        if bold:
+            style += "font-weight:700;"
         if color:
-            lbl.setProperty("color-role", "accent")
-        else:
-            lbl.setProperty("color-role", "secondary")
+            style += f"color:{color};"
+        if w:
+            style += f"min-width:{w}px;"
+        lbl.setStyleSheet(style)
         return lbl

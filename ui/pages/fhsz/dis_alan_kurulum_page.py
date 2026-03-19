@@ -47,7 +47,7 @@ class _InfoKart(QFrame):
         lay.setSpacing(2)
 
         lbl_baslik = QLabel(baslik)
-        lbl_baslik.setStyleSheet("font-size:10px; color:#8fa3b8; border:none;")
+        lbl_baslik.setProperty("color-role", "primary")
         lay.addWidget(lbl_baslik)
 
         self.lbl_deger = QLabel(deger)
@@ -62,7 +62,7 @@ class _InfoKart(QFrame):
 
         if aciklama:
             lbl_ac = QLabel(aciklama)
-            lbl_ac.setStyleSheet("font-size:10px; color:#666; border:none;")
+            lbl_ac.setProperty("color-role", "primary")
             lbl_ac.setWordWrap(True)
             lay.addWidget(lbl_ac)
 
@@ -91,10 +91,10 @@ class DisAlanKurulumPage(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet("QScrollArea { border:none; background:transparent; }")
+        scroll.setProperty("bg-role", "panel")
 
         inner = QWidget()
-        inner.setStyleSheet("background:transparent;")
+        inner.setProperty("bg-role", "panel")
         main = QVBoxLayout(inner)
         main.setContentsMargins(30, 20, 30, 30)
         main.setSpacing(20)
@@ -116,7 +116,7 @@ class DisAlanKurulumPage(QWidget):
             "Sistem katsayıyı otomatik hesaplar ve önümüzdeki yıl için "
             "tüm ayarları tek tıkla kaydeder."
         )
-        aciklama.setStyleSheet("font-size:11px; color:#8fa3b8;")
+        aciklama.setProperty("color-role", "primary")
         aciklama.setWordWrap(True)
         main.addWidget(aciklama)
 
@@ -218,12 +218,12 @@ class DisAlanKurulumPage(QWidget):
         ozet_lay.setSpacing(6)
 
         self.lbl_ozet = QLabel("Verileri girdikten sonra özet burada görünecek.")
-        self.lbl_ozet.setStyleSheet("font-size:11px; color:#8fa3b8;")
+        self.lbl_ozet.setProperty("color-role", "primary")
         self.lbl_ozet.setWordWrap(True)
         ozet_lay.addWidget(self.lbl_ozet)
 
         self.lbl_uyari = QLabel("")
-        self.lbl_uyari.setStyleSheet("font-size:11px; color:#FFB300;")
+        self.lbl_uyari.setProperty("color-role", "primary")
         self.lbl_uyari.setWordWrap(True)
         self.lbl_uyari.setVisible(False)
         ozet_lay.addWidget(self.lbl_uyari)

@@ -19,6 +19,7 @@ from unittest.mock import MagicMock
 from core.services.kalibrasyon_service import KalibrasyonService
 
 
+
 # ─────────────────────────────────────────────────────────────
 #  Fixture'lar
 # ─────────────────────────────────────────────────────────────

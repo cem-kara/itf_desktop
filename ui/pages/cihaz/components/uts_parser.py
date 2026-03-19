@@ -11,6 +11,7 @@ from typing import Dict, Optional, Set
 from bs4 import BeautifulSoup
 
 from core.logger import logger
+
 from core.paths import TEMP_DIR
 from database.table_config import TABLES
 

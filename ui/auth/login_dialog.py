@@ -70,10 +70,11 @@ class LoginDialog(QDialog):
         self._username = QLineEdit()
         self._username.setPlaceholderText("Kullanıcı Adı")
         self._username.setFixedHeight(45)
-        self._username.setStyleSheet(
-            "QLineEdit { background-color: #1e1e1e; border: 1px solid #444; "
-            "border-radius: 5px; color: white; padding-left: 10px; font-size: 14px; }"
-        )
+        self._username.setProperty("bg-role", "page")
+        self._username.setProperty("color-role", "primary")
+        self._username.setProperty("style-role", "form")
+        self._username.style().unpolish(self._username)
+        self._username.style().polish(self._username)
         self._username.setText("admin")  # Otomatik doldur
         card_layout.addWidget(self._username)
 
@@ -82,7 +83,11 @@ class LoginDialog(QDialog):
         self._password.setPlaceholderText("Şifre")
         self._password.setEchoMode(QLineEdit.EchoMode.Password)
         self._password.setFixedHeight(45)
-        self._password.setStyleSheet(self._username.styleSheet())
+        self._password.setProperty("bg-role", "page")
+        self._password.setProperty("color-role", "primary")
+        self._password.setProperty("style-role", "form")
+        self._password.style().unpolish(self._password)
+        self._password.style().polish(self._password)
         self._password.setText("admin123")  # Otomatik doldur
         card_layout.addWidget(self._password)
 
@@ -98,7 +103,7 @@ class LoginDialog(QDialog):
         btn_cancel = QPushButton("İptal")
         btn_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_cancel.setProperty("color-role", "muted")
-        btn_cancel.setStyleSheet("background: transparent; border: none;")
+        btn_cancel.setProperty("bg-role", "panel")
         btn_cancel.style().unpolish(btn_cancel)
         btn_cancel.style().polish(btn_cancel)
         btn_cancel.clicked.connect(self.reject)

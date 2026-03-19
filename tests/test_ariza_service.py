@@ -19,6 +19,7 @@ from unittest.mock import MagicMock, call
 from core.services.ariza_service import ArizaService
 
 
+
 # ─────────────────────────────────────────────────────────────
 #  Fixture'lar
 # ─────────────────────────────────────────────────────────────

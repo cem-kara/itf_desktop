@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from ui.components.base_table_model import BaseTableModel
 from core.di import get_izin_service
+
 from core.logger import logger
 # datetime artık BaseTableModel içinde
 

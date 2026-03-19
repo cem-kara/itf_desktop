@@ -1104,7 +1104,7 @@ class ArizaKayitForm(QWidget):
         ort_sure = round(sum(sure_list)/len(sure_list), 1) if sure_list else None
 
         container = QWidget()
-        container.setStyleSheet("background:transparent;")
+        container.setProperty("bg-role", "panel")
         hl = QHBoxLayout(container)
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setSpacing(8)
@@ -1196,7 +1196,7 @@ class ArizaKayitForm(QWidget):
         muted  = getattr(DarkTheme, "TEXT_MUTED",   "#5a6278")
 
         container = QWidget()
-        container.setStyleSheet("background: transparent;")
+        container.setProperty("bg-role", "panel")
         grid = QGridLayout(container)
         grid.setContentsMargins(0, 0, 0, 0)
         grid.setSpacing(10)
@@ -1266,7 +1266,7 @@ class ArizaKayitForm(QWidget):
         if remainder:
             for c in range(remainder, cols):
                 placeholder = QWidget()
-                placeholder.setStyleSheet("background:transparent;")
+                placeholder.setProperty("bg-role", "panel")
                 grid.addWidget(placeholder, len(cihaz_data) // cols, c)
 
         return container
@@ -1275,14 +1275,14 @@ class ArizaKayitForm(QWidget):
         """Tek bir yatay bar satırı oluşturur."""
         border = getattr(DarkTheme, "BORDER", "#242938")
         w = QWidget()
-        w.setStyleSheet("background: transparent;")
+        w.setProperty("bg-role", "panel")
         hl = QHBoxLayout(w)
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setSpacing(6)
 
         lbl = QLabel(label)
         lbl.setFixedWidth(46)
-        lbl.setStyleSheet("font-size: 10px; background: transparent;")
+        lbl.setProperty("bg-role", "panel")
         hl.addWidget(lbl)
 
         bar_bg = QWidget()
@@ -1304,7 +1304,7 @@ class ArizaKayitForm(QWidget):
         cnt = QLabel(str(value))
         cnt.setFixedWidth(24)
         cnt.setAlignment(Qt.AlignmentFlag.AlignRight)
-        cnt.setStyleSheet("font-size: 10px; font-weight: 600; background: transparent;")
+        cnt.setProperty("bg-role", "panel")
         hl.addWidget(cnt)
         return w
 
@@ -1422,7 +1422,7 @@ class ArizaKayitForm(QWidget):
         )
 
         container = QWidget()
-        container.setStyleSheet("background:transparent;")
+        container.setProperty("bg-role", "panel")
         cl = QVBoxLayout(container)
         cl.setContentsMargins(0, 0, 0, 0)
         cl.setSpacing(6)
@@ -1453,7 +1453,7 @@ class ArizaKayitForm(QWidget):
             rl.addWidget(chip)
 
             lbl_baslik = QLabel(baslik)
-            lbl_baslik.setStyleSheet("font-size: 12px; background: transparent;")
+            lbl_baslik.setProperty("bg-role", "panel")
             lbl_baslik.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
             rl.addWidget(lbl_baslik)
 

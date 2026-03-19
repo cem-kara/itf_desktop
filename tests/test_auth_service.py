@@ -1,4 +1,5 @@
 from core.auth.auth_service import AuthService
+
 from core.auth.password_hasher import PasswordHasher
 from core.auth.session_context import SessionContext
 
@@ -93,3 +94,5 @@ def test_authenticate_lockout_records_audit():
 
     assert session_user is None
     assert db.audit_calls[-1] == ("alice", False, "lockout")
+
+

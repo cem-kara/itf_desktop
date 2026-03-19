@@ -8,7 +8,7 @@ Mevcut altyapıyı (DokumanService, BaseDokumanPanel) bozmadan çalışır.
 
 Kullanım
 --------
-    from ui.pages.dokuman_listesi import DokumanListesiPage
+from ui.pages.dokuman_listesi import DokumanListesiPage
     page = DokumanListesiPage(db=self._db)
 """
 from __future__ import annotations
@@ -81,9 +81,9 @@ class _DokumanModel(BaseTableModel):
 
     def _fg(self, key: str, row: dict):
         if key == "_konum":
-            return QColor("#60a5fa") if row.get("DrivePath") else QColor(DarkTheme.TEXT_MUTED)
+            return QColor("#60a5fa") if row.get("DrivePath") else QColor("muted")
         if key == "DisplayName":
-            return QColor(DarkTheme.ACCENT)
+            return QColor("accent")
         return None
 
 
@@ -145,7 +145,7 @@ class DokumanListesiPage(QWidget):
         # Başlık
         top = QHBoxLayout()
         lbl = QLabel("Doküman Yönetimi")
-        lbl.setStyleSheet(f"font-size:18px;font-weight:700;color:{DarkTheme.TEXT_PRIMARY};")
+        lbl.setProperty("color-role", "primary")
         self.btn_yenile = QPushButton("⟳  Yenile")
         self.btn_yenile.setStyleSheet(str(S.get("refresh_btn", "") or ""))
         self.btn_yenile.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -158,7 +158,7 @@ class DokumanListesiPage(QWidget):
         # Özet kartlar
         stat_row = QHBoxLayout()
         stat_row.setSpacing(10)
-        self._s_toplam    = self._stat("Toplam Belge",  "—", DarkTheme.ACCENT)
+        self._s_toplam    = self._stat("Toplam Belge",  "—", "accent")
         self._s_personel  = self._stat("Personel",       "—", "#60a5fa")
         self._s_cihaz     = self._stat("Cihaz",          "—", "#a78bfa")
         self._s_rke       = self._stat("RKE",            "—", "#f472b6")
@@ -185,10 +185,10 @@ class DokumanListesiPage(QWidget):
         self.inp_arama.setMinimumWidth(220)
 
         self.chk_drive = QCheckBox("Sadece Drive")
-        self.chk_drive.setStyleSheet(f"color:{DarkTheme.TEXT_MUTED};font-size:12px;")
+        self.chk_drive.setProperty("color-role", "primary")
 
         self.lbl_sonuc = QLabel("— belge")
-        self.lbl_sonuc.setStyleSheet(f"color:{DarkTheme.TEXT_MUTED};font-size:12px;")
+        self.lbl_sonuc.setProperty("color-role", "primary")
 
         for lbl_t, w in (("Tür", self.cmb_tur), ("Belge Türü", self.cmb_belge)):
             fb.addWidget(QLabel(lbl_t))
@@ -252,17 +252,17 @@ class DokumanListesiPage(QWidget):
     def _stat(self, title: str, value: str, color: str) -> QFrame:
         f = QFrame()
         f.setStyleSheet(f"""
-            QFrame {{background:{DarkTheme.BG_SECONDARY};
-                    border:1px solid {DarkTheme.BORDER_PRIMARY};
+            QFrame {{background:{"panel"};
+                    border:1px solid {"primary"};
                     border-left:3px solid {color};border-radius:6px;}}
         """)
         lay = QVBoxLayout(f)
         lay.setContentsMargins(12, 8, 12, 8)
         lay.setSpacing(2)
         t = QLabel(title)
-        t.setStyleSheet(f"color:{DarkTheme.TEXT_MUTED};font-size:10px;")
+        t.setProperty("color-role", "primary")
         v = QLabel(value)
-        v.setStyleSheet(f"color:{color};font-size:20px;font-weight:700;")
+        v.setProperty("color-role", "primary")
         v.setObjectName("val")
         lay.addWidget(t); lay.addWidget(v)
         return f

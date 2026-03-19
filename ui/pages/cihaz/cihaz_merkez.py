@@ -155,7 +155,7 @@ class CihazMerkezPage(QWidget):
         btn_kapat.setFixedSize(28, 28)
         btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_kapat.setToolTip("Kapat")
-        btn_kapat.setStyleSheet("background:transparent; border:none;")
+        btn_kapat.setProperty("bg-role", "panel")
         btn_kapat.clicked.connect(self.kapat_istegi.emit)
         try:
             IconRenderer.set_button_icon(btn_kapat, "x", color=C.TEXT_MUTED, size=14)
@@ -169,7 +169,7 @@ class CihazMerkezPage(QWidget):
         nav = QWidget()
         nav.setFixedHeight(36)
         nav.setProperty("border-role", "top-secondary")
-        nav.setStyleSheet("background: transparent;")
+        nav.setProperty("bg-role", "panel")
         nav.style().unpolish(nav)
         nav.style().polish(nav)
         nav_lay = QHBoxLayout(nav)

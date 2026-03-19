@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from core.di import get_cihaz_service as _get_cihaz_service
 
+
 from PySide6.QtCore import QDate, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QGridLayout, QLabel, QLineEdit,

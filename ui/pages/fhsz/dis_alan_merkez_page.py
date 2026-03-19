@@ -57,7 +57,7 @@ class DisAlanMerkezPage(QWidget):
         btn_kapat.style().unpolish(btn_kapat)
         btn_kapat.style().polish(btn_kapat)
         btn_kapat.clicked.connect(self.kapat_istegi.emit)
-        IconRenderer.set_button_icon(btn_kapat, "x", color=DarkTheme.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(btn_kapat, "x", color="primary", size=14)
         self.btn_kapat = btn_kapat
         header_lay.addWidget(btn_kapat)
         root.addWidget(header)

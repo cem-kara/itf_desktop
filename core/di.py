@@ -1,4 +1,5 @@
 from database.repository_registry import RepositoryRegistry
+
 from database.cloud_adapter import get_cloud_adapter as _get_cloud_adapter
 
 from core.auth.auth_service import AuthService

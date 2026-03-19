@@ -36,7 +36,7 @@ class ThemeTestWindow(QMainWindow):
         
         # Başlık
         title = QLabel("Tema Değiştirme Test")
-        title.setStyleSheet(f"color: {DarkTheme.TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
+        title.setProperty("color-role", "primary")
         layout.addWidget(title)
         
         # Bilgi
@@ -44,7 +44,7 @@ class ThemeTestWindow(QMainWindow):
             "Aşağıdaki butonlarla tema değiştiremeyi test edin.\n"
             "Değişiklikler anında uygulanır."
         )
-        info.setStyleSheet(f"color: {DarkTheme.TEXT_SECONDARY};")
+        info.setProperty("color-role", "primary")
         layout.addWidget(info)
         
         # Dark Tema Butonu
@@ -59,7 +59,7 @@ class ThemeTestWindow(QMainWindow):
         
         # Bilgi Label
         self.lbl_current = QLabel("Mevcut Tema: Dark")
-        self.lbl_current.setStyleSheet(f"color: {DarkTheme.STATUS_SUCCESS}; font-weight: 500;")
+        self.lbl_current.setProperty("color-role", "primary")
         layout.addWidget(self.lbl_current)
         
         layout.addStretch()

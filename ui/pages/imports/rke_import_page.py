@@ -19,6 +19,7 @@ RKE_Muayene kolonları (table_config'den otomatik):
 """
 
 from core.services.excel_import_service import AlanTanimi, DuplicateKontrol, ImportKonfig
+
 from ui.pages.imports.components.base_import_page import BaseImportPage
 
 

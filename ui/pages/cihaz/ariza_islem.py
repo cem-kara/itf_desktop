@@ -457,7 +457,7 @@ class ArizaIslemPenceresi(QWidget):
     def _det_chip(title: str, muted: str, text_pr: str) -> QWidget:
         """Başlık + değer dikey çifti."""
         w = QWidget()
-        w.setStyleSheet("background:transparent;")
+        w.setProperty("bg-role", "panel")
         vl = QVBoxLayout(w)
         vl.setContentsMargins(0, 0, 0, 0)
         vl.setSpacing(1)
@@ -468,7 +468,7 @@ class ArizaIslemPenceresi(QWidget):
         )
         v = QLabel("—")
         v.setObjectName("val")
-        v.setStyleSheet("font-size: 11px; background: transparent;")
+        v.setProperty("bg-role", "panel")
         v.setWordWrap(True)
         vl.addWidget(t)
         vl.addWidget(v)

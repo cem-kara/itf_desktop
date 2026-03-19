@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 from core.services.bakim_service import BakimService
 
 
+
 @pytest.fixture
 def mock_registry():
     """Mock RepositoryRegistry döndür"""

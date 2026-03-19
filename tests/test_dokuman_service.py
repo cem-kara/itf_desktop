@@ -11,14 +11,15 @@ def test_dokuman_service_local_path():
     Test eğer personel ile dosya yüklerse, DokumanService
     dosyayı data/offline_uploads/personel/<TC>/ klasörüne kaydeder mi?
     """
-    import sys
+import sys
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
     
-    from database.sqlite_manager import SQLiteManager
-    from database.migrations import MigrationManager
-    from database.repository_registry import RepositoryRegistry
-    from core.services.dokuman_service import DokumanService
-    import tempfile
+from database.sqlite_manager import SQLiteManager
+
+from database.migrations import MigrationManager
+from database.repository_registry import RepositoryRegistry
+from core.services.dokuman_service import DokumanService
+import tempfile
     
     # Test DB oluştur
     test_db_path = os.path.join(tempfile.gettempdir(), "repys_test_dokuman.db")

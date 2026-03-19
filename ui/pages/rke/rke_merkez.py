@@ -93,7 +93,7 @@ class RKEMerkezPage(QWidget):
         # Ayırıcı
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.VLine)
-        sep.setStyleSheet(f"color:{C.BORDER_PRIMARY};")
+        sep.setProperty("color-role", "primary")
         sep.setFixedHeight(22)
         lay.addSpacing(16)
         lay.addWidget(sep)
@@ -199,7 +199,7 @@ class RKEMerkezPage(QWidget):
             logger.error(f"RKE modül yükleme hatası ({code}): {e}")
             err = QLabel(f"Modül yüklenemedi: {code}\n{e}")
             err.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            err.setStyleSheet(f"color:{C.STATUS_ERROR}; font-size:13px;")
+            err.setProperty("color-role", "primary")
             return err
 
     def _muayeneye_gec(self, ekipman_no: str = ""):

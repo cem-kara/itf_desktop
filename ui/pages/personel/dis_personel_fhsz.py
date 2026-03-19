@@ -65,7 +65,7 @@ class TutanakliGirisPage(QWidget):
         top_layout.addStretch()
 
         lbl_donem = QLabel("Dönem:")
-        lbl_donem.setStyleSheet("font-size: 12px; color: #b0b8c9;")
+        lbl_donem.setProperty("color-role", "primary")
         top_layout.addWidget(lbl_donem)
 
         self.cmb_ay = QComboBox()
@@ -128,12 +128,12 @@ class TutanakliGirisPage(QWidget):
         right_panel_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
         form_container = QFrame()
-        form_container.setStyleSheet("background: transparent;")
+        form_container.setProperty("bg-role", "panel")
         self.form_layout = QVBoxLayout(form_container)
         self.form_layout.setSpacing(12)
 
         self.lbl_secili = QLabel("Lütfen personel seçiniz.")
-        self.lbl_secili.setStyleSheet("font-weight: bold; color: #42a5f5;")
+        self.lbl_secili.setProperty("color-role", "primary")
         self.form_layout.addWidget(self.lbl_secili)
 
         # İşlem Alanı
@@ -193,7 +193,7 @@ class TutanakliGirisPage(QWidget):
     def _add_form_item(self, label_text: str, widget):
         row = QVBoxLayout()
         lbl = QLabel(label_text)
-        lbl.setStyleSheet("font-size: 11px; color: #aaaaaa;")
+        lbl.setProperty("color-role", "primary")
         row.addWidget(lbl)
         widget.setStyleSheet(S["input"])
         row.addWidget(widget)
@@ -231,12 +231,12 @@ class TutanakliGirisPage(QWidget):
             self._selected_personel_id = tc_item.text()
             self._selected_personel_ad = ad_item.text()
             self.lbl_secili.setText(f"Seçili: {ad_item.text()}")
-            self.lbl_secili.setStyleSheet("font-weight: bold; color: #66bb6a;")
+            self.lbl_secili.setProperty("color-role", "primary")
         else:
             self._selected_personel_id = None
             self._selected_personel_ad = None
             self.lbl_secili.setText("Lütfen personel seçiniz.")
-            self.lbl_secili.setStyleSheet("font-weight: bold; color: #42a5f5;")
+            self.lbl_secili.setProperty("color-role", "primary")
 
     def _kaydet(self):
         """Formu doğrular ve DB'ye yazar."""

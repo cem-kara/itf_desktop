@@ -18,6 +18,7 @@ from typing import Any, cast
 from core.services.izin_service import IzinService
 
 
+
 # ─────────────────────────────────────────────────────────────
 #  Fixture'lar
 # ─────────────────────────────────────────────────────────────

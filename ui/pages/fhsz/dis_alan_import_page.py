@@ -272,7 +272,7 @@ class DisAlanImportPage(QWidget):
         self.lbl_dosya.setText(
             f"{sonuc.dosya}   |   📅 {ay_ad} {sonuc.donem_yil}"
         )
-        self.lbl_dosya.setStyleSheet("font-size:11px; color:#81C784; font-weight:bold;")
+        self.lbl_dosya.setProperty("color-role", "primary")
 
         for btn in [self.btn_tumunu_sec, self.btn_gecerlileri, self.btn_secimi_kaldir]:
             btn.setEnabled(True)
@@ -689,7 +689,7 @@ class _KarsilastirmaWidget(QWidget):
         tl.setContentsMargins(12,6,12,6); tl.setSpacing(10)
 
         lbl = QLabel("Import Karşılaştırma")
-        lbl.setStyleSheet("font-size:15px; font-weight:bold; color:#1D75FE;")
+        lbl.setProperty("color-role", "primary")
         tl.addWidget(lbl); tl.addStretch()
 
         tl.addWidget(QLabel("Anabilim Dalı:"))
@@ -735,7 +735,7 @@ class _KarsilastirmaWidget(QWidget):
         lft.addWidget(QLabel("  Liste A (Eski / Birinci):"))
         self.lst_a = QListWidget()
         self.lst_a.setMaximumHeight(70)
-        self.lst_a.setStyleSheet("QListWidget { background:#111C2A; color:#E0E0E0; border:none; }")
+        self.lst_a.setProperty("bg-role", "panel")
         lft.addWidget(self.lst_a)
 
         # Sağ liste
@@ -743,7 +743,7 @@ class _KarsilastirmaWidget(QWidget):
         rgt.addWidget(QLabel("  Liste B (Yeni / İkinci):"))
         self.lst_b = QListWidget()
         self.lst_b.setMaximumHeight(70)
-        self.lst_b.setStyleSheet("QListWidget { background:#111C2A; color:#E0E0E0; border:none; }")
+        self.lst_b.setProperty("bg-role", "panel")
         rgt.addWidget(self.lst_b)
 
         self.btn_karsilastir = QPushButton("Karşılaştır")
@@ -841,7 +841,7 @@ class _KarsilastirmaWidget(QWidget):
         bl.addWidget(self.btn_pdf)
 
         self.lbl_durum = QLabel("")
-        self.lbl_durum.setStyleSheet("font-size:11px; color:#aaa;")
+        self.lbl_durum.setProperty("color-role", "primary")
         bl.addWidget(self.lbl_durum)
 
         root.addWidget(bot)
@@ -855,9 +855,9 @@ class _KarsilastirmaWidget(QWidget):
         lay = QVBoxLayout(f)
         lay.setContentsMargins(10,6,10,6); lay.setSpacing(2)
         lb = QLabel(baslik)
-        lb.setStyleSheet("font-size:10px; color:#8fa3b8; border:none;")
+        lb.setProperty("color-role", "primary")
         lv = QLabel(str(val))
-        lv.setStyleSheet(f"font-size:18px; font-weight:bold; color:{renk}; border:none;")
+        lv.setProperty("color-role", "primary")
         lay.addWidget(lb); lay.addWidget(lv)
         setattr(f, "_lv", lv)
         return f
@@ -1203,7 +1203,7 @@ class _KarsilastirmaWidget(QWidget):
                 lbl_kisi = QLabel(
                     f"<b>{s['ad']}</b>  |  TC: {s['tc']}"
                 )
-                lbl_kisi.setStyleSheet("font-size:11px; color:#E0E0E0; border:none;")
+                lbl_kisi.setProperty("color-role", "primary")
                 grp_lay.addWidget(lbl_kisi)
 
                 rb_a = QRadioButton(
@@ -1213,8 +1213,8 @@ class _KarsilastirmaWidget(QWidget):
                     f"Liste B  —  Vaka: {s['vb']}  |  Saat: {s['sb']:.2f}"
                 )
                 rb_a.setChecked(True)   # Varsayılan: A (eski liste)
-                rb_a.setStyleSheet("color:#81C784; border:none;")
-                rb_b.setStyleSheet("color:#64B5F6; border:none;")
+                rb_a.setProperty("color-role", "primary")
+                rb_b.setProperty("color-role", "primary")
 
                 grp = QButtonGroup(grp_frame)
                 grp.addButton(rb_a, 0)
