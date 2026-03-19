@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 
 from core.config import AppConfig
-from ui.styles.colors import DarkTheme as C
+
 
 
 class HakkindaDialog(QDialog):
@@ -251,89 +251,78 @@ class HakkindaDialog(QDialog):
 
     def _apply_style(self):
         self.setStyleSheet("""
-            QDialog {{
-                background-color: {};
-            }}
-            QScrollArea, QScrollArea > QWidget > QWidget {{
-                background-color: {};
-            }}
+            QDialog {
+                background-color: #0d1117;
+            }
+            QScrollArea, QScrollArea > QWidget > QWidget {
+                background-color: #0d1117;
+            }
 
-            QFrame#about_header {{
-                background-color: {};
-                border-bottom: 1px solid {};
-            }}
-            QLabel#about_app_name {{
+            QFrame#about_header {
+                background-color: #161b22;
+                border-bottom: 1px solid #1e2d3d;
+            }
+            QLabel#about_app_name {
                 font-size: 15px;
                 font-weight: 600;
-                color: {};
-            }}
-            QLabel#about_version {{
+                color: #e8edf5;
+            }
+            QLabel#about_version {
                 font-size: 12px;
-                color: {};
-            }}
+                color: #8b8fa3;
+            }
 
-            QLabel#about_section_title {{
+            QLabel#about_section_title {
                 font-size: 11px;
                 font-weight: 700;
-                color: {};
+                color: #3d8ef5;
                 letter-spacing: 1px;
-            }}
+            }
 
-            QLabel#about_key {{
+            QLabel#about_key {
                 font-size: 12px;
-                color: {};
-            }}
-            QLabel#about_value {{
+                color: #e8edf5;
+            }
+            QLabel#about_value {
                 font-size: 12px;
-                color: {};
-            }}
+                color: #e8edf5;
+            }
 
-            QFrame#about_card {{
-                background-color: {};
-                border: 1px solid {};
+            QFrame#about_card {
+                background-color: #161b22;
+                border: 1px solid #1e2d3d;
                 border-radius: 6px;
-            }}
-            QLabel#about_card_name {{
+            }
+            QLabel#about_card_name {
                 font-size: 13px;
                 font-weight: 600;
-                color: {};
-            }}
-            QLabel#about_card_license {{
+                color: #e8edf5;
+            }
+            QLabel#about_card_license {
                 font-size: 11px;
-                color: {};
-            }}
-            QLabel#about_card_link {{
+                color: #8b8fa3;
+            }
+            QLabel#about_card_link {
                 font-size: 11px;
-                color: {};
-            }}
-            QLabel#about_card_note {{
+                color: #3d8ef5;
+            }
+            QLabel#about_card_note {
                 font-size: 11px;
-                color: {};
+                color: #8b8fa3;
                 margin-top: 4px;
-            }}
+            }
 
-            QFrame#about_divider {{
+            QFrame#about_divider {
                 border: none;
-                border-top: 1px solid {};
-            }}
+                border-top: 1px solid #1e2d3d;
+            }
 
-            QFrame#about_footer {{
-                background-color: {};
-                border-top: 1px solid {};
-            }}
-            QLabel#about_copy {{
+            QFrame#about_footer {
+                background-color: #161b22;
+                border-top: 1px solid #1e2d3d;
+            }
+            QLabel#about_copy {
                 font-size: 11px;
-                color: {};
-            }}
-        """.format(
-            C.BG_PRIMARY, C.BG_PRIMARY,
-            C.BG_SECONDARY, C.BORDER_PRIMARY,
-            C.TEXT_PRIMARY, C.TEXT_MUTED,
-            C.ACCENT, C.TEXT_MUTED,
-            C.TEXT_PRIMARY, C.BG_SECONDARY,
-            C.BORDER_PRIMARY, C.TEXT_PRIMARY,
-            C.STATUS_SUCCESS, C.ACCENT,
-            C.TEXT_MUTED, C.BORDER_PRIMARY,
-            C.BG_SECONDARY, C.BORDER_PRIMARY,
-            C.TEXT_DISABLED
-        ))
+                color: #8b8fa3;
+            }
+      """  )

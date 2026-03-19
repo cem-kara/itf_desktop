@@ -22,7 +22,6 @@ from PySide6.QtGui import QCursor
 from core.di import get_rke_service
 from core.logger import logger
 from core.hata_yonetici import hata_goster
-from ui.styles.colors import DarkTheme as C
 from ui.styles.icons import IconRenderer, IconColors
 
 # ── Sekme tanımları ─────────────────────────────────────────────
@@ -70,8 +69,7 @@ class RKEMerkezPage(QWidget):
     def _build_header(self) -> QFrame:
         outer = QFrame()
         outer.setStyleSheet(
-            f"QFrame{{background:{C.BG_SECONDARY};"
-            f"border-bottom:1px solid {C.BORDER_PRIMARY};}}"
+            "QFrame{background:#1a2030;border-bottom:1px solid #1e2d3d;}"
         )
         outer.setFixedHeight(44)
         lay = QHBoxLayout(outer)
@@ -80,13 +78,13 @@ class RKEMerkezPage(QWidget):
 
         # Başlık ikonu + yazı
         ico = QLabel()
-        IconRenderer.set_label_icon(ico, "shield", color=C.ACCENT, size=18)
+        IconRenderer.set_label_icon(ico, "shield", color="#3d8ef5", size=18)  # ACCENT
         lay.addWidget(ico)
 
         lbl = QLabel("  RKE Yönetimi")
         lbl.setStyleSheet(
-            f"font-size:14px; font-weight:700; color:{C.TEXT_PRIMARY};"
-            f"background:transparent;"
+            "font-size:14px; font-weight:700; color:#e8edf5;"
+            "background:transparent;"
         )
         lay.addWidget(lbl)
 
@@ -107,7 +105,7 @@ class RKEMerkezPage(QWidget):
             btn.setFlat(True)
             IconRenderer.set_button_icon(
                 btn, icon_key,
-                color=C.TEXT_SECONDARY, size=14,
+                color="#4d6070", size=14,  # TEXT_SECONDARY
             )
             btn.setStyleSheet(self._tab_qss(active=False))
             btn.clicked.connect(lambda _, c=code: self._switch_tab(c))
@@ -122,7 +120,7 @@ class RKEMerkezPage(QWidget):
         btn_yenile.setToolTip("Sayfayı Yenile")
         btn_yenile.setProperty("style-role", "secondary")
         btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(btn_yenile, "refresh", color=C.TEXT_SECONDARY, size=15)
+        IconRenderer.set_button_icon(btn_yenile, "refresh", color="#4d6070", size=15)  # TEXT_SECONDARY
         btn_yenile.clicked.connect(self._yenile)
         lay.addWidget(btn_yenile)
 
@@ -143,7 +141,7 @@ class RKEMerkezPage(QWidget):
             IconRenderer.set_button_icon(
                 btn,
                 next(icon for cd, icon, _ in _TABS if cd == c),
-                color=C.ACCENT if c == code else C.TEXT_SECONDARY,
+                color="#3d8ef5" if c == code else "#4d6070",
                 size=14,
             )
 
@@ -241,8 +239,8 @@ class RKEMerkezPage(QWidget):
             return (
                 f"QPushButton{{"
                 f"background:transparent; border:none;"
-                f"border-bottom:2px solid {C.ACCENT};"
-                f"color:{C.TEXT_PRIMARY};"
+                f"border-bottom:2px solid #3d8ef5;"
+                f"color:#e8edf5;"
                 f"font-size:13px; font-weight:700; padding:0 14px;"
                 f"}}"
             )
@@ -250,8 +248,8 @@ class RKEMerkezPage(QWidget):
             f"QPushButton{{"
             f"background:transparent; border:none;"
             f"border-bottom:2px solid transparent;"
-            f"color:{C.TEXT_SECONDARY};"
+            f"color:#4d6070;"
             f"font-size:13px; font-weight:600; padding:0 14px;"
             f"}}"
-            f"QPushButton:hover{{color:{C.TEXT_PRIMARY};}}"
+            f"QPushButton:hover{{color:#e8edf5;}}"
         )

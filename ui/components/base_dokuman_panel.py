@@ -254,7 +254,9 @@ class BaseDokumanPanel(QWidget):
             # Cache'den veya DB'den oku
             sabitler = self._sabitler
             if not sabitler:
-                from core.di import get_cihaz_service as _cs_f; sabitler = _cs_f(self._db).get_sabitler()
+                from core.di import get_cihaz_service as _cs_f
+                sonuc = _cs_f(self._db).get_sabitler()
+                sabitler = sonuc.veri or []
 
             turleri = [
                 s.get("MenuEleman", "")
@@ -280,11 +282,11 @@ class BaseDokumanPanel(QWidget):
             return
 
         try:
-            self._dokumanlari = self._svc.get_belgeler(
-                self._entity_type, self._entity_id
-            )
+            sonuc = self._svc.get_belgeler(self._entity_type, self._entity_id)
+            self._dokumanlari = sonuc.veri or []
         except Exception as e:
             logger.error(f"BaseDokumanPanel: belgeler yüklenemedi: {e}")
+            self._dokumanlari = []
             return
 
         self._tablo.setRowCount(len(self._dokumanlari))

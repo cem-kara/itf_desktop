@@ -47,31 +47,18 @@ from ui.styles.icons import Icons, IconColors
 
 def _theme_colors() -> dict:
     """Aktif tema renklerini döner; hata olursa dark fallback kullanır."""
-    try:
-        from ui.styles.colors import DarkTheme as C
-        return {
-            "bg":        C.BG_PRIMARY,
-            "bg2":       C.BG_SECONDARY,
-            "border":    C.BORDER_PRIMARY,
-            "text":      C.TEXT_PRIMARY,
-            "text_muted": C.TEXT_MUTED,
-            "success":   C.STATUS_SUCCESS,
-            "warning":   C.STATUS_WARNING,
-            "error":     C.STATUS_ERROR,
-            "accent":    C.ACCENT,
-        }
-    except Exception:
-        return {
-            "bg":        "#0d1117",
-            "bg2":       "#161b22",
-            "border":    "#1e2d3d",
-            "text":      "#e8edf5",
-            "text_muted": "#8b8fa3",
-            "success":   "#2ec98e",
-            "warning":   "#e8a030",
-            "error":     "#e85555",
-            "accent":    "#3d8ef5",
-        }
+    # Tema yüklenemese bile çalışacak şekilde sabit hex kodları döndürülüyor
+    return {
+        "bg":        "#0d1117",
+        "bg2":       "#161b22",
+        "border":    "#1e2d3d",
+        "text":      "#e8edf5",
+        "text_muted": "#8b8fa3",
+        "success":   "#2ec98e",
+        "warning":   "#e8a030",
+        "error":     "#e85555",
+        "accent":    "#3d8ef5",
+    }
 
 
 # ══════════════════════════════════════════════════════════════
