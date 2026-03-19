@@ -25,6 +25,7 @@ from PySide6.QtGui import QColor, QPainter, QBrush
 
 from core.date_utils import to_ui_date
 from core.logger import logger
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 from core.di import get_cihaz_service, get_kalibrasyon_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.colors import C as _C
@@ -327,7 +328,7 @@ class KalibrasyonKayitForm(QWidget):
         self.table.setModel(self._model)
         self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
-        # tema otomatik — self.table.setStyleSheet(S["table"]) kaldırıldı
+        # tema otomatik —  kaldırıldı
         self.table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._model.setup_columns(self.table)
         self.table.selectionModel().currentChanged.connect(self._on_row_selected)
@@ -714,7 +715,7 @@ class KalibrasyonKayitForm(QWidget):
     def _on_kal_saved(self):
         self._close_form()
         self._load_data()
-        QMessageBox.information(self, "Başarı", "Kalibrasyon kaydı başarıyla eklendi.")
+        bilgi_goster(self, "Kalibrasyon kaydı başarıyla eklendi.")
 
     # ══════════════════════════════════════════════════════
     #  Sağ tık menüsü
@@ -1381,7 +1382,7 @@ class _KalibrasyonGirisForm(QWidget):
         self.dt_yapilan = QDateEdit(QDate.currentDate())
         self.dt_yapilan.setCalendarPopup(True)
         self.dt_yapilan.setDisplayFormat("ddd, d MMMM yyyy")
-        # tema otomatik — self.dt_yapilan.setStyleSheet(S["date"]) kaldırıldı
+        # tema otomatik —  kaldırıldı
         self._r(grid, 2, "Yapılan Tarih *", self.dt_yapilan)
 
         self.txt_gecerlilik = QLineEdit()
@@ -1394,7 +1395,7 @@ class _KalibrasyonGirisForm(QWidget):
         self.dt_bitis = QDateEdit(QDate.currentDate())
         self.dt_bitis.setCalendarPopup(True)
         self.dt_bitis.setDisplayFormat("ddd, d MMMM yyyy")
-        # tema otomatik — self.dt_bitis.setStyleSheet(S["date"]) kaldırıldı
+        # tema otomatik —  kaldırıldı
         self._r(grid, 4, "Bitiş Tarihi *", self.dt_bitis)
 
         self.cmb_durum = QComboBox()
@@ -1412,7 +1413,7 @@ class _KalibrasyonGirisForm(QWidget):
         self._r(grid, 6, "Dosya / Link", self.txt_dosya)
 
         self.txt_aciklama = QTextEdit()
-        # tema otomatik — self.txt_aciklama.setStyleSheet(S["input_text"]) kaldırıldı
+        # tema otomatik —  kaldırıldı
         self.txt_aciklama.setFixedHeight(72)
         self.txt_aciklama.setPlaceholderText("Ek açıklama (isteğe bağlı)")
         self._r(grid, 7, "Açıklama", self.txt_aciklama)
@@ -1460,14 +1461,14 @@ class _KalibrasyonGirisForm(QWidget):
         ):
             return
         if not self._db:
-            QMessageBox.warning(self, "Uyarı", "Veritabanı bağlantısı yok.")
+            uyari_goster(self, "Veritabanı bağlantısı yok.")
             return
         if not self._cihaz_id:
-            QMessageBox.warning(self, "Uyarı", "Cihaz seçili değil.")
+            uyari_goster(self, "Cihaz seçili değil.")
             return
         firma = self.txt_firma.text().strip()
         if not firma:
-            QMessageBox.warning(self, "Uyarı", "Firma adı zorunludur.")
+            uyari_goster(self, "Firma adı zorunludur.")
             return
         kalid = f"{self._cihaz_id}-KL-{datetime.now().strftime('%Y%m%d%H%M%S')}"
         data = {
@@ -1489,10 +1490,10 @@ class _KalibrasyonGirisForm(QWidget):
                 self.saved.emit()
                 self._clear()
             else:
-                QMessageBox.critical(self, "Hata", "Kalibrasyon kaydı başarısız")
+                hata_goster(self, "Kalibrasyon kaydı başarısız")
         except Exception as e:
             logger.error(f"Kalibrasyon kaydı kaydedilemedi: {e}")
-            QMessageBox.critical(self, "Hata", f"Kayıt başarısız: {e}")
+            hata_goster(self, f"Kayıt başarısız: {e}")
 
     def _clear(self):
         for w in [self.txt_firma, self.txt_sertifika,

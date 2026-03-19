@@ -304,27 +304,14 @@ class MainWindow(QMainWindow):
             page = TeknikHizmetlerPage(db=self._db, action_guard=self._action_guard)
             return page
         
-        if baslik == "RKE Envanter":
-            from ui.pages.rke.rke_yonetim import RKEYonetimPenceresi
-            page = RKEYonetimPenceresi(db=self._db, action_guard=self._action_guard)
-           # page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Envanter"))
-            page.load_data()
-            return page
-
-        if baslik == "RKE Muayene":
-            from ui.pages.rke.rke_muayene import RKEMuayenePage
-            page = RKEMuayenePage(db=self._db, action_guard=self._action_guard)
-            if hasattr(page, "btn_kapat") and page.btn_kapat is not None:
-                page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Muayene"))  # type: ignore[attr-defined]
-            page.load_data()
-            return page
-
-        if baslik == "RKE Raporlama":
-            from ui.pages.rke.rke_rapor import RKERaporPenceresi
-            page = RKERaporPenceresi(db=self._db, action_guard=self._action_guard)
-            if hasattr(page, "btn_kapat"):
-                page.btn_kapat.clicked.connect(lambda: self._close_page("RKE Raporlama"))  # type: ignore[attr-defined]
-            page.load_data()
+        if baslik in ("RKE Envanter", "RKE Muayene", "RKE Raporlama"):
+            from ui.pages.rke.rke_merkez import RKEMerkezPage
+            page = RKEMerkezPage(db=self._db, action_guard=self._action_guard)
+            # İlk açılışta istenen sekmeye git
+            if baslik == "RKE Muayene":
+                page._switch_tab("MUAYENE")
+            elif baslik == "RKE Raporlama":
+                page._switch_tab("RAPOR")
             return page
 
         if baslik == "Admin Panel":

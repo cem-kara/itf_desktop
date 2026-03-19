@@ -21,7 +21,7 @@ class ImportCenterPage(QWidget):
         super().__init__(parent)
         self._db = db
         self.setWindowTitle("Toplu Veri İçe Aktarma Merkezi")
-        self.resize(900, 650)
+        self.resize(1200, 750)
         self._build_ui()
 
     def _build_ui(self):

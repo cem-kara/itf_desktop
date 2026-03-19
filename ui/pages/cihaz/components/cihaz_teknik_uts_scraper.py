@@ -20,6 +20,7 @@ from PySide6.QtCore import Qt, Signal, QThread, QObject
 from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer
 from core.logger import logger
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 from core.di import get_cihaz_service
 from database.repository_registry import RepositoryRegistry
 from ui.pages.cihaz.components.uts_parser import (
@@ -151,7 +152,7 @@ class _Sec(QWidget):
     def row(self, l1, v1, l2="", v2=None):
         bg = _BG_ODD if self._r % 2 else _BG_EVEN; self._r += 1
         rw = QWidget()
-        rw.setStyleSheet("border-bottom: {_BC};")
+        rw.setStyleSheet(f"border-bottom: {_BC};")
         rw.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         rh = QHBoxLayout(rw); rh.setContentsMargins(0,0,0,0); rh.setSpacing(0)
         rh.addWidget(_mk_pair(l1, v1, bg), stretch=1)
@@ -331,12 +332,12 @@ class CihazTeknikUtsScraper(QWidget):
         self._prog.hide()
         self._st(f"❌ {msg}", _ERROR)
         logger.error(f"ÜTS: {msg}")
-        QMessageBox.warning(self, "Hata", msg)
+        uyari_goster(self, msg)
 
     def _show_debug(self):
         """Çekilen veriyi JSON olarak göster."""
         if not self._parsed:
-            QMessageBox.information(self, "Bilgi", "Henüz bir sonuç yok.")
+            bilgi_goster(self, "Henüz bir sonuç yok.")
             return
         dlg = QMessageBox(self)
         dlg.setWindowTitle("Çekilen Ürün Verisi")
@@ -428,8 +429,7 @@ class CihazTeknikUtsScraper(QWidget):
             filled = sum(1 for v in self._parsed.values() if v)
             self._st("✅ Kaydedildi!", _SUCCESS)
             self._b_save.setEnabled(False)
-            QMessageBox.information(self, "Başarılı",
-                                    f"Teknik bilgiler kaydedildi. ({filled} alan)")
+            bilgi_goster(self, f"Teknik bilgiler kaydedildi. ({filled} alan)")
             
             # Saved signal emit et (parent widget'a bildir)
             self.saved.emit()
@@ -439,7 +439,7 @@ class CihazTeknikUtsScraper(QWidget):
         except Exception as e:
             logger.error(f"VT: {e}")
             self._st(f"❌ {e}", _ERROR)
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     def _st(self, msg, color=""):
         self._stat.setText(msg)

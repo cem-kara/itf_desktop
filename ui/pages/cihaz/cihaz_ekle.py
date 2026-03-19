@@ -11,14 +11,12 @@ from PySide6.QtWidgets import (
 )
 
 from core.logger import logger
+from core.hata_yonetici import bilgi_goster, hata_goster, soru_sor, uyari_goster
 from core.di import get_cihaz_service as _get_cihaz_service
 from core.di import get_dokuman_service
-from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer
 from ui.pages.cihaz.components.cihaz_teknik_uts_scraper import CihazTeknikUtsScraper
 from ui.pages.cihaz.components.cihaz_dokuman_panel import CihazDokumanPanel
-
-C = DarkTheme
 
 
 class CihazEklePage(QWidget):
@@ -196,7 +194,7 @@ class CihazEklePage(QWidget):
         self.btn_save.setProperty("style-role", "action")
         self.btn_save.style().unpolish(self.btn_save)
         self.btn_save.style().polish(self.btn_save)
-        IconRenderer.set_button_icon(self.btn_save, "save", color=C.BTN_PRIMARY_TEXT, size=16)
+        IconRenderer.set_button_icon(self.btn_save, "save", color="primary", size=16)
         self.btn_save.clicked.connect(self._save)
         if self._action_guard:
             self._action_guard.disable_if_unauthorized(self.btn_save, "cihaz.write")
@@ -206,7 +204,7 @@ class CihazEklePage(QWidget):
         btn_clear.setProperty("style-role", "secondary")
         btn_clear.style().unpolish(btn_clear)
         btn_clear.style().polish(btn_clear)
-        IconRenderer.set_button_icon(btn_clear, "refresh", color=C.TEXT_PRIMARY, size=14)
+        IconRenderer.set_button_icon(btn_clear, "refresh", color="primary", size=14)
         btn_clear.clicked.connect(self._clear_form)
         fl1.addWidget(btn_clear)
         btn_cancel1 = QPushButton("İptal")
@@ -440,13 +438,13 @@ class CihazEklePage(QWidget):
         birim = self._get_text("Birim")
 
         if not cihaz_id or not marka or not birim:
-            QMessageBox.warning(self, "Eksik", "Cihaz ID, Marka ve Birim zorunludur.")
+            uyari_goster(self, "Cihaz ID, Marka ve Birim zorunludur.")
             return
 
         data = self._collect_form_data()
 
         if not self._svc:
-            QMessageBox.critical(self, "Hata", "Veritabanı bağlantısı yok")
+            hata_goster(self, "Veritabanı bağlantısı yok")
             return
 
         try:
@@ -487,12 +485,12 @@ class CihazEklePage(QWidget):
                             logger.info(f"NDK Lisans Belgesi yüklendi (async): {res.get('belge_adi')}")
                         else:
                             logger.warning(f"NDK Lisans Belgesi yüklenemedi (async): {res.get('error')}")
-                            QMessageBox.warning(self, "Belge Yükleme Hatası", f"NDK Lisans Belgesi yüklenemedi: {res.get('error')}")
+                            uyari_goster(self, f"NDK Lisans Belgesi yüklenemedi: {res.get('error')}")
                         self._dokuman_uploader = None
 
                     def _on_upload_error(msg: str):
                         logger.error(f"NDK belge async yükleme hatası: {msg}")
-                        QMessageBox.warning(self, "Belge Yükleme Hatası", f"NDK Lisans Belgesi yüklenirken hata oluştu: {msg}")
+                        uyari_goster(self, f"NDK Lisans Belgesi yüklenirken hata oluştu: {msg}")
                         self._dokuman_uploader = None
 
                     self._dokuman_uploader.finished.connect(_on_upload_finished)
@@ -529,20 +527,16 @@ class CihazEklePage(QWidget):
             self._tabs.setCurrentIndex(1)
             
             # Kullanıcıya bilgi ver
-            QMessageBox.information(
-                self,
-                "Cihaz Kaydedildi",
-                f"Cihaz başarıyla kaydedildi: {cihaz_id}\n\n"
+            bilgi_goster(self, f"Cihaz başarıyla kaydedildi: {cihaz_id}\n\n"
                 "Şimdi 'ÜTS Sorgulama' sekmesinden teknik bilgileri ekleyebilirsiniz.\n\n"
                 "'Belgeler' sekmesinden cihaz belgelerini yükleyebilirsiniz.\n\n"
-                "Not: Form otomatik kapanmayacak."
-            )
+                "Not: Form otomatik kapanmayacak.")
 
             # Signal emit et ama callback çağırma (form kapanmasın)
             self.saved.emit(data)
         except Exception as e:
             logger.error(f"Cihaz kaydetme hatasi: {e}")
-            QMessageBox.critical(self, "Hata", f"Kaydetme hatasi: {e}")
+            hata_goster(self, f"Kaydetme hatasi: {e}")
 
     def _collect_form_data(self) -> dict:
         cols = [
@@ -626,10 +620,7 @@ class CihazEklePage(QWidget):
         
         if filled_count > 0:
             logger.info(f"✅ Form populate tamamlandı: {filled_count} alan dolduruldu")
-            QMessageBox.information(
-                self,
-                "ÜTS Verisi Yüklendi",
-                f"Temel bilgiler form'a aktarıldı ({filled_count} alan).\n\n"
+            bilgi_goster(self, f"Temel bilgiler form'a aktarıldı ({filled_count} alan).\n\n"
                 "Detaylı teknik bilgiler (Sınıf, GMDN, Firma, vb.) "
                 "Cihaz_Teknik tablosuna kaydedildi.\n\n"
                 "Cihaz kaydedildikten sonra 'Cihaz Merkez' ekranında "
@@ -654,28 +645,17 @@ class CihazEklePage(QWidget):
         """ÜTS panelinden kaydet/iptal yapıldığında çalışır."""
         if self._uts_mode:
             logger.info("ÜTS işlemi tamamlandı, kullanıcıya belge yüklemek isteyip istemediği sorulacak.")
-            yanit = QMessageBox.question(
-                self,
-                "Belgeler Yükleme",
-                "Cihaz kaydı ve ÜTS işlemi tamamlandı. Şimdi belge yüklemek ister misiniz?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-            )
-            if yanit == QMessageBox.StandardButton.Yes:
+            yanit = soru_sor(self, "Belgeler Yükleme")
+            if yanit:
                 # Belgeler sekmesine yönlendir
                 self._tabs.setCurrentIndex(2)
             # Form açık kalacak, kapanmayacak
 
     def _cancel_uts(self):
         """ÜTS panelinde İptal butonuna basıldığında."""
-        reply = QMessageBox.question(
-            self,
-            "Operasyonu İptal Et",
-            "Emin misiniz? Kaydedilen cihaz verisi kalmayacak.\n"
-            "ÜTS sorgulması iptal edilecek.",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
+        reply = soru_sor(self, "Operasyonu İptal Et")
         
-        if reply == QMessageBox.StandardButton.Yes:
+        if reply:
             # Tab 1'e dön
             self._tabs.setCurrentIndex(0)
             

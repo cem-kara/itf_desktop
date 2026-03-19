@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QColor, QCursor
 
 from core.di import get_rke_service as _get_rke_service
+from core.hata_yonetici import hata_goster, bilgi_goster, uyari_goster
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.colors import DarkTheme
 from ui.styles.icons import IconRenderer, IconColors
@@ -184,16 +185,9 @@ class RKEYonetimPenceresi(QWidget):
         self.inputs: Dict[str, Any] = {}
         self._kpi: Dict[str, QLabel]    = {}
         
-        # Repository'leri hazırla
+        # Servis katmanı
         self._rke_svc = _get_rke_service(self._db) if self._db else None
-        self._rke_repo = None
         self._sabitler_cache = {}
-        if self._rke_svc:
-            try:
-                self._rke_repo = self._rke_svc.get_rke_repo()
-            except Exception as e:
-                from core.logger import logger
-                logger.error(f"Repository başlatma hatası: {e}")
 
         self._setup_ui()
         # YetkiYoneticisi.uygula(self, "rke_yonetim")  # TODO: Yetki sistemi entegrasyonu
@@ -566,32 +560,36 @@ class RKEYonetimPenceresi(QWidget):
     # ─────────────────────────────────────────────────────────────
     def load_data(self):
         """Ana pencereden çağrılan public veri yükleme metodu."""
-        if not self._db or not self._rke_repo:
-            QMessageBox.warning(self, "Bağlantı Yok", "Veritabanı bağlantısı kurulamadı.")
+        if not self._rke_svc:
+            uyari_goster(self, "Veritabanı bağlantısı kurulamadı.")
             return
-        
+
         try:
             # Sabitler yükle
             self.sabitler = _load_sabitler_from_db(self._db)
-            
-            # RKE listesini yükle
-            self.rke_listesi = self._rke_repo.get_all()
-            
-            # Muayene listesini yükle
-            muayene_repo = self._rke_svc.get_muayene_repo() if self._rke_svc else None
-            if muayene_repo:
-                self.muayene_listesi = muayene_repo.get_all()
-            
+
+            # RKE listesi
+            sonuc = self._rke_svc.get_rke_listesi()
+            if not sonuc.basarili:
+                hata_goster(self, sonuc.mesaj)
+                return
+            self.rke_listesi = sonuc.veri or []
+
+            # Muayene listesi
+            m_sonuc = self._rke_svc.get_muayene_listesi()
+            if m_sonuc.basarili:
+                self.muayene_listesi = m_sonuc.veri or []
+
             # Combo'ları doldur
             self._populate_combos()
-            
+
             # Tabloyu filtrele
             self.tabloyu_filtrele()
-            
+
         except Exception as e:
             from core.logger import logger
             logger.error(f"Veri yükleme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Veri yüklenirken hata: {e}")
+            hata_goster(self, f"Veri yüklenirken hata: {e}")
     
     def _populate_combos(self):
         """Combo kutularını sabitlerden doldur."""
@@ -745,13 +743,13 @@ class RKEYonetimPenceresi(QWidget):
             self, "cihaz.write", "RKE Kaydetme"
         ):
             return
-        if not self._rke_repo:
-            QMessageBox.warning(self, "Bağlantı Yok", "Repository bağlantısı kurulamadı.")
+        if not self._rke_svc:
+            uyari_goster(self, "Veritabanı bağlantısı kurulamadı.")
             return
         
         ekipman_no = self.inputs["EkipmanNo"].text().strip()
         if not ekipman_no:
-            QMessageBox.warning(self, "Eksik", "Ekipman No zorunludur.")
+            uyari_goster(self, "Ekipman No zorunludur.")
             return
 
         try:
@@ -775,22 +773,21 @@ class RKEYonetimPenceresi(QWidget):
 
             # Güncelleme mi, yeni kayıt mı?
             if self.secili_ekipman_no:
-                # UPDATE
-                self._rke_repo.update(self.secili_ekipman_no, data)
-                QMessageBox.information(self, "Başarılı", "Kayıt güncellendi.")
+                sonuc = self._rke_svc.rke_guncelle(self.secili_ekipman_no, data)
             else:
-                # INSERT
-                self._rke_repo.insert(data)
-                QMessageBox.information(self, "Başarılı", "Yeni kayıt eklendi.")
+                sonuc = self._rke_svc.rke_ekle(data)
 
-            # Formu temizle ve listeyi yenile
-            self.temizle()
-            self.load_data()
+            if sonuc.basarili:
+                bilgi_goster(self, sonuc.mesaj)
+                self.temizle()
+                self.load_data()
+            else:
+                hata_goster(self, sonuc.mesaj)
 
         except Exception as e:
             from core.logger import logger
             logger.error(f"RKE kayıt hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Kayıt sırasında hata: {e}")
+            hata_goster(self, f"Kayıt sırasında hata: {e}")
 
 
 

@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.logger import logger
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 from core.di import get_cihaz_service as _get_cihaz_service
 
 
@@ -47,7 +48,7 @@ class ArizaGirisForm(QWidget):
         # Cihazid — salt-okunur label (combo yok)
         grid.addWidget(self._lbl("Cihazid"), row, 0)
         self.lbl_cihazid = QLabel(self._cihaz_id or "—")
-        self.lbl_cihazid.setStyleSheet("font-weight:600;")
+        self.lbl_cihazid.setProperty("style-role", "form")
         grid.addWidget(self.lbl_cihazid, row, 1)
         row += 1
 
@@ -118,7 +119,7 @@ class ArizaGirisForm(QWidget):
         # Arıza Açıklaması
         grid.addWidget(self._lbl("Arıza Açıklaması"), row, 0)
         self.txt_aciklama = QTextEdit()
-        # tema otomatik — self.txt_aciklama.setStyleSheet(S["input_text"]) kaldırıldı
+        # tema otomatik
         self.txt_aciklama.setFixedHeight(80)
         grid.addWidget(self.txt_aciklama, row, 1)
         row += 1
@@ -141,14 +142,14 @@ class ArizaGirisForm(QWidget):
         btn_layout.setSpacing(8)
         btn_kaydet = QPushButton("Kaydet")
         success_style = ""  # setProperty("style-role","success") kullan
-        btn_kaydet.setStyleSheet(str(success_style) if success_style else "")
+        btn_kaydet.setProperty("style-role", "success")
         btn_kaydet.clicked.connect(self._save)
         if self._action_guard:
             self._action_guard.disable_if_unauthorized(btn_kaydet, "cihaz.write")
         btn_layout.addWidget(btn_kaydet)
         btn_temizle = QPushButton("Temizle")
-        
-        btn_temizle.setStyleSheet(str(cancel_style) if cancel_style else "")
+        cancel_style = ""  # İstenirse burada özel bir stil verilebilir
+        btn_temizle.setProperty("style-role", "secondary")
         btn_temizle.clicked.connect(self._clear)
         btn_layout.addWidget(btn_temizle)
         root.addLayout(btn_layout)
@@ -173,16 +174,16 @@ class ArizaGirisForm(QWidget):
             return
         cihaz_id = self._cihaz_id.strip()
         if not cihaz_id:
-            QMessageBox.warning(self, "Hata", "Cihaz ID boş!")
+            uyari_goster(self, "Cihaz ID boş!")
             return
         if not self.txt_baslik.text().strip():
-            QMessageBox.warning(self, "Hata", "Lütfen arıza başlığını girin!")
+            uyari_goster(self, "Lütfen arıza başlığını girin!")
             return
         if not self.txt_saat.text().strip():
-            QMessageBox.warning(self, "Hata", "Lütfen saati girin (HH:MM)!")
+            uyari_goster(self, "Lütfen saati girin (HH:MM)!")
             return
         if not self.cmb_ariza_tipi.currentText().strip():
-            QMessageBox.warning(self, "Hata", "Lütfen arıza türünü seçin!")
+            uyari_goster(self, "Lütfen arıza türünü seçin!")
             return
         try:
             if not self._db:
@@ -208,7 +209,7 @@ class ArizaGirisForm(QWidget):
             self.saved.emit()
         except Exception as e:
             logger.error(f"Arıza kaydedilemedi: {e}")
-            QMessageBox.critical(self, "Hata", f"Arıza kaydedilemedi:\n{e}")
+            hata_goster(self, f"Arıza kaydedilemedi:\n{e}")
 
     def _clear(self):
         self.dt_baslangi.setDate(QDate.currentDate())

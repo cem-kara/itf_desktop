@@ -7,7 +7,7 @@ from PySide6.QtCore  import Qt, QThread, Signal, QMarginsF
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QAbstractItemView,
     QTableView, QHeaderView, QLabel, QPushButton, QComboBox,
-    QRadioButton, QButtonGroup, QFrame, QApplication, QMessageBox,
+    QRadioButton, QButtonGroup, QFrame, QApplication,
 )
 from PySide6.QtGui import (
     QColor, QCursor, QTextDocument, QPdfWriter,
@@ -16,6 +16,7 @@ from PySide6.QtGui import (
 
 from core.logger import logger
 from core.di import get_rke_service as _get_rke_service
+from core.hata_yonetici import hata_goster, bilgi_goster, uyari_goster
 from core.paths import DB_PATH
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.colors import DarkTheme
@@ -152,7 +153,7 @@ class RaporVeriYukleyici(QThread):
             if ws2_data:
                 for r in ws2_data:
                     en=str(r.get('EkipmanNo','')).strip()
-                    tarih=str(r.get('FMuayeneTarihi') or r.get('F_MuayeneTarihi') or r.get('MuayeneTarihi') or '').strip()
+                    tarih=str(r.get('FMuayeneTarihi') or r.get('MuayeneTarihi') or '').strip()
                     fiz=str(r.get('FizikselDurum','')).strip()
                     sko=str(r.get('SkopiDurum','')).strip()
                     if tarih: tarih_s.add(tarih)
@@ -467,7 +468,7 @@ class RKERaporPenceresi(QWidget):
     def load_data(self):
         """Ana pencereden çağırılan veri yükleme metodu."""
         if not self._db or not self._rke_repo:
-            QMessageBox.warning(self, "Bağlantı Yok", "Veritabanı bağlantısı kurulamadı.")
+            uyari_goster(self, "Veritabanı bağlantısı kurulamadı.")
             return
         
         try:
@@ -484,7 +485,7 @@ class RKERaporPenceresi(QWidget):
 
         except Exception as e:
             logger.error(f"Veri yükleme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Veri yüklenirken hata: {e}")
+            hata_goster(self, "Veri yüklenirken hata: {e}")
     
     def _populate_combos(self):
         """Combo kutularını doldurmak için yardımcı metod."""
@@ -528,7 +529,7 @@ class RKERaporPenceresi(QWidget):
 
     def _yukleme_hata(self, msg: str):
         logger.error(f"Veri yükleme hatası: {msg}")
-        QMessageBox.critical(self, "Hata", f"Veri yüklenirken hata: {msg}")
+        hata_goster(self, "Veri yüklenirken hata: {msg}")
 
     def veriler_geldi(self, data, headers, abd_l, birim_l, tarih_l):
         self.ham_veriler=data
@@ -575,7 +576,7 @@ class RKERaporPenceresi(QWidget):
         ):
             return
         if not self.filtrelenmis_veri:
-            QMessageBox.warning(self, "Uyarı", "Rapor alınacak veri yok."); return
+            uyari_goster(self, "Rapor alınacak veri yok."); return
         mod=1
         if self.rb_hurda.isChecked(): mod=2
         elif self.rb_kisi.isChecked(): mod=3
@@ -593,7 +594,7 @@ class RKERaporPenceresi(QWidget):
         QApplication.restoreOverrideCursor()
         self.btn_olustur.setEnabled(True)
         self.btn_olustur.setText("PDF RAPOR OLUSTUR")
-        QMessageBox.information(self, "Tamamlandi", "Rapor islemleri tamamlandi.")
+        bilgi_goster(self, "Rapor işlemleri tamamlandı.")
         self.lbl_durum.setText("Hazır.")
 
     def closeEvent(self,event):

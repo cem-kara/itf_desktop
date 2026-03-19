@@ -29,6 +29,7 @@ from PySide6.QtGui import QColor, QDesktopServices, QPainter, QBrush
 
 from core.date_utils import to_ui_date
 from core.logger import logger
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 from core.di import get_cihaz_service
 from core.services.bakim_service import BakimService
 from database.sqlite_manager import SQLiteManager
@@ -37,7 +38,6 @@ from ui.components.drive_upload_worker import DriveUploadWorker
 from ui.pages.cihaz.components.toplu_bakim_panel import TopluBakimPlanPanel
 from ui.styles.colors import C as _C
 from ui.styles import DarkTheme
-from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 
 
@@ -119,7 +119,7 @@ class FormPanel(QGroupBox):
     
     def __init__(self, title: str, parent=None):
         super().__init__(title, parent)
-        self.setStyleSheet(S["group"])
+        
         self.layout_main = QGridLayout(self)
         self.layout_main.setContentsMargins(12, 12, 12, 12)
         self.layout_main.setHorizontalSpacing(16)
@@ -363,13 +363,13 @@ class BakimKayitForm(QWidget):
 
         self.txt_filter = QLineEdit()
         self.txt_filter.setPlaceholderText("🔍  Plan No, Cihaz, Teknisyen…")
-        self.txt_filter.setStyleSheet(S["input"])
+        
         self.txt_filter.setMaximumWidth(230)
         self.txt_filter.textChanged.connect(self._apply_filters)
         fb_l.addWidget(self.txt_filter)
 
         self.cmb_durum_filter = QComboBox()
-        self.cmb_durum_filter.setStyleSheet(S["combo"])
+        
         self.cmb_durum_filter.setFixedWidth(155)
         for lbl, val in [("Tüm Durumlar", None), ("Planlandı","Planlandı"),
                           ("Yapıldı","Yapıldı"), ("Gecikmiş","Gecikmiş")]:
@@ -378,7 +378,7 @@ class BakimKayitForm(QWidget):
         fb_l.addWidget(self.cmb_durum_filter)
 
         self.cmb_cihaz_filter = QComboBox()
-        self.cmb_cihaz_filter.setStyleSheet(S["combo"])
+        
         self.cmb_cihaz_filter.setFixedWidth(150)
         self.cmb_cihaz_filter.addItem("Tüm Cihazlar", None)
         self.cmb_cihaz_filter.currentIndexChanged.connect(self._apply_filters)
@@ -386,7 +386,7 @@ class BakimKayitForm(QWidget):
         fb_l.addWidget(self.cmb_cihaz_filter)
 
         self.cmb_marka_filter = QComboBox()
-        self.cmb_marka_filter.setStyleSheet(S["combo"])
+        
         self.cmb_marka_filter.setFixedWidth(130)
         self.cmb_marka_filter.addItem("Tüm Markalar", None)
         self.cmb_marka_filter.currentIndexChanged.connect(self._apply_filters)
@@ -424,7 +424,7 @@ class BakimKayitForm(QWidget):
         self.table.setModel(self._model)
         self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
-        self.table.setStyleSheet(S["table"])
+        
         self.table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._model.setup_columns(self.table)
         self.table.selectionModel().currentChanged.connect(self._on_row_selected)
@@ -628,7 +628,7 @@ class BakimKayitForm(QWidget):
         self._exec_form_scroll = QScrollArea()
         self._exec_form_scroll.setWidgetResizable(True)
         self._exec_form_scroll.setStyleSheet(
-            S.get("scroll", f"background:{surface};border:none;") or f"background:{surface};border:none;"
+            "" or f"background:{surface};border:none;"
         )
         self._exec_form_inner = QWidget()
         self._exec_form_inner.setProperty("bg-role", "surface")
@@ -683,7 +683,7 @@ class BakimKayitForm(QWidget):
         # Form içeriğinin yerleşeceği scroll alanı
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet(S.get("scroll", "background:{};border:none;".format(surface)) or "background:{};border:none;".format(surface))
+        scroll.setStyleSheet(f"background:{surface};border:none;")
 
         self._form_inner = QWidget()
         self._form_inner.setProperty("bg-role", "surface")
@@ -734,7 +734,7 @@ class BakimKayitForm(QWidget):
 
         bulk_scroll = QScrollArea()
         bulk_scroll.setWidgetResizable(True)
-        bulk_scroll.setStyleSheet(S.get("scroll", "background:{};border:none;".format(surface)) or "background:{};border:none;".format(surface))
+        bulk_scroll.setStyleSheet(f"background:{surface};border:none;")
 
         self._bulk_inner = QWidget()
         self._bulk_inner.setProperty("bg-role", "surface")
@@ -1058,11 +1058,7 @@ class BakimKayitForm(QWidget):
 
     def _on_toplu_plan_success(self, toplam_plan: int):
         self._load_data()
-        QMessageBox.information(
-            self,
-            "Başarılı",
-            f"Toplu bakım planlaması {toplam_plan} plan olacak şekilde oluşturuldu."
-        )
+        bilgi_goster(self, f"Toplu bakım planlaması {toplam_plan} plan olacak şekilde oluşturuldu.")
 
     # ══════════════════════════════════════════════════════
     #  Geri çağrılar
@@ -1082,7 +1078,7 @@ class BakimKayitForm(QWidget):
         surface = _C["surface"]
         outer = QScrollArea()
         outer.setWidgetResizable(True)
-        outer.setStyleSheet(S.get("scroll", "background:{};border:none;".format(surface)) or "background:{};border:none;".format(surface))
+        outer.setStyleSheet(f"background:{surface};border:none;")
         self._perf_inner = QWidget()
         self._perf_inner.setProperty("bg-role", "surface")
         self._perf_inner.style().unpolish(self._perf_inner)
@@ -1215,7 +1211,7 @@ class BakimKayitForm(QWidget):
         for title, value, color in items:
             card = QWidget()
             card.setProperty("bg-role", "panel")
-            card.setStyleSheet("border:1px solid {border};border-radius:6px;".format(border=_C["border"]))
+            card.setStyleSheet(f"border:1px solid {_C['border']};border-radius:6px;")
             card.style().unpolish(card)
             card.style().polish(card)
             cl = QVBoxLayout(card)
@@ -1364,7 +1360,7 @@ class BakimKayitForm(QWidget):
 
             card = QWidget()
             card.setProperty("bg-role", "panel")
-            card.setStyleSheet("border:1px solid {border};border-radius:8px;".format(border=_C["border"]))
+            card.setStyleSheet(f"border:1px solid {_C['border']};border-radius:8px;")
             card.style().unpolish(card)
             card.style().polish(card)
             cl = QVBoxLayout(card)
@@ -2099,7 +2095,7 @@ class _BakimGirisForm(QWidget):
         
         # Cihaz Seçimi
         self.cmb_cihaz_sec = QComboBox()
-        self.cmb_cihaz_sec.setStyleSheet(S["combo"])
+        
         self.cmb_cihaz_sec.setMinimumHeight(40)
         self.cmb_cihaz_sec.setEditable(True)
         line_edit = self.cmb_cihaz_sec.lineEdit()
@@ -2109,7 +2105,7 @@ class _BakimGirisForm(QWidget):
         self._panel_plan.add_field("Cihaz", self.cmb_cihaz_sec)
         
         self.cmb_periyot_plan = QComboBox()
-        self.cmb_periyot_plan.setStyleSheet(S["combo"])
+        
         self.cmb_periyot_plan.addItems([
             "Tek Seferlik",
             "3 Ay (Otomatik 4 Plan)",
@@ -2131,20 +2127,20 @@ class _BakimGirisForm(QWidget):
         self.dt_plan = QDateEdit(QDate.currentDate())
         self.dt_plan.setCalendarPopup(True)
         self.dt_plan.setDisplayFormat("ddd, d MMMM yyyy")
-        self.dt_plan.setStyleSheet(S["date"])
+        
         self.dt_plan.setMinimumHeight(36)
         self._panel_tarih.add_field("Planlanan Tarih", self.dt_plan)
         
         # Bakım Tipi
         self.txt_tip = QLineEdit()
-        self.txt_tip.setStyleSheet(S["input"])
+        
         self.txt_tip.setPlaceholderText("Periyodik, Rutin, Acil, İyileştirme")
         self.txt_tip.setMinimumHeight(36)
         self._panel_tarih.add_field("Bakım Tipi", self.txt_tip)
         
         # Bakım Periyodu
         self.txt_periyot = QLineEdit()
-        self.txt_periyot.setStyleSheet(S["input"])
+        
         self.txt_periyot.setPlaceholderText("3 Ay, 6 Ay, 1 Yıl")
         self.txt_periyot.setReadOnly(True)
         self.txt_periyot.setMinimumHeight(36)
@@ -2152,14 +2148,14 @@ class _BakimGirisForm(QWidget):
         
         # Bakım Sırası
         self.txt_sira = QLineEdit()
-        self.txt_sira.setStyleSheet(S["input"])
+        
         self.txt_sira.setReadOnly(True)
         self.txt_sira.setMinimumHeight(36)
         self._panel_tarih.add_field("Bakım Sırası", self.txt_sira)
         
         # Bakım Açıklaması
         self.txt_bakim = QLineEdit()
-        self.txt_bakim.setStyleSheet(S["input"])
+        
         self.txt_bakim.setPlaceholderText("Bakım hakkında kısa açıklama (isteğe bağlı)")
         self.txt_bakim.setMinimumHeight(36)
         self._panel_tarih.add_full_width_field("Bakım Açıklaması", self.txt_bakim)
@@ -2173,7 +2169,7 @@ class _BakimGirisForm(QWidget):
         
         # Durum
         self.cmb_durum = QComboBox()
-        self.cmb_durum.setStyleSheet(S["combo"])
+        
         self.cmb_durum.addItems(["Planlandı", "Yapıldı", "Gecikmiş"])
         self.cmb_durum.setMinimumHeight(36)
         self.cmb_durum.currentTextChanged.connect(self._durum_kontrol)
@@ -2183,20 +2179,20 @@ class _BakimGirisForm(QWidget):
         self.dt_bakim = QDateEdit(QDate.currentDate())
         self.dt_bakim.setCalendarPopup(True)
         self.dt_bakim.setDisplayFormat("ddd, d MMMM yyyy")
-        self.dt_bakim.setStyleSheet(S["date"])
+        
         self.dt_bakim.setMinimumHeight(36)
         self._panel_islem.add_field("Bakım Yapılan Tarih", self.dt_bakim)
         
         # Yapılan İşlemler
         self.txt_islemler = QTextEdit()
-        self.txt_islemler.setStyleSheet(S["input_text"])
+        
         self.txt_islemler.setFixedHeight(80)
         self.txt_islemler.setPlaceholderText("✓ İşlem 1: ...\n✓ İşlem 2: ...\n✓ Ölçüm: ...")
         self._panel_islem.add_full_width_field("Yapılan İşlemler ve Ölçümler", self.txt_islemler)
         
         # Açıklama / Notlar
         self.txt_aciklama = QTextEdit()
-        self.txt_aciklama.setStyleSheet(S["input_text"])
+        
         self.txt_aciklama.setFixedHeight(70)
         self.txt_aciklama.setPlaceholderText("Ek notlar, sorunlar, öneriler...")
         self._panel_islem.add_full_width_field("Not / Açıklamalar", self.txt_aciklama)
@@ -2210,7 +2206,7 @@ class _BakimGirisForm(QWidget):
         
         # Teknisyen
         self.txt_teknisyen = QLineEdit()
-        self.txt_teknisyen.setStyleSheet(S["input"])
+        
         self.txt_teknisyen.setPlaceholderText("Teknisyen adı ve soyadı")
         self.txt_teknisyen.setMinimumHeight(36)
         if self._kullanici_adi:
@@ -2264,7 +2260,7 @@ class _BakimGirisForm(QWidget):
         # ═══════════════════════════════════════════════════════
         btn_container = QWidget()
         btn_container.setProperty("bg-role", "surface")
-        btn_container.setStyleSheet("border-top:1px solid {border};border-radius:0px;padding:12px;".format(border=_C["border"]))
+        btn_container.setStyleSheet(f"border-top:1px solid {_C['border']};border-radius:0px;padding:12px;")
         btn_container.style().unpolish(btn_container)
         btn_container.style().polish(btn_container)
         btns = QHBoxLayout(btn_container)
@@ -2427,7 +2423,7 @@ class _BakimGirisForm(QWidget):
             )
             self.txt_aciklama.setPlaceholderText("⚠️  Yapıldı durumunda açıklama mutlaka giriniz!")
             self.txt_aciklama.setStyleSheet(
-                S["input_text"] + f"QTextEdit{{border:2px solid {_C['amber']};}}"
+                f"QTextEdit{{border:2px solid {_C['amber']};}}"
             )
         else:
             if not self._mevcut_link:
@@ -2437,7 +2433,7 @@ class _BakimGirisForm(QWidget):
                     f"background:{_C['panel']};border-radius:4px;border:1px dashed {_C['border']};"
                 )
             self.txt_aciklama.setPlaceholderText("Ek notlar, sorunlar, öneriler...")
-            self.txt_aciklama.setStyleSheet(S["input_text"])
+            
 
     def _dosya_sec(self):
         """Dosya seçme dialogunu açar."""
@@ -2468,7 +2464,7 @@ class _BakimGirisForm(QWidget):
         ):
             return
         if not self._db:
-            QMessageBox.warning(self, "Uyarı", "Veritabanı bağlantısı yok.")
+            uyari_goster(self, "Veritabanı bağlantısı yok.")
             return
         
         # Cihaz seçimi kontrolü - PLAN_CREATION modunda combo'dan, EXECUTION_INFO'da plan_data'dan
@@ -2476,13 +2472,13 @@ class _BakimGirisForm(QWidget):
         if self._mode == FormMode.PLAN_CREATION:
             cihaz_id = self.cmb_cihaz_sec.currentData()
             if not cihaz_id:
-                QMessageBox.warning(self, "Uyarı", "Lütfen bir cihaz seçiniz.")
+                uyari_goster(self, "Lütfen bir cihaz seçiniz.")
                 return
         else:
             # Önce plan_data'dan al, yoksa constructor parametresine bak
             cihaz_id = self._plan_data.get("Cihazid") or self._cihaz_id
             if not cihaz_id:
-                QMessageBox.warning(self, "Uyarı", "Cihaz bilgisi bulunamadı.")
+                uyari_goster(self, "Cihaz bilgisi bulunamadı.")
                 return
         
         # Seçilen cihaz_id'yi geçici olarak sakla
@@ -2528,7 +2524,7 @@ class _BakimGirisForm(QWidget):
         periyot = self.txt_periyot.text().strip()
         tarih_obj = self.dt_plan.date().toPython()
         if not isinstance(tarih_obj, (date, datetime)):
-            QMessageBox.warning(self, "Uyarı", "Geçersiz plan tarihi")
+            uyari_goster(self, "Geçersiz plan tarihi")
             return
         tarih = tarih_obj
         durum = self.cmb_durum.currentText().strip()
@@ -2594,22 +2590,14 @@ class _BakimGirisForm(QWidget):
     def _kayit_basarili(self):
         """Kayıt başarılı olduğunda çağrılır."""
         self.progress.setVisible(False)
-        QMessageBox.information(
-            self, 
-            "Başarılı", 
-            "Bakım kaydı/planı başarıyla oluşturuldu."
-        )
+        bilgi_goster(self, "Bakım kaydı/planı başarıyla oluşturuldu.")
         self._clear()
         self.saved.emit()
 
     def _kayit_hatasi(self, hata_mesaji: str):
         """Kayıt hatası olduğunda çağrılır."""
         self.progress.setVisible(False)
-        QMessageBox.critical(
-            self, 
-            "Hata", 
-            f"Kayıt başarısız: {hata_mesaji}"
-        )
+        hata_goster(self, f"Kayıt başarısız: {hata_mesaji}")
 
     def _clear(self):
         for w in [self.txt_periyot, self.txt_sira, self.txt_bakim,
@@ -2634,7 +2622,7 @@ class _BakimGirisForm(QWidget):
             f"background:{_C['panel']};border-radius:4px;border:1px dashed {_C['border']};"
         )
         self.btn_dosya_ac.setVisible(False)
-        self.txt_aciklama.setStyleSheet(S["input_text"])
+        
 
     def closeEvent(self, event):
         """Widget kapatılırken thread'leri güvenli şekilde durdurur."""

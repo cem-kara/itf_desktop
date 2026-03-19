@@ -7,6 +7,20 @@ Yeni tasarım (ariza_kayit.py ile aynı desen):
   • Sol: filtreler + renk kodlu liste tablosu
   • Sağ: her zaman görünür detay paneli → kayıt formu kaydırılabilir alanda açılır
 """
+_BAKIM_DURUM_COLOR = {
+        "Planli":   "#0ea5e9",
+        "Planlı":   "#0ea5e9",
+        "Yapildi":  "#10b981",
+        "Yapıldı":  "#10b981",
+        "Gecikmis": "#e85555",
+        "Gecikmiş": "#e85555",
+}
+_KAL_DURUM_COLOR = {
+        "Gecerli":  "#10b981",
+        "Geçerli":  "#10b981",
+        "Gecersiz": "#e85555",
+        "Geçersiz": "#e85555",
+}
 from typing import List, Dict, Any, Optional, cast
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -23,41 +37,11 @@ from PySide6.QtGui import QColor
 
 from core.date_utils import to_ui_date
 from core.logger import logger
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 from database.repository_registry import RepositoryRegistry
-from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer
 
 
-# ─────────────────────────────────────────────────────────────
-#  Renk sabitleri
-# ─────────────────────────────────────────────────────────────
-_C = {
-    "red":    "#ef4444",
-    "amber":  "#f59e0b",
-    "green":  "#10b981",
-    "accent": "#00b4d8",
-    "muted":  "#9ca3af",
-    "surface":"#0e1e35",
-    "panel":  "#112240",
-    "border": "#1a3560",
-    "text":   "#eef0f5",
-}
-
-_BAKIM_DURUM_COLOR = {
-    "Planli":    _C["accent"],
-    "Planlı":    _C["accent"],
-    "Yapildi":   _C["green"],
-    "Yapıldı":   _C["green"],
-    "Gecikmis":  _C["red"],
-    "Gecikmiş":  _C["red"],
-}
-
-_KAL_DURUM_COLOR = {
-    "Gecerli":  _C["green"],
-    "Geçerli":  _C["green"],
-    "Gecersiz": _C["red"],
-    "Geçersiz": _C["red"],
-}
 
 
 # ═════════════════════════════════════════════════════════════
@@ -196,22 +180,17 @@ class _BaseListDetailForm(QWidget):
 
     def _make_kpi_card(self, key, title, default, color) -> QWidget:
         card = QWidget()
-        card.setStyleSheet(
-            f"QWidget{{background:{_C['panel']};border-radius:6px;padding:0 2px;}}"
-            f"QWidget:hover{{background:{_C['border']};}}"
-        )
+        card.setProperty("bg-role", "panel")
+        card.setProperty("hover-role", "border")
         vl = QVBoxLayout(card)
         vl.setContentsMargins(10, 6, 10, 6)
         vl.setSpacing(2)
         t = QLabel(title)
-        t.setStyleSheet(
-            f"font-size:9px;font-weight:600;letter-spacing:0.06em;"
-            f"color:{_C['muted']};background:transparent;"
-        )
+        t.setProperty("color-role", "muted")
+        t.setProperty("style-role", "form")
+        t.setStyleSheet("font-size:9px;font-weight:600;letter-spacing:0.06em;background:transparent;")
         v = QLabel(default)
-        v.setStyleSheet(
-            f"font-size:18px;font-weight:700;color:{color};background:transparent;"
-        )
+        v.setStyleSheet(f"font-size:18px;font-weight:700;color:{color};background:transparent;")
         vl.addWidget(t)
         vl.addWidget(v)
         self._kpi_labels[key] = v
@@ -231,10 +210,8 @@ class _BaseListDetailForm(QWidget):
 
         # Filtre / buton satırı
         fb = QWidget()
-        fb.setStyleSheet(
-            f"background:{_C['surface']};"
-            f"border-bottom:1px solid {_C['border']};"
-        )
+        fb.setProperty("bg-role", "surface")
+        fb.setProperty("border-role", "border")
         fb_l = QHBoxLayout(fb)
         fb_l.setContentsMargins(10, 6, 10, 6)
         fb_l.setSpacing(8)
@@ -280,10 +257,8 @@ class _BaseListDetailForm(QWidget):
 
         # Sayaç
         self.lbl_count = QLabel("0 kayıt")
-        self.lbl_count.setStyleSheet(
-            f"font-size:11px;color:{_C['muted']};padding:4px 10px;"
-            f"background:{_C['surface']};border-top:1px solid {_C['border']};"
-        )
+        self.lbl_count.setProperty("color-role", "muted")
+        self.lbl_count.setStyleSheet("font-size:11px;padding:4px 10px;background:transparent;")
         layout.addWidget(self.lbl_count)
         return panel
 
@@ -293,10 +268,8 @@ class _BaseListDetailForm(QWidget):
     # Sağ panel
     def _build_right_panel(self) -> QWidget:
         panel = QWidget()
-        panel.setStyleSheet(
-            f"background:{_C['surface']};"
-            f"border-left:1px solid {_C['border']};"
-        )
+        panel.setProperty("bg-role", "surface")
+        panel.setProperty("border-role", "border")
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -306,17 +279,14 @@ class _BaseListDetailForm(QWidget):
 
         # Kayıt butonu bar
         btn_bar = QWidget()
-        btn_bar.setStyleSheet(
-            f"background:{_C['surface']};"
-            f"border-bottom:1px solid {_C['border']};"
-        )
+        btn_bar.setProperty("bg-role", "surface")
+        btn_bar.setProperty("border-role", "border")
         bb_l = QHBoxLayout(btn_bar)
         bb_l.setContentsMargins(10, 6, 10, 6)
         bb_l.setSpacing(8)
         lbl = QLabel(self._detail_title())
-        lbl.setStyleSheet(
-            f"font-size:11px;font-weight:600;color:{_C['text'][:7]};"
-        )
+        lbl.setProperty("color-role", "primary")
+        lbl.setStyleSheet("font-size:11px;font-weight:600;")
         bb_l.addWidget(lbl)
         bb_l.addStretch()
         self.btn_duzenle = QPushButton("Düzenle / Yeni")
@@ -360,16 +330,14 @@ class _BaseListDetailForm(QWidget):
     def _build_detail_header(self) -> QWidget:
         """Sağ panelin en üstündeki başlık widget'ı. Alt sınıflar override edebilir."""
         w = QWidget()
-        w.setStyleSheet(
-            f"background:{_C['panel']};border-bottom:1px solid {_C['border']};"
-        )
+        w.setProperty("bg-role", "panel")
+        w.setProperty("border-role", "border")
         vl = QVBoxLayout(w)
         vl.setContentsMargins(14, 10, 14, 10)
         vl.setSpacing(4)
         self.lbl_det_title = QLabel("— Bir kayıt seçin —")
-        self.lbl_det_title.setStyleSheet(
-            f"font-size:13px;font-weight:600;color:{_C['text']};"
-        )
+        self.lbl_det_title.setProperty("color-role", "primary")
+        self.lbl_det_title.setStyleSheet("font-size:13px;font-weight:600;")
         self.lbl_det_title.setWordWrap(True)
         vl.addWidget(self.lbl_det_title)
 
@@ -485,10 +453,8 @@ class _BaseListDetailForm(QWidget):
     # ── Yardımcı widget üreticileri ─────────────────────
     def _meta_label(self, text: str, color: str | None = None) -> QLabel:
         lbl = QLabel(text)
-        lbl.setStyleSheet(
-            f"font-size:11px;color:{color or _C['muted']};"
-            f"background:{_C['panel']};"
-        )
+        lbl.setProperty("color-role", "muted")
+        lbl.setStyleSheet("font-size:11px;background:transparent;")
         return lbl
 
     def _field_widget(self, title: str, value: str = "—") -> QWidget:
@@ -498,9 +464,8 @@ class _BaseListDetailForm(QWidget):
         vl.setContentsMargins(0, 0, 0, 0)
         vl.setSpacing(1)
         t = QLabel(title.upper())
-        t.setStyleSheet(
-            f"font-size:9px;letter-spacing:0.06em;color:{_C['muted']};font-weight:600;"
-        )
+        t.setProperty("color-role", "muted")
+        t.setStyleSheet("font-size:9px;letter-spacing:0.06em;font-weight:600;")
         v = QLabel(value)
         v.setObjectName("val")
         v.setStyleSheet("font-size:12px;")
@@ -562,11 +527,11 @@ class BakimKayitForm(_BaseListDetailForm):
     # ── KPI ─────────────────────────────────────────────
     def _kpi_definitions(self):
         return [
-            ("toplam",    "TOPLAM BAKIM",     "0",  _C["accent"]),
-            ("planli",    "PLANLİ",            "0",  _C["accent"]),
-            ("yapildi",   "YAPILDI",           "0",  _C["green"]),
-            ("gecikmis",  "GECİKMİŞ",          "0",  _C["red"]),
-            ("son_bakim", "SON BAKIM",          "—",  _C["muted"]),
+            ("toplam",    "TOPLAM BAKIM",     "0",  "#0ea5e9"),
+            ("planli",    "PLANLİ",            "0",  "#0ea5e9"),
+            ("yapildi",   "YAPILDI",           "0",  "#10b981"),
+            ("gecikmis",  "GECİKMİŞ",          "0",  "#e85555"),
+            ("son_bakim", "SON BAKIM",          "—",  "#8fa3b8"),
         ]
 
     def _compute_kpi(self, rows):
@@ -589,17 +554,15 @@ class BakimKayitForm(_BaseListDetailForm):
     # ── Detay paneli ────────────────────────────────────
     def _build_detail_header(self) -> QWidget:
         w = QWidget()
-        w.setStyleSheet(
-            f"background:{_C['panel']};border-bottom:1px solid {_C['border']};"
-        )
+        w.setProperty("bg-role", "panel")
+        w.setProperty("border-role", "border")
         vl = QVBoxLayout(w)
         vl.setContentsMargins(14, 10, 14, 10)
         vl.setSpacing(6)
 
         self.lbl_det_title = QLabel("— Bir kayıt seçin —")
-        self.lbl_det_title.setStyleSheet(
-            f"font-size:13px;font-weight:600;color:{_C['text']};"
-        )
+        self.lbl_det_title.setProperty("color-role", "primary")
+        self.lbl_det_title.setStyleSheet("font-size:13px;font-weight:600;")
         self.lbl_det_title.setWordWrap(True)
         vl.addWidget(self.lbl_det_title)
 
@@ -625,9 +588,8 @@ class BakimKayitForm(_BaseListDetailForm):
 
         self.lbl_det_islemler = QLabel("")
         self.lbl_det_islemler.setWordWrap(True)
-        self.lbl_det_islemler.setStyleSheet(
-            f"font-size:11px;color:{_C['muted']};padding-top:2px;"
-        )
+        self.lbl_det_islemler.setProperty("color-role", "muted")
+        self.lbl_det_islemler.setStyleSheet("font-size:11px;padding-top:2px;")
         vl.addWidget(self.lbl_det_islemler)
         return w
 
@@ -642,11 +604,10 @@ class BakimKayitForm(_BaseListDetailForm):
         self.lbl_det_bakim.setText(f"Yapılan: {bakim_t}")
 
         durum = row.get("Durum","")
-        dur_c = _BAKIM_DURUM_COLOR.get(durum, _C["muted"])
+        dur_c = _BAKIM_DURUM_COLOR.get(durum, "#8fa3b8")
         self.lbl_det_durum.setText(durum or "—")
         self.lbl_det_durum.setStyleSheet(
-            f"font-size:11px;font-weight:700;color:{dur_c};"
-            f"background:{_C['panel']};"
+            f"font-size:11px;font-weight:700;color:{dur_c};background:#191d26;"
         )
 
         self._set_field(self._fw_teknisyen, row.get("Teknisyen",""))
@@ -754,7 +715,7 @@ class _BakimGirisForm(QWidget):
 
     def _save(self):
         if not self._db or not self._cihaz_id:
-            QMessageBox.warning(self, "Uyarı", "Cihaz seçili değil.")
+            uyari_goster(self, "Cihaz seçili değil.")
             return
         planid = f"{self._cihaz_id}-BK-{datetime.now().strftime('%Y%m%d%H%M%S')}"
         data = {
@@ -778,7 +739,7 @@ class _BakimGirisForm(QWidget):
             self._clear()
         except Exception as e:
             logger.error(f"Bakım kaydı kaydedilemedi: {e}")
-            QMessageBox.critical(self, "Hata", f"Kayıt başarısız: {e}")
+            hata_goster(self, f"Kayıt başarısız: {e}")
 
     def _clear(self):
         for w in [self.txt_periyot, self.txt_sira, self.txt_bakim,
@@ -833,11 +794,11 @@ class KalibrasyonKayitForm(_BaseListDetailForm):
     # ── KPI ─────────────────────────────────────────────
     def _kpi_definitions(self):
         return [
-            ("toplam",    "TOPLAM",           "0",   _C["accent"]),
-            ("gecerli",   "GEÇERLİ",           "0",   _C["green"]),
-            ("gecersiz",  "GEÇERSİZ",          "0",   _C["red"]),
-            ("yaklasan",  "YAKLAŞAN BİTİŞ",    "0",   _C["amber"]),
-            ("son_kal",   "SON KALİBRASYON",   "—",   _C["muted"]),
+            ("toplam",    "TOPLAM",           "0",   "#0ea5e9"),
+            ("gecerli",   "GEÇERLİ",           "0",   "#10b981"),
+            ("gecersiz",  "GEÇERSİZ",          "0",   "#e85555"),
+            ("yaklasan",  "YAKLAŞAN BİTİŞ",    "0",   "#e8a030"),
+            ("son_kal",   "SON KALİBRASYON",   "—",   "#8fa3b8"),
         ]
 
     def _compute_kpi(self, rows):
@@ -873,17 +834,15 @@ class KalibrasyonKayitForm(_BaseListDetailForm):
     # ── Detay paneli ────────────────────────────────────
     def _build_detail_header(self) -> QWidget:
         w = QWidget()
-        w.setStyleSheet(
-            f"background:{_C['panel']};border-bottom:1px solid {_C['border']};"
-        )
+        w.setProperty("bg-role", "panel")
+        w.setProperty("border-role", "border")
         vl = QVBoxLayout(w)
         vl.setContentsMargins(14, 10, 14, 10)
         vl.setSpacing(6)
 
         self.lbl_det_title = QLabel("— Bir kayıt seçin —")
-        self.lbl_det_title.setStyleSheet(
-            f"font-size:13px;font-weight:600;color:{_C['text']};"
-        )
+        self.lbl_det_title.setProperty("color-role", "primary")
+        self.lbl_det_title.setStyleSheet("font-size:13px;font-weight:600;")
         self.lbl_det_title.setWordWrap(True)
         vl.addWidget(self.lbl_det_title)
 
@@ -909,9 +868,8 @@ class KalibrasyonKayitForm(_BaseListDetailForm):
 
         self.lbl_det_aciklama = QLabel("")
         self.lbl_det_aciklama.setWordWrap(True)
-        self.lbl_det_aciklama.setStyleSheet(
-            f"font-size:11px;color:{_C['muted']};padding-top:2px;"
-        )
+        self.lbl_det_aciklama.setProperty("color-role", "muted")
+        self.lbl_det_aciklama.setStyleSheet("font-size:11px;padding-top:2px;")
         vl.addWidget(self.lbl_det_aciklama)
         return w
 
@@ -928,28 +886,28 @@ class KalibrasyonKayitForm(_BaseListDetailForm):
 
         # Bitiş rengi: 30 gün içindeyse amber, geçmişse kırmızı
         bitis_raw = row.get("BitisTarihi","")
-        bitis_color = _C["muted"]
+        bitis_color = "#8fa3b8"
         if bitis_raw and len(bitis_raw) >= 10:
             try:
                 bt = datetime.strptime(bitis_raw[:10], "%Y-%m-%d").date()
                 bugun = datetime.now().date()
                 if bt < bugun:
-                    bitis_color = _C["red"]
+                    bitis_color = "#e85555"
                 elif bt <= bugun + timedelta(days=30):
-                    bitis_color = _C["amber"]
+                    bitis_color = "#e8a030"
                 else:
-                    bitis_color = _C["green"]
+                    bitis_color = "#10b981"
             except ValueError:
                 pass
         self.lbl_det_bitis.setStyleSheet(
-            f"font-size:11px;color:{bitis_color};background:{_C['panel']};"
+            f"font-size:11px;color:{bitis_color};background:#191d26;"
         )
 
         durum = row.get("Durum","")
-        dur_c = _KAL_DURUM_COLOR.get(durum, _C["muted"])
+        dur_c = _KAL_DURUM_COLOR.get(durum, "#8fa3b8")
         self.lbl_det_durum.setText(durum or "—")
         self.lbl_det_durum.setStyleSheet(
-            f"font-size:11px;font-weight:700;color:{dur_c};background:{_C['panel']};"
+            f"font-size:11px;font-weight:700;color:{dur_c};background:#191d26;"
         )
 
         self._set_field(self._fw_firma,      row.get("Firma",""))
@@ -1046,7 +1004,7 @@ class _KalibrasyonGirisForm(QWidget):
 
     def _save(self):
         if not self._db or not self._cihaz_id:
-            QMessageBox.warning(self, "Uyarı", "Cihaz seçili değil.")
+            uyari_goster(self, "Cihaz seçili değil.")
             return
         kalid = f"{self._cihaz_id}-KL-{datetime.now().strftime('%Y%m%d%H%M%S')}"
         data = {
@@ -1067,7 +1025,7 @@ class _KalibrasyonGirisForm(QWidget):
             self._clear()
         except Exception as e:
             logger.error(f"Kalibrasyon kaydı kaydedilemedi: {e}")
-            QMessageBox.critical(self, "Hata", f"Kayıt başarısız: {e}")
+            hata_goster(self, f"Kayıt başarısız: {e}")
 
     def _clear(self):
         for w in [self.txt_firma, self.txt_sertifika,

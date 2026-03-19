@@ -1,4 +1,4 @@
-﻿"""
+"""
 Ayarlar Sayfası â€” Sabitler, Tatiller, Tema ve Online/Offline YÖnetimi
 
 Özellikler:

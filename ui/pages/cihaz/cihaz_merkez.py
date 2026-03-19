@@ -20,9 +20,9 @@ from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QCursor, QPixmap
 
 from ui.styles import DarkTheme
-from ui.styles.components import STYLES
 from ui.styles.icons import IconRenderer
 from core.logger import logger
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 from core.di import get_cihaz_service as _get_cihaz_service
 from ui.pages.cihaz.components.uts_parser import scrape_uts
 from ui.pages.cihaz.components.ariza_detail_panel import CihazArizaPanel
@@ -199,7 +199,7 @@ class CihazMerkezPage(QWidget):
             # Cihaz verisini çek
             cihaz = svc.get_cihaz(self.cihaz_id).veri or []
             if not cihaz:
-                QMessageBox.warning(self, "Hata", f"Cihaz bulunamadı: {self.cihaz_id}")
+                uyari_goster(self, f"Cihaz bulunamadı: {self.cihaz_id}")
                 self.kapat_istegi.emit()
                 return
 
@@ -220,14 +220,14 @@ class CihazMerkezPage(QWidget):
             
             # Durum badge
             durum_style_map = {
-                "Aktif":      STYLES["header_durum_aktif"],
-                "Arızalı":    STYLES["header_durum_pasif"],
-                "Bakımda":    STYLES["header_durum_izinli"],
-                "Devre Dışı": STYLES["header_durum_pasif"],
+                "Aktif":      "",
+                "Arızalı":    "",
+                "Bakımda":    "",
+                "Devre Dışı": "",
             }
             self.lbl_durum.setText(durum)
             self.lbl_durum.setStyleSheet(
-                cast(str, durum_style_map.get(durum, cast(str, STYLES.get("info_label", "") or "")))
+                cast(str, durum_style_map.get(durum, cast(str, "" or "")))
             )
             
             # Cihaz resmi varsa göster
@@ -252,7 +252,7 @@ class CihazMerkezPage(QWidget):
                 
         except Exception as e:
             logger.error(f"Cihaz merkez veri hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Veri yüklenemedi:\n{e}")
+            hata_goster(self, f"Veri yüklenemedi:\n{e}")
 
     # ═══════════════════════════════════════════════════
     #  SEKME YÖNETİMİ
@@ -336,7 +336,7 @@ class CihazMerkezPage(QWidget):
             logger.error(f"Modül yükleme hatası ({code}): {e}")
             err = QLabel(f"Modül yüklenemedi: {code}\n{e}")
             err.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            err.setStyleSheet(cast(str, STYLES.get("stat_red", "color:{}".format(C.STATUS_ERROR)) or ""))
+            err.setStyleSheet("")
             return err
 
     # ═══════════════════════════════════════════════════
@@ -346,7 +346,7 @@ class CihazMerkezPage(QWidget):
     def _search_uts(self, urun_no: str):
         """\u00dcTS'den ürün verisi çek ve panele doldur."""
         if not urun_no.strip():
-            QMessageBox.warning(self, "Hata", "Lütfen ürün numarası girin.")
+            uyari_goster(self, "Lütfen ürün numarası girin.")
             return
         
         panel = self._modules.get("ÜTS BİLGİLERİ")
@@ -404,9 +404,9 @@ class CihazMerkezPage(QWidget):
                 else:
                     widget.setText(str(raw) if raw else "—")
             
-            QMessageBox.information(self, "Başarılı", message)
+            bilgi_goster(self, message)
         else:
-            QMessageBox.warning(self, "Hata", message)
+            uyari_goster(self, message)
 
     # ═══════════════════════════════════════════════════
     #  YARDIMCI OLUŞTURUCULAR

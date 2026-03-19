@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.logger import logger
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 
 from ui.styles.colors import C as _C
 
@@ -247,7 +248,7 @@ class TopluBakimPlanPanel(QWidget):
             # Require a brand to be selected
             marka = self.cmb_marka_filter.currentData()
             if not marka:
-                QMessageBox.warning(self, "Uyarı", "Lütfen önce bir marka seçin.")
+                uyari_goster(self, "Lütfen önce bir marka seçin.")
                 return
 
             dlg = QFileDialog(self)
@@ -275,7 +276,7 @@ class TopluBakimPlanPanel(QWidget):
                 aciklama=f"Toplu plan sırasında yüklenen sözleşme (marka={marka})",
             )
             if not res.get("ok"):
-                QMessageBox.critical(self, "Hata", f"Sözleşme yüklenemedi: {res.get('error')}")
+                hata_goster(self, f"Sözleşme yüklenemedi: {res.get('error')}")
                 return
 
             dokid = res.get("dokuman_id") or res.get("dokuman_id")
@@ -286,10 +287,10 @@ class TopluBakimPlanPanel(QWidget):
             idx = self.cmb_sozlesme.findData(dokid)
             if idx >= 0:
                 self.cmb_sozlesme.setCurrentIndex(idx)
-            QMessageBox.information(self, "Başarılı", "Sözleşme yüklendi ve seçildi.")
+            bilgi_goster(self, "Sözleşme yüklendi ve seçildi.")
         except Exception as e:
             logger.error(f"Sözleşme yükleme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Sözleşme yükleme hatası: {e}")
+            hata_goster(self, f"Sözleşme yükleme hatası: {e}")
 
     def _select_all_visible(self):
         for i in range(self.list_cihazlar.count()):
@@ -307,7 +308,7 @@ class TopluBakimPlanPanel(QWidget):
         ]
 
         if not secili_cihazlar:
-            QMessageBox.warning(self, "Uyarı", "Lütfen en az bir cihaz seçin.")
+            uyari_goster(self, "Lütfen en az bir cihaz seçin.")
             return
 
         plan_tipi = self.cmb_plan_tipi.currentText()
@@ -369,4 +370,4 @@ class TopluBakimPlanPanel(QWidget):
                 self._on_close()
         except Exception as e:
             logger.error(f"Toplu planlama başarısız: {e}")
-            QMessageBox.critical(self, "Hata", f"Planlama başarısız: {e}")
+            hata_goster(self, f"Planlama başarısız: {e}")

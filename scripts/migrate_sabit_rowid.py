@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """Sabitler.Rowid alanlarini sbt### formatina cevirir."""
 
 import os
@@ -22,7 +22,7 @@ def migrate(db_path: str) -> None:
         rows = cur.fetchall()
 
         # Yeni id'leri uret
-        new_ids = [f"sbt{i:03d}" for i in range(1, len(rows) + 1)]
+        new_ids = [f"sbt_{i:03d}" for i in range(1, len(rows) + 1)]
 
         # Geçici tablo ile row bazli eşleme
         conn.execute("CREATE TEMP TABLE _sabit_map (rid INTEGER, new_id TEXT, tmp_id TEXT)")

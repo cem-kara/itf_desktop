@@ -25,6 +25,7 @@ from PySide6.QtGui import QColor, QCursor, QPainter, QPen, QBrush
 
 from core.date_utils import to_ui_date
 from core.logger import logger
+from core.hata_yonetici import bilgi_goster, hata_goster, soru_sor, uyari_goster
 from core.paths import DATA_DIR
 from core.di import get_cihaz_service
 from core.services.ariza_service import ArizaService
@@ -445,7 +446,7 @@ class ArizaKayitForm(QWidget):
         # Kapatma butonu — sağ üstte tek X
         hdr = QWidget()
         hdr.setFixedHeight(30)
-        hdr.setStyleSheet("border-bottom: 1px solid {border};")
+        hdr.setStyleSheet(f"border-bottom: 1px solid {border};")
         hdr_l = QHBoxLayout(hdr)
         hdr_l.setContentsMargins(0, 0, 6, 0)
         hdr_l.setSpacing(0)
@@ -784,7 +785,7 @@ class ArizaKayitForm(QWidget):
         if cihaz_id:
             self.bakima_gec.emit(cihaz_id)
         else:
-            QMessageBox.warning(self, "Hata", "Cihaz bilgisi alınamadı.")
+            uyari_goster(self, "Cihaz bilgisi alınamadı.")
 
     def _open_ariza_form(self):
         """Yeni Arıza formunu — tablo ile detay arasında — açar."""
@@ -803,7 +804,7 @@ class ArizaKayitForm(QWidget):
                     cihaz_id = str(r.get("Cihazid", ""))
                     break
         if not cihaz_id:
-            QMessageBox.warning(self, "Uyarı", "Lütfen bir arıza seçin veya cihaz belirtin.")
+            uyari_goster(self, "Lütfen bir arıza seçin veya cihaz belirtin.")
             return
         form = ArizaGirisForm(self._db, cihaz_id=cihaz_id, action_guard=self._action_guard, parent=self)
         form.saved.connect(self._on_ariza_saved)
@@ -819,7 +820,7 @@ class ArizaKayitForm(QWidget):
         ):
             return
         if not self._selected_ariza_id:
-            QMessageBox.warning(self, "Uyarı", "Lütfen önce bir arıza seçin.")
+            uyari_goster(self, "Lütfen önce bir arıza seçin.")
             return
         self._clear_form_container()
         form = ArizaIslemForm(self._db, ariza_id=self._selected_ariza_id, action_guard=self._action_guard, parent=self)
@@ -841,13 +842,13 @@ class ArizaKayitForm(QWidget):
     def _on_ariza_saved(self):
         self._close_form()
         self._load_data()
-        QMessageBox.information(self, "Başarı", "Arıza başarıyla kaydedildi.")
+        bilgi_goster(self, "Arıza başarıyla kaydedildi.")
 
     def _on_islem_saved(self):
         self._close_form()
         if self._selected_ariza_id:
             self.islem_penceresi.set_ariza_id(self._selected_ariza_id)
-        QMessageBox.information(self, "Başarı", "İşlem başarıyla kaydedildi.")
+        bilgi_goster(self, "İşlem başarıyla kaydedildi.")
 
     # ══════════════════════════════════════════════════════
     #  Sağ tık menüsü
@@ -970,15 +971,12 @@ class ArizaKayitForm(QWidget):
         if not ariza_id or not self._db:
             return
         
-        reply = QMessageBox.warning(
-            self, 
-            "Hatalı Giriş Olarak İşaretle",
-            f"Arıza '{ariza_id}' hatalı giriş olarak işaretlenecek. Devam etmek istiyor musunuz?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
+        reply = soru_sor(
+            self,
+            f"Arıza '{ariza_id}' hatalı giriş olarak işaretlenecek. Devam etmek istiyor musunuz?"
         )
         
-        if reply != QMessageBox.StandardButton.Yes:
+        if not reply:
             return
         
         try:
@@ -987,12 +985,12 @@ class ArizaKayitForm(QWidget):
             if success:
                 logger.info(f"Arıza hatalı giriş olarak işaretlendi: {ariza_id}")
                 self._load_data()
-                QMessageBox.information(self, "Başarılı", f"Arıza '{ariza_id}' hatalı giriş olarak işaretlendi.")
+                bilgi_goster(self, f"Arıza '{ariza_id}' hatalı giriş olarak işaretlendi.")
             else:
-                QMessageBox.critical(self, "Hata", "Service kullanılamıyor")
+                hata_goster(self, "Service kullanılamıyor")
         except Exception as e:
             logger.error(f"Arıza güncellenemedi: {e}")
-            QMessageBox.critical(self, "Hata", f"İşaretleme başarısız: {e}")
+            hata_goster(self, f"İşaretleme başarısız: {e}")
 
 
 

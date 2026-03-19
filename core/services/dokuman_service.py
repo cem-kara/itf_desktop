@@ -122,7 +122,7 @@ class DokumanService:
         if not upload_sonuc.basarili:
             return upload_sonuc
         
-        upload_data = upload_sonuc.data or {}
+        upload_data = upload_sonuc.veri or {}
         
         # 3 — Dokumanlar tablosuna kaydet (DokumanId atama)
         try:
@@ -149,7 +149,7 @@ class DokumanService:
             )
             return SonucYonetici.tamam(
                 f"Belge başarıyla yüklendi: {custom_name}",
-                data={
+                veri={
                     "dokuman_id": dokuman_id,
                     "mode": upload_data.get("mode"),
                     "drive_link": upload_data.get("drive_link"),
@@ -229,7 +229,7 @@ class DokumanService:
         # Offline veya Drive başarısız → local'e kaydet
         local_save_sonuc = self._save_local(file_path, folder_name, custom_name, entity_type, entity_id)
         if local_save_sonuc.basarili:
-            return SonucYonetici.tamam(veri={"mode": "local", "local_path": local_save_sonuc.data})
+            return SonucYonetici.tamam(veri={"mode": "local", "local_path": local_save_sonuc.veri})
         else:
             return SonucYonetici.hata(Exception("Local kopyalama başarısız"), "DokumanService._upload")
 
@@ -275,6 +275,10 @@ class DokumanService:
                 # Personel dosyaları tek klasörde toplanır:
                 # data/offline_uploads/personel/<TCKimlikNo>/
                 target_dir = os.path.join(DATA_DIR, "offline_uploads", "personel", entity_id)
+            elif entity_type == "cihaz" and entity_id:
+                # Cihaz belgeleri cihaz id altına kaydedilir:
+                # data/offline_uploads/Cihaz_Belgeler/<Cihazid>/
+                target_dir = os.path.join(DATA_DIR, "offline_uploads", "Cihaz_Belgeler", entity_id)
             else:
                 target_dir = os.path.join(DATA_DIR, "offline_uploads", folder_name)
 

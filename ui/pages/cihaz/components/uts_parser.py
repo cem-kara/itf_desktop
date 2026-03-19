@@ -57,7 +57,7 @@ _JSON_KEY_TO_DB_FIELD = {
 
 def load_allowed_db_fields(table_name: str = "Cihaz_Teknik") -> Set[str]:
     """Return allowed DB columns for a table from TABLES config."""
-    config = TABLES.get(table_name, {})
+    config = TABLES[table_name]
     cols = config.get("columns", [])
     return set(cols)
 
@@ -102,8 +102,8 @@ async def scrape_uts(urun_no: str) -> Dict[str, str]:  # type: ignore
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(
             viewport={"width": 1280, "height": 720},
-            ignore_https_errors=True,
-        )
+            ignore_https_errors=True
+)
         page = await context.new_page()
 
         async def handle_response(response):
@@ -543,8 +543,8 @@ async def scrape_uts(urun_no: str) -> Dict[str, str]:
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(
             viewport={"width": 1280, "height": 720},
-            ignore_https_errors=True,
-        )
+            ignore_https_errors=True
+)
         page = await context.new_page()
 
         async def handle_response(response):
@@ -1070,8 +1070,8 @@ def _parse_uts_detail(soup: BeautifulSoup, urun_no: str) -> Dict[str, str]:
             "modal-body",
             "detail-panel",
             "info-panel",
-        ],
-    )
+        ]
+)
     if not panels:
         panels = soup.find_all("div")
 
@@ -1127,8 +1127,8 @@ def _parse_uts_detail(soup: BeautifulSoup, urun_no: str) -> Dict[str, str]:
             soup.find("h2"),
             soup.find(
                 ["span", "div"],
-                class_=["product-name", "urn-ad", "title", "main-title"],
-            ),
+                class_=["product-name", "urn-ad", "title", "main-title"]
+),
         ]
         for cand in urn_ad_candidates:
             if cand:

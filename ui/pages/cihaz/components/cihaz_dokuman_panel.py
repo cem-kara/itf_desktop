@@ -16,5 +16,5 @@ class CihazDokumanPanel(BaseDokumanPanel):
             doc_type      = "Cihaz_Belge",
             belge_tur_kod = "Cihaz_Belge_Tur",
             db            = db,
-            parent        = parent,
-        )
+            parent        = parent
+)

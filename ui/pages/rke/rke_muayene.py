@@ -2,8 +2,8 @@
 """RKE Muayene Girisi - rke_yonetim tasarimiyla uyumlu."""
 import sys
 import os
-import time
 import datetime
+import uuid
 from typing import List, Dict, Optional
 
 from PySide6.QtCore import (Qt, QDate, QThread, Signal, QAbstractTableModel,
@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QAbstractItemView,
     QTableView, QHeaderView, QLabel, QPushButton, QComboBox,
     QDateEdit, QLineEdit, QTextEdit, QProgressBar, QScrollArea,
-    QFrame, QGroupBox, QGridLayout, QFileDialog, QMessageBox,
+    QFrame, QGroupBox, QGridLayout, QFileDialog,
     QDialog, QListWidget, QCheckBox, QApplication,
 )
 from PySide6.QtGui import QColor, QCursor, QDesktopServices, QStandardItemModel, QStandardItem, QPalette
@@ -22,6 +22,7 @@ from ui.styles.icons import IconRenderer
 from ui.components.base_table_model import BaseTableModel
 from ui.pages.rke.components.toplu_muayene_dialog import TopluMuayeneDialog
 from core.paths import DB_PATH
+from core.hata_yonetici import hata_goster, bilgi_goster, uyari_goster
 from core.storage.storage_service import StorageService
 
 # --- YOL AYARLARI ---
@@ -29,18 +30,6 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir  = os.path.dirname(current_dir)
 if parent_dir not in sys.path:
     sys.path.append(parent_dir)
-
-def show_info(title, message, parent):
-    if "Uyar" in str(title):
-        QMessageBox.warning(parent, title, message)
-    else:
-        QMessageBox.information(parent, title, message)
-
-def show_error(title, message, parent):
-    QMessageBox.critical(parent, title, message)
-
-def veritabani_getir(vt, sayfa):
-    return None
 
 try:
     from core.logger import logger
@@ -176,18 +165,17 @@ class VeriYukleyici(QThread):
     veri_hazir  = Signal(list, list, dict, list, list, list, list, list)
     hata_olustu = Signal(str)
 
-    def __init__(self, db_path=None, use_sheets=True):
+    def __init__(self, db_path=None):
         super().__init__()
         self._db_path = db_path or DB_PATH
-        self._use_sheets = use_sheets
 
     @staticmethod
     def _repo_muayene_to_table(rows: List[Dict]):
         if not rows:
             return [], []
         headers = [
-            "KayitNo", "EkipmanNo", "F_MuayeneTarihi", "FizikselDurum",
-            "S_MuayeneTarihi", "SkopiDurum", "Aciklamalar",
+            "KayitNo", "EkipmanNo", "FMuayeneTarihi", "FizikselDurum",
+            "SMuayeneTarihi", "SkopiDurum", "Aciklamalar",
             "KontrolEden/Unvani", "BirimSorumlusu/Unvani", "Not", "Rapor"
         ]
         data = []
@@ -221,38 +209,14 @@ class VeriYukleyici(QThread):
             teknik_aciklamalar = []
             kontrol_edenler, birim_sorumlulari = set(), set()
 
-            db = None
-            rke_repo = None
-            muayene_repo = None
-            if not self._use_sheets:
-                from database.sqlite_manager import SQLiteManager
-                from core.di import get_rke_service
-                db = SQLiteManager(db_path=self._db_path, check_same_thread=True)
-                rke_svc = get_rke_service(db)
-                rke_repo = rke_svc.get_rke_repo()
-                muayene_repo = rke_svc.get_muayene_repo()
+            from database.sqlite_manager import SQLiteManager
+            from core.di import get_rke_service
+            db = SQLiteManager(db_path=self._db_path, check_same_thread=True)
+            rke_svc = get_rke_service(db)
+            rke_repo = rke_svc.get_rke_repo()
+            muayene_repo = rke_svc.get_muayene_repo()
 
-            ws_rke = None
-            ws_muayene = None
-            ws_sabit = None
-            if self._use_sheets:
-                try:
-                    ws_rke = veritabani_getir('rke', 'rke_list')
-                except Exception:
-                    ws_rke = None
-                try:
-                    ws_muayene = veritabani_getir('rke', 'rke_muayene')
-                except Exception:
-                    ws_muayene = None
-                try:
-                    ws_sabit = veritabani_getir('sabit', 'Sabitler')
-                except Exception:
-                    ws_sabit = None
-
-            if ws_rke:
-                rke_data = ws_rke.get_all_records()
-            elif rke_repo:
-                rke_data = rke_repo.get_all()
+            rke_data = rke_repo.get_all()
 
             for row in rke_data:
                 ekipman_no = str(row.get('EkipmanNo', '')).strip()
@@ -262,13 +226,7 @@ class VeriYukleyici(QThread):
                     rke_combo.append(display)
                     rke_dict[display] = ekipman_no
 
-            if ws_muayene:  # type: ignore
-                raw = ws_muayene.get_all_values()
-                if raw:
-                    headers = [str(h).strip() for h in raw[0]]  # type: ignore
-                    muayene_listesi = raw[1:]  # type: ignore
-            elif muayene_repo:
-                headers, muayene_listesi = self._repo_muayene_to_table(muayene_repo.get_all())
+            headers, muayene_listesi = self._repo_muayene_to_table(muayene_repo.get_all())
 
             if headers and muayene_listesi:
                 idx_k = self._find_header_index(headers, "KontrolEden/Unvani", "KontrolEden")
@@ -281,20 +239,14 @@ class VeriYukleyici(QThread):
                         val = str(row[idx_s]).strip()
                         if val: birim_sorumlulari.add(val)
 
-            if ws_sabit:  # type: ignore
-                for s in ws_sabit.get_all_records():  # type: ignore
-                    if str(s.get('Kod', '')).strip() == "RKE_Teknik":
-                        eleman = str(s.get('MenuEleman', '')).strip()
-                        if eleman: teknik_aciklamalar.append(eleman)
-            elif rke_svc:
-                try:
-                    sabitler_rke = rke_svc._r.get("Sabitler").get_by_kod("RKE_Teknik")
-                    for s in sabitler_rke:
-                        eleman = str(s.get("MenuEleman", "")).strip()
-                        if eleman:
-                            teknik_aciklamalar.append(eleman)
-                except Exception:
-                    pass
+            try:
+                sabitler_rke = rke_svc._r.get("Sabitler").get_by_kod("RKE_Teknik")
+                for s in sabitler_rke:
+                    eleman = str(s.get("MenuEleman", "")).strip()
+                    if eleman:
+                        teknik_aciklamalar.append(eleman)
+            except Exception:
+                pass
 
             if not teknik_aciklamalar:
                 teknik_aciklamalar = ["Yirtik Yok", "Kursun Butunlugu Tam", "Askilar Saglam", "Temiz"]
@@ -314,12 +266,11 @@ class KayitWorker(QThread):
     finished = Signal(str)
     error    = Signal(str)
 
-    def __init__(self, veri_dict, dosya_yolu, db_path=None, use_sheets=True):
+    def __init__(self, veri_dict, dosya_yolu, db_path=None):
         super().__init__()
         self.veri       = veri_dict
         self.dosya_yolu = dosya_yolu
-        self._db_path = db_path or DB_PATH
-        self._use_sheets = use_sheets
+        self._db_path   = db_path or DB_PATH
 
     def run(self):
         try:
@@ -362,81 +313,38 @@ class KayitWorker(QThread):
                     except Exception as e:
                         logger.warning(f"Dokumanlar kaydi eklenemedi: {e}")
 
-            rke_repo = None
-            muayene_repo = None
-            if not self._use_sheets:
-                rke_repo = rke_svc.get_rke_repo()
-                muayene_repo = rke_svc.get_muayene_repo()
+            rke_repo    = rke_svc.get_rke_repo()
+            muayene_repo = rke_svc.get_muayene_repo()
 
-            if self._use_sheets:
-                ws_muayene = veritabani_getir('rke', 'rke_muayene')
-                if not ws_muayene: raise Exception("Veritabani baglantisi yok.")
+            muayene_data = {
+                "KayitNo":              self.veri.get("KayitNo"),
+                "EkipmanNo":            self.veri.get("EkipmanNo"),
+                "FMuayeneTarihi":       self.veri.get("FMuayeneTarihi"),
+                "FizikselDurum":        self.veri.get("FizikselDurum"),
+                "SMuayeneTarihi":       self.veri.get("SMuayeneTarihi"),
+                "SkopiDurum":           self.veri.get("SkopiDurum"),
+                "Aciklamalar":          self.veri.get("Aciklamalar"),
+                "KontrolEdenUnvani":    self.veri.get("KontrolEden"),
+                "BirimSorumlusuUnvani": self.veri.get("BirimSorumlusu"),
+                "Notlar":               self.veri.get("Not"),
+                "Rapor":                drive_link,
+            }
+            muayene_repo.insert(muayene_data)
 
-                satir = [
-                    self.veri['KayitNo'], self.veri['EkipmanNo'],
-                    self.veri['F_MuayeneTarihi'], self.veri['FizikselDurum'],
-                    self.veri['S_MuayeneTarihi'], self.veri['SkopiDurum'],
-                    self.veri['Aciklamalar'], self.veri['KontrolEden'],
-                    self.veri['BirimSorumlusu'], self.veri['Not'], drive_link
-                ]
-                ws_muayene.append_row(satir)
-
-                ws_list = veritabani_getir('rke', 'rke_list')
-                if ws_list:
-                    cell = ws_list.find(self.veri['EkipmanNo'])
-                    if cell:
-                        yeni_durum = envanter_durumunu_belirle(
-                            self.veri['FizikselDurum'], self.veri['SkopiDurum'])
-                        gelecek = ""
-                        skopi_str = self.veri['S_MuayeneTarihi']
-                        if skopi_str:
-                            try:
-                                dt_obj = datetime.datetime.strptime(skopi_str, "%Y-%m-%d")
-                                gelecek = (dt_obj + relativedelta(years=1)).strftime("%Y-%m-%d")
-                            except: gelecek = skopi_str
-
-                        hdrs = ws_list.row_values(1)
-                        def ci(name):
-                            try: return hdrs.index(name) + 1
-                            except: return -1
-                        if (c := ci("KontrolTarihi")) > 0 and gelecek:
-                            ws_list.update_cell(cell.row, c, gelecek)
-                        if (c := ci("Durum")) > 0:
-                            ws_list.update_cell(cell.row, c, yeni_durum)
-                        if (c := ci("Aciklama")) > 0:
-                            ws_list.update_cell(cell.row, c, self.veri['Aciklamalar'])
-            else:
-                if not muayene_repo:
-                    raise Exception("Veritabani baglantisi yok.")
-                muayene_data = {
-                    "KayitNo": self.veri.get("KayitNo"),
-                    "EkipmanNo": self.veri.get("EkipmanNo"),
-                    "FMuayeneTarihi": self.veri.get("F_MuayeneTarihi"),
-                    "FizikselDurum": self.veri.get("FizikselDurum"),
-                    "SMuayeneTarihi": self.veri.get("S_MuayeneTarihi"),
-                    "SkopiDurum": self.veri.get("SkopiDurum"),
-                    "Aciklamalar": self.veri.get("Aciklamalar"),
-                    "KontrolEdenUnvani": self.veri.get("KontrolEden"),
-                    "BirimSorumlusuUnvani": self.veri.get("BirimSorumlusu"),
-                    "Notlar": self.veri.get("Not"),
-                    "Rapor": drive_link,
-                }
-                muayene_repo.insert(muayene_data)
-
-                if rke_repo:
-                    yeni_durum = envanter_durumunu_belirle(
-                        self.veri['FizikselDurum'], self.veri['SkopiDurum'])
-                    gelecek = ""
-                    skopi_str = self.veri['S_MuayeneTarihi']
-                    if skopi_str:
-                        try:
-                            dt_obj = datetime.datetime.strptime(skopi_str, "%Y-%m-%d")
-                            gelecek = (dt_obj + relativedelta(years=1)).strftime("%Y-%m-%d")
-                        except: gelecek = skopi_str
-                    update_data = {"Durum": yeni_durum, "Aciklama": self.veri.get("Aciklamalar", "")}
-                    if gelecek:
-                        update_data["KontrolTarihi"] = gelecek
-                    rke_repo.update(self.veri["EkipmanNo"], update_data)
+            yeni_durum = envanter_durumunu_belirle(
+                self.veri['FizikselDurum'], self.veri['SkopiDurum'])
+            gelecek = ""
+            skopi_str = self.veri.get('SMuayeneTarihi', '')
+            if skopi_str:
+                try:
+                    dt_obj = datetime.datetime.strptime(skopi_str, "%Y-%m-%d")
+                    gelecek = (dt_obj + relativedelta(years=1)).strftime("%Y-%m-%d")
+                except Exception:
+                    gelecek = skopi_str
+            update_data = {"Durum": yeni_durum, "Aciklama": self.veri.get("Aciklamalar", "")}
+            if gelecek:
+                update_data["KontrolTarihi"] = gelecek
+            rke_repo.update(self.veri["EkipmanNo"], update_data)
 
             self.finished.emit("Kayit ve guncelleme basarili.")
             if db:
@@ -449,15 +357,14 @@ class TopluKayitWorker(QThread):
     finished = Signal()
     error    = Signal(str)
 
-    def __init__(self, ekipman_listesi, ortak_veri, dosya_yolu, fiziksel_aktif, skopi_aktif, db_path=None, use_sheets=True):
+    def __init__(self, ekipman_listesi, ortak_veri, dosya_yolu, fiziksel_aktif, skopi_aktif, db_path=None):
         super().__init__()
         self.ekipman_listesi = ekipman_listesi
         self.ortak_veri      = ortak_veri
         self.dosya_yolu      = dosya_yolu
         self.fiziksel_aktif  = fiziksel_aktif
         self.skopi_aktif     = skopi_aktif
-        self._db_path = db_path or DB_PATH
-        self._use_sheets = use_sheets
+        self._db_path        = db_path or DB_PATH
 
     def run(self):
         try:
@@ -478,127 +385,67 @@ class TopluKayitWorker(QThread):
                 )
                 drive_link = upload_result.get("drive_link") or upload_result.get("local_path") or "-"
 
-            rke_repo = None
-            muayene_repo = None
-            if not self._use_sheets:
-                rke_repo = rke_svc.get_rke_repo()
-                muayene_repo = rke_svc.get_muayene_repo()
+            rke_repo     = rke_svc.get_rke_repo()
+            muayene_repo = rke_svc.get_muayene_repo()
 
-            if self._use_sheets:
-                ws_muayene = veritabani_getir('rke', 'rke_muayene')
-                ws_list    = veritabani_getir('rke', 'rke_list')
-                if not ws_muayene or not ws_list:
-                    raise Exception("Veritabani baglantisi yok.")
+            for idx, ekipman_no in enumerate(self.ekipman_listesi):
+                unique_id = uuid.uuid4().hex[:12].upper()
+                f_tarih = self.ortak_veri["FMuayeneTarihi"] if self.fiziksel_aktif else ""
+                f_durum = self.ortak_veri["FizikselDurum"]  if self.fiziksel_aktif else ""
+                s_tarih = self.ortak_veri["SMuayeneTarihi"] if self.skopi_aktif    else ""
+                s_durum = self.ortak_veri["SkopiDurum"]     if self.skopi_aktif    else ""
 
-                hdrs = ws_list.row_values(1)
-                def ci(name):
-                    try: return hdrs.index(name) + 1
-                    except: return -1
-                col_tarih   = ci("KontrolTarihi")
-                col_durum   = ci("Durum")
-                col_aciklama = ci("Aciklama")
-                try: col_ekipman = hdrs.index("EkipmanNo") + 1
-                except: col_ekipman = 2
-                all_ekipman = ws_list.col_values(col_ekipman)
+                muayene_data = {
+                    "KayitNo":              unique_id,
+                    "EkipmanNo":            ekipman_no,
+                    "FMuayeneTarihi":       f_tarih,
+                    "FizikselDurum":        f_durum,
+                    "SMuayeneTarihi":       s_tarih,
+                    "SkopiDurum":           s_durum,
+                    "Aciklamalar":          self.ortak_veri["Aciklamalar"],
+                    "KontrolEdenUnvani":    self.ortak_veri["KontrolEden"],
+                    "BirimSorumlusuUnvani": self.ortak_veri["BirimSorumlusu"],
+                    "Notlar":               self.ortak_veri["Not"],
+                    "Rapor":                drive_link,
+                }
+                muayene_repo.insert(muayene_data)
 
-                rows_to_add, batch_updates = [], []
-                base_time = int(time.time())
-
-                for idx, ekipman_no in enumerate(self.ekipman_listesi):
-                    unique_id = f"M-{base_time}-{idx}"
-                    f_tarih = self.ortak_veri['F_MuayeneTarihi'] if self.fiziksel_aktif else ""
-                    f_durum = self.ortak_veri['FizikselDurum']   if self.fiziksel_aktif else ""
-                    s_tarih = self.ortak_veri['S_MuayeneTarihi'] if self.skopi_aktif    else ""
-                    s_durum = self.ortak_veri['SkopiDurum']      if self.skopi_aktif    else ""
-
-                    rows_to_add.append([
-                        unique_id, ekipman_no, f_tarih, f_durum, s_tarih, s_durum,
-                        self.ortak_veri['Aciklamalar'], self.ortak_veri['KontrolEden'],
-                        self.ortak_veri['BirimSorumlusu'], self.ortak_veri['Not'], drive_link
-                    ])
-
+                yeni_genel = envanter_durumunu_belirle(f_durum, s_durum)
+                gelecek = ""
+                if s_tarih:
                     try:
-                        row_num = all_ekipman.index(ekipman_no) + 1
-                        yeni_genel = envanter_durumunu_belirle(f_durum, s_durum)
-                        gelecek = ""
-                        if s_tarih:
-                            try:
-                                dt_obj = datetime.datetime.strptime(s_tarih, "%Y-%m-%d")
-                                gelecek = (dt_obj + relativedelta(years=1)).strftime("%Y-%m-%d")
-                            except: gelecek = s_tarih
-                        if col_tarih > 0 and gelecek:
-                            batch_updates.append({'range': f"{chr(64+col_tarih)}{row_num}", 'values': [[gelecek]]})
-                        if col_durum > 0:
-                            batch_updates.append({'range': f"{chr(64+col_durum)}{row_num}", 'values': [[yeni_genel]]})
-                        if col_aciklama > 0:
-                            batch_updates.append({'range': f"{chr(64+col_aciklama)}{row_num}", 'values': [[self.ortak_veri['Aciklamalar']]]})
-                    except ValueError: pass
+                        dt_obj = datetime.datetime.strptime(s_tarih, "%Y-%m-%d")
+                        gelecek = (dt_obj + relativedelta(years=1)).strftime("%Y-%m-%d")
+                    except Exception:
+                        gelecek = s_tarih
+                update_data = {"Durum": yeni_genel, "Aciklama": self.ortak_veri.get("Aciklamalar", "")}
+                if gelecek:
+                    update_data["KontrolTarihi"] = gelecek
+                rke_repo.update(ekipman_no, update_data)
 
-                    self.progress.emit(idx + 1, len(self.ekipman_listesi))
+                if upload_result.get("mode") != "none":
+                    try:
+                        repo_doc = rke_svc.get_dokuman_repo()
+                        repo_doc.insert({  # type: ignore
+                            "EntityType":         "rke",
+                            "EntityId":           str(ekipman_no),
+                            "BelgeTuru":          "Rapor",
+                            "Belge":              os.path.basename(self.dosya_yolu),
+                            "DocType":            "RKE_Rapor",
+                            "DisplayName":        os.path.basename(self.dosya_yolu),
+                            "LocalPath":          upload_result.get("local_path") or "",
+                            "DrivePath":          upload_result.get("drive_link") or "",
+                            "BelgeAciklama":      "",
+                            "YuklenmeTarihi":     datetime.datetime.now().isoformat(),
+                            "IliskiliBelgeID":    unique_id,
+                            "IliskiliBelgeTipi":  "RKE_Muayene",
+                        })
+                    except Exception as e:
+                        logger.warning(f"Dokumanlar kaydi eklenemedi: {e}")
 
-                ws_muayene.append_rows(rows_to_add)
-                if batch_updates: ws_list.batch_update(batch_updates)
-                self.finished.emit()
-            else:
-                if not muayene_repo:
-                    raise Exception("Veritabani baglantisi yok.")
-                base_time = int(time.time())
-                for idx, ekipman_no in enumerate(self.ekipman_listesi):
-                    unique_id = f"M-{base_time}-{idx}"
-                    f_tarih = self.ortak_veri['F_MuayeneTarihi'] if self.fiziksel_aktif else ""
-                    f_durum = self.ortak_veri['FizikselDurum']   if self.fiziksel_aktif else ""
-                    s_tarih = self.ortak_veri['S_MuayeneTarihi'] if self.skopi_aktif    else ""
-                    s_durum = self.ortak_veri['SkopiDurum']      if self.skopi_aktif    else ""
+                self.progress.emit(idx + 1, len(self.ekipman_listesi))
 
-                    muayene_data = {
-                        "KayitNo": unique_id,
-                        "EkipmanNo": ekipman_no,
-                        "FMuayeneTarihi": f_tarih,
-                        "FizikselDurum": f_durum,
-                        "SMuayeneTarihi": s_tarih,
-                        "SkopiDurum": s_durum,
-                        "Aciklamalar": self.ortak_veri['Aciklamalar'],
-                        "KontrolEdenUnvani": self.ortak_veri['KontrolEden'],
-                        "BirimSorumlusuUnvani": self.ortak_veri['BirimSorumlusu'],
-                        "Notlar": self.ortak_veri['Not'],
-                        "Rapor": drive_link,
-                    }
-                    muayene_repo.insert(muayene_data)
-
-                    if rke_repo:
-                        yeni_genel = envanter_durumunu_belirle(f_durum, s_durum)
-                        gelecek = ""
-                        if s_tarih:
-                            try:
-                                dt_obj = datetime.datetime.strptime(s_tarih, "%Y-%m-%d")
-                                gelecek = (dt_obj + relativedelta(years=1)).strftime("%Y-%m-%d")
-                            except: gelecek = s_tarih
-                        update_data = {"Durum": yeni_genel, "Aciklama": self.ortak_veri.get("Aciklamalar", "")}
-                        if gelecek:
-                            update_data["KontrolTarihi"] = gelecek
-                        rke_repo.update(ekipman_no, update_data)
-
-                    if upload_result.get("mode") != "none":
-                        try:
-                            repo_doc = rke_svc.get_dokuman_repo()
-                            repo_doc.insert({  # type: ignore
-                                "EntityType": "rke",
-                                "EntityId": str(ekipman_no),
-                                "BelgeTuru": "Rapor",
-                                "Belge": os.path.basename(self.dosya_yolu),
-                                "DocType": "RKE_Rapor",
-                                "DisplayName": os.path.basename(self.dosya_yolu),
-                                "LocalPath": upload_result.get("local_path") or "",
-                                "DrivePath": upload_result.get("drive_link") or "",
-                                "BelgeAciklama": "",
-                                "YuklenmeTarihi": datetime.datetime.now().isoformat(),
-                                "IliskiliBelgeID": unique_id,
-                                "IliskiliBelgeTipi": "RKE_Muayene",
-                            })
-                        except Exception as e:
-                            logger.warning(f"Dokumanlar kaydi eklenemedi: {e}")
-
-                self.finished.emit()
+            self.finished.emit()
             if db:
                 db.close()
         except Exception as e:
@@ -620,6 +467,28 @@ class RKEEnvanterModel(BaseTableModel):
                 return QColor(_C["green"])
         return None
 
+    def _bg(self, key, row):
+        """
+        Satır arka planı KontrolTarihi'ne göre:
+          • Geçmiş  (süresi dolmuş) → kırmızı tonu
+          • ≤ 30 gün kalan         → sarı/turuncu tonu
+          • > 30 gün kalan         → normal
+        """
+        kt = str(row.get("KontrolTarihi", "")).strip()
+        if not kt or len(kt) < 10:
+            return None
+        try:
+            dt_obj = datetime.datetime.strptime(kt[:10], "%Y-%m-%d").date()
+            today  = datetime.date.today()
+            delta  = (dt_obj - today).days
+            if delta < 0:
+                return QColor(_C.get("red", "#e85555") + "28")   # kırmızı, %16 opaklık
+            if delta <= 30:
+                return QColor(_C.get("amber", "#e8a030") + "28") # turuncu, %16 opaklık
+        except Exception:
+            pass
+        return None
+
     def _align(self, key):
         if key in ("KontrolTarihi", "Durum"):
             return Qt.AlignmentFlag.AlignCenter
@@ -633,8 +502,8 @@ class RKEEnvanterModel(BaseTableModel):
 
 
 _GECMIS_COLS = [
-    ("F_MuayeneTarihi", "Fiz. Tarih"),
-    ("S_MuayeneTarihi", "Skopi Tarih"),
+    ("FMuayeneTarihi", "Fiz. Tarih"),
+    ("SMuayeneTarihi", "Skopi Tarih"),
     ("Aciklamalar",     "Aciklama"),
     ("Rapor",           "Rapor"),
 ]
@@ -671,7 +540,6 @@ class RKEMuayenePage(QWidget):
         self._db = db
         self._action_guard = action_guard
         self._db_path = DB_PATH
-        self._use_sheets = False if self._db else True
         self.yetki         = yetki
         self.kullanici_adi = kullanici_adi
         self.setWindowTitle("RKE Muayene Girisi")
@@ -960,26 +828,72 @@ class RKEMuayenePage(QWidget):
         vl.setContentsMargins(0, 0, 0, 0)
         vl.setSpacing(0)
 
-        # Filtre cubugu
+        # Filtre cubugu — iki satır
         fbar = QWidget()
-        fbar.setFixedHeight(52)
         fbar.setProperty("bg-role", "page")
-        fl = QHBoxLayout(fbar)
-        fl.setContentsMargins(12, 10, 12, 10)
-        fl.setSpacing(8)
+        fbar_vl = QVBoxLayout(fbar)
+        fbar_vl.setContentsMargins(12, 8, 12, 8)
+        fbar_vl.setSpacing(6)
+
+        # ── Üst satır: ABD + Durum + Arama ──────────────────────
+        row1 = QHBoxLayout()
+        row1.setSpacing(8)
 
         self.cmb_filtre_abd = QComboBox()
-        # setStyleSheet kaldırıldı (_S_COMBO) — global QSS
         self.cmb_filtre_abd.setFixedHeight(28)
         self.cmb_filtre_abd.setMinimumWidth(160)
-        self.cmb_filtre_abd.addItem("Tum ABD")
+        self.cmb_filtre_abd.addItem("Tüm ABD")
         self.cmb_filtre_abd.currentIndexChanged.connect(self.tabloyu_filtrele)
 
+        self.cmb_filtre_durum = QComboBox()
+        self.cmb_filtre_durum.setFixedHeight(28)
+        self.cmb_filtre_durum.setMinimumWidth(170)
+        for label in ["Tüm Durumlar", "Kullanıma Uygun", "Kullanıma Uygun Değil", "Hurda"]:
+            self.cmb_filtre_durum.addItem(label)
+        self.cmb_filtre_durum.currentIndexChanged.connect(self.tabloyu_filtrele)
+
         self.txt_ara = QLineEdit()
-        # setStyleSheet kaldırıldı (_S_INPUT) — global QSS
         self.txt_ara.setFixedHeight(28)
-        self.txt_ara.setPlaceholderText("Ara...")
+        self.txt_ara.setPlaceholderText("Ekipman no, birim, cins ara...")
         self.txt_ara.textChanged.connect(self.tabloyu_filtrele)
+
+        row1.addWidget(self.cmb_filtre_abd)
+        row1.addWidget(self.cmb_filtre_durum)
+        row1.addWidget(self.txt_ara, 1)
+
+        # ── Alt satır: Tarih filtresi + butonlar ─────────────────
+        row2 = QHBoxLayout()
+        row2.setSpacing(8)
+
+        # Tarih filtresi: gecikmiş / 30 gün / hepsi
+        lbl_tarih = QLabel("Kontrol tarihi:")
+        lbl_tarih.setProperty("color-role", "muted")
+        lbl_tarih.setStyleSheet("font-size:11px;")
+
+        self.cmb_filtre_tarih = QComboBox()
+        self.cmb_filtre_tarih.setFixedHeight(28)
+        self.cmb_filtre_tarih.setMinimumWidth(180)
+        self.cmb_filtre_tarih.addItems([
+            "Tüm Tarihler",
+            "Tarihi Geçmiş",
+            "30 Gün İçinde",
+            "60 Gün İçinde",
+        ])
+        self.cmb_filtre_tarih.currentIndexChanged.connect(self.tabloyu_filtrele)
+
+        # Renk açıklaması
+        def _badge(renk: str, metin: str) -> QLabel:
+            lbl = QLabel(f"● {metin}")
+            lbl.setStyleSheet(f"color:{renk}; font-size:11px;")
+            return lbl
+
+        row2.addWidget(lbl_tarih)
+        row2.addWidget(self.cmb_filtre_tarih)
+        row2.addSpacing(8)
+        row2.addWidget(_badge(_C.get("red",   "#e85555"), "Geçmiş"))
+        row2.addWidget(_badge(_C.get("amber", "#e8a030"), "≤30 gün"))
+        row2.addWidget(_badge(_C.get("green", "#2ec98e"), "Uygun"))
+        row2.addStretch()
 
         btn_yenile = QPushButton("")
         btn_yenile.setFixedSize(28, 28)
@@ -995,11 +909,11 @@ class RKEMuayenePage(QWidget):
         IconRenderer.set_button_icon(btn_toplu, "clipboard_list", color="#0a1420", size=14)
         btn_toplu.clicked.connect(self.ac_toplu_dialog)
 
-        fl.addWidget(self.cmb_filtre_abd)
-        fl.addWidget(self.txt_ara, 1)
-        fl.addWidget(btn_yenile)
-        fl.addWidget(btn_toplu)
-        vl.addWidget(fbar)
+        row2.addWidget(btn_yenile)
+        row2.addWidget(btn_toplu)
+
+        fbar_vl.addLayout(row1)
+        fbar_vl.addLayout(row2)
 
         # Tablo
         self._model = RKEEnvanterModel()
@@ -1083,9 +997,9 @@ class RKEMuayenePage(QWidget):
     def verileri_yukle(self):
         self.pbar.setVisible(True)
         self.pbar.setRange(0, 0)
-        self.loader = VeriYukleyici(self._db_path, use_sheets=self._use_sheets)
+        self.loader = VeriYukleyici(self._db_path)
         self.loader.veri_hazir.connect(self.veriler_geldi)
-        self.loader.hata_olustu.connect(lambda e: QMessageBox.critical(self, "Hata", e))
+        self.loader.hata_olustu.connect(lambda e: hata_goster(self, e))
         self.loader.finished.connect(lambda: self.pbar.setVisible(False))
         self.loader.start()
 
@@ -1118,23 +1032,60 @@ class RKEMuayenePage(QWidget):
                       if str(r.get("AnaBilimDali", "")).strip()})
         self.cmb_filtre_abd.blockSignals(True)
         self.cmb_filtre_abd.clear()
-        self.cmb_filtre_abd.addItem("Tum ABD")
+        self.cmb_filtre_abd.addItem("Tüm ABD")
         self.cmb_filtre_abd.addItems(abd)
         self.cmb_filtre_abd.blockSignals(False)
 
         self.tabloyu_filtrele()
 
     def tabloyu_filtrele(self):
-        secilen_abd = self.cmb_filtre_abd.currentText()
-        ara         = self.txt_ara.text().lower()
-        filtered    = []
+        secilen_abd   = self.cmb_filtre_abd.currentText()
+        secilen_durum = self.cmb_filtre_durum.currentText()
+        secilen_tarih = self.cmb_filtre_tarih.currentText()
+        ara           = self.txt_ara.text().lower()
+        today         = datetime.date.today()
+        filtered      = []
+
         for row in self.rke_data:
+            # ABD filtresi
             abd = str(row.get("AnaBilimDali", "")).strip()
-            if secilen_abd != "Tum ABD" and abd != secilen_abd: continue
-            if ara and ara not in " ".join([str(v) for v in row.values()]).lower(): continue
+            if secilen_abd not in ("Tüm ABD", "Tum ABD") and abd != secilen_abd:
+                continue
+
+            # Durum filtresi
+            durum = str(row.get("Durum", ""))
+            if secilen_durum == "Kullanıma Uygun" and "Uygun" not in durum:
+                continue
+            if secilen_durum == "Kullanıma Uygun Değil" and "Degil" not in durum:
+                continue
+            if secilen_durum == "Hurda" and "Hurda" not in durum:
+                continue
+
+            # Kontrol tarihi filtresi
+            if secilen_tarih != "Tüm Tarihler":
+                kt = str(row.get("KontrolTarihi", "")).strip()
+                if not kt or len(kt) < 10:
+                    continue
+                try:
+                    dt_obj = datetime.datetime.strptime(kt[:10], "%Y-%m-%d").date()
+                    delta  = (dt_obj - today).days
+                    if secilen_tarih == "Tarihi Geçmiş"  and delta >= 0:
+                        continue
+                    if secilen_tarih == "30 Gün İçinde"  and not (0 <= delta <= 30):
+                        continue
+                    if secilen_tarih == "60 Gün İçinde"  and not (0 <= delta <= 60):
+                        continue
+                except Exception:
+                    continue
+
+            # Metin araması
+            if ara and ara not in " ".join([str(v) for v in row.values()]).lower():
+                continue
+
             filtered.append(row)
+
         self._model.set_rows(filtered)
-        self.lbl_sayi.setText(f"{len(filtered)} kayit")
+        self.lbl_sayi.setText(f"{len(filtered)} / {len(self.rke_data)} kayıt")
         self._update_kpi(filtered)
 
     def _sag_tablo_tiklandi(self, index: QModelIndex):
@@ -1157,8 +1108,8 @@ class RKEMuayenePage(QWidget):
                     i = self.header_map.get(key, -1)
                     return row[i] if i != -1 and len(row) > i else ""
                 rows.append({
-                    "F_MuayeneTarihi": get_v("F_MuayeneTarihi"),
-                    "S_MuayeneTarihi": get_v("S_MuayeneTarihi"),
+                    "FMuayeneTarihi": get_v("FMuayeneTarihi"),
+                    "SMuayeneTarihi": get_v("SMuayeneTarihi"),
                     "Aciklamalar":     get_v("Aciklamalar"),
                     "Rapor":           get_v("Rapor"),
                 })
@@ -1192,15 +1143,15 @@ class RKEMuayenePage(QWidget):
             return
         rke_text = self.cmb_rke.currentText()
         if not rke_text:
-            QMessageBox.warning(self, "Uyari", "Ekipman secin."); return
+            uyari_goster(self, "Ekipman seçin."); return
         ekipman_no = self.rke_dict.get(rke_text, rke_text.split('|')[0].strip())
-        unique_id  = f"M-{int(time.time())}"
+        unique_id = uuid.uuid4().hex[:12].upper()
         veri = {
             'KayitNo':          unique_id,
             'EkipmanNo':        ekipman_no,
-            'F_MuayeneTarihi':  self.dt_fiziksel.date().toString("yyyy-MM-dd"),
+            'FMuayeneTarihi':  self.dt_fiziksel.date().toString("yyyy-MM-dd"),
             'FizikselDurum':    self.cmb_fiziksel.currentText(),
-            'S_MuayeneTarihi':  self.dt_skopi.date().toString("yyyy-MM-dd"),
+            'SMuayeneTarihi':  self.dt_skopi.date().toString("yyyy-MM-dd"),
             'SkopiDurum':       self.cmb_skopi.currentText(),
             'Aciklamalar':      self.cmb_aciklama.getCheckedItems(),
             'KontrolEden':      self.cmb_kontrol.currentText(),
@@ -1210,22 +1161,22 @@ class RKEMuayenePage(QWidget):
         self.pbar.setVisible(True)
         self.pbar.setRange(0, 0)
         self.btn_kaydet.setEnabled(False)
-        self.saver = KayitWorker(veri, self.secilen_dosya, db_path=self._db_path, use_sheets=self._use_sheets)
+        self.saver = KayitWorker(veri, self.secilen_dosya, db_path=self._db_path)
         self.saver.finished.connect(self.islem_basarili)
-        self.saver.error.connect(lambda e: QMessageBox.critical(self, "Hata", e))
+        self.saver.error.connect(lambda e: hata_goster(self, e))
         self.saver.start()
 
     def islem_basarili(self, msg: str):
         self.pbar.setVisible(False)
         self.btn_kaydet.setEnabled(True)
-        QMessageBox.information(self, "Basarili", msg)
+        bilgi_goster(self, msg)
         self.temizle()
         self.verileri_yukle()
 
     def ac_toplu_dialog(self):
         secili = self.tablo.selectionModel().selectedRows()
         if not secili:
-            QMessageBox.warning(self, "Uyari", "Tabloda satir secin."); return
+            uyari_goster(self, "Tabloda satır seçin."); return
         ekipmanlar = sorted({
             str(self._model.get_row(i.row()).get("EkipmanNo", ""))  # type: ignore
             for i in secili
@@ -1239,12 +1190,11 @@ class RKEMuayenePage(QWidget):
             self.kullanici_adi,
             self,
             db_path=self._db_path,
-            use_sheets=self._use_sheets,
             checkable_combo_cls=CheckableComboBox,
             worker_cls=TopluKayitWorker,
         )
         if dlg.exec() == QDialog.DialogCode.Accepted:
-            QMessageBox.information(self, "Bilgi", "Toplu kayit basarili.")
+            bilgi_goster(self, "Toplu kayıt başarılı.")
             self.verileri_yukle()
 
     def load_data(self):

@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.logger import logger
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 
 
 
@@ -78,7 +79,7 @@ class ArizaDuzenleForm(QWidget):
 
         grid.addWidget(self._lbl("Açıklama"), row, 0)
         self.txt_aciklama = QTextEdit()
-        # tema otomatik — self.txt_aciklama.setStyleSheet(S["input_text"]) kaldırıldı
+        # tema otomatik —  kaldırıldı
         self.txt_aciklama.setFixedHeight(100)
         grid.addWidget(self.txt_aciklama, row, 1)
         row += 1
@@ -97,12 +98,12 @@ class ArizaDuzenleForm(QWidget):
         btn_lay.setSpacing(8)
 
         btn_kaydet = QPushButton("Kaydet")
-        btn_kaydet.setStyleSheet(cast(str, S.get("success_btn") or S.get("refresh_btn", "")))
+        btn_kaydet.setProperty("style-role", "success")
         btn_kaydet.clicked.connect(self._save)
         btn_lay.addWidget(btn_kaydet)
 
         btn_iptal = QPushButton("İptal")
-        btn_iptal.setStyleSheet(cast(str, S.get("cancel_btn", "") or ""))
+        btn_iptal.setProperty("style-role", "secondary")
         btn_iptal.clicked.connect(self._cancel)
         btn_lay.addWidget(btn_iptal)
 
@@ -133,7 +134,7 @@ class ArizaDuzenleForm(QWidget):
         durum = self.cmb_durum.currentText().strip()
 
         if not baslik:
-            QMessageBox.warning(self, "Hata", "Lütfen başlık girin.")
+            uyari_goster(self, "Lütfen başlık girin.")
             return
 
         data = {
@@ -151,7 +152,7 @@ class ArizaDuzenleForm(QWidget):
             self.saved.emit()
         except Exception as e:
             logger.error(f"Arıza düzenlemesi kaydedilemedi: {e}")
-            QMessageBox.critical(self, "Hata", f"Kayıt başarısız: {e}")
+            hata_goster(self, f"Kayıt başarısız: {e}")
 
     def _cancel(self):
         parent = self.parentWidget()

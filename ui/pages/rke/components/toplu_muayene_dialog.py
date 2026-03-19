@@ -2,10 +2,11 @@
 import os
 
 from PySide6.QtCore import Qt, QDate
+from core.hata_yonetici import hata_goster, uyari_goster
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QGroupBox, QHBoxLayout, QDateEdit, QComboBox,
     QLabel, QGridLayout, QListWidget, QProgressBar, QPushButton,
-    QFileDialog, QMessageBox,
+    QFileDialog,
 )
 from PySide6.QtGui import QCursor
 
@@ -29,13 +30,11 @@ class TopluMuayeneDialog(QDialog):
         kullanici_adi=None,
         parent=None,
         db_path=None,
-        use_sheets=True,
         checkable_combo_cls=None,
         worker_cls=None,
     ):
         super().__init__(parent)
         self._db_path = db_path
-        self._use_sheets = use_sheets
         self._worker_cls = worker_cls
         self._checkable_combo_cls = checkable_combo_cls
 
@@ -170,7 +169,7 @@ class TopluMuayeneDialog(QDialog):
         lbl_acik.style().polish(lbl_acik)
 
         if not self._checkable_combo_cls:
-            QMessageBox.critical(self, "Hata", "CheckableComboBox sınıfı bulunamadı.")
+            hata_goster(self, "CheckableComboBox sınıfı bulunamadı.")
             self.reject()
             return
 
@@ -229,17 +228,17 @@ class TopluMuayeneDialog(QDialog):
 
     def kaydet(self):
         if not self.chk_fiz.isChecked() and not self.chk_sko.isChecked():
-            QMessageBox.warning(self, "Uyarı", "En az bir muayene türü seçin.")
+            uyari_goster(self, "En az bir muayene türü seçin.")
             return
 
         if not self._worker_cls:
-            QMessageBox.critical(self, "Hata", "Toplu kayıt worker sınıfı bulunamadı.")
+            hata_goster(self, "Toplu kayıt worker sınıfı bulunamadı.")
             return
 
         ortak_veri = {
-            "F_MuayeneTarihi": self.dt_fiz.date().toString("yyyy-MM-dd"),
+            "FMuayeneTarihi": self.dt_fiz.date().toString("yyyy-MM-dd"),
             "FizikselDurum": self.cmb_fiz.currentText(),
-            "S_MuayeneTarihi": self.dt_sko.date().toString("yyyy-MM-dd"),
+            "SMuayeneTarihi": self.dt_sko.date().toString("yyyy-MM-dd"),
             "SkopiDurum": self.cmb_sko.currentText(),
             "Aciklamalar": self.cmb_aciklama.getCheckedItems(),
             "KontrolEden": self.cmb_kontrol.currentText(),
@@ -258,9 +257,8 @@ class TopluMuayeneDialog(QDialog):
             self.chk_fiz.isChecked(),
             self.chk_sko.isChecked(),
             db_path=self._db_path,
-            use_sheets=self._use_sheets,
         )
         self.worker.progress.connect(self.pbar.setValue)
         self.worker.finished.connect(self.accept)
-        self.worker.error.connect(lambda e: QMessageBox.critical(self, "Hata", e))
+        self.worker.error.connect(lambda e: hata_goster(self, e))
         self.worker.start()

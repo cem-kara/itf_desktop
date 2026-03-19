@@ -1,8 +1,7 @@
-from core.di import get_cihaz_service as _get_cihaz_service
 # -*- coding: utf-8 -*-
 """
 Cihaz Overview Panel
-─────────────────────────────────────
+=====================================
 Genel Bakış sekmesi için cihaz detaylarını gösterir ve düzenleme imkanı sunar.
 Her grup için ayrı düzenle/kaydet/iptal butonları vardır.
 """
@@ -15,12 +14,10 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtGui import QPixmap, QCursor
 
-from ui.styles import DarkTheme, Colors
 from ui.styles.icons import IconRenderer
 from core.logger import logger
-
-
-C = DarkTheme
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
+from core.di import get_cihaz_service as _get_cihaz_service
 
 
 class CihazOverviewPanel(QWidget):
@@ -49,7 +46,7 @@ class CihazOverviewPanel(QWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # ── Özet kartlar şeridi (üst bant) ───────────────────────────────────
+        # == Ã–zet kartlar şeridi (üst bant) ===================================
         ozet_bar = QFrame()
         ozet_bar.setProperty("bg-role", "elevated")
         ozet_bar.style().unpolish(ozet_bar)
@@ -76,7 +73,7 @@ class CihazOverviewPanel(QWidget):
         scroll.setFrameShape(QFrame.Shape.NoFrame)
 
         content = QWidget()
-        content.setStyleSheet("background: transparent;")
+        content.setProperty("bg-role", "transparent")
         content_layout = QHBoxLayout(content)
         content_layout.setSpacing(24)
         content_layout.setContentsMargins(16, 16, 16, 16)
@@ -147,7 +144,12 @@ class CihazOverviewPanel(QWidget):
         self._add_date(grid_lisans, 1, 1, "Lisans Bitis", "BitisTarihi", "lisans")
         self._add_line(grid_lisans, 2, 0, "Sorumlu", "Sorumlusu", "lisans")
         self._add_line(grid_lisans, 2, 1, "RKS", "RKS", "lisans")
-        self._add_file(grid_lisans, 3, 0, "Lisans Belgesi", "NDKLisansBelgesi", "lisans", colspan=2)
+        # Lisans Belgesi yükleme alanı kaldırıldı, yerine yönlendirme butonu eklendi
+        btn_belgeler = QPushButton("Lisans Belgesi yüklemek için Belgeler sekmesine gidin")
+        btn_belgeler.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        btn_belgeler.setProperty("style-role", "action")
+        btn_belgeler.clicked.connect(self._goto_belgeler_tab)
+        grid_lisans.addWidget(btn_belgeler, 3 * 2, 0, 1, 2)
         right_lay.addWidget(grp_lisans)
 
         # 4. Teknik Hizmetler grubu
@@ -173,6 +175,17 @@ class CihazOverviewPanel(QWidget):
         scroll.setWidget(content)
         main_layout.addWidget(scroll)
 
+        
+    def _goto_belgeler_tab(self):
+        """Belgeler sekmesine geçiş için callback. Ãœst widget'ta override edilebilir veya sinyal ile bağlanabilir."""
+        # Eğer üstte bir sekme yöneticisi varsa, burada uygun şekilde sekme değiştirilebilir.
+        # Ã–rneğin:
+        # if hasattr(self.parent(), 'goto_belgeler_tab'):
+        #     self.parent().goto_belgeler_tab()
+        # Veya bir sinyal tetiklenebilir:
+        # self.goto_belgeler_tab.emit()
+        bilgi_goster(self, "Lisans Belgesi yüklemek için lütfen üstteki 'Belgeler' sekmesine geçiniz.")
+
     def _create_editable_group(self, title, group_id):
         """Düzenlenebilir grup kutusu oluştur."""
         grp = QGroupBox(title)
@@ -188,24 +201,19 @@ class CihazOverviewPanel(QWidget):
         header_row = QHBoxLayout()
         
         lbl_title = QLabel(title)
-        lbl_title.setStyleSheet(
-            f"color: {C.ACCENT}; font-weight: bold; font-size: 13px;"
-        )
+        lbl_title.setProperty("color-role", "accent")
+        lbl_title.setProperty("style-role", "section-title")
         header_row.addWidget(lbl_title)
         header_row.addStretch()
 
         # Butonlar
         btn_edit = self._create_icon_btn("edit", "Düzenle", lambda: self._toggle_edit(group_id, True))
         btn_save = self._create_icon_btn("save", "Kaydet", lambda: self._save_group(group_id), visible=False)
-        btn_cancel = self._create_icon_btn("x", "İptal", lambda: self._toggle_edit(group_id, False), visible=False)
+        btn_cancel = self._create_icon_btn("x", "Ä°ptal", lambda: self._toggle_edit(group_id, False), visible=False)
         
         # Stil özelleştirme
-        btn_save.setStyleSheet(
-            f"background: {Colors.GREEN_600}; color: {C.TEXT_PRIMARY}; border-radius: 4px; padding: 4px 8px;"
-        )
-        btn_cancel.setStyleSheet(
-            f"background: {Colors.RED_600}; color: {C.TEXT_PRIMARY}; border-radius: 4px; padding: 4px 8px;"
-        )
+        btn_save.setProperty("style-role", "success")
+        btn_cancel.setProperty("style-role", "danger")
 
         header_row.addWidget(btn_edit)
         header_row.addWidget(btn_save)
@@ -213,9 +221,9 @@ class CihazOverviewPanel(QWidget):
         
         vbox.addLayout(header_row)
         
-        # İçerik için placeholder widget
+        # Ä°çerik için placeholder widget
         content_widget = QWidget()
-        content_widget.setStyleSheet("background: transparent;")
+        content_widget.setProperty("bg-role", "transparent")
         vbox.addWidget(content_widget)
         
         # Referansları sakla
@@ -230,13 +238,13 @@ class CihazOverviewPanel(QWidget):
         return grp
 
     def _create_icon_btn(self, icon_name, tooltip, callback, visible=True):
-        """İkon butonu oluştur."""
+        """Ä°kon butonu oluştur."""
         btn = QPushButton("")
         btn.setToolTip(tooltip)
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn.setFixedSize(30, 26)
         btn.setVisible(visible)
-        IconRenderer.set_button_icon(btn, icon_name, color=C.TEXT_SECONDARY, size=14)
+        IconRenderer.set_button_icon(btn, icon_name, color="secondary", size=14)
         btn.setProperty("style-role", "quick-action")
         btn.clicked.connect(callback)
         return btn
@@ -250,7 +258,7 @@ class CihazOverviewPanel(QWidget):
         edit.setReadOnly(True)
         edit.setProperty("initial_readonly", read_only)
         edit.setProperty("color-role", "primary")
-        edit.setStyleSheet(self._field_style_read())
+        edit.setProperty("style-role", "form")
         edit.style().unpolish(edit)
         edit.style().polish(edit)
         self._widgets[key] = edit
@@ -265,7 +273,7 @@ class CihazOverviewPanel(QWidget):
         combo = QComboBox()
         combo.setEnabled(False)
         combo.setProperty("db_kodu", db_kodu)
-        combo.setStyleSheet(self._combo_style_read())
+        combo.setProperty("style-role", "form")
         self._widgets[key] = combo
         self._groups[group_id]["fields"].append(key)
         grid.addWidget(lbl, row * 2, col, 1, colspan)
@@ -279,7 +287,7 @@ class CihazOverviewPanel(QWidget):
         date.setCalendarPopup(True)
         date.setDisplayFormat("dd.MM.yyyy")
         date.setEnabled(False)
-        date.setStyleSheet(self._date_style_read())
+        date.setProperty("style-role", "form")
         self._widgets[key] = date
         self._groups[group_id]["fields"].append(key)
         grid.addWidget(lbl, row * 2, col, 1, colspan)
@@ -294,7 +302,7 @@ class CihazOverviewPanel(QWidget):
         line.setReadOnly(True)
         line.setPlaceholderText("-")
         line.setProperty("color-role", "primary")
-        line.setStyleSheet(self._field_style_read())
+        line.setProperty("style-role", "form")
         line.style().unpolish(line)
         line.style().polish(line)
         btn = QPushButton("Sec")
@@ -320,7 +328,7 @@ class CihazOverviewPanel(QWidget):
             line.setText(path)
 
     def _ozet_kart(self, baslik: str, deger: str, renk: str) -> QFrame:
-        """Üst banttaki özet kart widget'ı."""
+        """Ãœst banttaki özet kart widget'ı."""
         f = QFrame()
         f.setStyleSheet(
             f"QFrame {{ border-left: 3px solid {renk}; "
@@ -340,7 +348,7 @@ class CihazOverviewPanel(QWidget):
         return f
 
     def _ozet_guncelle(self, key: str, deger: str, renk: str = None):
-        """Özet kart değerini güncelle."""
+        """Ã–zet kart değerini güncelle."""
         kart_map = {
             "ariza":      self._kart_ariza,
             "bakim":      self._kart_bakim,
@@ -409,11 +417,11 @@ class CihazOverviewPanel(QWidget):
                 else:
                     widget.setDate(QDate.currentDate())
 
-        # ── Özet kartları güncelle ─────────────────────────────────────────────
+        # == Ã–zet kartları güncelle =============================================
         self._ozet_kartlari_guncelle()
 
     def _ozet_kartlari_guncelle(self):
-        """Üst banttaki özet kartları cihaz bazlı istatistiklerle doldurur."""
+        """Ãœst banttaki özet kartları cihaz bazlı istatistiklerle doldurur."""
         if not self.db or not self.cihaz_id:
             return
         try:
@@ -432,7 +440,7 @@ class CihazOverviewPanel(QWidget):
             try:
                 ariza_svc = _as(self.db)
                 arizalar = ariza_svc.get_ariza_listesi(self.cihaz_id).veri or []
-                acik = sum(1 for a in arizalar if str(a.get("Durum","")).strip() not in ("Kapalı","Çözüldü"))
+                acik = sum(1 for a in arizalar if str(a.get("Durum","")).strip() not in ("Kapalı","Ã‡özüldü"))
                 renk_a = "#ef4444" if acik > 0 else "#10b981"
                 self._ozet_guncelle("ariza", str(acik) if acik > 0 else "Yok", renk_a)
             except Exception:
@@ -475,7 +483,7 @@ class CihazOverviewPanel(QWidget):
                 self._ozet_guncelle("kalibrasyon", "—")
 
         except Exception as e:
-            logger.debug(f"Özet kartları güncellenemedi: {e}")
+            logger.debug(f"Ã–zet kartları güncellenemedi: {e}")
 
     def _toggle_edit(self, group_id, edit_mode):
         """Grup düzenleme modunu aç/kapat."""
@@ -506,7 +514,7 @@ class CihazOverviewPanel(QWidget):
             if key in self._file_buttons:
                 self._file_buttons[key].setEnabled(edit_mode)
             
-            # İptal edilirse eski veriyi geri yükle
+            # Ä°ptal edilirse eski veriyi geri yükle
             if not edit_mode:
                 val = self.cihaz_data.get(key, "")
                 if isinstance(widget, QLineEdit):
@@ -529,34 +537,11 @@ class CihazOverviewPanel(QWidget):
                     else:
                         widget.setDate(QDate.currentDate())
 
-    def _field_style_read(self):
-        return (
-            f"background: {C.BG_TERTIARY}; border: 1px solid {C.BORDER_SECONDARY}; "
-            f"border-radius: 4px; padding: 6px; color: {C.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
-        )
-
-    def _field_style_edit(self):
-        return (
-            f"background: {C.BG_SECONDARY}; border: 1px solid {C.INPUT_BORDER_FOCUS}; "
-            f"border-radius: 4px; padding: 6px; color: {C.TEXT_PRIMARY}; font-size: 13px;"
-        )
-
-    def _combo_style_read(self):
-        return (
-            f"background: {C.BG_TERTIARY}; border: 1px solid {C.BORDER_SECONDARY}; "
-            f"border-radius: 4px; padding: 6px; color: {C.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
-        )
-
-    def _date_style_read(self):
-        return (
-            f"background: {C.BG_TERTIARY}; border: 1px solid {C.BORDER_SECONDARY}; "
-            f"border-radius: 4px; padding: 6px; color: {C.TEXT_PRIMARY}; font-size: 13px; font-weight: 500;"
-        )
 
     def _save_group(self, group_id):
         """Grup verilerini kaydet."""
         if not self.db:
-            QMessageBox.warning(self, "Hata", "Veritabanı bağlantısı yok.")
+            uyari_goster(self, "Veritabanı bağlantısı yok.")
             return
 
         grp = self._groups[group_id]
@@ -584,7 +569,7 @@ class CihazOverviewPanel(QWidget):
 
             # Güncelle
             update_data["Cihazid"] = cihaz_id  # PK ekle
-            repo.update(update_data)
+            repo.update(cihaz_id, update_data)
             
             # Local veriyi güncelle
             self.cihaz_data.update(update_data)
@@ -596,11 +581,11 @@ class CihazOverviewPanel(QWidget):
             self.saved.emit()
             
             logger.info(f"Cihaz güncellendi ({group_id}): {cihaz_id}")
-            QMessageBox.information(self, "Başarılı", "Değişiklikler kaydedildi.")
+            bilgi_goster(self, "Değişiklikler kaydedildi.")
             
         except Exception as e:
             logger.error(f"Cihaz guncelleme hatasi ({group_id}): {e}")
-            QMessageBox.critical(self, "Hata", f"Kaydetme hatasi: {e}")
+            hata_goster(self, f"Kaydetme hatasi: {e}")
 
     def load_data(self):
         """Veri yenileme (gerekirse)."""
@@ -618,3 +603,4 @@ class CihazOverviewPanel(QWidget):
     def set_embedded_mode(self, embedded: bool):
         """Gömülü mod ayarı."""
         pass
+

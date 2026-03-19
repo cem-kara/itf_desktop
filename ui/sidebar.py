@@ -21,9 +21,9 @@ from ui.permissions.page_permissions import PAGE_PERMISSIONS
 from ui.styles.icons import GROUP_ICON_MAP, MENU_ICON_MAP, IconColors, Icons
 
 # ── Renk sabitleri ──────────────────────────────────────────────
-BG            = "#0a1520"       # sidebar zemin (topbar'dan biraz daha koyu)
+BG            = "#0a1520"
 BORDER        = "rgba(255,255,255,0.07)"
-HEADER_BG     = "#060d1a"       # logo alanı
+HEADER_BG     = "#060d1a"
 ITEM_TEXT     = "#6a90b4"
 ITEM_HOVER_BG = "rgba(255,255,255,0.04)"
 ITEM_HOVER_T  = "#c2d8ef"
@@ -42,32 +42,120 @@ NOTIFY_HOVER  = "rgba(245,158,11,0.18)"
 NOTIFY_TEXT   = "#f59e0b"
 NOTIFY_BORDER = "rgba(245,158,11,0.25)"
 
+# ── Grup başlığı aksan renkleri (her grup farklı) ───────────────
+_GROUP_ACCENT: dict[str, tuple[str, str]] = {
+    "PERSONEL":            ("#22d3ee", "rgba(34,211,238,0.07)"),
+    "CİHAZ":               ("#4080e0", "rgba(64,128,224,0.07)"),
+    "RKE":                 ("#a855f7", "rgba(168,85,247,0.07)"),
+    "YÖNETİCİ İŞLEMLERİ": ("#e8a030", "rgba(232,160,48,0.07)"),
+    "AYARLAR":             ("#6a8ca8", "rgba(106,140,168,0.06)"),
+}
+_DEFAULT_ACCENT = ("#4080e0", "rgba(64,128,224,0.07)")
 
-class FlatSection(QWidget):
-    def __init__(self, group_name: str, parent=None):
+
+class CollapsibleSection(QWidget):
+    """
+    Tıklanabilir başlık ile açılıp kapanabilen menü grubu.
+    Her grup kendine özgü aksan rengine sahiptir.
+    """
+    def __init__(self, group_name: str, collapsed: bool = False, parent=None):
         super().__init__(parent)
         self.setStyleSheet("background: transparent;")
         self.group_name = group_name
-        self._buttons   = []
+        self._buttons: list[MenuButton] = []
+        self._collapsed = collapsed
+
+        accent, accent_bg = _GROUP_ACCENT.get(group_name, _DEFAULT_ACCENT)
+        self._accent    = accent
+        self._accent_bg = accent_bg
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)
 
-        lbl = QLabel(group_name.upper())
-        lbl.setStyleSheet(
-            f"color: {GROUP_LBL}; font-size: 10px; font-weight: 700;"
-            f" letter-spacing: 0.14em; background: transparent;"
-            f" padding: 14px 16px 5px 16px;"
-        )
-        lay.addWidget(lbl)
+        # ── Grup başlık butonu (ikon sağda) ──────────────────────
+        # QPushButton kullanıyoruz: metin sol hizalı, chevron ikon sağ
+        # setLayoutDirection(RightToLeft) ile ikon sağa alınır
+        self._header_btn = QPushButton()
+        self._header_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self._header_btn.setFixedHeight(30)
+        self._header_btn.setCheckable(False)
+        self._header_btn.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
+        self._header_btn.clicked.connect(self._toggle)
+        lay.addWidget(self._header_btn)
 
+        # ── İçerik alanı ───────────────────────────────────────
         self.content = QWidget()
         self.content.setStyleSheet("background: transparent;")
         self._content_lay = QVBoxLayout(self.content)
-        self._content_lay.setContentsMargins(8, 2, 8, 4)
+        self._content_lay.setContentsMargins(8, 2, 8, 6)
         self._content_lay.setSpacing(1)
         lay.addWidget(self.content)
+
+        self._apply_header_style()
+        self.content.setVisible(not self._collapsed)
+
+    def _apply_header_style(self):
+        accent    = self._accent
+        accent_bg = self._accent_bg
+        icon_key  = "chevron_right" if self._collapsed else "chevron_down"
+
+        # Chevron ikonunu QIcon olarak al ve butona ata
+        try:
+            self._header_btn.setIcon(Icons.get(icon_key, size=13, color=accent))
+            self._header_btn.setIconSize(QSize(13, 13))
+        except Exception:
+            self._header_btn.setIcon(QIcon())
+
+        # Metin: grup adı sol hizalı
+        self._header_btn.setText(f"  {self.group_name}")
+
+        # İkonu sağa taşı: LayoutDirection RightToLeft yapar ama metni bozar.
+        # Bunun yerine padding trick: metin solda, ikon sağda için
+        # setStyleSheet içinde QPushButton::menu-indicator değil,
+        # subcontrol yok — ancak setLayoutDirection ile ikon sağa geçer
+        # ve metni LEFT hizalamak için padding ayarlarız.
+        self._header_btn.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
+
+        self._header_btn.setStyleSheet(
+            f"QPushButton {{"
+            f"  background: {accent_bg};"
+            f"  color: {accent};"
+            f"  border: none;"
+            f"  border-left: 3px solid {accent};"
+            f"  border-radius: 0 6px 6px 0;"
+            f"  text-align: left;"
+            f"  padding: 0 8px 0 10px;"
+            f"  font-size: 12px;"
+            f"  font-weight: 800;"
+            f"  letter-spacing: 0.12em;"
+            f"  margin: 6px 8px 2px 0px;"
+            f"}}"
+            f"QPushButton:hover {{"
+            f"  background: {accent}22;"
+            f"  color: {accent};"
+            f"}}"
+        )
+
+    def _toggle(self):
+        self._collapsed = not self._collapsed
+        self._apply_header_style()
+        self.content.setVisible(not self._collapsed)
+        p = self.parent()
+        if p:
+            p.adjustSize()
+
+    def expand(self):
+        if self._collapsed:
+            self._toggle()
+
+    def collapse(self):
+        if not self._collapsed:
+            self._toggle()
+
+    @property
+    def is_collapsed(self) -> bool:
+        return self._collapsed
 
     def add_item(self, baslik: str, callback, icon_key: str | None = None) -> MenuButton:
         btn = MenuButton(f"  {baslik}")
@@ -92,15 +180,14 @@ class FlatSection(QWidget):
         self._buttons.append(btn)
         return btn
 
-    @staticmethod
-    def _item_css(active: bool) -> str:
+    def _item_css(self, active: bool) -> str:
         if active:
             return (
                 f"QPushButton {{"
-                f"  background: {ACTIVE_BG};"
-                f"  color: {ACTIVE_TEXT};"
+                f"  background: {self._accent}18;"
+                f"  color: {self._accent};"
                 f"  border: none;"
-                f"  border-left: 2px solid {ACTIVE_BORDER};"
+                f"  border-left: 2px solid {self._accent};"
                 f"  border-radius: 0 8px 8px 0;"
                 f"  text-align: left;"
                 f"  padding-left: 12px;"
@@ -122,7 +209,7 @@ class FlatSection(QWidget):
             f"QPushButton:hover {{"
             f"  background: {ITEM_HOVER_BG};"
             f"  color: {ITEM_HOVER_T};"
-            f"  border-left-color: rgba(0,180,216,0.30);"
+            f"  border-left-color: {self._accent}55;"
             f"}}"
         )
 
@@ -134,10 +221,21 @@ class FlatSection(QWidget):
             key = getattr(btn, "_icon_key", None) or MENU_ICON_MAP.get(btn._baslik)
             if key:
                 try:
-                    color = ACTIVE_TEXT if active else ITEM_TEXT
+                    color = self._accent if active else ITEM_TEXT
                     btn.setIcon(Icons.get(key, size=14, color=color))
                 except Exception:
                     pass
+
+    def ensure_visible(self, baslik: str):
+        """Aktif öğe bu gruptaysa grubu aç."""
+        for btn in self._buttons:
+            if btn._baslik == baslik:
+                self.expand()
+                return
+
+
+# Geriye dönük uyumluluk
+FlatSection = CollapsibleSection
 
 
 class Sidebar(QWidget):
@@ -150,16 +248,15 @@ class Sidebar(QWidget):
         self.setAutoFillBackground(True)
         self.setStyleSheet("background-color: {};".format(BG))
 
-        # Sağ kenar ince çizgi + gölge
         shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(24)
         shadow.setOffset(6, 0)
         shadow.setColor(QColor(0, 0, 0, 60))
         self.setGraphicsEffect(shadow)
 
-        self._groups        = {}
-        self._all_buttons   = {}
-        self._active_baslik = None
+        self._groups:        dict[str, CollapsibleSection] = {}
+        self._all_buttons:   dict[str, tuple] = {}
+        self._active_baslik: str | None = None
         self._page_guard = page_guard
         self._build_ui()
 
@@ -178,7 +275,6 @@ class Sidebar(QWidget):
         hl.setContentsMargins(16, 0, 14, 0)
         hl.setSpacing(10)
 
-        # İkon
         try:
             logo_lbl = QLabel()
             logo_lbl.setPixmap(Icons.pixmap("hospital", size=22, color=ACTIVE_TEXT))
@@ -189,15 +285,12 @@ class Sidebar(QWidget):
             dot.setStyleSheet("font-size: 18px; font-weight: 900; background: transparent;")
             hl.addWidget(dot)
 
-        # Başlık sütunu
         name_col = QVBoxLayout()
         name_col.setSpacing(1)
-
         name_lbl = QLabel("REPYS")
         name_lbl.setStyleSheet(
-                f"color: #e2eaf4; font-size: 14px; font-weight: 800;"
-                f" background: transparent;"
-            )
+            f"color: #e2eaf4; font-size: 14px; font-weight: 800; background: transparent;"
+        )
         ver_lbl = QLabel(f"Versiyon · v{AppConfig.VERSION}")
         ver_lbl.setStyleSheet(
             f"color: {GROUP_LBL}; font-size: 11px; background: transparent;"
@@ -207,7 +300,6 @@ class Sidebar(QWidget):
         hl.addLayout(name_col)
         hl.addStretch()
 
-        # Cyan accent dot
         accent_dot = QLabel("●")
         accent_dot.setStyleSheet(
             f"color: {ACTIVE_TEXT}; font-size: 8px; background: transparent;"
@@ -238,8 +330,8 @@ class Sidebar(QWidget):
         menu_w = QWidget()
         menu_w.setStyleSheet("background: transparent;")
         self._menu_layout = QVBoxLayout(menu_w)
-        self._menu_layout.setContentsMargins(0, 4, 0, 8)
-        self._menu_layout.setSpacing(0)
+        self._menu_layout.setContentsMargins(0, 6, 0, 8)
+        self._menu_layout.setSpacing(2)
         self._load_menu()
         self._menu_layout.addStretch()
         scroll.setWidget(menu_w)
@@ -254,7 +346,6 @@ class Sidebar(QWidget):
         bl.setContentsMargins(12, 10, 12, 12)
         bl.setSpacing(6)
 
-        # Bildirim butonu
         self.notifications_btn = QPushButton("  Bildirimler")
         self.notifications_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         try:
@@ -280,7 +371,6 @@ class Sidebar(QWidget):
         self.notifications_btn.clicked.connect(self.dashboard_clicked.emit)
         bl.addWidget(self.notifications_btn)
 
-        # Senkronize Et butonu
         self.sync_btn = QPushButton("  Senkronize Et")
         self.sync_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         try:
@@ -305,7 +395,6 @@ class Sidebar(QWidget):
         """.format(SYNC_BG, SYNC_TEXT, SYNC_HOVER))
         bl.addWidget(self.sync_btn)
 
-        # Durum satırı
         status_row = QWidget()
         status_row.setStyleSheet("background: transparent;")
         sl = QHBoxLayout(status_row)
@@ -339,7 +428,7 @@ class Sidebar(QWidget):
             menu_cfg = {}
 
         for group_name, items in menu_cfg.items():
-            section = FlatSection(group_name)
+            section = CollapsibleSection(group_name, collapsed=True)
             added_any = False
             for item in items:
                 baslik = item.get("baslik", "?")
@@ -371,6 +460,8 @@ class Sidebar(QWidget):
             old_sec.set_active(None)
         if baslik and baslik in self._all_buttons:
             sec, _ = self._all_buttons[baslik]
+            # Grup kapalıysa otomatik aç
+            sec.ensure_visible(baslik)
             sec.set_active(baslik)
             self._active_baslik = baslik
         else:

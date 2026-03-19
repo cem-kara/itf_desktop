@@ -15,6 +15,7 @@ from PySide6.QtGui import QCursor
 
 from core.date_utils import to_ui_date
 from core.logger import logger
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 from core.paths import DATA_DIR
 
 from ui.components.base_table_model import BaseTableModel
@@ -127,7 +128,7 @@ class ArizaIslemForm(QWidget):
         self._add_row(grid, 3, "İşlem Türü", self.cmb_islem_turu)
 
         self.txt_yapilan_islem = QTextEdit()
-        # tema otomatik — self.txt_yapilan_islem.setStyleSheet(S["input_text"]) kaldırıldı
+        # tema otomatik —  kaldırıldı
         self.txt_yapilan_islem.setFixedHeight(80)
         self._add_row(grid, 4, "Yapılan İşlem", self.txt_yapilan_islem)
 
@@ -139,7 +140,7 @@ class ArizaIslemForm(QWidget):
         self._add_row(grid, 5, "Yeni Durum", self.cmb_yeni_durum)
 
         self.txt_rapor = QTextEdit()
-        # tema otomatik — self.txt_rapor.setStyleSheet(S["input_text"]) kaldırıldı
+        # tema otomatik —  kaldırıldı
         self.txt_rapor.setFixedHeight(70)
         self._add_row(grid, 6, "Rapor (Metin)", self.txt_rapor)
         
@@ -184,7 +185,7 @@ class ArizaIslemForm(QWidget):
         btn_lay.addWidget(btn_kaydet)
 
         btn_temizle = QPushButton("Temizle")
-        btn_temizle.setStyleSheet((S.get("cancel_btn", "") or ""))
+        btn_temizle.setProperty("style-role", "secondary")
         btn_temizle.clicked.connect(self._clear)
         btn_lay.addWidget(btn_temizle)
 
@@ -295,13 +296,13 @@ class ArizaIslemForm(QWidget):
                         
                 except Exception as e:
                     logger.error(f"Rapor belgesi kaydetme hatası: {e}")
-                    QMessageBox.warning(self, "Uyarı", f"Belge kaydedilemedi: {e}")
+                    uyari_goster(self, f"Belge kaydedilemedi: {e}")
             
             self.saved.emit()
             self._clear()
         except Exception as e:
             logger.error(f"Ariza islemi kaydedilemedi: {e}")
-            QMessageBox.critical(self, "Hata", f"Kayıt başarısız: {e}")
+            hata_goster(self, f"Kayıt başarısız: {e}")
 
     def _clear(self):
         self.dt_tarih.setDate(QDate.currentDate())
@@ -350,7 +351,7 @@ class ArizaIslemPenceresi(QWidget):
 
         self.table = QTableView()
         self.table.setModel(self._model)
-        # tema otomatik — self.table.setStyleSheet(S["table"]) kaldırıldı
+        # tema otomatik —  kaldırıldı
         self.table.setAlternatingRowColors(True)
         self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
@@ -365,7 +366,7 @@ class ArizaIslemPenceresi(QWidget):
         tl.addWidget(self.table)
 
         self.lbl_count = QLabel("0 kayit")
-        # tema otomatik — self.lbl_count.setStyleSheet(S["footer_label"]) kaldırıldı
+        # tema otomatik —  kaldırıldı
         tl.addWidget(self.lbl_count)
         root.addWidget(grp_table)
 

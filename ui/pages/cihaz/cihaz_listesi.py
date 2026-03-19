@@ -18,10 +18,8 @@ from PySide6.QtGui import (
 from core.logger import logger
 from core.di import get_cihaz_service as _get_cihaz_service
 from ui.components.base_table_model import BaseTableModel
-from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer
 
-C = DarkTheme
 
 # ── Bakım / Kalibrasyon uyarı hesaplamaları ───────────────────────────────────
 import calendar as _cal
@@ -90,7 +88,7 @@ _STATUS_TEXT = {
 }
 
 def _get_status_color(durum: str) -> tuple:
-    return _STATUS_COLORS.get(durum, (143, 163, 184, 25))
+    return _STATUS_COLORS.get(durum, (143, 163, 184, 38))
 
 def _get_status_text_color(durum: str) -> str:
     return _STATUS_TEXT.get(durum, "#8fa3b8")
@@ -104,9 +102,8 @@ COLUMNS = [
     ("Birim",        "Birim",          160),
     ("DemirbasNo",   "Demirbas No",    120),
     ("Durum",        "Durum",           90),
-    #("BakimDurum",   "Bakım",           90),
-    ("_actions",     "",               200),
 ]
+    # ("_actions",     "",               200),
 COL_IDX = {c[0]: i for i, c in enumerate(COLUMNS)}
 
 
@@ -163,67 +160,59 @@ class CihazDelegate(QStyledItemDelegate):
     def sizeHint(self, option, index):
         return QSize(COLUMNS[index.column()][2], 46)
 
-    def paint(self, painter: QPainter, option, index):
-        painter.save()
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        def paint(self, painter: QPainter, option, index):
+            painter.save()
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        row = index.row()
-        col = index.column()
-        key = COLUMNS[col][0]
-        rect = option.rect
-        is_sel = bool(option.state & QStyle.StateFlag.State_Selected)
-        is_hover = (row == self._hover_row)
+            row = index.row()
+            col = index.column()
+            key = COLUMNS[col][0]
+            rect = option.rect
+            is_sel = bool(option.state & QStyle.StateFlag.State_Selected)
+            is_hover = (row == self._hover_row)
 
-        if is_sel:
-            c = QColor(C.BTN_PRIMARY_BG)
-            c.setAlpha(60)
-            painter.fillRect(rect, c)
-        elif is_hover:
-            c = QColor(C.TEXT_PRIMARY)
-            c.setAlpha(10)
-            painter.fillRect(rect, c)
+            if is_sel:
+                c = QColor("#0ea5e9")
+                c.setAlpha(60)
+                painter.fillRect(rect, c)
+            elif is_hover:
+                c = QColor("#eef0f5")
+                c.setAlpha(10)
+                painter.fillRect(rect, c)
 
-        raw = index.model().data(index, BaseTableModel.RAW_ROW_ROLE)
-        if raw is None:
-            painter.restore()
-            return
+            raw = index.model().data(index, BaseTableModel.RAW_ROW_ROLE)
+            if raw is None:
+                painter.restore()
+                return
 
-        if key == "_cihaz":
-            self._draw_two(painter, rect,
-                           str(raw.get("Cihazid", "")),
-                           str(raw.get("CihazTipi", "") or "—"),
-                           mono_top=True)
-        elif key == "_marka_model":
-            self._draw_two(painter, rect,
-                           str(raw.get("Marka", "") or "—"),
-                           str(raw.get("Model", "") or "—"))
-        elif key == "_seri":
-            self._draw_two(painter, rect,
-                           str(raw.get("SeriNo", "") or "—"),
-                           str(raw.get("NDKSeriNo", "") or "—"),
-                           mono_top=True)
-        elif key == "Birim":
-            self._draw_two(painter, rect,
-                           str(raw.get("AnaBilimDali", "") or "—"),
-                           str(raw.get("Birim", "") or "—"))
-        elif key == "DemirbasNo":
-            self._draw_mono(painter, rect, str(raw.get("DemirbasNo", "") or "—"))
-        elif key == "Durum":
-            self._draw_status_pill(painter, rect, str(raw.get("Durum", "") or "—"))
-            # Bakım uyarısı rozeti
-            bakim_u = _bakim_uyari(raw)
-            kal_u   = _kalibrasyon_uyari(raw)
-            if bakim_u or kal_u:
-                self._draw_uyari_rozet(painter, rect, bakim_u, kal_u)
-        elif key == "_actions":
-            if is_hover or is_sel:
-                self._draw_action_btns(painter, rect, row)
-            else:
-                for k in list(self._btn_rects):
-                    if k[0] == row:
-                        del self._btn_rects[k]
+            if key == "_cihaz":
+                self._draw_two(painter, rect,
+                               str(raw.get("Cihazid", "")),
+                               str(raw.get("CihazTipi", "") or "—"),
+                               mono_top=True)
+            elif key == "_marka_model":
+                self._draw_two(painter, rect,
+                               str(raw.get("Marka", "") or "—"),
+                               str(raw.get("Model", "") or "—"))
+            elif key == "_seri":
+                self._draw_two(painter, rect,
+                               str(raw.get("SeriNo", "") or "—"),
+                               str(raw.get("NDKSeriNo", "") or "—"),
+                               mono_top=True)
+            elif key == "Birim":
+                self._draw_two(painter, rect,
+                               str(raw.get("AnaBilimDali", "") or "—"),
+                               str(raw.get("Birim", "") or "—"))
+            elif key == "DemirbasNo":
+                self._draw_mono(painter, rect, str(raw.get("DemirbasNo", "") or "—"))
+            elif key == "Durum":
+                self._draw_status_pill(painter, rect, str(raw.get("Durum", "") or "—"))
+                # Bakım uyarısı rozeti
+                bakim_u = _bakim_uyari(raw)
+                kal_u   = _kalibrasyon_uyari(raw)
+                if bakim_u or kal_u:
+                    self._draw_uyari_rozet(painter, rect, bakim_u, kal_u)
 
-        painter.restore()
 
     # ── Çizim yardımcıları ───────────────────────────────
 
@@ -232,11 +221,11 @@ class CihazDelegate(QStyledItemDelegate):
         r1 = QRect(rect.x() + pad, rect.y() + 4, rect.width() - pad * 2, 17)
         r2 = QRect(rect.x() + pad, rect.y() + 21, rect.width() - pad * 2, 14)
         p.setFont(QFont("Courier New", 10) if mono_top else QFont("Segoe UI", 11, QFont.Weight.Medium))
-        p.setPen(QColor(C.TEXT_PRIMARY))
+        p.setPen(QColor("#eef0f5"))
         p.drawText(r1, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
                    p.fontMetrics().elidedText(top, Qt.TextElideMode.ElideRight, r1.width()))
         p.setFont(QFont("Segoe UI", 9))
-        p.setPen(QColor(C.TEXT_MUTED))
+        p.setPen(QColor("#8fa3b8"))
         p.drawText(r2, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
                    p.fontMetrics().elidedText(bottom, Qt.TextElideMode.ElideRight, r2.width()))
 
@@ -244,7 +233,7 @@ class CihazDelegate(QStyledItemDelegate):
         pad = 8
         r = QRect(rect.x() + pad, rect.y(), rect.width() - pad * 2, rect.height())
         p.setFont(QFont("Segoe UI", 11))
-        p.setPen(QColor(C.TEXT_PRIMARY))
+        p.setPen(QColor("#eef0f5"))
         p.drawText(r, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
                    p.fontMetrics().elidedText(text, Qt.TextElideMode.ElideRight, r.width()))
 
@@ -293,30 +282,30 @@ class CihazDelegate(QStyledItemDelegate):
         p.setPen(Qt.PenStyle.NoPen)
         p.drawEllipse(dot_x - dot_r, dot_y - dot_r, dot_r * 2, dot_r * 2)
 
-    def _draw_action_btns(self, p, rect, row):
-        labels = [
-            ("detay", "Detay", C.BTN_PRIMARY_BG, C.BTN_PRIMARY_TEXT),
-            ("edit", "Duzenle", C.BTN_SECONDARY_BG, C.TEXT_PRIMARY),
-            ("bakim", "Bakim", C.BTN_SUCCESS_BG, C.BTN_SUCCESS_TEXT),
-        ]
-        x = rect.x() + 8
-        y = rect.center().y() - int(self.BTN_H / 2)
-        for key, label, bg, fg in labels:
-            btn_rect = QRect(x, y, self.BTN_W, self.BTN_H)
-            p.setBrush(QBrush(QColor(bg)))
-            p.setPen(QPen(QColor(C.BORDER_STRONG)))
-            p.drawRoundedRect(btn_rect, 6, 6)
-            p.setPen(QColor(fg))
-            p.setFont(QFont("Segoe UI", 9, QFont.Weight.Medium))
-            p.drawText(btn_rect, Qt.AlignmentFlag.AlignCenter, label)
-            self._btn_rects[(row, key)] = btn_rect
-            x += self.BTN_W + self.BTN_GAP
+    # def _draw_action_btns(self, p, rect, row):
+    #     labels = [
+    #         ("detay", "Detay", "#0ea5e9", "#fff"),
+    #         ("edit", "Duzenle", "#e5e7eb", "#222"),
+    #         ("bakim", "Bakim", "#10b981", "#fff"),
+    #     ]
+    #     x = rect.x() + 8
+    #     y = rect.center().y() - int(self.BTN_H / 2)
+    #     for key, label, bg, fg in labels:
+    #         btn_rect = QRect(x, y, self.BTN_W, self.BTN_H)
+    #         p.setBrush(QBrush(QColor(bg)))
+    #         p.setPen(QPen(QColor("#1e293b")))
+    #         p.drawRoundedRect(btn_rect, 6, 6)
+    #         p.setPen(QColor(fg))
+    #         p.setFont(QFont("Segoe UI", 9, QFont.Weight.Medium))
+    #         p.drawText(btn_rect, Qt.AlignmentFlag.AlignCenter, label)
+    #         self._btn_rects[(row, key)] = btn_rect
+    #         x += self.BTN_W + self.BTN_GAP
 
-    def get_action_at(self, row: int, pos: QPoint) -> str | None:
-        for (r, key), rect in self._btn_rects.items():
-            if r == row and rect.contains(pos):
-                return key
-        return None
+    # def get_action_at(self, row: int, pos: QPoint) -> str | None:
+    #     for (r, key), rect in self._btn_rects.items():
+    #         if r == row and rect.contains(pos):
+    #             return key
+    #     return None
 
 
 # ═══════════════════════════════════════════════════════════
@@ -372,12 +361,8 @@ class CihazListesiPage(QWidget):
     def _build_toolbar(self) -> QFrame:
         frame = QFrame()
         frame.setFixedHeight(60)
-        frame.setStyleSheet("""
-            QFrame {{
-                background-color: {};
-                border-bottom: 1px solid {};
-            }}
-        """.format(C.BG_SECONDARY, C.BORDER_PRIMARY))
+        frame.setProperty("bg-role", "panel")
+        frame.setProperty("border-role", "border")
         lay = QHBoxLayout(frame)
         lay.setContentsMargins(16, 0, 16, 0)
         lay.setSpacing(8)
@@ -445,7 +430,7 @@ class CihazListesiPage(QWidget):
         self.btn_yenile.setProperty("style-role", "refresh")
         self.btn_yenile.style().unpolish(self.btn_yenile)
         self.btn_yenile.style().polish(self.btn_yenile)
-        IconRenderer.set_button_icon(self.btn_yenile, "refresh", color=C.TEXT_SECONDARY, size=16)
+        IconRenderer.set_button_icon(self.btn_yenile, "refresh", color="secondary", size=16)
         lay.addWidget(self.btn_yenile)
 
         self.btn_yeni = QPushButton(" Yeni Cihaz")
@@ -453,7 +438,7 @@ class CihazListesiPage(QWidget):
         self.btn_yeni.setProperty("style-role", "action")
         self.btn_yeni.style().unpolish(self.btn_yeni)
         self.btn_yeni.style().polish(self.btn_yeni)
-        IconRenderer.set_button_icon(self.btn_yeni, "plus", color=C.BTN_PRIMARY_TEXT, size=16)
+        IconRenderer.set_button_icon(self.btn_yeni, "plus", color="primary", size=16)
         self.btn_yeni.setIconSize(QSize(16, 16))
         
         # IP-06: Aksiyon bazlı yetki kontrolü
@@ -467,12 +452,8 @@ class CihazListesiPage(QWidget):
     def _build_subtoolbar(self) -> QFrame:
         frame = QFrame()
         frame.setFixedHeight(36)
-        frame.setStyleSheet("""
-            QFrame {{
-                background-color: {};
-                border-bottom: 1px solid {};
-            }}
-        """.format(C.BG_PRIMARY, C.BORDER_PRIMARY))
+        frame.setProperty("bg-role", "page")
+        frame.setProperty("border-role", "border")
         lay = QHBoxLayout(frame)
         lay.setContentsMargins(16, 0, 16, 0)
         lay.setSpacing(8)
@@ -538,19 +519,15 @@ class CihazListesiPage(QWidget):
 
         self._model.setup_columns(
             self.table,
-            stretch_keys=["_marka_model", "Birim"],
-        )
+            stretch_keys=["_marka_model", "Birim"]
+)
         return self.table
 
     def _build_footer(self) -> QFrame:
         frame = QFrame()
         frame.setFixedHeight(40)
-        frame.setStyleSheet("""
-            QFrame {{
-                background-color: {};
-                border-top: 1px solid {};
-            }}
-        """.format(C.BG_SECONDARY, C.BORDER_PRIMARY))
+        frame.setProperty("bg-role", "panel")
+        frame.setProperty("border-role", "border")
         lay = QHBoxLayout(frame)
         lay.setContentsMargins(16, 0, 16, 0)
         lay.setSpacing(16)
@@ -599,9 +576,7 @@ class CihazListesiPage(QWidget):
         self.btn_yeni.clicked.connect(self.add_requested.emit)
         self.btn_load_more.clicked.connect(self._load_more_data)
         self.table.doubleClicked.connect(self._on_double_click)
-        self.table.mouseMoveEvent = self._tbl_mouse_move
-        self.table.mousePressEvent = self._tbl_mouse_press
-        self.table.leaveEvent = self._tbl_leave
+
 
     # ─── Veri Yükleme ────────────────────────────────────
 
@@ -777,45 +752,7 @@ class CihazListesiPage(QWidget):
         if has_more:
             self.btn_load_more.setText(f"Daha Fazla Yükle ({loaded}/{self._total_count})")
 
-    # ─── Mouse ───────────────────────────────────────────
 
-    def _tbl_mouse_move(self, event):
-        idx = self.table.indexAt(event.pos())
-        proxy_row = idx.row() if idx.isValid() else -1
-        self._hover_row = proxy_row
-        self._delegate.set_hover_row(proxy_row)
-        self.table.viewport().update()
-        QTableView.mouseMoveEvent(self.table, event)
-
-    def _tbl_leave(self, event):
-        self._hover_row = -1
-        self._delegate.set_hover_row(-1)
-        self.table.viewport().update()
-        QTableView.leaveEvent(self.table, event)
-
-    def _tbl_mouse_press(self, event):
-        idx = self.table.indexAt(event.pos())
-        if idx.isValid():
-            src = self._proxy.mapToSource(idx)
-            proxy_row = idx.row()
-            row_data = self._model.get_row(src.row())
-            if row_data and COLUMNS[idx.column()][0] == "_actions":
-                cell_rect = self.table.visualRect(idx)
-                local_pos = event.pos() - cell_rect.topLeft()
-                action = self._delegate.get_action_at(proxy_row, local_pos)
-                if action == "detay":
-                    self.detay_requested.emit(row_data)
-                    event.accept()
-                    return
-                if action == "edit":
-                    self.edit_requested.emit(row_data)
-                    event.accept()
-                    return
-                if action == "bakim":
-                    self.periodic_maintenance_requested.emit(row_data)
-                    event.accept()
-                    return
-        QTableView.mousePressEvent(self.table, event)
 
     def _on_double_click(self, idx):
         if not idx.isValid():

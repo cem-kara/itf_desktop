@@ -383,6 +383,7 @@ class BaseDokumanPanel(QWidget):
         self._btn_yukle.setText("Yükleniyor...")
 
         try:
+
             sonuc = self._svc.upload_and_save(
                 file_path   = file_path,
                 entity_type = self._entity_type,
@@ -395,11 +396,11 @@ class BaseDokumanPanel(QWidget):
                 iliskili_tip= self._iliskili_tip,
             )
 
-            if not sonuc["ok"]:
-                MesajKutusu.hata(self, "Hata", f"Yükleme başarısız:\n{sonuc['error']}")
+            if not sonuc.basarili:
+                MesajKutusu.hata(self, "Hata", f"Yükleme başarısız:\n{sonuc.mesaj}")
                 return
 
-            mod_text = "Drive'a yüklendi" if sonuc["mode"] == "drive" else "Yerel klasöre kaydedildi"
+            mod_text = "Drive'a yüklendi" if sonuc.veri and sonuc.veri.get("mode") == "drive" else "Yerel klasöre kaydedildi"
             self._inp_dosya.clear()
             self._inp_aciklama.clear()
             self._load_dokumanlari()
@@ -416,7 +417,9 @@ class BaseDokumanPanel(QWidget):
                     from datetime import date as _date
                     from core.di import get_registry; registry = get_registry(self._db)
                     saglik_repo = registry.get("Personel_Saglik_Takip")
-                    rapor_dosya = sonuc.get("drive_link") or sonuc.get("belge_adi") or ""
+                    rapor_dosya = ""
+                    if sonuc.veri:
+                        rapor_dosya = sonuc.veri.get("drive_link") or sonuc.veri.get("belge_adi") or ""
                     saglik_repo.update(self._iliskili_id, {
                         "RaporDosya":    rapor_dosya,
                         "MuayeneTarihi": _date.today().isoformat(),

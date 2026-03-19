@@ -17,6 +17,7 @@ from PySide6.QtCore import Qt, Signal
 
 from ui.styles import DarkTheme
 from core.logger import logger
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 
 from database.table_config import TABLES
 
@@ -406,7 +407,7 @@ class CihazTeknikPanel(QWidget):
     def _on_save(self):
         """Mevcut teknik veriyi veritabanina kaydet."""
         if not self.db:
-            QMessageBox.warning(self, "Hata", "Veritabanı bağlantısı bulunamadı.")
+            uyari_goster(self, "Veritabanı bağlantısı bulunamadı.")
             return
 
         data = dict(self.teknik_data or {})
@@ -417,15 +418,15 @@ class CihazTeknikPanel(QWidget):
         payload = {k: v for k, v in data.items() if k in allowed}
 
         if not payload or not payload.get("Cihazid"):
-            QMessageBox.warning(self, "Hata", "Kaydedilecek teknik veri bulunamadı.")
+            uyari_goster(self, "Kaydedilecek teknik veri bulunamadı.")
             return
 
         try:
             svc = _get_cihaz_service(self.db)
             svc.insert_cihaz_teknik(payload)
             self.teknik_data.update(payload)
-            QMessageBox.information(self, "Başarılı", "Teknik bilgiler kaydedildi.")
+            bilgi_goster(self, "Teknik bilgiler kaydedildi.")
             self.saved.emit()
         except Exception as e:
             logger.error(f"Teknik veri kaydetme hatasi: {e}")
-            QMessageBox.critical(self, "Hata", f"Kaydetme başarısız:\n{e}")
+            hata_goster(self, f"Kaydetme başarısız:\n{e}")
