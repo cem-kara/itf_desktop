@@ -12,8 +12,6 @@ class TeknikHizmetlerPage(QWidget):
         self._db = db
         self._action_guard = action_guard
         self.setProperty("bg-role", "page")
-        self.style().unpolish(self)
-        self.style().polish(self)
         
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)

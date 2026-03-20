@@ -107,8 +107,6 @@ class IzinTakipPage(QWidget):
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
         self.setProperty("bg-role", "page")
-        self.style().unpolish(self)
-        self.style().polish(self)
         self._db = db
         self._svc = get_izin_service(db) if db else None
         self._all_izin = []
@@ -137,8 +135,6 @@ class IzinTakipPage(QWidget):
         # ── FILTER BAR: Sadece Ay + Yıl ──
         filter_frame = QFrame()
         filter_frame.setProperty("bg-role", "panel")
-        filter_frame.style().unpolish(filter_frame)
-        filter_frame.style().polish(filter_frame)
         fp = QHBoxLayout(filter_frame)
         fp.setContentsMargins(12, 8, 12, 8)
         fp.setSpacing(8)
@@ -146,8 +142,6 @@ class IzinTakipPage(QWidget):
         lbl_ay = QLabel("Ay:")
         lbl_ay.setProperty("color-role", "muted")
         lbl_ay.setProperty("bg-role", "panel")
-        lbl_ay.style().unpolish(lbl_ay)
-        lbl_ay.style().polish(lbl_ay)
         fp.addWidget(lbl_ay)
 
         self.cmb_ay = QComboBox()
@@ -163,8 +157,6 @@ class IzinTakipPage(QWidget):
         lbl_yil = QLabel("Yıl:")
         lbl_yil.setProperty("color-role", "muted")
         lbl_yil.setProperty("bg-role", "panel")
-        lbl_yil.style().unpolish(lbl_yil)
-        lbl_yil.style().polish(lbl_yil)
         fp.addWidget(lbl_yil)
 
         self.cmb_yil = QComboBox()
@@ -182,8 +174,6 @@ class IzinTakipPage(QWidget):
 
         self.btn_yeni = QPushButton("Yeni Izin")
         self.btn_yeni.setProperty("style-role", "action")
-        self.btn_yeni.style().unpolish(self.btn_yeni)
-        self.btn_yeni.style().polish(self.btn_yeni)
         self.btn_yeni.setToolTip("Yeni İzin")
         self.btn_yeni.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_yeni, "plus", color="primary", size=14)
@@ -191,8 +181,6 @@ class IzinTakipPage(QWidget):
 
         self.btn_yenile = QPushButton("Yenile")
         self.btn_yenile.setProperty("style-role", "refresh")
-        self.btn_yenile.style().unpolish(self.btn_yenile)
-        self.btn_yenile.style().polish(self.btn_yenile)
         self.btn_yenile.setToolTip("Yenile")
         self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_yenile, "sync", color="primary", size=14)
@@ -213,8 +201,6 @@ class IzinTakipPage(QWidget):
 
         grp_tablo = QGroupBox("Izin Kayitlari")
         grp_tablo.setProperty("bg-role", "panel")
-        grp_tablo.style().unpolish(grp_tablo)
-        grp_tablo.style().polish(grp_tablo)
         tl = QVBoxLayout(grp_tablo)
         tl.setContentsMargins(8, 8, 8, 8)
         tl.setSpacing(6)
@@ -249,8 +235,6 @@ class IzinTakipPage(QWidget):
         foot = QHBoxLayout()
         self.lbl_count = QLabel("")
         self.lbl_count.setProperty("color-role", "muted")
-        self.lbl_count.style().unpolish(self.lbl_count)
-        self.lbl_count.style().polish(self.lbl_count)
         foot.addWidget(self.lbl_count)
         foot.addStretch()
         tl.addLayout(foot)
@@ -280,16 +264,12 @@ class IzinTakipPage(QWidget):
         lbl_drawer = QLabel("Izin Girisi")
         lbl_drawer.setProperty("color-role", "primary")
         lbl_drawer.setStyleSheet("font-size: 14px; font-weight: 600;")
-        lbl_drawer.style().unpolish(lbl_drawer)
-        lbl_drawer.style().polish(lbl_drawer)
         header_lay.addWidget(lbl_drawer)
         header_lay.addStretch()
 
         btn_drawer_close = QPushButton()
         btn_drawer_close.setFixedSize(32, 32)
         btn_drawer_close.setProperty("style-role", "close")
-        btn_drawer_close.style().unpolish(btn_drawer_close)
-        btn_drawer_close.style().polish(btn_drawer_close)
         btn_drawer_close.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(btn_drawer_close, "x", color="primary", size=16)
         btn_drawer_close.clicked.connect(self._close_drawer)
@@ -310,8 +290,6 @@ class IzinTakipPage(QWidget):
         # ─ Personel Seçimi ─
         grp_personel = QGroupBox("Personel Secimi")
         grp_personel.setProperty("bg-role", "panel")
-        grp_personel.style().unpolish(grp_personel)
-        grp_personel.style().polish(grp_personel)
         grp_personel.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         pg = QGridLayout(grp_personel)
         pg.setSpacing(8)
@@ -321,8 +299,6 @@ class IzinTakipPage(QWidget):
 
         lbl_sinif = QLabel("Hizmet Sınıfı")
         lbl_sinif.setProperty("color-role", "muted")
-        lbl_sinif.style().unpolish(lbl_sinif)
-        lbl_sinif.style().polish(lbl_sinif)
         lbl_sinif.setFixedWidth(120)
         pg.addWidget(lbl_sinif, 0, 0)
         self.cmb_hizmet_sinifi = QComboBox()
@@ -333,8 +309,6 @@ class IzinTakipPage(QWidget):
 
         lbl_p = QLabel("Personel")
         lbl_p.setProperty("color-role", "muted")
-        lbl_p.style().unpolish(lbl_p)
-        lbl_p.style().polish(lbl_p)
         lbl_p.setFixedWidth(120)
         pg.addWidget(lbl_p, 1, 0)
         self.cmb_personel = QComboBox()
@@ -357,8 +331,6 @@ class IzinTakipPage(QWidget):
         # ─ İzin Giriş Formu ─
         grp_giris = QGroupBox("Yeni Izin Girisi")
         grp_giris.setProperty("bg-role", "panel")
-        grp_giris.style().unpolish(grp_giris)
-        grp_giris.style().polish(grp_giris)
         grp_giris.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         fg = QGridLayout(grp_giris)
         fg.setSpacing(10)
@@ -368,8 +340,6 @@ class IzinTakipPage(QWidget):
 
         lbl_tip = QLabel("İzin Tipi")
         lbl_tip.setProperty("color-role", "muted")
-        lbl_tip.style().unpolish(lbl_tip)
-        lbl_tip.style().polish(lbl_tip)
         lbl_tip.setFixedWidth(120)
         fg.addWidget(lbl_tip, 0, 0)
         self.cmb_izin_tipi = QComboBox()
@@ -381,14 +351,10 @@ class IzinTakipPage(QWidget):
         # Max gün uyarı etiketi
         self.lbl_max_gun = QLabel("")
         self.lbl_max_gun.setProperty("color-role", "muted")
-        self.lbl_max_gun.style().unpolish(self.lbl_max_gun)
-        self.lbl_max_gun.style().polish(self.lbl_max_gun)
         fg.addWidget(self.lbl_max_gun, 1, 0, 1, 2)
 
         lbl_bas = QLabel("Başlama / Süre")
         lbl_bas.setProperty("color-role", "muted")
-        lbl_bas.style().unpolish(lbl_bas)
-        lbl_bas.style().polish(lbl_bas)
         lbl_bas.setFixedWidth(120)
         fg.addWidget(lbl_bas, 2, 0)
 
@@ -406,8 +372,6 @@ class IzinTakipPage(QWidget):
 
         lbl_gun = QLabel("Gün:")
         lbl_gun.setProperty("color-role", "muted")
-        lbl_gun.style().unpolish(lbl_gun)
-        lbl_gun.style().polish(lbl_gun)
         h_tarih.addWidget(lbl_gun)
         self.spn_gun = QSpinBox()
         self.spn_gun.setRange(1, 365)
@@ -420,8 +384,6 @@ class IzinTakipPage(QWidget):
 
         lbl_bit = QLabel("Bitiş (İşe Dönüş)")
         lbl_bit.setProperty("color-role", "muted")
-        lbl_bit.style().unpolish(lbl_bit)
-        lbl_bit.style().polish(lbl_bit)
         lbl_bit.setFixedWidth(120)
         fg.addWidget(lbl_bit, 3, 0)
         self.dt_bitis = QDateEdit()
@@ -436,8 +398,6 @@ class IzinTakipPage(QWidget):
 
         self.btn_kaydet = QPushButton("IZIN KAYDET")
         self.btn_kaydet.setProperty("style-role", "action")
-        self.btn_kaydet.style().unpolish(self.btn_kaydet)
-        self.btn_kaydet.style().polish(self.btn_kaydet)
         self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_kaydet.setEnabled(False)
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color="primary", size=14)
@@ -447,8 +407,6 @@ class IzinTakipPage(QWidget):
         # ─ Bakiye Panosu ─
         grp_bakiye = QGroupBox("Izin Bakiyesi")
         grp_bakiye.setProperty("bg-role", "panel")
-        grp_bakiye.style().unpolish(grp_bakiye)
-        grp_bakiye.style().polish(grp_bakiye)
         grp_bakiye.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         bg = QGridLayout(grp_bakiye)
         bg.setSpacing(4)
@@ -458,8 +416,6 @@ class IzinTakipPage(QWidget):
 
         lbl_y = QLabel("YILLIK İZİN")
         lbl_y.setProperty("style-role", "section-title")
-        lbl_y.style().unpolish(lbl_y)
-        lbl_y.style().polish(lbl_y)
         bg.addWidget(lbl_y, 0, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
 
         self.lbl_y_devir = self._add_stat(bg, 1, "Devir", "stat_value")
@@ -467,20 +423,18 @@ class IzinTakipPage(QWidget):
         self.lbl_y_kul = self._add_stat(bg, 3, "Kullanılan", "stat_red")
         self.lbl_y_kal = self._add_stat(bg, 4, "KALAN", "stat_green")
 
-        sep3 = QFrame(); sep3.setFixedHeight(1); sep3.setProperty("bg-role", "separator"); sep3.style().unpolish(sep3); sep3.style().polish(sep3)
+        sep3 = QFrame(); sep3.setFixedHeight(1); sep3.setProperty("bg-role", "separator")
         bg.addWidget(sep3, 5, 0, 1, 2)
 
         lbl_s = QLabel("ŞUA İZNİ")
         lbl_s.setProperty("style-role", "section-title")
-        lbl_s.style().unpolish(lbl_s)
-        lbl_s.style().polish(lbl_s)
         bg.addWidget(lbl_s, 6, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
 
         self.lbl_s_hak = self._add_stat(bg, 7, "Hakediş", "stat_value")
         self.lbl_s_kul = self._add_stat(bg, 8, "Kullanılan", "stat_red")
         self.lbl_s_kal = self._add_stat(bg, 9, "KALAN", "stat_green")
 
-        sep4 = QFrame(); sep4.setFixedHeight(1); sep4.setProperty("bg-role", "separator"); sep4.style().unpolish(sep4); sep4.style().polish(sep4)
+        sep4 = QFrame(); sep4.setFixedHeight(1); sep4.setProperty("bg-role", "separator")
         bg.addWidget(sep4, 10, 0, 1, 2)
 
         self.lbl_diger = self._add_stat(bg, 11, "Rapor / Mazeret", "stat_value")
@@ -557,8 +511,6 @@ class IzinTakipPage(QWidget):
         sep.setFixedWidth(1)
         sep.setFixedHeight(20)
         sep.setProperty("bg-role", "separator")
-        sep.style().unpolish(sep)
-        sep.style().polish(sep)
         layout.addWidget(sep)
 
     def _setup_calendar(self, date_edit):
@@ -572,8 +524,6 @@ class IzinTakipPage(QWidget):
         }
         lbl = QLabel(text)
         lbl.setProperty("style-role", "stat-label")
-        lbl.style().unpolish(lbl)
-        lbl.style().polish(lbl)
         grid.addWidget(lbl, row, 0)
         val = QLabel("—")
         val.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)

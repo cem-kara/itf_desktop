@@ -242,8 +242,6 @@ class BakimKayitForm(QWidget):
         sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
         sep.setProperty("bg-role", "separator")
-        sep.style().unpolish(sep)
-        sep.style().polish(sep)
         root.addWidget(sep)
 
         # ── Sekmeli Ana Alan ────────────────────────────
@@ -277,8 +275,6 @@ class BakimKayitForm(QWidget):
         bar = QWidget()
         bar.setFixedHeight(68)
         bar.setProperty("bg-role", "panel")
-        bar.style().unpolish(bar)
-        bar.style().polish(bar)
         layout = QHBoxLayout(bar)
         layout.setContentsMargins(12, 8, 12, 8)
         layout.setSpacing(1)
@@ -299,8 +295,6 @@ class BakimKayitForm(QWidget):
         card = QWidget()
         card.setProperty("bg-role", "panel")
         card.setStyleSheet("border-radius:6px;padding:0 2px;")
-        card.style().unpolish(card)
-        card.style().polish(card)
         vl = QVBoxLayout(card)
         vl.setContentsMargins(10, 6, 10, 6)
         vl.setSpacing(2)
@@ -309,8 +303,6 @@ class BakimKayitForm(QWidget):
         lbl_t.setStyleSheet(
             "font-size:9px;font-weight:600;letter-spacing:0.06em;background:transparent;"
         )
-        lbl_t.style().unpolish(lbl_t)
-        lbl_t.style().polish(lbl_t)
         lbl_v = QLabel(default)
         lbl_v.setStyleSheet(
             f"font-size:18px;font-weight:700;color:{color};background:transparent;"
@@ -355,8 +347,6 @@ class BakimKayitForm(QWidget):
         filter_bar.setStyleSheet(
             f"border-bottom:1px solid {_C['border']};"
         )
-        filter_bar.style().unpolish(filter_bar)
-        filter_bar.style().polish(filter_bar)
         fb_l = QHBoxLayout(filter_bar)
         fb_l.setContentsMargins(10, 6, 10, 6)
         fb_l.setSpacing(8)
@@ -406,8 +396,6 @@ class BakimKayitForm(QWidget):
         # Görünüm geçiş butonu
         self.btn_takvim_toggle = QPushButton("Takvim Görünümü")
         self.btn_takvim_toggle.setProperty("style-role", "secondary")
-        self.btn_takvim_toggle.style().unpolish(self.btn_takvim_toggle)
-        self.btn_takvim_toggle.style().polish(self.btn_takvim_toggle)
         self.btn_takvim_toggle.setCheckable(True)
         self.btn_takvim_toggle.toggled.connect(self._toggle_takvim_gorunumu)
         fb_l.addWidget(self.btn_takvim_toggle)
@@ -445,8 +433,6 @@ class BakimKayitForm(QWidget):
         self.lbl_count.setStyleSheet(
             f"font-size:11px;padding:4px 10px;border-top:1px solid {_C['border']};"
         )
-        self.lbl_count.style().unpolish(self.lbl_count)
-        self.lbl_count.style().polish(self.lbl_count)
         layout.addWidget(self.lbl_count)
         
         # Progress bar
@@ -490,8 +476,6 @@ class BakimKayitForm(QWidget):
         # ════════════════════════════════════
         detail_page = QWidget()
         detail_page.setProperty("bg-role", "surface")
-        detail_page.style().unpolish(detail_page)
-        detail_page.style().polish(detail_page)
         detail_layout = QVBoxLayout(detail_page)
         detail_layout.setContentsMargins(0, 0, 0, 0)
         detail_layout.setSpacing(0)
@@ -522,8 +506,6 @@ class BakimKayitForm(QWidget):
         self.lbl_det_durum.setStyleSheet(
             "font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;"
         )
-        self.lbl_det_durum.style().unpolish(self.lbl_det_durum)
-        self.lbl_det_durum.style().polish(self.lbl_det_durum)
         self.lbl_det_durum.setAlignment(Qt.AlignmentFlag.AlignCenter)
         top_row.addWidget(self.lbl_det_durum)
         dh_layout.addLayout(top_row)
@@ -534,8 +516,6 @@ class BakimKayitForm(QWidget):
         self.lbl_det_planid.setStyleSheet(
             "font-size:10px;letter-spacing:0.04em;"
         )
-        self.lbl_det_planid.style().unpolish(self.lbl_det_planid)
-        self.lbl_det_planid.style().polish(self.lbl_det_planid)
         dh_layout.addWidget(self.lbl_det_planid)
 
         # Ayırıcı çizgi
@@ -543,8 +523,6 @@ class BakimKayitForm(QWidget):
         sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
         sep.setProperty("bg-role", "separator")
-        sep.style().unpolish(sep)
-        sep.style().polish(sep)
         dh_layout.addWidget(sep)
 
         # Grid: Tarih + Periyot + Sıra / Tip + Teknisyen
@@ -575,8 +553,6 @@ class BakimKayitForm(QWidget):
         self.lbl_det_aciklama.setStyleSheet(
             f"font-size:11px;padding:6px 8px;border-radius:4px;border:1px solid {_C['border']};"
         )
-        self.lbl_det_aciklama.style().unpolish(self.lbl_det_aciklama)
-        self.lbl_det_aciklama.style().polish(self.lbl_det_aciklama)
         dh_layout.addWidget(self.lbl_det_aciklama)
 
         detail_layout.addWidget(self._det_header)
@@ -606,21 +582,15 @@ class BakimKayitForm(QWidget):
         # index 1: bakım bilgi giriş formu (sadece editable paneller)
         self._exec_content_stack = QStackedWidget()
         self._exec_content_stack.setProperty("bg-role", "surface")
-        self._exec_content_stack.style().unpolish(self._exec_content_stack)
-        self._exec_content_stack.style().polish(self._exec_content_stack)
 
         placeholder = QWidget()
         placeholder.setProperty("bg-role", "surface")
-        placeholder.style().unpolish(placeholder)
-        placeholder.style().polish(placeholder)
         ph_layout = QVBoxLayout(placeholder)
         ph_layout.addStretch()
         ph_lbl = QLabel('Kayıt seçip "Bakım Bilgisi Gir" butonuna tıklayın\nveya çift tıklayın.')
         ph_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         ph_lbl.setProperty("color-role", "muted")
         ph_lbl.setStyleSheet("font-size: 11px;")
-        ph_lbl.style().unpolish(ph_lbl)
-        ph_lbl.style().polish(ph_lbl)
         ph_layout.addWidget(ph_lbl)
         ph_layout.addStretch()
         self._exec_content_stack.addWidget(placeholder)   # index 0
@@ -632,8 +602,6 @@ class BakimKayitForm(QWidget):
         )
         self._exec_form_inner = QWidget()
         self._exec_form_inner.setProperty("bg-role", "surface")
-        self._exec_form_inner.style().unpolish(self._exec_form_inner)
-        self._exec_form_inner.style().polish(self._exec_form_inner)
         self._exec_form_layout = QVBoxLayout(self._exec_form_inner)
         self._exec_form_layout.setContentsMargins(10, 10, 10, 10)
         self._exec_form_layout.setSpacing(0)
@@ -650,8 +618,6 @@ class BakimKayitForm(QWidget):
         # ════════════════════════════════════
         form_page = QWidget()
         form_page.setProperty("bg-role", "surface")
-        form_page.style().unpolish(form_page)
-        form_page.style().polish(form_page)
         form_page_layout = QVBoxLayout(form_page)
         form_page_layout.setContentsMargins(0, 0, 0, 0)
         form_page_layout.setSpacing(0)
@@ -687,8 +653,6 @@ class BakimKayitForm(QWidget):
 
         self._form_inner = QWidget()
         self._form_inner.setProperty("bg-role", "surface")
-        self._form_inner.style().unpolish(self._form_inner)
-        self._form_inner.style().polish(self._form_inner)
         self._form_layout = QVBoxLayout(self._form_inner)
         self._form_layout.setContentsMargins(10, 10, 10, 10)
         self._form_layout.setSpacing(0)
@@ -703,8 +667,6 @@ class BakimKayitForm(QWidget):
         # ════════════════════════════════════
         bulk_page = QWidget()
         bulk_page.setProperty("bg-role", "surface")
-        bulk_page.style().unpolish(bulk_page)
-        bulk_page.style().polish(bulk_page)
         bulk_layout = QVBoxLayout(bulk_page)
         bulk_layout.setContentsMargins(0, 0, 0, 0)
         bulk_layout.setSpacing(0)
@@ -738,8 +700,6 @@ class BakimKayitForm(QWidget):
 
         self._bulk_inner = QWidget()
         self._bulk_inner.setProperty("bg-role", "surface")
-        self._bulk_inner.style().unpolish(self._bulk_inner)
-        self._bulk_inner.style().polish(self._bulk_inner)
         self._bulk_layout = QVBoxLayout(self._bulk_inner)
         self._bulk_layout.setContentsMargins(10, 10, 10, 10)
         self._bulk_layout.setSpacing(0)
@@ -766,15 +726,11 @@ class BakimKayitForm(QWidget):
         lbl.setProperty("color-role", "muted")
         lbl.setProperty("bg-role", "panel")
         lbl.setStyleSheet("font-size:11px;")
-        lbl.style().unpolish(lbl)
-        lbl.style().polish(lbl)
         return lbl
 
     def _field_lbl(self, title: str, value: str) -> QWidget:
         w = QWidget()
         w.setProperty("bg-role", "elevated")
-        w.style().unpolish(w)
-        w.style().polish(w)
         vl = QVBoxLayout(w)
         vl.setContentsMargins(0, 0, 0, 0)
         vl.setSpacing(1)
@@ -783,14 +739,10 @@ class BakimKayitForm(QWidget):
         t.setStyleSheet(
             "font-size:9px;letter-spacing:0.06em;font-weight:600;"
         )
-        t.style().unpolish(t)
-        t.style().polish(t)
         v = QLabel(value)
         v.setObjectName("val")
         v.setProperty("color-role", "primary")
         v.setStyleSheet("font-size: 12px;")
-        v.style().unpolish(v)
-        v.style().polish(v)
         v.setWordWrap(True)
         vl.addWidget(t)
         vl.addWidget(v)
@@ -1081,8 +1033,6 @@ class BakimKayitForm(QWidget):
         outer.setProperty("bg-role", "panel")
         self._perf_inner = QWidget()
         self._perf_inner.setProperty("bg-role", "surface")
-        self._perf_inner.style().unpolish(self._perf_inner)
-        self._perf_inner.style().polish(self._perf_inner)
         self._perf_layout = QVBoxLayout(self._perf_inner)
         self._perf_layout.setContentsMargins(16, 16, 16, 16)
         self._perf_layout.setSpacing(20)
@@ -1097,8 +1047,6 @@ class BakimKayitForm(QWidget):
             f"font-size:11px;font-weight:700;letter-spacing:0.08em;"
             f"padding-bottom:4px;border-bottom:1px solid {_C['border']};"
         )
-        lbl.style().unpolish(lbl)
-        lbl.style().polish(lbl)
         return lbl
 
     def _refresh_perf_tab(self):
@@ -1119,8 +1067,6 @@ class BakimKayitForm(QWidget):
             empty.setStyleSheet(
                 "font-size:13px;padding:40px;"
             )
-            empty.style().unpolish(empty)
-            empty.style().polish(empty)
             self._perf_layout.addWidget(empty)
             self._perf_layout.addStretch()
             return
@@ -1194,8 +1140,6 @@ class BakimKayitForm(QWidget):
 
         container = QWidget()
         container.setProperty("bg-role", "transparent")
-        container.style().unpolish(container)
-        container.style().polish(container)
         hl = QHBoxLayout(container)
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setSpacing(8)
@@ -1212,8 +1156,6 @@ class BakimKayitForm(QWidget):
             card = QWidget()
             card.setProperty("bg-role", "panel")
             card.setStyleSheet(f"border:1px solid {_C['border']};border-radius:6px;")
-            card.style().unpolish(card)
-            card.style().polish(card)
             cl = QVBoxLayout(card)
             cl.setContentsMargins(10, 8, 10, 8)
             cl.setSpacing(2)
@@ -1222,8 +1164,6 @@ class BakimKayitForm(QWidget):
             t.setStyleSheet(
                 "font-size:9px;font-weight:600;letter-spacing:0.06em;background:transparent;"
             )
-            t.style().unpolish(t)
-            t.style().polish(t)
             v = QLabel(value)
             v.setStyleSheet(
                 f"font-size:16px;font-weight:700;color:{color};background:transparent;"
@@ -1340,14 +1280,10 @@ class BakimKayitForm(QWidget):
             lbl = QLabel("Eşleşen marka verisi bulunamadı.")
             lbl.setProperty("color-role", "muted")
             lbl.setStyleSheet("font-size: 12px; padding: 12px;")
-            lbl.style().unpolish(lbl)
-            lbl.style().polish(lbl)
             return lbl
 
         container = QWidget()
         container.setProperty("bg-role", "transparent")
-        container.style().unpolish(container)
-        container.style().polish(container)
         grid = QGridLayout(container)
         grid.setContentsMargins(0, 0, 0, 0)
         grid.setSpacing(10)
@@ -1361,8 +1297,6 @@ class BakimKayitForm(QWidget):
             card = QWidget()
             card.setProperty("bg-role", "panel")
             card.setStyleSheet(f"border:1px solid {_C['border']};border-radius:8px;")
-            card.style().unpolish(card)
-            card.style().polish(card)
             cl = QVBoxLayout(card)
             cl.setContentsMargins(14, 12, 14, 12)
             cl.setSpacing(8)
@@ -1374,8 +1308,6 @@ class BakimKayitForm(QWidget):
             lbl_marka.setStyleSheet(
                 "font-size:13px;font-weight:700;background:transparent;"
             )
-            lbl_marka.style().unpolish(lbl_marka)
-            lbl_marka.style().polish(lbl_marka)
             hdr.addWidget(lbl_marka)
             hdr.addStretch()
 
@@ -1386,8 +1318,6 @@ class BakimKayitForm(QWidget):
             lbl_cihaz_sayi.setStyleSheet(
                 "font-size:10px;border-radius:4px;padding:1px 6px;"
             )
-            lbl_cihaz_sayi.style().unpolish(lbl_cihaz_sayi)
-            lbl_cihaz_sayi.style().polish(lbl_cihaz_sayi)
             hdr.addWidget(lbl_cihaz_sayi)
 
             # Tamamlanma oranı pill
@@ -1431,8 +1361,6 @@ class BakimKayitForm(QWidget):
             for c in range(remainder, cols):
                 ph = QWidget()
                 ph.setProperty("bg-role", "transparent")
-                ph.style().unpolish(ph)
-                ph.style().polish(ph)
                 grid.addWidget(ph, len(marka_data) // cols, c)
 
         return container
@@ -1446,8 +1374,6 @@ class BakimKayitForm(QWidget):
             f"border-left:3px solid {_C['amber']};"
             f"border-radius:8px;"
         )
-        card.style().unpolish(card)
-        card.style().polish(card)
         cl = QVBoxLayout(card)
         cl.setContentsMargins(16, 12, 16, 12)
         cl.setSpacing(10)
@@ -1459,8 +1385,6 @@ class BakimKayitForm(QWidget):
         lbl_title.setStyleSheet(
             "font-size:12px;font-weight:700;background:transparent;"
         )
-        lbl_title.style().unpolish(lbl_title)
-        lbl_title.style().polish(lbl_title)
         hdr.addWidget(lbl_title)
         hdr.addStretch()
         lbl_sayi = QLabel(f"{len(plansiz_markalar)} marka")
@@ -1474,8 +1398,6 @@ class BakimKayitForm(QWidget):
         # Marka satırları — yatay akış (wrap)
         wrap = QWidget()
         wrap.setProperty("bg-role", "transparent")
-        wrap.style().unpolish(wrap)
-        wrap.style().polish(wrap)
         wrap_l = QHBoxLayout(wrap)
         wrap_l.setContentsMargins(0, 0, 0, 0)
         wrap_l.setSpacing(8)
@@ -1486,8 +1408,6 @@ class BakimKayitForm(QWidget):
             chip.setStyleSheet(
                 f"border:1px solid {_C['border']};border-radius:6px;"
             )
-            chip.style().unpolish(chip)
-            chip.style().polish(chip)
             chip_l = QVBoxLayout(chip)
             chip_l.setContentsMargins(10, 6, 10, 6)
             chip_l.setSpacing(2)
@@ -1497,8 +1417,6 @@ class BakimKayitForm(QWidget):
             lbl_m.setStyleSheet(
                 "font-size:12px;font-weight:600;background:transparent;"
             )
-            lbl_m.style().unpolish(lbl_m)
-            lbl_m.style().polish(lbl_m)
             chip_l.addWidget(lbl_m)
 
             lbl_c = QLabel(f"{d['cihaz_sayi']} cihaz")
@@ -1506,8 +1424,6 @@ class BakimKayitForm(QWidget):
             lbl_c.setStyleSheet(
                 "font-size:10px;background:transparent;"
             )
-            lbl_c.style().unpolish(lbl_c)
-            lbl_c.style().polish(lbl_c)
             chip_l.addWidget(lbl_c)
             wrap_l.addWidget(chip)
 
@@ -1519,8 +1435,6 @@ class BakimKayitForm(QWidget):
     def _bar_row(self, label: str, value: int, pct: int, fill_color: str) -> QWidget:
         w = QWidget()
         w.setProperty("bg-role", "transparent")
-        w.style().unpolish(w)
-        w.style().polish(w)
         hl = QHBoxLayout(w)
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setSpacing(6)
@@ -1529,16 +1443,12 @@ class BakimKayitForm(QWidget):
         lbl.setFixedWidth(56)
         lbl.setProperty("color-role", "muted")
         lbl.setStyleSheet("font-size: 10px;")
-        lbl.style().unpolish(lbl)
-        lbl.style().polish(lbl)
         hl.addWidget(lbl)
 
         bar_bg = QWidget()
         bar_bg.setFixedHeight(6)
         bar_bg.setProperty("bg-role", "separator")
         bar_bg.setStyleSheet("border-radius: 3px;")
-        bar_bg.style().unpolish(bar_bg)
-        bar_bg.style().polish(bar_bg)
         bar_bg.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         bar_fill = QWidget(bar_bg)
         bar_fill.setFixedHeight(6)
@@ -1591,8 +1501,6 @@ class BakimKayitForm(QWidget):
         container.setStyleSheet(
             f"border:1px solid {_C['border']};border-radius:8px;"
         )
-        container.style().unpolish(container)
-        container.style().polish(container)
         cl = QVBoxLayout(container)
         cl.setContentsMargins(16, 14, 16, 14)
         cl.setSpacing(6)
@@ -1608,8 +1516,6 @@ class BakimKayitForm(QWidget):
             val_lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter)
             val_lbl.setProperty("color-role", "muted")
             val_lbl.setStyleSheet("font-size: 9px;")
-            val_lbl.style().unpolish(val_lbl)
-            val_lbl.style().polish(val_lbl)
             col.addWidget(val_lbl)
 
             bar_color = _C["red"] if val > max_val * 0.7 else \
@@ -1633,8 +1539,6 @@ class BakimKayitForm(QWidget):
             lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter)
             lbl.setProperty("color-role", "muted")
             lbl.setStyleSheet("font-size: 9px;")
-            lbl.style().unpolish(lbl)
-            lbl.style().polish(lbl)
             lbl_row.addWidget(lbl)
         cl.addLayout(lbl_row)
 
@@ -1649,8 +1553,6 @@ class BakimKayitForm(QWidget):
 
         container = QWidget()
         container.setProperty("bg-role", "transparent")
-        container.style().unpolish(container)
-        container.style().polish(container)
         cl = QVBoxLayout(container)
         cl.setContentsMargins(0, 0, 0, 0)
         cl.setSpacing(6)
@@ -1659,8 +1561,6 @@ class BakimKayitForm(QWidget):
             lbl = QLabel("Gecikmiş bakım bulunmuyor.")
             lbl.setProperty("color-role", "muted")
             lbl.setStyleSheet("font-size: 12px; padding: 12px;")
-            lbl.style().unpolish(lbl)
-            lbl.style().polish(lbl)
             cl.addWidget(lbl)
             return container
 
@@ -1671,8 +1571,6 @@ class BakimKayitForm(QWidget):
             row_w.setStyleSheet(
                 f"border:1px solid {_C['border']};border-left:3px solid {_C['red']};border-radius:6px;"
             )
-            row_w.style().unpolish(row_w)
-            row_w.style().polish(row_w)
             rl = QHBoxLayout(row_w)
             rl.setContentsMargins(12, 8, 12, 8)
             rl.setSpacing(12)
@@ -1682,24 +1580,18 @@ class BakimKayitForm(QWidget):
             chip.setStyleSheet(
                 f"font-size:11px;font-weight:600;background:{_C['accent']}22;border-radius:4px;padding:2px 8px;"
             )
-            chip.style().unpolish(chip)
-            chip.style().polish(chip)
             chip.setFixedWidth(90)
             rl.addWidget(chip)
 
             plan_no = QLabel(str(r.get("Planid",""))[:20])
             plan_no.setProperty("color-role", "muted")
             plan_no.setStyleSheet("font-size: 11px;")
-            plan_no.style().unpolish(plan_no)
-            plan_no.style().polish(plan_no)
             plan_no.setFixedWidth(120)
             rl.addWidget(plan_no)
 
             periyot = QLabel(str(r.get("BakimPeriyodu","")) or "—")
             periyot.setProperty("color-role", "primary")
             periyot.setStyleSheet("font-size: 12px;")
-            periyot.style().unpolish(periyot)
-            periyot.style().polish(periyot)
             periyot.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
             rl.addWidget(periyot)
 
@@ -1715,8 +1607,6 @@ class BakimKayitForm(QWidget):
                 "font-size:11px;font-weight:600;background:transparent;"
             )
             gecikme_lbl.setProperty("color-role", "err")
-            gecikme_lbl.style().unpolish(gecikme_lbl)
-            gecikme_lbl.style().polish(gecikme_lbl)
             rl.addWidget(gecikme_lbl)
 
             cl.addWidget(row_w)
@@ -1793,21 +1683,15 @@ class _BakimTakvimWidget(QWidget):
         self.btn_geri = QPushButton("‹")
         self.btn_geri.setFixedSize(28, 28)
         self.btn_geri.setProperty("style-role", "secondary")
-        self.btn_geri.style().unpolish(self.btn_geri)
-        self.btn_geri.style().polish(self.btn_geri)
         self.btn_geri.clicked.connect(self._onceki_ay)
 
         self.btn_ileri = QPushButton("›")
         self.btn_ileri.setFixedSize(28, 28)
         self.btn_ileri.setProperty("style-role", "secondary")
-        self.btn_ileri.style().unpolish(self.btn_ileri)
-        self.btn_ileri.style().polish(self.btn_ileri)
         self.btn_ileri.clicked.connect(self._sonraki_ay)
 
         self.btn_bugun = QPushButton("Bugün")
         self.btn_bugun.setProperty("style-role", "secondary")
-        self.btn_bugun.style().unpolish(self.btn_bugun)
-        self.btn_bugun.style().polish(self.btn_bugun)
         self.btn_bugun.setFixedHeight(28)
         self.btn_bugun.clicked.connect(self._bugun_git)
 
@@ -2225,8 +2109,6 @@ class _BakimGirisForm(QWidget):
         self.lbl_dosya.setStyleSheet(
             f"font-style:italic;padding:8px 12px;border-radius:4px;border:1px dashed {_C['border']};"
         )
-        self.lbl_dosya.style().unpolish(self.lbl_dosya)
-        self.lbl_dosya.style().polish(self.lbl_dosya)
         file_layout.addWidget(self.lbl_dosya, 1)
         
         self.btn_dosya_ac = QPushButton("Aç")
@@ -2261,8 +2143,6 @@ class _BakimGirisForm(QWidget):
         btn_container = QWidget()
         btn_container.setProperty("bg-role", "surface")
         btn_container.setStyleSheet(f"border-top:1px solid {_C['border']};border-radius:0px;padding:12px;")
-        btn_container.style().unpolish(btn_container)
-        btn_container.style().polish(btn_container)
         btns = QHBoxLayout(btn_container)
         btns.setContentsMargins(8, 8, 8, 8)
         btns.setSpacing(8)

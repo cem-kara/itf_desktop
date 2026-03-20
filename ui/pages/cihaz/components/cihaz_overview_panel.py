@@ -49,8 +49,6 @@ class CihazOverviewPanel(QWidget):
         # == Ã–zet kartlar şeridi (üst bant) ===================================
         ozet_bar = QFrame()
         ozet_bar.setProperty("bg-role", "elevated")
-        ozet_bar.style().unpolish(ozet_bar)
-        ozet_bar.style().polish(ozet_bar)
         ozet_bar.setMaximumHeight(80)
         ozet_lay = QHBoxLayout(ozet_bar)
         ozet_lay.setContentsMargins(16, 10, 16, 10)
@@ -190,8 +188,6 @@ class CihazOverviewPanel(QWidget):
         """Düzenlenebilir grup kutusu oluştur."""
         grp = QGroupBox(title)
         grp.setProperty("bg-role", "panel")
-        grp.style().unpolish(grp)
-        grp.style().polish(grp)
         
         vbox = QVBoxLayout(grp)
         vbox.setContentsMargins(12, 12, 12, 12)
@@ -259,8 +255,6 @@ class CihazOverviewPanel(QWidget):
         edit.setProperty("initial_readonly", read_only)
         edit.setProperty("color-role", "primary")
         edit.setProperty("style-role", "form")
-        edit.style().unpolish(edit)
-        edit.style().polish(edit)
         self._widgets[key] = edit
         self._groups[group_id]["fields"].append(key)
         grid.addWidget(lbl, row * 2, col, 1, colspan)
@@ -303,8 +297,6 @@ class CihazOverviewPanel(QWidget):
         line.setPlaceholderText("-")
         line.setProperty("color-role", "primary")
         line.setProperty("style-role", "form")
-        line.style().unpolish(line)
-        line.style().polish(line)
         btn = QPushButton("Sec")
         btn
         btn.setEnabled(False)

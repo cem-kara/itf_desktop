@@ -470,7 +470,6 @@ class SaglikTakipPage(QWidget):
 
         lbl = QLabel("Sağlık Takip")
         lbl.setProperty("style-role", "title")
-        lbl.style().unpolish(lbl); lbl.style().polish(lbl)
         lay.addWidget(lbl)
         lay.addStretch()
 
@@ -535,13 +534,11 @@ class SaglikTakipPage(QWidget):
             lbl_num.setAlignment(Qt.AlignmentFlag.AlignLeft)
             lbl_num.setProperty("color-role", color_role)
             lbl_num.setProperty("bg-role", "panel")
-            lbl_num.style().unpolish(lbl_num); lbl_num.style().polish(lbl_num)
             cl.addWidget(lbl_num)
 
             lbl_lbl = QLabel(label)
             lbl_lbl.setProperty("color-role", "muted")
             lbl_lbl.setProperty("bg-role", "panel")
-            lbl_lbl.style().unpolish(lbl_lbl); lbl_lbl.style().polish(lbl_lbl)
             cl.addWidget(lbl_lbl)
 
             lay.addWidget(card)
@@ -608,22 +605,18 @@ class SaglikTakipPage(QWidget):
 
         self.lbl_form_title = QLabel("Yeni Muayene Kaydı")
         self.lbl_form_title.setProperty("style-role", "section-title")
-        self.lbl_form_title.style().unpolish(self.lbl_form_title)
-        self.lbl_form_title.style().polish(self.lbl_form_title)
         top_row.addWidget(self.lbl_form_title)
 
         sep_v = QFrame()
         sep_v.setFrameShape(QFrame.Shape.VLine)
         sep_v.setFixedWidth(1)
         sep_v.setProperty("bg-role", "separator")
-        sep_v.style().unpolish(sep_v); sep_v.style().polish(sep_v)
         top_row.addWidget(sep_v)
 
         # Hizmet Sınıfı
         lbl_hs = QLabel("Hizmet Sınıfı:")
         lbl_hs.setProperty("color-role", "muted")
         lbl_hs.setStyleSheet("font-size: 11px;")
-        lbl_hs.style().unpolish(lbl_hs); lbl_hs.style().polish(lbl_hs)
         top_row.addWidget(lbl_hs)
         self.cmb_hizmet_sinifi = QComboBox()
         self.cmb_hizmet_sinifi.setMinimumWidth(150)
@@ -634,7 +627,6 @@ class SaglikTakipPage(QWidget):
         lbl_per = QLabel("Personel:")
         lbl_per.setProperty("color-role", "muted")
         lbl_per.setStyleSheet("font-size: 11px;")
-        lbl_per.style().unpolish(lbl_per); lbl_per.style().polish(lbl_per)
         top_row.addWidget(lbl_per)
         self.cmb_personel = QComboBox()
         self.cmb_personel.setMinimumWidth(220)
@@ -662,7 +654,6 @@ class SaglikTakipPage(QWidget):
         sep_h.setFrameShape(QFrame.Shape.HLine)
         sep_h.setFixedHeight(1)
         sep_h.setProperty("bg-role", "separator")
-        sep_h.style().unpolish(sep_h); sep_h.style().polish(sep_h)
         form_lay.addWidget(sep_h)
 
         # ── 4 muayene kartı ──
@@ -675,7 +666,6 @@ class SaglikTakipPage(QWidget):
         exam_hint = QLabel("Muayene branşlarını doldurun — sonuç otomatik hesaplanır")
         exam_hint.setProperty("color-role", "muted")
         exam_hint.setStyleSheet("font-size: 11px;")
-        exam_hint.style().unpolish(exam_hint); exam_hint.style().polish(exam_hint)
         exam_lay.addWidget(exam_hint)
 
         exam_row = QHBoxLayout()
@@ -707,7 +697,6 @@ class SaglikTakipPage(QWidget):
         lbl_rapor = QLabel("Rapor:")
         lbl_rapor.setProperty("color-role", "muted")
         lbl_rapor.setStyleSheet("font-size: 11px;")
-        lbl_rapor.style().unpolish(lbl_rapor); lbl_rapor.style().polish(lbl_rapor)
         rapor_grp_l.addWidget(lbl_rapor)
         self.inp_rapor = QLineEdit()
         self.inp_rapor.setReadOnly(True)
@@ -733,7 +722,6 @@ class SaglikTakipPage(QWidget):
         lbl_not = QLabel("Not:")
         lbl_not.setProperty("color-role", "muted")
         lbl_not.setStyleSheet("font-size: 11px;")
-        lbl_not.style().unpolish(lbl_not); lbl_not.style().polish(lbl_not)
         not_grp_l.addWidget(lbl_not)
         self.inp_not = QLineEdit()
         self.inp_not.setPlaceholderText("Açıklama veya not...")

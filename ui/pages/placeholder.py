@@ -42,8 +42,6 @@ class PlaceholderPage(QWidget):
         lbl_sub = QLabel(subtitle or "Bu sayfa henüz geliştirme aşamasında.")
         lbl_sub.setProperty("color-role", "muted")
         lbl_sub.setProperty("bg-role", "panel")
-        lbl_sub.style().unpolish(lbl_sub)
-        lbl_sub.style().polish(lbl_sub)
         lbl_sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(lbl_sub)
 

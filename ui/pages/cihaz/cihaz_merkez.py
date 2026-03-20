@@ -65,8 +65,6 @@ class CihazMerkezPage(QWidget):
 
     def _setup_ui(self):
         self.setProperty("bg-role", "page")
-        self.style().unpolish(self)
-        self.style().polish(self)
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
@@ -105,8 +103,6 @@ class CihazMerkezPage(QWidget):
         btn_back = QPushButton(" Listeye")
         btn_back.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_back.setProperty("style-role", "secondary")
-        btn_back.style().unpolish(btn_back)
-        btn_back.style().polish(btn_back)
         IconRenderer.set_button_icon(btn_back, "arrow_left", color=C.TEXT_SECONDARY, size=14)
         btn_back.setIconSize(QSize(14, 14))
         btn_back.clicked.connect(self.kapat_istegi.emit)
@@ -133,8 +129,6 @@ class CihazMerkezPage(QWidget):
         )
         self.lbl_detay = QLabel("…")
         self.lbl_detay.setProperty("style-role", "info")
-        self.lbl_detay.style().unpolish(self.lbl_detay)
-        self.lbl_detay.style().polish(self.lbl_detay)
         info_lay.addWidget(self.lbl_cihaz_id)
         info_lay.addWidget(self.lbl_detay)
         top_lay.addLayout(info_lay)
@@ -170,8 +164,6 @@ class CihazMerkezPage(QWidget):
         nav.setFixedHeight(36)
         nav.setProperty("border-role", "top-secondary")
         nav.setProperty("bg-role", "panel")
-        nav.style().unpolish(nav)
-        nav.style().polish(nav)
         nav_lay = QHBoxLayout(nav)
         nav_lay.setContentsMargins(16, 0, 16, 0)
         nav_lay.setSpacing(0)
@@ -417,8 +409,6 @@ class CihazMerkezPage(QWidget):
         s = QFrame()
         s.setFixedSize(1, 20)
         s.setProperty("bg-role", "separator")
-        s.style().unpolish(s)
-        s.style().polish(s)
         return s
 
     # ═══════════════════════════════════════════════════

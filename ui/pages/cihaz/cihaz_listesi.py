@@ -297,8 +297,6 @@ class CihazListesiPage(QWidget):
     def __init__(self, db=None, action_guard=None, parent=None):
         super().__init__(parent)
         self.setProperty("bg-role", "page")
-        self.style().unpolish(self)
-        self.style().polish(self)
         self._db = db
         self._action_guard = action_guard
         self._all_data = []
@@ -345,8 +343,6 @@ class CihazListesiPage(QWidget):
         title = QLabel("Cihaz Listesi")
         title.setProperty("color-role", "primary")
         title.setProperty("bg-role", "panel")
-        title.style().unpolish(title)
-        title.style().polish(title)
         lay.addWidget(title)
 
         lay.addWidget(self._sep())
@@ -403,16 +399,12 @@ class CihazListesiPage(QWidget):
         self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_yenile.setFixedSize(32, 28)
         self.btn_yenile.setProperty("style-role", "refresh")
-        self.btn_yenile.style().unpolish(self.btn_yenile)
-        self.btn_yenile.style().polish(self.btn_yenile)
         IconRenderer.set_button_icon(self.btn_yenile, "refresh", color="secondary", size=16)
         lay.addWidget(self.btn_yenile)
 
         self.btn_yeni = QPushButton(" Yeni Cihaz")
         self.btn_yeni.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_yeni.setProperty("style-role", "action")
-        self.btn_yeni.style().unpolish(self.btn_yeni)
-        self.btn_yeni.style().polish(self.btn_yeni)
         IconRenderer.set_button_icon(self.btn_yeni, "plus", color="primary", size=16)
         self.btn_yeni.setIconSize(QSize(16, 16))
         
@@ -436,15 +428,11 @@ class CihazListesiPage(QWidget):
         lbl = QLabel("FİLTRE:")
         lbl.setProperty("color-role", "disabled")
         lbl.setProperty("bg-role", "panel")
-        lbl.style().unpolish(lbl)
-        lbl.style().polish(lbl)
         lay.addWidget(lbl)
 
         lbl_abd = QLabel("Birim:")
         lbl_abd.setProperty("color-role", "disabled")
         lbl_abd.setProperty("bg-role", "panel")
-        lbl_abd.style().unpolish(lbl_abd)
-        lbl_abd.style().polish(lbl_abd)
         lay.addWidget(lbl_abd)
 
         self.cmb_abd = QComboBox()
@@ -456,8 +444,6 @@ class CihazListesiPage(QWidget):
         lbl_kaynak = QLabel("Kaynak:")
         lbl_kaynak.setProperty("color-role", "disabled")
         lbl_kaynak.setProperty("bg-role", "panel")
-        lbl_kaynak.style().unpolish(lbl_kaynak)
-        lbl_kaynak.style().polish(lbl_kaynak)
         lay.addWidget(lbl_kaynak)
 
         self.cmb_kaynak = QComboBox()
@@ -509,14 +495,10 @@ class CihazListesiPage(QWidget):
 
         self.lbl_info = QLabel("0 kayıt")
         self.lbl_info.setProperty("style-role", "footer")
-        self.lbl_info.style().unpolish(self.lbl_info)
-        self.lbl_info.style().polish(self.lbl_info)
         lay.addWidget(self.lbl_info)
 
         self.lbl_detail = QLabel("")
         self.lbl_detail.setProperty("style-role", "footer")
-        self.lbl_detail.style().unpolish(self.lbl_detail)
-        self.lbl_detail.style().polish(self.lbl_detail)
         lay.addWidget(self.lbl_detail)
 
         lay.addStretch()
@@ -532,8 +514,6 @@ class CihazListesiPage(QWidget):
         self.btn_load_more.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_load_more.setFixedHeight(28)
         self.btn_load_more.setProperty("style-role", "action")
-        self.btn_load_more.style().unpolish(self.btn_load_more)
-        self.btn_load_more.style().polish(self.btn_load_more)
         self.btn_load_more.setVisible(False)
         lay.addWidget(self.btn_load_more)
 
@@ -744,6 +724,4 @@ class CihazListesiPage(QWidget):
         f = QFrame()
         f.setFixedSize(1, 22)
         f.setProperty("bg-role", "separator")
-        f.style().unpolish(f)
-        f.style().polish(f)
         return f

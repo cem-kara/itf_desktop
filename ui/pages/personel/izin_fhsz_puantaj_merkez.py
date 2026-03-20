@@ -90,8 +90,6 @@ class IzinFHSZPuantajMerkezPage(QWidget):
         btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_kapat.setToolTip("Kapat")
         btn_kapat.setProperty("style-role", "danger")
-        btn_kapat.style().unpolish(btn_kapat)
-        btn_kapat.style().polish(btn_kapat)
         btn_kapat.clicked.connect(self.kapat_istegi.emit)
         IconRenderer.set_button_icon(btn_kapat, "x", color=C.TEXT_PRIMARY, size=14)
         self.btn_kapat = btn_kapat
@@ -126,8 +124,6 @@ class IzinFHSZPuantajMerkezPage(QWidget):
         sep.setFrameShape(QFrame.Shape.VLine)
         sep.setLineWidth(1)
         sep.setProperty("bg-role", "separator")
-        sep.style().unpolish(sep)
-        sep.style().polish(sep)
         sep.setMaximumWidth(1)
         return sep
 
@@ -180,8 +176,6 @@ class IzinFHSZPuantajMerkezPage(QWidget):
                 btn.setProperty("style-role", "tab-active")
             else:
                 btn.setProperty("style-role", "tab-inactive")
-            btn.style().unpolish(btn)
-            btn.style().polish(btn)
 
         # Widget lazy-load
         if code not in self._modules:

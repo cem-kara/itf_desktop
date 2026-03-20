@@ -248,12 +248,10 @@ class PersonelSaglikPanel(QWidget):
         lt = QLabel(label)
         lt.setProperty("style-role", "form")
         lt.setStyleSheet("font-size:10px;")
-        lt.style().unpolish(lt); lt.style().polish(lt)
         vl.addWidget(lt)
         lv = QLabel("—")
         lv.setProperty("color-role", "primary")
         lv.setStyleSheet("font-size:13px; font-weight:600;")
-        lv.style().unpolish(lv); lv.style().polish(lv)
         vl.addWidget(lv)
         lay.addWidget(w)
         return lv

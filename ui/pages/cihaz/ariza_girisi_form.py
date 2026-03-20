@@ -37,8 +37,6 @@ class ArizaGirisForm(QWidget):
 
         form = QGroupBox("Yeni Arıza Kaydı")
         form.setProperty("style-role", "section")
-        form.style().unpolish(form)
-        form.style().polish(form)
         grid = QGridLayout(form)
         grid.setContentsMargins(12, 12, 12, 12)
         grid.setHorizontalSpacing(16)
@@ -58,8 +56,6 @@ class ArizaGirisForm(QWidget):
         self.dt_baslangi = QDateEdit(QDate.currentDate())
         self.dt_baslangi.setCalendarPopup(True)
         self.dt_baslangi.setProperty("bg-role", "input")
-        self.dt_baslangi.style().unpolish(self.dt_baslangi)
-        self.dt_baslangi.style().polish(self.dt_baslangi)
         grid.addWidget(self.dt_baslangi, row, 1)
         row += 1
 
@@ -67,8 +63,6 @@ class ArizaGirisForm(QWidget):
         grid.addWidget(self._lbl("Saat *"), row, 0)
         self.txt_saat = QLineEdit()
         self.txt_saat.setProperty("bg-role", "input")
-        self.txt_saat.style().unpolish(self.txt_saat)
-        self.txt_saat.style().polish(self.txt_saat)
         self.txt_saat.setPlaceholderText("HH:MM")
         grid.addWidget(self.txt_saat, row, 1)
         row += 1
@@ -77,8 +71,6 @@ class ArizaGirisForm(QWidget):
         grid.addWidget(self._lbl("Bildiren"), row, 0)
         self.txt_bildiren = QLineEdit()
         self.txt_bildiren.setProperty("bg-role", "input")
-        self.txt_bildiren.style().unpolish(self.txt_bildiren)
-        self.txt_bildiren.style().polish(self.txt_bildiren)
         grid.addWidget(self.txt_bildiren, row, 1)
         row += 1
 
@@ -87,8 +79,6 @@ class ArizaGirisForm(QWidget):
         self.cmb_ariza_tipi = QComboBox()
         self.cmb_ariza_tipi.setEditable(True)
         self.cmb_ariza_tipi.setProperty("bg-role", "input")
-        self.cmb_ariza_tipi.style().unpolish(self.cmb_ariza_tipi)
-        self.cmb_ariza_tipi.style().polish(self.cmb_ariza_tipi)
         self.cmb_ariza_tipi.addItems([
             "Elektrik Arızası", "Mekanik Arızası", "Yazılım Arızası",
             "Kalibrasyonu Yapılması Gerek", "Diğer"
@@ -100,8 +90,6 @@ class ArizaGirisForm(QWidget):
         grid.addWidget(self._lbl("Öncelik *"), row, 0)
         self.cmb_oncelik = QComboBox()
         self.cmb_oncelik.setProperty("bg-role", "input")
-        self.cmb_oncelik.style().unpolish(self.cmb_oncelik)
-        self.cmb_oncelik.style().polish(self.cmb_oncelik)
         self.cmb_oncelik.addItems(["Düşük", "Orta", "Yüksek", "Kritik"])
         self.cmb_oncelik.setCurrentText("Orta")
         grid.addWidget(self.cmb_oncelik, row, 1)
@@ -111,8 +99,6 @@ class ArizaGirisForm(QWidget):
         grid.addWidget(self._lbl("Başlık *"), row, 0)
         self.txt_baslik = QLineEdit()
         self.txt_baslik.setProperty("bg-role", "input")
-        self.txt_baslik.style().unpolish(self.txt_baslik)
-        self.txt_baslik.style().polish(self.txt_baslik)
         self.txt_baslik.setPlaceholderText("Arıza açıklaması başlığı...")
         grid.addWidget(self.txt_baslik, row, 1)
         row += 1
@@ -129,8 +115,6 @@ class ArizaGirisForm(QWidget):
         grid.addWidget(self._lbl("Durum *"), row, 0)
         self.cmb_durum = QComboBox()
         self.cmb_durum.setProperty("bg-role", "input")
-        self.cmb_durum.style().unpolish(self.cmb_durum)
-        self.cmb_durum.style().polish(self.cmb_durum)
         self.cmb_durum.addItems(["Açık", "Yakında Kapanacak", "Kapalı"])
         self.cmb_durum.setCurrentText("Açık")
         grid.addWidget(self.cmb_durum, row, 1)
@@ -159,8 +143,6 @@ class ArizaGirisForm(QWidget):
     def _lbl(text: str) -> QLabel:
         lbl = QLabel(text)
         lbl.setProperty("color-role", "secondary")
-        lbl.style().unpolish(lbl)
-        lbl.style().polish(lbl)
         return lbl
 
     def set_cihaz_id(self, cihaz_id: str):

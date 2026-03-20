@@ -239,8 +239,6 @@ class CihazTeknikPanel(QWidget):
         self._search_box = QLineEdit()
         self._search_box.setPlaceholderText("UTS Ürün Numarası...")
         self._search_box.setProperty("bg-role", "input")
-        self._search_box.style().unpolish(self._search_box)
-        self._search_box.style().polish(self._search_box)
         self._search_box.setMinimumHeight(32)
         action_lay.addWidget(self._search_box, 1)
 
@@ -249,8 +247,6 @@ class CihazTeknikPanel(QWidget):
         btn_search.setMinimumWidth(80)
         btn_search.setMinimumHeight(32)
         btn_search.setProperty("style-role", "action")
-        btn_search.style().unpolish(btn_search)
-        btn_search.style().polish(btn_search)
         btn_search.clicked.connect(self._on_search)
         action_lay.addWidget(btn_search)
 
@@ -259,8 +255,6 @@ class CihazTeknikPanel(QWidget):
         btn_clear.setMinimumWidth(80)
         btn_clear.setMinimumHeight(32)
         btn_clear.setProperty("style-role", "secondary")
-        btn_clear.style().unpolish(btn_clear)
-        btn_clear.style().polish(btn_clear)
         btn_clear.clicked.connect(self._on_clear)
         action_lay.addWidget(btn_clear)
 
@@ -269,8 +263,6 @@ class CihazTeknikPanel(QWidget):
         btn_save.setMinimumWidth(80)
         btn_save.setMinimumHeight(32)
         btn_save.setProperty("style-role", "action")
-        btn_save.style().unpolish(btn_save)
-        btn_save.style().polish(btn_save)
         btn_save.clicked.connect(self._on_save)
         action_lay.addWidget(btn_save)
 

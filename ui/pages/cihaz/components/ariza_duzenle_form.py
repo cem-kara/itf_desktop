@@ -33,8 +33,6 @@ class ArizaDuzenleForm(QWidget):
 
         form = QGroupBox("Arıza Düzenleme")
         form.setProperty("style-role", "section")
-        form.style().unpolish(form)
-        form.style().polish(form)
         grid = QGridLayout(form)
         grid.setContentsMargins(12, 12, 12, 12)
         grid.setHorizontalSpacing(16)
@@ -52,8 +50,6 @@ class ArizaDuzenleForm(QWidget):
         self.cmb_ariza_tipi = QComboBox()
         self.cmb_ariza_tipi.setEditable(True)
         self.cmb_ariza_tipi.setProperty("bg-role", "input")
-        self.cmb_ariza_tipi.style().unpolish(self.cmb_ariza_tipi)
-        self.cmb_ariza_tipi.style().polish(self.cmb_ariza_tipi)
         self.cmb_ariza_tipi.addItems([
             "Elektrik Arızası", "Mekanik Arızası", "Yazılım Arızası",
             "Kalibrasyonu Yapılması Gerek", "Diğer",
@@ -64,8 +60,6 @@ class ArizaDuzenleForm(QWidget):
         grid.addWidget(self._lbl("Öncelik *"), row, 0)
         self.cmb_oncelik = QComboBox()
         self.cmb_oncelik.setProperty("bg-role", "input")
-        self.cmb_oncelik.style().unpolish(self.cmb_oncelik)
-        self.cmb_oncelik.style().polish(self.cmb_oncelik)
         self.cmb_oncelik.addItems(["Düşük", "Orta", "Yüksek", "Kritik"])
         grid.addWidget(self.cmb_oncelik, row, 1)
         row += 1
@@ -73,8 +67,6 @@ class ArizaDuzenleForm(QWidget):
         grid.addWidget(self._lbl("Başlık *"), row, 0)
         self.txt_baslik = QLineEdit()
         self.txt_baslik.setProperty("bg-role", "input")
-        self.txt_baslik.style().unpolish(self.txt_baslik)
-        self.txt_baslik.style().polish(self.txt_baslik)
         grid.addWidget(self.txt_baslik, row, 1)
         row += 1
 
@@ -88,8 +80,6 @@ class ArizaDuzenleForm(QWidget):
         grid.addWidget(self._lbl("Durum"), row, 0)
         self.cmb_durum = QComboBox()
         self.cmb_durum.setProperty("bg-role", "input")
-        self.cmb_durum.style().unpolish(self.cmb_durum)
-        self.cmb_durum.style().polish(self.cmb_durum)
         self.cmb_durum.addItems(["Açık", "Devam Ediyor", "Kapalı", "Hatalı Giriş"])
         grid.addWidget(self.cmb_durum, row, 1)
 
@@ -113,8 +103,6 @@ class ArizaDuzenleForm(QWidget):
     def _lbl(self, text: str) -> QLabel:
         lbl = QLabel(text)
         lbl.setProperty("color-role", "secondary")
-        lbl.style().unpolish(lbl)
-        lbl.style().polish(lbl)
         return lbl
 
     def _load_form(self):

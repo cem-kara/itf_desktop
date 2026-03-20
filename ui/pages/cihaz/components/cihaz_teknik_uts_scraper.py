@@ -229,8 +229,6 @@ class CihazTeknikUtsScraper(QWidget):
     def _search_box(self):
         box = QFrame()
         box.setProperty("border-role", "panel")
-        box.style().unpolish(box)
-        box.style().polish(box)
         vb = QVBoxLayout(box); vb.setContentsMargins(20,18,20,18); vb.setSpacing(12)
 
         title = QLabel("ÜTS Ürün Sorgulama")

@@ -70,8 +70,6 @@ class PersonelMerkezPage(QWidget):
 
     def _setup_ui(self):
         self.setProperty("bg-role", "page")
-        self.style().unpolish(self)
-        self.style().polish(self)
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
@@ -113,8 +111,6 @@ class PersonelMerkezPage(QWidget):
         btn_back = QPushButton(" Listeye")
         btn_back.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_back.setProperty("style-role", "secondary")
-        btn_back.style().unpolish(btn_back)
-        btn_back.style().polish(btn_back)
         IconRenderer.set_button_icon(btn_back, "arrow_left", color=C.TEXT_SECONDARY, size=14)
         btn_back.setIconSize(QSize(14, 14))
         btn_back.clicked.connect(self.kapat_istegi.emit)
@@ -140,8 +136,6 @@ class PersonelMerkezPage(QWidget):
         )
         self.lbl_detay = QLabel("…")
         self.lbl_detay.setProperty("style-role", "info")
-        self.lbl_detay.style().unpolish(self.lbl_detay)
-        self.lbl_detay.style().polish(self.lbl_detay)
         info_lay.addWidget(self.lbl_ad)
         info_lay.addWidget(self.lbl_detay)
         top_lay.addLayout(info_lay)
@@ -172,8 +166,6 @@ class PersonelMerkezPage(QWidget):
         nav.setFixedHeight(36)
         nav.setProperty("border-role", "top-secondary")
         nav.setProperty("bg-role", "panel")
-        nav.style().unpolish(nav)
-        nav.style().polish(nav)
         nav_lay = QHBoxLayout(nav)
         nav_lay.setContentsMargins(16, 0, 16, 0)
         nav_lay.setSpacing(0)
@@ -218,8 +210,6 @@ class PersonelMerkezPage(QWidget):
         form_hdr = QHBoxLayout()
         self.lbl_form_title = QLabel("İşlem")
         self.lbl_form_title.setProperty("style-role", "section")
-        self.lbl_form_title.style().unpolish(self.lbl_form_title)
-        self.lbl_form_title.style().polish(self.lbl_form_title)
         form_hdr.addWidget(self.lbl_form_title)
         form_hdr.addStretch()
         btn_form_kapat = QPushButton()
@@ -242,8 +232,6 @@ class PersonelMerkezPage(QWidget):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setProperty("style-role", "plain")
-        scroll.style().unpolish(scroll)
-        scroll.style().polish(scroll)
 
         info_widget = QWidget()
         info_widget.setProperty("bg-role", "panel")
@@ -534,8 +522,6 @@ class PersonelMerkezPage(QWidget):
         }
         role = role_map.get(durum, "info")
         self.lbl_durum.setProperty("style-role", role)
-        self.lbl_durum.style().unpolish(self.lbl_durum)
-        self.lbl_durum.style().polish(self.lbl_durum)
 
     def _on_theme_changed(self, _theme_name: str):
         """Tema değişince runtime setStyleSheet alanlarını yeniler."""
@@ -597,16 +583,12 @@ class PersonelMerkezPage(QWidget):
         s = QFrame()
         s.setFixedSize(1, 20)
         s.setProperty("bg-role", "separator")
-        s.style().unpolish(s)
-        s.style().polish(s)
         return s
 
     @staticmethod
     def _section_lbl(text: str) -> QLabel:
         lbl = QLabel(text)
         lbl.setProperty("style-role", "section")
-        lbl.style().unpolish(lbl)
-        lbl.style().polish(lbl)
         return lbl
 
     def _action_btn(self, label: str, icon: str, callback) -> QPushButton:
@@ -632,11 +614,7 @@ class PersonelMerkezPage(QWidget):
     def _apply_tab_style(self, btn, active: bool):
         """Tab butonunu aktif/pasif yap — QSS style-role sistemi."""
         btn.setProperty("style-role", "tab-active" if active else "tab-inactive")
-        btn.style().unpolish(btn)
-        btn.style().polish(btn)
 
     def _apply_quick_action_style(self, btn):
         """Hızlı işlem butonuna stil ver — QSS style-role sistemi."""
         btn.setProperty("style-role", "quick-action")
-        btn.style().unpolish(btn)
-        btn.style().polish(btn)

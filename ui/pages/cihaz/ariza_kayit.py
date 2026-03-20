@@ -381,8 +381,6 @@ class ArizaKayitForm(QWidget):
         # Bakım Planla butonu (arıza seçilince aktif olur)
         self.btn_bakim_planla = QPushButton("Bakım Planla")
         self.btn_bakim_planla.setProperty("style-role", "secondary")
-        self.btn_bakim_planla.style().unpolish(self.btn_bakim_planla)
-        self.btn_bakim_planla.style().polish(self.btn_bakim_planla)
         self.btn_bakim_planla.setEnabled(False)
         self.btn_bakim_planla.setToolTip("Seçili arıza için bakım planı oluştur")
         self.btn_bakim_planla.clicked.connect(self._bakima_gec)
@@ -466,8 +464,6 @@ class ArizaKayitForm(QWidget):
 
         self._form_inner = QWidget()
         self._form_inner.setProperty("bg-role", "surface")
-        self._form_inner.style().unpolish(self._form_inner)
-        self._form_inner.style().polish(self._form_inner)
         self._form_layout = QVBoxLayout(self._form_inner)
         self._form_layout.setContentsMargins(10, 10, 10, 10)
         self._form_layout.setSpacing(0)
@@ -582,8 +578,6 @@ class ArizaKayitForm(QWidget):
     def _field_lbl(self, title: str, value: str) -> QWidget:
         w = QWidget()
         w.setProperty("bg-role", "panel")
-        w.style().unpolish(w)
-        w.style().polish(w)
         vl = QVBoxLayout(w)
         vl.setContentsMargins(0, 0, 0, 0)
         vl.setSpacing(1)
@@ -594,8 +588,6 @@ class ArizaKayitForm(QWidget):
         v = QLabel(value)
         v.setProperty("color-role", "primary")
         v.setStyleSheet("font-size: 12px;")
-        v.style().unpolish(v)
-        v.style().polish(v)
         vl.addWidget(t)
         vl.addWidget(v)
         w.setProperty("val_lbl", v)   # değere erişmek için
@@ -892,8 +884,6 @@ class ArizaKayitForm(QWidget):
         dialog.setMinimumWidth(500)
         dialog.setMinimumHeight(400)
         dialog.setProperty("bg-role", "page")
-        dialog.style().unpolish(dialog)
-        dialog.style().polish(dialog)
         
         layout = QVBoxLayout(dialog)
         layout.setContentsMargins(16, 16, 16, 16)
@@ -926,13 +916,9 @@ class ArizaKayitForm(QWidget):
             lbl = QLabel(label)
             lbl.setProperty("color-role", "secondary")
             lbl.setStyleSheet("font-weight: 600; min-width: 120px;")
-            lbl.style().unpolish(lbl)
-            lbl.style().polish(lbl)
             
             val = QLabel(str(value))
             val.setProperty("color-role", "primary")
-            val.style().unpolish(val)
-            val.style().polish(val)
             val.setWordWrap(True)
             
             frm.addWidget(lbl)
@@ -1005,8 +991,6 @@ class ArizaKayitForm(QWidget):
 
         self._perf_inner = QWidget()
         self._perf_inner.setProperty("bg-role", "surface")
-        self._perf_inner.style().unpolish(self._perf_inner)
-        self._perf_inner.style().polish(self._perf_inner)
         self._perf_layout = QVBoxLayout(self._perf_inner)
         self._perf_layout.setContentsMargins(16, 16, 16, 16)
         self._perf_layout.setSpacing(20)

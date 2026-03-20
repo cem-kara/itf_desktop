@@ -84,8 +84,6 @@ class ArizaIslemForm(QWidget):
 
         form = QGroupBox("Ariza İşlemi Kaydi")
         form.setProperty("style-role", "section")
-        form.style().unpolish(form)
-        form.style().polish(form)
         grid = QGridLayout(form)
         grid.setContentsMargins(12, 12, 12, 12)
         grid.setHorizontalSpacing(16)
@@ -94,28 +92,20 @@ class ArizaIslemForm(QWidget):
         self.dt_tarih = QDateEdit()
         self.dt_tarih.setDate(QDate.currentDate())
         self.dt_tarih.setProperty("bg-role", "input")
-        self.dt_tarih.style().unpolish(self.dt_tarih)
-        self.dt_tarih.style().polish(self.dt_tarih)
         self._add_row(grid, 0, "Tarih", self.dt_tarih)
 
         self.txt_saat = QLineEdit()
         self.txt_saat.setProperty("bg-role", "input")
-        self.txt_saat.style().unpolish(self.txt_saat)
-        self.txt_saat.style().polish(self.txt_saat)
         self.txt_saat.setPlaceholderText("HH:MM")
         self._add_row(grid, 1, "Saat", self.txt_saat)
 
         self.txt_islem_yapan = QLineEdit()
         self.txt_islem_yapan.setProperty("bg-role", "input")
-        self.txt_islem_yapan.style().unpolish(self.txt_islem_yapan)
-        self.txt_islem_yapan.style().polish(self.txt_islem_yapan)
         self._add_row(grid, 2, "İşlem Yapan", self.txt_islem_yapan)
 
         self.cmb_islem_turu = QComboBox()
         self.cmb_islem_turu.setEditable(True)
         self.cmb_islem_turu.setProperty("bg-role", "input")
-        self.cmb_islem_turu.style().unpolish(self.cmb_islem_turu)
-        self.cmb_islem_turu.style().polish(self.cmb_islem_turu)
         self.cmb_islem_turu.addItems([
             "Elektrik Onarımı",
             "Mekanik Onarımı",
@@ -134,8 +124,6 @@ class ArizaIslemForm(QWidget):
 
         self.cmb_yeni_durum = QComboBox()
         self.cmb_yeni_durum.setProperty("bg-role", "input")
-        self.cmb_yeni_durum.style().unpolish(self.cmb_yeni_durum)
-        self.cmb_yeni_durum.style().polish(self.cmb_yeni_durum)
         self.cmb_yeni_durum.addItems(["Açık", "Yakında Kapanacak", "Kapalı"])
         self._add_row(grid, 5, "Yeni Durum", self.cmb_yeni_durum)
 
@@ -153,8 +141,6 @@ class ArizaIslemForm(QWidget):
         self.lbl_rapor_belge = QLabel("Belge seçilmedi")
         self.lbl_rapor_belge.setProperty("color-role", "muted")
         self.lbl_rapor_belge.setStyleSheet("font-size: 11px;")
-        self.lbl_rapor_belge.style().unpolish(self.lbl_rapor_belge)
-        self.lbl_rapor_belge.style().polish(self.lbl_rapor_belge)
         belge_lay.addWidget(self.lbl_rapor_belge, 1)
         
         self.btn_belge_sec = QPushButton("Belge Seç")
@@ -177,8 +163,6 @@ class ArizaIslemForm(QWidget):
 
         btn_kaydet = QPushButton("Kaydet")
         btn_kaydet.setProperty("style-role", "success")
-        btn_kaydet.style().unpolish(btn_kaydet)
-        btn_kaydet.style().polish(btn_kaydet)
         btn_kaydet.clicked.connect(self._save)
         if self._action_guard:
             self._action_guard.disable_if_unauthorized(btn_kaydet, "cihaz.write")
@@ -194,8 +178,6 @@ class ArizaIslemForm(QWidget):
     def _add_row(self, grid, row, label, widget):
         lbl = QLabel(label)
         lbl.setProperty("color-role", "secondary")
-        lbl.style().unpolish(lbl)
-        lbl.style().polish(lbl)
         grid.addWidget(lbl, row, 0)
         grid.addWidget(widget, row, 1)
 
@@ -212,8 +194,6 @@ class ArizaIslemForm(QWidget):
             self.lbl_rapor_belge.setText(Path(file_path).name)
             self.lbl_rapor_belge.setProperty("color-role", "accent")
         self.lbl_rapor_belge.setStyleSheet("font-size: 11px;")
-        self.lbl_rapor_belge.style().unpolish(self.lbl_rapor_belge)
-        self.lbl_rapor_belge.style().polish(self.lbl_rapor_belge)
     
     def _clear_rapor_belge(self):
         """Seçilen belgeyi temizle."""
@@ -221,8 +201,6 @@ class ArizaIslemForm(QWidget):
         self.lbl_rapor_belge.setText("Belge seçilmedi")
         self.lbl_rapor_belge.setProperty("color-role", "muted")
         self.lbl_rapor_belge.setStyleSheet("font-size: 11px;")
-        self.lbl_rapor_belge.style().unpolish(self.lbl_rapor_belge)
-        self.lbl_rapor_belge.style().polish(self.lbl_rapor_belge)
 
     def _save(self):
         if self._action_guard and not self._action_guard.check_and_warn(
@@ -343,8 +321,6 @@ class ArizaIslemPenceresi(QWidget):
         # ── Tablo ───────────────────────────────────────
         grp_table = QGroupBox("Arıza İşlemleri")
         grp_table.setProperty("style-role", "section")
-        grp_table.style().unpolish(grp_table)
-        grp_table.style().polish(grp_table)
         tl = QVBoxLayout(grp_table)
         tl.setContentsMargins(10, 10, 10, 10)
         tl.setSpacing(6)

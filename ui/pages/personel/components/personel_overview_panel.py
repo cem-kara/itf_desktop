@@ -165,8 +165,6 @@ class PersonelOverviewPanel(QWidget):
         sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
         sep.setProperty("bg-role", "separator")
-        sep.style().unpolish(sep)
-        sep.style().polish(sep)
         left_l.addWidget(sep)
         left_l.addSpacing(8)
 
@@ -181,7 +179,6 @@ class PersonelOverviewPanel(QWidget):
             lbl.setProperty("color-role", "muted")
             lbl.setStyleSheet("font-size: 10px;")
             lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            lbl.style().unpolish(lbl); lbl.style().polish(lbl)
 
             val = QLabel(str(value_txt) if value_txt else "—")
             val.setWordWrap(True)
@@ -191,7 +188,6 @@ class PersonelOverviewPanel(QWidget):
             else:
                 val.setProperty("color-role", "primary")
                 val.setStyleSheet("font-size: 12px; font-weight: 500;")
-            val.style().unpolish(val); val.style().polish(val)
 
             grid.addWidget(lbl, row, 0)
             grid.addWidget(val, row, 1)
@@ -261,7 +257,6 @@ class PersonelOverviewPanel(QWidget):
         hint = QLabel("Diploma ve ek belgeler için Belgeler sekmesini kullanın.")
         hint.setProperty("color-role", "muted")
         hint.setStyleSheet("font-size: 11px;")
-        hint.style().unpolish(hint); hint.style().polish(hint)
         btn_docs = QPushButton("Belgeler")
         btn_docs.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_docs.setProperty("style-role", "secondary")
@@ -280,7 +275,6 @@ class PersonelOverviewPanel(QWidget):
             lbl = QLabel(text)
             lbl.setProperty("color-role", "muted")
             lbl.setStyleSheet("font-size: 11px; font-weight: 600; padding-bottom: 2px;")
-            lbl.style().unpolish(lbl); lbl.style().polish(lbl)
             return lbl, stretch
 
         header_row = QHBoxLayout()
@@ -551,7 +545,6 @@ class PersonelOverviewPanel(QWidget):
         lbl_t = QLabel("Durum")
         lbl_t.setProperty("color-role", "muted")
         lbl_t.setStyleSheet("font-size: 11px;")
-        lbl_t.style().unpolish(lbl_t); lbl_t.style().polish(lbl_t)
         l.addWidget(lbl_t)
 
         val_str = str(durum_val) if durum_val else "—"
@@ -569,8 +562,6 @@ class PersonelOverviewPanel(QWidget):
         else:
             lbl_v.setProperty("color-role", "primary")
             lbl_v.setStyleSheet("font-size: 13px; font-weight: 500;")
-
-        lbl_v.style().unpolish(lbl_v); lbl_v.style().polish(lbl_v)
         l.addWidget(lbl_v)
         l.addStretch()
 
@@ -585,13 +576,11 @@ class PersonelOverviewPanel(QWidget):
         lbl_t = QLabel(label)
         lbl_t.setProperty("color-role", "muted")
         lbl_t.setStyleSheet("font-size: 11px;")
-        lbl_t.style().unpolish(lbl_t); lbl_t.style().polish(lbl_t)
         l.addWidget(lbl_t)
 
         lbl_v = QLabel(str(value) if value else "—")
         lbl_v.setProperty("color-role", "primary")
         lbl_v.setStyleSheet("font-size: 13px; font-weight: 500;")
-        lbl_v.style().unpolish(lbl_v); lbl_v.style().polish(lbl_v)
         lbl_v.setWordWrap(True)
         l.addWidget(lbl_v)
 
@@ -607,8 +596,6 @@ class PersonelOverviewPanel(QWidget):
         lbl_t = QLabel(label)
         lbl_t.setProperty("color-role", "muted")
         lbl_t.setStyleSheet("font-size: 11px;")
-        lbl_t.style().unpolish(lbl_t)
-        lbl_t.style().polish(lbl_t)
         l.addWidget(lbl_t)
         
         val = self.personel_data.get(db_key, "")
@@ -632,8 +619,6 @@ class PersonelOverviewPanel(QWidget):
         lbl_t = QLabel(label)
         lbl_t.setProperty("color-role", "muted")
         lbl_t.setStyleSheet("font-size: 11px;")
-        lbl_t.style().unpolish(lbl_t)
-        lbl_t.style().polish(lbl_t)
         l.addWidget(lbl_t)
         
         val = self.personel_data.get(db_key, "")
@@ -718,8 +703,6 @@ class PersonelOverviewPanel(QWidget):
         lbl_t = QLabel(label)
         lbl_t.setProperty("color-role", "muted")
         lbl_t.setStyleSheet("font-size: 11px;")
-        lbl_t.style().unpolish(lbl_t)
-        lbl_t.style().polish(lbl_t)
         l.addWidget(lbl_t)
         
         val = self.personel_data.get(db_key, "")

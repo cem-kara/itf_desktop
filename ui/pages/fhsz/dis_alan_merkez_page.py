@@ -54,8 +54,6 @@ class DisAlanMerkezPage(QWidget):
         btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_kapat.setToolTip("Kapat")
         btn_kapat.setProperty("style-role", "danger")
-        btn_kapat.style().unpolish(btn_kapat)
-        btn_kapat.style().polish(btn_kapat)
         btn_kapat.clicked.connect(self.kapat_istegi.emit)
         IconRenderer.set_button_icon(btn_kapat, "x", color="primary", size=14)
         self.btn_kapat = btn_kapat

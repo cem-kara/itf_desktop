@@ -135,8 +135,6 @@ class AdminPanel(QWidget):
         font.setBold(True)
         title.setFont(font)
         title.setProperty("color-role", "primary")
-        title.style().unpolish(title)
-        title.style().polish(title)
         
         header_layout.addWidget(title)
         header_layout.addStretch()
@@ -170,8 +168,6 @@ class AdminPanel(QWidget):
         info = QLabel("Bu özellik yakında eklenecek...")
         info.setProperty("color-role", "disabled")
         info.setStyleSheet("font-size: 12px;")
-        info.style().unpolish(info)
-        info.style().polish(info)
         info.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(info)
         

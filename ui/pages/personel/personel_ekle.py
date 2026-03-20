@@ -177,8 +177,6 @@ class PersonelEklePage(QWidget):
         title_text = "Personel Düzenle" if self._is_edit else "Personel Ekle"
         self.lbl_baslik = QLabel(title_text)
         self.lbl_baslik.setProperty("style-role", "title")
-        self.lbl_baslik.style().unpolish(self.lbl_baslik)
-        self.lbl_baslik.style().polish(self.lbl_baslik)
         main.addWidget(self.lbl_baslik)
 
         # Scroll
@@ -231,7 +229,6 @@ class PersonelEklePage(QWidget):
         sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
         sep.setProperty("bg-role", "separator")
-        sep.style().unpolish(sep); sep.style().polish(sep)
         left_l.addWidget(sep)
         left_l.addSpacing(8)
 
@@ -249,7 +246,6 @@ class PersonelEklePage(QWidget):
             else:
                 lbl.setProperty("color-role", "muted")
                 lbl.setStyleSheet("font-size: 10px;")
-                lbl.style().unpolish(lbl); lbl.style().polish(lbl)
             lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             grid.addWidget(lbl, row, 0)
             grid.addWidget(widget, row, 1)
@@ -314,7 +310,6 @@ class PersonelEklePage(QWidget):
             lbl = QLabel(label_txt)
             lbl.setProperty("color-role", "muted")
             lbl.setStyleSheet("font-size: 11px;")
-            lbl.style().unpolish(lbl); lbl.style().polish(lbl)
             grid.addWidget(lbl, 0, col)
             if status_lbl:
                 row_w = QWidget()
@@ -363,7 +358,6 @@ class PersonelEklePage(QWidget):
             else:
                 lbl.setProperty("color-role", "muted")
                 lbl.setStyleSheet("font-size: 11px;")
-                lbl.style().unpolish(lbl); lbl.style().polish(lbl)
             grid.addWidget(lbl, row_lbl, col)
             grid.addWidget(widget, row_inp, col)
 
@@ -412,7 +406,6 @@ class PersonelEklePage(QWidget):
                 lbl = QLabel(txt)
                 lbl.setProperty("color-role", "muted")
                 lbl.setStyleSheet("font-size: 11px; font-weight: 600;")
-                lbl.style().unpolish(lbl); lbl.style().polish(lbl)
                 hdr.addWidget(lbl, stretch)
             layout.addLayout(hdr)
 
@@ -420,7 +413,6 @@ class PersonelEklePage(QWidget):
         edu1_label = QLabel("Lise / Önlisans / Lisans")
         edu1_label.setProperty("color-role", "accent")
         edu1_label.setProperty("bg-role", "panel")
-        edu1_label.style().unpolish(edu1_label); edu1_label.style().polish(edu1_label)
         edu_lay.addWidget(edu1_label)
         _edu_col_headers(edu_lay)
 
@@ -464,14 +456,12 @@ class PersonelEklePage(QWidget):
         sep_edu = QFrame()
         sep_edu.setFixedHeight(1)
         sep_edu.setProperty("bg-role", "separator")
-        sep_edu.style().unpolish(sep_edu); sep_edu.style().polish(sep_edu)
         edu_lay.addWidget(sep_edu)
 
         # ── 2. Eğitim ──
         edu2_label = QLabel("Önlisans / Lisans / Yüksek Lisans / Doktora")
         edu2_label.setProperty("color-role", "accent")
         edu2_label.setProperty("bg-role", "panel")
-        edu2_label.style().unpolish(edu2_label); edu2_label.style().polish(edu2_label)
         edu_lay.addWidget(edu2_label)
         _edu_col_headers(edu_lay)
 
@@ -591,7 +581,6 @@ class PersonelEklePage(QWidget):
 
         btn_iptal = QPushButton("İPTAL")
         btn_iptal.setProperty("style-role", "danger")
-        btn_iptal.style().unpolish(btn_iptal); btn_iptal.style().polish(btn_iptal)
         btn_iptal.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_iptal.clicked.connect(self._on_cancel)
         IconRenderer.set_button_icon(btn_iptal, "x", color="primary", size=14)
@@ -600,8 +589,6 @@ class PersonelEklePage(QWidget):
         # Yeni Personel Ekle butonu (sadece edit mode'da görünür)
         self.btn_yeni_personel = QPushButton("YENİ PERSONEL")
         self.btn_yeni_personel.setProperty("style-role", "secondary")
-        self.btn_yeni_personel.style().unpolish(self.btn_yeni_personel)
-        self.btn_yeni_personel.style().polish(self.btn_yeni_personel)
         self.btn_yeni_personel.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_yeni_personel.clicked.connect(self._reset_form_for_new_personel)
         IconRenderer.set_button_icon(self.btn_yeni_personel, "plus", color="primary", size=14)
@@ -613,7 +600,6 @@ class PersonelEklePage(QWidget):
         title = "GÜNCELLE" if self._is_edit else "KAYDET"
         self.btn_kaydet = QPushButton(f"KİŞİYİ {title}")
         self.btn_kaydet.setProperty("style-role", "action")
-        self.btn_kaydet.style().unpolish(self.btn_kaydet); self.btn_kaydet.style().polish(self.btn_kaydet)
         self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_kaydet.clicked.connect(self._on_save)
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color="primary", size=14)
@@ -1042,8 +1028,6 @@ class PersonelEklePage(QWidget):
             label_widget.setPixmap(Icons.pixmap("x", size=16, color="err"))
             label_widget.setProperty("color-role", "err")
         label_widget.setStyleSheet(style)
-        label_widget.style().unpolish(label_widget)
-        label_widget.style().polish(label_widget)
 
     def _validate_tc_on_change(self):
         """TC Kimlik No real-time validasyonu (merkezi validator kullanır)."""

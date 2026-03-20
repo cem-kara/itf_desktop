@@ -411,8 +411,6 @@ class PersonelListesiPage(QWidget):
     def __init__(self, db=None, action_guard=None, parent=None):
         super().__init__(parent)
         self.setProperty("bg-role", "page")
-        self.style().unpolish(self)
-        self.style().polish(self)
         self._db             = db
         self._svc            = get_personel_service(db) if db else None
         self._izin_svc       = get_izin_service(db) if db else None
@@ -470,8 +468,6 @@ class PersonelListesiPage(QWidget):
         title = QLabel("Personel Listesi")
         title.setProperty("color-role", "primary")
         title.setProperty("bg-role", "panel")
-        title.style().unpolish(title)
-        title.style().polish(title)
         lay.addWidget(title)
         lay.addWidget(self._sep())
 
@@ -550,16 +546,12 @@ class PersonelListesiPage(QWidget):
         self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_yenile.setFixedSize(32, 28)
         self.btn_yenile.setProperty("style-role", "refresh")
-        self.btn_yenile.style().unpolish(self.btn_yenile)
-        self.btn_yenile.style().polish(self.btn_yenile)
         IconRenderer.set_button_icon(self.btn_yenile, "refresh", color=C.TEXT_SECONDARY, size=16)
         lay.addWidget(self.btn_yenile)
 
         self.btn_yeni = QPushButton(" Yeni Personel")
         self.btn_yeni.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_yeni.setProperty("style-role", "action")
-        self.btn_yeni.style().unpolish(self.btn_yeni)
-        self.btn_yeni.style().polish(self.btn_yeni)
         IconRenderer.set_button_icon(self.btn_yeni, "user_add", color=C.BTN_PRIMARY_TEXT, size=18)
         self.btn_yeni.setIconSize(QSize(18, 18))
         
@@ -575,8 +567,6 @@ class PersonelListesiPage(QWidget):
         self.btn_close.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_close.setToolTip("Kapat")
         self.btn_close.setProperty("style-role", "close")
-        self.btn_close.style().unpolish(self.btn_close)
-        self.btn_close.style().polish(self.btn_close)
         IconRenderer.set_button_icon(self.btn_close, "x", color=C.TEXT_SECONDARY, size=16)
         self.btn_close.setIconSize(QSize(16, 16))
         lay.addWidget(self.btn_close)
@@ -593,8 +583,6 @@ class PersonelListesiPage(QWidget):
         lbl = QLabel("FİLTRE:")
         lbl.setProperty("color-role", "disabled")
         lbl.setProperty("bg-role", "panel")
-        lbl.style().unpolish(lbl)
-        lbl.style().polish(lbl)
         lay.addWidget(lbl)
 
         self.cmb_gorev_yeri = QComboBox()
@@ -614,8 +602,6 @@ class PersonelListesiPage(QWidget):
         self.btn_excel = QPushButton(" Excel")
         self.btn_excel.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_excel.setProperty("style-role", "success")
-        self.btn_excel.style().unpolish(self.btn_excel)
-        self.btn_excel.style().polish(self.btn_excel)
         IconRenderer.set_button_icon(self.btn_excel, "download", color=C.TEXT_SECONDARY, size=16)
         self.btn_excel.setIconSize(QSize(16, 16))
         lay.addWidget(self.btn_excel)
@@ -660,14 +646,10 @@ class PersonelListesiPage(QWidget):
 
         self.lbl_info = QLabel("0 kayıt")
         self.lbl_info.setProperty("style-role", "footer")
-        self.lbl_info.style().unpolish(self.lbl_info)
-        self.lbl_info.style().polish(self.lbl_info)
         lay.addWidget(self.lbl_info)
 
         self.lbl_detail = QLabel("")
         self.lbl_detail.setProperty("style-role", "footer")
-        self.lbl_detail.style().unpolish(self.lbl_detail)
-        self.lbl_detail.style().polish(self.lbl_detail)
         lay.addWidget(self.lbl_detail)
 
         lay.addStretch()
@@ -684,8 +666,6 @@ class PersonelListesiPage(QWidget):
         self.btn_load_more.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_load_more.setFixedHeight(28)
         self.btn_load_more.setProperty("style-role", "action")
-        self.btn_load_more.style().unpolish(self.btn_load_more)
-        self.btn_load_more.style().polish(self.btn_load_more)
         self.btn_load_more.setVisible(False)  # İlk başta gizle
         lay.addWidget(self.btn_load_more)
         
@@ -1335,6 +1315,4 @@ class PersonelListesiPage(QWidget):
         s = QFrame()
         s.setFixedSize(1, 20)
         s.setProperty("bg-role", "separator")
-        s.style().unpolish(s)
-        s.style().polish(s)
         return s

@@ -53,8 +53,6 @@ class SabitEditDialog(QDialog):
         self.setModal(True)
         self.setMinimumWidth(400)
         self.setProperty("bg-role", "page")
-        self.style().unpolish(self)
-        self.style().polish(self)
         
         layout = QVBoxLayout(self)
         
@@ -62,8 +60,6 @@ class SabitEditDialog(QDialog):
         lbl_kod = QLabel("Kod:")
         lbl_kod.setProperty("color-role", "primary")
         lbl_kod.setStyleSheet("font-weight: 500;")
-        lbl_kod.style().unpolish(lbl_kod)
-        lbl_kod.style().polish(lbl_kod)
         layout.addWidget(lbl_kod)
         self._txt_kod = QLineEdit()
         # setStyleSheet kaldırıldı: input_field â€” global QSS kuralı geçerli
@@ -75,8 +71,6 @@ class SabitEditDialog(QDialog):
         lbl_menu = QLabel("Menü Elemanı (Seçenek):")
         lbl_menu.setProperty("color-role", "primary")
         lbl_menu.setStyleSheet("font-weight: 500;")
-        lbl_menu.style().unpolish(lbl_menu)
-        lbl_menu.style().polish(lbl_menu)
         layout.addWidget(lbl_menu)
         self._txt_menu_eleman = QLineEdit()
         # setStyleSheet kaldırıldı: input_field â€” global QSS kuralı geçerli
@@ -89,8 +83,6 @@ class SabitEditDialog(QDialog):
         lbl_aciklama = QLabel("Açıklama:")
         lbl_aciklama.setProperty("color-role", "primary")
         lbl_aciklama.setStyleSheet("font-weight: 500;")
-        lbl_aciklama.style().unpolish(lbl_aciklama)
-        lbl_aciklama.style().polish(lbl_aciklama)
         layout.addWidget(lbl_aciklama)
         self._txt_aciklama = QLineEdit()
         # setStyleSheet kaldırıldı: input_field â€” global QSS kuralı geçerli
@@ -102,14 +94,10 @@ class SabitEditDialog(QDialog):
         btn_layout = QHBoxLayout()
         btn_ok = QPushButton("Tamam")
         btn_ok.setProperty("style-role", "action")
-        btn_ok.style().unpolish(btn_ok)
-        btn_ok.style().polish(btn_ok)
         IconRenderer.set_button_icon(btn_ok, "check", size=14)
         btn_ok.clicked.connect(self._on_accept)
         btn_cancel = QPushButton("Ä°ptal")
         btn_cancel.setProperty("style-role", "secondary")
-        btn_cancel.style().unpolish(btn_cancel)
-        btn_cancel.style().polish(btn_cancel)
         IconRenderer.set_button_icon(btn_cancel, "x", size=14)
         btn_cancel.clicked.connect(self.reject)
         btn_layout.addWidget(btn_ok)
@@ -161,7 +149,7 @@ class TatilEditDialog(QDialog):
         self.setWindowTitle("Tatil Düzenleme")
         self.setModal(True)
         self.setMinimumWidth(400)
-        self.setProperty("bg-role", "page"); self.style().unpolish(self); self.style().polish(self)
+        self.setProperty("bg-role", "page")
         
         layout = QVBoxLayout(self)
         
@@ -169,8 +157,6 @@ class TatilEditDialog(QDialog):
         lbl_tarih = QLabel("Tarih:")
         lbl_tarih.setProperty("color-role", "primary")
         lbl_tarih.setStyleSheet("font-weight: 500;")
-        lbl_tarih.style().unpolish(lbl_tarih)
-        lbl_tarih.style().polish(lbl_tarih)
         layout.addWidget(lbl_tarih)
         self._date_edit = QDateEdit()
         self._date_edit.setCalendarPopup(True)
@@ -183,8 +169,6 @@ class TatilEditDialog(QDialog):
         lbl_tatil_adi = QLabel("Tatil Adı:")
         lbl_tatil_adi.setProperty("color-role", "primary")
         lbl_tatil_adi.setStyleSheet("font-weight: 500;")
-        lbl_tatil_adi.style().unpolish(lbl_tatil_adi)
-        lbl_tatil_adi.style().polish(lbl_tatil_adi)
         layout.addWidget(lbl_tatil_adi)
         self._cmb_resmi_tatil = QComboBox()
         self._cmb_resmi_tatil.setEditable(True)
@@ -209,14 +193,10 @@ class TatilEditDialog(QDialog):
         btn_layout = QHBoxLayout()
         btn_ok = QPushButton("Tamam")
         btn_ok.setProperty("style-role", "action")
-        btn_ok.style().unpolish(btn_ok)
-        btn_ok.style().polish(btn_ok)
         IconRenderer.set_button_icon(btn_ok, "check", size=14)
         btn_ok.clicked.connect(self._on_accept)
         btn_cancel = QPushButton("Ä°ptal")
         btn_cancel.setProperty("style-role", "secondary")
-        btn_cancel.style().unpolish(btn_cancel)
-        btn_cancel.style().polish(btn_cancel)
         IconRenderer.set_button_icon(btn_cancel, "x", size=14)
         btn_cancel.clicked.connect(self.reject)
         btn_layout.addWidget(btn_ok)
@@ -274,8 +254,6 @@ class SettingsPage(QWidget):
         
         # Ana sayfa background
         self.setProperty("bg-role", "page")
-        self.style().unpolish(self)
-        self.style().polish(self)
         
         # Tab widget
         tabs = QTabWidget()
@@ -293,8 +271,6 @@ class SettingsPage(QWidget):
         lbl_ana_kat = QLabel("Ana Kategoriler (Kod):")
         lbl_ana_kat.setProperty("color-role", "primary")
         lbl_ana_kat.setStyleSheet("font-weight: 600;")
-        lbl_ana_kat.style().unpolish(lbl_ana_kat)
-        lbl_ana_kat.style().polish(lbl_ana_kat)
         left_panel.addWidget(lbl_ana_kat)
         self._list_kod = QListWidget()
         # setStyleSheet kaldırıldı: table â€” global QSS
@@ -304,8 +280,6 @@ class SettingsPage(QWidget):
         # Yeni Kategori butonu
         btn_new_kod = QPushButton("Yeni Kategori")
         btn_new_kod.setProperty("style-role", "secondary")
-        btn_new_kod.style().unpolish(btn_new_kod)
-        btn_new_kod.style().polish(btn_new_kod)
         IconRenderer.set_button_icon(btn_new_kod, "plus", size=14)
         btn_new_kod.clicked.connect(self._add_kod)
         left_panel.addWidget(btn_new_kod)
@@ -318,8 +292,6 @@ class SettingsPage(QWidget):
         lbl_secenekler = QLabel("Seçenekler (MenuEleman) ve Açıklamalar:")
         lbl_secenekler.setProperty("color-role", "primary")
         lbl_secenekler.setStyleSheet("font-weight: 600;")
-        lbl_secenekler.style().unpolish(lbl_secenekler)
-        lbl_secenekler.style().polish(lbl_secenekler)
         right_panel.addWidget(lbl_secenekler)
         
         self._table_menu_elemanlari = QTableWidget()
@@ -337,20 +309,14 @@ class SettingsPage(QWidget):
         btn_layout = QHBoxLayout()
         btn_add = QPushButton("Yeni Seçenek")
         btn_add.setProperty("style-role", "secondary")
-        btn_add.style().unpolish(btn_add)
-        btn_add.style().polish(btn_add)
         IconRenderer.set_button_icon(btn_add, "plus", size=14)
         btn_add.clicked.connect(self._add_menu_eleman)
         btn_edit = QPushButton("Düzenle")
         btn_edit.setProperty("style-role", "secondary")
-        btn_edit.style().unpolish(btn_edit)
-        btn_edit.style().polish(btn_edit)
         IconRenderer.set_button_icon(btn_edit, "edit", size=14)
         btn_edit.clicked.connect(self._edit_menu_eleman)
         btn_delete = QPushButton("Sil")
         btn_delete.setProperty("style-role", "secondary")
-        btn_delete.style().unpolish(btn_delete)
-        btn_delete.style().polish(btn_delete)
         IconRenderer.set_button_icon(btn_delete, "trash", size=14)
         btn_delete.clicked.connect(self._delete_menu_eleman)
         
@@ -387,8 +353,6 @@ class SettingsPage(QWidget):
         lbl_yil = QLabel("Yıl:")
         lbl_yil.setProperty("color-role", "primary")
         lbl_yil.setStyleSheet("font-weight: 500;")
-        lbl_yil.style().unpolish(lbl_yil)
-        lbl_yil.style().polish(lbl_yil)
         filter_layout.addWidget(lbl_yil)
         self._cmb_tatil_yil = QComboBox()
         # setStyleSheet kaldırıldı: input_combo â€” global QSS kuralı geçerli
@@ -412,20 +376,14 @@ class SettingsPage(QWidget):
         btn_layout = QHBoxLayout()
         btn_add = QPushButton("Yeni Tatil")
         btn_add.setProperty("style-role", "secondary")
-        btn_add.style().unpolish(btn_add)
-        btn_add.style().polish(btn_add)
         IconRenderer.set_button_icon(btn_add, "plus", size=14)
         btn_add.clicked.connect(self._add_tatil)
         btn_edit = QPushButton("Düzenle")
         btn_edit.setProperty("style-role", "secondary")
-        btn_edit.style().unpolish(btn_edit)
-        btn_edit.style().polish(btn_edit)
         IconRenderer.set_button_icon(btn_edit, "edit", size=14)
         btn_edit.clicked.connect(self._edit_tatil)
         btn_delete = QPushButton("Sil")
         btn_delete.setProperty("style-role", "secondary")
-        btn_delete.style().unpolish(btn_delete)
-        btn_delete.style().polish(btn_delete)
         IconRenderer.set_button_icon(btn_delete, "trash", size=14)
         btn_delete.clicked.connect(self._delete_tatil)
         
@@ -445,15 +403,11 @@ class SettingsPage(QWidget):
         lbl_tema_baslik = QLabel("Tema Seçimi")
         lbl_tema_baslik.setProperty("color-role", "primary")
         lbl_tema_baslik.setStyleSheet("font-weight: 700; font-size: 14px;")
-        lbl_tema_baslik.style().unpolish(lbl_tema_baslik)
-        lbl_tema_baslik.style().polish(lbl_tema_baslik)
         tema_layout.addWidget(lbl_tema_baslik)
         
         tema_info = QLabel("Uygulamanın gÖrünüş temasını seçin")
         tema_info.setProperty("color-role", "secondary")
         tema_info.setStyleSheet("font-size: 12px;")
-        tema_info.style().unpolish(tema_info)
-        tema_info.style().polish(tema_info)
         tema_layout.addWidget(tema_info)
         
         tema_layout.addSpacing(20)
@@ -462,16 +416,12 @@ class SettingsPage(QWidget):
         self._radio_dark = QRadioButton("Koyu Tema (Dark)")
         self._radio_dark.setProperty("color-role", "primary")
         self._radio_dark.setStyleSheet("font-size: 12px;")
-        self._radio_dark.style().unpolish(self._radio_dark)
-        self._radio_dark.style().polish(self._radio_dark)
         self._radio_dark.setChecked(True)
         tema_layout.addWidget(self._radio_dark)
         
         dark_desc = QLabel("Dimli, gÖz arkadaşı renkler")
         dark_desc.setProperty("color-role", "secondary")
         dark_desc.setStyleSheet("font-size: 11px; margin-left: 25px;")
-        dark_desc.style().unpolish(dark_desc)
-        dark_desc.style().polish(dark_desc)
         tema_layout.addWidget(dark_desc)
         
         tema_layout.addSpacing(15)
@@ -480,15 +430,11 @@ class SettingsPage(QWidget):
         self._radio_light = QRadioButton("Açık Tema (Light)")
         self._radio_light.setProperty("color-role", "primary")
         self._radio_light.setStyleSheet("font-size: 12px;")
-        self._radio_light.style().unpolish(self._radio_light)
-        self._radio_light.style().polish(self._radio_light)
         tema_layout.addWidget(self._radio_light)
         
         light_desc = QLabel("Aydınlık, açık renkler")
         light_desc.setProperty("color-role", "secondary")
         light_desc.setStyleSheet("font-size: 11px; margin-left: 25px;")
-        light_desc.style().unpolish(light_desc)
-        light_desc.style().polish(light_desc)
         tema_layout.addWidget(light_desc)
         
         tema_layout.addSpacing(20)
@@ -496,8 +442,6 @@ class SettingsPage(QWidget):
         # Kaydet butonu
         btn_tema_kaydet = QPushButton("Tema Değişikliğini Uygula")
         btn_tema_kaydet.setProperty("style-role", "action")
-        btn_tema_kaydet.style().unpolish(btn_tema_kaydet)
-        btn_tema_kaydet.style().polish(btn_tema_kaydet)
         IconRenderer.set_button_icon(btn_tema_kaydet, "palette", size=14)
         btn_tema_kaydet.clicked.connect(self._apply_theme)
         tema_layout.addWidget(btn_tema_kaydet)
@@ -514,15 +458,11 @@ class SettingsPage(QWidget):
         lbl_sistem_baslik = QLabel("Sistem Durumu")
         lbl_sistem_baslik.setProperty("color-role", "primary")
         lbl_sistem_baslik.setStyleSheet("font-weight: 700; font-size: 14px;")
-        lbl_sistem_baslik.style().unpolish(lbl_sistem_baslik)
-        lbl_sistem_baslik.style().polish(lbl_sistem_baslik)
         sistem_layout.addWidget(lbl_sistem_baslik)
         
         durum_info = QLabel("Sistemin çalışma modunu belirleyin")
         durum_info.setProperty("color-role", "secondary")
         durum_info.setStyleSheet("font-size: 12px;")
-        durum_info.style().unpolish(durum_info)
-        durum_info.style().polish(durum_info)
         sistem_layout.addWidget(durum_info)
         
         sistem_layout.addSpacing(20)
@@ -531,8 +471,6 @@ class SettingsPage(QWidget):
         self._chk_online_mod = QCheckBox("Online Mod Etkin")
         self._chk_online_mod.setProperty("color-role", "primary")
         self._chk_online_mod.setStyleSheet("font-size: 12px; font-weight: 500;")
-        self._chk_online_mod.style().unpolish(self._chk_online_mod)
-        self._chk_online_mod.style().polish(self._chk_online_mod)
         self._chk_online_mod.setChecked(AppConfig.is_online_mode())
         self._chk_online_mod.stateChanged.connect(self._on_online_mode_changed)
         sistem_layout.addWidget(self._chk_online_mod)
@@ -540,8 +478,6 @@ class SettingsPage(QWidget):
         online_desc = QLabel("âœ“ Online: Bulut senkronizasyonu, canlı veri\nâœ— Offline: Yerel veri, manuel senkronizasyon")
         online_desc.setProperty("color-role", "secondary")
         online_desc.setStyleSheet("font-size: 11px; margin-left: 25px;")
-        online_desc.style().unpolish(online_desc)
-        online_desc.style().polish(online_desc)
         sistem_layout.addWidget(online_desc)
         
         sistem_layout.addSpacing(20)
@@ -550,8 +486,6 @@ class SettingsPage(QWidget):
         self._chk_auto_sync = QCheckBox("Otomatik Senkronizasyon")
         self._chk_auto_sync.setProperty("color-role", "primary")
         self._chk_auto_sync.setStyleSheet("font-size: 12px; font-weight: 500;")
-        self._chk_auto_sync.style().unpolish(self._chk_auto_sync)
-        self._chk_auto_sync.style().polish(self._chk_auto_sync)
         self._chk_auto_sync.setChecked(AppConfig.get_auto_sync())
         self._chk_auto_sync.setEnabled(True)
         sistem_layout.addWidget(self._chk_auto_sync)
@@ -559,8 +493,6 @@ class SettingsPage(QWidget):
         sync_desc = QLabel("Değişiklikleri arka planda otomatik senkronize et")
         sync_desc.setProperty("color-role", "secondary")
         sync_desc.setStyleSheet("font-size: 11px; margin-left: 25px;")
-        sync_desc.style().unpolish(sync_desc)
-        sync_desc.style().polish(sync_desc)
         sistem_layout.addWidget(sync_desc)
         
         sistem_layout.addSpacing(20)
@@ -569,8 +501,6 @@ class SettingsPage(QWidget):
         lbl_sync_info = QLabel("Son Senkronizasyon: Åimdi")
         lbl_sync_info.setProperty("color-role", "ok")
         lbl_sync_info.setStyleSheet("font-size: 11px; font-weight: 500;")
-        lbl_sync_info.style().unpolish(lbl_sync_info)
-        lbl_sync_info.style().polish(lbl_sync_info)
         sistem_layout.addWidget(lbl_sync_info)
         
         sistem_layout.addSpacing(20)
@@ -578,8 +508,6 @@ class SettingsPage(QWidget):
         # Kaydet butonu
         btn_sistem_kaydet = QPushButton("Sistem Ayarlarını Kaydet")
         btn_sistem_kaydet.setProperty("style-role", "action")
-        btn_sistem_kaydet.style().unpolish(btn_sistem_kaydet)
-        btn_sistem_kaydet.style().polish(btn_sistem_kaydet)
         IconRenderer.set_button_icon(btn_sistem_kaydet, "save", size=14)
         btn_sistem_kaydet.clicked.connect(self._save_system_settings)
         sistem_layout.addWidget(btn_sistem_kaydet)
@@ -783,8 +711,6 @@ class SettingsPage(QWidget):
         # Kod alanını devre dışı bırak (zaten seçili)
         dialog._txt_kod.setReadOnly(True)
         dialog._txt_kod.setProperty("bg-role", "input")
-        dialog._txt_kod.style().unpolish(dialog._txt_kod)
-        dialog._txt_kod.style().polish(dialog._txt_kod)
         
         if dialog.exec() == QDialog.DialogCode.Accepted:
             _, menu_eleman, aciklama = dialog.get_data()
@@ -821,8 +747,6 @@ class SettingsPage(QWidget):
         # Kod alanını devre dışı bırak
         dialog._txt_kod.setReadOnly(True)
         dialog._txt_kod.setProperty("bg-role", "input")
-        dialog._txt_kod.style().unpolish(dialog._txt_kod)
-        dialog._txt_kod.style().polish(dialog._txt_kod)
         
         if dialog.exec() == QDialog.DialogCode.Accepted:
             _, menu_eleman, aciklama = dialog.get_data()
@@ -1012,25 +936,17 @@ class SettingsPage(QWidget):
         ThemeManager, açık tüm sayfalarda bu metodu çağırmalıdır.
         """
         # Ana widget arkaplan
-        self.setProperty("bg-role", "page"); self.style().unpolish(self); self.style().polish(self)
+        self.setProperty("bg-role", "page")
         # Tab widget ve diğer stiller QSS'den gelir, inline stil gereksiz
         # RadioButton ve Checkbox'lar için sadece setProperty yeterli
         if hasattr(self, '_radio_dark'):
             self._radio_dark.setProperty("color-role", "primary")
-            self._radio_dark.style().unpolish(self._radio_dark)
-            self._radio_dark.style().polish(self._radio_dark)
         if hasattr(self, '_radio_light'):
             self._radio_light.setProperty("color-role", "primary")
-            self._radio_light.style().unpolish(self._radio_light)
-            self._radio_light.style().polish(self._radio_light)
         if hasattr(self, '_chk_online_mod'):
             self._chk_online_mod.setProperty("color-role", "primary")
-            self._chk_online_mod.style().unpolish(self._chk_online_mod)
-            self._chk_online_mod.style().polish(self._chk_online_mod)
         if hasattr(self, '_chk_auto_sync'):
             self._chk_auto_sync.setProperty("color-role", "primary")
-            self._chk_auto_sync.style().unpolish(self._chk_auto_sync)
-            self._chk_auto_sync.style().polish(self._chk_auto_sync)
         logger.debug("SettingsPage tema stilleri yenilendi")
     
     def _on_online_mode_changed(self):

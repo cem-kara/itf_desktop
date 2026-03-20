@@ -455,8 +455,6 @@ class IstenAyrilikPage(QWidget):
         self.lbl_status = QLabel("")
         self.lbl_status.setProperty("color-role", "muted")
         self.lbl_status.setProperty("bg-role", "panel")
-        self.lbl_status.style().unpolish(self.lbl_status)
-        self.lbl_status.style().polish(self.lbl_status)
         main.addWidget(self.lbl_status)
 
     def _add_stat(self, grid, row, text, style_key):

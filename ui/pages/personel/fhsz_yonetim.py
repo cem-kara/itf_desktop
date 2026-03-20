@@ -261,8 +261,6 @@ class FHSZYonetimPage(QWidget):
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
         self.setProperty("bg-role", "page")
-        self.style().unpolish(self)
-        self.style().polish(self)
         self._db = db
         self._svc = get_fhsz_service(db) if db else None
         self._all_personel = []
@@ -285,8 +283,6 @@ class FHSZYonetimPage(QWidget):
         # ── ÜST BAR: Dönem Seçimi ──
         filter_frame = QFrame()
         filter_frame.setProperty("bg-role", "panel")
-        filter_frame.style().unpolish(filter_frame)
-        filter_frame.style().polish(filter_frame)
         fp = QHBoxLayout(filter_frame)
         fp.setContentsMargins(12, 8, 12, 8)
         fp.setSpacing(8)
@@ -314,16 +310,12 @@ class FHSZYonetimPage(QWidget):
         self.lbl_donem = QLabel("Dönem aralığı: ...")
         self.lbl_donem.setProperty("color-role", "muted")
         self.lbl_donem.setStyleSheet("font-size: 11px;")
-        self.lbl_donem.style().unpolish(self.lbl_donem)
-        self.lbl_donem.style().polish(self.lbl_donem)
         fp.addWidget(self.lbl_donem)
 
         fp.addStretch()
 
         self.btn_hesapla = QPushButton("HESAPLA")
         self.btn_hesapla.setProperty("style-role", "action")
-        self.btn_hesapla.style().unpolish(self.btn_hesapla)
-        self.btn_hesapla.style().polish(self.btn_hesapla)
         self.btn_hesapla.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_hesapla, "bar_chart", color="primary", size=14)
         fp.addWidget(self.btn_hesapla)
@@ -333,8 +325,6 @@ class FHSZYonetimPage(QWidget):
         # -- Bilgi alani: aylik ozet
         info_frame = QFrame()
         info_frame.setProperty("bg-role", "panel")
-        info_frame.style().unpolish(info_frame)
-        info_frame.style().polish(info_frame)
         info_layout = QHBoxLayout(info_frame)
         info_layout.setContentsMargins(12, 8, 12, 8)
         info_layout.setSpacing(24)
@@ -403,16 +393,12 @@ class FHSZYonetimPage(QWidget):
         # ── ALT BAR ──
         bot_frame = QFrame()
         bot_frame.setProperty("bg-role", "panel")
-        bot_frame.style().unpolish(bot_frame)
-        bot_frame.style().polish(bot_frame)
         bf = QHBoxLayout(bot_frame)
         bf.setContentsMargins(12, 8, 12, 8)
         bf.setSpacing(12)
 
         self.lbl_durum = QLabel("Hazır")
         self.lbl_durum.setProperty("color-role", "muted")
-        self.lbl_durum.style().unpolish(self.lbl_durum)
-        self.lbl_durum.style().polish(self.lbl_durum)
         bf.addWidget(self.lbl_durum)
 
         bf.addStretch()
@@ -436,8 +422,6 @@ class FHSZYonetimPage(QWidget):
 
         self.btn_kaydet = QPushButton("KAYDET / GUNCELLE")
         self.btn_kaydet.setProperty("style-role", "action")
-        self.btn_kaydet.style().unpolish(self.btn_kaydet)
-        self.btn_kaydet.style().polish(self.btn_kaydet)
         self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_kaydet, "save", color="primary", size=14)
         bf.addWidget(self.btn_kaydet)
@@ -450,8 +434,6 @@ class FHSZYonetimPage(QWidget):
     def _make_label(self, text):
         lbl = QLabel(text)
         lbl.setProperty("color-role", "muted")
-        lbl.style().unpolish(lbl)
-        lbl.style().polish(lbl)
         return lbl
 
     def _add_sep(self, layout):
@@ -459,8 +441,6 @@ class FHSZYonetimPage(QWidget):
         sep.setFixedWidth(1)
         sep.setFixedHeight(20)
         sep.setProperty("bg-role", "separator")
-        sep.style().unpolish(sep)
-        sep.style().polish(sep)
         layout.addWidget(sep)
 
     def _make_stat_block(self, title: str, value_label: QLabel) -> QWidget:
@@ -471,13 +451,9 @@ class FHSZYonetimPage(QWidget):
 
         lbl_title = QLabel(title)
         lbl_title.setProperty("style-role", "stat-label")
-        lbl_title.style().unpolish(lbl_title)
-        lbl_title.style().polish(lbl_title)
         bl.addWidget(lbl_title)
 
         value_label.setProperty("style-role", "stat-value")
-        value_label.style().unpolish(value_label)
-        value_label.style().polish(value_label)
         bl.addWidget(value_label)
         return block
 

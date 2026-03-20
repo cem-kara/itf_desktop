@@ -94,8 +94,6 @@ class PuantajRaporPage(QWidget):
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
         self.setProperty("bg-role", "page")
-        self.style().unpolish(self)
-        self.style().polish(self)
         self._db = db
         self._rapor_data = []     # Tablodaki satırlar (dict list)
 
@@ -114,8 +112,6 @@ class PuantajRaporPage(QWidget):
         # ── ÜST BAR: Rapor Filtreleri ──
         filter_frame = QFrame()
         filter_frame.setProperty("bg-role", "panel")
-        filter_frame.style().unpolish(filter_frame)
-        filter_frame.style().polish(filter_frame)
         fp = QHBoxLayout(filter_frame)
         fp.setContentsMargins(12, 8, 12, 8)
         fp.setSpacing(8)
@@ -144,8 +140,6 @@ class PuantajRaporPage(QWidget):
 
         self.btn_getir = QPushButton("Raporu Olustur")
         self.btn_getir.setProperty("style-role", "action")
-        self.btn_getir.style().unpolish(self.btn_getir)
-        self.btn_getir.style().polish(self.btn_getir)
         self.btn_getir.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         IconRenderer.set_button_icon(self.btn_getir, "clipboard_list", color="primary", size=14)
         fp.addWidget(self.btn_getir)
@@ -155,8 +149,6 @@ class PuantajRaporPage(QWidget):
         # ── BİLGİ LABEL ──
         self.lbl_bilgi = QLabel("Veri bekleniyor...")
         self.lbl_bilgi.setProperty("color-role", "muted")
-        self.lbl_bilgi.style().unpolish(self.lbl_bilgi)
-        self.lbl_bilgi.style().polish(self.lbl_bilgi)
         self.lbl_bilgi.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         main.addWidget(self.lbl_bilgi)
 
@@ -184,16 +176,12 @@ class PuantajRaporPage(QWidget):
         # ── ALT BAR ──
         bot_frame = QFrame()
         bot_frame.setProperty("bg-role", "panel")
-        bot_frame.style().unpolish(bot_frame)
-        bot_frame.style().polish(bot_frame)
         bf = QHBoxLayout(bot_frame)
         bf.setContentsMargins(12, 8, 12, 8)
         bf.setSpacing(12)
 
         self.lbl_durum = QLabel("Hazır")
         self.lbl_durum.setProperty("color-role", "muted")
-        self.lbl_durum.style().unpolish(self.lbl_durum)
-        self.lbl_durum.style().polish(self.lbl_durum)
         bf.addWidget(self.lbl_durum)
 
         bf.addStretch()
@@ -218,8 +206,6 @@ class PuantajRaporPage(QWidget):
 
         self.btn_excel = QPushButton("Excel Indir")
         self.btn_excel.setProperty("style-role", "success-filled")
-        self.btn_excel.style().unpolish(self.btn_excel)
-        self.btn_excel.style().polish(self.btn_excel)
         self.btn_excel.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_excel.setEnabled(False)
         IconRenderer.set_button_icon(self.btn_excel, "download", color="primary", size=14)
@@ -227,8 +213,6 @@ class PuantajRaporPage(QWidget):
 
         self.btn_pdf = QPushButton("PDF Indir")
         self.btn_pdf.setProperty("style-role", "danger")
-        self.btn_pdf.style().unpolish(self.btn_pdf)
-        self.btn_pdf.style().polish(self.btn_pdf)
         self.btn_pdf.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_pdf.setEnabled(False)
         IconRenderer.set_button_icon(self.btn_pdf, "save", color="primary", size=14)
@@ -241,16 +225,12 @@ class PuantajRaporPage(QWidget):
     def _make_label(self, text):
         lbl = QLabel(text)
         lbl.setProperty("color-role", "muted")
-        lbl.style().unpolish(lbl)
-        lbl.style().polish(lbl)
         return lbl
 
     def _add_sep(self, layout):
         sep = QFrame()
         sep.setFixedWidth(1); sep.setFixedHeight(20)
         sep.setProperty("bg-role", "separator")
-        sep.style().unpolish(sep)
-        sep.style().polish(sep)
         layout.addWidget(sep)
 
     # ═══════════════════════════════════════════

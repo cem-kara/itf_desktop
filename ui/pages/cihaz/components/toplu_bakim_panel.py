@@ -41,15 +41,11 @@ class TopluBakimPlanPanel(QWidget):
         title = QLabel("Toplu Bakım Planı Oluştur")
         title.setProperty("color-role", "accent")
         title.setStyleSheet("font-size: 14px; font-weight: bold;")
-        title.style().unpolish(title)
-        title.style().polish(title)
         layout.addWidget(title)
 
         lbl_marka = QLabel("Marka Filtresi:")
         lbl_marka.setProperty("color-role", "primary")
         lbl_marka.setStyleSheet("font-weight: 600;")
-        lbl_marka.style().unpolish(lbl_marka)
-        lbl_marka.style().polish(lbl_marka)
         layout.addWidget(lbl_marka)
 
         self.cmb_marka_filter = QComboBox()
@@ -61,8 +57,6 @@ class TopluBakimPlanPanel(QWidget):
         lbl_sozlesme = QLabel("Sözleşme seç (isteğe bağlı):")
         lbl_sozlesme.setProperty("color-role", "primary")
         lbl_sozlesme.setStyleSheet("font-weight: 600;")
-        lbl_sozlesme.style().unpolish(lbl_sozlesme)
-        lbl_sozlesme.style().polish(lbl_sozlesme)
         layout.addWidget(lbl_sozlesme)
 
         self.cmb_sozlesme = QComboBox()
@@ -80,8 +74,6 @@ class TopluBakimPlanPanel(QWidget):
         lbl_cihaz = QLabel("Cihazlar Seçin:")
         lbl_cihaz.setProperty("color-role", "primary")
         lbl_cihaz.setStyleSheet("font-weight: 600;")
-        lbl_cihaz.style().unpolish(lbl_cihaz)
-        lbl_cihaz.style().polish(lbl_cihaz)
         layout.addWidget(lbl_cihaz)
 
         self.list_cihazlar = QListWidget()
@@ -106,8 +98,6 @@ class TopluBakimPlanPanel(QWidget):
         lbl_plan = QLabel("Bakım Planı Türü:")
         lbl_plan.setProperty("color-role", "primary")
         lbl_plan.setStyleSheet("font-weight: 600;")
-        lbl_plan.style().unpolish(lbl_plan)
-        lbl_plan.style().polish(lbl_plan)
         layout.addWidget(lbl_plan)
 
         self.cmb_plan_tipi = QComboBox()
@@ -123,8 +113,6 @@ class TopluBakimPlanPanel(QWidget):
         lbl_tarih = QLabel("Başlangıç Tarihi:")
         lbl_tarih.setProperty("color-role", "primary")
         lbl_tarih.setStyleSheet("font-weight: 600;")
-        lbl_tarih.style().unpolish(lbl_tarih)
-        lbl_tarih.style().polish(lbl_tarih)
         layout.addWidget(lbl_tarih)
 
         self.dt_baslangic = QDateEdit(QDate.currentDate())
@@ -136,8 +124,6 @@ class TopluBakimPlanPanel(QWidget):
         lbl_acik = QLabel("Bakım Açıklaması (isteğe bağlı):")
         lbl_acik.setProperty("color-role", "primary")
         lbl_acik.setStyleSheet("font-weight: 600;")
-        lbl_acik.style().unpolish(lbl_acik)
-        lbl_acik.style().polish(lbl_acik)
         layout.addWidget(lbl_acik)
 
         self.txt_aciklama = QLineEdit()
@@ -149,8 +135,6 @@ class TopluBakimPlanPanel(QWidget):
         lbl_soz = QLabel("Sözleşme DokümanId (opsiyonel):")
         lbl_soz.setProperty("color-role", "primary")
         lbl_soz.setStyleSheet("font-weight: 600;")
-        lbl_soz.style().unpolish(lbl_soz)
-        lbl_soz.style().polish(lbl_soz)
         layout.addWidget(lbl_soz)
 
         self.le_sozlesme_id = QLineEdit()

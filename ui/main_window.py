@@ -56,8 +56,6 @@ class MainWindow(QMainWindow):
         # ── Ana alan (sidebar + içerik) ───────────────────────────
         body = QWidget()
         body.setProperty("bg-role", "page")
-        body.style().unpolish(body)
-        body.style().polish(body)
         main_layout = QHBoxLayout(body)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
@@ -78,8 +76,6 @@ class MainWindow(QMainWindow):
         content = QWidget()
         content.setObjectName("content_area")
         content.setProperty("bg-role", "page")
-        content.style().unpolish(content)
-        content.style().polish(content)
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(0)
@@ -834,8 +830,6 @@ class MainWindow(QMainWindow):
         logger.info(f"Tema değiştirildi: {theme_name} — UI yenileniyor")
         try:
             # Tüm pencereyi yenile — alt widget'lar otomatik güncellenir
-            self.style().unpolish(self)
-            self.style().polish(self)
             self.update()
             logger.info(f"Tema '{theme_name}' uygulandı")
         except Exception as e:
