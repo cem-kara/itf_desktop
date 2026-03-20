@@ -17,8 +17,6 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QColor, QCursor, QDesktopServices, QStandardItemModel, QStandardItem, QPalette
 
-from ui.styles.colors import C as _C
-from ui.styles.components import STYLES
 from ui.styles.icons import IconRenderer
 from ui.components.base_table_model import BaseTableModel
 from ui.pages.rke.components.toplu_muayene_dialog import TopluMuayeneDialog
@@ -70,7 +68,7 @@ except (ImportError, ModuleNotFoundError):  # type: ignore
         def uygula(w, key): pass
 
 try:
-    from ui.styles.colors import DarkTheme  # type: ignore
+    from ui.styles.colors import DarkTheme, C as _C  # type: ignore
 except ImportError:  # type: ignore
     class DarkTheme:  # type: ignore
         BG_PRIMARY = "#0f1117"; BG_SECONDARY = "#13161d"; SURFACE = "#13161d"
@@ -81,6 +79,17 @@ except ImportError:  # type: ignore
         STATUS_SUCCESS = "#2ec98e"; STATUS_WARNING = "#e8a030"; STATUS_ERROR = "#e85555"; STATUS_INFO = "#3d8ef5"
         MONOSPACE = "\"JetBrains Mono\", \"Consolas\", monospace"
         RKE_PURP = "#a855f7"
+    _C = {
+        "red": "#e85555",
+        "amber": "#e8a030",
+        "green": "#2ec98e",
+        "accent": "#3d8ef5",
+        "muted": "#4d6070",
+        "surface": "#121820",
+        "panel": "#1a2030",
+        "border": "#1e2d3d",
+        "text": "#e8edf5",
+    }
 
 class _S(dict):  # type: ignore
     def __missing__(self, k: str) -> str: return ""
@@ -136,9 +145,7 @@ class FieldGroup(QWidget):
     def __init__(self, title: str, color: str, parent=None):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.setStyleSheet(
-            f"FieldGroup{{background:{DarkTheme.BG_SECONDARY};border:1px solid {DarkTheme.BORDER_PRIMARY};border-radius:6px;}}"
-        )
+        self.setProperty("bg-role", "panel")
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
@@ -147,23 +154,18 @@ class FieldGroup(QWidget):
         hdr = QWidget()
         hdr.setFixedHeight(30)
         hdr.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        hdr.setStyleSheet(
-            f"QWidget{{background:rgba(255,255,255,12);border-bottom:1px solid {DarkTheme.BORDER_PRIMARY};"
-            f"border-top-left-radius:6px;border-top-right-radius:6px;}}"
-        )
+        hdr.setProperty("style-role", "fieldgroup-header")
         hh = QHBoxLayout(hdr)
         hh.setContentsMargins(10, 0, 10, 0)
         hh.setSpacing(8)
 
         bar = QFrame()
         bar.setFixedSize(3, 14)
-        bar.setStyleSheet("border: none;")
+        bar.setProperty("style-role", "fieldgroup-bar")
 
         lbl = QLabel(title.upper())
-        lbl.setStyleSheet(
-            f"color:{color};background:transparent;font-size:9px;font-weight:700;"
-            f"letter-spacing:2px;font-family:{DarkTheme.MONOSPACE};"
-        )
+        lbl.setProperty("style-role", "fieldgroup-title")
+        lbl.setProperty("color-role", "custom")  # QSS'te 'custom' rolü color parametresiyle override edilmeli
         hh.addWidget(bar)
         hh.addWidget(lbl)
         hh.addStretch()
@@ -171,7 +173,7 @@ class FieldGroup(QWidget):
 
         # Body
         self._body = QWidget()
-        self._body.setStyleSheet("background:transparent;")
+        self._body.setProperty("bg-role", "transparent")
         self._bl = QVBoxLayout(self._body)
         self._bl.setContentsMargins(10, 10, 10, 12)
         self._bl.setSpacing(8)
@@ -810,15 +812,10 @@ class RKEMuayenePage(QWidget):
         vl.setSpacing(2)
 
         lt = QLabel(title)
-        lt.setStyleSheet(
-            f"color:{DarkTheme.TEXT_MUTED};background:transparent;font-family:{DarkTheme.MONOSPACE};"
-            f"font-size:8px;font-weight:700;letter-spacing:2px;"
-        )
+        lt.setProperty("style-role", "kpi-label")
         lv = QLabel(val)
-        lv.setStyleSheet(
-            f"color:{color};background:transparent;font-family:{DarkTheme.MONOSPACE};"
-            f"font-size:20px;font-weight:700;"
-        )
+        lv.setProperty("style-role", "kpi-value")
+        lv.setProperty("color-role", "custom")  # QSS'te 'custom' rolü color parametresiyle override edilmeli
         vl.addWidget(lt)
         vl.addWidget(lv)
         hl.addWidget(content, 1)
@@ -858,8 +855,8 @@ class RKEMuayenePage(QWidget):
         hh = QHBoxLayout(hdr)
         hh.setContentsMargins(14, 0, 14, 0)
         t1 = QLabel("MUAYENE FORMU")
+        t1.setProperty("style-role", "form-title")
         t1.setProperty("color-role", "muted")
-        t1.setStyleSheet("font-family: {}; font-size: 9px; font-weight: 700; letter-spacing: 2px;".format(DarkTheme.MONOSPACE))
         hh.addWidget(t1)
         hh.addStretch()
         vl.addWidget(hdr)

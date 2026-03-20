@@ -1,796 +1,764 @@
 # -*- coding: utf-8 -*-
-"""RKE Envanter Yönetimi — merkezi temaya göre tasarım."""
-import sys
-import time
-from typing import Any, List, Dict, Optional
-from datetime import datetime
+"""RKE Envanter Yönetimi — liste + sağ animasyonlu kayıt paneli."""
+from typing import Optional
 
-from PySide6.QtCore  import Qt, QDate, QThread, Signal, QAbstractTableModel, QModelIndex
-from PySide6.QtWidgets import (
-    QGroupBox,
-    QWidget, QVBoxLayout, QHBoxLayout, QAbstractItemView,
-    QTableView, QHeaderView, QLabel, QPushButton, QComboBox,
-    QDateEdit, QLineEdit, QTextEdit, QProgressBar, QScrollArea,
-    QFrame, QGridLayout, QSizePolicy, QApplication, QMessageBox,
+from PySide6.QtCore import (
+    Qt, QSortFilterProxyModel, Signal, QTimer, QSize,
+    QPropertyAnimation, QEasingCurve,
 )
-from PySide6.QtGui import QColor, QCursor
+from PySide6.QtGui import QCursor
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel,
+    QPushButton, QLineEdit, QComboBox, QTableView,
+    QAbstractItemView, QDateEdit, QTextEdit, QScrollArea,
+    QFormLayout,
+)
 
-from core.di import get_rke_service as _get_rke_service
-from core.hata_yonetici import hata_goster, bilgi_goster, uyari_goster
+from core.logger import logger
+from core.di import get_rke_service
+from core.hata_yonetici import bilgi_goster, hata_goster, soru_sor
 from ui.components.base_table_model import BaseTableModel
-from ui.styles.colors import DarkTheme
 from ui.styles.icons import IconRenderer, IconColors
 
+# ─── Sabitler ──────────────────────────────────────────────
+_PANEL_W = 512
 
-# ── ORTAK STİL STRİNGLERİ ────────────────────────────────────────
-# _S_PAGE kaldırıldı — global QSS kuralı geçerli
-# _S_INPUT kaldırıldı — global QSS kuralı geçerli
-# _S_DATE kaldırıldı — global QSS kuralı geçerli
-# _S_COMBO kaldırıldı — global QSS kuralı geçerli
-# _S_TEXTEDIT kaldırıldı — global QSS kuralı geçerli
-# _S_TABLE kaldırıldı — global QSS kuralı geçerli
-# _S_SCROLL kaldırıldı — global QSS kuralı geçerli
-# _S_PBAR kaldırıldı — global QSS kuralı geçerli
+_DURUM_SECENEKLER = ["Uygun", "Uygun Değil", "Kontrolde", "Kullanım Dışı"]
+_CINS_SECENEKLER  = ["Önlük", "Boyunluk", "Gözlük", "Eldiven", "Bere", "Etek", "Diğer"]
+_BEDEN_SECENEKLER = ["XS", "S", "M", "L", "XL", "XXL", "Standart"]
+_PB_SECENEKLER    = ["0.25", "0.35", "0.50"]
 
+_DURUM_RENK = {
+    "Uygun":         (46,  201, 142),
+    "Uygun Değil":   (232,  85,  85),
+    "Kontrolde":     (232, 160,  48),
+    "Kullanım Dışı": (143, 163, 184),
+}
 
-# ══════════════════════════════════════════════════════════════════
-#  FieldGroup — mockup'ın fgroup bileşeni
-# ══════════════════════════════════════════════════════════════════
-class FieldGroup(QGroupBox):
-    """
-    QGroupBox tabanlı grup kutusu — tema sistemiyle uyumlu.
-    color parametresi başlık aksan rengini belirler.
-    Arka plan ve kenarlık tema QSS tarafından otomatik uygulanır.
-    """
-    def __init__(self, title: str, color: str = "", parent=None):
-        super().__init__(title, parent)
-        # Başlık rengini sadece color özelliğiyle override et
-        if color:
-            self.setProperty("color-role", "primary")
-        self._bl = QVBoxLayout(self)
-        self._bl.setContentsMargins(10, 10, 10, 12)
-        self._bl.setSpacing(8)
-
-    def add_widget(self, w): self._bl.addWidget(w)
-    def add_layout(self, l): self._bl.addLayout(l)
-    def body_layout(self) -> QVBoxLayout: return self._bl
+def _durum_stil(r: int, g: int, b: int) -> str:
+    return (
+        f"QPushButton {{background:rgba({r},{g},{b},38);"
+        f"color:rgb({r},{g},{b});"
+        f"border:1px solid rgba({r},{g},{b},100);"
+        f"border-radius:4px;padding:4px 12px;"
+        f"font-size:11px;font-weight:500;}}"
+        f"QPushButton:checked {{background:rgba({r},{g},{b},80);"
+        f"border:1px solid rgb({r},{g},{b});font-weight:600;}}"
+        f"QPushButton:hover {{background:rgba({r},{g},{b},60);}}"
+    )
 
 
+# ═══════════════════════════════════════════════════════════
+#  MODEL
+# ═══════════════════════════════════════════════════════════
 
-# ══════════════════════════════════════════════════════════════════
-#  YARDIMCIlar - Sabitler
-# ══════════════════════════════════════════════════════════════════
-def _load_sabitler_from_db(db) -> Dict:
-    """Sabitler tablosundan verileri registry üzerinden oku ve kısaltma map'ini döndür."""
-    if not db:
-        return {}
-    try:
-        from core.di import get_registry
-        sabitler = get_registry(db).get("Sabitler").get_all() or []
-
-        maps = {"AnaBilimDali": {}, "Birim": {}, "Koruyucu_Cinsi": {}, "Beden": {}}
-
-        for row in sabitler:
-            kod    = str(row.get("Kod") or "").strip()
-            eleman = str(row.get("MenuEleman") or "").strip()
-            kis    = str(row.get("Aciklama") or "").strip()
-
-            if kod and eleman and kis and kod in maps:
-                maps[kod][eleman] = kis
-
-        return maps
-    except Exception as e:
-        from core.logger import logger
-        logger.error(f"Sabitler yüklenirken hata: {e}")
-        return {}
-
-
-# ══════════════════════════════════════════════════════════════════
-#  TABLO MODELİ
-# ══════════════════════════════════════════════════════════════════
 _COLS = [
-    ("EkipmanNo",        "EKİPMAN NO",  120),
-    ("KoruyucuNumarasi", "KORUYUCU NO", 140),
-    ("AnaBilimDali",     "ABD",         110),
-    ("Birim",            "BİRİM",       110),
-    ("KoruyucuCinsi",    "CİNS",        110),
-    ("KursunEsdegeri",   "Pb",           70),
-    ("HizmetYili",       "YIL",          60),
-    ("Bedeni",           "BEDEN",        70),
-    ("KontrolTarihi",    "KONTROL T.",  100),
-    ("Durum",            "DURUM",       120),
-   
-]
-_CK = [c[0] for c in _COLS]
-_CH = [c[1] for c in _COLS]
-_CW = [c[2] for c in _COLS]
-
-VT_COLS = [
-    "KayitNo","EkipmanNo","KoruyucuNumarasi","AnaBilimDali","Birim",
-    "KoruyucuCinsi","KursunEsdegeri","HizmetYili","Bedeni","KontrolTarihi",
-    "Durum","Açiklama","Varsa_Demirbaş_No","KayitTarih"
+    ("EkipmanNo",        "Ekipman No",      120),
+    ("KoruyucuNumarasi", "Koruyucu No",     130),
+    ("AnaBilimDali",     "Ana Bilim Dalı",  160),
+    ("Birim",            "Birim",           140),
+    ("KoruyucuCinsi",    "Cins",            110),
+    ("KursunEsdegeri",   "Pb",               55),
+    ("HizmetYili",       "Yıl",              55),
+    ("Bedeni",           "Beden",            65),
+    ("KontrolTarihi",    "Kontrol Tarihi",  110),
+    ("Durum",            "Durum",           110),
 ]
 
 
-class RKETableModel(BaseTableModel):
-    def __init__(self, rows=None, parent=None):
-        super().__init__(_COLS, rows, parent)
+class _RKEModel(BaseTableModel):
+    def __init__(self, parent=None):
+        super().__init__(_COLS, parent=parent)
 
-    def _display(self, key, row):
-        return str(row.get(key, ""))
+    def _display(self, key: str, row: dict) -> str:
+        val = row.get(key, "")
+        return str(val) if val is not None else ""
 
-    def _fg(self, key, row):
+    def _fg(self, key: str, row: dict):
         if key == "Durum":
-            v = row.get(key, "")
-            if "Değil" in v or "Hurda" in v:
-                return QColor("err")
-            if "Uygun" in v:
-                return QColor("ok")
-            if "Tamirde" in v:
-                return QColor("warn")
+            return self.status_fg(str(row.get("Durum", "")))
         return None
 
-    def _align(self, key):
-        if key in ("KontrolTarihi", "HizmetYili", "Durum", "KursunEsdegeri", "Bedeni"):
-            return Qt.AlignmentFlag.AlignCenter
-        return Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
 
-    def set_rows(self, rows):
-        self.set_data(rows)
+# ═══════════════════════════════════════════════════════════
+#  KAYIT PANELİ
+# ═══════════════════════════════════════════════════════════
 
-    def get_row(self, idx) -> Optional[Dict]:
-        return self._data[idx] if 0 <= idx < len(self._data) else None
+class _KayitPanel(QFrame):
+    """Yeni ekle / düzenle formu — sağdan animasyonlu açılır kapanır."""
 
-
-class _GecmisModel(BaseTableModel):
-    _K = ["Tarih","Sonuç","Açıklama"]
-    _H = ["TARİH","SONUÇ","AÇIKLAMA"]
-    _COLS = [("Tarih", "TARİH"), ("Sonuç", "SONUÇ"), ("Açıklama", "AÇIKLAMA")]
+    kaydet_istendi = Signal(dict)
+    sil_istendi    = Signal(str)
+    kapat_istendi  = Signal()
 
     def __init__(self, parent=None):
-        super().__init__(self._COLS, [], parent)
-
-    def _display(self, key, row):
-        return str(row.get(key, ""))
-
-    def _fg(self, key, row):
-        if key == "Sonuç":
-            v = row.get("Sonuç", "")
-            if "Değil" in v:
-                return QColor("err")
-            if "Uygun" in v:
-                return QColor("ok")
-        return None
-
-    def set_rows(self, rows):
-        self.set_data(rows)
-
-
-# ══════════════════════════════════════════════════════════════════
-#  ANA PENCERE
-# ══════════════════════════════════════════════════════════════════
-class RKEYonetimPenceresi(QWidget):
-    def __init__(self, db=None, action_guard=None, parent=None):
         super().__init__(parent)
-        self._db = db
-        self._action_guard = action_guard
-        self.setWindowTitle("RKE Envanter Yönetimi")
-        self.resize(1280, 840)
-        # setStyleSheet kaldırıldı (_S_PAGE) — global QSS
+        self.setProperty("bg-role", "panel")
+        self.setMinimumWidth(0)
+        self.setMaximumWidth(0)
+        self._mod: str = "yeni"
+        self._ekipman_no: str = ""
+        self._anim_min: Optional[QPropertyAnimation] = None
+        self._anim_max: Optional[QPropertyAnimation] = None
+        # Dışarıdan load_data tarafından doldurulur
+        self.sabitler:   dict[str, dict[str, str]] = {}
+        self.rke_listesi: list[dict] = []
+        self._build_ui()
+        # Combo değişimlerinde otomatik no hesapla
+        self.cmb_abd.currentIndexChanged.connect(self.kod_hesapla)
+        self.cmb_birim_panel.currentIndexChanged.connect(self.kod_hesapla)
+        self.cmb_cins.currentIndexChanged.connect(self.kod_hesapla)
 
-        self.sabitler: Dict          = {}
-        self.rke_listesi: List[Dict] = []
-        self.muayene_listesi: List[Dict] = []
-        self.secili_ekipman_no       = None
-        self.inputs: Dict[str, Any] = {}
-        self._kpi: Dict[str, QLabel]    = {}
-        
-        # Servis katmanı
-        self._rke_svc = _get_rke_service(self._db) if self._db else None
-        self._sabitler_cache = {}
+    # ─── UI ──────────────────────────────────────────────
 
-        self._setup_ui()
-        # YetkiYoneticisi.uygula(self, "rke_yonetim")  # TODO: Yetki sistemi entegrasyonu
-
-    # ─────────────────────────────────────────────────────────────
-    #  ANA LAYOUT
-    # ─────────────────────────────────────────────────────────────
-    def _setup_ui(self):
+    def _build_ui(self):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
-        root.addWidget(self._mk_kpi_bar())
-        root.addWidget(self._mk_body(), 1)
 
-    # ─────────────────────────────────────────────────────────────
-    #  KPI ŞERIDI
-    # ─────────────────────────────────────────────────────────────
-    def _mk_kpi_bar(self) -> QWidget:
-        bar = QWidget()
-        bar.setFixedHeight(68)
-        bar.setProperty("bg-role", "page")
-        hl = QHBoxLayout(bar)
-        hl.setContentsMargins(0, 0, 0, 0)
-        hl.setSpacing(1)
+        # Başlık
+        header = QFrame()
+        header.setFixedHeight(48)
+        header.setProperty("bg-role", "elevated")
+        hlay = QHBoxLayout(header)
+        hlay.setContentsMargins(16, 0, 8, 0)
+        self.lbl_baslik = QLabel("Yeni Kayıt")
+        self.lbl_baslik.setProperty("style-role", "section-title")
+        self.lbl_baslik.setProperty("color-role", "primary")
+        hlay.addWidget(self.lbl_baslik)
+        hlay.addStretch()
+        btn_kapat = QPushButton()
+        btn_kapat.setFixedSize(28, 28)
+        btn_kapat.setProperty("style-role", "close")
+        btn_kapat.setToolTip("Kapat")
+        btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        IconRenderer.set_button_icon(btn_kapat, "x", color=IconColors.MUTED, size=14)
+        btn_kapat.clicked.connect(self.kapat_istendi.emit)
+        hlay.addWidget(btn_kapat)
+        root.addWidget(header)
 
-        specs = [
-            ("toplam",  "TOPLAM EKİPMAN", "0", "accent"),
-            ("uygun",   "KULLANIMA UYGUN","0", "ok"),
-            ("uygun_d", "UYGUN DEĞİL",    "0", "err"),
-            ("hurda",   "HURDA",          "0", "warn"),
-            ("tamirde", "TAMİRDE",        "0", "muted"),
-        ]
-        for key, title, val, color in specs:
-            hl.addWidget(self._mk_kpi_card(key, title, val, color), 1)
-        return bar
-
-    def _mk_kpi_card(self, key, title, val, color) -> QWidget:
-        w = QWidget()
-        w.setProperty("bg-role", "page")
-        hl = QHBoxLayout(w)
-        hl.setContentsMargins(0, 0, 0, 0)
-        hl.setSpacing(0)
-
-        accent = QFrame()
-        accent.setFixedWidth(3)
-        # tema otomatik — accent
-        hl.addWidget(accent)
-
-        content = QWidget()
-        content.setProperty("bg-role", "page")
-        vl = QVBoxLayout(content)
-        vl.setContentsMargins(14, 8, 14, 8)
-        vl.setSpacing(2)
-
-        lt = QLabel(title)
-        lt.setProperty("color-role", "muted")
-        lv = QLabel(val)
-        lv.setProperty("bg-role", "panel")
-        vl.addWidget(lt)
-        vl.addWidget(lv)
-        hl.addWidget(content, 1)
-        self._kpi[key] = lv
-        return w
-
-    # ─────────────────────────────────────────────────────────────
-    #  GÖVDE (liste | form)
-    # ─────────────────────────────────────────────────────────────
-    def _mk_body(self) -> QWidget:
-        w = QWidget(); w.setProperty("bg-role", "page");
-        hl = QHBoxLayout(w); hl.setContentsMargins(0,0,0,0); hl.setSpacing(0)
-        hl.addWidget(self._mk_list_panel(), 1)
-        sep = QFrame(); sep.setFixedWidth(1)
-        sep.setProperty("bg-role", "separator")
-        hl.addWidget(sep)
-        self._form_panel = self._mk_form_panel()
-        self._form_panel.setFixedWidth(390)
-        hl.addWidget(self._form_panel)
-        return w
-
-    # ─────────────────────────────────────────────────────────────
-    #  FORM PANELİ
-    # ─────────────────────────────────────────────────────────────
-    def _mk_form_panel(self) -> QWidget:
-        panel = QWidget()
-        panel.setProperty("bg-role", "page")
-        vl = QVBoxLayout(panel); vl.setContentsMargins(0,0,0,0); vl.setSpacing(0)
-
-        # Panel başlık çubuğu
-        hdr = QWidget(); hdr.setFixedHeight(36)
-        hdr.setProperty("bg-role", "page")
-        hh = QHBoxLayout(hdr); hh.setContentsMargins(14,0,14,0)
-        t1 = QLabel("EKİPMAN FORMU")
-        t1.setProperty("color-role", "muted")
-        t1.setProperty("color-role", "muted")  # monospace tema QSS ile
-        self._lbl_mode = QLabel("YENİ KAYIT")
-        self._lbl_mode.setProperty("style-role", "warning")
-        hh.addWidget(t1); hh.addStretch(); hh.addWidget(self._lbl_mode)
-        vl.addWidget(hdr)
-
-        # Scroll form
+        # Form içeriği (scroll)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        # setStyleSheet kaldırıldı (_S_SCROLL) — global QSS
+        scroll.setProperty("style-role", "plain")
 
-        inner = QWidget()
-        il = QVBoxLayout(inner)
-        il.setContentsMargins(12, 12, 12, 20)
-        il.setSpacing(10)
+        icerik = QWidget()
+        form = QFormLayout(icerik)
+        form.setContentsMargins(16, 16, 16, 16)
+        form.setSpacing(10)
+        form.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
-        # ── Kimlik Bilgileri ─────────────────────────────────────
-        grp_id = FieldGroup("Kimlik Bilgileri", "warn")
-        g = QGridLayout(); g.setContentsMargins(0,0,0,0)
-        g.setHorizontalSpacing(10); g.setVerticalSpacing(6)
-        
-        # Hidden KayitNo (arka planda kullanılacak)
-        hidden_kayitno = self._input(ro=True)
-        hidden_kayitno.setVisible(False)
-        self.inputs["KayitNo"] = hidden_kayitno
-        
-        self._add_row(g, 0, "EKİPMAN NO", "EkipmanNo",        ro=True)
-        self._add_row(g, 1, "KORUYUCU NO","KoruyucuNumarasi",  ro=True)
-        self._add_row(g, 2, "DEMİRBAŞ NO","Varsa_Demirbaş_No")
-        grp_id.add_layout(g); il.addWidget(grp_id)
+        def _lbl(t: str, zorunlu: bool = False) -> QLabel:
+            l = QLabel(("★ " if zorunlu else "") + t)
+            l.setProperty("color-role", "muted")
+            return l
 
-        # ── Ekipman Özellikleri ──────────────────────────────────
-        grp_oz = FieldGroup("Ekipman Özellikleri", "ok")
-        g2 = QGridLayout(); g2.setContentsMargins(0,0,0,0)
-        g2.setHorizontalSpacing(10); g2.setVerticalSpacing(6)
-        self._add_combo_row(g2, 0, "ANA BİLİM DALI", "AnaBilimDali")
-        self.inputs["AnaBilimDali"].currentIndexChanged.connect(self.kod_hesapla)
-        self._add_combo_row(g2, 1, "BİRİM", "Birim")
-        self.inputs["Birim"].currentIndexChanged.connect(self.kod_hesapla)
-        self._add_combo_row(g2, 2, "KORUYUCU CİNSİ", "KoruyucuCinsi")
-        self.inputs["KoruyucuCinsi"].currentIndexChanged.connect(self.kod_hesapla)
+        self.inp_ekipman_no  = QLineEdit(); self.inp_ekipman_no.setPlaceholderText("Ekipman no")
+        self.inp_koruyucu_no = QLineEdit(); self.inp_koruyucu_no.setPlaceholderText("Koruyucu numarası")
+        self.cmb_abd         = QComboBox()
+        self.cmb_birim_panel = QComboBox()
+        self.inp_yil         = QLineEdit(); self.inp_yil.setPlaceholderText("YYYY"); self.inp_yil.setMaxLength(4)
+        self.inp_demirba     = QLineEdit(); self.inp_demirba.setPlaceholderText("Demirbaş no (opsiyonel)")
 
-        g2.addWidget(self._lbl("KURŞUN EŞDEĞERİ"),  6, 0)
-        g2.addWidget(self._lbl("BEDEN"),             6, 1)
-        cmb_pb = self._combo(); cmb_pb.setEditable(True)
-        cmb_pb.addItems(["0.25 mmPb","0.35 mmPb","0.50 mmPb","1.0 mmPb"])
-        cmb_bd = self._combo()
-        g2.addWidget(cmb_pb, 7, 0); g2.addWidget(cmb_bd, 7, 1)
-        self.inputs["KursunEsdegeri"] = cmb_pb
-        self.inputs["Beden"]          = cmb_bd
+        self.cmb_cins  = QComboBox(); self.cmb_cins.addItems(_CINS_SECENEKLER)
+        self.cmb_pb    = QComboBox(); self.cmb_pb.addItems(_PB_SECENEKLER);      self.cmb_pb.setEditable(True)
+        self.cmb_beden = QComboBox(); self.cmb_beden.addItems(_BEDEN_SECENEKLER)
 
-        g2.addWidget(self._lbl("HİZMET YILI"), 8, 0, 1, 2)
-        dt_yil = self._date(); dt_yil.setDisplayFormat("yyyy")
-        g2.addWidget(dt_yil, 9, 0, 1, 2)
-        self.inputs["HizmetYili"] = dt_yil
+        # Gizli — formda yok, _veri_topla'da otomatik atanır
+        self.dt_kontrol = QDateEdit(); self.dt_kontrol.setDate(self.dt_kontrol.minimumDate())
+        self.cmb_durum  = QComboBox(); self.cmb_durum.addItems(_DURUM_SECENEKLER)
 
-        grp_oz.add_layout(g2); il.addWidget(grp_oz)
+        self.txt_aciklama = QTextEdit()
+        self.txt_aciklama.setPlaceholderText("Açıklama...")
+        self.txt_aciklama.setFixedHeight(70)
 
-        # ── Durum ve Geçmiş ──────────────────────────────────────
-        grp_dur = FieldGroup("Durum ve Geçmiş", "err")
-        g3 = QGridLayout(); g3.setContentsMargins(0,0,0,0)
-        g3.setHorizontalSpacing(10); g3.setVerticalSpacing(6)
-        
-        # KAYIT TARİHİ (salt okunur)
-        g3.addWidget(self._lbl("KAYIT TARİHİ"), 0, 0)
-        lbl_kayit = self._value_label()
-        g3.addWidget(lbl_kayit, 1, 0)
-        self.inputs["KayitTarih"] = lbl_kayit
-        
-        # SON KONTROL (salt okunur)
-        g3.addWidget(self._lbl("SON KONTROL"), 0, 1)
-        lbl_kontrol = self._value_label()
-        g3.addWidget(lbl_kontrol, 1, 1)
-        self.inputs["KontrolTarihi"] = lbl_kontrol
-        
-        # GÜNCEL DURUM (salt okunur)
-        g3.addWidget(self._lbl("GÜNCEL DURUM"), 2, 0, 1, 2)
-        lbl_durum = self._value_label()
-        g3.addWidget(lbl_durum, 3, 0, 1, 2)
-        self.inputs["Durum"] = lbl_durum
-        
-        # AÇIKLAMA (salt okunur)
-        g3.addWidget(self._lbl("AÇIKLAMA"), 4, 0, 1, 2)
-        lbl_aciklama = self._value_label()
-        lbl_aciklama.setFixedHeight(70)
-        lbl_aciklama.setWordWrap(True)
-        lbl_aciklama.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        lbl_aciklama.setProperty("bg-role", "input")
-        g3.addWidget(lbl_aciklama, 5, 0, 1, 2)
-        self.inputs["Açiklama"] = lbl_aciklama
-        
-        grp_dur.add_layout(g3); il.addWidget(grp_dur)
+        for lbl_t, widget, zorunlu in [
+            ("Ekipman No",      self.inp_ekipman_no,  True),
+            ("Koruyucu No",     self.inp_koruyucu_no, False),
+            ("Ana Bilim Dalı",  self.cmb_abd,         False),
+            ("Birim",           self.cmb_birim_panel, False),
+            ("Koruyucu Cinsi",  self.cmb_cins,        False),
+            ("Pb",              self.cmb_pb,          False),
+            ("Hizmet Yılı",     self.inp_yil,         False),
+            ("Beden",           self.cmb_beden,       False),
+            ("Demirbaş No",     self.inp_demirba,     False),
+            ("Açıklama",        self.txt_aciklama,    False),
+        ]:
+            form.addRow(_lbl(lbl_t, zorunlu), widget)
 
-        # ── Muayene Geçmişi ───────────────────────────────────────
-        grp_gec = FieldGroup("Muayene Geçmişi", DarkTheme.RKE_PURP)
-        self._gecmis_model = _GecmisModel()
-        tbl = QTableView()
-        tbl.setModel(self._gecmis_model)
-        # setStyleSheet kaldırıldı (_S_TABLE) — global QSS
-        tbl.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        tbl.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        tbl.verticalHeader().setVisible(False)
-        tbl.setShowGrid(False); tbl.setAlternatingRowColors(True)
-        tbl.setFixedHeight(120)
-        tbl.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        grp_gec.add_widget(tbl); il.addWidget(grp_gec)
-        il.addStretch()
+        scroll.setWidget(icerik)
+        root.addWidget(scroll, 1)
 
-        scroll.setWidget(inner); vl.addWidget(scroll, 1)
+        # Alt butonlar
+        alt = QFrame()
+        alt.setFixedHeight(56)
+        alt.setProperty("bg-role", "elevated")
+        alay = QHBoxLayout(alt)
+        alay.setContentsMargins(16, 8, 16, 8)
+        alay.setSpacing(8)
 
-        # Progress bar
-        self.pbar = QProgressBar()
-        self.pbar.setVisible(False); self.pbar.setFixedHeight(2)
-        # setStyleSheet kaldırıldı (_S_PBAR) — global QSS
-        vl.addWidget(self.pbar)
+        self.btn_sil = QPushButton("Sil")
+        self.btn_sil.setProperty("style-role", "danger")
+        self.btn_sil.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_sil.setVisible(False)
+        IconRenderer.set_button_icon(self.btn_sil, "trash", color=IconColors.MUTED, size=14)
+        self.btn_sil.clicked.connect(self._on_sil)
+        alay.addWidget(self.btn_sil)
+        alay.addStretch()
 
-        # Butonlar
-        br = QHBoxLayout(); br.setContentsMargins(12,8,12,12); br.setSpacing(8)
-        self.btn_temizle = self._btn("↺  TEMİZLE / YENİ", "secondary")
-        self.btn_temizle.clicked.connect(self.temizle)
-        self.btn_kaydet  = self._btn("KAYDET", "primary")
-        self.btn_kaydet.clicked.connect(self.kaydet)
-        if self._action_guard:
-            self._action_guard.disable_if_unauthorized(self.btn_kaydet, "cihaz.write")
-        br.addWidget(self.btn_temizle); br.addWidget(self.btn_kaydet)
-        vl.addLayout(br)
-        return panel
+        self.btn_kaydet = QPushButton("Kaydet")
+        self.btn_kaydet.setProperty("style-role", "action")
+        self.btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_kaydet, "save", color=IconColors.PRIMARY, size=14)
+        self.btn_kaydet.clicked.connect(self._on_kaydet)
+        alay.addWidget(self.btn_kaydet)
 
-    # ─────────────────────────────────────────────────────────────
-    #  LİSTE PANELİ
-    # ─────────────────────────────────────────────────────────────
-    def _mk_list_panel(self) -> QWidget:
-        panel = QWidget(); panel.setProperty("bg-role", "page");
-        vl = QVBoxLayout(panel); vl.setContentsMargins(0,0,0,0); vl.setSpacing(0)
+        root.addWidget(alt)
 
-        # Filtre çubuğu
-        fbar = QWidget(); fbar.setFixedHeight(46)
-        fbar.setProperty("bg-role", "page")
-        fl = QHBoxLayout(fbar); fl.setContentsMargins(12,0,12,0); fl.setSpacing(8)
+    # ─── Animasyon ───────────────────────────────────────
 
-        self.cmb_filtre_abd = self._combo(width=170)
-        self.cmb_filtre_abd.addItem("Tüm ABD")
-        self.cmb_filtre_abd.currentIndexChanged.connect(self.tabloyu_filtrele)
+    def _animate(self, hedef: int):
+        for anim, prop in [(self._anim_min, b"minimumWidth"),
+                           (self._anim_max, b"maximumWidth")]:
+            if anim and anim.state() == QPropertyAnimation.State.Running:
+                anim.stop()
 
-        self.cmb_filtre_dur = self._combo(width=160)
-        self.cmb_filtre_dur.addItems(["Tüm Durumlar","Kullanıma Uygun","Kullanıma Uygun Değil","Hurda","Tamirde"])
-        self.cmb_filtre_dur.currentIndexChanged.connect(self.tabloyu_filtrele)
+        cur = self.width()
+        for prop in (b"minimumWidth", b"maximumWidth"):
+            a = QPropertyAnimation(self, prop)
+            a.setDuration(220)
+            a.setStartValue(cur)
+            a.setEndValue(hedef)
+            a.setEasingCurve(QEasingCurve.Type.OutCubic)
+            a.start()
+            if prop == b"minimumWidth":
+                self._anim_min = a
+            else:
+                self._anim_max = a
 
-        self.txt_ara = QLineEdit()
-        self.txt_ara.setFixedHeight(28); self.txt_ara.setPlaceholderText("⌕  Ara...")
-        self.txt_ara.textChanged.connect(self.tabloyu_filtrele)
+    def ac(self):
+        self._animate(_PANEL_W)
 
-        btn_yenile = QPushButton("")
-        btn_yenile.setFixedSize(28,28)
-        btn_yenile.setProperty("style-role", "refresh")
-        btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(btn_yenile, "refresh", color=IconColors.MUTED, size=14)
-        btn_yenile.clicked.connect(self.load_data)
+    def kapat(self):
+        self._animate(0)
 
-        fl.addWidget(self.cmb_filtre_abd); fl.addWidget(self.cmb_filtre_dur)
-        fl.addWidget(self.txt_ara, 1); fl.addWidget(btn_yenile)
-        vl.addWidget(fbar)
+    # ─── Mod ─────────────────────────────────────────────
 
-        # Tablo
-        self._model = RKETableModel()
-        self.tablo = QTableView()
-        self.tablo.setModel(self._model)
-        # setStyleSheet kaldırıldı (_S_TABLE) — global QSS
-        self.tablo.setAlternatingRowColors(True)
-        self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.tablo.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        self.tablo.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.tablo.verticalHeader().setVisible(False)
-        self.tablo.setShowGrid(False)
-        self.tablo.setSortingEnabled(True)
-        hdr = self.tablo.horizontalHeader()
-        for i, w in enumerate(_CW):
-            hdr.setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch if i == 2 else QHeaderView.ResizeMode.Interactive)
-            if i != 2: hdr.resizeSection(i, w)
-        self.tablo.doubleClicked.connect(self._on_double_click)
-        vl.addWidget(self.tablo, 1)
+    def yeni_mod(self):
+        self._mod = "yeni"
+        self._ekipman_no = ""
+        self.lbl_baslik.setText("Yeni Kayıt")
+        self.btn_sil.setVisible(False)
+        self.inp_ekipman_no.setReadOnly(False)
+        self._temizle()
+        self.ac()
 
-        # Footer
-        foot = QWidget(); foot.setFixedHeight(30)
-        foot.setProperty("bg-role", "page")
-        foot.setProperty("border-role", "top")
-        fl2 = QHBoxLayout(foot); fl2.setContentsMargins(12,0,12,0)
-        self.lbl_sayi = QLabel("0 kayıt")
-        self.lbl_sayi.setProperty("color-role", "muted")
-        self.lbl_sayi.setProperty("color-role", "muted")  # monospace tema QSS ile
-        fl2.addStretch(); fl2.addWidget(self.lbl_sayi)
-        vl.addWidget(foot)
-        return panel
+    def duzenle_mod(self, row: dict):
+        self._mod = "duzenle"
+        self._ekipman_no = str(row.get("EkipmanNo", ""))
+        self.lbl_baslik.setText(f"Düzenle — {self._ekipman_no}")
+        self.btn_sil.setVisible(True)
+        self.inp_ekipman_no.setReadOnly(True)
 
-    # ─────────────────────────────────────────────────────────────
-    #  UI YARDIMCILARI
-    # ─────────────────────────────────────────────────────────────
-    def _lbl(self, text) -> QLabel:
-        l = QLabel(text)
-        l.setProperty("color-role", "muted")
-        l.setProperty("color-role", "muted")  # monospace tema QSS ile
-        return l
+        self.inp_ekipman_no.setText(str(row.get("EkipmanNo", "")))
+        self.inp_koruyucu_no.setText(str(row.get("KoruyucuNumarasi", "") or ""))
+        self._set_cmb(self.cmb_abd,         str(row.get("AnaBilimDali", "") or ""))
+        self._set_cmb(self.cmb_birim_panel,  str(row.get("Birim", "") or ""))
+        self._set_cmb(self.cmb_cins,        str(row.get("KoruyucuCinsi", "") or ""))
+        self._set_cmb(self.cmb_pb,    str(row.get("KursunEsdegeri", "") or ""))
+        self.inp_yil.setText(str(row.get("HizmetYili", "") or ""))
+        self._set_cmb(self.cmb_beden, str(row.get("Bedeni", "") or ""))
+        self._set_cmb(self.cmb_durum, str(row.get("Durum", "") or "Uygun"))
+        self.inp_demirba.setText(str(row.get("VarsaDemirbasNo", "") or ""))
+        self.txt_aciklama.setPlainText(str(row.get("Aciklama", "") or ""))
 
-    def _value_label(self, text="—") -> QLabel:
-        """Salt okunur veri gösterimi için label."""
-        l = QLabel(text)
-        l.setFixedHeight(28)
-        l.setProperty("bg-role", "panel")
-        return l
+        kt = row.get("KontrolTarihi", "")
+        if kt:
+            try:
+                from core.date_utils import parse_date
+                from PySide6.QtCore import QDate
+                d = parse_date(str(kt))
+                if d:
+                    self.dt_kontrol.setDate(QDate(d.year, d.month, d.day))
+            except Exception:
+                pass
+        self.ac()
 
-    def _input(self, ro=False) -> QLineEdit:
-        w = QLineEdit(); w.setFixedHeight(28)
-        if ro: w.setReadOnly(True)
-        return w
+    # ─── Yardımcı ────────────────────────────────────────
 
-    def _combo(self, width=None) -> QComboBox:
-        w = QComboBox(); w.setFixedHeight(28)
-        if width: w.setMinimumWidth(width)
-        return w
+    @staticmethod
+    def _set_cmb(cmb: QComboBox, val: str):
+        idx = cmb.findText(val)
+        if idx >= 0:
+            cmb.setCurrentIndex(idx)
+        elif cmb.isEditable():
+            cmb.setCurrentText(val)
 
-    def _date(self) -> QDateEdit:
-        w = QDateEdit(); w.setCalendarPopup(True)
-        w.setDisplayFormat("yyyy-MM-dd"); w.setDate(QDate.currentDate())
-        w.setFixedHeight(28)
-        return w
+    def _temizle(self):
+        for w in (self.inp_ekipman_no, self.inp_koruyucu_no,
+                  self.inp_yil, self.inp_demirba):
+            w.clear()
+        self.txt_aciklama.clear()
+        for cmb in (self.cmb_abd, self.cmb_birim_panel, self.cmb_cins, self.cmb_pb):
+            cmb.setCurrentIndex(0)
+        self.cmb_beden.setCurrentIndex(0)
+        self.dt_kontrol.setDate(self.dt_kontrol.minimumDate())
 
-    def _btn(self, text, style="secondary") -> QPushButton:
-        b = QPushButton(text); b.setFixedHeight(34)
-        b.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        if style == "primary":
-            b.setProperty("style-role", "success-filled")
-        else:
-            b.setProperty("style-role", "secondary")
-        return b
+    def _veri_topla(self) -> Optional[dict]:
+        ekipman_no = self.inp_ekipman_no.text().strip()
+        if not ekipman_no:
+            return None
 
-    def _add_row(self, grid, row, label, key, ro=False):
-        grid.addWidget(self._lbl(label), row*2, 0, 1, 2)
-        w = self._input(ro)
-        grid.addWidget(w, row*2+1, 0, 1, 2)
-        self.inputs[key] = w
+        from datetime import date as _date
+        bugun = _date.today().strftime("%Y-%m-%d")
 
-    def _add_row2(self, grid, row, label1, key1, label2=None, key2=None,
-                  _date=False, _date2=False):
-        grid.addWidget(self._lbl(label1), row*2,   0)
-        w1 = self._date() if _date  else self._input()
-        grid.addWidget(w1, row*2+1, 0)
-        self.inputs[key1] = w1
-        if label2:
-            grid.addWidget(self._lbl(label2), row*2, 1)
-            w2 = self._date() if _date2 else self._input()
-            grid.addWidget(w2, row*2+1, 1)
-            if key2:
-                self.inputs[key2] = w2
+        # Yeni kayıt → kontrol tarihi=bugün, durum=Uygun
+        # Düzenleme → mevcut değerleri koru (tabloda zaten var)
+        kt    = bugun if self._mod == "yeni" else self.dt_kontrol.date().toString("yyyy-MM-dd")
+        durum = "Uygun" if self._mod == "yeni" else self.cmb_durum.currentText()
 
-    def _add_combo_row(self, grid, row, label, key):
-        grid.addWidget(self._lbl(label), row*2, 0, 1, 2)
-        w = self._combo(); grid.addWidget(w, row*2+1, 0, 1, 2)
-        self.inputs[key] = w
-
-    # ─────────────────────────────────────────────────────────────
-    #  KPI GÜNCELLEME
-    # ─────────────────────────────────────────────────────────────
-    def _update_kpi(self, rows: List[Dict]):
-        c = {"toplam":len(rows),"uygun":0,"uygun_d":0,"hurda":0,"tamirde":0}
-        for r in rows:
-            d = r.get("Durum","")
-            if "Değil" in d: c["uygun_d"] += 1
-            elif "Uygun" in d: c["uygun"] += 1
-            elif "Hurda" in d: c["hurda"] += 1
-            elif "Tamirde" in d: c["tamirde"] += 1
-        for k, v in c.items():
-            if k in self._kpi: self._kpi[k].setText(str(v))
-
-    # ─────────────────────────────────────────────────────────────
-    #  MANTIK
-    # ─────────────────────────────────────────────────────────────
-    def load_data(self):
-        """Ana pencereden çağrılan public veri yükleme metodu."""
-        if not self._rke_svc:
-            uyari_goster(self, "Veritabanı bağlantısı kurulamadı.")
-            return
-
-        try:
-            # Sabitler yükle
-            self.sabitler = _load_sabitler_from_db(self._db)
-
-            # RKE listesi
-            sonuc = self._rke_svc.get_rke_listesi()
-            if not sonuc.basarili:
-                hata_goster(self, sonuc.mesaj)
-                return
-            self.rke_listesi = sonuc.veri or []
-
-            # Muayene listesi
-            m_sonuc = self._rke_svc.get_muayene_listesi()
-            if m_sonuc.basarili:
-                self.muayene_listesi = m_sonuc.veri or []
-
-            # Combo'ları doldur
-            self._populate_combos()
-
-            # Tabloyu filtrele
-            self.tabloyu_filtrele()
-
-        except Exception as e:
-            from core.logger import logger
-            logger.error(f"Veri yükleme hatası: {e}")
-            hata_goster(self, f"Veri yüklenirken hata: {e}")
-    
-    def _populate_combos(self):
-        """Combo kutularını sabitlerden doldur."""
-        def fill(ui_key, db_key):
-            w = self.inputs.get(ui_key)
-            if not isinstance(w, QComboBox): return
-            w.blockSignals(True); w.clear(); w.addItem("")
-            d = self.sabitler.get(db_key, {})
-            items = sorted(d.keys() if isinstance(d, dict) else d)
-            w.addItems(items); w.blockSignals(False)
-
-        fill("AnaBilimDali","AnaBilimDali")
-        fill("Birim","Birim")
-        fill("KoruyucuCinsi","Koruyucu_Cinsi")
-        fill("Beden","Beden")
-
-        # Filtre combo'ları
-        self.cmb_filtre_abd.blockSignals(True)
-        self.cmb_filtre_abd.clear(); self.cmb_filtre_abd.addItem("Tüm ABD")
-        abd_d = self.sabitler.get("AnaBilimDali", {})
-        self.cmb_filtre_abd.addItems(sorted(abd_d.keys() if isinstance(abd_d, dict) else abd_d))
-        self.cmb_filtre_abd.blockSignals(False)
-
-    def tabloyu_filtrele(self):
-        """Filtrelere göre RKE listesini süzgecinden geçir."""
-        f_abd  = self.cmb_filtre_abd.currentText()
-        f_dur  = self.cmb_filtre_dur.currentText()
-        ara    = self.txt_ara.text().lower()
-
-        result = []
-        for row in self.rke_listesi:
-            # Filtreler
-            if f_abd != "Tüm ABD" and row.get("AnaBilimDali", "") != f_abd:
-                continue
-            if f_dur != "Tüm Durumlar" and row.get("Durum", "") != f_dur:
-                continue
-            
-            # Arama
-            if ara:
-                searchable = " ".join(str(v) for v in row.values()).lower()
-                if ara not in searchable:
-                    continue
-            
-            result.append(row)
-
-        self._model.set_rows(result)
-        self.lbl_sayi.setText(f"{len(result)} kayıt")
-        self._update_kpi(result)
-
-    def _on_double_click(self, index: QModelIndex):
-        row = self._model.get_row(index.row())
-        if not row: return
-        self.secili_ekipman_no = row.get("EkipmanNo","")
-
-        for key, w in self.inputs.items():
-            val = row.get(key,"")
-            if isinstance(w, QLineEdit): 
-                w.setText(str(val) if val else "")
-            elif isinstance(w, QTextEdit): 
-                w.setPlainText(str(val) if val else "")
-            elif isinstance(w, QComboBox): 
-                w.setCurrentText(str(val) if val else "")
-            elif isinstance(w, QDateEdit):
-                if val:
-                    try: 
-                        w.setDate(QDate.fromString(str(val)[:10],"yyyy-MM-dd"))
-                    except: 
-                        pass
-            elif isinstance(w, QLabel):  # Salt okunur label alanları
-                w.setText(str(val) if val else "—")
-
-        try:
-            yil = str(row.get("HizmetYili","")).strip()
-            if yil and yil.isdigit(): 
-                self.inputs["HizmetYili"].setDate(QDate(int(yil),1,1))
-        except: 
-            pass
-
-        # Durum ve KontrolTarihi artık label, setEnabled gereksiz
-        self.btn_kaydet.setText("↑  GÜNCELLE")
-        self.btn_kaydet.setProperty("style-role", "warning")
-        self._lbl_mode.setText("DÜZENLEME")
-        self.gecmisi_yukle(row.get("EkipmanNo",""))
-
-    def gecmisi_yukle(self, ekipman_no: str):
-        """Ekipman numarasına göre muayene geçmişini yükle."""
-        if not ekipman_no or not self.muayene_listesi:
-            self._gecmis_model.set_rows([])
-            return
-        
-        rows = []
-        for muayene in self.muayene_listesi:
-            if str(muayene.get("EkipmanNo", "")).strip() == str(ekipman_no).strip():
-                rows.append({
-                    "Tarih": muayene.get("FMuayeneTarihi", ""),
-                    "Sonuç": muayene.get("FizikselDurum", ""),
-                    "Açıklama": muayene.get("Aciklamalar", "")
-                })
-        self._gecmis_model.set_rows(rows)
+        return {
+            "EkipmanNo":        ekipman_no,
+            "KoruyucuNumarasi": self.inp_koruyucu_no.text().strip(),
+            "AnaBilimDali":     self.cmb_abd.currentText(),
+            "Birim":            self.cmb_birim_panel.currentText(),
+            "KoruyucuCinsi":    self.cmb_cins.currentText().strip(),
+            "KursunEsdegeri":   self.cmb_pb.currentText().strip(),
+            "HizmetYili":       self.inp_yil.text().strip(),
+            "Bedeni":           self.cmb_beden.currentText(),
+            "KontrolTarihi":    kt,
+            "Durum":            durum,
+            "VarsaDemirbasNo":  self.inp_demirba.text().strip(),
+            "Aciklama":         self.txt_aciklama.toPlainText().strip(),
+        }
 
     def kod_hesapla(self):
-        """Ekipman ve koruyucu numaralarını otomatik hesapla."""
-        abd  = self.inputs["AnaBilimDali"].currentText()
-        birim= self.inputs["Birim"].currentText()
-        cins = self.inputs["KoruyucuCinsi"].currentText()
+        """
+        ABD / Birim / Cins seçimi değişince EkipmanNo ve
+        KoruyucuNumarasi alanlarını otomatik doldur.
+        Sadece yeni kayıt modunda çalışır.
+        """
+        if self._mod != "yeni":
+            return
 
-        def short(grp, val):
-            m = self.sabitler.get(grp,{})
-            return m.get(val,"UNK") if isinstance(m,dict) else "UNK"
+        abd  = self.cmb_abd.currentText().strip()
+        birim = self.cmb_birim_panel.currentText().strip()
+        cins  = self.cmb_cins.currentText().strip()
 
-        k_abd = short("AnaBilimDali",abd)
-        k_cins= short("Koruyucu_Cinsi",cins)
+        def short(grup: str, val: str) -> str:
+            m = self.sabitler.get(grup, {})
+            return m.get(val, "UNK") if m else "UNK"
 
-        # Yeni kayıt ise ekipman no oluştur
-        if not self.secili_ekipman_no and cins:
-            sayac = 1 + sum(1 for r in self.rke_listesi if r.get("KoruyucuCinsi") == cins)
-            self.inputs["EkipmanNo"].setText(f"RKE-{k_cins}-{sayac}")
+        k_abd  = short("AnaBilimDali",  abd)
+        k_cins = short("KoruyucuCinsi", cins)
 
-        # Koruyucu numarası
+        # EkipmanNo — aynı cinsten kaç ekipman varsa +1
+        if cins:
+            sayac = 1 + sum(
+                1 for r in self.rke_listesi
+                if r.get("KoruyucuCinsi", "").strip() == cins
+            )
+            self.inp_ekipman_no.setText(f"RKE-{k_cins}-{sayac}")
+        else:
+            self.inp_ekipman_no.clear()
+
+        # KoruyucuNumarasi
         if birim == "Radyoloji Depo":
-            self.inputs["KoruyucuNumarasi"].setText("")
+            self.inp_koruyucu_no.clear()
         elif abd and birim and cins:
             sayac = 1 + sum(
                 1 for r in self.rke_listesi
-                if r.get("AnaBilimDali") == abd 
-                and r.get("Birim") == birim 
-                and r.get("KoruyucuCinsi") == cins
+                if r.get("AnaBilimDali", "").strip()   == abd
+                and r.get("Birim", "").strip()          == birim
+                and r.get("KoruyucuCinsi", "").strip()  == cins
             )
-            k_b = short("Birim",birim)
-            self.inputs["KoruyucuNumarasi"].setText(f"{k_abd}-{k_b}-{k_cins}-{sayac}")
+            k_b = short("Birim", birim)
+            self.inp_koruyucu_no.setText(f"{k_abd}-{k_b}-{k_cins}-{sayac}")
+        else:
+            self.inp_koruyucu_no.clear()
 
-    def temizle(self):
-        """Formu temizle ve yeni kayıt moduna geç."""
-        self.secili_ekipman_no = None
-        for w in self.inputs.values():
-            if isinstance(w, QLineEdit):  w.clear()
-            elif isinstance(w, QTextEdit): w.clear()
-            elif isinstance(w, QComboBox): w.setCurrentIndex(0)
-            elif isinstance(w, QDateEdit): w.setDate(QDate.currentDate())
-            elif isinstance(w, QLabel): w.setText("—")
-        self.inputs["KayitNo"].setText("Otomatik")
-        # Durum ve KontrolTarihi artık label, setEnabled gereksiz
-        self._gecmis_model.set_rows([])
-        self.btn_kaydet.setText("KAYDET")
-        self.btn_kaydet.setProperty("style-role", "success-filled")
-        self._lbl_mode.setText("YENİ KAYIT")
-
-    def kaydet(self):
-        """RKE kaydını veritabanına kaydet (insert veya update)."""
-        if self._action_guard and not self._action_guard.check_and_warn(
-            self, "cihaz.write", "RKE Kaydetme"
-        ):
+    def _on_kaydet(self):
+        veri = self._veri_topla()
+        if not veri:
+            hata_goster(self, "Ekipman No zorunludur.")
             return
-        if not self._rke_svc:
-            uyari_goster(self, "Veritabanı bağlantısı kurulamadı.")
-            return
-        
-        ekipman_no = self.inputs["EkipmanNo"].text().strip()
-        if not ekipman_no:
-            uyari_goster(self, "Ekipman No zorunludur.")
-            return
+        self.kaydet_istendi.emit(veri)
 
-        try:
-            # Form verilerini topla
-            data = {
-                "EkipmanNo": ekipman_no,
-                "KoruyucuNumarasi": self.inputs["KoruyucuNumarasi"].text().strip(),
-                "AnaBilimDali": self.inputs["AnaBilimDali"].currentText(),
-                "Birim": self.inputs["Birim"].currentText(),
-                "KoruyucuCinsi": self.inputs["KoruyucuCinsi"].currentText(),
-                "KursunEsdegeri": self.inputs["KursunEsdegeri"].currentText(),
-                "HizmetYili": self.inputs["HizmetYili"].text(),
-                "Bedeni": self.inputs["Beden"].currentText(),
-                "KontrolTarihi": self.inputs["KontrolTarihi"].text(),
-                "Durum": self.inputs["Durum"].text(),
-                "Aciklama": self.inputs["Açiklama"].text(),
-                "VarsaDemirbasNo": self.inputs.get("Varsa_Demirbaş_No", self.inputs.get("VarsaDemirbasNo", QLineEdit())).text().strip(),
-                "KayitTarih": self.inputs.get("KayitTarih", QLineEdit()).text(),
-                "Barkod": self.inputs.get("Barkod", QLineEdit()).text().strip(),
-            }
+    def _on_sil(self):
+        if self._ekipman_no:
+            self.sil_istendi.emit(self._ekipman_no)
 
-            # Güncelleme mi, yeni kayıt mı?
-            if self.secili_ekipman_no:
-                sonuc = self._rke_svc.rke_guncelle(self.secili_ekipman_no, data)
+
+# ═══════════════════════════════════════════════════════════
+#  SAYFA
+# ═══════════════════════════════════════════════════════════
+
+class RKEYonetimPage(QWidget):
+
+    detay_requested = Signal(dict)
+
+    def __init__(self, db=None, action_guard=None, parent=None):
+        super().__init__(parent)
+        self.setProperty("bg-role", "page")
+        self._db           = db
+        self._action_guard = action_guard
+        self._all_data: list[dict] = []
+
+        self._search_timer = QTimer(self)
+        self._search_timer.setInterval(250)
+        self._search_timer.setSingleShot(True)
+        self._search_timer.timeout.connect(self._apply_filters)
+
+        # Sabit listeler (load_data'da doldurulur)
+        self._sabit_abd:   list[str] = []
+        self._sabit_birim: list[str] = []
+        self._sabit_cins:  list[str] = []
+        self._sabit_beden: list[str] = _BEDEN_SECENEKLER
+
+        self._setup_ui()
+        self._connect_signals()
+        if db:
+            self.load_data()
+
+    # ─── UI ──────────────────────────────────────────────
+
+    def _setup_ui(self):
+        main = QVBoxLayout(self)
+        main.setContentsMargins(0, 0, 0, 0)
+        main.setSpacing(0)
+        main.addWidget(self._build_toolbar())
+        main.addWidget(self._build_subtoolbar())
+
+        # İçerik: tablo sol + panel sağ
+        self._icerik = QHBoxLayout()
+        self._icerik.setContentsMargins(0, 0, 0, 0)
+        self._icerik.setSpacing(0)
+
+        sol = QWidget()
+        sol_lay = QVBoxLayout(sol)
+        sol_lay.setContentsMargins(0, 0, 0, 0)
+        sol_lay.setSpacing(0)
+        sol_lay.addWidget(self._build_table(), 1)
+        sol_lay.addWidget(self._build_footer())
+        self._icerik.addWidget(sol, 1)
+
+        self._panel = _KayitPanel()
+        self._icerik.addWidget(self._panel)
+
+        wrap = QWidget()
+        wrap.setLayout(self._icerik)
+        main.addWidget(wrap, 1)
+
+    def _build_toolbar(self) -> QFrame:
+        frame = QFrame()
+        frame.setFixedHeight(60)
+        frame.setProperty("bg-role", "panel")
+        lay = QHBoxLayout(frame)
+        lay.setContentsMargins(16, 0, 16, 0)
+        lay.setSpacing(8)
+
+        title = QLabel("RKE Envanter")
+        title.setProperty("style-role", "title")
+        title.setProperty("color-role", "primary")
+        lay.addWidget(title)
+        lay.addWidget(self._sep())
+
+        self._durum_btns: dict[str, QPushButton] = {}
+        for lbl in ("Tümü", "Uygun", "Uygun Değil", "Kontrolde"):
+            btn = QPushButton(lbl)
+            btn.setCheckable(True)
+            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            btn.setFixedHeight(28)
+            btn.setMinimumWidth(80)
+            if lbl == "Tümü":
+                btn.setProperty("style-role", "secondary")
+                btn.setChecked(True)
             else:
-                sonuc = self._rke_svc.rke_ekle(data)
+                r, g, b = _DURUM_RENK[lbl]
+                btn.setStyleSheet(_durum_stil(r, g, b))
+            self._durum_btns[lbl] = btn
+            lay.addWidget(btn)
 
+        lay.addWidget(self._sep())
+
+        self.inp_arama = QLineEdit()
+        self.inp_arama.setPlaceholderText("Ekipman no, birim, cins ara…")
+        self.inp_arama.setClearButtonEnabled(True)
+        self.inp_arama.setFixedWidth(220)
+        lay.addWidget(self.inp_arama)
+
+        lay.addStretch()
+
+        self.btn_yenile = QPushButton()
+        self.btn_yenile.setToolTip("Yenile")
+        self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_yenile.setFixedSize(32, 28)
+        self.btn_yenile.setProperty("style-role", "refresh")
+        IconRenderer.set_button_icon(self.btn_yenile, "refresh", color=IconColors.MUTED, size=16)
+        lay.addWidget(self.btn_yenile)
+
+        self.btn_yeni = QPushButton(" Yeni Ekipman")
+        self.btn_yeni.setProperty("style-role", "action")
+        self.btn_yeni.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        IconRenderer.set_button_icon(self.btn_yeni, "plus", color=IconColors.PRIMARY, size=14)
+        if self._action_guard:
+            self._action_guard.disable_if_unauthorized(self.btn_yeni, "rke.write")
+        lay.addWidget(self.btn_yeni)
+
+        return frame
+
+    def _build_subtoolbar(self) -> QFrame:
+        frame = QFrame()
+        frame.setFixedHeight(36)
+        frame.setProperty("bg-role", "page")
+        lay = QHBoxLayout(frame)
+        lay.setContentsMargins(16, 0, 16, 0)
+        lay.setSpacing(8)
+
+        lbl = QLabel("FİLTRE:")
+        lbl.setProperty("color-role", "disabled")
+        lay.addWidget(lbl)
+
+        for attr, placeholder, width in [
+            ("cmb_abd",   "Ana Bilim Dalı", 160),
+            ("cmb_birim", "Birim",          140),
+            ("cmb_cins",  "Cins",           130),
+        ]:
+            lbl_f = QLabel(placeholder + ":")
+            lbl_f.setProperty("color-role", "disabled")
+            lay.addWidget(lbl_f)
+            cmb = QComboBox()
+            cmb.addItem("Tümü")
+            cmb.setFixedWidth(width)
+            setattr(self, attr, cmb)
+            lay.addWidget(cmb)
+
+        lay.addStretch()
+        return frame
+
+    def _build_table(self) -> QTableView:
+        self._model = _RKEModel()
+        self._proxy = QSortFilterProxyModel(self)
+        self._proxy.setSourceModel(self._model)
+        self._proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self._proxy.setFilterKeyColumn(-1)
+
+        self.table = QTableView()
+        self.table.setModel(self._proxy)
+        self.table.setAlternatingRowColors(True)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.setSortingEnabled(True)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setShowGrid(False)
+        self.table.verticalHeader().setDefaultSectionSize(38)
+
+        self._model.setup_columns(self.table, stretch_keys=["AnaBilimDali", "Birim"])
+        return self.table
+
+    def _build_footer(self) -> QFrame:
+        frame = QFrame()
+        frame.setFixedHeight(36)
+        frame.setProperty("bg-role", "panel")
+        lay = QHBoxLayout(frame)
+        lay.setContentsMargins(16, 0, 16, 0)
+        self.lbl_info = QLabel("0 kayıt")
+        self.lbl_info.setProperty("style-role", "footer")
+        lay.addWidget(self.lbl_info)
+        lay.addStretch()
+        return frame
+
+    # ─── Sinyaller ───────────────────────────────────────
+
+    def _connect_signals(self):
+        for lbl, btn in self._durum_btns.items():
+            btn.clicked.connect(lambda _, t=lbl: self._on_durum_click(t))
+        self.inp_arama.textChanged.connect(lambda _: self._search_timer.start())
+        self.cmb_abd.currentIndexChanged.connect(lambda _: self._apply_filters())
+        self.cmb_birim.currentIndexChanged.connect(lambda _: self._apply_filters())
+        self.cmb_cins.currentIndexChanged.connect(lambda _: self._apply_filters())
+        self.btn_yenile.clicked.connect(self.load_data)
+        self.btn_yeni.clicked.connect(self._on_yeni)
+        self.table.doubleClicked.connect(self._on_double_click)
+        self._panel.kaydet_istendi.connect(self._on_panel_kaydet)
+        self._panel.sil_istendi.connect(self._on_panel_sil)
+        self._panel.kapat_istendi.connect(self._panel.kapat)
+
+    # ─── Veri ────────────────────────────────────────────
+
+    def load_data(self):
+        if not self._db:
+            return
+        try:
+            svc = get_rke_service(self._db)
+            sonuc = svc.get_rke_listesi()
+            self._all_data = (sonuc.veri or []) if sonuc.basarili else []
+
+            # Sabitler tablosundan combo listeleri ve kısa kodları yükle
+            try:
+                sabitler = svc._r.get("Sabitler").get_all() or []
+                def _sabit_liste(kod: str) -> list[str]:
+                    return sorted({
+                        str(r.get("MenuEleman", "")).strip()
+                        for r in sabitler
+                        if str(r.get("Kod", "")).strip() == kod
+                        and str(r.get("MenuEleman", "")).strip()
+                    })
+                def _kisa_kod_map(kod: str) -> dict[str, str]:
+                    """MenuEleman → Aciklama (kısa kod) eşlemesi."""
+                    return {
+                        str(r.get("MenuEleman", "")).strip(): str(r.get("Aciklama", "")).strip()
+                        for r in sabitler
+                        if str(r.get("Kod", "")).strip() == kod
+                        and str(r.get("MenuEleman", "")).strip()
+                    }
+                self._sabit_abd   = _sabit_liste("AnaBilimDali")
+                self._sabit_birim = _sabit_liste("Birim")
+                self._sabit_cins  = _sabit_liste("Koruyucu_Cinsi")
+                self._sabit_beden = _sabit_liste("Beden") or _BEDEN_SECENEKLER
+                # Kısa kod haritaları
+                self._panel.sabitler = {
+                    "AnaBilimDali":   _kisa_kod_map("AnaBilimDali"),
+                    "Birim":          _kisa_kod_map("Birim"),
+                    "KoruyucuCinsi":  _kisa_kod_map("Koruyucu_Cinsi"),
+                }
+            except Exception as e:
+                logger.debug(f"RKE sabitler yüklenemedi: {e}")
+                self._sabit_abd = self._sabit_birim = self._sabit_cins = []
+                self._sabit_beden = _BEDEN_SECENEKLER
+                self._panel.sabitler = {}
+
+            # Paneli güncelle
+            self._panel.rke_listesi = self._all_data
+            self._panel_combolarini_doldur()
+
+        except Exception as e:
+            logger.error(f"RKE liste yükleme: {e}")
+            self._all_data = []
+        self._fill_combos()
+        self._apply_filters()
+
+    def _panel_combolarini_doldur(self):
+        """Kayıt panelindeki combo'ları Sabitler tablosundan doldur."""
+        p = self._panel
+
+        def _doldur(cmb: QComboBox, secenekler: list[str], mevcut: str = ""):
+            cmb.blockSignals(True)
+            cmb.clear()
+            cmb.addItem("")          # boş seçenek
+            cmb.addItems(secenekler)
+            idx = cmb.findText(mevcut)
+            if idx >= 0:
+                cmb.setCurrentIndex(idx)
+            cmb.blockSignals(False)
+
+        _doldur(p.cmb_abd,         self._sabit_abd)
+        _doldur(p.cmb_birim_panel, self._sabit_birim)
+        _doldur(p.cmb_cins,        self._sabit_cins)
+        _doldur(p.cmb_beden,       self._sabit_beden)
+
+    def _fill_combos(self):
+        def uniq(key):
+            return sorted({str(r.get(key, "")) for r in self._all_data if r.get(key, "")})
+
+        for cmb, key in [
+            (self.cmb_abd,   "AnaBilimDali"),
+            (self.cmb_birim, "Birim"),
+            (self.cmb_cins,  "KoruyucuCinsi"),
+        ]:
+            cur = cmb.currentText()
+            cmb.blockSignals(True)
+            cmb.clear()
+            cmb.addItem("Tümü")
+            cmb.addItems(uniq(key))
+            idx = cmb.findText(cur)
+            if idx >= 0:
+                cmb.setCurrentIndex(idx)
+            cmb.blockSignals(False)
+
+    # ─── Filtreleme ──────────────────────────────────────
+
+    def _on_durum_click(self, lbl: str):
+        for t, btn in self._durum_btns.items():
+            btn.setChecked(t == lbl)
+        self._apply_filters()
+
+    def _apply_filters(self):
+        filtered = self._all_data
+        aktif = next((t for t, b in self._durum_btns.items() if b.isChecked()), "Tümü")
+        if aktif != "Tümü":
+            filtered = [r for r in filtered if str(r.get("Durum", "")).strip() == aktif]
+        for cmb, key in [
+            (self.cmb_abd,   "AnaBilimDali"),
+            (self.cmb_birim, "Birim"),
+            (self.cmb_cins,  "KoruyucuCinsi"),
+        ]:
+            val = cmb.currentText()
+            if val and val != "Tümü":
+                filtered = [r for r in filtered if str(r.get(key, "")).strip() == val]
+        self._model.set_data(filtered)
+        self._proxy.setFilterFixedString(self.inp_arama.text().strip())
+        self.lbl_info.setText(f"{self._proxy.rowCount()} kayıt")
+
+    # ─── Panel işlemleri ─────────────────────────────────
+
+    def _on_yeni(self):
+        self._panel.yeni_mod()
+
+    def _on_double_click(self, idx):
+        if not idx.isValid():
+            return
+        src = self._proxy.mapToSource(idx)
+        row = self._model.get_row(src.row())
+        if row:
+            self._panel.duzenle_mod(row)
+            self.detay_requested.emit(row)
+
+    def _on_panel_kaydet(self, veri: dict):
+        if not self._db:
+            return
+        try:
+            svc = get_rke_service(self._db)
+            if self._panel._mod == "yeni":
+                sonuc = svc.rke_ekle(veri)
+            else:
+                sonuc = svc.rke_guncelle(veri["EkipmanNo"], veri)
             if sonuc.basarili:
                 bilgi_goster(self, sonuc.mesaj)
-                self.temizle()
+                self._panel.kapat()
                 self.load_data()
             else:
                 hata_goster(self, sonuc.mesaj)
-
         except Exception as e:
-            from core.logger import logger
-            logger.error(f"RKE kayıt hatası: {e}")
-            hata_goster(self, f"Kayıt sırasında hata: {e}")
+            logger.error(f"RKE kaydet: {e}")
+            hata_goster(self, str(e))
+
+    def _on_panel_sil(self, ekipman_no: str):
+        if not soru_sor(self, f"<b>{ekipman_no}</b> kaydı silinsin mi?"):
+            return
+        try:
+            svc = get_rke_service(self._db)
+            sonuc = svc.rke_sil(ekipman_no)
+            if sonuc.basarili:
+                bilgi_goster(self, sonuc.mesaj)
+                self._panel.kapat()
+                self.load_data()
+            else:
+                hata_goster(self, sonuc.mesaj)
+        except Exception as e:
+            hata_goster(self, str(e))
+
+    # ─── Yardımcı ────────────────────────────────────────
+
+    @staticmethod
+    def _sep() -> QFrame:
+        f = QFrame()
+        f.setFixedSize(1, 22)
+        f.setProperty("bg-role", "separator")
+        return f
 
 
-
-
-
-
+# Geriye dönük uyumluluk
+RKEYonetimPenceresi = RKEYonetimPage

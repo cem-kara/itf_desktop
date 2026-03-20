@@ -156,8 +156,8 @@ class RKEMerkezPage(QWidget):
     def _create_module(self, code: str) -> QWidget:
         try:
             if code == "ENVANTER":
-                from ui.pages.rke.rke_yonetim import RKEYonetimPenceresi
-                w = RKEYonetimPenceresi(
+                from ui.pages.rke.rke_yonetim import RKEYonetimPage
+                w = RKEYonetimPage(
                     db=self._db,
                     action_guard=self._action_guard,
                 )

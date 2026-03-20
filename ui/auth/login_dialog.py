@@ -36,8 +36,9 @@ class LoginDialog(QDialog):
         # Ana frame
         self.frame = QFrame()
         self.frame.setStyleSheet(
-            "QFrame { background-color: #2d2d30; border-radius: 15px; border: 1px solid #3e3e42; }"
+            "QFrame { background-color: #1a2030; border-radius: 15px; border: 1px solid #3e3e42; }"
         )
+        #self.frame.setProperty("bg-role", "panel")  # Tema için rol tanımla
         card_layout = QVBoxLayout(self.frame)
         card_layout.setContentsMargins(40, 40, 40, 40)
         card_layout.setSpacing(20)
@@ -56,7 +57,7 @@ class LoginDialog(QDialog):
         # Başlık metni
         lbl_title = QLabel("REPYS GİRİŞ")
         lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lbl_title.setFont(QFont("Arial", 48, QFont.Weight.Bold))
+        lbl_title.setFont(QFont("Arial", 60, QFont.Weight.Bold))
         lbl_title.setProperty("color-role", "accent")
         lbl_title.setStyleSheet("border: none;")
         
