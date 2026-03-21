@@ -113,20 +113,56 @@ class RkeService:
             return SonucYonetici.hata(e, f"RkeService.get_muayene({kayit_no})")
 
     def muayene_ekle(self, veri: dict) -> SonucYonetici:
-        """Yeni muayene kaydı ekle."""
+        """Yeni muayene kaydı ekle; RKE_List.Durum ve KontrolTarihi'ni güncelle."""
         try:
             self._r.get("RKE_Muayene").insert(veri)
+            self._rke_listini_guncelle(veri)
             return SonucYonetici.tamam(f"Muayene eklendi: {veri.get('KayitNo', '?')}")
         except Exception as e:
             return SonucYonetici.hata(e, "RkeService.muayene_ekle")
 
     def muayene_guncelle(self, kayit_no: str, veri: dict) -> SonucYonetici:
-        """Muayene kaydını güncelle."""
+        """Muayene kaydını güncelle; RKE_List'i de güncelle."""
         try:
             self._r.get("RKE_Muayene").update(kayit_no, veri)
+            self._rke_listini_guncelle(veri)
             return SonucYonetici.tamam(f"Muayene güncellendi: {kayit_no}")
         except Exception as e:
             return SonucYonetici.hata(e, "RkeService.muayene_guncelle")
+
+    def _rke_listini_guncelle(self, muayene: dict) -> None:
+        """
+        Muayene sonucuna göre RKE_List.Durum ve KontrolTarihi'ni günceller.
+
+        Durum belirleme:
+          Fiziksel VEYA Skopi → "Kullanıma Uygun Değil"  → "Uygun Değil"
+          İkisi de "Kullanıma Uygun" (Skopi "Yapılmadı" dahil)  → "Uygun"
+
+        KontrolTarihi: Skopi tarihi varsa skopi, yoksa fiziksel tarihi.
+        """
+        ekipman_no = str(muayene.get("EkipmanNo", "")).strip()
+        if not ekipman_no:
+            return
+        try:
+            fiz = str(muayene.get("FizikselDurum", "")).strip()
+            sko = str(muayene.get("SkopiDurum", "")).strip()
+            fiz_t = str(muayene.get("FMuayeneTarihi", "") or "").strip()
+            sko_t = str(muayene.get("SMuayeneTarihi", "") or "").strip()
+
+            uygun_d = ("Değil" in fiz) or ("Değil" in sko)
+            yeni_durum = "Uygun Değil" if uygun_d else "Uygun"
+
+            # Kontrol tarihi: skopi varsa skopi, yoksa fiziksel
+            yeni_tarih = sko_t if sko_t else fiz_t
+
+            guncelleme: dict = {"Durum": yeni_durum}
+            if yeni_tarih:
+                guncelleme["KontrolTarihi"] = yeni_tarih
+
+            self._r.get("RKE_List").update(ekipman_no, guncelleme)
+        except Exception as e:
+            from core.logger import logger
+            logger.warning(f"RKE_List güncelleme (muayene sonrası): {e}")
 
     def muayene_sil(self, kayit_no: str) -> SonucYonetici:
         """Muayene kaydını sil."""

@@ -26,9 +26,8 @@ from ui.styles.icons import IconRenderer, IconColors
 
 # ── Sekme tanımları ─────────────────────────────────────────────
 _TABS = [
-    ("ENVANTER",  "box",         "Envanter"),
-    ("MUAYENE",   "clipboard",   "Muayene"),
-    ("RAPOR",     "bar_chart",   "Rapor"),
+    ("ENVANTER", "box",       "Envanter"),
+    ("RAPOR",    "bar_chart", "Rapor"),
 ]
 
 
@@ -156,39 +155,24 @@ class RKEMerkezPage(QWidget):
     def _create_module(self, code: str) -> QWidget:
         try:
             if code == "ENVANTER":
-                from ui.pages.rke.rke_yonetim import RKEYonetimPage
-                w = RKEYonetimPage(
-                    db=self._db,
-                    action_guard=self._action_guard,
-                )
-                # Çift tıklama → Muayene sekmesine ekipmanla geç
-                if hasattr(w, "ekipman_secildi_signal"):
-                    w.ekipman_secildi_signal.connect(self._muayeneye_gec)
-                return w
-
-            elif code == "MUAYENE":
-                from ui.pages.rke.rke_muayene import RKEMuayenePage
+                from ui.pages.rke.rke_page import RKEPage
                 from core.auth.session_context import SessionContext
                 try:
-                    session = SessionContext()
-                    kullanici = session.get_user()
-                    kullanici_adi = kullanici.username if kullanici else None
+                    kullanici_adi = SessionContext().get_user().username
                 except Exception:
                     kullanici_adi = None
-                w = RKEMuayenePage(
+                return RKEPage(
                     db=self._db,
                     action_guard=self._action_guard,
                     kullanici_adi=kullanici_adi,
                 )
-                return w
 
             elif code == "RAPOR":
                 from ui.pages.rke.rke_rapor import RKERaporPenceresi
-                w = RKERaporPenceresi(
+                return RKERaporPenceresi(
                     db=self._db,
                     action_guard=self._action_guard,
                 )
-                return w
 
             else:
                 raise ValueError(f"Bilinmeyen sekme: {code}")
@@ -200,26 +184,11 @@ class RKEMerkezPage(QWidget):
             err.setProperty("color-role", "primary")
             return err
 
-    def _muayeneye_gec(self, ekipman_no: str = ""):
-        """
-        Envanter sekmesinden çift tıklandığında muayene sekmesine geç
-        ve ekipmanı otomatik seç.
-        """
-        self._switch_tab("MUAYENE")
-        if ekipman_no:
-            w = self._modules.get("MUAYENE")
-            if w and hasattr(w, "cmb_rke"):
-                idx = w.cmb_rke.findText(ekipman_no, Qt.MatchFlag.MatchContains)
-                if idx >= 0:
-                    w.cmb_rke.setCurrentIndex(idx)
-
     def _yenile(self):
         """Aktif sekmeyi yenile."""
         w = self._modules.get(self._active_tab)
         if w and hasattr(w, "load_data"):
             w.load_data()
-        elif w and hasattr(w, "verileri_yukle"):
-            w.verileri_yukle()
 
     # ═══════════════════════════════════════════════════════════
     #  main_window.py arayüzü
