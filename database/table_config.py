@@ -182,9 +182,10 @@ TABLES = {
 
     "Tatiller": {
         "pk": "Tarih",
-        "sync_mode": "pull_only",  # Read-only table
+        "sync_mode": "pull_only",
         "columns": [
-            "Tarih","ResmiTatil"
+            "Tarih", "ResmiTatil",
+            "TatilTuru",   # Resmi | Idari
         ],
         "date_fields": ["Tarih"],
         
@@ -323,6 +324,68 @@ TABLES = {
         "sync":False
     },
 
+    # ─────────────── NÖBET VT ───────────────
+
+    "Nobet_Vardiya": {
+        "pk": "VardiyaID",
+        "columns": [
+            "VardiyaID",
+            "BirimAdi",   # Sabitler.MenuEleman (Kod=Birim) ile eşleşir
+            "VardiyaAdi",
+            "BasSaat",
+            "BitSaat",
+            "SaatSuresi",
+            "MinPersonel",
+            "Aktif",
+        ],
+    },
+
+    "Nobet_Plan": {
+        "pk": "PlanID",
+        "columns": [
+            "PlanID",
+            "PersonelID",
+            "BirimAdi",   # Sabitler'den
+            "VardiyaID",
+            "NobetTarihi",
+            "NobetTuru",
+            "Durum",
+            "KayitTarihi",
+            "Notlar",
+        ],
+        "date_fields": ["NobetTarihi", "KayitTarihi"],
+    },
+
+    "Nobet_Onay": {
+        "pk": "OnayID",
+        "columns": [
+            "OnayID", "Yil", "Ay", "BirimAdi",
+            "Durum", "OnaylayanID", "OnayTarihi", "Notlar",
+        ],
+        "date_fields": ["OnayTarihi"],
+    },
+
+    "Nobet_MesaiHedef": {
+        "pk": "HedefID",
+        "columns": [
+            "HedefID", "PersonelID", "Yil", "Ay", "BirimAdi",
+            "HedefSaat", "HedefTipi", "Aciklama",
+            # zorunlu | gonullu_disi | nobet_yok
+            "NobetTercihi",
+        ],
+    },
+
+    "Nobet_FazlaMesai": {
+        "pk": "FazlaID",
+        "columns": [
+            "FazlaID", "PersonelID", "Yil", "Ay", "BirimAdi",
+            "CalisanSaat", "HedefSaat", "FazlaMesaiSaat",
+            "DevirSaat",     # önceki aydan gelen devir
+            "ToplamFazla",   # FazlaMesaiSaat + DevirSaat
+            "OdenenSaat",    # 7'nin katı — ödenir, sıfırlanır
+            "DevireGiden",   # ToplamFazla % 7 — sonraki aya devir
+        ],
+    },
 
 }
 

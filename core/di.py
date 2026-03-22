@@ -149,3 +149,7 @@ def get_auth_services(db):
     return auth_service, authorization_service, session_context
 
 
+
+def get_nobet_service(db):
+    from core.services.nobet_service import NobetService
+    return NobetService(get_registry(db))

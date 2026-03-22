@@ -243,6 +243,15 @@ class MainWindow(QMainWindow):
             page.kapat_istegi.connect(lambda: self._close_page("Diğer Rad. Gör. FHSZ Yön."))
             return page
 
+        
+        if baslik == "Nöbet Takip":
+            from ui.pages.nobet.nobet_merkez import NobetMerkezPage
+            page = NobetMerkezPage(db=self._db)
+            #page.btn_kapat.clicked.connect(lambda: self._close_page("Nöbet Takip"))
+            page.load_data()
+            return page
+
+        
         if baslik == "Sağlık Takip":
             from ui.pages.personel.saglik_takip import SaglikTakipPage
             page = SaglikTakipPage(db=self._db)

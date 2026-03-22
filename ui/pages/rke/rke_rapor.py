@@ -410,8 +410,7 @@ class RKERaporPenceresi(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
         root.addWidget(self._build_kpi_bar())
-        root.addWidget(self._build_toolbar())
-        root.addWidget(self._build_subtoolbar())
+        root.addWidget(self._build_kontrol_paneli())
         root.addWidget(self._build_table(), 1)
         root.addWidget(self._build_footer())
 
@@ -450,18 +449,25 @@ class RKERaporPenceresi(QWidget):
 
     # ─── Toolbar ─────────────────────────────────────────
 
-    def _build_toolbar(self) -> QFrame:
-        frame = QFrame()
-        frame.setFixedHeight(56)
-        frame.setProperty("bg-role", "panel")
-        lay = QHBoxLayout(frame)
-        lay.setContentsMargins(16, 0, 16, 0)
-        lay.setSpacing(10)
+    def _build_kontrol_paneli(self) -> QFrame:
+        """
+        3 sütunlu kontrol paneli:
+          [1] Rapor Türü     [2] Filtreler     [3] İşlemler
+        """
+        from PySide6.QtWidgets import QGroupBox, QGridLayout
+        outer = QFrame()
+        outer.setProperty("bg-role", "panel")
+        outer.setFixedHeight(110)
+        lay = QHBoxLayout(outer)
+        lay.setContentsMargins(16, 10, 16, 10)
+        lay.setSpacing(0)
 
-        # ── Rapor Türü ──
-        lbl_tur = QLabel("RAPOR:")
-        lbl_tur.setProperty("color-role", "disabled")
-        lay.addWidget(lbl_tur)
+        # ── SÜTUN 1: Rapor Türü ──────────────────────────
+        grp_tur = QGroupBox("Rapor Türü")
+        grp_tur.setProperty("style-role", "group")
+        vt = QVBoxLayout(grp_tur)
+        vt.setContentsMargins(10, 4, 10, 4)
+        vt.setSpacing(4)
 
         self._bg = QButtonGroup(self)
         self.rb_envanter = QRadioButton("Aktif Envanter Listesi")
@@ -470,76 +476,73 @@ class RKERaporPenceresi(QWidget):
         for rb in (self.rb_envanter, self.rb_hurda):
             rb.setProperty("style-role", "radio")
             self._bg.addButton(rb)
-            lay.addWidget(rb)
+            vt.addWidget(rb)
 
-        # Hurda'ya özel: bölüm bazlı checkbox
-        self.chk_gruplu = QCheckBox("Bölüm Bazlı Grupla")
+        self.chk_gruplu = QCheckBox("  Bölüm Bazlı Grupla")
         self.chk_gruplu.setProperty("style-role", "check")
         self.chk_gruplu.setEnabled(False)
-        lay.addWidget(self.chk_gruplu)
+        self.chk_gruplu.setToolTip("Hurda raporunu ABD ve Birim bazlı gruplandırır")
+        vt.addWidget(self.chk_gruplu)
 
-        lay.addWidget(self._vsep())
+        lay.addWidget(grp_tur, 2)
+        lay.addSpacing(10)
 
-        # ── Filtreler ──
-        for attr, placeholder, width in [
-            ("cmb_abd",   "Ana Bilim Dalı", 160),
-            ("cmb_birim", "Birim",          140),
-        ]:
-            lbl = QLabel(placeholder + ":")
-            lbl.setProperty("color-role", "disabled")
-            lay.addWidget(lbl)
-            cmb = QComboBox()
-            cmb.addItem("Tümü")
-            cmb.setFixedWidth(width)
-            setattr(self, attr, cmb)
-            lay.addWidget(cmb)
+        # ── SÜTUN 2: Filtreler ───────────────────────────
+        grp_fil = QGroupBox("Filtreler")
+        grp_fil.setProperty("style-role", "group")
+        gf = QGridLayout(grp_fil)
+        gf.setContentsMargins(10, 4, 10, 4)
+        gf.setSpacing(6)
 
-        lay.addStretch()
+        def _flbl(t):
+            l = QLabel(t); l.setProperty("style-role","stat-label")
+            l.setProperty("color-role", "muted"); return l
 
-        self.btn_yenile = QPushButton()
-        self.btn_yenile.setToolTip("Verileri Yenile")
+        gf.addWidget(_flbl("Ana Bilim Dalı"), 0, 0)
+        self.cmb_abd = QComboBox(); self.cmb_abd.addItem("Tümü")
+        gf.addWidget(self.cmb_abd, 1, 0)
+
+        gf.addWidget(_flbl("Birim"), 0, 1)
+        self.cmb_birim = QComboBox(); self.cmb_birim.addItem("Tümü")
+        gf.addWidget(self.cmb_birim, 1, 1)
+
+        gf.addWidget(_flbl("Muayene Tarihi"), 0, 2)
+        self.cmb_tarih = QComboBox(); self.cmb_tarih.addItem("Tüm Tarihler")
+        self.cmb_tarih.setToolTip("Seçilen tarihte muayenesi yapılan ekipmanları filtreler")
+        gf.addWidget(self.cmb_tarih, 1, 2)
+
+        gf.setColumnStretch(0, 2)
+        gf.setColumnStretch(1, 2)
+        gf.setColumnStretch(2, 2)
+
+        lay.addWidget(grp_fil, 5)
+        lay.addSpacing(10)
+
+        # ── SÜTUN 3: İşlemler ────────────────────────────
+        grp_isl = QGroupBox("İşlemler")
+        grp_isl.setProperty("style-role", "group")
+        vi = QVBoxLayout(grp_isl)
+        vi.setContentsMargins(10, 4, 10, 4)
+        vi.setSpacing(6)
+
+        self.btn_yenile = QPushButton(" Verileri Yenile")
         self.btn_yenile.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_yenile.setFixedSize(32, 32)
         self.btn_yenile.setProperty("style-role", "refresh")
-        IconRenderer.set_button_icon(self.btn_yenile, "refresh", color=IconColors.MUTED, size=16)
-        lay.addWidget(self.btn_yenile)
+        self.btn_yenile.setFixedHeight(28)
+        IconRenderer.set_button_icon(self.btn_yenile, "refresh", color=IconColors.MUTED, size=14)
+        vi.addWidget(self.btn_yenile)
 
-        self.btn_pdf = QPushButton(" PDF Oluştur")
+        self.btn_pdf = QPushButton(" PDF Rapor Oluştur")
         self.btn_pdf.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_pdf.setProperty("style-role", "action")
-        self.btn_pdf.setFixedHeight(32)
-        IconRenderer.set_button_icon(self.btn_pdf, "file_text", color=IconColors.PRIMARY, size=16)
+        self.btn_pdf.setFixedHeight(28)
+        IconRenderer.set_button_icon(self.btn_pdf, "file_text", color=IconColors.PRIMARY, size=14)
         if self._action_guard:
             self._action_guard.disable_if_unauthorized(self.btn_pdf, "cihaz.write")
-        lay.addWidget(self.btn_pdf)
-        return frame
+        vi.addWidget(self.btn_pdf)
 
-    # ─── Tablo ───────────────────────────────────────────
-
-    def _build_subtoolbar(self) -> QFrame:
-        frame = QFrame()
-        frame.setFixedHeight(40)
-        frame.setProperty("bg-role", "page")
-        lay = QHBoxLayout(frame)
-        lay.setContentsMargins(16, 0, 16, 0)
-        lay.setSpacing(8)
-
-        lbl = QLabel("MUAYENE TARİHİ:")
-        lbl.setProperty("color-role", "disabled")
-        lay.addWidget(lbl)
-
-        self.cmb_tarih = QComboBox()
-        self.cmb_tarih.addItem("Tüm Tarihler")
-        self.cmb_tarih.setFixedWidth(140)
-        lay.addWidget(self.cmb_tarih)
-
-        lay.addStretch()
-
-        lbl_acik = QLabel("Seçilen tarihteki muayene kayıtlarını filtreler")
-        lbl_acik.setProperty("color-role", "disabled")
-        lay.addWidget(lbl_acik)
-
-        return frame
+        lay.addWidget(grp_isl, 2)
+        return outer
 
     # ─── Tablo ───────────────────────────────────────────
 
