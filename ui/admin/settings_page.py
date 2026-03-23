@@ -516,7 +516,16 @@ class SettingsPage(QWidget):
         
         tabs.addTab(sistem_widget, "Online/Offline")
         tabs.setTabIcon(3, Icons.get("wifi"))
-        
+
+        # ======== NÖBET BİRİMİ TAB ========
+        try:
+            from ui.pages.nobet.nobet_birim_page import NobetBirimPage
+            self._nobet_birim_page = NobetBirimPage(db=self._db, parent=self)
+            tabs.addTab(self._nobet_birim_page, "Nöbet Birimleri")
+        except Exception as e:
+            from core.logger import logger
+            logger.error(f"Nöbet Birimi sekmesi yüklenemedi: {e}")
+
         layout.addWidget(tabs)
     
     def _load_data(self):

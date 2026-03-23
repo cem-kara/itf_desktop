@@ -3,10 +3,11 @@
 nobet_merkez.py — Nöbet Yönetimi Ana Sayfası
 
 Sekmeler:
-  BIRIM    → Birim & Vardiya tanımları
   PLAN     → Takvim görünümü + otomatik planlama
   OZET     → Personel nöbet yükü özeti
   RAPOR    → PDF / Excel çıktı
+
+Not: Birim & Vardiya tanımları → Ayarlar > Nöbet Birimleri sekmesine taşındı.
 """
 from __future__ import annotations
 from typing import Optional
@@ -24,7 +25,6 @@ from core.hata_yonetici import hata_goster
 from ui.styles.icons import IconRenderer, IconColors
 
 _TABS = [
-    ("BIRIM",  "settings",   "Birim Tanımları"),
     ("PLAN",   "calendar",   "Nöbet Planı"),
     ("OZET",   "bar_chart",  "Personel Özeti"),
     ("RAPOR",  "file_text",  "Raporlar"),
@@ -41,7 +41,7 @@ class NobetMerkezPage(QWidget):
         self._nav_btns: dict[str, QPushButton] = {}
         self._active    = ""
         self._setup_ui()
-        self._switch_tab("BIRIM")
+        self._switch_tab("PLAN")
 
     def _setup_ui(self):
         self.setProperty("bg-role", "page")
@@ -121,11 +121,7 @@ class NobetMerkezPage(QWidget):
 
     def _create_module(self, code: str) -> QWidget:
         try:
-            if code == "BIRIM":
-                from ui.pages.nobet.nobet_birim_page import NobetBirimPage
-                return NobetBirimPage(db=self._db,
-                                      action_guard=self._action_guard)
-            elif code == "PLAN":
+            if code == "PLAN":
                 from ui.pages.nobet.nobet_plan_page import NobetPlanPage
                 return NobetPlanPage(db=self._db,
                                      action_guard=self._action_guard)

@@ -59,6 +59,69 @@ class NobetService:
     #  VARDİYA
     # ═══════════════════════════════════════════════════
 
+    def get_birim_ayar(self, birim_adi: str) -> dict:
+        """
+        Birim ayarını döner. Yoksa varsayılan üretir.
+        Slot süresi: GunlukSlotSaat || Σ ana vardiya SaatSuresi
+        """
+        try:
+            rows = self._r.get("Nobet_BirimAyar").get_all() or []
+            kayit = next((r for r in rows
+                          if r.get("BirimAdi") == birim_adi), None)
+            if kayit:
+                return dict(kayit)
+        except Exception:
+            pass
+
+        # Varsayılan: ana vardiyaların saatini topla
+        slot_saat = None
+        try:
+            v_rows = self._r.get("Nobet_Vardiya").get_all() or []
+            ana_saatler = [
+                float(v.get("SaatSuresi", GUNLUK_HEDEF_SAAT))
+                for v in v_rows
+                if v.get("BirimAdi") == birim_adi
+                and (v.get("VardiyaRolu") or "ana") == "ana"
+                and int(v.get("Aktif", 1))
+            ]
+            if ana_saatler:
+                slot_saat = sum(ana_saatler)
+        except Exception:
+            pass
+
+        return {
+            "BirimAdi":         birim_adi,
+            "GunlukSlotSaat":   slot_saat or 24.0,
+            "SlotBasiPersonel": 4,
+            "CalismaModu":      "tam_gun",
+            "OtomatikBolunme":  1,
+        }
+
+    def birim_ayar_kaydet(self, birim_adi: str, slot_saat: Optional[float],
+                          slot_personel: int, calisma_modu: str,
+                          otomatik_bolunme: bool = True,
+                          aciklama: str = "") -> SonucYonetici:
+        try:
+            rows = self._r.get("Nobet_BirimAyar").get_all() or []
+            mevcut = next((r for r in rows
+                           if r.get("BirimAdi") == birim_adi), None)
+            veri = {
+                "BirimAdi":        birim_adi,
+                "GunlukSlotSaat":  slot_saat,
+                "SlotBasiPersonel": slot_personel,
+                "CalismaModu":     calisma_modu,
+                "OtomatikBolunme": 1 if otomatik_bolunme else 0,
+                "Aciklama":        aciklama,
+            }
+            if mevcut:
+                self._r.get("Nobet_BirimAyar").update(mevcut["AyarID"], veri)
+            else:
+                veri["AyarID"] = _yeni_id("BA-")
+                self._r.get("Nobet_BirimAyar").insert(veri)
+            return SonucYonetici.tamam(f"{birim_adi} birim ayarı kaydedildi")
+        except Exception as e:
+            return SonucYonetici.hata(e, "NobetService.birim_ayar_kaydet")
+
     def get_vardiyalar(self, birim_adi: Optional[str] = None) -> SonucYonetici:
         try:
             rows = self._r.get("Nobet_Vardiya").get_all() or []
@@ -165,131 +228,225 @@ class NobetService:
         birim_adi: str,
         max_aylik_saat: float = MAX_AYLIK_SAAT,
     ) -> SonucYonetici:
+        """
+        Slot tabanlı nöbet planlama algoritması.
+
+        Her gün SlotBasiPersonel kadar "slot" doldurulur.
+        Her slot normalde 1 kişiye tam atanır (SlotSuresi kadar saat).
+        Kişinin aylık hedef saati dolmuşsa → OtomatikBolunme=1 ise slot
+        "ana" vardiyaları arasında bölünür (farklı kişiler, aynı pozisyon).
+
+        Adalet ölçüsü: SAAT TOPLAMI eşitlenir.
+        Sıralama: az saat → az hafta sonu → bu vardiyaya az girmiş
+        """
         try:
-            # Vardiyaları getir
+            # ── Birim ayarı ───────────────────────────────────
+            ayar = self.get_birim_ayar(birim_adi)
+            slot_basi    = int(ayar.get("SlotBasiPersonel", 4))
+            slot_saat    = float(ayar.get("GunlukSlotSaat", 24.0))
+            oto_bolunme  = bool(int(ayar.get("OtomatikBolunme", 1)))
+
+            # Ana vardiyalar (algoritma bunları doldurur, sıralı)
             v_sonuc = self.get_vardiyalar(birim_adi)
             if not v_sonuc.basarili or not v_sonuc.veri:
                 return SonucYonetici.hata(
-                    ValueError(f"'{birim_adi}' için vardiya tanımı yok")
-                )
-            vardiyalar = v_sonuc.veri
+                    ValueError(f"'{birim_adi}' için vardiya tanımı yok"))
 
-            # Personel — GorevYeri = birim_adi, tercih filtresi uygula
+            tum_vardiyalar = v_sonuc.veri
+            ana_vardiyalar = [
+                v for v in tum_vardiyalar
+                if (v.get("VardiyaRolu") or "ana") == "ana"
+                and int(v.get("Aktif",1))
+            ]
+            if not ana_vardiyalar:
+                return SonucYonetici.hata(
+                    ValueError(f"'{birim_adi}' için 'ana' rolünde vardiya yok"))
+
+            # ── Personel havuzu ───────────────────────────────
             personel_rows = self._r.get("Personel").get_all() or []
-            personeller = [p for p in personel_rows
-                           if str(p.get("GorevYeri", "")).strip() == birim_adi]
-
+            personeller   = [
+                p for p in personel_rows
+                if str(p.get("GorevYeri","")).strip() == birim_adi
+            ]
             if not personeller:
                 return SonucYonetici.hata(
-                    ValueError(f"'{birim_adi}' biriminde kayıtlı personel yok")
-                )
+                    ValueError(f"'{birim_adi}' biriminde kayıtlı personel yok"))
 
-            # NobetTercihi kontrolü — gonullu_disi ve nobet_yok olanları çıkar
-            tercih_map = self._tercih_map_getir(yil, ay)
+            tercih_map  = self._tercih_map_getir(yil, ay)
             personeller = [
                 p for p in personeller
-                if tercih_map.get(str(p["KimlikNo"]), "zorunlu") == "zorunlu"
+                if tercih_map.get(str(p["KimlikNo"]),"zorunlu") == "zorunlu"
             ]
-
+            # Fazla mesai gönüllüleri — zorunlu personel dolduramadığında devreye girer
+            gonullu_fm = [
+                p for p in [q for q in (self._r.get("Personel").get_all() or [])
+                             if str(q.get("GorevYeri","")).strip() == birim_adi]
+                if tercih_map.get(str(p["KimlikNo"]),"zorunlu") == "fazla_mesai_gonullu"
+            ]
             if not personeller:
                 return SonucYonetici.hata(
-                    ValueError(f"'{birim_adi}' biriminde zorunlu nöbet tutacak personel yok")
+                    ValueError("Zorunlu nöbet tutacak personel yok"))
+
+            izin_map = self._izin_map_getir(yil, ay)
+
+            # Dini bayram günleri — otomatik atama yapılmaz
+            # Manuel 'Fazla Mesai' ile eklenebilir
+            dini_bayram_set: set[str] = set(
+                self._tatil_listesi_getir(yil, ay,
+                                          idari_dahil=False,
+                                          sadece_dini=True)
+            )
+
+            # Kişiye özgü aylık hedef saat (zorunlu + gönüllü)
+            hedef_map: dict[str, float] = {}
+            for p in personeller + gonullu_fm:
+                pid = str(p["KimlikNo"])
+                if pid in hedef_map:
+                    continue
+                h   = self._kisi_hedef_saat(pid, yil, ay, otomatik=True)
+                hedef_map[pid] = h if h is not None else max_aylik_saat
+
+            # ── Ay günleri ────────────────────────────────────
+            ay_bas  = date(yil, ay, 1)
+            ay_bit  = (date(yil+1,1,1)-timedelta(days=1) if ay==12
+                       else date(yil,ay+1,1)-timedelta(days=1))
+            gunler  = [ay_bas+timedelta(days=i)
+                       for i in range((ay_bit-ay_bas).days+1)]
+
+            # ── Sayaçlar ──────────────────────────────────────
+            saat_sayac:    dict[str,float]         = {str(p["KimlikNo"]):0.0 for p in personeller}
+            hs_sayac:      dict[str,int]           = {str(p["KimlikNo"]):0   for p in personeller}
+            vardiya_sayac: dict[str,dict[str,int]] = {str(p["KimlikNo"]):{} for p in personeller}
+            son_nobet:     dict[str,str]           = {}
+            eklenen:       list[dict]              = []
+            uyarilar:      list[str]               = []
+
+            HAFTASONU = {5, 6}
+
+            def _sirala(pid_listesi: list[str]) -> list[str]:
+                return sorted(
+                    pid_listesi,
+                    key=lambda pid: (
+                        saat_sayac.get(pid, 0.0),
+                        hs_sayac.get(pid, 0),
+                        sum(vardiya_sayac.get(pid,{}).values()),
+                    )
                 )
 
-            izin_map  = self._izin_map_getir(yil, ay)
-            tatiller  = self._tatil_listesi_getir(yil, ay)
+            def _atanabilir(pid: str, tarih_str: str, gun: date,
+                            v_saat: float, hedef: float,
+                            fm_gonullu: bool = False) -> bool:
+                if tarih_str in izin_map.get(pid, set()):
+                    return False
+                dun = (gun - timedelta(days=1)).isoformat()
+                if son_nobet.get(pid) == dun:
+                    return False
+                # FM gönüllüsünde saat limiti yok — isteyen kişi
+                if not fm_gonullu and saat_sayac.get(pid, 0.0) >= hedef:
+                    return False
+                return True
 
-            # Personel başına max nöbet gün + hedef saat hesapla
-            max_nobet_gun:  dict[str, int]   = {}
-            hedef_saat_map: dict[str, float] = {}
+            def _ekle(pid: str, v: dict, tarih_str: str, is_hw: bool):
+                plan = {
+                    "PlanID":      _yeni_id("NB-"),
+                    "PersonelID":  pid,
+                    "BirimAdi":    birim_adi,
+                    "VardiyaID":   v["VardiyaID"],
+                    "NobetTarihi": tarih_str,
+                    "NobetTuru":   "normal",
+                    "Durum":       "taslak",
+                }
+                self._r.get("Nobet_Plan").insert(plan)
+                eklenen.append(plan)
+                vsaat = float(v.get("SaatSuresi", GUNLUK_HEDEF_SAAT))
+                saat_sayac[pid] = saat_sayac.get(pid, 0.0) + vsaat
+                if is_hw:
+                    hs_sayac[pid] = hs_sayac.get(pid, 0) + 1
+                vs = vardiya_sayac.setdefault(pid, {})
+                vs[v["VardiyaID"]] = vs.get(v["VardiyaID"], 0) + 1
+                son_nobet[pid] = tarih_str
+                return plan
 
-            for p in personeller:
-                pid = str(p["KimlikNo"])
-                # Max nöbet gün
-                sonuc_max = self.personel_max_nobet_gunu(pid, yil, ay)
-                max_nobet_gun[pid] = (sonuc_max.veri["MaxNobetGun"]
-                                      if sonuc_max.basarili else 30)
-                # Kişiye özgü hedef saat — izin günleri otomatik düşülür
-                hedef = self._kisi_hedef_saat(pid, yil, ay, otomatik=True)
-                hedef_saat_map[pid] = hedef if hedef is not None else max_aylik_saat
-
-            ay_bas = date(yil, ay, 1)
-            if ay == 12:
-                ay_bit = date(yil + 1, 1, 1) - timedelta(days=1)
-            else:
-                ay_bit = date(yil, ay + 1, 1) - timedelta(days=1)
-
-            gunler = [ay_bas + timedelta(days=i)
-                      for i in range((ay_bit - ay_bas).days + 1)]
-
-            saat_sayac:  dict[str, float] = {str(p["KimlikNo"]): 0.0 for p in personeller}
-            gun_sayac:   dict[str, int]   = {str(p["KimlikNo"]): 0   for p in personeller}
-            son_nobet:   dict[str, str]   = {}
-            # O gün hangi personel atandı: {tarih_str: set(pid)}
-            gun_atanan:  dict[str, set]   = {}
-            eklenen:     list[dict]       = []
-            uyarilar:    list[str]        = []
-
+            # ── Ana döngü ─────────────────────────────────────
             for gun in gunler:
                 tarih_str = gun.isoformat()
-                gun_atanan.setdefault(tarih_str, set())
 
-                for vardiya in vardiyalar:
-                    min_p = int(vardiya.get("MinPersonel", 1))
-                    # Gerçek vardiya süresi — mesai sayacına girer
-                    saat  = float(vardiya.get("SaatSuresi", GUNLUK_HEDEF_SAAT))
-                    v_id  = vardiya["VardiyaID"]
-                    atanan = 0
+                # Dini bayram → otomatik atama yok
+                if tarih_str in dini_bayram_set:
+                    continue
 
-                    # En az gün nöbet tutmuş, onlar arasında en az saat tutmuş önce
-                    adaylar = sorted(
-                        personeller,
-                        key=lambda p: (gun_sayac.get(str(p["KimlikNo"]), 0),
-                                       saat_sayac.get(str(p["KimlikNo"]), 0.0))
-                    )
+                is_hw     = gun.weekday() in HAFTASONU
+                pid_listesi = [str(p["KimlikNo"]) for p in personeller]
 
-                    for p in adaylar:
-                        if atanan >= min_p:
+                for slot_no in range(slot_basi):
+
+                    # Tam slot: tek kişi tüm ana vardiyalara girer
+                    # Önce zorunlu, dolmazsa FM gönüllüsü (saat limiti yok)
+                    tam_atandi = False
+                    fm_pid_listesi = [str(p["KimlikNo"]) for p in gonullu_fm]
+                    for pid in _sirala(pid_listesi):
+                        hedef = hedef_map.get(pid, max_aylik_saat)
+                        kalan = hedef - saat_sayac.get(pid, 0.0)
+                        if kalan < slot_saat * 0.5:
+                            continue
+                        if not _atanabilir(pid, tarih_str, gun, slot_saat, hedef):
+                            continue
+                        for v in ana_vardiyalar:
+                            _ekle(pid, v, tarih_str, is_hw)
+                        tam_atandi = True
+                        break
+
+                    if not tam_atandi:
+                        for pid in _sirala(fm_pid_listesi):
+                            hedef = hedef_map.get(pid, max_aylik_saat)
+                            if not _atanabilir(pid, tarih_str, gun,
+                                               slot_saat, hedef, fm_gonullu=True):
+                                continue
+                            for v in ana_vardiyalar:
+                                _ekle(pid, v, tarih_str, is_hw)
+                            tam_atandi = True
                             break
-                        pid = str(p["KimlikNo"])
 
-                        # İzin günü kontrolü
-                        if tarih_str in izin_map.get(pid, set()):
-                            continue
-                        # Aynı gün başka vardiyaya zaten atandı mı
-                        if pid in gun_atanan[tarih_str]:
-                            continue
-                        # Üst üste nöbet yasağı
-                        dun = (gun - timedelta(days=1)).isoformat()
-                        if son_nobet.get(pid) == dun:
-                            continue
-                        # Kişiye özgü max nöbet gün limiti (izin/tatil düşülmüş)
-                        # NOT: Saat limiti burada kullanılmaz — SaatSuresi mesai
-                        # hesabı içindir, atama kısıtı için gün sayısı yeterlidir.
-                        if gun_sayac.get(pid, 0) >= max_nobet_gun.get(pid, 30):
-                            continue
+                    if tam_atandi:
+                        continue
 
-                        plan = {
-                            "PlanID":      _yeni_id("NB-"),
-                            "PersonelID":  pid,
-                            "BirimAdi":    birim_adi,
-                            "VardiyaID":   v_id,
-                            "NobetTarihi": tarih_str,
-                            "NobetTuru":   "normal",
-                            "Durum":       "taslak",
-                        }
-                        self._r.get("Nobet_Plan").insert(plan)
-                        eklenen.append(plan)
-                        saat_sayac[pid]         = saat_sayac.get(pid, 0.0) + saat
-                        gun_sayac[pid]          = gun_sayac.get(pid, 0) + 1
-                        gun_atanan[tarih_str].add(pid)
-                        son_nobet[pid]          = tarih_str
-                        atanan += 1
-
-                    if atanan < min_p:
+                    # Tam slot dolmadı — oto_bolunme açıksa her ana vardiyaya ayrı kişi
+                    if oto_bolunme:
+                        slot_tamam = True
+                        for v in ana_vardiyalar:
+                            v_saat = float(v.get("SaatSuresi", GUNLUK_HEDEF_SAAT))
+                            atandi = False
+                            # Önce zorunlu, dolmazsa FM gönüllüsü
+                            for pid in _sirala(pid_listesi):
+                                hedef = hedef_map.get(pid, max_aylik_saat)
+                                if not _atanabilir(pid, tarih_str, gun,
+                                                   v_saat, hedef):
+                                    continue
+                                _ekle(pid, v, tarih_str, is_hw)
+                                atandi = True
+                                break
+                            if not atandi:
+                                for pid in _sirala(fm_pid_listesi):
+                                    hedef = hedef_map.get(pid, max_aylik_saat)
+                                    if not _atanabilir(pid, tarih_str, gun,
+                                                       v_saat, hedef,
+                                                       fm_gonullu=True):
+                                        continue
+                                    _ekle(pid, v, tarih_str, is_hw)
+                                    atandi = True
+                                    break
+                            if not atandi:
+                                slot_tamam = False
+                                uyarilar.append(
+                                    f"{tarih_str} slot {slot_no+1} "
+                                    f"'{v.get('VardiyaAdi','')}' doldurulamadı"
+                                )
+                        if not slot_tamam:
+                            pass  # uyarı zaten eklendi
+                    else:
                         uyarilar.append(
-                            f"{tarih_str} {vardiya.get('VardiyaAdi','')} — "
-                            f"{atanan}/{min_p} personel atanabildi"
+                            f"{tarih_str} slot {slot_no+1} — "
+                            "hedef dolmuş personel, bölünme kapalı"
                         )
 
             ozet = (f"{len(eklenen)} nöbet ataması yapıldı"
@@ -299,7 +456,7 @@ class NobetService:
                 veri={"eklenen": eklenen, "uyarilar": uyarilar}
             )
         except Exception as e:
-            logger.error(f"Otomatik plan: {e}")
+            logger.error(f"Otomatik plan (slot): {e}")
             return SonucYonetici.hata(e, "NobetService.otomatik_plan_olustur")
 
     def taslak_temizle(self, yil: int, ay: int,
@@ -537,6 +694,88 @@ class NobetService:
             pass
         return None
 
+    def birim_ayar_kaydet(self, birim_adi: str,
+                          gunluk_slot_saat: Optional[float],
+                          slot_basi_personel: int = 4,
+                          calisma_modu: str = "tam_gun",
+                          aciklama: str = "") -> SonucYonetici:
+        """Birim nöbet ayarlarını kaydeder."""
+        try:
+            rows = self._r.get("Nobet_BirimAyar").get_all() or []
+            mevcut = next((r for r in rows
+                           if r.get("BirimAdi") == birim_adi), None)
+            veri = {
+                "BirimAdi":         birim_adi,
+                "GunlukSlotSaat":   gunluk_slot_saat,
+                "SlotBasiPersonel": slot_basi_personel,
+                "CalismaModu":      calisma_modu,
+                "Aciklama":         aciklama,
+            }
+            if mevcut:
+                self._r.get("Nobet_BirimAyar").update(mevcut["AyarID"], veri)
+            else:
+                veri["AyarID"] = _yeni_id("BA-")
+                self._r.get("Nobet_BirimAyar").insert(veri)
+            return SonucYonetici.tamam(
+                f"{birim_adi} ayarları kaydedildi "
+                f"({calisma_modu}, {gunluk_slot_saat or 'oto'}h/slot, "
+                f"{slot_basi_personel} personel)"
+            )
+        except Exception as e:
+            return SonucYonetici.hata(e, "NobetService.birim_ayar_kaydet")
+
+    def birim_ayar_kaydet(self, birim_adi: str,
+                          slot_saat: Optional[float],
+                          slot_personel: int = 4,
+                          calisma_modu: str = "tam_gun",
+                          otomatik_bolunme: bool = True,
+                          aciklama: str = "") -> SonucYonetici:
+        """Birim nöbet ayarlarını kaydeder/günceller."""
+        try:
+            rows = self._r.get("Nobet_BirimAyar").get_all() or []
+            mevcut = next((r for r in rows
+                           if r.get("BirimAdi") == birim_adi), None)
+            veri = {
+                "BirimAdi":        birim_adi,
+                "GunlukSlotSaat":  slot_saat,
+                "SlotBasiPersonel": slot_personel,
+                "CalismaModu":     calisma_modu,
+                "OtomatikBolunme": 1 if otomatik_bolunme else 0,
+                "Aciklama":        aciklama,
+            }
+            if mevcut:
+                self._r.get("Nobet_BirimAyar").update(mevcut["AyarID"], veri)
+            else:
+                veri["AyarID"] = _yeni_id("BA-")
+                self._r.get("Nobet_BirimAyar").insert(veri)
+            return SonucYonetici.tamam(
+                f"{birim_adi} ayarları kaydedildi "
+                f"({calisma_modu}, "
+                f"{slot_saat or 'oto'}h/slot, "
+                f"{slot_personel} personel)"
+            )
+        except Exception as e:
+            return SonucYonetici.hata(e, "NobetService.birim_ayar_kaydet")
+
+    def birim_ayar_getir(self, birim_adi: str) -> Optional[dict]:
+        """Birim ayarını döner. Kayıt yoksa None."""
+        try:
+            rows = self._r.get("Nobet_BirimAyar").get_all() or []
+            return next((r for r in rows if r.get("BirimAdi") == birim_adi), None)
+        except Exception:
+            return None
+
+    def _slot_saat_hesapla(self, birim_adi: str,
+                           vardiyalar: list[dict],
+                           ayar: Optional[dict]) -> float:
+        """
+        Bir slotun kaç saat süreceğini hesaplar.
+        Öncelik: BirimAyar.GunlukSlotSaat → Σ vardiya.SaatSuresi
+        """
+        if ayar and ayar.get("GunlukSlotSaat"):
+            return float(ayar["GunlukSlotSaat"])
+        return sum(float(v.get("SaatSuresi", 0)) for v in vardiyalar)
+
     def _tercih_map_getir(self, yil: int, ay: int) -> dict[str, str]:
         """Personel bazlı NobetTercihi haritası döner. {pid: tercih}"""
         try:
@@ -763,11 +1002,20 @@ class NobetService:
             return SonucYonetici.hata(e, "NobetService.fazla_mesai_getir")
 
     def _tatil_listesi_getir(self, yil: int, ay: int,
-                             idari_dahil: bool = True) -> list[str]:
+                             idari_dahil: bool = True,
+                             sadece_dini: bool = False) -> list[str]:
         """
         Tatiller tablosundan o aya ait tatil tarihlerini döner.
-        idari_dahil=True  → Resmi + Idari (mesai/iş günü hesabı için)
-        idari_dahil=False → sadece Resmi (nöbet atama için)
+
+        TatilTuru değerleri:
+          Resmi      → Devlet tatili (iş günü hesabına girer)
+          Idari      → Kurum izni (iş günü hesabına girer)
+          DiniBayram → Dini bayram (iş günü hesabına girer AMA
+                       otomatik nöbet ataması yapılmaz)
+
+        idari_dahil=True  → Resmi + Idari + DiniBayram
+        idari_dahil=False → sadece Resmi + DiniBayram
+        sadece_dini=True  → sadece DiniBayram
         """
         try:
             rows   = self._r.get("Tatiller").get_all() or []
@@ -779,8 +1027,13 @@ class NobetService:
                 turu = str(r.get("TatilTuru", "Resmi")).strip()
                 if not (ay_bas <= t <= ay_bit):
                     continue
-                if turu == "Resmi":
+                if sadece_dini:
+                    if turu == "DiniBayram":
+                        result.append(t)
+                elif turu == "Resmi":
                     result.append(t)
+                elif turu == "DiniBayram":
+                    result.append(t)   # iş günü hesabında düşülür
                 elif turu == "Idari" and idari_dahil:
                     result.append(t)
             return result

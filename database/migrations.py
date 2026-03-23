@@ -12,7 +12,7 @@ class MigrationManager:
     v1: Tüm tablolar — güncel şema (temiz kurulum)
     """
 
-    CURRENT_VERSION = 7
+    CURRENT_VERSION = 8
 
     def __init__(self, db_path):
         self.db_path = db_path
@@ -411,6 +411,47 @@ class MigrationManager:
         finally:
             conn.close()
 
+    def _migrate_to_v8(self):
+        """v8: Nobet_BirimAyar + Nobet_Vardiya.VardiyaRolu."""
+        conn = self.connect()
+        cur  = conn.cursor()
+        try:
+            tablolar = self._tablo_listesi(cur)
+            if "Nobet_BirimAyar" not in tablolar:
+                cur.execute("""
+                CREATE TABLE IF NOT EXISTS Nobet_BirimAyar (
+                    AyarID           TEXT PRIMARY KEY,
+                    BirimAdi         TEXT NOT NULL UNIQUE,
+                    -- max saat/slot (None → vardiyalar toplamından hesaplanır)
+                    GunlukSlotSaat   REAL,
+                    SlotBasiPersonel INTEGER NOT NULL DEFAULT 4,
+                    -- tam_gun | sadece_gunduz | uzatilmis_gunduz | karma
+                    CalismaModu      TEXT NOT NULL DEFAULT 'tam_gun',
+                    -- True ise hedef saat dolunca slot otomatik bölünür
+                    OtomatikBolunme  INTEGER NOT NULL DEFAULT 1,
+                    Aciklama         TEXT,
+                    sync_status      TEXT DEFAULT 'clean',
+                    updated_at       TEXT
+                )""")
+            # Nobet_Vardiya.VardiyaRolu — ana | yardimci
+            if "Nobet_Vardiya" in tablolar:
+                cur.execute("PRAGMA table_info(Nobet_Vardiya)")
+                mevcut = {r[1] for r in cur.fetchall()}
+                if "VardiyaRolu" not in mevcut:
+                    cur.execute(
+                        "ALTER TABLE Nobet_Vardiya "
+                        "ADD COLUMN VardiyaRolu TEXT DEFAULT 'ana'"
+                    )
+                    # MinPersonel=0 olan mevcut vardiyaları yardimci yap
+                    cur.execute(
+                        "UPDATE Nobet_Vardiya SET VardiyaRolu='yardimci' "
+                        "WHERE MinPersonel = 0"
+                    )
+            conn.commit()
+            logger.info("v8: Nobet_BirimAyar + VardiyaRolu eklendi")
+        finally:
+            conn.close()
+
     def create_tables(self, cur):
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Personel (
@@ -641,6 +682,8 @@ class MigrationManager:
         CREATE TABLE IF NOT EXISTS Tatiller (
             Tarih       TEXT PRIMARY KEY,
             ResmiTatil  TEXT,
+            -- Resmi: devlet tatili | Idari: kurum izni | DiniBayram: dini bayram
+            -- DiniBayram: iş günü hesabında düşülür AMA otomatik nöbet ataması yapılmaz
             TatilTuru   TEXT DEFAULT 'Resmi',
             sync_status TEXT DEFAULT 'clean',
             updated_at  TEXT
@@ -925,6 +968,9 @@ class MigrationManager:
             BitSaat         TEXT NOT NULL,
             SaatSuresi      REAL NOT NULL,
             MinPersonel     INTEGER NOT NULL DEFAULT 1,
+            -- ana: algoritma slot doldururken kullanır
+            -- yardimci: sadece manuel veya slot bölününce eklenir (MinPersonel=0)
+            VardiyaRolu     TEXT NOT NULL DEFAULT 'ana',
             Aktif           INTEGER NOT NULL DEFAULT 1,
             sync_status     TEXT DEFAULT 'clean',
             updated_at      TEXT
@@ -970,6 +1016,23 @@ class MigrationManager:
         cur.execute("CREATE INDEX IF NOT EXISTS idx_nobet_plan_tarih    ON Nobet_Plan(NobetTarihi)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_nobet_plan_personel ON Nobet_Plan(PersonelID)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_nobet_plan_birim    ON Nobet_Plan(BirimAdi)")
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Nobet_BirimAyar (
+            AyarID           TEXT PRIMARY KEY,
+            BirimAdi         TEXT NOT NULL UNIQUE,
+            -- None → vardiya SaatSuresi toplamından otomatik hesaplanır
+            GunlukSlotSaat   REAL,
+            SlotBasiPersonel INTEGER NOT NULL DEFAULT 4,
+            -- tam_gun | sadece_gunduz | uzatilmis_gunduz | karma
+            CalismaModu      TEXT NOT NULL DEFAULT 'tam_gun',
+            -- 1: hedef dolunca slot otomatik bölünür  0: bölünmez (uyarı verilir)
+            OtomatikBolunme  INTEGER NOT NULL DEFAULT 1,
+            Aciklama         TEXT,
+            sync_status      TEXT DEFAULT 'clean',
+            updated_at       TEXT
+        )
+        """)
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS Nobet_MesaiHedef (

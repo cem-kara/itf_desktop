@@ -329,13 +329,10 @@ TABLES = {
     "Nobet_Vardiya": {
         "pk": "VardiyaID",
         "columns": [
-            "VardiyaID",
-            "BirimAdi",   # Sabitler.MenuEleman (Kod=Birim) ile eşleşir
-            "VardiyaAdi",
-            "BasSaat",
-            "BitSaat",
-            "SaatSuresi",
+            "VardiyaID", "BirimAdi", "VardiyaAdi",
+            "BasSaat", "BitSaat", "SaatSuresi",
             "MinPersonel",
+            "VardiyaRolu",  # ana | yardimci
             "Aktif",
         ],
     },
@@ -384,6 +381,18 @@ TABLES = {
             "ToplamFazla",   # FazlaMesaiSaat + DevirSaat
             "OdenenSaat",    # 7'nin katı — ödenir, sıfırlanır
             "DevireGiden",   # ToplamFazla % 7 — sonraki aya devir
+        ],
+    },
+
+    "Nobet_BirimAyar": {
+        "pk": "AyarID",
+        "columns": [
+            "AyarID", "BirimAdi",
+            "GunlukSlotSaat",    # None → Σ ana vardiya SaatSuresi
+            "SlotBasiPersonel",  # günde kaç pozisyon (slot sayısı)
+            "CalismaModu",       # tam_gun|sadece_gunduz|uzatilmis_gunduz|karma
+            "OtomatikBolunme",   # 1: hedef dolunca slot otomatik bölünür
+            "Aciklama",
         ],
     },
 

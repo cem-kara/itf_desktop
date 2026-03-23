@@ -226,6 +226,7 @@ class NobetOzetPage(QWidget):
         for i in range(1, 7):
             hdr.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
         self.tbl_hedef.doubleClicked.connect(self._on_hedef_tablo_tiklandi)
+        self.tbl_hedef.clicked.connect(self._on_hedef_tablo_tiklandi)
         vl.addWidget(self.tbl_hedef, 1)
         return w
 
@@ -304,11 +305,14 @@ class NobetOzetPage(QWidget):
 
         # Nöbet tercihi
         self.cmb_nobet_tercihi = QComboBox()
-        self.cmb_nobet_tercihi.addItem("Zorunlu (algoritma atar)",     userData="zorunlu")
-        self.cmb_nobet_tercihi.addItem("Gönüllü dışı (acil hariç)",   userData="gonullu_disi")
-        self.cmb_nobet_tercihi.addItem("Nöbet yok (hiç atanmaz)",      userData="nobet_yok")
+        self.cmb_nobet_tercihi.addItem("Zorunlu (algoritma atar)",          userData="zorunlu")
+        self.cmb_nobet_tercihi.addItem("Fazla Mesai Gönüllüsü (boşluk doldurur)", userData="fazla_mesai_gonullu")
+        self.cmb_nobet_tercihi.addItem("Gönüllü dışı (acil hariç)",         userData="gonullu_disi")
+        self.cmb_nobet_tercihi.addItem("Nöbet yok (hiç atanmaz)",           userData="nobet_yok")
         self.cmb_nobet_tercihi.setToolTip(
             "Zorunlu: Algoritma bu kişiyi normale atar.\n"
+            "Fazla Mesai Gönüllüsü: Zorunlu personel dolduramadığında\n"
+            "  bu kişi boş slotlara otomatik yazılır.\n"
             "Gönüllü dışı: Algoritma atlamaz, acil/hastalık\n"
             "  durumunda 'Fazla Mesai' olarak manuel eklenebilir.\n"
             "Nöbet yok: Hiçbir şekilde atanamaz."
@@ -382,6 +386,9 @@ class NobetOzetPage(QWidget):
     # ─── Animasyon ───────────────────────────────────────
 
     def _panel_ac(self):
+        # Önce direkt aç (animasyon başlamadan görünür olsun)
+        self._hedef_panel.setMinimumWidth(_PANEL_W)
+        self._hedef_panel.setMaximumWidth(_PANEL_W)
         self._animate(_PANEL_W)
 
     def _panel_kapat(self):
@@ -389,10 +396,13 @@ class NobetOzetPage(QWidget):
         self._secili_pid = None
 
     def _animate(self, hedef: int):
+        # Önceki animasyonları durdur ama listeyi hemen silme
+        for a in self._anim:
+            a.stop()
         self._anim.clear()
-        cur = self._hedef_panel.width()
+        cur = self._hedef_panel.maximumWidth()
         for prop in (b"minimumWidth", b"maximumWidth"):
-            a = QPropertyAnimation(self._hedef_panel, prop)
+            a = QPropertyAnimation(self._hedef_panel, prop, self)
             a.setDuration(220)
             a.setStartValue(cur)
             a.setEndValue(hedef)
@@ -634,6 +644,8 @@ class NobetOzetPage(QWidget):
                 devir    = float(fazla_r.get("DevirSaat", 0.0))
                 odenen   = float(fazla_r.get("OdenenSaat", 0.0))
                 devire_g = float(fazla_r.get("DevireGiden", 0.0))
+
+                ri = self.tbl_hedef.rowCount()
                 self.tbl_hedef.insertRow(ri)
 
                 def _renk_fazla(v):
@@ -643,11 +655,13 @@ class NobetOzetPage(QWidget):
 
                 tercih       = str(hedef_r.get("NobetTercihi", "zorunlu"))
                 tercih_etiket = {
+                    "fazla_mesai_gonullu": " ✦ FM Gönüllüsü",
                     "gonullu_disi": " ⚠ Gönüllü Dışı",
                     "nobet_yok":    " ✘ Nöbet Yok",
                 }
                 tercih_txt  = tercih_etiket.get(tercih, "")
-                tercih_renk = (QColor("#e8a030") if tercih == "gonullu_disi"
+                tercih_renk = (QColor("#2ec98e") if tercih == "fazla_mesai_gonullu"
+                               else QColor("#e8a030") if tercih == "gonullu_disi"
                                else QColor("#e85555") if tercih == "nobet_yok"
                                else None)
 
