@@ -50,10 +50,10 @@ env/
 *.sublime-workspace
 
 # ─── Veritabanı & Cache ─────────────────────────────────────────────
-#*.db
+*.db
 *.sqlite
 *.sqlite3
-#database/*.db
+database/*.db
 database/*.sqlite
 database/*.sqlite3
 *.cache
