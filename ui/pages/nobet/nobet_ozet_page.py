@@ -433,7 +433,11 @@ class NobetOzetPage(QWidget):
             self.cmb_birim.clear()
             self.cmb_birim.addItem("Tüm Birimler", userData=None)
             for b in (sonuc.veri or []):
-                self.cmb_birim.addItem(b, userData=b)
+                if isinstance(b, dict):
+                    adi = b.get("BirimAdi", "")
+                else:
+                    adi = str(b)
+                self.cmb_birim.addItem(adi, userData=adi)
             for i in range(self.cmb_birim.count()):
                 if self.cmb_birim.itemData(i) == cur:
                     self.cmb_birim.setCurrentIndex(i)
@@ -460,7 +464,7 @@ class NobetOzetPage(QWidget):
 
     def _yukle_nobet_ozeti(self, svc, birim_filtre):
         try:
-            from core.services.nobet_service import GUNLUK_HEDEF_SAAT
+            GUNLUK_HEDEF_SAAT = 7.0  # 7 saat/gün
             sonuc = svc.personel_nobet_ozeti(self._yil, self._ay, birim_filtre)
             rows  = sonuc.veri or [] if sonuc.basarili else []
 
@@ -499,17 +503,15 @@ class NobetOzetPage(QWidget):
                 ad      = p_ad.get(pid) or str(r.get("AdSoyad", pid))
                 calisan = float(r.get("ToplamSaat", 0.0))
 
-                # Önce tablodaki kayıt, yoksa izin düşülmüş otomatik hesap
-                hedef_tab = hedef_map.get(pid)
-                if hedef_tab is not None:
-                    hedef = hedef_tab
-                else:
-                    try:
-                        h = svc._kisi_hedef_saat(pid, self._yil, self._ay,
-                                                  otomatik=True)
-                        hedef = h if h is not None else varsayilan_hedef
-                    except Exception:
-                        hedef = varsayilan_hedef
+                # Hedef: her zaman izin düşülmüş hesap kullan (otomatik=True)
+                # NB_PersonelTercih'teki kayıt izin sonrası güncellenmiş olmayabilir
+                try:
+                    h_otomatik = svc._kisi_hedef_saat(
+                        pid, self._yil, self._ay, otomatik=True)
+                    hedef = float(h_otomatik) if h_otomatik is not None \
+                            else varsayilan_hedef
+                except Exception:
+                    hedef = varsayilan_hedef
                 fazla   = calisan - hedef
                 sayi    = int(r.get("NobetSayisi", 0))
 
@@ -555,7 +557,7 @@ class NobetOzetPage(QWidget):
 
     def _yukle_mesai_hedef(self, svc, birim_filtre):
         try:
-            from core.services.nobet_service import GUNLUK_HEDEF_SAAT
+            GUNLUK_HEDEF_SAAT = 7.0  # 7 saat/gün
 
             # Personel özeti (çalışılan saat için)
             ozet_sonuc = svc.personel_nobet_ozeti(self._yil, self._ay, birim_filtre)
@@ -614,8 +616,11 @@ class NobetOzetPage(QWidget):
                 ozet_r  = ozet_map.get(pid, {})
 
                 h_tipi   = hedef_r.get("HedefTipi", "normal")
-                h_saat   = float(hedef_r.get("HedefSaat", varsayilan_hedef)) \
-                           if hedef_r else varsayilan_hedef
+                try:
+                    h_otm = svc._kisi_hedef_saat(pid, self._yil, self._ay, otomatik=True)
+                    h_saat = float(h_otm) if h_otm is not None else varsayilan_hedef
+                except Exception:
+                    h_saat = varsayilan_hedef
                 calisan  = float(ozet_r.get("ToplamSaat", 0.0))
                 bu_ay_f  = float(fazla_r.get("FazlaMesaiSaat", calisan - h_saat))
                 devir    = float(fazla_r.get("DevirSaat", 0.0))
@@ -630,15 +635,13 @@ class NobetOzetPage(QWidget):
                 ad       = p_ad.get(pid) or pid
 
                 h_tipi  = hedef_r.get("HedefTipi", "normal")
-                if hedef_r:
-                    h_saat = float(hedef_r.get("HedefSaat", varsayilan_hedef))
-                else:
-                    try:
-                        h = svc._kisi_hedef_saat(pid, self._yil, self._ay,
-                                                  otomatik=True)
-                        h_saat = h if h is not None else varsayilan_hedef
-                    except Exception:
-                        h_saat = varsayilan_hedef
+                try:
+                    h_otm2 = svc._kisi_hedef_saat(
+                        pid, self._yil, self._ay, otomatik=True)
+                    h_saat = float(h_otm2) if h_otm2 is not None \
+                             else varsayilan_hedef
+                except Exception:
+                    h_saat = varsayilan_hedef
                 calisan  = float(ozet_r.get("ToplamSaat", 0.0))
                 bu_ay_f  = float(fazla_r.get("FazlaMesaiSaat", calisan - h_saat))
                 devir    = float(fazla_r.get("DevirSaat", 0.0))
@@ -829,7 +832,7 @@ class NobetOzetPage(QWidget):
             from core.hesaplamalar import ay_is_gunu
             tatiller = svc._tatil_listesi_getir(self._yil, self._ay)
             is_gunu  = ay_is_gunu(self._yil, self._ay, tatil_listesi=tatiller)
-            from core.services.nobet_service import GUNLUK_HEDEF_SAAT
+            GUNLUK_HEDEF_SAAT = 7.0  # 7 saat/gün
             if tipi == "sua":
                 self.spn_hedef_saat.setValue(0.0)
             elif tipi == "normal":

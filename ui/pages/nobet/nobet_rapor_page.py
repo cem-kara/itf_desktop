@@ -510,7 +510,11 @@ class NobetRaporPage(QWidget):
             self.cmb_birim.clear()
             self.cmb_birim.addItem("Tüm Birimler", userData=None)
             for b in (sonuc.veri or []):
-                self.cmb_birim.addItem(b, userData=b)
+                if isinstance(b, dict):
+                    adi = b.get("BirimAdi", "")
+                else:
+                    adi = str(b)
+                self.cmb_birim.addItem(adi, userData=adi)
             for i in range(self.cmb_birim.count()):
                 if self.cmb_birim.itemData(i) == cur:
                     self.cmb_birim.setCurrentIndex(i)
@@ -563,7 +567,7 @@ class NobetRaporPage(QWidget):
                 uyari_goster(self, "Bu dönemde nöbet planı yok.")
                 return
 
-            v_rows = svc._r.get("Nobet_Vardiya").get_all() or []
+            v_rows = svc._r.get("NB_Vardiya").get_all() or []
             v_map  = {v["VardiyaID"]: v for v in v_rows}
             p_rows = svc._r.get("Personel").get_all() or []
             p_map  = {str(p["KimlikNo"]): p.get("AdSoyad","") for p in p_rows}
@@ -614,7 +618,7 @@ class NobetRaporPage(QWidget):
                 h = svc._kisi_hedef_saat(pid, yil, ay)
                 try:
                     from core.hesaplamalar import ay_is_gunu
-                    from core.services.nobet_service import GUNLUK_HEDEF_SAAT
+                    GUNLUK_HEDEF_SAAT = 7.0  # 7 saat/gün
                     tatiller = svc._tatil_listesi_getir(yil, ay)
                     h = h or ay_is_gunu(yil, ay, tatiller) * GUNLUK_HEDEF_SAAT
                 except Exception:

@@ -1,5 +1,5 @@
 """
-Ayarlar Sayfası â€” Sabitler, Tatiller, Tema ve Online/Offline YÖnetimi
+Ayarlar Sayfası — Sabitler, Tatiller, Tema ve Online/Offline Yönetimi
 
 Özellikler:
 - Sabitler tarafından veri eklemek, düzenlemek, silmek
@@ -41,6 +41,8 @@ from ui.components.formatted_widgets import (
     apply_title_case_formatting,
     apply_combo_title_case_formatting,
 )
+from ui.styles.colors import DarkTheme, get_current_theme
+from ui.styles.components import STYLES, refresh_styles
 from ui.styles.icons import Icons, IconRenderer
 
 
@@ -53,6 +55,8 @@ class SabitEditDialog(QDialog):
         self.setModal(True)
         self.setMinimumWidth(400)
         self.setProperty("bg-role", "page")
+        self.style().unpolish(self)
+        self.style().polish(self)
         
         layout = QVBoxLayout(self)
         
@@ -60,22 +64,26 @@ class SabitEditDialog(QDialog):
         lbl_kod = QLabel("Kod:")
         lbl_kod.setProperty("color-role", "primary")
         lbl_kod.setStyleSheet("font-weight: 500;")
+        lbl_kod.style().unpolish(lbl_kod)
+        lbl_kod.style().polish(lbl_kod)
         layout.addWidget(lbl_kod)
         self._txt_kod = QLineEdit()
-        # setStyleSheet kaldırıldı: input_field â€” global QSS kuralı geçerli
+        # setStyleSheet kaldırıldı: input_field — global QSS kuralı geçerli
         self._txt_kod.setText(kod)
-        self._txt_kod.setPlaceholderText("Ã–rn: PARAM_001")
+        self._txt_kod.setPlaceholderText("Örn: PARAM_001")
         layout.addWidget(self._txt_kod)
         
         # Menü Elemanı
         lbl_menu = QLabel("Menü Elemanı (Seçenek):")
         lbl_menu.setProperty("color-role", "primary")
         lbl_menu.setStyleSheet("font-weight: 500;")
+        lbl_menu.style().unpolish(lbl_menu)
+        lbl_menu.style().polish(lbl_menu)
         layout.addWidget(lbl_menu)
         self._txt_menu_eleman = QLineEdit()
-        # setStyleSheet kaldırıldı: input_field â€” global QSS kuralı geçerli
+        # setStyleSheet kaldırıldı: input_field — global QSS kuralı geçerli
         self._txt_menu_eleman.setText(menu_eleman)
-        self._txt_menu_eleman.setPlaceholderText("Ã–rn: Tıp, Mühendislik, Fen Bilgisi")
+        self._txt_menu_eleman.setPlaceholderText("Örn: Tıp, Mühendislik, Fen Bilgisi")
         apply_title_case_formatting(self._txt_menu_eleman)
         layout.addWidget(self._txt_menu_eleman)
         
@@ -83,9 +91,11 @@ class SabitEditDialog(QDialog):
         lbl_aciklama = QLabel("Açıklama:")
         lbl_aciklama.setProperty("color-role", "primary")
         lbl_aciklama.setStyleSheet("font-weight: 500;")
+        lbl_aciklama.style().unpolish(lbl_aciklama)
+        lbl_aciklama.style().polish(lbl_aciklama)
         layout.addWidget(lbl_aciklama)
         self._txt_aciklama = QLineEdit()
-        # setStyleSheet kaldırıldı: input_field â€” global QSS kuralı geçerli
+        # setStyleSheet kaldırıldı: input_field — global QSS kuralı geçerli
         self._txt_aciklama.setText(aciklama)
         self._txt_aciklama.setPlaceholderText("Seçeneğin açıklaması (opsiyonel)")
         layout.addWidget(self._txt_aciklama)
@@ -94,10 +104,14 @@ class SabitEditDialog(QDialog):
         btn_layout = QHBoxLayout()
         btn_ok = QPushButton("Tamam")
         btn_ok.setProperty("style-role", "action")
+        btn_ok.style().unpolish(btn_ok)
+        btn_ok.style().polish(btn_ok)
         IconRenderer.set_button_icon(btn_ok, "check", size=14)
         btn_ok.clicked.connect(self._on_accept)
-        btn_cancel = QPushButton("Ä°ptal")
+        btn_cancel = QPushButton("İptal")
         btn_cancel.setProperty("style-role", "secondary")
+        btn_cancel.style().unpolish(btn_cancel)
+        btn_cancel.style().polish(btn_cancel)
         IconRenderer.set_button_icon(btn_cancel, "x", size=14)
         btn_cancel.clicked.connect(self.reject)
         btn_layout.addWidget(btn_ok)
@@ -110,7 +124,7 @@ class SabitEditDialog(QDialog):
             self.accept()
     
     def get_data(self) -> tuple[str, str, str]:
-        """Giriş verilerini dÖndür"""
+        """Giriş verilerini döndür"""
         return (
             self._txt_kod.text().strip(),
             self._txt_menu_eleman.text().strip(),
@@ -118,7 +132,7 @@ class SabitEditDialog(QDialog):
         )
     
     def validate(self) -> bool:
-        """Form doğrulaması â€” Rehber BÖlüm 8.5.4"""
+        """Form doğrulaması — Rehber Bölüm 8.5.4"""
         kod = self._txt_kod.text().strip()
         menu_eleman = self._txt_menu_eleman.text().strip()
         
@@ -149,7 +163,7 @@ class TatilEditDialog(QDialog):
         self.setWindowTitle("Tatil Düzenleme")
         self.setModal(True)
         self.setMinimumWidth(400)
-        self.setProperty("bg-role", "page")
+        self.setProperty("bg-role", "page"); self.style().unpolish(self); self.style().polish(self)
         
         layout = QVBoxLayout(self)
         
@@ -157,27 +171,31 @@ class TatilEditDialog(QDialog):
         lbl_tarih = QLabel("Tarih:")
         lbl_tarih.setProperty("color-role", "primary")
         lbl_tarih.setStyleSheet("font-weight: 500;")
+        lbl_tarih.style().unpolish(lbl_tarih)
+        lbl_tarih.style().polish(lbl_tarih)
         layout.addWidget(lbl_tarih)
         self._date_edit = QDateEdit()
         self._date_edit.setCalendarPopup(True)
         self._date_edit.setDate(QDate.fromString(tarih, "yyyy-MM-dd") if tarih else QDate.currentDate())
         self._date_edit.setDateRange(QDate(2020, 1, 1), QDate(2050, 12, 31))
-        # setStyleSheet kaldırıldı: input_date â€” global QSS kuralı geçerli
+        # setStyleSheet kaldırıldı: input_date — global QSS kuralı geçerli
         layout.addWidget(self._date_edit)
         
         # Tatil Adı
         lbl_tatil_adi = QLabel("Tatil Adı:")
         lbl_tatil_adi.setProperty("color-role", "primary")
         lbl_tatil_adi.setStyleSheet("font-weight: 500;")
+        lbl_tatil_adi.style().unpolish(lbl_tatil_adi)
+        lbl_tatil_adi.style().polish(lbl_tatil_adi)
         layout.addWidget(lbl_tatil_adi)
         self._cmb_resmi_tatil = QComboBox()
         self._cmb_resmi_tatil.setEditable(True)
         self._cmb_resmi_tatil.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
-        # setStyleSheet kaldırıldı: input_combo â€” global QSS kuralı geçerli
+        # setStyleSheet kaldırıldı: input_combo — global QSS kuralı geçerli
         # Placeholder text ayarla
         line_edit = self._cmb_resmi_tatil.lineEdit()
         if line_edit:
-            line_edit.setPlaceholderText("Ã–rn: Yeni Yıl")
+            line_edit.setPlaceholderText("Örn: Yeni Yıl")
 
         unique_adlar = sorted({(ad or "").strip() for ad in (tatil_adlari or []) if (ad or "").strip()})
         self._cmb_resmi_tatil.addItems(unique_adlar)
@@ -193,10 +211,14 @@ class TatilEditDialog(QDialog):
         btn_layout = QHBoxLayout()
         btn_ok = QPushButton("Tamam")
         btn_ok.setProperty("style-role", "action")
+        btn_ok.style().unpolish(btn_ok)
+        btn_ok.style().polish(btn_ok)
         IconRenderer.set_button_icon(btn_ok, "check", size=14)
         btn_ok.clicked.connect(self._on_accept)
-        btn_cancel = QPushButton("Ä°ptal")
+        btn_cancel = QPushButton("İptal")
         btn_cancel.setProperty("style-role", "secondary")
+        btn_cancel.style().unpolish(btn_cancel)
+        btn_cancel.style().polish(btn_cancel)
         IconRenderer.set_button_icon(btn_cancel, "x", size=14)
         btn_cancel.clicked.connect(self.reject)
         btn_layout.addWidget(btn_ok)
@@ -209,14 +231,14 @@ class TatilEditDialog(QDialog):
             self.accept()
     
     def get_data(self) -> tuple[str, str]:
-        """Giriş verilerini dÖndür"""
+        """Giriş verilerini döndür"""
         return (
             self._date_edit.date().toString("yyyy-MM-dd"),
             self._cmb_resmi_tatil.currentText().strip()
         )
     
     def validate(self) -> bool:
-        """Form doğrulaması â€” Rehber BÖlüm 8.5.4"""
+        """Form doğrulaması — Rehber Bölüm 8.5.4"""
         resmi_tatil = self._cmb_resmi_tatil.currentText().strip()
         
         if not validate_not_empty(resmi_tatil):
@@ -228,21 +250,21 @@ class TatilEditDialog(QDialog):
 
 
 class SettingsPage(QWidget):
-    """Ayarlar sayfası â€” Rehber BÖlüm 1.3 uyumlu"""
+    """Ayarlar sayfası — Rehber Bölüm 1.3 uyumlu"""
     
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
         self._db = db
         
-        # Service bağlantısı â€” di.py kullan (Rehber BÖlüm 1.3)
+        # Service bağlantısı — di.py kullan (Rehber Bölüm 1.3)
         if db:
             from core.di import get_registry
             from database.repository_registry import RepositoryRegistry
             # SettingsService henüz registry kullanmıyor, direkt SQLiteManager kullanıyor
             # Bu yüzden şimdilik direkt instance oluşturuyoruz
-            self._service = SettingsService(self._db)
+            self._service = SettingsService()
         else:
-            self._service = SettingsService(self._db)
+            self._service = SettingsService()
         
         self._setup_ui()
         self._load_data()
@@ -254,12 +276,36 @@ class SettingsPage(QWidget):
         
         # Ana sayfa background
         self.setProperty("bg-role", "page")
+        self.style().unpolish(self)
+        self.style().polish(self)
         
         # Tab widget
         tabs = QTabWidget()
-        # QTabWidget için setStyleSheet kullanımı kaldırıldı, tema QSS'den gelir
+        tabs.setStyleSheet("""
+            QTabWidget::pane {{
+                border: 1px solid {};
+                background-color: {};
+            }}
+            QTabBar::tab {{
+                background-color: {};
+                color: {};
+                padding: 8px 20px;
+                border: 1px solid {};
+                border-bottom: none;
+            }}
+            QTabBar::tab:selected {{
+                background-color: {};
+                color: {};
+                border-bottom: 1px solid {};
+            }}
+        """.format(
+            DarkTheme.BORDER_PRIMARY, DarkTheme.BG_PRIMARY,
+            DarkTheme.BG_SECONDARY, DarkTheme.TEXT_SECONDARY,
+            DarkTheme.BORDER_PRIMARY, DarkTheme.BG_PRIMARY,
+            DarkTheme.TEXT_PRIMARY, DarkTheme.BG_PRIMARY
+        ))
         
-        # ======== SABÄ°TLER TAB ========
+        # ======== SABİTLER TAB ========
         sabitler_widget = QWidget()
         sabitler_layout = QVBoxLayout(sabitler_widget)
         
@@ -271,15 +317,19 @@ class SettingsPage(QWidget):
         lbl_ana_kat = QLabel("Ana Kategoriler (Kod):")
         lbl_ana_kat.setProperty("color-role", "primary")
         lbl_ana_kat.setStyleSheet("font-weight: 600;")
+        lbl_ana_kat.style().unpolish(lbl_ana_kat)
+        lbl_ana_kat.style().polish(lbl_ana_kat)
         left_panel.addWidget(lbl_ana_kat)
         self._list_kod = QListWidget()
-        # setStyleSheet kaldırıldı: table â€” global QSS
+        # setStyleSheet kaldırıldı: table — global QSS
         self._list_kod.itemSelectionChanged.connect(self._on_kod_selected)
         left_panel.addWidget(self._list_kod)
         
         # Yeni Kategori butonu
         btn_new_kod = QPushButton("Yeni Kategori")
         btn_new_kod.setProperty("style-role", "secondary")
+        btn_new_kod.style().unpolish(btn_new_kod)
+        btn_new_kod.style().polish(btn_new_kod)
         IconRenderer.set_button_icon(btn_new_kod, "plus", size=14)
         btn_new_kod.clicked.connect(self._add_kod)
         left_panel.addWidget(btn_new_kod)
@@ -287,11 +337,13 @@ class SettingsPage(QWidget):
         left_widget = QWidget()
         left_widget.setLayout(left_panel)
         
-        # SAÄ: MenuEleman Tablosu
+        # SAĞ: MenuEleman Tablosu
         right_panel = QVBoxLayout()
         lbl_secenekler = QLabel("Seçenekler (MenuEleman) ve Açıklamalar:")
         lbl_secenekler.setProperty("color-role", "primary")
         lbl_secenekler.setStyleSheet("font-weight: 600;")
+        lbl_secenekler.style().unpolish(lbl_secenekler)
+        lbl_secenekler.style().polish(lbl_secenekler)
         right_panel.addWidget(lbl_secenekler)
         
         self._table_menu_elemanlari = QTableWidget()
@@ -302,21 +354,27 @@ class SettingsPage(QWidget):
         self._table_menu_elemanlari.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self._table_menu_elemanlari.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
         self._table_menu_elemanlari.setAlternatingRowColors(True)
-        # setStyleSheet kaldırıldı: table â€” global QSS kuralı geçerli
+        # setStyleSheet kaldırıldı: table — global QSS kuralı geçerli
         right_panel.addWidget(self._table_menu_elemanlari)
         
         # Butonlar (MenuEleman işlemleri)
         btn_layout = QHBoxLayout()
         btn_add = QPushButton("Yeni Seçenek")
         btn_add.setProperty("style-role", "secondary")
+        btn_add.style().unpolish(btn_add)
+        btn_add.style().polish(btn_add)
         IconRenderer.set_button_icon(btn_add, "plus", size=14)
         btn_add.clicked.connect(self._add_menu_eleman)
         btn_edit = QPushButton("Düzenle")
         btn_edit.setProperty("style-role", "secondary")
+        btn_edit.style().unpolish(btn_edit)
+        btn_edit.style().polish(btn_edit)
         IconRenderer.set_button_icon(btn_edit, "edit", size=14)
         btn_edit.clicked.connect(self._edit_menu_eleman)
         btn_delete = QPushButton("Sil")
         btn_delete.setProperty("style-role", "secondary")
+        btn_delete.style().unpolish(btn_delete)
+        btn_delete.style().polish(btn_delete)
         IconRenderer.set_button_icon(btn_delete, "trash", size=14)
         btn_delete.clicked.connect(self._delete_menu_eleman)
         
@@ -329,9 +387,9 @@ class SettingsPage(QWidget):
         right_widget = QWidget()
         right_widget.setLayout(right_panel)
         
-        # Splitter ile sol-sağ bÖlme
+        # Splitter ile sol-sağ bölme
         splitter = QSplitter(Qt.Orientation.Horizontal)
-        # setStyleSheet kaldırıldı: splitter â€” global QSS kuralı geçerli
+        # setStyleSheet kaldırıldı: splitter — global QSS kuralı geçerli
         splitter.addWidget(left_widget)
         splitter.addWidget(right_widget)
         splitter.setSizes([300, 500])
@@ -344,7 +402,7 @@ class SettingsPage(QWidget):
         tabs.addTab(sabitler_widget, "Sabitler")
         tabs.setTabIcon(0, Icons.get("settings_sliders"))
         
-        # ======== TATÄ°LLER TAB ========
+        # ======== TATİLLER TAB ========
         tatiller_widget = QWidget()
         tatiller_layout = QVBoxLayout(tatiller_widget)
 
@@ -353,9 +411,11 @@ class SettingsPage(QWidget):
         lbl_yil = QLabel("Yıl:")
         lbl_yil.setProperty("color-role", "primary")
         lbl_yil.setStyleSheet("font-weight: 500;")
+        lbl_yil.style().unpolish(lbl_yil)
+        lbl_yil.style().polish(lbl_yil)
         filter_layout.addWidget(lbl_yil)
         self._cmb_tatil_yil = QComboBox()
-        # setStyleSheet kaldırıldı: input_combo â€” global QSS kuralı geçerli
+        # setStyleSheet kaldırıldı: input_combo — global QSS kuralı geçerli
         self._cmb_tatil_yil.currentIndexChanged.connect(self._load_tatiller)
         filter_layout.addWidget(self._cmb_tatil_yil)
         filter_layout.addStretch()
@@ -369,21 +429,27 @@ class SettingsPage(QWidget):
         self._table_tatiller.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self._table_tatiller.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
         self._table_tatiller.setAlternatingRowColors(True)
-        # setStyleSheet kaldırıldı: table â€” global QSS kuralı geçerli
+        # setStyleSheet kaldırıldı: table — global QSS kuralı geçerli
         tatiller_layout.addWidget(self._table_tatiller)
         
         # Butonlar
         btn_layout = QHBoxLayout()
         btn_add = QPushButton("Yeni Tatil")
         btn_add.setProperty("style-role", "secondary")
+        btn_add.style().unpolish(btn_add)
+        btn_add.style().polish(btn_add)
         IconRenderer.set_button_icon(btn_add, "plus", size=14)
         btn_add.clicked.connect(self._add_tatil)
         btn_edit = QPushButton("Düzenle")
         btn_edit.setProperty("style-role", "secondary")
+        btn_edit.style().unpolish(btn_edit)
+        btn_edit.style().polish(btn_edit)
         IconRenderer.set_button_icon(btn_edit, "edit", size=14)
         btn_edit.clicked.connect(self._edit_tatil)
         btn_delete = QPushButton("Sil")
         btn_delete.setProperty("style-role", "secondary")
+        btn_delete.style().unpolish(btn_delete)
+        btn_delete.style().polish(btn_delete)
         IconRenderer.set_button_icon(btn_delete, "trash", size=14)
         btn_delete.clicked.connect(self._delete_tatil)
         
@@ -403,11 +469,15 @@ class SettingsPage(QWidget):
         lbl_tema_baslik = QLabel("Tema Seçimi")
         lbl_tema_baslik.setProperty("color-role", "primary")
         lbl_tema_baslik.setStyleSheet("font-weight: 700; font-size: 14px;")
+        lbl_tema_baslik.style().unpolish(lbl_tema_baslik)
+        lbl_tema_baslik.style().polish(lbl_tema_baslik)
         tema_layout.addWidget(lbl_tema_baslik)
         
-        tema_info = QLabel("Uygulamanın gÖrünüş temasını seçin")
+        tema_info = QLabel("Uygulamanın görünüş temasını seçin")
         tema_info.setProperty("color-role", "secondary")
         tema_info.setStyleSheet("font-size: 12px;")
+        tema_info.style().unpolish(tema_info)
+        tema_info.style().polish(tema_info)
         tema_layout.addWidget(tema_info)
         
         tema_layout.addSpacing(20)
@@ -416,12 +486,16 @@ class SettingsPage(QWidget):
         self._radio_dark = QRadioButton("Koyu Tema (Dark)")
         self._radio_dark.setProperty("color-role", "primary")
         self._radio_dark.setStyleSheet("font-size: 12px;")
+        self._radio_dark.style().unpolish(self._radio_dark)
+        self._radio_dark.style().polish(self._radio_dark)
         self._radio_dark.setChecked(True)
         tema_layout.addWidget(self._radio_dark)
         
-        dark_desc = QLabel("Dimli, gÖz arkadaşı renkler")
+        dark_desc = QLabel("Dimli, göz arkadaşı renkler")
         dark_desc.setProperty("color-role", "secondary")
         dark_desc.setStyleSheet("font-size: 11px; margin-left: 25px;")
+        dark_desc.style().unpolish(dark_desc)
+        dark_desc.style().polish(dark_desc)
         tema_layout.addWidget(dark_desc)
         
         tema_layout.addSpacing(15)
@@ -430,11 +504,15 @@ class SettingsPage(QWidget):
         self._radio_light = QRadioButton("Açık Tema (Light)")
         self._radio_light.setProperty("color-role", "primary")
         self._radio_light.setStyleSheet("font-size: 12px;")
+        self._radio_light.style().unpolish(self._radio_light)
+        self._radio_light.style().polish(self._radio_light)
         tema_layout.addWidget(self._radio_light)
         
         light_desc = QLabel("Aydınlık, açık renkler")
         light_desc.setProperty("color-role", "secondary")
         light_desc.setStyleSheet("font-size: 11px; margin-left: 25px;")
+        light_desc.style().unpolish(light_desc)
+        light_desc.style().polish(light_desc)
         tema_layout.addWidget(light_desc)
         
         tema_layout.addSpacing(20)
@@ -442,6 +520,8 @@ class SettingsPage(QWidget):
         # Kaydet butonu
         btn_tema_kaydet = QPushButton("Tema Değişikliğini Uygula")
         btn_tema_kaydet.setProperty("style-role", "action")
+        btn_tema_kaydet.style().unpolish(btn_tema_kaydet)
+        btn_tema_kaydet.style().polish(btn_tema_kaydet)
         IconRenderer.set_button_icon(btn_tema_kaydet, "palette", size=14)
         btn_tema_kaydet.clicked.connect(self._apply_theme)
         tema_layout.addWidget(btn_tema_kaydet)
@@ -458,11 +538,15 @@ class SettingsPage(QWidget):
         lbl_sistem_baslik = QLabel("Sistem Durumu")
         lbl_sistem_baslik.setProperty("color-role", "primary")
         lbl_sistem_baslik.setStyleSheet("font-weight: 700; font-size: 14px;")
+        lbl_sistem_baslik.style().unpolish(lbl_sistem_baslik)
+        lbl_sistem_baslik.style().polish(lbl_sistem_baslik)
         sistem_layout.addWidget(lbl_sistem_baslik)
         
         durum_info = QLabel("Sistemin çalışma modunu belirleyin")
         durum_info.setProperty("color-role", "secondary")
         durum_info.setStyleSheet("font-size: 12px;")
+        durum_info.style().unpolish(durum_info)
+        durum_info.style().polish(durum_info)
         sistem_layout.addWidget(durum_info)
         
         sistem_layout.addSpacing(20)
@@ -471,13 +555,17 @@ class SettingsPage(QWidget):
         self._chk_online_mod = QCheckBox("Online Mod Etkin")
         self._chk_online_mod.setProperty("color-role", "primary")
         self._chk_online_mod.setStyleSheet("font-size: 12px; font-weight: 500;")
+        self._chk_online_mod.style().unpolish(self._chk_online_mod)
+        self._chk_online_mod.style().polish(self._chk_online_mod)
         self._chk_online_mod.setChecked(AppConfig.is_online_mode())
         self._chk_online_mod.stateChanged.connect(self._on_online_mode_changed)
         sistem_layout.addWidget(self._chk_online_mod)
         
-        online_desc = QLabel("âœ“ Online: Bulut senkronizasyonu, canlı veri\nâœ— Offline: Yerel veri, manuel senkronizasyon")
+        online_desc = QLabel("✓ Online: Bulut senkronizasyonu, canlı veri\n✗ Offline: Yerel veri, manuel senkronizasyon")
         online_desc.setProperty("color-role", "secondary")
         online_desc.setStyleSheet("font-size: 11px; margin-left: 25px;")
+        online_desc.style().unpolish(online_desc)
+        online_desc.style().polish(online_desc)
         sistem_layout.addWidget(online_desc)
         
         sistem_layout.addSpacing(20)
@@ -486,6 +574,8 @@ class SettingsPage(QWidget):
         self._chk_auto_sync = QCheckBox("Otomatik Senkronizasyon")
         self._chk_auto_sync.setProperty("color-role", "primary")
         self._chk_auto_sync.setStyleSheet("font-size: 12px; font-weight: 500;")
+        self._chk_auto_sync.style().unpolish(self._chk_auto_sync)
+        self._chk_auto_sync.style().polish(self._chk_auto_sync)
         self._chk_auto_sync.setChecked(AppConfig.get_auto_sync())
         self._chk_auto_sync.setEnabled(True)
         sistem_layout.addWidget(self._chk_auto_sync)
@@ -493,14 +583,18 @@ class SettingsPage(QWidget):
         sync_desc = QLabel("Değişiklikleri arka planda otomatik senkronize et")
         sync_desc.setProperty("color-role", "secondary")
         sync_desc.setStyleSheet("font-size: 11px; margin-left: 25px;")
+        sync_desc.style().unpolish(sync_desc)
+        sync_desc.style().polish(sync_desc)
         sistem_layout.addWidget(sync_desc)
         
         sistem_layout.addSpacing(20)
         
         # Senkronizasyon bilgisi
-        lbl_sync_info = QLabel("Son Senkronizasyon: Åimdi")
+        lbl_sync_info = QLabel("Son Senkronizasyon: Şimdi")
         lbl_sync_info.setProperty("color-role", "ok")
         lbl_sync_info.setStyleSheet("font-size: 11px; font-weight: 500;")
+        lbl_sync_info.style().unpolish(lbl_sync_info)
+        lbl_sync_info.style().polish(lbl_sync_info)
         sistem_layout.addWidget(lbl_sync_info)
         
         sistem_layout.addSpacing(20)
@@ -508,6 +602,8 @@ class SettingsPage(QWidget):
         # Kaydet butonu
         btn_sistem_kaydet = QPushButton("Sistem Ayarlarını Kaydet")
         btn_sistem_kaydet.setProperty("style-role", "action")
+        btn_sistem_kaydet.style().unpolish(btn_sistem_kaydet)
+        btn_sistem_kaydet.style().polish(btn_sistem_kaydet)
         IconRenderer.set_button_icon(btn_sistem_kaydet, "save", size=14)
         btn_sistem_kaydet.clicked.connect(self._save_system_settings)
         sistem_layout.addWidget(btn_sistem_kaydet)
@@ -517,15 +613,6 @@ class SettingsPage(QWidget):
         tabs.addTab(sistem_widget, "Online/Offline")
         tabs.setTabIcon(3, Icons.get("wifi"))
 
-        # ======== NÖBET BİRİMİ TAB ========
-        try:
-            from ui.pages.nobet.nobet_birim_page import NobetBirimPage
-            self._nobet_birim_page = NobetBirimPage(db=self._db, parent=self)
-            tabs.addTab(self._nobet_birim_page, "Nöbet Birimleri")
-        except Exception as e:
-            from core.logger import logger
-            logger.error(f"Nöbet Birimi sekmesi yüklenemedi: {e}")
-
         layout.addWidget(tabs)
     
     def _load_data(self):
@@ -534,9 +621,9 @@ class SettingsPage(QWidget):
         self._load_tatiller()
     
     def _load_sabitler(self):
-        """Sabitleri yükle â€” Sol tarafta unique Kod'lar listele"""
+        """Sabitleri yükle — Sol tarafta unique Kod'lar listele"""
         try:
-            sabitler = self._service.get_sabitler().veri or []
+            sabitler = self._service.get_sabitler()
             
             # Benzersiz Kod'ları bul
             unique_kodlar = {}
@@ -554,7 +641,7 @@ class SettingsPage(QWidget):
             
             logger.info(f"{len(unique_kodlar)} benzersiz kod yüklendi")
             
-            # Ä°lk Kod'u seç varsa
+            # İlk Kod'u seç varsa
             if self._list_kod.count() > 0:
                 self._list_kod.setCurrentRow(0)
             else:
@@ -585,23 +672,23 @@ class SettingsPage(QWidget):
                 return
             
             result = self._service.add_sabit(kod, menu_eleman, aciklama)
-            if result.basarili:
+            if result["success"]:
                 QMessageBox.information(self, "Başarılı", f"'{kod}' kategorisi oluşturuldu")
                 self._load_sabitler()
             else:
-                QMessageBox.critical(self, "Hata", result.mesaj)
+                QMessageBox.critical(self, "Hata", result["message"])
     
     def _load_menu_elemanlari(self, kod: str | None = None):
-        """Seçilen Kod'un MenuElemanlarını sağ tarafta gÖster"""
+        """Seçilen Kod'un MenuElemanlarını sağ tarafta göster"""
         try:
             self._table_menu_elemanlari.setRowCount(0)
             
             if not kod:
                 return
             
-            sabitler = self._service.get_sabitler().veri or []
+            sabitler = self._service.get_sabitler()
             
-            # Seçili Kod'a ait MenuElemanları gÖster
+            # Seçili Kod'a ait MenuElemanları göster
             for sabit in sabitler:
                 if sabit.get("Kod", "") == kod:
                     row = self._table_menu_elemanlari.rowCount()
@@ -625,7 +712,7 @@ class SettingsPage(QWidget):
     def _load_tatiller(self):
         """Tatilleri yükle"""
         try:
-            tatiller = self._service.get_tatiller().veri or []
+            tatiller = self._service.get_tatiller()
 
             # Yıl filtresi seçeneklerini güncelle
             selected_year = self._cmb_tatil_yil.currentData() if hasattr(self, "_cmb_tatil_yil") else None
@@ -677,9 +764,9 @@ class SettingsPage(QWidget):
             QMessageBox.critical(self, "Hata", f"Tatiller yüklenemedi:\n{str(e)}")
 
     def _get_unique_tatil_adlari(self) -> list[str]:
-        """Tatiller tablosundaki benzersiz tatil adlarını dÖndür."""
+        """Tatiller tablosundaki benzersiz tatil adlarını döndür."""
         try:
-            tatiller = self._service.get_tatiller().veri or []
+            tatiller = self._service.get_tatiller()
             return sorted(
                 {
                     (t.get("ResmiTatil", "") or "").strip()
@@ -706,11 +793,11 @@ class SettingsPage(QWidget):
                     return
                 
                 result = self._service.add_sabit(kod, menu_eleman, aciklama)
-                if result.basarili:
+                if result["success"]:
                     QMessageBox.information(self, "Başarılı", f"'{kod}' kategorisi oluşturuldu ve '{menu_eleman}' seçeneği eklendi")
                     self._load_sabitler()
                 else:
-                    QMessageBox.critical(self, "Hata", result.mesaj)
+                    QMessageBox.critical(self, "Hata", result["message"])
             return
         
         # Kod seçili ise, yeni MenuEleman ekle
@@ -720,6 +807,8 @@ class SettingsPage(QWidget):
         # Kod alanını devre dışı bırak (zaten seçili)
         dialog._txt_kod.setReadOnly(True)
         dialog._txt_kod.setProperty("bg-role", "input")
+        dialog._txt_kod.style().unpolish(dialog._txt_kod)
+        dialog._txt_kod.style().polish(dialog._txt_kod)
         
         if dialog.exec() == QDialog.DialogCode.Accepted:
             _, menu_eleman, aciklama = dialog.get_data()
@@ -729,11 +818,11 @@ class SettingsPage(QWidget):
                 return
             
             result = self._service.add_sabit(kod, menu_eleman, aciklama)
-            if result.basarili:
+            if result["success"]:
                 QMessageBox.information(self, "Başarılı", f"'{menu_eleman}' seçeneği eklendi")
                 self._on_kod_selected()  # Sağ tarafı yenile
             else:
-                QMessageBox.critical(self, "Hata", result.mesaj)
+                QMessageBox.critical(self, "Hata", result["message"])
     
     def _edit_menu_eleman(self):
         """Seçili MenuEleman'ı düzenle"""
@@ -756,6 +845,8 @@ class SettingsPage(QWidget):
         # Kod alanını devre dışı bırak
         dialog._txt_kod.setReadOnly(True)
         dialog._txt_kod.setProperty("bg-role", "input")
+        dialog._txt_kod.style().unpolish(dialog._txt_kod)
+        dialog._txt_kod.style().polish(dialog._txt_kod)
         
         if dialog.exec() == QDialog.DialogCode.Accepted:
             _, menu_eleman, aciklama = dialog.get_data()
@@ -765,11 +856,11 @@ class SettingsPage(QWidget):
                 return
             
             result = self._service.update_sabit(rowid, kod, menu_eleman, aciklama)
-            if result.basarili:
+            if result["success"]:
                 QMessageBox.information(self, "Başarılı", "Seçenek güncellendi")
                 self._on_kod_selected()  # Sağ tarafı yenile
             else:
-                QMessageBox.critical(self, "Hata", result.mesaj)
+                QMessageBox.critical(self, "Hata", result["message"])
     
     def _delete_menu_eleman(self):
         """Seçili MenuEleman'ı sil"""
@@ -797,11 +888,11 @@ class SettingsPage(QWidget):
         
         if reply == QMessageBox.StandardButton.Yes:
             result = self._service.delete_sabit(rowid)
-            if result.basarili:
+            if result["success"]:
                 QMessageBox.information(self, "Başarılı", "Seçenek silindi")
                 self._on_kod_selected()  # Sağ tarafı yenile
             else:
-                QMessageBox.critical(self, "Hata", result.mesaj)
+                QMessageBox.critical(self, "Hata", result["message"])
     
     def _add_tatil(self):
         """Yeni tatil ekle"""
@@ -817,11 +908,11 @@ class SettingsPage(QWidget):
                 return
             
             result = self._service.add_tatil(tarih, resmi_tatil)
-            if result.basarili:
-                QMessageBox.information(self, "Başarılı", result.mesaj)
+            if result["success"]:
+                QMessageBox.information(self, "Başarılı", result["message"])
                 self._load_tatiller()
             else:
-                QMessageBox.critical(self, "Hata", result.mesaj)
+                QMessageBox.critical(self, "Hata", result["message"])
     
     def _edit_tatil(self):
         """Tatili düzenle"""
@@ -858,11 +949,11 @@ class SettingsPage(QWidget):
             else:
                 result = self._service.update_tatil(tarih, resmi_tatil)
             
-            if result.basarili:
-                QMessageBox.information(self, "Başarılı", result.mesaj)
+            if result["success"]:
+                QMessageBox.information(self, "Başarılı", result["message"])
                 self._load_tatiller()
             else:
-                QMessageBox.critical(self, "Hata", result.mesaj)
+                QMessageBox.critical(self, "Hata", result["message"])
     
     def _delete_tatil(self):
         """Tatili sil"""
@@ -889,11 +980,11 @@ class SettingsPage(QWidget):
         
         if reply == QMessageBox.StandardButton.Yes:
             result = self._service.delete_tatil(tarih)
-            if result.basarili:
-                QMessageBox.information(self, "Başarılı", result.mesaj)
+            if result["success"]:
+                QMessageBox.information(self, "Başarılı", result["message"])
                 self._load_tatiller()
             else:
-                QMessageBox.critical(self, "Hata", result.mesaj)
+                QMessageBox.critical(self, "Hata", result["message"])
 
     def _apply_theme(self):
         """Tema değişikliğini uygula"""
@@ -910,10 +1001,10 @@ class SettingsPage(QWidget):
             
             logger.info(f"Tema değişimi başlatılıyor: {tema}")
             
-            # QApplication Örneğini al
+            # QApplication örneğini al
             app = QApplication.instance()
             if not app:
-                logger.error("QApplication Örneği bulunamadı")
+                logger.error("QApplication örneği bulunamadı")
                 QMessageBox.critical(self, "Hata", "Uygulama başlatılmamış")
                 return
             
@@ -924,6 +1015,8 @@ class SettingsPage(QWidget):
             logger.info(f"Tema değişimi sonucu: {success}")
             
             if success:
+                # STYLES cache'ini sıfırla (kalan STYLES kullanımları için)
+                refresh_styles()
                 logger.info(f"Tema başarıyla değiştirildi: {tema}")
                 QMessageBox.information(
                     self,
@@ -932,7 +1025,7 @@ class SettingsPage(QWidget):
                     f"Değişiklikler anında uygulanmıştır."
                 )
             else:
-                logger.error("ThemeManager.set_theme False dÖnüştü")
+                logger.error("ThemeManager.set_theme False dönüştü")
                 QMessageBox.critical(self, "Hata", "Tema değişikliği başarısız oldu")
                 
         except Exception as e:
@@ -944,18 +1037,67 @@ class SettingsPage(QWidget):
         Tema değişikliği sonrası bu sayfanın tüm inline stillerini yenile.
         ThemeManager, açık tüm sayfalarda bu metodu çağırmalıdır.
         """
+        C = DarkTheme
+        
         # Ana widget arkaplan
-        self.setProperty("bg-role", "page")
-        # Tab widget ve diğer stiller QSS'den gelir, inline stil gereksiz
-        # RadioButton ve Checkbox'lar için sadece setProperty yeterli
+        self.setProperty("bg-role", "page"); self.style().unpolish(self); self.style().polish(self)
+        
+        # Tab widget
+        tabs_widget = getattr(self, '_tabs', None)
+        if tabs_widget:
+            from typing import cast
+            tabs_cast = cast(QTabWidget, tabs_widget)
+            tabs_cast.setStyleSheet("""
+                QTabWidget::pane {{
+                    border: 1px solid {};
+                    background-color: {};
+                }}
+                QTabBar::tab {{
+                    background-color: {};
+                    color: {};
+                    padding: 8px 20px;
+                    border: 1px solid {};
+                    border-bottom: none;
+                }}
+                QTabBar::tab:selected {{
+                    background-color: {};
+                    color: {};
+                    border-bottom: 1px solid {};
+                }}
+            """.format(
+                C.BORDER_PRIMARY, C.BG_PRIMARY,
+                C.BG_SECONDARY, C.TEXT_SECONDARY,
+                C.BORDER_PRIMARY, C.BG_PRIMARY,
+                C.TEXT_PRIMARY, C.BG_PRIMARY
+            ))
+        
+        # RadioButton'lar
         if hasattr(self, '_radio_dark'):
             self._radio_dark.setProperty("color-role", "primary")
+            self._radio_dark.setStyleSheet("font-size: 12px;")
+            self._radio_dark.style().unpolish(self._radio_dark)
+            self._radio_dark.style().polish(self._radio_dark)
         if hasattr(self, '_radio_light'):
             self._radio_light.setProperty("color-role", "primary")
+            self._radio_light.setStyleSheet("font-size: 12px;")
+            self._radio_light.style().unpolish(self._radio_light)
+            self._radio_light.style().polish(self._radio_light)
+        
+        # Checkbox'lar
         if hasattr(self, '_chk_online_mod'):
             self._chk_online_mod.setProperty("color-role", "primary")
+            self._chk_online_mod.setStyleSheet("font-size: 12px; font-weight: 500;")
+            self._chk_online_mod.style().unpolish(self._chk_online_mod)
+            self._chk_online_mod.style().polish(self._chk_online_mod)
         if hasattr(self, '_chk_auto_sync'):
             self._chk_auto_sync.setProperty("color-role", "primary")
+            self._chk_auto_sync.setStyleSheet("font-size: 12px; font-weight: 500;")
+            self._chk_auto_sync.style().unpolish(self._chk_auto_sync)
+            self._chk_auto_sync.style().polish(self._chk_auto_sync)
+        
+        # Tablo ve liste stiller — global QSS kuralları geçerli, ek setStyleSheet gerekmez
+        pass
+        
         logger.debug("SettingsPage tema stilleri yenilendi")
     
     def _on_online_mode_changed(self):
@@ -967,7 +1109,7 @@ class SettingsPage(QWidget):
             self._chk_auto_sync.setChecked(False)
             logger.info("Offline moda geçildi, otomatik senkronizasyon devre dışı bırakıldı")
         else:
-            logger.info("Online moda geçildi, otomatik senkronizasyon etkin kılınması Önerilir")
+            logger.info("Online moda geçildi, otomatik senkronizasyon etkin kılınması önerilir")
     
     def _save_system_settings(self):
         """Sistem ayarlarını kaydet"""
@@ -1002,5 +1144,4 @@ class SettingsPage(QWidget):
         except Exception as e:
             logger.error(f"Sistem ayarları kaydetme hatası: {e}")
             QMessageBox.critical(self, "Hata", f"Ayarlar kaydedilemedi:\n{str(e)}")
-
 

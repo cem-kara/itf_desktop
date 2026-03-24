@@ -182,10 +182,9 @@ TABLES = {
 
     "Tatiller": {
         "pk": "Tarih",
-        "sync_mode": "pull_only",
+        "sync_mode": "pull_only",  # Read-only table
         "columns": [
-            "Tarih", "ResmiTatil",
-            "TatilTuru",   # Resmi | Idari
+            "Tarih","ResmiTatil"
         ],
         "date_fields": ["Tarih"],
         
@@ -324,77 +323,126 @@ TABLES = {
         "sync":False
     },
 
-    # ─────────────── NÖBET VT ───────────────
 
-    "Nobet_Vardiya": {
-        "pk": "VardiyaID",
+
+    # ═══════════════════════════════════════════════════
+    #  NÖBET MODÜLÜ — NB_ prefix (v2)
+    #  NOT: Personel.GorevYeri FHSZ kapsamında korunur.
+    # ═══════════════════════════════════════════════════
+
+    "NB_Birim": {
+        "pk": "BirimID",
         "columns": [
-            "VardiyaID", "BirimAdi", "VardiyaAdi",
-            "BasSaat", "BitSaat", "SaatSuresi",
-            "MinPersonel",
-            "VardiyaRolu",  # ana | yardimci
-            "Aktif",
+            "BirimID", "BirimKodu", "BirimAdi", "BirimTipi",
+            "UstBirimID", "Aktif", "Sira", "Aciklama",
+            "created_at", "updated_at", "created_by", "is_deleted",
         ],
+        "sync": False,
     },
 
-    "Nobet_Plan": {
-        "pk": "PlanID",
-        "columns": [
-            "PlanID",
-            "PersonelID",
-            "BirimAdi",   # Sabitler'den
-            "VardiyaID",
-            "NobetTarihi",
-            "NobetTuru",
-            "Durum",
-            "KayitTarihi",
-            "Notlar",
-        ],
-        "date_fields": ["NobetTarihi", "KayitTarihi"],
-    },
-
-    "Nobet_Onay": {
-        "pk": "OnayID",
-        "columns": [
-            "OnayID", "Yil", "Ay", "BirimAdi",
-            "Durum", "OnaylayanID", "OnayTarihi", "Notlar",
-        ],
-        "date_fields": ["OnayTarihi"],
-    },
-
-    "Nobet_MesaiHedef": {
-        "pk": "HedefID",
-        "columns": [
-            "HedefID", "PersonelID", "Yil", "Ay", "BirimAdi",
-            "HedefSaat", "HedefTipi", "Aciklama",
-            # zorunlu | gonullu_disi | nobet_yok
-            "NobetTercihi",
-        ],
-    },
-
-    "Nobet_FazlaMesai": {
-        "pk": "FazlaID",
-        "columns": [
-            "FazlaID", "PersonelID", "Yil", "Ay", "BirimAdi",
-            "CalisanSaat", "HedefSaat", "FazlaMesaiSaat",
-            "DevirSaat",     # önceki aydan gelen devir
-            "ToplamFazla",   # FazlaMesaiSaat + DevirSaat
-            "OdenenSaat",    # 7'nin katı — ödenir, sıfırlanır
-            "DevireGiden",   # ToplamFazla % 7 — sonraki aya devir
-        ],
-    },
-
-    "Nobet_BirimAyar": {
+    "NB_BirimAyar": {
         "pk": "AyarID",
         "columns": [
-            "AyarID", "BirimAdi",
-            "GunlukSlotSaat",    # None → Σ ana vardiya SaatSuresi
-            "SlotBasiPersonel",  # günde kaç pozisyon (slot sayısı)
-            "CalismaModu",       # tam_gun|sadece_gunduz|uzatilmis_gunduz|karma
-            "OtomatikBolunme",   # 1: hedef dolunca slot otomatik bölünür
-            "Aciklama",
+            "AyarID", "BirimID",
+            "GunlukSlotSayisi", "GunlukSlotDakika", "CalismaModu",
+            "OtomatikBolunme", "GunlukHedefDakika",
+            "HaftasonuNobetZorunlu", "DiniBayramAtama",
+            "GeserlilikBaslangic", "GeserlilikBitis",
+            "created_at", "updated_at",
         ],
+        "sync": False,
+    },
+
+    "NB_VardiyaGrubu": {
+        "pk": "GrupID",
+        "columns": [
+            "GrupID", "BirimID", "GrupAdi", "GrupTuru",
+            "Sira", "Aktif", "created_at", "updated_at",
+        ],
+        "sync": False,
+    },
+
+    "NB_Vardiya": {
+        "pk": "VardiyaID",
+        "columns": [
+            "VardiyaID", "GrupID", "BirimID",
+            "VardiyaAdi", "BasSaat", "BitSaat", "SureDakika",
+            "Rol", "MinPersonel", "Sira",
+            "GeserlilikBaslangic", "GeserlilikBitis",
+            "Aktif", "created_at", "updated_at",
+        ],
+        "sync": False,
+    },
+
+    "NB_PersonelTercih": {
+        "pk": "TercihID",
+        "columns": [
+            "TercihID", "PersonelID", "BirimID", "Yil", "Ay",
+            "NobetTercihi", "HedefDakika", "HedefTipi",
+            "MaxNobetGun", "TercihVardiyalar", "KacinilacakGunler",
+            "Notlar", "Durum", "OnaylayanID", "OnayTarihi",
+            "created_at", "updated_at",
+        ],
+        "sync": False,
+    },
+
+    "NB_Plan": {
+        "pk": "PlanID",
+        "columns": [
+            "PlanID", "BirimID", "Yil", "Ay", "Versiyon",
+            "Durum", "AlgoritmaVersiyon", "OlusturmaParametreleri",
+            "Notlar", "OnaylayanID", "OnayTarihi",
+            "created_at", "updated_at", "created_by",
+        ],
+        "sync": False,
+    },
+
+    "NB_PlanSatir": {
+        "pk": "SatirID",
+        "columns": [
+            "SatirID", "PlanID", "PersonelID", "VardiyaID",
+            "NobetTarihi", "Kaynak", "NobetTuru", "Durum",
+            "OncekiSatirID", "Notlar",
+            "created_at", "updated_at", "created_by",
+        ],
+        "date_fields": ["NobetTarihi"],
+        "sync": False,
+    },
+
+    "NB_MesaiHesap": {
+        "pk": "HesapID",
+        "columns": [
+            "HesapID", "PersonelID", "BirimID", "PlanID",
+            "Yil", "Ay",
+            "CalisDakika", "HedefDakika", "FazlaDakika",
+            "DevirDakika", "ToplamFazlaDakika",
+            "OdenenDakika", "DevireGidenDakika",
+            "HesapDurumu", "HesapTarihi",
+            "created_at", "updated_at",
+        ],
+        "sync": False,
+    },
+
+    "NB_MesaiKural": {
+        "pk": "KuralID",
+        "columns": [
+            "KuralID", "KuralAdi", "KuralTuru", "Parametre",
+            "GeserlilikBaslangic", "GeserlilikBitis",
+            "Aciklama", "created_at", "updated_at",
+        ],
+        "sync": False,
+    },
+
+    "NB_BirimPersonel": {
+        "pk": "ID",
+        "columns": [
+            "ID", "BirimID", "PersonelID", "Rol",
+            "GorevBaslangic", "GorevBitis", "AnabirimMi",
+            "Aktif", "Notlar", "created_at", "updated_at",
+        ],
+        # NOT: Personel.GorevYeri FHSZ kapsamında korunur.
+        # Bu tablo nöbet modülü için ek birim atamasıdır.
+        "sync": False,
     },
 
 }
-

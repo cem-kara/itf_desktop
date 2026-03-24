@@ -12,7 +12,7 @@ class MigrationManager:
     v1: Tüm tablolar — güncel şema (temiz kurulum)
     """
 
-    CURRENT_VERSION = 8
+    CURRENT_VERSION = 1
 
     def __init__(self, db_path):
         self.db_path = db_path
@@ -119,9 +119,7 @@ class MigrationManager:
             logger.error(f"Migration hatasi: {e} | Yedek: {backup_path}")
             raise
 
-    # ════════════════════════════════════════════════════════
-    #  MIGRATION METODLARI
-    # ════════════════════════════════════════════════════════
+    CURRENT_VERSION = 2
 
     def _migrate_to_v1(self):
         """v1: Tum tablolar - temiz kurulum."""
@@ -137,320 +135,267 @@ class MigrationManager:
             conn.close()
 
     def _migrate_to_v2(self):
-        """v2: Nöbet modülü tabloları."""
-        conn = self.connect()
-        cur = conn.cursor()
-        try:
-            self._create_nobet_tables(cur)
-            conn.commit()
-            logger.info("v2: Nobet tablolari olusturuldu")
-        finally:
-            conn.close()
+        """
+        v2: Nöbet modülü — sıfırdan temiz tasarım.
 
-    def _migrate_to_v3(self):
-        """v3: Nobet_Birim kaldır, BirimID → BirimAdi (tablo yeniden oluştur)."""
-        conn = self.connect()
-        cur  = conn.cursor()
-        try:
-            tablolar = self._tablo_listesi(cur)
+        Yeni tablolar (NB_ prefix = New Build):
+          NB_Birim          — Birim tanımları (Sabitler bağımsız)
+          NB_BirimAyar      — Birime özgü planlama kuralları
+          NB_VardiyaGrubu   — Vardiya grubu (slot kavramı)
+          NB_Vardiya        — Vardiya zaman dilimi
+          NB_PersonelTercih — Aylık personel nöbet talebi / hedefi
+          NB_Plan           — Aylık plan başlığı (versiyonlu)
+          NB_PlanSatir      — Tek nöbet kaydı (silinmez, iptal edilir)
+          NB_MesaiHesap     — Aylık mesai özeti (birim bazlı)
+          NB_MesaiKural     — Mesai ödeme kuralları (tarih aralıklı)
 
-            def _kolonlar(tablo):
-                cur.execute(f"PRAGMA table_info({tablo})")
-                return {r[1] for r in cur.fetchall()}
-
-            # ── Nobet_Vardiya ──
-            if "Nobet_Vardiya" in tablolar:
-                k = _kolonlar("Nobet_Vardiya")
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS Nobet_Vardiya_yeni (
-                        VardiyaID   TEXT PRIMARY KEY,
-                        BirimAdi    TEXT NOT NULL DEFAULT '',
-                        VardiyaAdi  TEXT NOT NULL,
-                        BasSaat     TEXT NOT NULL,
-                        BitSaat     TEXT NOT NULL,
-                        SaatSuresi  REAL NOT NULL,
-                        MinPersonel INTEGER NOT NULL DEFAULT 1,
-                        Aktif       INTEGER NOT NULL DEFAULT 1,
-                        sync_status TEXT DEFAULT 'clean',
-                        updated_at  TEXT
-                    )
-                """)
-                # BirimAdi kaynağını belirle
-                if "BirimAdi" in k:
-                    birim_expr = "v.BirimAdi"
-                elif "BirimID" in k and "Nobet_Birim" in tablolar:
-                    birim_expr = "COALESCE(b.BirimAdi, v.BirimID, '')"
-                elif "BirimID" in k:
-                    birim_expr = "COALESCE(v.BirimID, '')"
-                else:
-                    birim_expr = "''"
-
-                join = ("LEFT JOIN Nobet_Birim b ON b.BirimID = v.BirimID"
-                        if "BirimID" in k and "Nobet_Birim" in tablolar else "")
-
-                cur.execute(f"""
-                    INSERT OR IGNORE INTO Nobet_Vardiya_yeni
-                        (VardiyaID, BirimAdi, VardiyaAdi, BasSaat, BitSaat,
-                         SaatSuresi, MinPersonel, Aktif, sync_status, updated_at)
-                    SELECT v.VardiyaID, {birim_expr},
-                           v.VardiyaAdi, v.BasSaat, v.BitSaat,
-                           v.SaatSuresi, v.MinPersonel, v.Aktif,
-                           v.sync_status, v.updated_at
-                    FROM Nobet_Vardiya v {join}
-                """)
-                cur.execute("DROP TABLE Nobet_Vardiya")
-                cur.execute("ALTER TABLE Nobet_Vardiya_yeni RENAME TO Nobet_Vardiya")
-                logger.info("v3: Nobet_Vardiya yeniden oluşturuldu")
-
-            # ── Nobet_Plan ──
-            if "Nobet_Plan" in tablolar:
-                k = _kolonlar("Nobet_Plan")
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS Nobet_Plan_yeni (
-                        PlanID      TEXT PRIMARY KEY,
-                        PersonelID  TEXT NOT NULL,
-                        BirimAdi    TEXT NOT NULL DEFAULT '',
-                        VardiyaID   TEXT NOT NULL,
-                        NobetTarihi TEXT NOT NULL,
-                        NobetTuru   TEXT NOT NULL DEFAULT 'normal',
-                        Durum       TEXT NOT NULL DEFAULT 'taslak',
-                        KayitTarihi TEXT NOT NULL DEFAULT (datetime('now','localtime')),
-                        Notlar      TEXT,
-                        sync_status TEXT DEFAULT 'clean',
-                        updated_at  TEXT,
-                        UNIQUE(PersonelID, NobetTarihi, VardiyaID)
-                    )
-                """)
-                if "BirimAdi" in k:
-                    birim_expr = "p.BirimAdi"
-                elif "BirimID" in k and "Nobet_Birim" in tablolar:
-                    birim_expr = "COALESCE(b.BirimAdi, p.BirimID, '')"
-                elif "BirimID" in k:
-                    birim_expr = "COALESCE(p.BirimID, '')"
-                else:
-                    birim_expr = "''"
-
-                join = ("LEFT JOIN Nobet_Birim b ON b.BirimID = p.BirimID"
-                        if "BirimID" in k and "Nobet_Birim" in tablolar else "")
-
-                cur.execute(f"""
-                    INSERT OR IGNORE INTO Nobet_Plan_yeni
-                        (PlanID, PersonelID, BirimAdi, VardiyaID, NobetTarihi,
-                         NobetTuru, Durum, KayitTarihi, Notlar, sync_status, updated_at)
-                    SELECT p.PlanID, p.PersonelID, {birim_expr},
-                           p.VardiyaID, p.NobetTarihi, p.NobetTuru,
-                           p.Durum, p.KayitTarihi, p.Notlar,
-                           p.sync_status, p.updated_at
-                    FROM Nobet_Plan p {join}
-                """)
-                cur.execute("DROP TABLE Nobet_Plan")
-                cur.execute("ALTER TABLE Nobet_Plan_yeni RENAME TO Nobet_Plan")
-                logger.info("v3: Nobet_Plan yeniden oluşturuldu")
-
-            # ── Nobet_Onay ──
-            if "Nobet_Onay" in tablolar:
-                k = _kolonlar("Nobet_Onay")
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS Nobet_Onay_yeni (
-                        OnayID      TEXT PRIMARY KEY,
-                        Yil         INTEGER NOT NULL,
-                        Ay          INTEGER NOT NULL,
-                        BirimAdi    TEXT,
-                        Durum       TEXT NOT NULL DEFAULT 'taslak',
-                        OnaylayanID TEXT,
-                        OnayTarihi  TEXT,
-                        Notlar      TEXT,
-                        sync_status TEXT DEFAULT 'clean',
-                        updated_at  TEXT,
-                        UNIQUE(Yil, Ay, BirimAdi)
-                    )
-                """)
-                if "BirimAdi" in k:
-                    birim_expr = "o.BirimAdi"
-                elif "BirimID" in k and "Nobet_Birim" in tablolar:
-                    birim_expr = "COALESCE(b.BirimAdi, o.BirimID)"
-                elif "BirimID" in k:
-                    birim_expr = "o.BirimID"
-                else:
-                    birim_expr = "NULL"
-
-                join = ("LEFT JOIN Nobet_Birim b ON b.BirimID = o.BirimID"
-                        if "BirimID" in k and "Nobet_Birim" in tablolar else "")
-
-                cur.execute(f"""
-                    INSERT OR IGNORE INTO Nobet_Onay_yeni
-                        (OnayID, Yil, Ay, BirimAdi, Durum,
-                         OnaylayanID, OnayTarihi, Notlar, sync_status, updated_at)
-                    SELECT o.OnayID, o.Yil, o.Ay, {birim_expr},
-                           o.Durum, o.OnaylayanID, o.OnayTarihi,
-                           o.Notlar, o.sync_status, o.updated_at
-                    FROM Nobet_Onay o {join}
-                """)
-                cur.execute("DROP TABLE Nobet_Onay")
-                cur.execute("ALTER TABLE Nobet_Onay_yeni RENAME TO Nobet_Onay")
-                logger.info("v3: Nobet_Onay yeniden oluşturuldu")
-
-            # İndeksler
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_nobet_plan_tarih    ON Nobet_Plan(NobetTarihi)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_nobet_plan_personel ON Nobet_Plan(PersonelID)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_nobet_plan_birim    ON Nobet_Plan(BirimAdi)")
-
-            conn.commit()
-            logger.info("v3: BirimAdi migrasyonu tamamlandı")
-        finally:
-            conn.close()
-
-    @staticmethod
-    def _tablo_listesi(cur) -> set:
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        return {r[0] for r in cur.fetchall()}
-
-    def _migrate_to_v4(self):
-        """v4: Nobet_MesaiHedef ve Nobet_FazlaMesai tabloları."""
+        NOT: Personel.GorevYeri FHSZ kapsamında korunur, dokunulmaz.
+             Nöbet birim bağlantısı NB_Birim üzerinden kurulur.
+        """
         conn = self.connect()
         cur  = conn.cursor()
         try:
-            tablolar = self._tablo_listesi(cur)
-            if "Nobet_MesaiHedef" not in tablolar:
-                cur.execute("""
-                CREATE TABLE IF NOT EXISTS Nobet_MesaiHedef (
-                    HedefID     TEXT PRIMARY KEY,
-                    PersonelID  TEXT NOT NULL,
-                    Yil         INTEGER NOT NULL,
-                    Ay          INTEGER NOT NULL,
-                    BirimAdi    TEXT,
-                    HedefSaat   REAL NOT NULL DEFAULT 0.0,
-                    HedefTipi   TEXT NOT NULL DEFAULT 'normal',
-                    Aciklama    TEXT,
-                    sync_status TEXT DEFAULT 'clean',
-                    updated_at  TEXT,
-                    UNIQUE(PersonelID, Yil, Ay)
-                )""")
-            if "Nobet_FazlaMesai" not in tablolar:
-                cur.execute("""
-                CREATE TABLE IF NOT EXISTS Nobet_FazlaMesai (
-                    FazlaID        TEXT PRIMARY KEY,
-                    PersonelID     TEXT NOT NULL,
-                    Yil            INTEGER NOT NULL,
-                    Ay             INTEGER NOT NULL,
-                    BirimAdi       TEXT,
-                    CalisanSaat    REAL NOT NULL DEFAULT 0.0,
-                    HedefSaat      REAL NOT NULL DEFAULT 0.0,
-                    FazlaMesaiSaat REAL NOT NULL DEFAULT 0.0,
-                    DevirSaat      REAL NOT NULL DEFAULT 0.0,
-                    ToplamFazla    REAL NOT NULL DEFAULT 0.0,
-                    sync_status    TEXT DEFAULT 'clean',
-                    updated_at     TEXT,
-                    UNIQUE(PersonelID, Yil, Ay)
-                )""")
+            self._nb_create_tables(cur)
+            self._nb_seed_birimler(cur)
             conn.commit()
-            logger.info("v4: Nobet_MesaiHedef ve Nobet_FazlaMesai olusturuldu")
+            logger.info("v2: Nobet modulu (NB_) tablolari olusturuldu")
         finally:
             conn.close()
 
-    def _migrate_to_v5(self):
-        """v5: Nobet_FazlaMesai — OdenenSaat ve DevireGiden kolonları."""
-        conn = self.connect()
-        cur  = conn.cursor()
-        try:
-            tablolar = self._tablo_listesi(cur)
-            if "Nobet_FazlaMesai" in tablolar:
-                cur.execute("PRAGMA table_info(Nobet_FazlaMesai)")
-                mevcut = {r[1] for r in cur.fetchall()}
-                if "OdenenSaat" not in mevcut:
-                    cur.execute(
-                        "ALTER TABLE Nobet_FazlaMesai "
-                        "ADD COLUMN OdenenSaat REAL DEFAULT 0.0"
-                    )
-                if "DevireGiden" not in mevcut:
-                    cur.execute(
-                        "ALTER TABLE Nobet_FazlaMesai "
-                        "ADD COLUMN DevireGiden REAL DEFAULT 0.0"
-                    )
-            conn.commit()
-            logger.info("v5: Nobet_FazlaMesai OdenenSaat/DevireGiden eklendi")
-        finally:
-            conn.close()
+    # ════════════════════════════════════════════════════════
+    #  NÖBET MODÜLÜ — TABLO OLUŞTURMA (v2)
+    # ════════════════════════════════════════════════════════
 
-    def _migrate_to_v6(self):
-        """v6: Nobet_MesaiHedef — NobetTercihi kolonu."""
-        conn = self.connect()
-        cur  = conn.cursor()
-        try:
-            tablolar = self._tablo_listesi(cur)
-            if "Nobet_MesaiHedef" in tablolar:
-                cur.execute("PRAGMA table_info(Nobet_MesaiHedef)")
-                mevcut = {r[1] for r in cur.fetchall()}
-                if "NobetTercihi" not in mevcut:
-                    cur.execute(
-                        "ALTER TABLE Nobet_MesaiHedef "
-                        "ADD COLUMN NobetTercihi TEXT DEFAULT 'zorunlu'"
-                    )
-            conn.commit()
-            logger.info("v6: Nobet_MesaiHedef.NobetTercihi eklendi")
-        finally:
-            conn.close()
+    def _nb_create_tables(self, cur):
+        """NB_ tablolarını oluşturur. İdempotent — varsa atlar."""
 
-    def _migrate_to_v7(self):
-        """v7: Tatiller tablosuna TatilTuru kolonu (Resmi / Idari)."""
-        conn = self.connect()
-        cur  = conn.cursor()
-        try:
-            tablolar = self._tablo_listesi(cur)
-            if "Tatiller" in tablolar:
-                cur.execute("PRAGMA table_info(Tatiller)")
-                mevcut = {r[1] for r in cur.fetchall()}
-                if "TatilTuru" not in mevcut:
-                    cur.execute(
-                        "ALTER TABLE Tatiller "
-                        "ADD COLUMN TatilTuru TEXT DEFAULT 'Resmi'"
-                    )
-                    # Mevcut kayıtlar Resmi'dir — değişiklik gerekmez
-            conn.commit()
-            logger.info("v7: Tatiller.TatilTuru eklendi")
-        finally:
-            conn.close()
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS NB_Birim (
+            BirimID      TEXT PRIMARY KEY,
+            BirimKodu    TEXT NOT NULL UNIQUE,
+            BirimAdi     TEXT NOT NULL,
+            BirimTipi    TEXT NOT NULL DEFAULT 'radyoloji',
+            UstBirimID   TEXT REFERENCES NB_Birim(BirimID),
+            Aktif        INTEGER NOT NULL DEFAULT 1,
+            Sira         INTEGER NOT NULL DEFAULT 99,
+            Aciklama     TEXT,
+            created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at   TEXT,
+            created_by   TEXT,
+            is_deleted   INTEGER NOT NULL DEFAULT 0
+        )
+        """)
 
-    def _migrate_to_v8(self):
-        """v8: Nobet_BirimAyar + Nobet_Vardiya.VardiyaRolu."""
-        conn = self.connect()
-        cur  = conn.cursor()
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS NB_BirimAyar (
+            AyarID                TEXT PRIMARY KEY,
+            BirimID               TEXT NOT NULL REFERENCES NB_Birim(BirimID),
+            GunlukSlotSayisi      INTEGER NOT NULL DEFAULT 4,
+            GunlukSlotDakika      INTEGER,
+            CalismaModu           TEXT NOT NULL DEFAULT 'tam_gun',
+            OtomatikBolunme       INTEGER NOT NULL DEFAULT 1,
+            GunlukHedefDakika     INTEGER NOT NULL DEFAULT 420,
+            HaftasonuNobetZorunlu INTEGER NOT NULL DEFAULT 1,
+            DiniBayramAtama       INTEGER NOT NULL DEFAULT 0,
+            GeserlilikBaslangic   TEXT,
+            GeserlilikBitis       TEXT,
+            created_at            TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at            TEXT,
+            UNIQUE(BirimID, GeserlilikBaslangic)
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS NB_VardiyaGrubu (
+            GrupID     TEXT PRIMARY KEY,
+            BirimID    TEXT NOT NULL REFERENCES NB_Birim(BirimID),
+            GrupAdi    TEXT NOT NULL,
+            GrupTuru   TEXT NOT NULL DEFAULT 'zorunlu',
+            Sira       INTEGER NOT NULL DEFAULT 1,
+            Aktif      INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT,
+            UNIQUE(BirimID, GrupAdi)
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS NB_Vardiya (
+            VardiyaID           TEXT PRIMARY KEY,
+            GrupID              TEXT NOT NULL REFERENCES NB_VardiyaGrubu(GrupID),
+            BirimID             TEXT NOT NULL REFERENCES NB_Birim(BirimID),
+            VardiyaAdi          TEXT NOT NULL,
+            BasSaat             TEXT NOT NULL,
+            BitSaat             TEXT NOT NULL,
+            SureDakika          INTEGER NOT NULL,
+            Rol                 TEXT NOT NULL DEFAULT 'ana',
+            MinPersonel         INTEGER NOT NULL DEFAULT 1,
+            Sira                INTEGER NOT NULL DEFAULT 1,
+            GeserlilikBaslangic TEXT,
+            GeserlilikBitis     TEXT,
+            Aktif               INTEGER NOT NULL DEFAULT 1,
+            created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at          TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS NB_PersonelTercih (
+            TercihID          TEXT PRIMARY KEY,
+            PersonelID        TEXT NOT NULL REFERENCES Personel(KimlikNo),
+            BirimID           TEXT NOT NULL REFERENCES NB_Birim(BirimID),
+            Yil               INTEGER NOT NULL,
+            Ay                INTEGER NOT NULL CHECK(Ay BETWEEN 1 AND 12),
+            NobetTercihi      TEXT NOT NULL DEFAULT 'zorunlu',
+            HedefDakika       INTEGER,
+            HedefTipi         TEXT NOT NULL DEFAULT 'normal',
+            MaxNobetGun       INTEGER,
+            TercihVardiyalar  TEXT,
+            KacinilacakGunler TEXT,
+            Notlar            TEXT,
+            Durum             TEXT NOT NULL DEFAULT 'taslak',
+            OnaylayanID       TEXT,
+            OnayTarihi        TEXT,
+            created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at        TEXT,
+            UNIQUE(PersonelID, BirimID, Yil, Ay)
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS NB_Plan (
+            PlanID                 TEXT PRIMARY KEY,
+            BirimID                TEXT NOT NULL REFERENCES NB_Birim(BirimID),
+            Yil                    INTEGER NOT NULL,
+            Ay                     INTEGER NOT NULL CHECK(Ay BETWEEN 1 AND 12),
+            Versiyon               INTEGER NOT NULL DEFAULT 1,
+            Durum                  TEXT NOT NULL DEFAULT 'taslak',
+            AlgoritmaVersiyon      TEXT,
+            OlusturmaParametreleri TEXT,
+            Notlar                 TEXT,
+            OnaylayanID            TEXT,
+            OnayTarihi             TEXT,
+            created_at             TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at             TEXT,
+            created_by             TEXT,
+            UNIQUE(BirimID, Yil, Ay, Versiyon)
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS NB_PlanSatir (
+            SatirID       TEXT PRIMARY KEY,
+            PlanID        TEXT NOT NULL REFERENCES NB_Plan(PlanID),
+            PersonelID    TEXT NOT NULL REFERENCES Personel(KimlikNo),
+            VardiyaID     TEXT NOT NULL REFERENCES NB_Vardiya(VardiyaID),
+            NobetTarihi   TEXT NOT NULL,
+            Kaynak        TEXT NOT NULL DEFAULT 'algoritma',
+            NobetTuru     TEXT NOT NULL DEFAULT 'normal',
+            Durum         TEXT NOT NULL DEFAULT 'aktif',
+            OncekiSatirID TEXT REFERENCES NB_PlanSatir(SatirID),
+            Notlar        TEXT,
+            created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at    TEXT,
+            created_by    TEXT
+        )
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_nb_satir_tarih    ON NB_PlanSatir(NobetTarihi)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_nb_satir_personel ON NB_PlanSatir(PersonelID)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_nb_satir_plan     ON NB_PlanSatir(PlanID)")
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS NB_MesaiHesap (
+            HesapID           TEXT PRIMARY KEY,
+            PersonelID        TEXT NOT NULL REFERENCES Personel(KimlikNo),
+            BirimID           TEXT NOT NULL REFERENCES NB_Birim(BirimID),
+            PlanID            TEXT NOT NULL REFERENCES NB_Plan(PlanID),
+            Yil               INTEGER NOT NULL,
+            Ay                INTEGER NOT NULL CHECK(Ay BETWEEN 1 AND 12),
+            CalisDakika       INTEGER NOT NULL DEFAULT 0,
+            HedefDakika       INTEGER NOT NULL DEFAULT 0,
+            FazlaDakika       INTEGER NOT NULL DEFAULT 0,
+            DevirDakika       INTEGER NOT NULL DEFAULT 0,
+            ToplamFazlaDakika INTEGER NOT NULL DEFAULT 0,
+            OdenenDakika      INTEGER NOT NULL DEFAULT 0,
+            DevireGidenDakika INTEGER NOT NULL DEFAULT 0,
+            HesapDurumu       TEXT NOT NULL DEFAULT 'taslak',
+            HesapTarihi       TEXT,
+            created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at        TEXT,
+            UNIQUE(PersonelID, BirimID, Yil, Ay, PlanID)
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS NB_MesaiKural (
+            KuralID             TEXT PRIMARY KEY,
+            KuralAdi            TEXT NOT NULL,
+            KuralTuru           TEXT NOT NULL,
+            Parametre           TEXT NOT NULL DEFAULT '{}',
+            GeserlilikBaslangic TEXT NOT NULL,
+            GeserlilikBitis     TEXT,
+            Aciklama            TEXT,
+            created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at          TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS NB_BirimPersonel (
+            ID               TEXT PRIMARY KEY,
+            BirimID          TEXT NOT NULL REFERENCES NB_Birim(BirimID),
+            PersonelID       TEXT NOT NULL REFERENCES Personel(KimlikNo),
+            -- teknisyen | uzman | sorumlu | asistan
+            Rol              TEXT NOT NULL DEFAULT 'teknisyen',
+            GorevBaslangic   TEXT NOT NULL,
+            GorevBitis       TEXT,
+            -- 1: ana birim  0: ikinci birim (rotasyon, geçici görev)
+            AnabirimMi       INTEGER NOT NULL DEFAULT 1,
+            Aktif            INTEGER NOT NULL DEFAULT 1,
+            Notlar           TEXT,
+            created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at       TEXT,
+            UNIQUE(BirimID, PersonelID, GorevBaslangic)
+        )
+        """)
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_nb_birimper_personel "
+            "ON NB_BirimPersonel(PersonelID)"
+        )
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_nb_birimper_birim "
+            "ON NB_BirimPersonel(BirimID)"
+        )
+
+    def _nb_seed_birimler(self, cur):
+        """Sabitler.Birim kayıtlarını NB_Birim'e taşır. İdempotent."""
         try:
-            tablolar = self._tablo_listesi(cur)
-            if "Nobet_BirimAyar" not in tablolar:
-                cur.execute("""
-                CREATE TABLE IF NOT EXISTS Nobet_BirimAyar (
-                    AyarID           TEXT PRIMARY KEY,
-                    BirimAdi         TEXT NOT NULL UNIQUE,
-                    -- max saat/slot (None → vardiyalar toplamından hesaplanır)
-                    GunlukSlotSaat   REAL,
-                    SlotBasiPersonel INTEGER NOT NULL DEFAULT 4,
-                    -- tam_gun | sadece_gunduz | uzatilmis_gunduz | karma
-                    CalismaModu      TEXT NOT NULL DEFAULT 'tam_gun',
-                    -- True ise hedef saat dolunca slot otomatik bölünür
-                    OtomatikBolunme  INTEGER NOT NULL DEFAULT 1,
-                    Aciklama         TEXT,
-                    sync_status      TEXT DEFAULT 'clean',
-                    updated_at       TEXT
-                )""")
-            # Nobet_Vardiya.VardiyaRolu — ana | yardimci
-            if "Nobet_Vardiya" in tablolar:
-                cur.execute("PRAGMA table_info(Nobet_Vardiya)")
-                mevcut = {r[1] for r in cur.fetchall()}
-                if "VardiyaRolu" not in mevcut:
-                    cur.execute(
-                        "ALTER TABLE Nobet_Vardiya "
-                        "ADD COLUMN VardiyaRolu TEXT DEFAULT 'ana'"
-                    )
-                    # MinPersonel=0 olan mevcut vardiyaları yardimci yap
-                    cur.execute(
-                        "UPDATE Nobet_Vardiya SET VardiyaRolu='yardimci' "
-                        "WHERE MinPersonel = 0"
-                    )
-            conn.commit()
-            logger.info("v8: Nobet_BirimAyar + VardiyaRolu eklendi")
-        finally:
-            conn.close()
+            cur.execute("""
+                INSERT OR IGNORE INTO NB_Birim
+                    (BirimID, BirimKodu, BirimAdi, Aktif, Sira, created_at)
+                SELECT
+                    lower(hex(randomblob(16))),
+                    upper(replace(replace(replace(replace(replace(
+                        trim(MenuEleman),
+                        ' ', '_'), 'İ', 'I'), 'Ş', 'S'), 'Ğ', 'G'), 'Ü', 'U')),
+                    trim(MenuEleman),
+                    1,
+                    row_number() OVER (ORDER BY MenuEleman),
+                    datetime('now')
+                FROM Sabitler
+                WHERE Kod = 'Birim'
+                  AND MenuEleman IS NOT NULL
+                  AND trim(MenuEleman) != ''
+            """)
+            n = cur.rowcount
+            if n > 0:
+                logger.info(f"v2 seed: {n} birim Sabitler → NB_Birim aktarildi")
+        except Exception as e:
+            logger.debug(f"v2 seed birimler: {e}")
+
+    # ════════════════════════════════════════════════════════
+    #  TABLO OLUSTURMA
+    # ════════════════════════════════════════════════════════
 
     def create_tables(self, cur):
         cur.execute("""
@@ -682,9 +627,6 @@ class MigrationManager:
         CREATE TABLE IF NOT EXISTS Tatiller (
             Tarih       TEXT PRIMARY KEY,
             ResmiTatil  TEXT,
-            -- Resmi: devlet tatili | Idari: kurum izni | DiniBayram: dini bayram
-            -- DiniBayram: iş günü hesabında düşülür AMA otomatik nöbet ataması yapılmaz
-            TatilTuru   TEXT DEFAULT 'Resmi',
             sync_status TEXT DEFAULT 'clean',
             updated_at  TEXT
         )
@@ -949,126 +891,6 @@ class MigrationManager:
             Success   INTEGER NOT NULL,
             Reason    TEXT,
             CreatedAt TEXT NOT NULL
-        )
-        """)
-        # Nöbet tabloları (create_tables'ta da olsun — fresh install için)
-        self._create_nobet_tables(cur)
-
-    # ════════════════════════════════════════════════════════
-    #  NÖBET TABLOLARI
-    # ════════════════════════════════════════════════════════
-
-    def _create_nobet_tables(self, cur):
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Nobet_Vardiya (
-            VardiyaID       TEXT PRIMARY KEY,
-            BirimAdi        TEXT NOT NULL,
-            VardiyaAdi      TEXT NOT NULL,
-            BasSaat         TEXT NOT NULL,
-            BitSaat         TEXT NOT NULL,
-            SaatSuresi      REAL NOT NULL,
-            MinPersonel     INTEGER NOT NULL DEFAULT 1,
-            -- ana: algoritma slot doldururken kullanır
-            -- yardimci: sadece manuel veya slot bölününce eklenir (MinPersonel=0)
-            VardiyaRolu     TEXT NOT NULL DEFAULT 'ana',
-            Aktif           INTEGER NOT NULL DEFAULT 1,
-            sync_status     TEXT DEFAULT 'clean',
-            updated_at      TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Nobet_Plan (
-            PlanID          TEXT PRIMARY KEY,
-            PersonelID      TEXT NOT NULL,
-            BirimAdi        TEXT NOT NULL,
-            VardiyaID       TEXT NOT NULL,
-            NobetTarihi     TEXT NOT NULL,
-            NobetTuru       TEXT NOT NULL DEFAULT 'normal'
-                                CHECK(NobetTuru IN ('normal','fazla_mesai')),
-            Durum           TEXT NOT NULL DEFAULT 'taslak'
-                                CHECK(Durum IN ('taslak','onaylandi','iptal')),
-            KayitTarihi     TEXT NOT NULL DEFAULT (datetime('now','localtime')),
-            Notlar          TEXT,
-            sync_status     TEXT DEFAULT 'clean',
-            updated_at      TEXT,
-            UNIQUE(PersonelID, NobetTarihi, VardiyaID)
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Nobet_Onay (
-            OnayID          TEXT PRIMARY KEY,
-            Yil             INTEGER NOT NULL,
-            Ay              INTEGER NOT NULL CHECK(Ay BETWEEN 1 AND 12),
-            BirimAdi        TEXT,
-            Durum           TEXT NOT NULL DEFAULT 'taslak'
-                                CHECK(Durum IN ('taslak','onaylandi','revize')),
-            OnaylayanID     TEXT,
-            OnayTarihi      TEXT,
-            Notlar          TEXT,
-            sync_status     TEXT DEFAULT 'clean',
-            updated_at      TEXT,
-            UNIQUE(Yil, Ay, BirimAdi)
-        )
-        """)
-
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_nobet_plan_tarih    ON Nobet_Plan(NobetTarihi)")
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_nobet_plan_personel ON Nobet_Plan(PersonelID)")
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_nobet_plan_birim    ON Nobet_Plan(BirimAdi)")
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Nobet_BirimAyar (
-            AyarID           TEXT PRIMARY KEY,
-            BirimAdi         TEXT NOT NULL UNIQUE,
-            -- None → vardiya SaatSuresi toplamından otomatik hesaplanır
-            GunlukSlotSaat   REAL,
-            SlotBasiPersonel INTEGER NOT NULL DEFAULT 4,
-            -- tam_gun | sadece_gunduz | uzatilmis_gunduz | karma
-            CalismaModu      TEXT NOT NULL DEFAULT 'tam_gun',
-            -- 1: hedef dolunca slot otomatik bölünür  0: bölünmez (uyarı verilir)
-            OtomatikBolunme  INTEGER NOT NULL DEFAULT 1,
-            Aciklama         TEXT,
-            sync_status      TEXT DEFAULT 'clean',
-            updated_at       TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Nobet_MesaiHedef (
-            HedefID         TEXT PRIMARY KEY,
-            PersonelID      TEXT NOT NULL,
-            Yil             INTEGER NOT NULL,
-            Ay              INTEGER NOT NULL CHECK(Ay BETWEEN 1 AND 12),
-            BirimAdi        TEXT,
-            HedefSaat       REAL NOT NULL DEFAULT 0.0,
-            HedefTipi       TEXT NOT NULL DEFAULT 'normal',
-            Aciklama        TEXT,
-            NobetTercihi    TEXT NOT NULL DEFAULT 'zorunlu',
-            -- zorunlu: algoritma atar
-            -- gonullu_disi: atlamaz, acil durumda manuel fazla_mesai eklenebilir
-            -- nobet_yok: hiç atanmaz
-            sync_status     TEXT DEFAULT 'clean',
-            updated_at      TEXT,
-            UNIQUE(PersonelID, Yil, Ay)
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Nobet_FazlaMesai (
-            FazlaID         TEXT PRIMARY KEY,
-            PersonelID      TEXT NOT NULL,
-            Yil             INTEGER NOT NULL,
-            Ay              INTEGER NOT NULL CHECK(Ay BETWEEN 1 AND 12),
-            BirimAdi        TEXT,
-            CalisanSaat     REAL NOT NULL DEFAULT 0.0,
-            HedefSaat       REAL NOT NULL DEFAULT 0.0,
-            FazlaMesaiSaat  REAL NOT NULL DEFAULT 0.0,
-            DevirSaat       REAL NOT NULL DEFAULT 0.0,  -- önceki aydan devir
-            ToplamFazla     REAL NOT NULL DEFAULT 0.0,  -- FazlaMesai + Devir
-            sync_status     TEXT DEFAULT 'clean',
-            updated_at      TEXT,
-            UNIQUE(PersonelID, Yil, Ay)
         )
         """)
 
@@ -1408,7 +1230,6 @@ class MigrationManager:
             "Dozimetre_Olcum",
             "Dis_Alan_Calisma", "Dis_Alan_Izin_Ozet",
             "Dis_Alan_Katsayi_Protokol",
-            "Nobet_Vardiya", "Nobet_Plan", "Nobet_Onay",
             "Users", "Roles", "Permissions",
             "UserRoles", "RolePermissions", "AuthAudit",
             "schema_version",

@@ -100,6 +100,43 @@ def get_dozimetre_service(db):
     from core.services.dozimetre_service import DozimetreService
     return DozimetreService(get_registry(db))
 
+def get_nb_birim_service(db):
+    from core.services.nobet.nb_birim_service import NbBirimService
+    return NbBirimService(get_registry(db))
+
+def get_nb_tercih_service(db):
+    from core.services.nobet.nb_tercih_service import NbTercihService
+    return NbTercihService(get_registry(db))
+
+def get_nb_vardiya_service(db):
+    from core.services.nobet.nb_vardiya_service import NbVardiyaService
+    return NbVardiyaService(get_registry(db))
+
+def get_nb_plan_service(db):
+    from core.services.nobet.nb_plan_service import NbPlanService
+    return NbPlanService(get_registry(db))
+
+def get_nb_mesai_service(db):
+    from core.services.nobet.nb_mesai_service import NbMesaiService
+    return NbMesaiService(get_registry(db))
+
+def get_nb_algoritma(db):
+    from core.services.nobet.nb_algoritma import NbAlgoritma
+    return NbAlgoritma(get_registry(db))
+
+def get_nb_birim_personel_service(db):
+    from core.services.nobet.nb_birim_personel_service import NbBirimPersonelService
+    return NbBirimPersonelService(get_registry(db))
+
+def get_nobet_service(db):
+    """
+    Nöbet modülü ana giriş noktası.
+    NB_ servislerini tek nesneye toplar (NobetAdapter).
+    UI sayfaları bu fonksiyonu kullanır.
+    """
+    from core.services.nobet.nobet_adapter import NobetAdapter
+    return NobetAdapter(get_registry(db))
+
 _fallback_registry_cache = {}
 
 
@@ -149,7 +186,3 @@ def get_auth_services(db):
     return auth_service, authorization_service, session_context
 
 
-
-def get_nobet_service(db):
-    from core.services.nobet_service import NobetService
-    return NobetService(get_registry(db))

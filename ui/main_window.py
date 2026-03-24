@@ -243,15 +243,6 @@ class MainWindow(QMainWindow):
             page.kapat_istegi.connect(lambda: self._close_page("Diğer Rad. Gör. FHSZ Yön."))
             return page
 
-        
-        if baslik == "Nöbet Takip":
-            from ui.pages.nobet.nobet_merkez import NobetMerkezPage
-            page = NobetMerkezPage(db=self._db)
-            #page.btn_kapat.clicked.connect(lambda: self._close_page("Nöbet Takip"))
-            page.load_data()
-            return page
-
-        
         if baslik == "Sağlık Takip":
             from ui.pages.personel.saglik_takip import SaglikTakipPage
             page = SaglikTakipPage(db=self._db)
@@ -322,8 +313,24 @@ class MainWindow(QMainWindow):
             from ui.admin.settings_page import SettingsPage
             page = SettingsPage(db=self._db)
             return page
-        
-        
+
+        # ── NÖBET ────────────────────────────────────────────────────
+        if baslik == "Birim & Vardiyalar":
+            from ui.admin.nobet_vardiya_page import NobetVardiyaPage
+            return NobetVardiyaPage(db=self._db, action_guard=self._action_guard)
+
+        if baslik == "Nöbet Planı":
+            from ui.pages.nobet.nobet_plan_page import NobetPlanPage
+            return NobetPlanPage(db=self._db, action_guard=self._action_guard)
+
+        if baslik == "Personel Özeti":
+            from ui.pages.nobet.nobet_ozet_page import NobetOzetPage
+            return NobetOzetPage(db=self._db, action_guard=self._action_guard)
+
+        if baslik == "Raporlar":
+            from ui.pages.nobet.nobet_rapor_page import NobetRaporPage
+            return NobetRaporPage(db=self._db, action_guard=self._action_guard)
+
         return PlaceholderPage(
             title=baslik,
             subtitle=f"{group} modülü — geliştirme aşamasında"

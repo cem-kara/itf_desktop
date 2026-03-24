@@ -1,1165 +1,874 @@
 # -*- coding: utf-8 -*-
 """
-Nöbet Plan Sayfası — Takvim görünümü + otomatik planlama.
-Sol: filtreler + otomatik plan butonu
-Orta: aylık takvim grid
-Sağ: seçili güne atama paneli
+nobet_plan_page.py — Nöbet Planlama (Excel benzeri görünüm)
+
+Tablo yapısı:
+  Sütun 0: Tarih
+  Sütun 1: Gün
+  Sonraki sütunlar: VardiyaGrubu başlığı (merged) + her slot için kişi adı
+
+  Örnek:  Tarih | Gün | ── 08:00-20:00 ──────── | ── 20:00-08:00 ──────── |
+                       | Kişi1 | Kişi2 | Kişi3   | Kişi1 | Kişi2 | Kişi3   |
+
+Özellikler:
+  - Hücreye çift tıkla: nöbet ekle / kaldır
+  - Sağ tıkla: kontekst menüsü
+  - Hafta sonu satırları: mavi arka plan
+  - Dini bayram: turuncu satır
+  - Onaylı plan: yeşil ton
+  - Sol panel: birim/dönem + kişi tercihleri
 """
 from __future__ import annotations
-import calendar
-from datetime import date, timedelta
-from typing import Optional
 
-from PySide6.QtCore import Qt, QDate, Signal, QTimer
-from PySide6.QtGui import QCursor, QColor
+from calendar import monthrange
+from datetime import date
+
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QBrush, QFont
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel,
-    QPushButton, QComboBox, QScrollArea, QGridLayout,
-    QGroupBox, QSpinBox, QProgressBar, QSizePolicy,
-    QTextEdit,
+    QWidget, QHBoxLayout, QVBoxLayout, QFrame, QLabel,
+    QPushButton, QComboBox, QTableWidget, QTableWidgetItem,
+    QHeaderView, QAbstractItemView, QScrollArea,
+    QGroupBox, QMessageBox, QMenu, QProgressBar,
+    QDialog, QFormLayout, QDialogButtonBox, QSizePolicy,
 )
 
 from core.di import get_nobet_service
 from core.logger import logger
-from core.hata_yonetici import bilgi_goster, hata_goster, soru_sor
-from ui.styles.icons import IconRenderer, IconColors
 
-_GUN_ADLARI = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"]
-_AY_ADLARI  = ["", "Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",
-               "Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
+_AY_TR = ["",
+    "Ocak", "\u015eubat", "Mart", "Nisan", "May\u0131s", "Haziran",
+    "Temmuz", "A\u011fustos", "Eyl\u00fcl", "Ekim", "Kas\u0131m", "Aral\u0131k"]
+_GUN_TR = [
+    "Pazartesi", "Sal\u0131", "\u00c7ar\u015famba",
+    "Per\u015fembe", "Cuma", "Cumartesi", "Pazar"]
+
+# Renk paleti
+C = {
+    "haftasonu_bg": "#1a2a4a",   # cumartesi/pazar satır bg
+    "dini_bg":      "#2a1e00",   # dini bayram
+    "tatil_bg":     "#2a1010",   # resmi tatil
+    "onay_bg":      "#0a2010",   # onaylı plan
+    "normal_bg":    "#0f1623",   # normal gün
+    "kisi_bg":      "#162035",   # kişi adı hücresi
+    "kisi_bg_hs":   "#1a3060",   # kişi adı - hafta sonu
+    "kisi_bg_onay": "#0d2818",   # kişi adı - onaylı
+    "bos_kisi":     "#0d1525",   # boş slot
+    "bos_kisi_hs":  "#141c35",   # boş slot - hafta sonu
+    "header_bg":    "#0a1020",   # vardiya grubu header
+    "tarih_renk":   "#8aabcf",
+    "gun_renk_hs":  "#4d9ee8",   # hafta sonu gün adı
+    "gun_renk":     "#6a90b4",
+    "kisi_renk":    "#c2d8ef",
+    "bos_renk":     "#2a3a50",
+    "tatil_simge":  "#e85555",
+    "dini_simge":   "#e8a030",
+}
+
+TERCIH_RENK = {
+    "zorunlu":             "#2ec98e",
+    "fazla_mesai_gonullu": "#4d9ee8",
+    "gonullu_disi":        "#e8a030",
+    "nobet_yok":           "#e85555",
+}
+TERCIH_ETIKET = {
+    "zorunlu":             "Zorunlu",
+    "fazla_mesai_gonullu": "FM G\u00f6n\u00fcll\u00fc",
+    "gonullu_disi":        "G\u00f6n\u00fcll\u00fc D\u0131\u015f\u0131",
+    "nobet_yok":           "N\u00f6bet Yok",
+}
+
+MAX_SLOT_PER_GRUP = 6  # tek grupta gösterilecek max kişi sütunu
 
 
-class _GunHucresi(QFrame):
-    """Takvim gün hücresi — üstüne tıklayınca sinyal emit eder."""
-    tiklandi = Signal(date, list)  # tarih, o güne atanan nöbetler
-
-    def __init__(self, gun: Optional[date] = None,
-                 tatil: bool = False, dini_bayram: bool = False, parent=None):
+class _ManuelDialog(QDialog):
+    def __init__(self, tarih, personeller, vardiyalar, parent=None):
         super().__init__(parent)
-        self._gun         = gun
-        self._nobetler:   list[dict] = []
-        self._tatil       = tatil
-        self._dini_bayram = dini_bayram
-
-        self.setMinimumHeight(88)
-        self.setSizePolicy(
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.MinimumExpanding,
-        )
-        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-
+        self.setWindowTitle(f"N\u00f6bet Ekle \u2014 {tarih}")
+        self.setModal(True)
+        self.setMinimumWidth(360)
+        self.setProperty("bg-role", "page")
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(5, 4, 5, 6)
-        lay.setSpacing(1)
+        lay.setContentsMargins(20,20,20,20)
+        lay.setSpacing(12)
+        lbl = QLabel(f"<b>{tarih}</b>")
+        lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lay.addWidget(lbl)
+        form = QFormLayout()
+        self._cmb_p = QComboBox()
+        self._cmb_p.setEditable(True)
+        self._cmb_p.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        for p in personeller:
+            self._cmb_p.addItem(p.get("AdSoyad",""), userData=p.get("pid",""))
+        form.addRow("Personel:", self._cmb_p)
+        self._cmb_v = QComboBox()
+        for v in vardiyalar:
+            lbl2 = f"{v.get('VardiyaAdi','')} ({v.get('BasSaat','')}\u2013{v.get('BitSaat','')})"
+            self._cmb_v.addItem(lbl2, userData=v.get("VardiyaID",""))
+        form.addRow("Vardiya:", self._cmb_v)
+        self._cmb_tur = QComboBox()
+        self._cmb_tur.addItem("Normal", userData="normal")
+        self._cmb_tur.addItem("Fazla Mesai", userData="fazla_mesai")
+        form.addRow("T\u00fcr:", self._cmb_tur)
+        lay.addLayout(form)
+        btns = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok |
+            QDialogButtonBox.StandardButton.Cancel)
+        btns.accepted.connect(self.accept)
+        btns.rejected.connect(self.reject)
+        lay.addWidget(btns)
 
-        self.lbl_gun = QLabel("")
-        self.lbl_gun.setProperty("style-role", "stat-label")
-        lay.addWidget(self.lbl_gun)
-
-        self.lbl_tatil = QLabel("")
-        self.lbl_tatil.setProperty("color-role", "warn")
-        self.lbl_tatil.setStyleSheet("font-size: 9px;")
-        self.lbl_tatil.setVisible(False)
-        lay.addWidget(self.lbl_tatil)
-
-        self.lbl_icerik = QLabel("")
-        self.lbl_icerik.setWordWrap(True)
-        self.lbl_icerik.setProperty("color-role", "muted")
-        self.lbl_icerik.setAlignment(
-            Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        self.lbl_icerik.setStyleSheet("font-size: 11px;")
-        lay.addWidget(self.lbl_icerik, 1)
-
-        if gun is None:
-            # Önceki/sonraki ay boş hücresi
-            self.setProperty("bg-role", "elevated")
-            return
-
-        is_haftasonu = gun.weekday() >= 5
-        if dini_bayram:
-            # Dini bayram — mor ton, otomatik atama yok
-            self.setProperty("bg-role", "elevated")
-            self.setStyleSheet(
-                "QFrame { background-color: rgba(120, 40, 180, 0.12); "
-                "border: 1px solid rgba(120, 40, 180, 0.30); border-radius: 4px; }"
-            )
-        elif tatil:
-            # Resmi tatil — kırmızımsı ton
-            self.setProperty("bg-role", "elevated")
-            self.setStyleSheet(
-                "QFrame { background-color: rgba(180, 40, 40, 0.10); "
-                "border: 1px solid rgba(180, 40, 40, 0.25); border-radius: 4px; }"
-            )
-        elif is_haftasonu:
-            # Hafta sonu — mavimsi ton
-            self.setProperty("bg-role", "elevated")
-            self.setStyleSheet(
-                "QFrame { background-color: rgba(30, 80, 160, 0.10); "
-                "border: 1px solid rgba(30, 80, 160, 0.20); border-radius: 4px; }"
-            )
-        else:
-            self.setProperty("bg-role", "page")
-
-        # Gün numarası rengi
-        if dini_bayram:
-            self.lbl_gun.setProperty("color-role", "info")  # mor tona yakın
-        elif tatil:
-            self.lbl_gun.setProperty("color-role", "danger")
-        elif is_haftasonu:
-            self.lbl_gun.setProperty("color-role", "warn")
-        else:
-            self.lbl_gun.setProperty("color-role", "primary")
-
-        self.lbl_gun.setText(str(gun.day))
-
-    def set_tatil_adi(self, adi: str):
-        if adi:
-            self.lbl_tatil.setText(adi[:18])
-            self.lbl_tatil.setVisible(True)
-
-    def set_nobetler(self, nobetler: list[dict], personel_map: dict,
-                     vardiya_map: dict = None):
-        self._nobetler = nobetler
-        if not nobetler:
-            self.lbl_icerik.setText("")
-            return
-
-        vardiya_map = vardiya_map or {}
-
-        # Vardiya adından kısa etiket üret
-        def _vardiya_etiket(v_id: str) -> str:
-            v   = vardiya_map.get(v_id, {})
-            adi = v.get("VardiyaAdi", "")
-            bas = v.get("BasSaat", "")
-            adi_lower = adi.lower()
-
-            # Vardiya adında "gece" geçiyorsa
-            if "gece" in adi_lower:
-                return "N"
-            # Vardiya adında "gündüz" veya "gunduz" geçiyorsa
-            if "gündüz" in adi_lower or "gunduz" in adi_lower:
-                return "G"
-
-            # Başlangıç saatine göre ayır
-            try:
-                saat = int(bas.split(":")[0])
-                if saat >= 20 or saat < 6:
-                    return "N"   # Gece
-                return "G"       # Gündüz
-            except Exception:
-                return adi[:2].upper() if adi else "?"
-
-        # Gündüz "G" Gece "N" olsun — çakışırsa tam saate bak
-        def _v_renk(etiket: str):
-            """Gündüz → sarımsı, Gece → mavimsi tonu text'e yansıt."""
-            return etiket  # Renk QLabel property ile değil, prefix ile
-
-        # Personel + vardiya eşlemi
-        # Aynı kişi birden fazla vardiyada olabilir (gündüz+gece = 24h)
-        # pid → [(v_adi_kisa, nobet_turu)]
-        pid_vardiya: dict[str, list[str]] = {}
-        for n in nobetler:
-            pid   = str(n.get("PersonelID", ""))
-            v_id  = str(n.get("VardiyaID", ""))
-            tur   = n.get("NobetTuru", "normal")
-            etiket = _vardiya_etiket(v_id)
-            if pid not in pid_vardiya:
-                pid_vardiya[pid] = []
-            pid_vardiya[pid].append((etiket, tur))
-
-        satirlar = []
-        for pid, v_listesi in pid_vardiya.items():
-            ad       = personel_map.get(pid, pid)
-            parcalar = ad.split()
-            kisa     = (parcalar[0] + " " + parcalar[-1][0] + "."
-                        if len(parcalar) > 1 else ad)
-
-            # Fazla mesai işareti
-            has_fm = any(t == "fazla_mesai" for _, t in v_listesi)
-            prefix = "★ " if has_fm else ""
-
-            # Vardiya etiketleri: tek vardiyaysa sadece ad, çok vardiyaysa G+N
-            v_etiketler = [e for e, _ in v_listesi]
-            if len(set(v_etiketler)) == 1 and len(v_etiketler) == 1:
-                # Tek vardiya — sadece G veya N göster
-                satirlar.append(f"{prefix}{kisa} ({v_etiketler[0]})")
-            elif len(v_etiketler) > 1:
-                # Birden fazla vardiya (24h) — G+N göster
-                satirlar.append(f"{prefix}{kisa} (G+N)")
-            else:
-                satirlar.append(f"{prefix}{kisa}")
-
-        self.lbl_icerik.setText("\n".join(satirlar))
-
-    def set_secili(self, secili: bool):
-        if secili:
-            self.setStyleSheet(
-                "QFrame { background-color: rgba(40, 120, 220, 0.22); "
-                "border: 2px solid rgba(40, 120, 220, 0.70); border-radius: 4px; }"
-            )
-        else:
-            # Orijinal stili geri yükle
-            is_hw = self._gun and self._gun.weekday() >= 5
-            if self._dini_bayram:
-                self.setStyleSheet(
-                    "QFrame { background-color: rgba(120, 40, 180, 0.12); "
-                    "border: 1px solid rgba(120, 40, 180, 0.30); border-radius: 4px; }"
-                )
-            elif self._tatil:
-                self.setStyleSheet(
-                    "QFrame { background-color: rgba(180, 40, 40, 0.10); "
-                    "border: 1px solid rgba(180, 40, 40, 0.25); border-radius: 4px; }"
-                )
-            elif is_hw:
-                self.setStyleSheet(
-                    "QFrame { background-color: rgba(30, 80, 160, 0.10); "
-                    "border: 1px solid rgba(30, 80, 160, 0.20); border-radius: 4px; }"
-                )
-            else:
-                self.setStyleSheet("")
-                self.setProperty("bg-role", "page")
-                self.style().unpolish(self)
-                self.style().polish(self)
-
-    def mousePressEvent(self, event):
-        if self._gun:
-            self.tiklandi.emit(self._gun, self._nobetler)
-        super().mousePressEvent(event)
+    def get_data(self):
+        return {
+            "PersonelID": self._cmb_p.currentData(),
+            "VardiyaID":  self._cmb_v.currentData(),
+            "NobetTuru":  self._cmb_tur.currentData(),
+        }
 
 
 class NobetPlanPage(QWidget):
 
     def __init__(self, db=None, action_guard=None, parent=None):
         super().__init__(parent)
+        self._db  = db
+        self._ag  = action_guard
+        self._yil = date.today().year
+        self._ay  = date.today().month
+        self._plan_data  = []
+        self._v_map      = {}
+        self._p_map      = {}
+        self._pid_list   = []
+        self._tatil_set  = set()
+        self._dini_set   = set()
+        self._onay_durumu = "yok"
+        self._slot_sayisi = 4
+        self._birim_adi   = ""
+        self._birim_id    = ""
+        self._tercih_map  = {}
+        # Vardiya grubu yapısı: [{"GrupAdi", "BasSaat", "BitSaat", "VardiyaIDler":[]}]
+        self._gruplar: list[dict] = []
         self.setProperty("bg-role", "page")
-        self._db           = db
-        self._action_guard = action_guard
-        self._yil          = date.today().year
-        self._ay           = date.today().month
-        self._secili_gun:  Optional[date] = None
-        self._plan_data:   list[dict] = []
-        self._personel_map: dict[str, str] = {}
-        self._vardiya_map:  dict[str, dict] = {}
-        self._tatil_map:   dict[str, str] = {}
-        self._hucreler:    dict[date, _GunHucresi] = {}
-        self._setup_ui()
+        self._build()
         if db:
-            self.load_data()
+            self._birimleri_yukle()
 
-    # ─── UI ──────────────────────────────────────────────
+    def _svc(self):
+        return get_nobet_service(self._db)
 
-    def _setup_ui(self):
-        root = QHBoxLayout(self)
-        root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(0)
-        root.addWidget(self._build_sol_panel(), 0)
-        root.addWidget(self._build_takvim_alani(), 1)
-        # Sağdan açılan manuel nöbet paneli
-        self._manuel_panel = self._build_manuel_panel()
-        root.addWidget(self._manuel_panel, 0)
+    def _reg(self):
+        from core.di import get_registry
+        return get_registry(self._db)
 
-    # ── Sol Panel (kontroller) ──
+    def _ay_etiketi(self):
+        return f"{_AY_TR[self._ay]}\n{self._yil}"
 
-    def _build_sol_panel(self) -> QFrame:
-        panel = QFrame()
-        panel.setFixedWidth(220)
-        panel.setProperty("bg-role", "panel")
-        lay = QVBoxLayout(panel)
-        lay.setContentsMargins(12, 16, 12, 16)
-        lay.setSpacing(12)
+    # ──────────────────────────────────────────────────────────
+    #  UI
+    # ──────────────────────────────────────────────────────────
 
-        # Ay/Yıl navigasyonu
-        grp_nav = QGroupBox("Dönem")
-        grp_nav.setProperty("style-role", "group")
-        nl = QVBoxLayout(grp_nav)
-        nl.setContentsMargins(8, 6, 8, 10)
-        nl.setSpacing(6)
+    def _build(self):
+        ana = QHBoxLayout(self)
+        ana.setContentsMargins(0,0,0,0)
+        ana.setSpacing(0)
+        ana.addWidget(self._build_sol())
+        orta = QWidget()
+        orta.setProperty("bg-role","page")
+        ol = QVBoxLayout(orta)
+        ol.setContentsMargins(0,0,0,0)
+        ol.setSpacing(0)
+        ol.addWidget(self._build_onay_bar())
+        ol.addWidget(self._build_tablo(), 1)
+        ol.addWidget(self._build_footer())
+        ana.addWidget(orta, 1)
 
-        nav_row = QHBoxLayout()
-        self.btn_prev = QPushButton("‹")
-        self.btn_prev.setFixedSize(28, 28)
-        self.btn_prev.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_prev.setProperty("style-role", "secondary")
-        self.btn_prev.clicked.connect(self._prev_ay)
-        nav_row.addWidget(self.btn_prev)
+    def _grp(self, baslik):
+        g = QGroupBox(baslik)
+        g.setProperty("style-role","group")
+        return g
 
-        self.lbl_ay = QLabel()
-        self.lbl_ay.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.lbl_ay.setProperty("style-role", "section-title")
-        self.lbl_ay.setProperty("color-role", "primary")
-        nav_row.addWidget(self.lbl_ay, 1)
+    def _build_sol(self):
+        sol = QFrame()
+        sol.setFixedWidth(230)
+        sol.setProperty("bg-role","panel")
+        lay = QVBoxLayout(sol)
+        lay.setContentsMargins(12,14,12,14)
+        lay.setSpacing(10)
 
-        self.btn_next = QPushButton("›")
-        self.btn_next.setFixedSize(28, 28)
-        self.btn_next.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_next.setProperty("style-role", "secondary")
-        self.btn_next.clicked.connect(self._next_ay)
-        nav_row.addWidget(self.btn_next)
-        nl.addLayout(nav_row)
-        lay.addWidget(grp_nav)
+        g1 = self._grp("D\u00f6nem")
+        gl = QVBoxLayout(g1)
+        nav = QHBoxLayout()
+        bg = QPushButton("\u2039")
+        bg.setFixedSize(28,28)
+        bg.setProperty("style-role","secondary")
+        bg.clicked.connect(self._ay_geri)
+        self._lbl_ay = QLabel()
+        self._lbl_ay.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._lbl_ay.setProperty("style-role","section-title")
+        bi = QPushButton("\u203a")
+        bi.setFixedSize(28,28)
+        bi.setProperty("style-role","secondary")
+        bi.clicked.connect(self._ay_ileri)
+        nav.addWidget(bg); nav.addWidget(self._lbl_ay,1); nav.addWidget(bi)
+        gl.addLayout(nav)
+        lay.addWidget(g1)
 
-        # Birim filtresi
-        grp_birim = QGroupBox("Birim")
-        grp_birim.setProperty("style-role", "group")
-        bl = QVBoxLayout(grp_birim)
-        bl.setContentsMargins(8, 6, 8, 10)
-        bl.setSpacing(6)
-        self.cmb_birim = QComboBox()
-        self.cmb_birim.addItem("Tüm Birimler", userData=None)
-        self.cmb_birim.currentIndexChanged.connect(self._filtrele_ve_goster)
-        bl.addWidget(self.cmb_birim)
-        lay.addWidget(grp_birim)
+        g2 = self._grp("Birim")
+        bl = QVBoxLayout(g2)
+        self._cmb_birim = QComboBox()
+        self._cmb_birim.currentIndexChanged.connect(self._on_birim)
+        bl.addWidget(self._cmb_birim)
+        lay.addWidget(g2)
 
-        # Otomatik planlama
-        grp_oto = QGroupBox("Otomatik Planlama")
-        grp_oto.setProperty("style-role", "group")
-        ol = QVBoxLayout(grp_oto)
-        ol.setContentsMargins(8, 6, 8, 10)
-        ol.setSpacing(6)
+        g3 = self._grp("Planlama")
+        pl = QVBoxLayout(g3)
+        pl.setSpacing(6)
+        self._btn_oto = QPushButton("\u26a1  Otomatik Plan")
+        self._btn_oto.setProperty("style-role","action")
+        self._btn_oto.setFixedHeight(32)
+        self._btn_oto.clicked.connect(self._oto_plan)
+        pl.addWidget(self._btn_oto)
+        self._btn_temizle = QPushButton("\u2715  Tasla\u011f\u0131 Temizle")
+        self._btn_temizle.setProperty("style-role","danger")
+        self._btn_temizle.setFixedHeight(28)
+        self._btn_temizle.clicked.connect(self._temizle)
+        pl.addWidget(self._btn_temizle)
+        self._pbar = QProgressBar()
+        self._pbar.setFixedHeight(3)
+        self._pbar.setRange(0,0)
+        self._pbar.setVisible(False)
+        pl.addWidget(self._pbar)
+        lay.addWidget(g3)
 
-        lbl_saat = QLabel("Aylık max saat:")
-        lbl_saat.setProperty("color-role", "muted")
-        ol.addWidget(lbl_saat)
+        g4 = self._grp("Onay")
+        ol2 = QVBoxLayout(g4)
+        self._lbl_onay = QLabel("\u2014")
+        self._lbl_onay.setWordWrap(True)
+        self._lbl_onay.setStyleSheet("font-size:11px;")
+        ol2.addWidget(self._lbl_onay)
+        br = QHBoxLayout()
+        self._btn_onayla = QPushButton("\u2714  Onayla")
+        self._btn_onayla.setProperty("style-role","action")
+        self._btn_onayla.setFixedHeight(28)
+        self._btn_onayla.setEnabled(False)
+        self._btn_onayla.clicked.connect(self._onayla)
+        br.addWidget(self._btn_onayla)
+        self._btn_ogeri = QPushButton("Geri Al")
+        self._btn_ogeri.setProperty("style-role","secondary")
+        self._btn_ogeri.setFixedHeight(28)
+        self._btn_ogeri.setVisible(False)
+        self._btn_ogeri.clicked.connect(self._onay_geri_al)
+        br.addWidget(self._btn_ogeri)
+        ol2.addLayout(br)
+        lay.addWidget(g4)
 
-        self.spn_max_saat = QSpinBox()
-        self.spn_max_saat.setRange(50, 400)
-        self.spn_max_saat.setValue(225)
-        self.spn_max_saat.setSuffix(" saat")
-        self.spn_max_saat.setToolTip(
-            "Aylık iş günü × 7.5 saat olarak otomatik hesaplanır.\n"
-            "İstersen elle de değiştirebilirsin."
-        )
-        ol.addWidget(self.spn_max_saat)
+        g5 = self._grp("Personel Tercihleri")
+        ql = QVBoxLayout(g5)
+        ql.setContentsMargins(4,6,4,4)
+        sc = QScrollArea()
+        sc.setWidgetResizable(True)
+        sc.setFrameShape(QFrame.Shape.NoFrame)
+        self._p_widget = QWidget()
+        self._p_lay    = QVBoxLayout(self._p_widget)
+        self._p_lay.setContentsMargins(2,2,2,2)
+        self._p_lay.setSpacing(2)
+        sc.setWidget(self._p_widget)
+        ql.addWidget(sc)
+        lay.addWidget(g5, 1)
+        return sol
 
-        self.lbl_is_gunu = QLabel("")
-        self.lbl_is_gunu.setProperty("color-role", "muted")
-        self.lbl_is_gunu.setProperty("style-role", "stat-label")
-        ol.addWidget(self.lbl_is_gunu)
+    def _build_onay_bar(self):
+        bar = QFrame()
+        bar.setProperty("bg-role","elevated")
+        bar.setFixedHeight(26)
+        h = QHBoxLayout(bar)
+        h.setContentsMargins(16,0,16,0)
+        self._lbl_onay_bar = QLabel("")
+        self._lbl_onay_bar.setStyleSheet("font-size:11px;")
+        h.addWidget(self._lbl_onay_bar)
+        h.addStretch()
+        self._lbl_plan_bilgi = QLabel("")
+        self._lbl_plan_bilgi.setProperty("color-role","muted")
+        self._lbl_plan_bilgi.setStyleSheet("font-size:10px;")
+        h.addWidget(self._lbl_plan_bilgi)
+        return bar
 
-        self.btn_taslak_temizle = QPushButton("Taslakları Temizle")
-        self.btn_taslak_temizle.setProperty("style-role", "danger")
-        self.btn_taslak_temizle.setFixedHeight(28)
-        self.btn_taslak_temizle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_taslak_temizle.clicked.connect(self._taslak_temizle)
-        ol.addWidget(self.btn_taslak_temizle)
+    def _build_tablo(self):
+        self._tablo = QTableWidget(0,0)
+        self._tablo.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self._tablo.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._tablo.verticalHeader().setVisible(False)
+        self._tablo.setShowGrid(True)
+        self._tablo.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self._tablo.customContextMenuRequested.connect(self._kontekst_menu)
+        self._tablo.cellDoubleClicked.connect(self._cift_tikla)
+        self._tablo.horizontalHeader().setDefaultSectionSize(110)
+        return self._tablo
 
-        self.btn_oto_plan = QPushButton(" Taslak Oluştur")
-        self.btn_oto_plan.setProperty("style-role", "action")
-        self.btn_oto_plan.setFixedHeight(32)
-        self.btn_oto_plan.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_oto_plan, "magic",
-                                     color=IconColors.PRIMARY, size=14)
-        self.btn_oto_plan.clicked.connect(self._oto_plan_olustur)
-        ol.addWidget(self.btn_oto_plan)
+    def _build_footer(self):
+        f = QFrame()
+        f.setProperty("bg-role","panel")
+        f.setFixedHeight(24)
+        h = QHBoxLayout(f)
+        h.setContentsMargins(12,0,12,0)
+        self._lbl_status = QLabel("")
+        self._lbl_status.setProperty("color-role","muted")
+        self._lbl_status.setStyleSheet("font-size:10px;")
+        h.addWidget(self._lbl_status)
+        return f
 
-        self.pbar = QProgressBar()
-        self.pbar.setFixedHeight(3)
-        self.pbar.setVisible(False)
-        self.pbar.setRange(0, 0)
-        ol.addWidget(self.pbar)
-        lay.addWidget(grp_oto)
+    # ──────────────────────────────────────────────────────────
+    #  Veri
+    # ──────────────────────────────────────────────────────────
 
-        # Onay
-        grp_onay = QGroupBox("Onay")
-        grp_onay.setProperty("style-role", "group")
-        oy = QVBoxLayout(grp_onay)
-        oy.setContentsMargins(8, 6, 8, 10)
-        oy.setSpacing(6)
-        self.lbl_onay_durum = QLabel("—")
-        self.lbl_onay_durum.setProperty("color-role", "muted")
-        oy.addWidget(self.lbl_onay_durum)
-        self.btn_onayla = QPushButton(" Planı Onayla")
-        self.btn_onayla.setProperty("style-role", "action")
-        self.btn_onayla.setFixedHeight(28)
-        self.btn_onayla.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(self.btn_onayla, "check",
-                                     color=IconColors.PRIMARY, size=14)
-        self.btn_onayla.clicked.connect(self._onayla)
-        oy.addWidget(self.btn_onayla)
-        lay.addWidget(grp_onay)
+    def _birimleri_yukle(self):
+        try:
+            self._cmb_birim.blockSignals(True)
+            self._cmb_birim.clear()
+            self._cmb_birim.addItem("\u2014 Birim Se\u00e7in \u2014", userData=("",""))
+            for b in (self._svc().get_birimler().veri or []):
+                if isinstance(b,dict):
+                    self._cmb_birim.addItem(b.get("BirimAdi",""), userData=(b.get("BirimAdi",""), b.get("BirimID","")))
+                else:
+                    self._cmb_birim.addItem(str(b), userData=(str(b),""))
+            self._cmb_birim.blockSignals(False)
+        except Exception as e:
+            logger.error(f"birimleri_yukle: {e}")
 
-        # Personel Durumu — plan öncesi ayar kontrol özeti
-        grp_personel = QGroupBox("Personel Durumu")
-        grp_personel.setProperty("style-role", "group")
-        pl = QVBoxLayout(grp_personel)
-        pl.setContentsMargins(8, 6, 8, 8)
-        pl.setSpacing(2)
-        self.lbl_personel_durum = QLabel("Birim seçin")
-        self.lbl_personel_durum.setProperty("color-role", "muted")
-        self.lbl_personel_durum.setProperty("style-role", "stat-label")
-        self.lbl_personel_durum.setWordWrap(True)
-        pl.addWidget(self.lbl_personel_durum)
-        self.scroll_personel = QScrollArea()
-        self.scroll_personel.setWidgetResizable(True)
-        self.scroll_personel.setFrameShape(QFrame.Shape.NoFrame)
-        self.scroll_personel.setFixedHeight(140)
-        self._personel_durum_widget = QWidget()
-        self._personel_durum_lay = QVBoxLayout(self._personel_durum_widget)
-        self._personel_durum_lay.setContentsMargins(0, 0, 0, 0)
-        self._personel_durum_lay.setSpacing(1)
-        self.scroll_personel.setWidget(self._personel_durum_widget)
-        pl.addWidget(self.scroll_personel)
-        lay.addWidget(grp_personel)
+    def _on_birim(self):
+        data = self._cmb_birim.currentData()
+        if not data: return
+        self._birim_adi, self._birim_id = data
+        self._yukle()
 
+    def _ay_geri(self):
+        self._ay, self._yil = (12, self._yil-1) if self._ay==1 else (self._ay-1, self._yil)
+        self._yukle()
+
+    def _ay_ileri(self):
+        self._ay, self._yil = (1, self._yil+1) if self._ay==12 else (self._ay+1, self._yil)
+        self._yukle()
+
+    def _yukle(self):
+        self._lbl_ay.setText(self._ay_etiketi())
+        if not self._birim_adi: return
+        try:
+            svc = self._svc()
+            reg = self._reg()
+
+            v_rows = reg.get("NB_Vardiya").get_all() or []
+            self._v_map = {str(v["VardiyaID"]): dict(v) for v in v_rows}
+
+            p_rows = reg.get("Personel").get_all() or []
+            self._p_map = {str(p["KimlikNo"]): p.get("AdSoyad","") for p in p_rows}
+
+            t_rows = reg.get("Tatiller").get_all() or []
+            ab = f"{self._yil:04d}-{self._ay:02d}-01"
+            ae = f"{self._yil:04d}-{self._ay:02d}-31"
+            self._tatil_set = {str(r.get("Tarih","")) for r in t_rows
+                               if ab<=str(r.get("Tarih",""))<=ae and str(r.get("TatilTuru",""))=="Resmi"}
+            self._dini_set  = {str(r.get("Tarih","")) for r in t_rows
+                               if ab<=str(r.get("Tarih",""))<=ae and str(r.get("TatilTuru",""))=="DiniBayram"}
+
+            sonuc = svc.get_plan(self._yil, self._ay, self._birim_adi)
+            self._plan_data = sonuc.veri or [] if sonuc.basarili else []
+            for r in self._plan_data:
+                if not r.get("AdSoyad"):
+                    r["AdSoyad"] = self._p_map.get(str(r.get("PersonelID","")), "")
+
+            onay_rows = (svc.onay_getir(self._yil,self._ay,self._birim_adi).veri or [])
+            self._onay_durumu = onay_rows[0].get("Durum","yok") if onay_rows else "yok"
+
+            self._pid_list = self._personel_listesi()
+
+            try:
+                a_rows = reg.get("NB_BirimAyar").get_all() or []
+                ayar   = next((r for r in a_rows if str(r.get("BirimID",""))==self._birim_id), None)
+                self._slot_sayisi = int((ayar or {}).get("GunlukSlotSayisi", 4))
+            except Exception:
+                self._slot_sayisi = 4
+
+            self._tercih_map = svc._tercih_map_getir(
+                self._yil, self._ay, self._birim_adi)                 if hasattr(svc,"_tercih_map_getir") else {}
+
+            # Grupları al
+            self._gruplar = self._gruplari_olustur()
+
+        except Exception as e:
+            logger.error(f"yukle: {e}")
+            self._plan_data = []
+            self._pid_list  = []
+            self._gruplar   = []
+
+        self._ciz()
+        self._onay_guncelle()
+        self._tercih_goster()
+
+    def _personel_listesi(self):
+        try:
+            from core.di import get_nb_birim_personel_service
+            if self._birim_id:
+                pids = get_nb_birim_personel_service(self._db).personel_pid_listesi(self._birim_id)
+                if pids:
+                    return sorted(pids, key=lambda p: self._p_map.get(p,""))
+        except Exception:
+            pass
+        try:
+            p_rows = self._reg().get("Personel").get_all() or []
+            return sorted(
+                [str(p["KimlikNo"]) for p in p_rows
+                 if str(p.get("GorevYeri","")).strip()==self._birim_adi],
+                key=lambda p: self._p_map.get(p,""))
+        except Exception:
+            return []
+
+    def _gruplari_olustur(self):
+        """
+        Vardiya gruplarını ve her grubun slot sayısını belirler.
+        NB_VardiyaGrubu → [{GrupAdi, BasSaat, BitSaat, VardiyaIDler, slot_sayisi}]
+        Fallback: tek grup, BasSaat'e göre ana vardiyalar.
+        """
+        try:
+            reg = self._reg()
+            g_rows = reg.get("NB_VardiyaGrubu").get_all() or []
+            v_rows = reg.get("NB_Vardiya").get_all() or []
+
+            gruplar = [g for g in g_rows
+                       if str(g.get("BirimID",""))==self._birim_id
+                       and int(g.get("Aktif",1))]
+            gruplar.sort(key=lambda g: int(g.get("Sira",1)))
+
+            if not gruplar:
+                raise ValueError("Grup yok")
+
+            sonuc = []
+            for g in gruplar:
+                gid = g["GrupID"]
+                ana_v = [v for v in v_rows
+                         if str(v.get("GrupID",""))==gid
+                         and (v.get("Rol","ana"))=="ana"
+                         and int(v.get("Aktif",1))]
+                ana_v.sort(key=lambda v: int(v.get("Sira",1)))
+                if not ana_v:
+                    continue
+                bas  = ana_v[0].get("BasSaat","")
+                bit  = ana_v[-1].get("BitSaat","")
+                baslik = f"{bas} - {bit}"
+                sonuc.append({
+                    "GrupAdi":    g.get("GrupAdi", baslik),
+                    "Baslik":     baslik,
+                    "GrupID":     gid,
+                    "VardiyaIDler": [v["VardiyaID"] for v in ana_v],
+                    "slot_sayisi": min(self._slot_sayisi, MAX_SLOT_PER_GRUP),
+                })
+            return sonuc if sonuc else self._gruplar_fallback()
+        except Exception:
+            return self._gruplar_fallback()
+
+    def _gruplar_fallback(self):
+        """Grup tanımlı değilse tüm ana vardiyaları tek grupta göster."""
+        v_ids = [vid for vid,v in self._v_map.items()
+                 if (v.get("Rol","ana"))=="ana"]
+        if not v_ids:
+            return []
+        bas = self._v_map[v_ids[0]].get("BasSaat","")
+        return [{
+            "GrupAdi":    "N\u00f6bet",
+            "Baslik":     bas + " \u2013 ...",
+            "GrupID":     "",
+            "VardiyaIDler": v_ids,
+            "slot_sayisi": min(self._slot_sayisi, MAX_SLOT_PER_GRUP),
+        }]
+
+    # ──────────────────────────────────────────────────────────
+    #  Tablo çizimi (Excel benzeri)
+    # ──────────────────────────────────────────────────────────
+
+    def _ciz(self):
+        self._tablo.clearSpans()
+        self._tablo.setRowCount(0)
+        self._tablo.setColumnCount(0)
+
+        if not self._gruplar:
+            self._lbl_status.setText("Birim se\u00e7in veya vard\u0131ya tan\u0131mlay\u0131n")
+            return
+
+        gun_sayisi = monthrange(self._yil, self._ay)[1]
+
+        # Sütun yapısı:
+        # [0]=Tarih [1]=Gün  |  Grup1: slot_sayisi sütun  |  Grup2: slot_sayisi sütun  | ...
+        toplam_slot = sum(g["slot_sayisi"] for g in self._gruplar)
+        toplam_sutun = 2 + toplam_slot
+        self._tablo.setColumnCount(toplam_sutun)
+        self._tablo.setRowCount(2 + gun_sayisi)  # satır0=grup header, satır1=? (yok), satır2..=günler
+
+        # Aslında 2 header satırı yerine 1 satır header + setSpan kullanalım
+        # Satır 0: "Tarih" | "Gün" | GrupBaslık(merged) | GrupBaslık(merged) |...
+        # Satır 1..gun_sayisi+1: gün verileri
+        self._tablo.setRowCount(1 + gun_sayisi)
+
+        bold = QFont()
+        bold.setBold(True)
+        bold_kucuk = QFont()
+        bold_kucuk.setBold(True)
+        bold_kucuk.setPointSize(9)
+
+        # ── Satır 0: Başlıklar ──
+        def header_item(txt):
+            it = QTableWidgetItem(txt)
+            it.setFont(bold)
+            it.setBackground(QBrush(QColor(C["header_bg"])))
+            it.setForeground(QColor("#8aabcf"))
+            it.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            it.setFlags(Qt.ItemFlag.ItemIsEnabled)
+            return it
+
+        self._tablo.setItem(0, 0, header_item("Tarih"))
+        self._tablo.setColumnWidth(0, 90)
+        self._tablo.setItem(0, 1, header_item("G\u00fcn"))
+        self._tablo.setColumnWidth(1, 95)
+
+        ci = 2
+        for g in self._gruplar:
+            n = g["slot_sayisi"]
+            it = header_item(g["Baslik"])
+            self._tablo.setItem(0, ci, it)
+            if n > 1:
+                self._tablo.setSpan(0, ci, 1, n)
+            for k in range(n):
+                self._tablo.setColumnWidth(ci+k, 115)
+            ci += n
+
+        self._tablo.setRowHeight(0, 28)
+
+        # ── Plan indeksi {tarih: {grup_idx: [kisi_adlari]}} ──
+        plan_idx: dict[str, dict[int, list[str]]] = {}
+        plan_satir_idx: dict[str, dict[int, list[dict]]] = {}
+
+        # Varsayılan: her vardiya ID hangi gruba ait
+        vid_to_grup: dict[str, int] = {}
+        for gi, g in enumerate(self._gruplar):
+            for vid in g["VardiyaIDler"]:
+                vid_to_grup[vid] = gi
+
+        for s in self._plan_data:
+            tarih = str(s.get("NobetTarihi",""))
+            vid   = str(s.get("VardiyaID",""))
+            gi    = vid_to_grup.get(vid, 0)
+            ad    = str(s.get("AdSoyad","") or
+                        self._p_map.get(str(s.get("PersonelID","")), ""))
+            plan_idx.setdefault(tarih, {}).setdefault(gi, []).append(ad)
+            plan_satir_idx.setdefault(tarih, {}).setdefault(gi, []).append(s)
+
+        onaylanmis = self._onay_durumu in ("onaylandi","yururlukte")
+
+        # ── Gün satırları ──
+        for gun in range(1, gun_sayisi+1):
+            ri    = gun  # 0=header, 1=1.gün, ...
+            tarih = f"{self._yil:04d}-{self._ay:02d}-{gun:02d}"
+            gund  = date(self._yil, self._ay, gun)
+            is_hw = gund.weekday() >= 5
+            is_t  = tarih in self._tatil_set
+            is_d  = tarih in self._dini_set
+
+            # Satır arka plan rengi
+            if is_d:
+                row_bg = C["dini_bg"]
+            elif is_t:
+                row_bg = C["tatil_bg"]
+            elif is_hw:
+                row_bg = C["haftasonu_bg"]
+            elif onaylanmis:
+                row_bg = C["onay_bg"]
+            else:
+                row_bg = C["normal_bg"]
+
+            self._tablo.setRowHeight(ri, 28)
+
+            # Tarih hücresi: "1.07.2025"
+            tarih_str = f"{gun}.{self._ay:02d}.{self._yil}"
+            tarih_item = QTableWidgetItem(tarih_str)
+            tarih_item.setBackground(QBrush(QColor(row_bg)))
+            tarih_item.setForeground(QColor(C["gun_renk_hs"] if is_hw else C["tarih_renk"]))
+            tarih_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            tarih_item.setFont(bold_kucuk)
+            tarih_item.setData(Qt.ItemDataRole.UserRole,
+                               {"tarih": tarih, "gun": gun, "tip": "tarih"})
+            self._tablo.setItem(ri, 0, tarih_item)
+
+            # Gün hücresi: "Salı"
+            gun_adi = _GUN_TR[gund.weekday()]
+            if is_d:
+                gun_adi += " \U0001f54c"
+            elif is_t:
+                gun_adi += " \U0001f3c1"
+            gun_item = QTableWidgetItem(gun_adi)
+            gun_item.setBackground(QBrush(QColor(row_bg)))
+            gun_item.setForeground(QColor(C["gun_renk_hs"] if is_hw else C["gun_renk"]))
+            gun_item.setTextAlignment(Qt.AlignmentFlag.AlignVCenter |
+                                       Qt.AlignmentFlag.AlignLeft)
+            gun_item.setData(Qt.ItemDataRole.UserRole,
+                             {"tarih": tarih, "gun": gun, "tip": "gun"})
+            self._tablo.setItem(ri, 1, gun_item)
+
+            # Kişi sütunları
+            ci = 2
+            for gi, g in enumerate(self._gruplar):
+                kisiler    = plan_idx.get(tarih, {}).get(gi, [])
+                satirlar_g = plan_satir_idx.get(tarih, {}).get(gi, [])
+                n          = g["slot_sayisi"]
+                for ki in range(n):
+                    ad = kisiler[ki] if ki < len(kisiler) else ""
+                    satir = satirlar_g[ki] if ki < len(satirlar_g) else None
+                    kisi_item = QTableWidgetItem(ad)
+                    kisi_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                    if ad:
+                        bg = C["kisi_bg_onay"] if onaylanmis else                              C["kisi_bg_hs"]   if is_hw       else                              C["kisi_bg"]
+                        kisi_item.setForeground(QColor(C["kisi_renk"]))
+                        kisi_item.setFont(bold_kucuk)
+                    else:
+                        bg = C["bos_kisi_hs"] if is_hw else C["bos_kisi"]
+                        if is_d:
+                            bg = C["dini_bg"]
+                        elif is_t:
+                            bg = C["tatil_bg"]
+                        kisi_item.setForeground(QColor(C["bos_renk"]))
+                    kisi_item.setBackground(QBrush(QColor(bg)))
+                    kisi_item.setData(Qt.ItemDataRole.UserRole, {
+                        "tarih": tarih, "gun": gun,
+                        "grup_idx": gi, "slot_ki": ki,
+                        "satir": satir, "tip": "kisi",
+                    })
+                    self._tablo.setItem(ri, ci+ki, kisi_item)
+                ci += n
+
+        # Başlık satırı sabitle
+        self._tablo.horizontalHeader().setVisible(False)
+
+        self._lbl_status.setText(
+            f"{self._birim_adi}  |  {_AY_TR[self._ay]} {self._yil}  |  "
+            f"{len(self._plan_data)} n\u00f6bet  |  Durum: {self._onay_durumu}")
+        self._lbl_plan_bilgi.setText(
+            f"Slot: {self._slot_sayisi}/g\u00fcn  |  Toplam: {len(self._plan_data)}")
+
+    # ──────────────────────────────────────────────────────────
+    #  Onay & Sol Panel
+    # ──────────────────────────────────────────────────────────
+
+    def _onay_guncelle(self):
+        d = {
+            "yok":        ("Plan yok",                  "#6b7280"),
+            "taslak":     ("\U0001f4cb  Taslak",          "#f59e0b"),
+            "onaylandi":  ("\u2714  Onayland\u0131",      "#22c55e"),
+            "yururlukte": ("\u2714  Y\u00fcr\u00fcrl\u00fckte","#22c55e"),
+        }
+        metin, renk = d.get(self._onay_durumu,("?","#888"))
+        self._lbl_onay.setText(f"<span style='color:{renk}'>{metin}</span>")
+        self._lbl_onay_bar.setText(
+            f"<span style='color:{renk}'>{metin}</span>  "
+            f"<span style='color:#555;font-size:10px;'>"
+            f"{_AY_TR[self._ay]} {self._yil} \u2014 {self._birim_adi}</span>")
+        onaylanmis = self._onay_durumu in ("onaylandi","yururlukte")
+        self._btn_onayla.setEnabled(self._onay_durumu=="taslak" and bool(self._plan_data))
+        self._btn_ogeri.setVisible(onaylanmis)
+        self._btn_oto.setEnabled(not onaylanmis)
+        self._btn_temizle.setEnabled(self._onay_durumu=="taslak")
+
+    def _tercih_goster(self):
+        lay = self._p_lay
+        while lay.count():
+            w = lay.takeAt(0).widget()
+            if w: w.deleteLater()
+        if not self._pid_list:
+            lay.addWidget(QLabel("Personel yok", styleSheet="color:#555;font-size:11px;"))
+            return
+        plan_sayi = {}
+        for s in self._plan_data:
+            pid = str(s.get("PersonelID",""))
+            plan_sayi[pid] = plan_sayi.get(pid,0)+1
+        for pid in self._pid_list:
+            ad     = self._p_map.get(pid,pid)
+            tercih = self._tercih_map.get(pid,"zorunlu")
+            renk   = TERCIH_RENK.get(tercih,"#6b7280")
+            etiket = TERCIH_ETIKET.get(tercih,tercih)
+            sayi   = plan_sayi.get(pid,0)
+            row = QWidget()
+            rl  = QHBoxLayout(row)
+            rl.setContentsMargins(4,2,4,2)
+            rl.setSpacing(4)
+            dot = QLabel("\u25cf")
+            dot.setFixedWidth(12)
+            dot.setStyleSheet(f"color:{renk};font-size:11px;")
+            rl.addWidget(dot)
+            ad_lbl = QLabel(ad[:20])
+            ad_lbl.setStyleSheet("font-size:11px;")
+            ad_lbl.setToolTip(f"{ad} \u2014 {etiket}")
+            rl.addWidget(ad_lbl, 1)
+            sayi_lbl = QLabel(str(sayi) if sayi else "\u2014")
+            sayi_lbl.setFixedWidth(24)
+            sayi_lbl.setAlignment(Qt.AlignmentFlag.AlignRight)
+            sayi_lbl.setStyleSheet(f"font-size:10px;color:{'#f59e0b' if sayi>12 else '#6b7280'};")
+            rl.addWidget(sayi_lbl)
+            lay.addWidget(row)
         lay.addStretch()
 
-        # Seçili güne manuel nöbet ekle
-        grp_manuel = QGroupBox("Manuel Nöbet")
-        grp_manuel.setProperty("style-role", "group")
-        ml = QVBoxLayout(grp_manuel)
-        ml.setContentsMargins(8, 6, 8, 10)
-        ml.setSpacing(4)
-        self.lbl_secili_gun = QLabel("Takvimden gün seçin")
-        self.lbl_secili_gun.setProperty("color-role", "muted")
-        self.lbl_secili_gun.setProperty("style-role", "stat-label")
-        self.lbl_secili_gun.setWordWrap(True)
-        ml.addWidget(self.lbl_secili_gun)
-        self.btn_manuel_ekle = QPushButton(" Nöbet Ekle")
-        self.btn_manuel_ekle.setProperty("style-role", "secondary")
-        self.btn_manuel_ekle.setFixedHeight(28)
-        self.btn_manuel_ekle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_manuel_ekle.setEnabled(False)
-        IconRenderer.set_button_icon(self.btn_manuel_ekle, "plus",
-                                     color=IconColors.MUTED, size=13)
-        self.btn_manuel_ekle.clicked.connect(self._manuel_panel_ac)
-        ml.addWidget(self.btn_manuel_ekle)
-        lay.addWidget(grp_manuel)
-
-        self.lbl_durum = QLabel("")
-        self.lbl_durum.setProperty("color-role", "muted")
-        self.lbl_durum.setWordWrap(True)
-        lay.addWidget(self.lbl_durum)
-        return panel
-
-    # ── Takvim ──
-
-    def _build_takvim_alani(self) -> QWidget:
-        wrap = QWidget()
-        wl   = QVBoxLayout(wrap)
-        wl.setContentsMargins(0, 0, 0, 0)
-        wl.setSpacing(0)
-
-        # Gün başlıkları
-        hdr = QFrame()
-        hdr.setFixedHeight(30)
-        hdr.setProperty("bg-role", "elevated")
-        hl = QHBoxLayout(hdr)
-        hl.setContentsMargins(4, 0, 4, 0)
-        hl.setSpacing(2)
-        for gn in _GUN_ADLARI:
-            l = QLabel(gn)
-            l.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            l.setProperty("style-role", "stat-label")
-            l.setProperty("color-role",
-                          "warn" if gn in ("Cmt","Paz") else "muted")
-            hl.addWidget(l, 1)
-        wl.addWidget(hdr)
-
-        # Grid scroll
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self._takvim_widget = QWidget()
-        self._takvim_grid   = QGridLayout(self._takvim_widget)
-        self._takvim_grid.setSpacing(2)
-        self._takvim_grid.setContentsMargins(4, 4, 4, 4)
-        scroll.setWidget(self._takvim_widget)
-        wl.addWidget(scroll, 1)
-        return wrap
-
-    # ─── Veri ────────────────────────────────────────────
-
-    def load_data(self):
-        if not self._db:
-            return
-        self._personel_yukle()
-        self._birim_combo_doldur()
-        self._max_saat_guncelle()
-        self._plan_yukle()
-
-    def _personel_yukle(self):
-        try:
-            from database.repository_registry import RepositoryRegistry
-            svc = get_nobet_service(self._db)
-            p_rows = svc._r.get("Personel").get_all() or []
-            self._personel_map = {
-                str(p["KimlikNo"]): p.get("AdSoyad", "") for p in p_rows
-            }
-        except Exception as e:
-            logger.error(f"Personel yükleme: {e}")
-
-    def _birim_combo_doldur(self):
-        try:
-            svc   = get_nobet_service(self._db)
-            sonuc = svc.get_birimler()
-            cur   = self.cmb_birim.currentData()
-            self.cmb_birim.blockSignals(True)
-            self.cmb_birim.clear()
-            self.cmb_birim.addItem("Tüm Birimler", userData=None)
-            for b in (sonuc.veri or []):
-                self.cmb_birim.addItem(b, userData=b)
-            # Önceki seçimi koru
-            for i in range(self.cmb_birim.count()):
-                if self.cmb_birim.itemData(i) == cur:
-                    self.cmb_birim.setCurrentIndex(i)
-                    break
-            self.cmb_birim.blockSignals(False)
-        except Exception as e:
-            logger.error(f"Birim combo: {e}")
-
-    def _plan_yukle(self):
-        if not self._db:
-            return
-        try:
-            svc       = get_nobet_service(self._db)
-            birim_adi = self.cmb_birim.currentData()
-            sonuc     = svc.get_plan(self._yil, self._ay, birim_adi)
-            self._plan_data = sonuc.veri or [] if sonuc.basarili else []
-
-            # Vardiya haritası: VardiyaID → vardiya dict
-            try:
-                v_rows = svc._r.get("Nobet_Vardiya").get_all() or []
-                self._vardiya_map = {
-                    v["VardiyaID"]: v for v in v_rows
-                }
-            except Exception:
-                self._vardiya_map = {}
-
-            # Tatil listesi
-            try:
-                t_rows = svc._r.get("Tatiller").get_all() or []
-                self._tatil_map: dict[str, str] = {
-                    str(r.get("Tarih","")): str(r.get("ResmiTatil",""))
-                    for r in t_rows
-                }
-                self._dini_bayram_set: set[str] = {
-                    str(r.get("Tarih",""))
-                    for r in t_rows
-                    if str(r.get("TatilTuru","")) == "DiniBayram"
-                }
-            except Exception:
-                self._tatil_map = {}
-                self._dini_bayram_set = set()
-
-            self._takvim_goster()
-            self._onay_durum_goster()
-            self._personel_durum_goster(svc)
-        except Exception as e:
-            logger.error(f"Plan yükleme: {e}")
-
-    def _filtrele_ve_goster(self):
-        self._plan_yukle()
-        self._personel_durum_goster()
-
-    # ─── Takvim ──────────────────────────────────────────
-
-    def _takvim_goster(self):
-        self._hucreler.clear()
-        # Grid temizle
-        while self._takvim_grid.count():
-            item = self._takvim_grid.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-
-        self.lbl_ay.setText(f"{_AY_ADLARI[self._ay]} {self._yil}")
-
-        # Ayın ilk gününün haftadaki yeri (0=Pzt)
-        ilk_gun = date(self._yil, self._ay, 1)
-        bos_adet = ilk_gun.weekday()
-
-        # Plan → gün → nöbet listesi haritası
-        gun_plan: dict[date, list[dict]] = {}
-        for n in self._plan_data:
-            try:
-                t = date.fromisoformat(str(n.get("NobetTarihi","")))
-                gun_plan.setdefault(t, []).append(n)
-            except Exception:
-                pass
-
-        ay_gun_sayisi = calendar.monthrange(self._yil, self._ay)[1]
-        sutun = 0
-        satir = 0
-
-        # Boş hücreler (önceki ay)
-        for _ in range(bos_adet):
-            bos = _GunHucresi()
-            self._takvim_grid.addWidget(bos, satir, sutun)
-            sutun += 1
-
-        # Ayın günleri
-        for gun_no in range(1, ay_gun_sayisi + 1):
-            g         = date(self._yil, self._ay, gun_no)
-            tarih_str = g.isoformat()
-            tatil_adi = getattr(self, "_tatil_map", {}).get(tarih_str, "")
-            is_dini   = tarih_str in getattr(self, "_dini_bayram_set", set())
-
-            hucre = _GunHucresi(g, tatil=bool(tatil_adi), dini_bayram=is_dini)
-            if tatil_adi:
-                hucre.set_tatil_adi(tatil_adi)
-            nobetler = gun_plan.get(g, [])
-            hucre.set_nobetler(nobetler, self._personel_map,
-                               getattr(self, "_vardiya_map", {}))
-            hucre.tiklandi.connect(self._on_gun_tiklandi)
-            self._takvim_grid.addWidget(hucre, satir, sutun)
-            self._hucreler[g] = hucre
-            sutun += 1
-            if sutun == 7:
-                sutun = 0
-                satir += 1
-
-        # Sütun ve satır stretch — hücreler eşit büyür
-        for i in range(7):
-            self._takvim_grid.setColumnStretch(i, 1)
-        for i in range(satir + 1):
-            self._takvim_grid.setRowStretch(i, 1)
-
-    def _on_gun_tiklandi(self, gun: date, nobetler: list):
-        if self._secili_gun and self._secili_gun in self._hucreler:
-            self._hucreler[self._secili_gun].set_secili(False)
-        self._secili_gun = gun
-        self._hucreler[gun].set_secili(True)
-        self.btn_manuel_ekle.setEnabled(True)
-        self.lbl_secili_gun.setText(gun.strftime("%d.%m.%Y"))
-
-        if nobetler:
-            satirlar = [
-                f"• {self._personel_map.get(n.get('PersonelID',''), n.get('PersonelID',''))}"
-                for n in nobetler
-            ]
-            self.lbl_durum.setText(
-                f"{gun.strftime('%d.%m.%Y')} nöbetleri:\n"
-                + "\n".join(satirlar)
-            )
-        else:
-            self.lbl_durum.setText(f"{gun.strftime('%d.%m.%Y')} — Nöbet yok")
-
-    # ─── Navigasyon ──────────────────────────────────────
-
-    # ── Manuel Nöbet Paneli ──
-
-    def _build_manuel_panel(self) -> QFrame:
-        from PySide6.QtWidgets import QScrollArea, QFormLayout, QTextEdit
-        panel = QFrame()
-        panel.setProperty("bg-role", "panel")
-        panel.setMinimumWidth(0)
-        panel.setMaximumWidth(0)
-        root = QVBoxLayout(panel)
-        root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(0)
-
-        hdr = QFrame()
-        hdr.setFixedHeight(48)
-        hdr.setProperty("bg-role", "elevated")
-        hl = QHBoxLayout(hdr)
-        hl.setContentsMargins(16, 0, 8, 0)
-        self.lbl_manuel_baslik = QLabel("Nöbet Ekle")
-        self.lbl_manuel_baslik.setProperty("style-role", "section-title")
-        self.lbl_manuel_baslik.setProperty("color-role", "primary")
-        hl.addWidget(self.lbl_manuel_baslik)
-        hl.addStretch()
-        btn_kapat = QPushButton()
-        btn_kapat.setFixedSize(28, 28)
-        btn_kapat.setProperty("style-role", "close")
-        btn_kapat.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(btn_kapat, "x",
-                                     color=IconColors.MUTED, size=14)
-        btn_kapat.clicked.connect(self._manuel_panel_kapat)
-        hl.addWidget(btn_kapat)
-        root.addWidget(hdr)
-
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        icerik = QWidget()
-        form = QFormLayout(icerik)
-        form.setContentsMargins(16, 16, 16, 16)
-        form.setSpacing(10)
-        form.setLabelAlignment(Qt.AlignmentFlag.AlignRight |
-                               Qt.AlignmentFlag.AlignVCenter)
-
-        def _lbl(t, z=False):
-            l = QLabel(("★ " if z else "") + t)
-            l.setProperty("color-role", "muted")
-            return l
-
-        self.lbl_manuel_tarih = QLabel("")
-        self.lbl_manuel_tarih.setProperty("style-role", "section-title")
-        form.addRow(_lbl("Tarih"), self.lbl_manuel_tarih)
-
-        self.cmb_manuel_vardiya = QComboBox()
-        form.addRow(_lbl("Vardiya", True), self.cmb_manuel_vardiya)
-
-        self.cmb_manuel_personel = QComboBox()
-        self.cmb_manuel_personel.setEditable(True)
-        self.cmb_manuel_personel.setInsertPolicy(
-            QComboBox.InsertPolicy.NoInsert)
-        form.addRow(_lbl("Personel", True), self.cmb_manuel_personel)
-
-        self.cmb_manuel_tur = QComboBox()
-        self.cmb_manuel_tur.addItem("Normal",      userData="normal")
-        self.cmb_manuel_tur.addItem("Fazla Mesai", userData="fazla_mesai")
-        self.cmb_manuel_tur.setCurrentIndex(0)
-        form.addRow(_lbl("Nöbet Türü"), self.cmb_manuel_tur)
-
-        self.inp_manuel_not = QTextEdit()
-        self.inp_manuel_not.setFixedHeight(60)
-        self.inp_manuel_not.setPlaceholderText("Acil durum, hastalık notu…")
-        form.addRow(_lbl("Not"), self.inp_manuel_not)
-
-        scroll.setWidget(icerik)
-        root.addWidget(scroll, 1)
-
-        alt = QFrame()
-        alt.setFixedHeight(56)
-        alt.setProperty("bg-role", "elevated")
-        al = QHBoxLayout(alt)
-        al.setContentsMargins(16, 8, 16, 8)
-        al.setSpacing(8)
-        al.addStretch()
-        btn_kaydet = QPushButton(" Ekle")
-        btn_kaydet.setProperty("style-role", "action")
-        btn_kaydet.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        IconRenderer.set_button_icon(btn_kaydet, "plus",
-                                     color=IconColors.PRIMARY, size=14)
-        btn_kaydet.clicked.connect(self._manuel_nobet_ekle)
-        al.addWidget(btn_kaydet)
-        root.addWidget(alt)
-        return panel
-
-    def _manuel_panel_ac(self):
-        if not self._secili_gun:
-            return
-        self.lbl_manuel_baslik.setText(
-            f"Nöbet Ekle — {self._secili_gun.strftime('%d.%m.%Y')}")
-        self.lbl_manuel_tarih.setText(
-            self._secili_gun.strftime("%d.%m.%Y"))
-        self._manuel_vardiya_doldur()
-        self._manuel_personel_doldur()
-        self._animate_manuel(300)
-
-    def _manuel_panel_kapat(self):
-        self._animate_manuel(0)
-
-    def _animate_manuel(self, hedef: int):
-        if not hasattr(self, "_manuel_anim"):
-            self._manuel_anim = []
-        self._manuel_anim.clear()
-        from PySide6.QtCore import QPropertyAnimation, QEasingCurve
-        cur = self._manuel_panel.width()
-        for prop in (b"minimumWidth", b"maximumWidth"):
-            a = QPropertyAnimation(self._manuel_panel, prop)
-            a.setDuration(220)
-            a.setStartValue(cur)
-            a.setEndValue(hedef)
-            a.setEasingCurve(QEasingCurve.Type.OutCubic)
-            a.start()
-            self._manuel_anim.append(a)
-
-    def _manuel_vardiya_doldur(self):
-        self.cmb_manuel_vardiya.clear()
-        birim_adi = self.cmb_birim.currentText().strip()
-        if not birim_adi or birim_adi == "Tüm Birimler":
-            return
-        try:
-            svc   = get_nobet_service(self._db)
-            sonuc = svc.get_vardiyalar(birim_adi)
-            for v in (sonuc.veri or []):
-                lbl = (f"{v.get('VardiyaAdi','')} "
-                       f"({v.get('BasSaat','')}-{v.get('BitSaat','')})")
-                self.cmb_manuel_vardiya.addItem(lbl, userData=v["VardiyaID"])
-        except Exception as e:
-            logger.error(f"Manuel vardiya doldur: {e}")
-
-    def _manuel_personel_doldur(self):
-        self.cmb_manuel_personel.clear()
-        try:
-            svc = get_nobet_service(self._db)
-            p_rows     = svc._r.get("Personel").get_all() or []
-            tercih_map = svc._tercih_map_getir(self._yil, self._ay)
-
-            # Radyasyon görevlisi hizmet sınıflarını Sabitler'den al
-            try:
-                s_rows = svc._r.get("Sabitler").get_all() or []
-                rad_siniflar = {
-                    str(r.get("MenuEleman","")).strip().lower()
-                    for r in s_rows
-                    if str(r.get("Kod","")).strip() == "Hizmet_Sinifi"
-                    and "radyasyon" in str(r.get("MenuEleman","")).lower()
-                }
-            except Exception:
-                rad_siniflar = {"radyasyon görevlisi"}
-
-            # Radyasyon görevlilerini filtrele
-            filtreli = [
-                p for p in p_rows
-                if str(p.get("HizmetSinifi","")).strip().lower() in rad_siniflar
-                and p.get("AdSoyad","")
-            ]
-
-            # Eşleşme yoksa tüm personeli göster (fallback)
-            liste = filtreli if filtreli else p_rows
-
-            for p in sorted(liste, key=lambda x: x.get("AdSoyad","")):
-                pid    = str(p["KimlikNo"])
-                ad     = p.get("AdSoyad","")
-                if not ad:
-                    continue
-                tercih = tercih_map.get(pid, "zorunlu")
-                if tercih == "gonullu_disi":
-                    etiket = f"⚠ {ad}"
-                elif tercih == "nobet_yok":
-                    etiket = f"✘ {ad}"
-                else:
-                    etiket = ad
-                self.cmb_manuel_personel.addItem(etiket, userData=pid)
-        except Exception as e:
-            logger.error(f"Manuel personel doldur: {e}")
-
-    def _manuel_nobet_ekle(self):
-        if not self._secili_gun:
-            hata_goster(self, "Önce takvimden bir gün seçin.")
-            return
-        v_id = self.cmb_manuel_vardiya.currentData()
-        pid  = self.cmb_manuel_personel.currentData()
-        tur  = self.cmb_manuel_tur.currentData()
-        if not v_id or not pid:
-            hata_goster(self, "Vardiya ve personel seçimi zorunludur.")
-            return
-        try:
-            svc   = get_nobet_service(self._db)
-            birim = self.cmb_birim.currentText().strip()
-            not_t = self.inp_manuel_not.toPlainText().strip()
-            veri  = {
-                "PersonelID":  pid,
-                "BirimAdi":    birim if birim != "Tüm Birimler" else "",
-                "VardiyaID":   v_id,
-                "NobetTarihi": self._secili_gun.isoformat(),
-                "NobetTuru":   tur,
-                # Fazla mesai → direkt onaylı; diğerleri → taslak
-                "Durum":       "onaylandi" if tur == "fazla_mesai" else "taslak",
-                "Notlar":      not_t,
-            }
-            sonuc = svc.plan_ekle(veri)
-            if sonuc.basarili:
-                bilgi_goster(self, sonuc.mesaj)
-                self._manuel_panel_kapat()
-                self._plan_yukle()
-            else:
-                hata_goster(self, sonuc.mesaj)
-        except Exception as e:
-            hata_goster(self, str(e))
-
-    def _prev_ay(self):
-        if self._ay == 1:
-            self._ay  = 12
-            self._yil -= 1
-        else:
-            self._ay -= 1
-        self._max_saat_guncelle()
-        self._plan_yukle()
-
-    def _next_ay(self):
-        if self._ay == 12:
-            self._ay  = 1
-            self._yil += 1
-        else:
-            self._ay += 1
-        self._max_saat_guncelle()
-        self._plan_yukle()
-
-    def _max_saat_guncelle(self):
-        """Ay değişince iş günü × 7.5 saati spn_max_saat'e yazar."""
-        try:
-            from core.hesaplamalar import ay_is_gunu
-            tatiller = []
-            if self._db:
-                try:
-                    svc = get_nobet_service(self._db)
-                    tatiller = svc._tatil_listesi_getir(self._yil, self._ay)
-                except Exception:
-                    pass
-            is_gunu  = ay_is_gunu(self._yil, self._ay, tatil_listesi=tatiller)
-            max_saat = round(is_gunu * 7)
-            self.spn_max_saat.setValue(max_saat)
-            self.lbl_is_gunu.setText(
-                f"{is_gunu} iş günü × 7 saat = {max_saat} saat"
-            )
-        except Exception as e:
-            logger.debug(f"Max saat hesap: {e}")
-
-    # ─── Otomatik Plan ───────────────────────────────────
-
-    def _oto_plan_olustur(self):
-        birim_adi = self.cmb_birim.currentText().strip()
-        if not birim_adi or birim_adi == "Tüm Birimler":
-            hata_goster(self, "Otomatik planlama için bir birim seçin.")
-            return
-
-        try:
-            svc = get_nobet_service(self._db)
-
-            # Onaylanmış plan var mı kontrol et
-            onay = svc.onay_getir(self._yil, self._ay, birim_adi)
-            onay_rows = onay.veri or []
-            zaten_onaylandi = any(
-                r.get("Durum") == "onaylandi" for r in onay_rows
-            )
-            if zaten_onaylandi:
-                hata_goster(self,
-                    f"<b>{birim_adi}</b> için {_AY_ADLARI[self._ay]} {self._yil} "
-                    f"planı zaten onaylanmış.\nYeni taslak oluşturmak için önce onayı geri alın.")
-                return
-
-            # Mevcut taslak sayısı
-            mevcut = svc.get_plan(self._yil, self._ay, birim_adi)
-            mevcut_sayi = len([r for r in (mevcut.veri or [])
-                                if r.get("Durum") == "taslak"])
-
-            onay_metni = (f"<b>{birim_adi}</b> için "
-                          f"<b>{_AY_ADLARI[self._ay]} {self._yil}</b> "
-                          f"nöbet taslağı oluşturulsun mu?")
-            if mevcut_sayi > 0:
-                onay_metni += (f"<br><br>⚠ Mevcut <b>{mevcut_sayi} taslak</b> "
-                               f"silinecek.")
-
-            if not soru_sor(self, onay_metni):
-                return
-
-            # Sadece taslakları temizle (onaylananlar korunur)
-            svc.taslak_temizle(self._yil, self._ay, birim_adi)
-            self.pbar.setVisible(True)
-            self.btn_oto_plan.setEnabled(False)
-            self.lbl_durum.setText("Taslak oluşturuluyor…")
-
-            sonuc = svc.otomatik_plan_olustur(
-                self._yil, self._ay, birim_adi,
-                max_aylik_saat=float(self.spn_max_saat.value()),
-            )
-            self.pbar.setVisible(False)
-            self.btn_oto_plan.setEnabled(True)
-
-            if sonuc.basarili:
-                uyarilar = (sonuc.veri or {}).get("uyarilar", [])
-                mesaj = sonuc.mesaj
-                if uyarilar:
-                    mesaj += "\n\nUyarılar:\n" + "\n".join(uyarilar[:5])
-                bilgi_goster(self, mesaj)
-                self.lbl_durum.setText(sonuc.mesaj)
-                self._plan_yukle()
-            else:
-                hata_goster(self, sonuc.mesaj)
-                self.lbl_durum.setText("")
-        except Exception as e:
-            self.pbar.setVisible(False)
-            self.btn_oto_plan.setEnabled(True)
-            hata_goster(self, str(e))
-
-    def _taslak_temizle(self):
-        birim_adi = self.cmb_birim.currentText().strip()
-        birim_goster = birim_adi if birim_adi and birim_adi != "Tüm Birimler" else "tüm birimler"
-        if not soru_sor(self,
-            f"<b>{_AY_ADLARI[self._ay]} {self._yil}</b> — "
-            f"<b>{birim_goster}</b> taslak nöbetleri silinsin mi?\n"
-            f"(Onaylanmış planlar korunur)"):
-            return
-        try:
-            svc = get_nobet_service(self._db)
-            birim_filtre = birim_adi if birim_adi and birim_adi != "Tüm Birimler" else None
-            sonuc = svc.taslak_temizle(self._yil, self._ay, birim_filtre)
-            if sonuc.basarili:
-                bilgi_goster(self, sonuc.mesaj)
-                self._plan_yukle()
-            else:
-                hata_goster(self, sonuc.mesaj)
-        except Exception as e:
-            hata_goster(self, str(e))
-
-    # ─── Onay ────────────────────────────────────────────
-
-    def _personel_durum_goster(self, svc=None):
-        """Sol panelde personel nöbet ayar durumunu göster."""
-        # Eski widget'ları temizle
-        while self._personel_durum_lay.count():
-            item = self._personel_durum_lay.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-
-        birim_adi = self.cmb_birim.currentText().strip()
-        if not birim_adi or birim_adi == "Tüm Birimler":
-            self.lbl_personel_durum.setText("Birim seçin")
-            return
-
-        try:
-            if svc is None:
-                svc = get_nobet_service(self._db)
-
-            p_rows = svc._r.get("Personel").get_all() or []
-            birimi = [p for p in p_rows
-                      if str(p.get("GorevYeri","")).strip() == birim_adi]
-
-            h_rows = svc._r.get("Nobet_MesaiHedef").get_all() or []
-            ayarli = {str(r.get("PersonelID",""))
-                      for r in h_rows
-                      if r.get("Yil") == self._yil
-                      and r.get("Ay") == self._ay}
-
-            tercih_map = svc._tercih_map_getir(self._yil, self._ay)
-
-            TERCIH_ETIKET = {
-                "zorunlu":             ("●", "#2ec98e", "Zorunlu"),
-                "fazla_mesai_gonullu": ("✦", "#4d9ee8", "FM Gönüllü"),
-                "gonullu_disi":        ("⚠", "#e8a030", "Gönüllü Dışı"),
-                "nobet_yok":           ("✘", "#e85555", "Nöbet Yok"),
-            }
-            _AY_ADLARI_LOCAL = ["","Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",
-                                 "Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
-
-            eksik = 0
-            for p in sorted(birimi, key=lambda x: x.get("AdSoyad","")):
-                pid   = str(p["KimlikNo"])
-                ad    = p.get("AdSoyad","")
-                tercih = tercih_map.get(pid, "zorunlu")
-                ayar_var = pid in ayarli
-
-                sembol, renk, tercih_adi = TERCIH_ETIKET.get(
-                    tercih, ("●", "#888", tercih))
-
-                parcalar = ad.split()
-                kisa = (parcalar[0] + " " + parcalar[-1][0] + "."
-                        if len(parcalar) > 1 else ad)
-
-                # Tıklanabilir satır butonu
-                btn = QPushButton(f"{sembol}  {kisa}  {tercih_adi if ayar_var else '!'}")
-                btn.setFlat(True)
-                btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-                btn.setStyleSheet(
-                    f"QPushButton {{ text-align:left; font-size:11px; "
-                    f"color:{renk if ayar_var else '#e8a030'}; "
-                    f"padding:2px 4px; border:none; "
-                    f"background:transparent; }}"
-                    f"QPushButton:hover {{ background:rgba(255,255,255,0.06); "
-                    f"border-radius:3px; }}"
-                )
-                if not ayar_var:
-                    eksik += 1
-
-                # Tıklayınca tercih değiştirme menüsü
-                btn.clicked.connect(
-                    lambda checked, _pid=pid, _ad=ad, _t=tercih:
-                        self._tercih_sec(_pid, _ad, _t)
-                )
-                self._personel_durum_lay.addWidget(btn)
-
-            self._personel_durum_lay.addStretch()
-
-            if eksik:
-                self.lbl_personel_durum.setText(
-                    f"⚠ {eksik} kişi ayarsız  (tıklayarak düzenle)")
-                self.lbl_personel_durum.setStyleSheet("color: #e8a030; font-size: 10px;")
-            else:
-                self.lbl_personel_durum.setText(
-                    f"✔ {len(birimi)} personel  (tıklayarak düzenle)")
-                self.lbl_personel_durum.setStyleSheet("color: #2ec98e; font-size: 10px;")
-
-        except Exception as e:
-            logger.error(f"Personel durum: {e}")
-            self.lbl_personel_durum.setText("Yüklenemedi")
-
-    def _tercih_sec(self, pid: str, ad: str, mevcut_tercih: str):
-        """Personel satırına tıklayınca nöbet tercihi seçme menüsü açar."""
-        from PySide6.QtWidgets import QMenu
-        from PySide6.QtGui import QAction
-
-        SECENEKLER = [
-            ("zorunlu",             "● Zorunlu (algoritma atar)"),
-            ("fazla_mesai_gonullu", "✦ Fazla Mesai Gönüllüsü"),
-            ("gonullu_disi",        "⚠ Gönüllü Dışı (acil hariç)"),
-            ("nobet_yok",           "✘ Nöbet Yok"),
-        ]
-
+    # ──────────────────────────────────────────────────────────
+    #  Kontekst Menü & Tıklamalar
+    # ──────────────────────────────────────────────────────────
+
+    def _kontekst_menu(self, pos):
+        item = self._tablo.itemAt(pos)
+        if not item: return
+        veri = item.data(Qt.ItemDataRole.UserRole)
+        if not isinstance(veri,dict) or veri.get("tip") not in ("kisi","tarih","gun"): return
+        tarih    = veri.get("tarih","")
+        satir    = veri.get("satir")
+        is_d     = tarih in self._dini_set
+        onaylanmis = self._onay_durumu in ("onaylandi","yururlukte")
         menu = QMenu(self)
-        menu.setTitle(ad)
+        if not onaylanmis:
+            a1 = menu.addAction("+ N\u00f6bet Ekle")
+            a1.triggered.connect(lambda: self._manuel_ekle(tarih))
+        if satir and not onaylanmis:
+            menu.addSeparator()
+            v = self._v_map.get(satir.get("VardiyaID",""),{})
+            ad = satir.get("AdSoyad","") or self._p_map.get(str(satir.get("PersonelID","")), "")
+            a2 = menu.addAction(f"\u2715  {ad} \u2014 {v.get('VardiyaAdi','?')} kald\u0131r")
+            sid = satir["SatirID"]
+            a2.triggered.connect(lambda checked=False,s=sid: self._satir_kaldir(s))
+        if is_d and not onaylanmis:
+            menu.addSeparator()
+            a3 = menu.addAction("\u26a0  Fazla Mesai Ekle (Dini Bayram)")
+            a3.triggered.connect(lambda: self._manuel_ekle(tarih, fazla=True))
+        if menu.actions():
+            menu.exec(self._tablo.viewport().mapToGlobal(pos))
 
-        for val, lbl in SECENEKLER:
-            act = QAction(("✔ " if val == mevcut_tercih else "    ") + lbl, self)
-            act.setData(val)
-            menu.addAction(act)
+    def _cift_tikla(self, row, col):
+        if row == 0: return
+        if self._onay_durumu in ("onaylandi","yururlukte"): return
+        item = self._tablo.item(row, col)
+        if not item: return
+        veri = item.data(Qt.ItemDataRole.UserRole)
+        if isinstance(veri,dict) and veri.get("tarih"):
+            self._manuel_ekle(veri["tarih"])
 
-        secilen = menu.exec(self.cursor().pos())
-        if not secilen or secilen.data() == mevcut_tercih:
-            return
+    # ──────────────────────────────────────────────────────────
+    #  Aksiyonlar
+    # ──────────────────────────────────────────────────────────
 
-        yeni_tercih = secilen.data()
+    def _oto_plan(self):
+        if not self._birim_adi:
+            QMessageBox.warning(self,"Uyar\u0131","Birim se\u00e7in."); return
+        if QMessageBox.question(self,"Otomatik Plan",
+            f"{_AY_TR[self._ay]} {self._yil} \u2014 {self._birim_adi}\n\n"
+            "Otomatik taslak olu\u015fturulsun mu?\nMevcut taslak silinir.",
+            QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No
+            ) != QMessageBox.StandardButton.Yes: return
         try:
-            svc   = get_nobet_service(self._db)
-            birim = self.cmb_birim.currentText().strip()
-            birim = birim if birim != "Tüm Birimler" else ""
-
-            # Mevcut kayıt var mı kontrol et
-            h_rows  = svc._r.get("Nobet_MesaiHedef").get_all() or []
-            mevcut  = next(
-                (r for r in h_rows
-                 if str(r.get("PersonelID","")) == pid
-                 and r.get("Yil") == self._yil
-                 and r.get("Ay")  == self._ay),
-                None
-            )
-            if mevcut:
-                svc._r.get("Nobet_MesaiHedef").update(
-                    mevcut["HedefID"], {"NobetTercihi": yeni_tercih}
-                )
+            self._pbar.setVisible(True)
+            self._btn_oto.setEnabled(False)
+            s = self._svc().otomatik_plan_olustur(self._yil,self._ay,self._birim_adi)
+            self._pbar.setVisible(False)
+            self._btn_oto.setEnabled(True)
+            if s.basarili:
+                uyari = (s.veri or {}).get("uyarilar",[])
+                msg = s.mesaj + ("\n\n\u26a0 Uyar\u0131lar:\n"+
+                    "\n".join(f"\u2022 {u}" for u in uyari[:10]) if uyari else "")
+                QMessageBox.information(self,"Tamamland\u0131",msg)
+                self._yukle()
             else:
-                # Kayıt yoksa oluştur — hedef saat otomatik
-                h = svc._kisi_hedef_saat(pid, self._yil, self._ay, otomatik=True)
-                sonuc = svc.mesai_hedef_kaydet(
-                    pid, self._yil, self._ay,
-                    hedef_saat  = h or 0.0,
-                    hedef_tipi  = "normal",
-                    birim_adi   = birim,
-                    nobet_tercihi = yeni_tercih
-                )
-            # Paneli yenile
-            self._personel_durum_goster()
+                QMessageBox.critical(self,"Hata",str(s.hata))
         except Exception as e:
-            hata_goster(self, str(e))
+            self._pbar.setVisible(False); self._btn_oto.setEnabled(True)
+            QMessageBox.critical(self,"Hata",str(e))
 
-    def _onay_durum_goster(self):
-        birim_adi = self.cmb_birim.currentData()
-        if not birim_adi or not self._db:
-            self.lbl_onay_durum.setText("—")
-            return
+    def _temizle(self):
+        if not self._birim_adi: return
+        if QMessageBox.question(self,"Tasla\u011f\u0131 Temizle",
+            "T\u00fcm taslak sat\u0131rlar iptal edilsin mi?",
+            QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No
+            ) != QMessageBox.StandardButton.Yes: return
         try:
-            svc   = get_nobet_service(self._db)
-            sonuc = svc.onay_getir(self._yil, self._ay, birim_adi)
-            rows  = sonuc.veri or []
-            if rows:
-                durum = rows[0].get("Durum", "taslak")
-                renk  = "ok" if durum == "onaylandi" else "warn"
-                self.lbl_onay_durum.setProperty("color-role", renk)
-                self.lbl_onay_durum.setText(durum.capitalize())
-            else:
-                self.lbl_onay_durum.setText("Taslak")
-            self.lbl_onay_durum.style().unpolish(self.lbl_onay_durum)
-            self.lbl_onay_durum.style().polish(self.lbl_onay_durum)
+            s = self._svc().taslak_temizle(self._yil,self._ay,self._birim_adi)
+            if s.basarili: self._yukle()
+            else: QMessageBox.critical(self,"Hata",str(s.hata))
         except Exception as e:
-            logger.error(f"Onay durum: {e}")
+            QMessageBox.critical(self,"Hata",str(e))
 
     def _onayla(self):
-        birim_adi = self.cmb_birim.currentText().strip()
-        if not birim_adi or birim_adi == "Tüm Birimler":
-            hata_goster(self, "Onaylamak için bir birim seçin.")
-            return
-        if not soru_sor(self,
-            f"<b>{_AY_ADLARI[self._ay]} {self._yil}</b> nöbet planı onaylansın mı?"):
-            return
+        if not self._birim_adi: return
+        if QMessageBox.question(self,"Plan\u0131 Onayla",
+            f"{_AY_TR[self._ay]} {self._yil} plan\u0131 onaylans\u0131n m\u0131?",
+            QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No
+            ) != QMessageBox.StandardButton.Yes: return
         try:
-            svc   = get_nobet_service(self._db)
-            sonuc = svc.onayla(self._yil, self._ay, birim_adi,
-                               onaylayan_id="current_user")
-            if sonuc.basarili:
-                bilgi_goster(self, sonuc.mesaj)
-                self._onay_durum_goster()
-            else:
-                hata_goster(self, sonuc.mesaj)
+            svc = self._svc()
+            onayla = ""
+            try:
+                from core.auth.session_context import get_session
+                onayla = get_session().user_id or ""
+            except Exception: pass
+            s = svc.onayla(self._yil,self._ay,self._birim_adi,onayla)
+            if s.basarili:
+                QMessageBox.information(self,"Onayland\u0131",s.mesaj)
+                self._yukle()
+            else: QMessageBox.critical(self,"Hata",str(s.hata))
         except Exception as e:
-            hata_goster(self, str(e))
+            QMessageBox.critical(self,"Hata",str(e))
+
+    def _onay_geri_al(self):
+        if QMessageBox.question(self,"Onayi Geri Al","Plan onay\u0131 geri al\u0131nacak.",
+            QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No
+            ) != QMessageBox.StandardButton.Yes: return
+        try:
+            bid = self._birim_id
+            if not bid:
+                svc = self._svc()
+                bid = svc._birim_id_coz(self._birim_adi) if hasattr(svc,"_birim_id_coz") else ""
+            if not bid:
+                QMessageBox.warning(self,"Hata","Birim ID bulunamad\u0131."); return
+            s = self._svc().plan.onay_geri_al(bid,self._yil,self._ay)
+            if s.basarili: self._yukle()
+            else: QMessageBox.critical(self,"Hata",str(s.hata))
+        except Exception as e:
+            QMessageBox.critical(self,"Hata",str(e))
+
+    def _manuel_ekle(self, tarih, fazla=False):
+        try:
+            svc = self._svc()
+            v_sonuc = svc.get_vardiyalar(self._birim_adi)
+            vardiyalar = v_sonuc.veri or [] if v_sonuc.basarili else []
+            if not vardiyalar:
+                QMessageBox.warning(self,"Uyar\u0131","Bu birimde vard\u0131ya tan\u0131ml\u0131 de\u011fil."); return
+            personeller = [{"pid":p,"AdSoyad":self._p_map.get(p,p)} for p in self._pid_list]
+            dialog = _ManuelDialog(tarih, personeller, vardiyalar, self)
+            if dialog.exec() != QDialog.DialogCode.Accepted: return
+            veri = dialog.get_data()
+            if fazla: veri["NobetTuru"] = "fazla_mesai"
+            bid = self._birim_id
+            if not bid:
+                bid = svc._birim_id_coz(self._birim_adi) if hasattr(svc,"_birim_id_coz") else ""
+            plan_s = svc.plan.plan_al_veya_olustur(bid,self._yil,self._ay)
+            if not plan_s.basarili:
+                QMessageBox.critical(self,"Hata",str(plan_s.hata)); return
+            ekle_s = svc.plan.satir_ekle(
+                plan_id=plan_s.veri["PlanID"],
+                personel_id=veri["PersonelID"],
+                vardiya_id=veri["VardiyaID"],
+                nobet_tarihi=tarih,
+                kaynak="manuel",
+                nobet_turu=veri["NobetTuru"])
+            if ekle_s.basarili: self._yukle()
+            else: QMessageBox.critical(self,"Hata",str(ekle_s.hata))
+        except Exception as e:
+            QMessageBox.critical(self,"Hata",str(e))
+
+    def _satir_kaldir(self, satir_id):
+        try:
+            s = self._svc().plan.satir_iptal(satir_id)
+            if s.basarili: self._yukle()
+            else: QMessageBox.critical(self,"Hata",str(s.hata))
+        except Exception as e:
+            QMessageBox.critical(self,"Hata",str(e))
+
+    def load_data(self):
+        self._birimleri_yukle()

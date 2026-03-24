@@ -61,6 +61,11 @@ PAGE_PERMISSIONS: dict[str, str] = {
 
     # Yedekleme
     "Yedek Oluştur": "backup.create",
-    "Yedek Geri Yükle": "backup.restore"
+    "Yedek Geri Yükle": "backup.restore",
+
+    # Nöbet
+    "Nöbet Planı":    "nobet.plan",
+    "Personel Özeti": "nobet.ozet",
+    "Raporlar":       "nobet.rapor",
 
 }

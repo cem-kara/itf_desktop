@@ -60,10 +60,10 @@ class AdminPanel(QWidget):
                 background: {};
             }}
         """.format(
-            "primary", "page",
-            "panel", DarkTheme.TEXT_SECONDARY,
-            "primary", "page",
-            "primary", "page",
+            DarkTheme.BORDER_PRIMARY, DarkTheme.BG_PRIMARY,
+            DarkTheme.BG_SECONDARY, DarkTheme.TEXT_SECONDARY,
+            DarkTheme.BORDER_PRIMARY, DarkTheme.BG_PRIMARY,
+            DarkTheme.TEXT_PRIMARY, DarkTheme.BG_PRIMARY,
             DarkTheme.BG_HOVER
         ))
         
@@ -101,16 +101,16 @@ class AdminPanel(QWidget):
         self.backup_page = BackupPage()
         self._tabs.addTab(self.backup_page, "Yedekleme")
         self._tabs.setTabIcon(6, Icons.get("database"))
-        
-        # Toplu Personel Import sekmesi
+
+        # Nöbet Ayarları sekmesi (Birimler + Vardiyalar)
         try:
-            from ui.pages.imports.personel_import_page import PersonelImportPage
-            self.personel_import = PersonelImportPage(db=self._db)
-            self._tabs.addTab(self.personel_import, "Toplu Personel İçe Aktar")
-            self._tabs.setTabIcon(self._tabs.count()-1, Icons.get("upload"))
+            from ui.admin.nobet_ayarlar_page import NobetAyarlarPage
+            self.nobet_ayarlar_page = NobetAyarlarPage(self._db)
+            self._tabs.addTab(self.nobet_ayarlar_page, "Nöbet Ayarları")
+            self._tabs.setTabIcon(7, Icons.get("settings"))
         except Exception as e:
-            import traceback
-            print("Personel import sekmesi eklenemedi:", e, traceback.format_exc())
+            from core.logger import logger
+            logger.error(f"Nöbet Ayarları sekmesi yüklenemedi: {e}")
 
         layout.addWidget(self._tabs)
     
@@ -123,7 +123,7 @@ class AdminPanel(QWidget):
                 border-bottom: 2px solid {};
                 padding: 8px;
             }}
-        """.format("panel", "primary"))
+        """.format(DarkTheme.BG_SECONDARY, DarkTheme.BORDER_PRIMARY))
         
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(20, 8, 20, 8)
@@ -135,6 +135,8 @@ class AdminPanel(QWidget):
         font.setBold(True)
         title.setFont(font)
         title.setProperty("color-role", "primary")
+        title.style().unpolish(title)
+        title.style().polish(title)
         
         header_layout.addWidget(title)
         header_layout.addStretch()
@@ -168,6 +170,8 @@ class AdminPanel(QWidget):
         info = QLabel("Bu özellik yakında eklenecek...")
         info.setProperty("color-role", "disabled")
         info.setStyleSheet("font-size: 12px;")
+        info.style().unpolish(info)
+        info.style().polish(info)
         info.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(info)
         
