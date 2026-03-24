@@ -115,11 +115,15 @@ class NbPlanService:
     def plan_al_veya_olustur(self, birim_id: str, yil: int,
                               ay: int,
                               algoritma_versiyon: str = "v1",
-                              olusturan_id: str = "") -> SonucYonetici:
+                              olusturan_id: str = "",
+                              temizle: bool = False) -> SonucYonetici:
         """
-        Mevcut taslak plan varsa eski aktif satırları temizleyip döner.
-        Yoksa yeni oluşturur.
+        Mevcut taslak plan varsa PlanID'sini döner.
+        Yoksa yeni plan kaydı oluşturur.
         Onaylı plan varsa hata döner.
+
+        temizle=True  → Otomatik plan öncesi aktif satırları iptal et.
+        temizle=False → Sadece PlanID al/oluştur, satırlara dokunma (manuel ekleme).
         """
         try:
             mevcut = self.get_plan(birim_id, yil, ay)
@@ -130,20 +134,21 @@ class NbPlanService:
                         ValueError(
                             f"Plan zaten {durum}. "
                             "Değişiklik için önce onayı geri alın."))
-                # Mevcut taslak — eski aktif satırları iptal et
-                ps_rows = self._r.get("NB_PlanSatir").get_all() or []
-                iptal_n = 0
-                for s in ps_rows:
-                    if (str(s.get("PlanID", "")) == mevcut["PlanID"]
-                            and s.get("Durum") == "aktif"):
-                        self._r.get("NB_PlanSatir").update(
-                            s["SatirID"],
-                            {"Durum": "iptal", "updated_at": _simdi()})
-                        iptal_n += 1
-                if iptal_n:
-                    logger.info(f"Eski taslak temizlendi: {iptal_n} satır iptal")
+                # temizle=True ise mevcut aktif satırları iptal et
+                if temizle:
+                    ps_rows = self._r.get("NB_PlanSatir").get_all() or []
+                    iptal_n = 0
+                    for s in ps_rows:
+                        if (str(s.get("PlanID", "")) == mevcut["PlanID"]
+                                and s.get("Durum") == "aktif"):
+                            self._r.get("NB_PlanSatir").update(
+                                s["SatirID"],
+                                {"Durum": "iptal", "updated_at": _simdi()})
+                            iptal_n += 1
+                    if iptal_n:
+                        logger.info(f"Eski taslak temizlendi: {iptal_n} satır iptal")
                 return SonucYonetici.tamam(
-                    "Mevcut taslak plan temizlendi", veri=mevcut)
+                    "Mevcut plan döndürüldü", veri=mevcut)
 
             plan = {
                 "PlanID":               _yeni_id(),

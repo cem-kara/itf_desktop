@@ -255,16 +255,9 @@ class SettingsPage(QWidget):
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
         self._db = db
-        
-        # Service bağlantısı — di.py kullan (Rehber Bölüm 1.3)
-        if db:
-            from core.di import get_registry
-            from database.repository_registry import RepositoryRegistry
-            # SettingsService henüz registry kullanmıyor, direkt SQLiteManager kullanıyor
-            # Bu yüzden şimdilik direkt instance oluşturuyoruz
-            self._service = SettingsService()
-        else:
-            self._service = SettingsService()
+
+        # SettingsService doğrudan db nesnesi bekler.
+        self._service = SettingsService(self._db)
         
         self._setup_ui()
         self._load_data()
@@ -623,7 +616,10 @@ class SettingsPage(QWidget):
     def _load_sabitler(self):
         """Sabitleri yükle — Sol tarafta unique Kod'lar listele"""
         try:
-            sabitler = self._service.get_sabitler()
+            sonuc = self._service.get_sabitler()
+            if sonuc.basarisiz:
+                raise ValueError(sonuc.mesaj or "Sabitler alınamadı")
+            sabitler = sonuc.veri or []
             
             # Benzersiz Kod'ları bul
             unique_kodlar = {}
@@ -672,11 +668,11 @@ class SettingsPage(QWidget):
                 return
             
             result = self._service.add_sabit(kod, menu_eleman, aciklama)
-            if result["success"]:
+            if result.basarili:
                 QMessageBox.information(self, "Başarılı", f"'{kod}' kategorisi oluşturuldu")
                 self._load_sabitler()
             else:
-                QMessageBox.critical(self, "Hata", result["message"])
+                QMessageBox.critical(self, "Hata", result.mesaj)
     
     def _load_menu_elemanlari(self, kod: str | None = None):
         """Seçilen Kod'un MenuElemanlarını sağ tarafta göster"""
@@ -686,7 +682,10 @@ class SettingsPage(QWidget):
             if not kod:
                 return
             
-            sabitler = self._service.get_sabitler()
+            sonuc = self._service.get_sabitler()
+            if sonuc.basarisiz:
+                raise ValueError(sonuc.mesaj or "Menü elemanları alınamadı")
+            sabitler = sonuc.veri or []
             
             # Seçili Kod'a ait MenuElemanları göster
             for sabit in sabitler:
@@ -712,7 +711,10 @@ class SettingsPage(QWidget):
     def _load_tatiller(self):
         """Tatilleri yükle"""
         try:
-            tatiller = self._service.get_tatiller()
+            sonuc = self._service.get_tatiller()
+            if sonuc.basarisiz:
+                raise ValueError(sonuc.mesaj or "Tatiller alınamadı")
+            tatiller = sonuc.veri or []
 
             # Yıl filtresi seçeneklerini güncelle
             selected_year = self._cmb_tatil_yil.currentData() if hasattr(self, "_cmb_tatil_yil") else None
@@ -766,7 +768,10 @@ class SettingsPage(QWidget):
     def _get_unique_tatil_adlari(self) -> list[str]:
         """Tatiller tablosundaki benzersiz tatil adlarını döndür."""
         try:
-            tatiller = self._service.get_tatiller()
+            sonuc = self._service.get_tatiller()
+            if sonuc.basarisiz:
+                return []
+            tatiller = sonuc.veri or []
             return sorted(
                 {
                     (t.get("ResmiTatil", "") or "").strip()
@@ -793,11 +798,11 @@ class SettingsPage(QWidget):
                     return
                 
                 result = self._service.add_sabit(kod, menu_eleman, aciklama)
-                if result["success"]:
+                if result.basarili:
                     QMessageBox.information(self, "Başarılı", f"'{kod}' kategorisi oluşturuldu ve '{menu_eleman}' seçeneği eklendi")
                     self._load_sabitler()
                 else:
-                    QMessageBox.critical(self, "Hata", result["message"])
+                    QMessageBox.critical(self, "Hata", result.mesaj)
             return
         
         # Kod seçili ise, yeni MenuEleman ekle
@@ -818,11 +823,11 @@ class SettingsPage(QWidget):
                 return
             
             result = self._service.add_sabit(kod, menu_eleman, aciklama)
-            if result["success"]:
+            if result.basarili:
                 QMessageBox.information(self, "Başarılı", f"'{menu_eleman}' seçeneği eklendi")
                 self._on_kod_selected()  # Sağ tarafı yenile
             else:
-                QMessageBox.critical(self, "Hata", result["message"])
+                QMessageBox.critical(self, "Hata", result.mesaj)
     
     def _edit_menu_eleman(self):
         """Seçili MenuEleman'ı düzenle"""
@@ -856,11 +861,11 @@ class SettingsPage(QWidget):
                 return
             
             result = self._service.update_sabit(rowid, kod, menu_eleman, aciklama)
-            if result["success"]:
+            if result.basarili:
                 QMessageBox.information(self, "Başarılı", "Seçenek güncellendi")
                 self._on_kod_selected()  # Sağ tarafı yenile
             else:
-                QMessageBox.critical(self, "Hata", result["message"])
+                QMessageBox.critical(self, "Hata", result.mesaj)
     
     def _delete_menu_eleman(self):
         """Seçili MenuEleman'ı sil"""
@@ -888,11 +893,11 @@ class SettingsPage(QWidget):
         
         if reply == QMessageBox.StandardButton.Yes:
             result = self._service.delete_sabit(rowid)
-            if result["success"]:
+            if result.basarili:
                 QMessageBox.information(self, "Başarılı", "Seçenek silindi")
                 self._on_kod_selected()  # Sağ tarafı yenile
             else:
-                QMessageBox.critical(self, "Hata", result["message"])
+                QMessageBox.critical(self, "Hata", result.mesaj)
     
     def _add_tatil(self):
         """Yeni tatil ekle"""
@@ -908,11 +913,11 @@ class SettingsPage(QWidget):
                 return
             
             result = self._service.add_tatil(tarih, resmi_tatil)
-            if result["success"]:
-                QMessageBox.information(self, "Başarılı", result["message"])
+            if result.basarili:
+                QMessageBox.information(self, "Başarılı", result.mesaj)
                 self._load_tatiller()
             else:
-                QMessageBox.critical(self, "Hata", result["message"])
+                QMessageBox.critical(self, "Hata", result.mesaj)
     
     def _edit_tatil(self):
         """Tatili düzenle"""
@@ -949,11 +954,11 @@ class SettingsPage(QWidget):
             else:
                 result = self._service.update_tatil(tarih, resmi_tatil)
             
-            if result["success"]:
-                QMessageBox.information(self, "Başarılı", result["message"])
+            if result.basarili:
+                QMessageBox.information(self, "Başarılı", result.mesaj)
                 self._load_tatiller()
             else:
-                QMessageBox.critical(self, "Hata", result["message"])
+                QMessageBox.critical(self, "Hata", result.mesaj)
     
     def _delete_tatil(self):
         """Tatili sil"""
@@ -980,11 +985,11 @@ class SettingsPage(QWidget):
         
         if reply == QMessageBox.StandardButton.Yes:
             result = self._service.delete_tatil(tarih)
-            if result["success"]:
-                QMessageBox.information(self, "Başarılı", result["message"])
+            if result.basarili:
+                QMessageBox.information(self, "Başarılı", result.mesaj)
                 self._load_tatiller()
             else:
-                QMessageBox.critical(self, "Hata", result["message"])
+                QMessageBox.critical(self, "Hata", result.mesaj)
 
     def _apply_theme(self):
         """Tema değişikliğini uygula"""

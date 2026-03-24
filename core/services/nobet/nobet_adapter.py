@@ -174,6 +174,20 @@ class NobetAdapter:
             return {}
         return self.tercih.tercih_map_getir(bid, yil, ay)
 
+    def sadece_tercih_guncelle(self, personel_id: str, yil: int, ay: int,
+                                nobet_tercihi: str,
+                                birim: str = "") -> SonucYonetici:
+        """
+        Sadece NobetTercihi alanını günceller.
+        Kayıt yoksa otomatik hedef hesaplayarak oluşturur.
+        """
+        bid = self._birim_id_coz(birim) if birim else \
+              self._personelin_birim_id(personel_id)
+        if not bid:
+            return SonucYonetici.hata(ValueError("Birim bulunamadı"))
+        return self.tercih.sadece_tercih_guncelle(
+            personel_id, bid, yil, ay, nobet_tercihi)
+
     def mesai_hedef_kaydet(self, personel_id: str, yil: int, ay: int,
                            hedef_saat: float = 0.0,
                            hedef_tipi: str = "normal",
