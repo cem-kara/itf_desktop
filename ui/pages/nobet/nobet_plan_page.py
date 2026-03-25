@@ -37,11 +37,11 @@ from core.di import get_nobet_service
 from core.logger import logger
 
 _AY_TR = ["",
-    "Ocak", "\u015eubat", "Mart", "Nisan", "May\u0131s", "Haziran",
-    "Temmuz", "A\u011fustos", "Eyl\u00fcl", "Ekim", "Kas\u0131m", "Aral\u0131k"]
+    "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
 _GUN_TR = [
-    "Pazartesi", "Sal\u0131", "\u00c7ar\u015famba",
-    "Per\u015fembe", "Cuma", "Cumartesi", "Pazar"]
+    "Pazartesi", "Salı", "Çarşamba",
+    "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 
 # Renk paleti
 C = {
@@ -65,18 +65,8 @@ C = {
     "dini_simge":   "#e8a030",
 }
 
-TERCIH_RENK = {
-    "zorunlu":             "#2ec98e",
-    "fazla_mesai_gonullu": "#4d9ee8",
-    "gonullu_disi":        "#e8a030",
-    "nobet_yok":           "#e85555",
-}
-TERCIH_ETIKET = {
-    "zorunlu":             "Zorunlu",
-    "fazla_mesai_gonullu": "FM G\u00f6n\u00fcll\u00fc",
-    "gonullu_disi":        "G\u00f6n\u00fcll\u00fc D\u0131\u015f\u0131",
-    "nobet_yok":           "N\u00f6bet Yok",
-}
+FM_GONULLU_RENK = "#4d9ee8"   # FM Gönüllü işareti rengi
+FM_GONULLU_ETIKET = "FM Gönüllü"
 
 MAX_SLOT_PER_GRUP = 6  # tek grupta gösterilecek max kişi sütunu
 
@@ -84,7 +74,7 @@ MAX_SLOT_PER_GRUP = 6  # tek grupta gösterilecek max kişi sütunu
 class _ManuelDialog(QDialog):
     def __init__(self, tarih, personeller, vardiyalar, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(f"N\u00f6bet Ekle \u2014 {tarih}")
+        self.setWindowTitle(f"Nöbet Ekle — {tarih}")
         self.setModal(True)
         self.setMinimumWidth(360)
         self.setProperty("bg-role", "page")
@@ -103,13 +93,13 @@ class _ManuelDialog(QDialog):
         form.addRow("Personel:", self._cmb_p)
         self._cmb_v = QComboBox()
         for v in vardiyalar:
-            lbl2 = f"{v.get('VardiyaAdi','')} ({v.get('BasSaat','')}\u2013{v.get('BitSaat','')})"
+            lbl2 = f"{v.get('VardiyaAdi','')} ({v.get('BasSaat','')}–{v.get('BitSaat','')})"
             self._cmb_v.addItem(lbl2, userData=v.get("VardiyaID",""))
         form.addRow("Vardiya:", self._cmb_v)
         self._cmb_tur = QComboBox()
         self._cmb_tur.addItem("Normal", userData="normal")
         self._cmb_tur.addItem("Fazla Mesai", userData="fazla_mesai")
-        form.addRow("T\u00fcr:", self._cmb_tur)
+        form.addRow("Tür:", self._cmb_tur)
         lay.addLayout(form)
         btns = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok |
@@ -144,7 +134,7 @@ class NobetPlanPage(QWidget):
         self._slot_sayisi = 4
         self._birim_adi   = ""
         self._birim_id    = ""
-        self._tercih_map  = {}
+        self._fm_gonullu: set  = set()   # FM Gönüllü pid seti
         # Vardiya grubu yapısı: [{"GrupAdi", "BasSaat", "BitSaat", "VardiyaIDler":[]}]
         self._gruplar: list[dict] = []
         self.setProperty("bg-role", "page")
@@ -195,17 +185,17 @@ class NobetPlanPage(QWidget):
         lay.setContentsMargins(12,14,12,14)
         lay.setSpacing(10)
 
-        g1 = self._grp("D\u00f6nem")
+        g1 = self._grp("Dönem")
         gl = QVBoxLayout(g1)
         nav = QHBoxLayout()
-        bg = QPushButton("\u2039")
+        bg = QPushButton("‹")
         bg.setFixedSize(28,28)
         bg.setProperty("style-role","secondary")
         bg.clicked.connect(self._ay_geri)
         self._lbl_ay = QLabel()
         self._lbl_ay.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._lbl_ay.setProperty("style-role","section-title")
-        bi = QPushButton("\u203a")
+        bi = QPushButton("›")
         bi.setFixedSize(28,28)
         bi.setProperty("style-role","secondary")
         bi.clicked.connect(self._ay_ileri)
@@ -223,12 +213,12 @@ class NobetPlanPage(QWidget):
         g3 = self._grp("Planlama")
         pl = QVBoxLayout(g3)
         pl.setSpacing(6)
-        self._btn_oto = QPushButton("\u26a1  Otomatik Plan")
+        self._btn_oto = QPushButton("⚡  Otomatik Plan")
         self._btn_oto.setProperty("style-role","action")
         self._btn_oto.setFixedHeight(32)
         self._btn_oto.clicked.connect(self._oto_plan)
         pl.addWidget(self._btn_oto)
-        self._btn_temizle = QPushButton("\u2715  Tasla\u011f\u0131 Temizle")
+        self._btn_temizle = QPushButton("✕  Taslağı Temizle")
         self._btn_temizle.setProperty("style-role","danger")
         self._btn_temizle.setFixedHeight(28)
         self._btn_temizle.clicked.connect(self._temizle)
@@ -242,12 +232,12 @@ class NobetPlanPage(QWidget):
 
         g4 = self._grp("Onay")
         ol2 = QVBoxLayout(g4)
-        self._lbl_onay = QLabel("\u2014")
+        self._lbl_onay = QLabel("—")
         self._lbl_onay.setWordWrap(True)
         self._lbl_onay.setStyleSheet("font-size:11px;")
         ol2.addWidget(self._lbl_onay)
         br = QHBoxLayout()
-        self._btn_onayla = QPushButton("\u2714  Onayla")
+        self._btn_onayla = QPushButton("✔  Onayla")
         self._btn_onayla.setProperty("style-role","action")
         self._btn_onayla.setFixedHeight(28)
         self._btn_onayla.setEnabled(False)
@@ -566,7 +556,7 @@ class NobetPlanPage(QWidget):
         try:
             self._cmb_birim.blockSignals(True)
             self._cmb_birim.clear()
-            self._cmb_birim.addItem("\u2014 Birim Se\u00e7in \u2014", userData=("",""))
+            self._cmb_birim.addItem("— Birim Seçin —", userData=("",""))
             for b in (self._svc().get_birimler().veri or []):
                 if isinstance(b,dict):
                     self._cmb_birim.addItem(b.get("BirimAdi",""), userData=(b.get("BirimAdi",""), b.get("BirimID","")))
@@ -629,8 +619,21 @@ class NobetPlanPage(QWidget):
             except Exception:
                 self._slot_sayisi = 4
 
-            self._tercih_map = svc._tercih_map_getir(
-                self._yil, self._ay, self._birim_adi)                 if hasattr(svc,"_tercih_map_getir") else {}
+            # FM Gönüllü seti: NB_PersonelTercih'ten oku
+            try:
+                reg = self._reg()
+                t_rows = reg.get("NB_PersonelTercih").get_all() or []
+                bid = self._birim_id
+                self._fm_gonullu = {
+                    str(r.get("PersonelID",""))
+                    for r in t_rows
+                    if str(r.get("BirimID","")) == bid
+                    and int(r.get("Yil", 0)) == self._yil
+                    and int(r.get("Ay",  0)) == self._ay
+                    and str(r.get("NobetTercihi","")) == "fazla_mesai_gonullu"
+                }
+            except Exception:
+                self._fm_gonullu = set()
 
             # Grupları al
             self._gruplar = self._gruplari_olustur()
@@ -746,7 +749,7 @@ class NobetPlanPage(QWidget):
         self._tablo.setColumnCount(0)
 
         if not self._gruplar:
-            self._lbl_status.setText("Birim se\u00e7in veya vard\u0131ya tan\u0131mlay\u0131n")
+            self._lbl_status.setText("Birim seçin veya vardıya tanımlayın")
             return
 
         gun_sayisi = monthrange(self._yil, self._ay)[1]
@@ -909,9 +912,9 @@ class NobetPlanPage(QWidget):
 
         self._lbl_status.setText(
             f"{self._birim_adi}  |  {_AY_TR[self._ay]} {self._yil}  |  "
-            f"{len(self._plan_data)} n\u00f6bet  |  Durum: {self._onay_durumu}")
+            f"{len(self._plan_data)} nöbet  |  Durum: {self._onay_durumu}")
         self._lbl_plan_bilgi.setText(
-            f"Slot: {self._slot_sayisi}/g\u00fcn  |  Toplam: {len(self._plan_data)}")
+            f"Slot: {self._slot_sayisi}/gün  |  Toplam: {len(self._plan_data)}")
 
     # ──────────────────────────────────────────────────────────
     #  Onay & Sol Panel
@@ -921,15 +924,15 @@ class NobetPlanPage(QWidget):
         d = {
             "yok":        ("Plan yok",                  "#6b7280"),
             "taslak":     ("\U0001f4cb  Taslak",          "#f59e0b"),
-            "onaylandi":  ("\u2714  Onayland\u0131",      "#22c55e"),
-            "yururlukte": ("\u2714  Y\u00fcr\u00fcrl\u00fckte","#22c55e"),
+            "onaylandi":  ("✔  Onaylandı",      "#22c55e"),
+            "yururlukte": ("✔  Yürürlükte","#22c55e"),
         }
         metin, renk = d.get(self._onay_durumu,("?","#888"))
         self._lbl_onay.setText(f"<span style='color:{renk}'>{metin}</span>")
         self._lbl_onay_bar.setText(
             f"<span style='color:{renk}'>{metin}</span>  "
             f"<span style='color:#555;font-size:10px;'>"
-            f"{_AY_TR[self._ay]} {self._yil} \u2014 {self._birim_adi}</span>")
+            f"{_AY_TR[self._ay]} {self._yil} — {self._birim_adi}</span>")
         onaylanmis = self._onay_durumu in ("onaylandi","yururlukte")
         self._btn_onayla.setEnabled(self._onay_durumu=="taslak" and bool(self._plan_data))
         self._btn_ogeri.setVisible(onaylanmis)
@@ -946,10 +949,9 @@ class NobetPlanPage(QWidget):
                 styleSheet="color:#555;font-size:11px;"))
             return
 
-        # Başlık satırı
-        baslik = QLabel("● Renge tıkla → tercih değiştir")
-        baslik.setStyleSheet(
-            "font-size:10px;color:#3a5a7a;padding:2px 4px;")
+        # Başlık
+        baslik = QLabel("● = FM Gönüllü  ○ = Zorunlu")
+        baslik.setStyleSheet("font-size:10px;color:#3a5a7a;padding:2px 4px;")
         lay.addWidget(baslik)
 
         plan_sayi: dict[str,int] = {}
@@ -958,27 +960,25 @@ class NobetPlanPage(QWidget):
             plan_sayi[pid] = plan_sayi.get(pid,0)+1
 
         for pid in self._pid_list:
-            ad     = self._p_map.get(pid,pid)
-            tercih = self._tercih_map.get(pid,"zorunlu")
-            renk   = TERCIH_RENK.get(tercih,"#6b7280")
-            etiket = TERCIH_ETIKET.get(tercih,tercih)
-            sayi   = plan_sayi.get(pid,0)
+            ad     = self._p_map.get(pid, pid)
+            fm     = pid in self._fm_gonullu
+            renk   = FM_GONULLU_RENK if fm else "#4a6080"
+            dot_ch = "●" if fm else "○"
+            etiket = FM_GONULLU_ETIKET if fm else "Zorunlu"
+            sayi   = plan_sayi.get(pid, 0)
 
             row = QWidget()
-            row.setProperty("bg-role","panel")
+            row.setProperty("bg-role", "panel")
             row.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-            rl  = QHBoxLayout(row)
-            rl.setContentsMargins(4,2,4,2)
+            rl = QHBoxLayout(row)
+            rl.setContentsMargins(4, 2, 4, 2)
             rl.setSpacing(4)
 
-            dot = QLabel("●")
+            dot = QLabel(dot_ch)
             dot.setFixedWidth(14)
-            dot.setStyleSheet(
-                f"color:{renk};font-size:13px;"
-                f"padding:0;margin:0;")
+            dot.setStyleSheet(f"color:{renk};font-size:13px;")
             dot.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-            dot.setToolTip(
-                f"Tıkla → tercih değiştir\nMevcut: {etiket}")
+            dot.setToolTip(f"Tıkla → FM Gönüllü değiştir\nMevcut: {etiket}")
             rl.addWidget(dot)
 
             ad_lbl = QLabel(ad[:20])
@@ -991,62 +991,51 @@ class NobetPlanPage(QWidget):
             sayi_lbl.setAlignment(Qt.AlignmentFlag.AlignRight)
             sayi_lbl.setStyleSheet(
                 f"font-size:10px;"
-                f"color:{'#f59e0b' if sayi>12 else '#6b7280'};")
+                f"color:{'#f59e0b' if sayi > 12 else '#6b7280'};")
             rl.addWidget(sayi_lbl)
 
-            # Tıklamayla tercih menüsü aç
-            _pid = pid  # closure için kopyala
+            _pid = pid
             row.mousePressEvent = lambda e, p=_pid: \
-                self._tercih_menu(p)
+                self._fm_toggler(p, e.globalPosition().toPoint())
             dot.mousePressEvent = lambda e, p=_pid: \
-                self._tercih_menu(p)
+                self._fm_toggler(p, e.globalPosition().toPoint())
 
             lay.addWidget(row)
         lay.addStretch()
 
-    def _tercih_menu(self, pid: str):
-        """Personel tercihini değiştirme menüsü."""
-        menu = QMenu(self)
-        secenekler = [
-            ("zorunlu",             "● Zorunlu",          "#2ec98e"),
-            ("fazla_mesai_gonullu", "✦ FM Gönüllüsü",     "#4d9ee8"),
-            ("gonullu_disi",        "⚠ Gönüllü Dışı",     "#e8a030"),
-            ("nobet_yok",           "✘ Nöbet Yok",        "#e85555"),
-        ]
-        mevcut = self._tercih_map.get(pid,"zorunlu")
-        for val, etiket, renk in secenekler:
-            act = menu.addAction(etiket)
-            act.setCheckable(True)
-            act.setChecked(val == mevcut)
-            act.setData(val)
-
-        secilen = menu.exec(
-            self._p_widget.mapToGlobal(
-                self._p_widget.rect().center()))
-        if not secilen or not secilen.data():
+    def _fm_toggler(self, pid: str, global_pos=None):
+        """FM Gönüllü durumunu aç/kapat."""
+        from PySide6.QtGui import QCursor
+        fm = pid in self._fm_gonullu
+        yeni = "zorunlu" if fm else "fazla_mesai_gonullu"
+        menu = QMenu(self._p_widget)
+        act  = menu.addAction(
+            "FM Gönüllü → Zorunlu yap" if fm else "Zorunlu → FM Gönüllü yap")
+        menu.addSeparator()
+        menu.addAction("İptal")
+        pos = global_pos if global_pos is not None else QCursor.pos()
+        secilen = menu.exec(pos)
+        if not secilen or secilen.text() == "İptal":
             return
-
-        yeni_tercih = secilen.data()
-        if yeni_tercih == mevcut:
-            return
-
         try:
             svc   = self._svc()
             sonuc = svc.sadece_tercih_guncelle(
                 personel_id   = pid,
                 yil           = self._yil,
                 ay            = self._ay,
-                nobet_tercihi = yeni_tercih,
+                nobet_tercihi = yeni,
                 birim         = self._birim_adi,
             )
             if sonuc.basarili:
-                # Lokal map güncelle — tam yeniden yükleme gerekmez
-                self._tercih_map[pid] = yeni_tercih
+                if yeni == "fazla_mesai_gonullu":
+                    self._fm_gonullu.add(pid)
+                else:
+                    self._fm_gonullu.discard(pid)
                 self._tercih_goster()
             else:
-                QMessageBox.critical(self,"Hata", str(sonuc.hata))
+                QMessageBox.critical(self, "Hata", sonuc.mesaj)
         except Exception as e:
-            QMessageBox.critical(self,"Hata",str(e))
+            QMessageBox.critical(self, "Hata", str(e))
 
     # ──────────────────────────────────────────────────────────
     #  Kontekst Menü & Tıklamalar
@@ -1061,20 +1050,20 @@ class NobetPlanPage(QWidget):
         satir    = veri.get("satir")
         is_d     = tarih in self._dini_set
         onaylanmis = self._onay_durumu in ("onaylandi","yururlukte")
-        menu = QMenu(self)
+        menu = QMenu(self._tablo)
         if not onaylanmis:
-            a1 = menu.addAction("+ N\u00f6bet Ekle")
+            a1 = menu.addAction("+ Nöbet Ekle")
             a1.triggered.connect(lambda: self._manuel_ekle(tarih))
         if satir and not onaylanmis:
             menu.addSeparator()
             v = self._v_map.get(satir.get("VardiyaID",""),{})
             ad = satir.get("AdSoyad","") or self._p_map.get(str(satir.get("PersonelID","")), "")
-            a2 = menu.addAction(f"\u2715  {ad} \u2014 {v.get('VardiyaAdi','?')} kald\u0131r")
+            a2 = menu.addAction(f"✕  {ad} — {v.get('VardiyaAdi','?')} kaldır")
             sid = satir["SatirID"]
             a2.triggered.connect(lambda checked=False,s=sid: self._satir_kaldir(s))
         if is_d and not onaylanmis:
             menu.addSeparator()
-            a3 = menu.addAction("\u26a0  Fazla Mesai Ekle (Dini Bayram)")
+            a3 = menu.addAction("⚠  Fazla Mesai Ekle (Dini Bayram)")
             a3.triggered.connect(lambda: self._manuel_ekle(tarih, fazla=True))
         if menu.actions():
             menu.exec(self._tablo.viewport().mapToGlobal(pos))
@@ -1094,10 +1083,10 @@ class NobetPlanPage(QWidget):
 
     def _oto_plan(self):
         if not self._birim_adi:
-            QMessageBox.warning(self,"Uyar\u0131","Birim se\u00e7in."); return
+            QMessageBox.warning(self,"Uyarı","Birim seçin."); return
         if QMessageBox.question(self,"Otomatik Plan",
-            f"{_AY_TR[self._ay]} {self._yil} \u2014 {self._birim_adi}\n\n"
-            "Otomatik taslak olu\u015fturulsun mu?\nMevcut taslak silinir.",
+            f"{_AY_TR[self._ay]} {self._yil} — {self._birim_adi}\n\n"
+            "Otomatik taslak oluşturulsun mu?\nMevcut taslak silinir.",
             QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No
             ) != QMessageBox.StandardButton.Yes: return
         try:
@@ -1108,33 +1097,33 @@ class NobetPlanPage(QWidget):
             self._btn_oto.setEnabled(True)
             if s.basarili:
                 uyari = (s.veri or {}).get("uyarilar",[])
-                msg = s.mesaj + ("\n\n\u26a0 Uyar\u0131lar:\n"+
-                    "\n".join(f"\u2022 {u}" for u in uyari[:10]) if uyari else "")
-                QMessageBox.information(self,"Tamamland\u0131",msg)
+                msg = s.mesaj + ("\n\n⚠ Uyarılar:\n"+
+                    "\n".join(f"• {u}" for u in uyari[:10]) if uyari else "")
+                QMessageBox.information(self,"Tamamlandı",msg)
                 self._yukle()
             else:
-                QMessageBox.critical(self,"Hata",str(s.hata))
+                QMessageBox.critical(self,"Hata",s.mesaj)
         except Exception as e:
             self._pbar.setVisible(False); self._btn_oto.setEnabled(True)
             QMessageBox.critical(self,"Hata",str(e))
 
     def _temizle(self):
         if not self._birim_adi: return
-        if QMessageBox.question(self,"Tasla\u011f\u0131 Temizle",
-            "T\u00fcm taslak sat\u0131rlar iptal edilsin mi?",
+        if QMessageBox.question(self,"Taslağı Temizle",
+            "Tüm taslak satırlar iptal edilsin mi?",
             QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No
             ) != QMessageBox.StandardButton.Yes: return
         try:
             s = self._svc().taslak_temizle(self._yil,self._ay,self._birim_adi)
             if s.basarili: self._yukle()
-            else: QMessageBox.critical(self,"Hata",str(s.hata))
+            else: QMessageBox.critical(self,"Hata",s.mesaj)
         except Exception as e:
             QMessageBox.critical(self,"Hata",str(e))
 
     def _onayla(self):
         if not self._birim_adi: return
-        if QMessageBox.question(self,"Plan\u0131 Onayla",
-            f"{_AY_TR[self._ay]} {self._yil} plan\u0131 onaylans\u0131n m\u0131?",
+        if QMessageBox.question(self,"Planı Onayla",
+            f"{_AY_TR[self._ay]} {self._yil} planı onaylansın mı?",
             QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No
             ) != QMessageBox.StandardButton.Yes: return
         try:
@@ -1146,14 +1135,14 @@ class NobetPlanPage(QWidget):
             except Exception: pass
             s = svc.onayla(self._yil,self._ay,self._birim_adi,onayla)
             if s.basarili:
-                QMessageBox.information(self,"Onayland\u0131",s.mesaj)
+                QMessageBox.information(self,"Onaylandı",s.mesaj)
                 self._yukle()
-            else: QMessageBox.critical(self,"Hata",str(s.hata))
+            else: QMessageBox.critical(self,"Hata",s.mesaj)
         except Exception as e:
             QMessageBox.critical(self,"Hata",str(e))
 
     def _onay_geri_al(self):
-        if QMessageBox.question(self,"Onayi Geri Al","Plan onay\u0131 geri al\u0131nacak.",
+        if QMessageBox.question(self,"Onayi Geri Al","Plan onayı geri alınacak.",
             QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No
             ) != QMessageBox.StandardButton.Yes: return
         try:
@@ -1162,10 +1151,10 @@ class NobetPlanPage(QWidget):
                 svc = self._svc()
                 bid = svc._birim_id_coz(self._birim_adi) if hasattr(svc,"_birim_id_coz") else ""
             if not bid:
-                QMessageBox.warning(self,"Hata","Birim ID bulunamad\u0131."); return
+                QMessageBox.warning(self,"Hata","Birim ID bulunamadı."); return
             s = self._svc().plan.onay_geri_al(bid,self._yil,self._ay)
             if s.basarili: self._yukle()
-            else: QMessageBox.critical(self,"Hata",str(s.hata))
+            else: QMessageBox.critical(self,"Hata",s.mesaj)
         except Exception as e:
             QMessageBox.critical(self,"Hata",str(e))
 
@@ -1175,35 +1164,74 @@ class NobetPlanPage(QWidget):
             v_sonuc = svc.get_vardiyalar(self._birim_adi)
             vardiyalar = v_sonuc.veri or [] if v_sonuc.basarili else []
             if not vardiyalar:
-                QMessageBox.warning(self,"Uyar\u0131","Bu birimde vard\u0131ya tan\u0131ml\u0131 de\u011fil."); return
-            personeller = [{"pid":p,"AdSoyad":self._p_map.get(p,p)} for p in self._pid_list]
+                QMessageBox.warning(self, "Uyarı",
+                    "Bu birimde vardiya tanımlı değil.")
+                return
+            personeller = [
+                {"pid": p, "AdSoyad": self._p_map.get(p, p)}
+                for p in self._pid_list
+            ]
             dialog = _ManuelDialog(tarih, personeller, vardiyalar, self)
-            if dialog.exec() != QDialog.DialogCode.Accepted: return
+            if dialog.exec() != QDialog.DialogCode.Accepted:
+                return
             veri = dialog.get_data()
-            if fazla: veri["NobetTuru"] = "fazla_mesai"
+            if fazla:
+                veri["NobetTuru"] = "fazla_mesai"
+
             bid = self._birim_id
             if not bid:
-                bid = svc._birim_id_coz(self._birim_adi) if hasattr(svc,"_birim_id_coz") else ""
-            plan_s = svc.plan.plan_al_veya_olustur(bid,self._yil,self._ay)
+                bid = (svc._birim_id_coz(self._birim_adi)
+                       if hasattr(svc, "_birim_id_coz") else "")
+
+            plan_s = svc.plan.plan_al_veya_olustur(bid, self._yil, self._ay)
             if not plan_s.basarili:
-                QMessageBox.critical(self,"Hata",str(plan_s.hata)); return
+                QMessageBox.critical(self, "Hata", plan_s.mesaj)
+                return
+
             ekle_s = svc.plan.satir_ekle(
-                plan_id=plan_s.veri["PlanID"],
-                personel_id=veri["PersonelID"],
-                vardiya_id=veri["VardiyaID"],
-                nobet_tarihi=tarih,
-                kaynak="manuel",
-                nobet_turu=veri["NobetTuru"])
-            if ekle_s.basarili: self._yukle()
-            else: QMessageBox.critical(self,"Hata",str(ekle_s.hata))
+                plan_id      = plan_s.veri["PlanID"],
+                personel_id  = veri["PersonelID"],
+                vardiya_id   = veri["VardiyaID"],
+                nobet_tarihi = tarih,
+                kaynak       = "manuel",
+                nobet_turu   = veri["NobetTuru"])
+
+            if ekle_s.basarili:
+                self._yukle()
+            else:
+                # Kısıt hatası — kullanıcıya override seçeneği sun
+                cevap = QMessageBox.question(
+                    self, "Kısıt Uyarısı",
+                    f"⚠  {ekle_s.mesaj}\n\n"
+                    "Yine de eklemek istiyor musunuz?\n"
+                    "(Özel durum / acil müdahale için)",
+                    QMessageBox.StandardButton.Yes |
+                    QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No)
+
+                if cevap == QMessageBox.StandardButton.Yes:
+                    # Kısıtı yok sayarak zorla ekle
+                    ekle_s2 = svc.plan.satir_ekle(
+                        plan_id      = plan_s.veri["PlanID"],
+                        personel_id  = veri["PersonelID"],
+                        vardiya_id   = veri["VardiyaID"],
+                        nobet_tarihi = tarih,
+                        kaynak       = "manuel_override",
+                        nobet_turu   = veri["NobetTuru"],
+                        kisit_atla   = True)
+                    if ekle_s2.basarili:
+                        self._yukle()
+                    else:
+                        QMessageBox.critical(self, "Hata", ekle_s2.mesaj)
+
         except Exception as e:
-            QMessageBox.critical(self,"Hata",str(e))
+            QMessageBox.critical(self, "Hata", str(e))
 
     def _satir_kaldir(self, satir_id):
         try:
             s = self._svc().plan.satir_iptal(satir_id)
             if s.basarili: self._yukle()
-            else: QMessageBox.critical(self,"Hata",str(s.hata))
+            else: QMessageBox.critical(self,"Hata",s.mesaj)
         except Exception as e:
             QMessageBox.critical(self,"Hata",str(e))
 

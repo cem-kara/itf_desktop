@@ -119,7 +119,29 @@ class MigrationManager:
             logger.error(f"Migration hatasi: {e} | Yedek: {backup_path}")
             raise
 
-    CURRENT_VERSION = 2
+    CURRENT_VERSION = 3
+
+    def _migrate_to_v3(self):
+        """
+        v3: NB_BirimAyar'a FmMaxSaat kolonu eklendi.
+        FM Gönüllünün ayda yapabileceği max fazla mesai saati.
+        """
+        conn = self.connect()
+        cur  = conn.cursor()
+        try:
+            cur.execute("""
+                ALTER TABLE NB_BirimAyar
+                ADD COLUMN FmMaxSaat INTEGER NOT NULL DEFAULT 60
+            """)
+            conn.commit()
+            logger.info("v3: NB_BirimAyar.FmMaxSaat kolonu eklendi")
+        except Exception as e:
+            if "duplicate column" in str(e).lower():
+                logger.info("v3: FmMaxSaat zaten var, atlandı")
+            else:
+                raise
+        finally:
+            conn.close()
 
     def _migrate_to_v1(self):
         """v1: Tum tablolar - temiz kurulum."""

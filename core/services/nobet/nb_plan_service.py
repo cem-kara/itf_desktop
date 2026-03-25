@@ -170,34 +170,33 @@ class NbPlanService:
     def taslak_temizle(self, birim_id: str,
                        yil: int, ay: int) -> SonucYonetici:
         """
-        Taslak plan satırlarını iptal eder (Durum='iptal').
-        Kayıtlar silinmez — denetim izi korunur.
+        Taslak planın aktif satırlarını fiziksel olarak siler.
         Onaylı satırlar dokunulmaz.
         """
         try:
             plan = self.get_plan(birim_id, yil, ay)
             if not plan:
-                return SonucYonetici.tamam("Temizlenecek plan yok", veri={"iptal": 0})
+                return SonucYonetici.tamam("Temizlenecek plan yok", veri={"silinen": 0})
 
             if plan.get("Durum") in ("onaylandi", "yururlukte"):
                 return SonucYonetici.hata(
                     ValueError("Onaylı plan silinemez."))
 
+            plan_id = plan["PlanID"]
             rows = self._r.get("NB_PlanSatir").get_all() or []
-            iptal_sayisi = 0
+            silinen = 0
             for r in rows:
-                if (str(r.get("PlanID", "")) == plan["PlanID"]
-                        and r.get("Durum") == "aktif"):
-                    self._r.get("NB_PlanSatir").update(
-                        r["SatirID"],
-                        {"Durum": "iptal", "updated_at": _simdi()}
-                    )
-                    iptal_sayisi += 1
+                if str(r.get("PlanID","")) == plan_id:
+                    try:
+                        self._r.get("NB_PlanSatir").delete(r["SatirID"])
+                        silinen += 1
+                    except Exception:
+                        pass
 
-            logger.info(f"Taslak temizlendi: {iptal_sayisi} satır iptal")
+            logger.info(f"Taslak temizlendi: {silinen} satır silindi")
             return SonucYonetici.tamam(
-                f"{iptal_sayisi} taslak satır iptal edildi",
-                veri={"iptal": iptal_sayisi, "PlanID": plan["PlanID"]})
+                f"{silinen} satır silindi",
+                veri={"silinen": silinen, "PlanID": plan_id})
         except Exception as e:
             return SonucYonetici.hata(e, "NbPlanService.taslak_temizle")
 
@@ -212,11 +211,11 @@ class NbPlanService:
                    kaynak: str = "algoritma",
                    nobet_turu: str = "normal",
                    notlar: str = "",
-                   olusturan_id: str = "") -> SonucYonetici:
+                   olusturan_id: str = "",
+                   kisit_atla: bool = False) -> SonucYonetici:
         """
         Tek nöbet satırı ekler.
-        normal türde kısıt kontrolü yapılır.
-        fazla_mesai türünde kısıtlar atlanır.
+        kisit_atla=True → kısıt kontrolü yapılmaz (manuel override).
         """
         try:
             personel_id  = str(personel_id).strip()
@@ -242,11 +241,16 @@ class NbPlanService:
                             "Onaylı plana sadece 'fazla_mesai' türünde "
                             "satır eklenebilir."))
 
-            # Kısıt kontrolü
-            kisit = self._kisit_kontrol(
-                personel_id, nobet_tarihi, vardiya_id, nobet_turu)
-            if kisit:
-                return SonucYonetici.hata(ValueError(kisit))
+            # Kısıt kontrolü — kisit_atla=True ise atla
+            if not kisit_atla:
+                kisit = self._kisit_kontrol(
+                    personel_id, nobet_tarihi, vardiya_id, nobet_turu)
+                if kisit:
+                    return SonucYonetici.hata(ValueError(kisit))
+            elif kisit_atla:
+                logger.warning(
+                    f"[Override] Kısıt atlandı: {personel_id} "
+                    f"/ {nobet_tarihi} / {kaynak}")
 
             satir = {
                 "SatirID":      _yeni_id(),
@@ -337,7 +341,7 @@ class NbPlanService:
                onaylayan_id: str) -> SonucYonetici:
         """
         Planı onaylar: Durum taslak → onaylandi.
-        Onaylı plan satırları kilitlenir.
+        Onay anında iptal satırlar fiziksel olarak silinir (DB şişmesini önler).
         """
         try:
             plan = self.get_plan(birim_id, yil, ay)
@@ -349,22 +353,40 @@ class NbPlanService:
                     ValueError(
                         f"Plan zaten '{plan['Durum']}' durumunda."))
 
-            self._r.get("NB_Plan").update(plan["PlanID"], {
+            plan_id = plan["PlanID"]
+
+            # İptal satırları fiziksel sil
+            tum_satirlar = self._r.get("NB_PlanSatir").get_all() or []
+            silinen = 0
+            for s in tum_satirlar:
+                if (str(s.get("PlanID","")) == plan_id
+                        and str(s.get("Durum","")) == "iptal"):
+                    try:
+                        self._r.get("NB_PlanSatir").delete(s["SatirID"])
+                        silinen += 1
+                    except Exception:
+                        pass
+            if silinen:
+                logger.info(f"Onay öncesi {silinen} iptal satır silindi: {plan_id}")
+
+            # Planı onayla
+            self._r.get("NB_Plan").update(plan_id, {
                 "Durum":       "onaylandi",
                 "OnaylayanID": onaylayan_id,
                 "OnayTarihi":  _simdi(),
                 "updated_at":  _simdi(),
             })
 
-            # Aktif satır sayısını hesapla
-            satirlar = self.get_satirlar(plan["PlanID"])
+            # Aktif satır sayısı
+            satirlar = self.get_satirlar(plan_id)
             adet = len(satirlar.veri or [])
 
             logger.info(f"Plan onaylandı: {birim_id} {yil}/{ay:02d} "
-                        f"({adet} satır)")
+                        f"({adet} aktif satır, {silinen} iptal silindi)")
             return SonucYonetici.tamam(
                 f"Plan onaylandı — {adet} nöbet kaydı",
-                veri={"PlanID": plan["PlanID"], "satirSayisi": adet})
+                veri={"PlanID": plan_id, "satirSayisi": adet,
+                      "silinenIptal": silinen})
         except Exception as e:
             return SonucYonetici.hata(e, "NbPlanService.onayla")
 
@@ -372,7 +394,7 @@ class NbPlanService:
                      ay: int) -> SonucYonetici:
         """
         Onayı geri alır: onaylandi → taslak.
-        Düzenleme için gerekli.
+        Mevcut plan satırları korunur, plan taslak olarak düzenlenebilir.
         """
         try:
             plan = self.get_plan(birim_id, yil, ay)
@@ -383,12 +405,21 @@ class NbPlanService:
                 return SonucYonetici.hata(
                     ValueError("Onaylanmamış plan için geri alma yapılamaz"))
 
+            # Sadece durum değişir — satırlar aynen korunur
             self._r.get("NB_Plan").update(plan["PlanID"], {
                 "Durum":      "taslak",
                 "updated_at": _simdi(),
             })
-            logger.info(f"Plan onayı geri alındı: {birim_id} {yil}/{ay:02d}")
-            return SonucYonetici.tamam("Plan onayı geri alındı")
+
+            satirlar = self.get_satirlar(plan["PlanID"])
+            adet = len(satirlar.veri or [])
+
+            logger.info(
+                f"Plan onayı geri alındı: {birim_id} {yil}/{ay:02d} "
+                f"→ taslak ({adet} satır korundu)")
+            return SonucYonetici.tamam(
+                f"Plan taslak durumuna alındı — {adet} nöbet kaydı korundu",
+                veri={"PlanID": plan["PlanID"], "satirSayisi": adet})
         except Exception as e:
             return SonucYonetici.hata(e, "NbPlanService.onay_geri_al")
 
