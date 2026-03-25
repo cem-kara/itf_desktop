@@ -328,8 +328,9 @@ class MainWindow(QMainWindow):
             return NobetOzetPage(db=self._db, action_guard=self._action_guard)
 
         if baslik == "Raporlar":
-            from ui.pages.nobet.nobet_rapor_page import NobetRaporPage
-            return NobetRaporPage(db=self._db, action_guard=self._action_guard)
+            from ui.pages.nobet.nobet_hazirlik_page import NobetHazirlikPage
+            return NobetHazirlikPage(db=self._db, action_guard=self._action_guard)          
+            
 
         return PlaceholderPage(
             title=baslik,

@@ -119,7 +119,33 @@ class MigrationManager:
             logger.error(f"Migration hatasi: {e} | Yedek: {backup_path}")
             raise
 
-    CURRENT_VERSION = 3
+    CURRENT_VERSION = 4
+
+    def _migrate_to_v4(self):
+        """
+        v4: NB_HazirlikOnay tablosu eklendi.
+        Nöbet planı yapmadan önce ön hazırlık onayı gerektirir.
+        """
+        conn = self.connect()
+        cur  = conn.cursor()
+        try:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS NB_HazirlikOnay (
+                    OnayID      TEXT PRIMARY KEY,
+                    BirimID     TEXT NOT NULL REFERENCES NB_Birim(BirimID),
+                    Yil         INTEGER NOT NULL,
+                    Ay          INTEGER NOT NULL CHECK(Ay BETWEEN 1 AND 12),
+                    Durum       TEXT NOT NULL DEFAULT 'onaylandi',
+                    OnayTarihi  TEXT NOT NULL,
+                    Notlar      TEXT,
+                    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+                    UNIQUE(BirimID, Yil, Ay)
+                )
+            """)
+            conn.commit()
+            logger.info("v4: NB_HazirlikOnay tablosu oluşturuldu")
+        finally:
+            conn.close()
 
     def _migrate_to_v3(self):
         """

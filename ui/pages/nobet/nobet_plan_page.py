@@ -210,12 +210,37 @@ class NobetPlanPage(QWidget):
         bl.addWidget(self._cmb_birim)
         lay.addWidget(g2)
 
-        g3 = self._grp("Planlama")
-        pl = QVBoxLayout(g3)
+        g3 = self._grp("Ön Hazırlık")
+        hl = QVBoxLayout(g3)
+        hl.setSpacing(4)
+        self._lbl_hazirlik = QLabel("— Henüz onaylanmadı —")
+        self._lbl_hazirlik.setWordWrap(True)
+        self._lbl_hazirlik.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._lbl_hazirlik.setStyleSheet(
+            "font-size:10px;color:#e85555;padding:2px;")
+        hl.addWidget(self._lbl_hazirlik)
+        self._btn_hazirlik = QPushButton("✔  Hazırlığı Onayla")
+        self._btn_hazirlik.setProperty("style-role","action")
+        self._btn_hazirlik.setFixedHeight(28)
+        self._btn_hazirlik.setEnabled(False)
+        self._btn_hazirlik.clicked.connect(self._hazirlik_onayla)
+        hl.addWidget(self._btn_hazirlik)
+        self._btn_hazirlik_iptal = QPushButton("Onayı Geri Al")
+        self._btn_hazirlik_iptal.setProperty("style-role","danger")
+        self._btn_hazirlik_iptal.setFixedHeight(24)
+        self._btn_hazirlik_iptal.setVisible(False)
+        self._btn_hazirlik_iptal.clicked.connect(self._hazirlik_iptal)
+        hl.addWidget(self._btn_hazirlik_iptal)
+        lay.addWidget(g3)
+
+        g4 = self._grp("Planlama")
+        pl = QVBoxLayout(g4)
         pl.setSpacing(6)
         self._btn_oto = QPushButton("⚡  Otomatik Plan")
         self._btn_oto.setProperty("style-role","action")
         self._btn_oto.setFixedHeight(32)
+        self._btn_oto.setEnabled(False)   # Hazırlık onayına kadar kilitli
+        self._btn_oto.setToolTip("Önce 'Ön Hazırlık' onaylanmalıdır")
         self._btn_oto.clicked.connect(self._oto_plan)
         pl.addWidget(self._btn_oto)
         self._btn_temizle = QPushButton("✕  Taslağı Temizle")
@@ -228,10 +253,10 @@ class NobetPlanPage(QWidget):
         self._pbar.setRange(0,0)
         self._pbar.setVisible(False)
         pl.addWidget(self._pbar)
-        lay.addWidget(g3)
+        lay.addWidget(g4)
 
-        g4 = self._grp("Onay")
-        ol2 = QVBoxLayout(g4)
+        g5_onay = self._grp("Onay")
+        ol2 = QVBoxLayout(g5_onay)
         self._lbl_onay = QLabel("—")
         self._lbl_onay.setWordWrap(True)
         self._lbl_onay.setStyleSheet("font-size:11px;")
@@ -250,7 +275,7 @@ class NobetPlanPage(QWidget):
         self._btn_ogeri.clicked.connect(self._onay_geri_al)
         br.addWidget(self._btn_ogeri)
         ol2.addLayout(br)
-        lay.addWidget(g4)
+        lay.addWidget(g5_onay)
 
         g5 = self._grp("Personel Tercihleri")
         ql = QVBoxLayout(g5)
@@ -648,6 +673,7 @@ class NobetPlanPage(QWidget):
         self._onay_guncelle()
         self._tercih_goster()
         self._bilgi_guncelle()
+        self._hazirlik_guncelle()
 
     def _personel_listesi(self):
         try:
@@ -936,7 +962,12 @@ class NobetPlanPage(QWidget):
         onaylanmis = self._onay_durumu in ("onaylandi","yururlukte")
         self._btn_onayla.setEnabled(self._onay_durumu=="taslak" and bool(self._plan_data))
         self._btn_ogeri.setVisible(onaylanmis)
-        self._btn_oto.setEnabled(not onaylanmis)
+        # Otomatik Plan: hem hazırlık onaylı hem de plan onaylı değil olmalı
+        hazirlik_ok = getattr(self, "_hazirlik_onaylandi", False)
+        self._btn_oto.setEnabled(hazirlik_ok and not onaylanmis)
+        self._btn_oto.setToolTip(
+            "" if hazirlik_ok
+            else "Önce 'Ön Hazırlık' onaylanmalıdır")
         self._btn_temizle.setEnabled(self._onay_durumu=="taslak")
 
     def _tercih_goster(self):
@@ -1080,6 +1111,102 @@ class NobetPlanPage(QWidget):
     # ──────────────────────────────────────────────────────────
     #  Aksiyonlar
     # ──────────────────────────────────────────────────────────
+
+    def _hazirlik_guncelle(self):
+        """NB_HazirlikOnay tablosunu kontrol et, UI'yi güncelle."""
+        if not self._birim_id:
+            self._hazirlik_onaylandi = False
+            self._lbl_hazirlik.setText("— Birim seçin —")
+            self._btn_hazirlik.setEnabled(False)
+            self._btn_hazirlik_iptal.setVisible(False)
+            return
+        try:
+            reg  = self._reg()
+            rows = reg.get("NB_HazirlikOnay").get_all() or []
+            kayit = next(
+                (r for r in rows
+                 if str(r.get("BirimID","")) == self._birim_id
+                 and int(r.get("Yil",0)) == self._yil
+                 and int(r.get("Ay",0)) == self._ay),
+                None)
+            onaylandi = bool(kayit)
+            self._hazirlik_onaylandi = onaylandi
+            if onaylandi:
+                tarih = str(kayit.get("OnayTarihi",""))[:10]
+                self._lbl_hazirlik.setText(
+                    f"<span style='color:#2ec98e'>✔ Onaylandı</span>"
+                    f"<br><span style='font-size:9px;color:#6b7280'>{tarih}</span>")
+                self._btn_hazirlik.setEnabled(False)
+                self._btn_hazirlik_iptal.setVisible(True)
+            else:
+                self._lbl_hazirlik.setText(
+                    "<span style='color:#e85555'>✗ Onaylanmadı</span>")
+                self._btn_hazirlik.setEnabled(True)
+                self._btn_hazirlik_iptal.setVisible(False)
+        except Exception as e:
+            logger.error(f"_hazirlik_guncelle: {e}")
+            self._hazirlik_onaylandi = False
+
+    def _hazirlik_onayla(self):
+        """Ön hazırlığı onayla — NB_HazirlikOnay'a kaydet."""
+        if not self._birim_id:
+            return
+        try:
+            from datetime import datetime
+            reg   = self._reg()
+            simdi = datetime.now().isoformat(sep=" ", timespec="seconds")
+            rows  = reg.get("NB_HazirlikOnay").get_all() or []
+            kayit = next(
+                (r for r in rows
+                 if str(r.get("BirimID","")) == self._birim_id
+                 and int(r.get("Yil",0)) == self._yil
+                 and int(r.get("Ay",0)) == self._ay),
+                None)
+            if kayit:
+                reg.get("NB_HazirlikOnay").update(
+                    kayit["OnayID"],
+                    {"Durum": "onaylandi", "OnayTarihi": simdi})
+            else:
+                import uuid
+                reg.get("NB_HazirlikOnay").insert({
+                    "OnayID":     str(uuid.uuid4()),
+                    "BirimID":    self._birim_id,
+                    "Yil":        self._yil,
+                    "Ay":         self._ay,
+                    "Durum":      "onaylandi",
+                    "OnayTarihi": simdi,
+                    "created_at": simdi,
+                })
+            self._hazirlik_guncelle()
+            self._onay_guncelle()
+        except Exception as e:
+            QMessageBox.critical(self, "Hata", str(e))
+
+    def _hazirlik_iptal(self):
+        """Hazırlık onayını geri al."""
+        cevap = QMessageBox.question(
+            self, "Hazırlık Onayı Geri Al",
+            "Ön hazırlık onayı geri alınacak.\n"
+            "Otomatik Plan butonu kilitlenecek.\nEmin misiniz?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No)
+        if cevap != QMessageBox.StandardButton.Yes:
+            return
+        try:
+            reg   = self._reg()
+            rows  = reg.get("NB_HazirlikOnay").get_all() or []
+            kayit = next(
+                (r for r in rows
+                 if str(r.get("BirimID","")) == self._birim_id
+                 and int(r.get("Yil",0)) == self._yil
+                 and int(r.get("Ay",0)) == self._ay),
+                None)
+            if kayit:
+                reg.get("NB_HazirlikOnay").delete(kayit["OnayID"])
+            self._hazirlik_guncelle()
+            self._onay_guncelle()
+        except Exception as e:
+            QMessageBox.critical(self, "Hata", str(e))
 
     def _oto_plan(self):
         if not self._birim_adi:
