@@ -115,6 +115,7 @@ class NobetAdapter:
             bid     = self._birim_id_coz(birim)
             yil     = int(str(veri.get("NobetTarihi", ""))[:4] or 0)
             ay      = int(str(veri.get("NobetTarihi", ""))[5:7] or 0)
+            kisit_atla = bool(veri.get("KisitAtla", False))
             plan_s  = self.plan.plan_al_veya_olustur(bid, yil, ay)
             if not plan_s.basarili:
                 return plan_s
@@ -127,6 +128,7 @@ class NobetAdapter:
                 kaynak       = "manuel",
                 nobet_turu   = str(veri.get("NobetTuru", "normal")),
                 notlar       = str(veri.get("Notlar", "")),
+                kisit_atla   = kisit_atla,
             )
         except Exception as e:
             return SonucYonetici.hata(e, "NobetAdapter.plan_ekle")
@@ -537,13 +539,20 @@ class NobetAdapter:
     def _birim_id_coz(self, birim: str) -> str:
         """
         BirimID veya BirimAdi → BirimID.
-        UUID formatındaysa doğrudan döner.
+        UUID zorunluluğu yoktur; NB_Birim'de doğrudan ID eşleşmesi aranır.
         """
         if not birim:
             return ""
-        # UUID formatı kontrolü
-        if len(birim) == 36 and birim.count("-") == 4:
-            return birim
+        birim = str(birim).strip()
+
+        # Önce doğrudan BirimID eşleşmesi dene (UUID, md5 vb. tüm formatlar)
+        try:
+            rows = self._r.get("NB_Birim").get_all() or []
+            if any(str(r.get("BirimID", "")) == birim for r in rows):
+                return birim
+        except Exception:
+            pass
+
         # BirimAdi → BirimID
         return self.birim.birim_id_bul(birim) or ""
 

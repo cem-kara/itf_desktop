@@ -246,7 +246,7 @@ class NbPlanService:
                 kisit = self._kisit_kontrol(
                     personel_id, nobet_tarihi, vardiya_id, nobet_turu)
                 if kisit:
-                    return SonucYonetici.hata(ValueError(kisit))
+                    return SonucYonetici.uyari(kisit, "NbPlanService.satir_ekle")
             elif kisit_atla:
                 logger.warning(
                     f"[Override] Kısıt atlandı: {personel_id} "

@@ -348,6 +348,7 @@ TABLES = {
             "OtomatikBolunme", "GunlukHedefDakika",
             "HaftasonuNobetZorunlu", "DiniBayramAtama",
             "GeserlilikBaslangic", "GeserlilikBitis",
+            "FmMaxSaat", "MaxGunlukSureDakika",
             "created_at", "updated_at",
         ],
         "sync": False,
@@ -438,10 +439,19 @@ TABLES = {
         "columns": [
             "ID", "BirimID", "PersonelID", "Rol",
             "GorevBaslangic", "GorevBitis", "AnabirimMi",
-            "Aktif", "Notlar", "created_at", "updated_at",
+            "Aktif", "Notlar",
+            "created_at", "updated_at",
         ],
-        # NOT: Personel.GorevYeri FHSZ kapsamında korunur.
-        # Bu tablo nöbet modülü için ek birim atamasıdır.
+        "sync": False,
+    },
+
+    "NB_HazirlikOnay": {
+        "pk": "OnayID",
+        "columns": [
+            "OnayID", "BirimID", "Yil", "Ay",
+            "Durum", "OnayTarihi", "Notlar",
+            "created_at",
+        ],
         "sync": False,
     },
 

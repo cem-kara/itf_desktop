@@ -253,6 +253,11 @@ class NbAlgoritma:
             return sonuc
 
         slot_sayisi = int(ayar.get("GunlukSlotSayisi", VARSAYILAN_SLOT))
+        logger.info(
+            f"[Birim ayarı] slot={slot_sayisi} "
+            f"FmMax={ayar.get('FmMaxSaat',60)}s "
+            f"MaxGunluk={ayar.get('MaxGunlukSureDakika',720)}dk"
+        )
 
         # ── Vardiya grupları ──────────────────────────────────
         try:
@@ -465,6 +470,7 @@ class NbAlgoritma:
             izin_map    = h["izin_map"]
             dini_set    = h["dini_set"]
             plan_id     = h["plan_id"]
+            ayar        = h["ayar"]
 
             # ── Sayaçlar ──────────────────────────────────────
             # Sıralama: az saat → az nöbet → az hafta sonu
@@ -474,11 +480,22 @@ class NbAlgoritma:
             # Son nöbet takibi: {pid: (tarih_str, grup_id)}
             # Aynı gün farklı gruba girebilir, aynı gruba giremez
             son_nobet:  dict[str, tuple] = {}
+            # Günlük toplam süre: {pid: {tarih_str: toplam_dk}}
+            gun_sure_sayac: dict[str, dict] = {p: {} for p in personeller + gonulluler}
 
             eklenen:  list[dict] = []
             uyarilar: list[str]  = []
             # FM Gönüllülerin fazla mesai saati (hedef üstü kısım)
             fm_saat_sayac: dict[str, int] = {p: 0 for p in gonulluler}
+
+            # Birim bazlı günlük max süre — NB_BirimAyar.MaxGunlukSureDakika
+            # 720dk = 12s → personel günde sadece 1 vardiya (gündüz VEYA gece)
+            # 1440dk = 24s → personel aynı günde 2 vardiya tutabilir (gündüz + gece)
+            BIRIM_MAX_GUN_DK = int(ayar.get("MaxGunlukSureDakika", 720))
+            logger.info(
+                f"[Birim] MaxGunlukSureDakika={BIRIM_MAX_GUN_DK}dk "
+                f"({'24 saat — gündüz+gece izinli' if BIRIM_MAX_GUN_DK >= 1440 else '12 saat — tek vardiya'})"
+            )
 
             # Tolerans: tek bir vardiyanın süresi kadar (±1 nöbet)
             # toplam_dk değil — çünkü her vardiya artık ayrı slot
@@ -528,8 +545,12 @@ class NbAlgoritma:
                 ust     = hedef + _tolerans(pid)
                 sonraki = saat_sayac[pid] + eklenecek_dk
                 if saat_sayac[pid] == 0:
-                    return True
-                if sonraki > ust:
+                    pass  # İlk atama — günlük limit kontrolünü yine de yap
+                elif sonraki > ust:
+                    return False
+                # ── Birim bazlı günlük max süre kontrolü ─────
+                gun_toplam = gun_sure_sayac[pid].get(tarih_str, 0)
+                if gun_toplam + eklenecek_dk > BIRIM_MAX_GUN_DK:
                     return False
                 return True
 
@@ -578,6 +599,9 @@ class NbAlgoritma:
                 dk = int(vardiya.get("SureDakika", 0))
                 saat_sayac[pid]  += dk
                 nobet_sayac[pid] += 1
+                # Günlük toplam süre sayacını güncelle
+                gun_sure_sayac[pid][tarih_str] = (
+                    gun_sure_sayac[pid].get(tarih_str, 0) + dk)
                 if is_hw:
                     hs_sayac[pid] += 1
                 # son_nobet: (tarih, grup_id) — dün yasağı + aynı grup yasağı
@@ -605,18 +629,92 @@ class NbAlgoritma:
 
                 is_hw = gun.weekday() in HAFTASONU
 
-                # Her slot için, her grup içindeki her vardiyaya ayrı kişi ata
+                # Her slot için, her grup içindeki her vardiyaya kişi ata
                 for slot_no in range(slot_sayisi):
                     for grup in gruplar:
                         grup_id = grup["GrupID"]
+                        vardiyalar = grup["ana"]
 
-                        for vardiya in grup["ana"]:
+                        # ── 24s mod: aynı kişiyi grubun tüm vardiyalarına ata ──
+                        if BIRIM_MAX_GUN_DK >= 1440 and len(vardiyalar) > 1:
+                            toplam_grup_dk = sum(
+                                int(v.get("SureDakika", 0)) for v in vardiyalar)
+                            atandi_24 = False
+
+                            # Zorunlu personelden 24s tutabilecek biri var mı?
+                            for pid in _sirala(personeller):
+                                hedef = hedef_map.get(pid, 0)
+                                ust = hedef + _tolerans(pid)
+                                kalan_ust = ust - saat_sayac[pid]
+                                # 24 saat izinli olmak, 24 saat zorunlu demek değil.
+                                # Kalan üst limit 24s paketi taşımıyorsa tek vardiya moduna düş.
+                                if kalan_ust < toplam_grup_dk:
+                                    continue
+                                ek_dk = 0
+                                uygun = True
+                                for v in vardiyalar:
+                                    v_dk = int(v.get("SureDakika", 0))
+                                    if not _atanabilir(
+                                        pid, tarih_str, gun,
+                                        grup_id=f"{grup_id}_{v['VardiyaID']}",
+                                        eklenecek_dk=ek_dk + v_dk,
+                                    ):
+                                        uygun = False
+                                        break
+                                    ek_dk += v_dk
+                                if uygun:
+                                    for v in vardiyalar:
+                                        _ekle(pid, v, tarih_str, is_hw,
+                                              f"{grup_id}_{v['VardiyaID']}")
+                                    atandi_24 = True
+                                    break
+
+                            # FM Gönüllü de dene
+                            if not atandi_24:
+                                for pid in _sirala(gonulluler):
+                                    ust = hedef_map.get(pid, 0) + _tolerans(pid)
+                                    kalan_ust = ust - saat_sayac[pid]
+                                    if kalan_ust < toplam_grup_dk:
+                                        continue
+                                    if fm_saat_sayac.get(pid, 0) + toplam_grup_dk > FM_MAX_DK:
+                                        continue
+                                    ek_dk = 0
+                                    uygun = True
+                                    for v in vardiyalar:
+                                        v_dk = int(v.get("SureDakika", 0))
+                                        if not _atanabilir_fm(
+                                            pid, tarih_str, gun,
+                                            grup_id=f"{grup_id}_{v['VardiyaID']}",
+                                        ):
+                                            uygun = False
+                                            break
+                                        if fm_saat_sayac.get(pid, 0) + ek_dk + v_dk > FM_MAX_DK:
+                                            uygun = False
+                                            break
+                                        ek_dk += v_dk
+                                    if uygun:
+                                        for v in vardiyalar:
+                                            v_dk = int(v.get("SureDakika", 0))
+                                            _ekle(pid, v, tarih_str, is_hw,
+                                                  f"{grup_id}_{v['VardiyaID']}")
+                                            fm_saat_sayac[pid] = \
+                                                fm_saat_sayac.get(pid, 0) + v_dk
+                                        atandi_24 = True
+                                        break
+
+                            if atandi_24:
+                                continue  # Bu slot doldu, sıradaki slot'a geç
+
+                            # 24s atanamadı → tek tek ata (aşağı düş)
+
+                        # ── Tek vardiya modu (12s veya 24s bulunamadıysa) ──
+                        for vardiya in vardiyalar:
                             v_dk = int(vardiya.get("SureDakika", 0))
                             v_slot_id = f"{grup_id}_{vardiya['VardiyaID']}"
 
                             atandi = False
 
-                            # 1. Zorunlu personel (hedef sınırı var)
+                            # 1. Zorunlu personel
                             for pid in _sirala(personeller):
                                 if not _atanabilir(pid, tarih_str, gun,
                                                    grup_id=v_slot_id,
@@ -626,7 +724,7 @@ class NbAlgoritma:
                                 atandi = True
                                 break
 
-                            # 2. Doldurulamadıysa FM Gönüllüler (hedef sınırı yok, max 60s)
+                            # 2. FM Gönüllüler
                             if not atandi:
                                 for pid in _sirala(gonulluler):
                                     if not _atanabilir_fm(pid, tarih_str, gun,
@@ -638,7 +736,7 @@ class NbAlgoritma:
                                     atandi = True
                                     break
 
-                            # 3. Kimse uygun değilse boş bırak
+                            # 3. Boş bırak
                             if not atandi:
                                 uyarilar.append(
                                     f"{tarih_str} | slot {slot_no+1} | "

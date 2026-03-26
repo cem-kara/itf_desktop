@@ -421,6 +421,15 @@ class NobetVardiyaPage(QWidget):
         self._spn_fm_max.setToolTip("FM Gönüllünün aylık max fazla mesai saati")
         form.addRow("FM Max:", self._spn_fm_max)
 
+        self._spn_max_gun = QSpinBox()
+        self._spn_max_gun.setRange(1, 2)
+        self._spn_max_gun.setValue(1)
+        self._spn_max_gun.setSuffix(" vardiya/gün")
+        self._spn_max_gun.setToolTip(
+            "1 = Personel günde sadece 1 vardiya tutabilir (12s)\n"
+            "2 = Personel aynı günde gündüz+gece tutabilir (24s)")
+        form.addRow("Max Günlük:", self._spn_max_gun)
+
         gl.addLayout(form)
         self._btn_ayar_kaydet = self._btn("Kaydet", "action")
         self._btn_ayar_kaydet.setEnabled(False)
@@ -756,8 +765,9 @@ class NobetVardiyaPage(QWidget):
                 ri  = self._tbl_p.rowCount()
                 pid = str(r.get("PersonelID",""))
                 self._tbl_p.insertRow(ri)
+                atama_id = r.get("ID", "")
                 ad_i = QTableWidgetItem(p_map.get(pid, pid))
-                ad_i.setData(Qt.ItemDataRole.UserRole, r["AtamaID"])
+                ad_i.setData(Qt.ItemDataRole.UserRole, atama_id)
                 self._tbl_p.setItem(ri, 0, ad_i)
                 self._tbl_p.setItem(ri, 1, _it(r.get("Rol","teknisyen")))
                 self._tbl_p.setItem(ri, 2,
@@ -766,7 +776,7 @@ class NobetVardiyaPage(QWidget):
                 a_itm = QTableWidgetItem("Aktif" if aktif else "Pasif")
                 a_itm.setForeground(QColor(
                     "#2ec98e" if aktif else "#e85555"))
-                a_itm.setData(Qt.ItemDataRole.UserRole, r["AtamaID"])
+                a_itm.setData(Qt.ItemDataRole.UserRole, atama_id)
                 self._tbl_p.setItem(ri, 3, a_itm)
             self._lbl_p_ozet.setText(f"{len(bp)} personel")
         except Exception as e:
@@ -843,6 +853,9 @@ class NobetVardiyaPage(QWidget):
                 int((ayar or {}).get("GunlukSlotSayisi", 4)))
             self._spn_fm_max.setValue(
                 int((ayar or {}).get("FmMaxSaat", 60)))
+            # MaxGunlukSureDakika → 720=1 vardiya, 1440=2 vardiya
+            max_dk = int((ayar or {}).get("MaxGunlukSureDakika", 720))
+            self._spn_max_gun.setValue(2 if max_dk >= 1440 else 1)
         except Exception as e:
             logger.error(f"Birim ayar yükle: {e}")
 
@@ -940,27 +953,49 @@ class NobetVardiyaPage(QWidget):
             return
         try:
             reg   = self._reg()
+
+            # MaxGunlukSureDakika kolonu yoksa migration çalıştır
+            try:
+                test_rows = reg.get("NB_BirimAyar").get_all() or []
+                if test_rows:
+                    _ = test_rows[0].get("MaxGunlukSureDakika", None)
+                    if _ is None:
+                        raise KeyError("kolon yok")
+            except Exception:
+                try:
+                    from database.migrations import MigrationManager
+                    db_path = getattr(self._db, "db_path", self._db)
+                    MigrationManager(db_path).run_migrations()
+                    logger.info("Migration çalıştırıldı (MaxGunlukSureDakika)")
+                except Exception as me:
+                    logger.error(f"Migration hatası: {me}")
+
             rows  = reg.get("NB_BirimAyar").get_all() or []
             ayar  = next(
                 (r for r in rows if str(r.get("BirimID",""))==bid), None)
             veri  = {
-                "GunlukSlotSayisi": self._spn_slot.value(),
-                "FmMaxSaat":        self._spn_fm_max.value(),
-                "updated_at":       _simdi(),
+                "GunlukSlotSayisi":    self._spn_slot.value(),
+                "FmMaxSaat":           self._spn_fm_max.value(),
+                "MaxGunlukSureDakika": 1440 if self._spn_max_gun.value() >= 2 else 720,
+                "updated_at":          _simdi(),
             }
             if ayar:
                 reg.get("NB_BirimAyar").update(ayar["AyarID"], veri)
+                logger.info(f"BirimAyar güncellendi: {veri}")
             else:
                 veri["AyarID"]     = _yeni_id()
                 veri["BirimID"]    = bid
                 veri["created_at"] = _simdi()
                 reg.get("NB_BirimAyar").insert(veri)
+                logger.info(f"BirimAyar eklendi: {veri}")
             QMessageBox.information(
                 self, "Kaydedildi",
                 f"Slot: {self._spn_slot.value()}  |  "
-                f"FM Max: {self._spn_fm_max.value()} saat")
+                f"FM Max: {self._spn_fm_max.value()} saat  |  "
+                f"Max günlük: {'24 saat (2 vardiya)' if self._spn_max_gun.value()>=2 else '12 saat (1 vardiya)'}")
         except Exception as e:
             QMessageBox.critical(self, "Hata", str(e))
+            logger.error(f"_birim_ayar_kaydet: {e}")
 
     # ──────────────────────────────────────────────────────────
     #  Grup Aksiyonları
@@ -1073,6 +1108,13 @@ class NobetVardiyaPage(QWidget):
     # ──────────────────────────────────────────────────────────
 
     def _vardiya_yeni(self):
+        if not self._secili_birim_id or not self._secili_grup_id:
+            QMessageBox.warning(
+                self,
+                "Uyarı",
+                "Önce bir birim ve vardiya grubu seçin.",
+            )
+            return
         dialog = _VardiyaDialog(parent=self)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
@@ -1084,6 +1126,7 @@ class NobetVardiyaPage(QWidget):
             self._reg().get("NB_Vardiya").insert({
                 "VardiyaID":   _yeni_id(),
                 "GrupID":      self._secili_grup_id,
+                "BirimID":     self._secili_birim_id,
                 "MinPersonel": 1,
                 "created_at":  _simdi(),
                 **veri,
@@ -1154,11 +1197,11 @@ class NobetVardiyaPage(QWidget):
                 return
             for pid in dialog.get_secilen():
                 reg.get("NB_BirimPersonel").insert({
-                    "AtamaID":        _yeni_id(),
+                    "ID":             _yeni_id(),
                     "BirimID":        self._secili_birim_id,
                     "PersonelID":     pid,
                     "Rol":            "teknisyen",
-                    "AnaBirim":       1,
+                    "AnabirimMi":     1,
                     "Aktif":          1,
                     "GorevBaslangic": date.today().isoformat(),
                     "created_at":     _simdi(),
@@ -1184,11 +1227,11 @@ class NobetVardiyaPage(QWidget):
                 if (str(p.get("GorevYeri","")).strip() == self._secili_birim_adi
                         and pid not in mevcutlar):
                     reg.get("NB_BirimPersonel").insert({
-                        "AtamaID":        _yeni_id(),
+                        "ID":             _yeni_id(),
                         "BirimID":        self._secili_birim_id,
                         "PersonelID":     pid,
                         "Rol":            "teknisyen",
-                        "AnaBirim":       1,
+                        "AnabirimMi":     1,
                         "Aktif":          1,
                         "GorevBaslangic": date.today().isoformat(),
                         "created_at":     _simdi(),

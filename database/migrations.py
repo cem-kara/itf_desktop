@@ -119,7 +119,30 @@ class MigrationManager:
             logger.error(f"Migration hatasi: {e} | Yedek: {backup_path}")
             raise
 
-    CURRENT_VERSION = 4
+    CURRENT_VERSION = 5
+
+    def _migrate_to_v5(self):
+        """
+        v5: NB_BirimAyar'a MaxGunlukSureDakika kolonu eklendi.
+        Birim bazlı: o birimin personeli aynı günde max kaç dakika nöbet tutabilir.
+        720 = 12 saat (varsayılan, sadece 1 vardiya), 1440 = 24 saat (gündüz+gece).
+        """
+        conn = self.connect()
+        cur  = conn.cursor()
+        try:
+            cur.execute("""
+                ALTER TABLE NB_BirimAyar
+                ADD COLUMN MaxGunlukSureDakika INTEGER NOT NULL DEFAULT 720
+            """)
+            conn.commit()
+            logger.info("v5: NB_BirimAyar.MaxGunlukSureDakika kolonu eklendi")
+        except Exception as e:
+            if "duplicate column" in str(e).lower():
+                logger.info("v5: MaxGunlukSureDakika zaten var, atlandı")
+            else:
+                raise
+        finally:
+            conn.close()
 
     def _migrate_to_v4(self):
         """

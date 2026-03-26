@@ -316,21 +316,20 @@ class MainWindow(QMainWindow):
 
         # ── NÖBET ────────────────────────────────────────────────────
         if baslik == "Birim & Vardiyalar":
-            from ui.admin.nobet_vardiya_page import NobetVardiyaPage
+            from ui.pages.nobet.nobet_vardiya_page import NobetVardiyaPage
             return NobetVardiyaPage(db=self._db, action_guard=self._action_guard)
 
         if baslik == "Nöbet Planı":
-            from ui.pages.nobet.nobet_plan_page import NobetPlanPage
-            return NobetPlanPage(db=self._db, action_guard=self._action_guard)
+            from ui.pages.nobet.nobet_merkez_page import NobetMerkezPage
+            return NobetMerkezPage(db=self._db, action_guard=self._action_guard)
 
         if baslik == "Personel Özeti":
             from ui.pages.nobet.nobet_ozet_page import NobetOzetPage
             return NobetOzetPage(db=self._db, action_guard=self._action_guard)
 
         if baslik == "Raporlar":
-            from ui.pages.nobet.nobet_hazirlik_page import NobetHazirlikPage
-            return NobetHazirlikPage(db=self._db, action_guard=self._action_guard)          
-            
+            from ui.pages.nobet.nobet_rapor_page import NobetRaporPage
+            return NobetRaporPage(db=self._db, action_guard=self._action_guard)
 
         return PlaceholderPage(
             title=baslik,
