@@ -173,7 +173,7 @@ class NobetBirimPage(QWidget):
                                Qt.AlignmentFlag.AlignVCenter)
 
         def _lbl(t, z=False):
-            l = QLabel(("★ " if z else "") + t)
+            l = QLabel(("* " if z else "") + t)
             l.setProperty("color-role", "muted")
             return l
 

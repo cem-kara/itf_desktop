@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
 )
 from core.di import get_nobet_service
 from core.logger import logger
+from ui.styles.icons import IconRenderer, IconColors
 
 _AY  = ["","Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",
          "Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
@@ -75,8 +76,9 @@ class _Hucre(QFrame):
             border = "2px solid rgba(255,255,255,0.06)"
         self.setStyleSheet(f"_Hucre{{background:{bg};border:{border};border-radius:0px;}}")
         renk = "#e8a030" if dini else ("#e85555" if tatil else "#4d9ee8" if hf else "#8aabcf")
-        ekler = " 🕌" if dini else (" 🎌" if tatil else "")
-        self._lbl.setText(f"<span style='color:{renk}'>{g} {_GUN[a]}{ekler}</span>")
+        etiket = "(Dini Tatil)" if dini else ("(Resmi Tatil)" if tatil else "")
+        self._lbl.setText(
+            f"<span style='color:{renk}'>{g} {_GUN[a]} {etiket}</span>")
         al = self._alan.layout()
         while al.count():
             w = al.takeAt(0).widget()
@@ -190,8 +192,10 @@ class NobetPlanPage(QWidget):
         hdr = QHBoxLayout()
         hdr.addWidget(QLabel("Manuel Nöbet", styleSheet="font-weight:600;color:#c2d8ef;"))
         hdr.addStretch()
-        kapat = QPushButton("✕"); kapat.setFixedSize(24,24)
+        kapat = QPushButton(""); kapat.setFixedSize(24,24)
         kapat.setProperty("style-role","secondary")
+        IconRenderer.set_button_icon(
+            kapat, "x", color=IconColors.MUTED, size=12)
         kapat.clicked.connect(lambda: p.setVisible(False))
         hdr.addWidget(kapat); lay.addLayout(hdr)
         self._lbl_m_gun = QLabel("—"); self._lbl_m_gun.setProperty("style-role","stat-label")
@@ -461,8 +465,10 @@ class NobetPlanPage(QWidget):
             vas = n.get("VardiyaAdi",""); sid = str(n.get("SatirID",""))
             rw = QWidget(); rl = QHBoxLayout(rw); rl.setContentsMargins(0,0,0,0)
             lb = QLabel(f"{ad}  {vas}"); lb.setStyleSheet("font-size:11px;")
-            bs = QPushButton("✕"); bs.setFixedSize(18,18)
+            bs = QPushButton(""); bs.setFixedSize(18,18)
             bs.setProperty("style-role","danger")
+            IconRenderer.set_button_icon(
+                bs, "x", color=IconColors.DANGER, size=11)
             bs.clicked.connect(lambda _,s=sid: self._nobet_sil(s))
             rl.addWidget(lb,1); rl.addWidget(bs); self._ml.addWidget(rw)
         if not nobetler:

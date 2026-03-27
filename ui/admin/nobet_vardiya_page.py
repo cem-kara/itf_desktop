@@ -126,7 +126,7 @@ class _GrupDialog(QDialog):
 
 
 class _VardiyaDialog(QDialog):
-    def __init__(self, kayit: dict = None, parent=None):
+    def __init__(self, kayit: dict = None, birim_ayar: dict = None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Vardiya Düzenle" if kayit else "Yeni Vardiya")
         self.setModal(True)
@@ -174,6 +174,16 @@ class _VardiyaDialog(QDialog):
         self._aktif.setChecked(bool(int((kayit or {}).get("Aktif", 1))))
         form.addRow("", self._aktif)
 
+        self._haftasonu = QCheckBox("Bu birimde hafta sonu çalışma var")
+        self._haftasonu.setChecked(
+            bool(int((birim_ayar or {}).get("HaftasonuNobetZorunlu", 1))))
+        form.addRow("Hafta Sonu:", self._haftasonu)
+
+        self._tatil = QCheckBox("Bu birimde tatil günlerinde çalışma var")
+        self._tatil.setChecked(
+            bool(int((birim_ayar or {}).get("DiniBayramAtama", 1))))
+        form.addRow("Tatiller:", self._tatil)
+
         lay.addLayout(form)
         btns = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok |
@@ -191,6 +201,12 @@ class _VardiyaDialog(QDialog):
             "Rol":        self._rol.currentData(),
             "Sira":       self._sira.value(),
             "Aktif":      1 if self._aktif.isChecked() else 0,
+        }
+
+    def get_birim_ayar_data(self) -> dict:
+        return {
+            "HaftasonuNobetZorunlu": 1 if self._haftasonu.isChecked() else 0,
+            "DiniBayramAtama":       1 if self._tatil.isChecked() else 0,
         }
 
 
@@ -859,6 +875,48 @@ class NobetVardiyaPage(QWidget):
         except Exception as e:
             logger.error(f"Birim ayar yükle: {e}")
 
+    def _birim_ayar_getir(self, birim_id: str) -> dict:
+        try:
+            rows = self._reg().get("NB_BirimAyar").get_all() or []
+            return next(
+                (r for r in rows if str(r.get("BirimID", "")) == birim_id),
+                None,
+            ) or {}
+        except Exception as e:
+            logger.error(f"Birim ayar getir: {e}")
+            return {}
+
+    def _vardiya_icin_birim_ayar_kaydet(self, birim_id: str, secim: dict):
+        if not birim_id:
+            return
+        try:
+            reg = self._reg()
+            rows = reg.get("NB_BirimAyar").get_all() or []
+            ayar = next(
+                (r for r in rows if str(r.get("BirimID", "")) == birim_id),
+                None,
+            )
+            veri = {
+                "HaftasonuNobetZorunlu": int(secim.get("HaftasonuNobetZorunlu", 1)),
+                "DiniBayramAtama": int(secim.get("DiniBayramAtama", 1)),
+                "updated_at": _simdi(),
+            }
+            if ayar:
+                reg.get("NB_BirimAyar").update(ayar["AyarID"], veri)
+            else:
+                reg.get("NB_BirimAyar").insert({
+                    "AyarID": _yeni_id(),
+                    "BirimID": birim_id,
+                    "GunlukSlotSayisi": self._spn_slot.value(),
+                    "FmMaxSaat": self._spn_fm_max.value(),
+                    "MaxGunlukSureDakika": (
+                        1440 if self._spn_max_gun.value() >= 2 else 720),
+                    "created_at": _simdi(),
+                    **veri,
+                })
+        except Exception as e:
+            logger.error(f"Vardiya birim ayar kaydet: {e}")
+
     # ──────────────────────────────────────────────────────────
     #  Seçim Sinyalleri
     # ──────────────────────────────────────────────────────────
@@ -1115,7 +1173,8 @@ class NobetVardiyaPage(QWidget):
                 "Önce bir birim ve vardiya grubu seçin.",
             )
             return
-        dialog = _VardiyaDialog(parent=self)
+        birim_ayar = self._birim_ayar_getir(self._secili_birim_id)
+        dialog = _VardiyaDialog(birim_ayar=birim_ayar, parent=self)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         veri = dialog.get_data()
@@ -1131,6 +1190,10 @@ class NobetVardiyaPage(QWidget):
                 "created_at":  _simdi(),
                 **veri,
             })
+            self._vardiya_icin_birim_ayar_kaydet(
+                self._secili_birim_id,
+                dialog.get_birim_ayar_data(),
+            )
             self._vardiyeleri_yukle(self._secili_grup_id)
         except Exception as e:
             QMessageBox.critical(self, "Hata", str(e))
@@ -1145,11 +1208,16 @@ class NobetVardiyaPage(QWidget):
             reg   = self._reg()
             rows  = reg.get("NB_Vardiya").get_all() or []
             kayit = next((r for r in rows if r["VardiyaID"]==vid), None)
-            dialog = _VardiyaDialog(kayit, parent=self)
+            birim_ayar = self._birim_ayar_getir(self._secili_birim_id)
+            dialog = _VardiyaDialog(kayit, birim_ayar=birim_ayar, parent=self)
             if dialog.exec() != QDialog.DialogCode.Accepted:
                 return
             reg.get("NB_Vardiya").update(
                 vid, {**dialog.get_data(), "updated_at": _simdi()})
+            self._vardiya_icin_birim_ayar_kaydet(
+                self._secili_birim_id,
+                dialog.get_birim_ayar_data(),
+            )
             self._vardiyeleri_yukle(self._secili_grup_id)
         except Exception as e:
             QMessageBox.critical(self, "Hata", str(e))

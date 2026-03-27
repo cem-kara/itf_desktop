@@ -14,8 +14,8 @@ Yapı:
   └─────────────────────────────────────────────────┘
 
 Akış:
-  Hazırlık sekmesi → kontrol → "✔ Hazırlığı Onayla"
-  → Plan sekmesi aktif → "⚡ Otomatik Plan" → "✔ Onayla"
+    Hazırlık sekmesi → kontrol → "Hazırlığı Onayla"
+    → Plan sekmesi aktif → "Otomatik Plan" → "Onayla"
 """
 from __future__ import annotations
 
@@ -33,6 +33,7 @@ from PySide6.QtWidgets import (
 
 from core.di import get_registry
 from core.logger import logger
+from ui.styles.icons import IconRenderer, IconColors
 
 _AY = ["","Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",
        "Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
@@ -184,15 +185,19 @@ class NobetMerkezPage(QWidget):
 
         h.addStretch()
 
-        self._btn_pdf = QPushButton("⬇ PDF")
+        self._btn_pdf = QPushButton("PDF")
         self._btn_pdf.setProperty("style-role","secondary")
         self._btn_pdf.setFixedHeight(28)
+        IconRenderer.set_button_icon(
+            self._btn_pdf, "file_pdf", color=IconColors.MUTED, size=14)
         self._btn_pdf.clicked.connect(self._pdf_al)
         h.addWidget(self._btn_pdf)
 
-        btn_yenile = QPushButton("↺")
+        btn_yenile = QPushButton("")
         btn_yenile.setFixedSize(28,28)
         btn_yenile.setProperty("style-role","secondary")
+        IconRenderer.set_button_icon(
+            btn_yenile, "refresh", color=IconColors.MUTED, size=14)
         btn_yenile.clicked.connect(self._yukle)
         h.addWidget(btn_yenile)
         return bar
@@ -250,11 +255,14 @@ class NobetMerkezPage(QWidget):
         h.setContentsMargins(0,0,0,0)
         h.setSpacing(0)
 
-        self._btn_adim_hazirlik = QPushButton("  📋  Ön Hazırlık  ")
+        self._btn_adim_hazirlik = QPushButton("  Ön Hazırlık  ")
         self._btn_adim_hazirlik.setCheckable(True)
         self._btn_adim_hazirlik.setChecked(True)
         self._btn_adim_hazirlik.setProperty("style-role","tab-active")
         self._btn_adim_hazirlik.setFixedHeight(38)
+        IconRenderer.set_button_icon(
+            self._btn_adim_hazirlik, "clipboard_list",
+            color=IconColors.PRIMARY, size=14)
         self._btn_adim_hazirlik.clicked.connect(lambda: self._sekme_gec(0))
         h.addWidget(self._btn_adim_hazirlik)
 
@@ -263,18 +271,21 @@ class NobetMerkezPage(QWidget):
         self._lbl_ok.setAlignment(Qt.AlignmentFlag.AlignCenter)
         h.addWidget(self._lbl_ok)
 
-        self._btn_adim_plan = QPushButton("  📅  Nöbet Planı  ")
+        self._btn_adim_plan = QPushButton("  Nöbet Planı  ")
         self._btn_adim_plan.setCheckable(True)
         self._btn_adim_plan.setChecked(False)
         self._btn_adim_plan.setProperty("style-role","tab")
         self._btn_adim_plan.setFixedHeight(38)
+        IconRenderer.set_button_icon(
+            self._btn_adim_plan, "calendar",
+            color=IconColors.MUTED, size=14)
         self._btn_adim_plan.clicked.connect(lambda: self._sekme_gec(1))
         h.addWidget(self._btn_adim_plan)
 
         h.addStretch()
 
         # Hazırlık onay durumu göstergesi
-        self._lbl_hazirlik_durum = QLabel("⬜ Hazırlık onaylanmadı")
+        self._lbl_hazirlik_durum = QLabel("Hazırlık onaylanmadı")
         self._lbl_hazirlik_durum.setStyleSheet(
             "font-size:11px;color:#e85555;padding:0 16px;")
         h.addWidget(self._lbl_hazirlik_durum)
@@ -301,17 +312,22 @@ class NobetMerkezPage(QWidget):
         hh.setContentsMargins(0,0,0,0)
         hh.setSpacing(8)
 
-        self._btn_tercih = QPushButton("✎  Tercih Düzenle")
+        self._btn_tercih = QPushButton("Tercih Düzenle")
         self._btn_tercih.setProperty("style-role","secondary")
         self._btn_tercih.setFixedHeight(32)
         self._btn_tercih.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_tercih, "edit", color=IconColors.MUTED, size=14)
         self._btn_tercih.clicked.connect(self._hazirlik.tercih_duzenle)
         hh.addWidget(self._btn_tercih)
 
-        self._btn_hazirlik_onayla = QPushButton("✔  Hazırlığı Onayla")
+        self._btn_hazirlik_onayla = QPushButton("Hazırlığı Onayla")
         self._btn_hazirlik_onayla.setProperty("style-role","action")
         self._btn_hazirlik_onayla.setFixedHeight(32)
         self._btn_hazirlik_onayla.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_hazirlik_onayla, "check_circle",
+            color=IconColors.PRIMARY, size=14)
         self._btn_hazirlik_onayla.clicked.connect(self._hazirlik_onayla)
         hh.addWidget(self._btn_hazirlik_onayla)
 
@@ -330,18 +346,22 @@ class NobetMerkezPage(QWidget):
         ph.setContentsMargins(0,0,0,0)
         ph.setSpacing(8)
 
-        self._btn_oto = QPushButton("⚡  Otomatik Plan")
+        self._btn_oto = QPushButton("Otomatik Plan")
         self._btn_oto.setProperty("style-role","action")
         self._btn_oto.setFixedHeight(32)
         self._btn_oto.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_oto, "bolt", color=IconColors.PRIMARY, size=14)
         self._btn_oto.setToolTip("Önce 'Ön Hazırlık' onaylanmalıdır")
         self._btn_oto.clicked.connect(self._oto_plan)
         ph.addWidget(self._btn_oto)
 
-        self._btn_temizle = QPushButton("✕  Taslağı Temizle")
+        self._btn_temizle = QPushButton("Taslağı Temizle")
         self._btn_temizle.setProperty("style-role","danger")
         self._btn_temizle.setFixedHeight(32)
         self._btn_temizle.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_temizle, "x", color=IconColors.DANGER, size=14)
         self._btn_temizle.clicked.connect(self._taslak_temizle)
         ph.addWidget(self._btn_temizle)
 
@@ -351,10 +371,12 @@ class NobetMerkezPage(QWidget):
         self._pbar.setVisible(False)
         ph.addWidget(self._pbar)
 
-        self._btn_onayla = QPushButton("✔  Onayla")
+        self._btn_onayla = QPushButton("Onayla")
         self._btn_onayla.setProperty("style-role","action")
         self._btn_onayla.setFixedHeight(32)
         self._btn_onayla.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_onayla, "check", color=IconColors.PRIMARY, size=14)
         self._btn_onayla.clicked.connect(self._plan_onayla)
         ph.addWidget(self._btn_onayla)
 
@@ -567,32 +589,41 @@ class NobetMerkezPage(QWidget):
 
             if onaylandi:
                 tarih = str(kayit.get("OnayTarihi",""))[:10]
-                self._lbl_hazirlik_durum.setText(f"✅ Hazırlık onaylandı ({tarih})")
+                self._lbl_hazirlik_durum.setText(f"Hazırlık onaylandı ({tarih})")
                 self._lbl_hazirlik_durum.setStyleSheet(
                     "font-size:11px;color:#2ec98e;padding:0 16px;")
-                self._btn_adim_plan.setText("  📅  Nöbet Planı  ")
+                self._btn_adim_plan.setText("  Nöbet Planı  ")
+                IconRenderer.set_button_icon(
+                    self._btn_adim_plan, "calendar",
+                    color=IconColors.MUTED, size=14)
                 self._btn_hazirlik_onayla.setEnabled(False)
-                self._btn_hazirlik_onayla.setText("✔ Onaylandı")
+                self._btn_hazirlik_onayla.setText("Onaylandı")
                 self._btn_hazirlik_iptal.setVisible(True)
             else:
-                self._lbl_hazirlik_durum.setText("⬜ Hazırlık onaylanmadı")
+                self._lbl_hazirlik_durum.setText("Hazırlık onaylanmadı")
                 self._lbl_hazirlik_durum.setStyleSheet(
                     "font-size:11px;color:#e85555;padding:0 16px;")
-                self._btn_adim_plan.setText("  📅  Nöbet Planı  🔒")
+                self._btn_adim_plan.setText("  Nöbet Planı  ")
+                IconRenderer.set_button_icon(
+                    self._btn_adim_plan, "lock",
+                    color=IconColors.MUTED, size=14)
                 self._btn_hazirlik_onayla.setEnabled(bool(self._birim_id))
-                self._btn_hazirlik_onayla.setText("✔  Hazırlığı Onayla")
+                self._btn_hazirlik_onayla.setText("Hazırlığı Onayla")
                 self._btn_hazirlik_iptal.setVisible(False)
 
         except Exception as e:
             logger.error(f"_hazirlik_durum_guncelle: {e}")
             # Tablo yoksa (migration bekliyor) → butonu yine de aktif et
             self._hazirlik_onaylandi = False
-            self._lbl_hazirlik_durum.setText("⬜ Hazırlık onaylanmadı")
+            self._lbl_hazirlik_durum.setText("Hazırlık onaylanmadı")
             self._lbl_hazirlik_durum.setStyleSheet(
                 "font-size:11px;color:#e85555;padding:0 16px;")
-            self._btn_adim_plan.setText("  📅  Nöbet Planı  🔒")
+            self._btn_adim_plan.setText("  Nöbet Planı  ")
+            IconRenderer.set_button_icon(
+                self._btn_adim_plan, "lock",
+                color=IconColors.MUTED, size=14)
             self._btn_hazirlik_onayla.setEnabled(bool(self._birim_id))
-            self._btn_hazirlik_onayla.setText("✔  Hazırlığı Onayla")
+            self._btn_hazirlik_onayla.setText("Hazırlığı Onayla")
             self._btn_hazirlik_iptal.setVisible(False)
 
         self._oto_durum_guncelle()
@@ -605,9 +636,9 @@ class NobetMerkezPage(QWidget):
 
         d = {
             "yok":        ("",              ""),
-            "taslak":     ("📝 Taslak",     "#f59e0b"),
-            "onaylandi":  ("✅ Plan Onaylı","#2ec98e"),
-            "yururlukte": ("🟢 Yürürlükte","#2ec98e"),
+            "taslak":     ("Taslak",        "#f59e0b"),
+            "onaylandi":  ("Plan Onaylı",   "#2ec98e"),
+            "yururlukte": ("Yürürlükte",    "#2ec98e"),
         }
         metin, renk = d.get(self._plan_onay_durumu, ("",""))
         self._lbl_plan_durum.setText(metin)

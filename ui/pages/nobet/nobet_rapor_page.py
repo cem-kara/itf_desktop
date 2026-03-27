@@ -134,7 +134,7 @@ class _RaporWorker(QThread):
                 lay.setMargins(QMarginsF(10, 10, 10, 10))
                 w.setPageLayout(lay)
                 doc.print_(w)
-                self.log.emit(f"✔ PDF hazır: {self._kayit}")
+                self.log.emit(f"PDF hazır: {self._kayit}")
                 RaporServisi.ac(self._kayit)
 
             else:  # Excel — şablon veya openpyxl
@@ -144,13 +144,13 @@ class _RaporWorker(QThread):
                     # Şablon yoksa openpyxl ile doğrudan oluştur
                     yol = self._excel_olustur()
                 if yol:
-                    self.log.emit(f"✔ Excel hazır: {yol}")
+                    self.log.emit(f"Excel hazır: {yol}")
                     RaporServisi.ac(yol)
                 else:
-                    self.log.emit("✗ Excel oluşturulamadı.")
+                    self.log.emit("Excel oluşturulamadı.")
 
         except Exception as e:
-            self.log.emit(f"✗ Hata: {e}")
+            self.log.emit(f"Hata: {e}")
             logger.error(f"Nöbet rapor worker: {e}")
         finally:
             self.bitti.emit()
@@ -348,7 +348,7 @@ class _RaporWorker(QThread):
             logger.error(f"Excel oluşturma: {e}")
             return ""
         except Exception as e:
-            self.log.emit(f"✗ Hata: {e}")
+            self.log.emit(f"Hata: {e}")
         finally:
             self.bitti.emit()
 

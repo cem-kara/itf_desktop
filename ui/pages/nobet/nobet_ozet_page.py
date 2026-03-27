@@ -33,6 +33,7 @@ from PySide6.QtWidgets import (
 
 from core.di import get_registry
 from core.logger import logger
+from ui.styles.icons import IconRenderer, IconColors
 
 _AY = ["","Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",
        "Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
@@ -213,9 +214,11 @@ class NobetOzetPage(QWidget):
         h.addWidget(self._cmb_birim)
         h.addStretch()
 
-        btn_yenile = QPushButton("↺  Yenile")
+        btn_yenile = QPushButton("Yenile")
         btn_yenile.setProperty("style-role", "secondary")
         btn_yenile.setFixedHeight(28)
+        IconRenderer.set_button_icon(
+            btn_yenile, "refresh", color=IconColors.MUTED, size=14)
         btn_yenile.clicked.connect(self._yukle)
         h.addWidget(btn_yenile)
         return bar
@@ -258,7 +261,7 @@ class NobetOzetPage(QWidget):
         return w
 
     def _build_dagilim_tab(self) -> QWidget:
-        """Personel × gün matrisi — o gün nöbet varsa ✔."""
+        """Personel × gün matrisi — o gün nöbet varsa işaretli."""
         w = QWidget()
         lay = QVBoxLayout(w)
         lay.setContentsMargins(8, 8, 8, 4)
@@ -322,7 +325,7 @@ class NobetOzetPage(QWidget):
         # Çoklu seçim için checkbox sütunlu tablo
         self._tbl_fm = QTableWidget(0, 7)
         self._tbl_fm.setHorizontalHeaderLabels([
-            "✔", "Ad Soyad",
+            "Seç", "Ad Soyad",
             "Bu Ay\nFazla",
             "Önceki\nDevir",
             "Toplam\nFazla",
@@ -350,23 +353,29 @@ class NobetOzetPage(QWidget):
 
         alt = QHBoxLayout()
 
-        self._btn_fm_tumunu = QPushButton("☑ Tümünü Seç")
+        self._btn_fm_tumunu = QPushButton("Tümünü Seç")
         self._btn_fm_tumunu.setProperty("style-role", "secondary")
         self._btn_fm_tumunu.setFixedHeight(28)
+        IconRenderer.set_button_icon(
+            self._btn_fm_tumunu, "check_square", color=IconColors.MUTED, size=14)
         self._btn_fm_tumunu.clicked.connect(self._fm_tumunu_sec)
         alt.addWidget(self._btn_fm_tumunu)
 
-        self._btn_fm_bildir = QPushButton("📋  Fazla Mesai Bildir")
+        self._btn_fm_bildir = QPushButton("Fazla Mesai Bildir")
         self._btn_fm_bildir.setProperty("style-role", "action")
         self._btn_fm_bildir.setFixedHeight(28)
         self._btn_fm_bildir.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_fm_bildir, "clipboard_list", color=IconColors.PRIMARY, size=14)
         self._btn_fm_bildir.clicked.connect(self._fm_bildir)
         alt.addWidget(self._btn_fm_bildir)
 
-        self._btn_fm_pdf = QPushButton("⬇ PDF")
+        self._btn_fm_pdf = QPushButton("PDF")
         self._btn_fm_pdf.setProperty("style-role", "secondary")
         self._btn_fm_pdf.setFixedHeight(28)
         self._btn_fm_pdf.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_fm_pdf, "file_pdf", color=IconColors.MUTED, size=14)
         self._btn_fm_pdf.clicked.connect(self._fm_pdf)
         alt.addWidget(self._btn_fm_pdf)
 
@@ -555,13 +564,13 @@ class NobetOzetPage(QWidget):
 
                 # Dağılım durumu
                 if sayi == 0:
-                    dag, dag_renk = "✘ Yok", "#e85555"
+                    dag, dag_renk = "Yok", "#e85555"
                 elif sayi < ort * 0.75:
                     dag, dag_renk = "↓ Düşük", "#e85555"
                 elif sayi > ort * 1.25:
                     dag, dag_renk = "↑ Yüksek", "#f59e0b"
                 else:
-                    dag, dag_renk = "✔ Dengeli", "#2ec98e"
+                    dag, dag_renk = "Dengeli", "#2ec98e"
                 dag_itm = _it(dag, pid)
                 dag_itm.setForeground(QColor(dag_renk))
                 self._tbl_nobet.setItem(ri, 6, dag_itm)
@@ -813,7 +822,7 @@ class NobetOzetPage(QWidget):
                 self._tbl_fm.insertRow(ri)
 
                 # Sütun 0: Checkbox
-                chk_itm = QTableWidgetItem("☐")
+                chk_itm = QTableWidgetItem("Seç")
                 chk_itm.setData(Qt.ItemDataRole.UserRole, pid)
                 chk_itm.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 chk_itm.setForeground(QColor("#6b7280"))
@@ -857,13 +866,13 @@ class NobetOzetPage(QWidget):
 
                 # Sütun 5: FM Durumu
                 if bildirildi:
-                    r_lbl  = "✔ Bildirildi"
+                    r_lbl  = "Bildirildi"
                     r_renk = "#2ec98e"
                 elif toplam_f > FM_ESIK:
-                    r_lbl  = "⏳ Bekliyor"
+                    r_lbl  = "Bekliyor"
                     r_renk = "#f59e0b"
                 elif abs(toplam_f) <= FM_ESIK:
-                    r_lbl  = "⇄ Alacak/Verecek"
+                    r_lbl  = "Alacak/Verecek"
                     r_renk = "#f3c55a"
                 else:
                     r_lbl  = "↓ Eksik"
@@ -902,22 +911,22 @@ class NobetOzetPage(QWidget):
         itm = self._tbl_fm.item(row, 0)
         if not itm:
             return
-        seçili = itm.text() == "☑"
-        itm.setText("☐" if seçili else "☑")
+        secili = itm.text() == "Seçili"
+        itm.setText("Seç" if secili else "Seçili")
         itm.setForeground(QColor(
-            "#6b7280" if seçili else "#2ec98e"))
+            "#6b7280" if secili else "#2ec98e"))
         self._btn_fm_bildir.setEnabled(
             len(self._fm_secili_pidler()) > 0)
 
     def _fm_tumunu_sec(self):
         """Tüm satırları seç/seçimi kaldır."""
         tum_secili = all(
-            (self._tbl_fm.item(r, 0) or QTableWidgetItem()).text() == "☑"
+            (self._tbl_fm.item(r, 0) or QTableWidgetItem()).text() == "Seçili"
             for r in range(self._tbl_fm.rowCount()))
         for r in range(self._tbl_fm.rowCount()):
             itm = self._tbl_fm.item(r, 0)
             if itm:
-                itm.setText("☐" if tum_secili else "☑")
+                itm.setText("Seç" if tum_secili else "Seçili")
                 itm.setForeground(QColor(
                     "#6b7280" if tum_secili else "#2ec98e"))
         self._btn_fm_bildir.setEnabled(
@@ -928,7 +937,7 @@ class NobetOzetPage(QWidget):
             self._tbl_fm.item(r, 0).data(Qt.ItemDataRole.UserRole)
             for r in range(self._tbl_fm.rowCount())
             if self._tbl_fm.item(r, 0)
-            and self._tbl_fm.item(r, 0).text() == "☑"
+            and self._tbl_fm.item(r, 0).text() == "Seçili"
         ]
 
     def _fm_bildir(self):

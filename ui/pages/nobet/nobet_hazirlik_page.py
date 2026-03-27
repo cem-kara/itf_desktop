@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 )
 from core.di import get_registry
 from core.logger import logger
+from ui.styles.icons import IconRenderer, IconColors
 
 _AY = ["","Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",
        "Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
@@ -175,10 +176,12 @@ class NobetHazirlikPage(QWidget):
         lay.addWidget(self._tbl, 1)
 
         alt = QHBoxLayout()
-        self._btn_tercih = QPushButton("✎  Tercih Düzenle")
+        self._btn_tercih = QPushButton("Tercih Düzenle")
         self._btn_tercih.setProperty("style-role","secondary")
         self._btn_tercih.setFixedHeight(28)
         self._btn_tercih.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_tercih, "edit", color=IconColors.MUTED, size=14)
         self._btn_tercih.clicked.connect(self.tercih_duzenle)
         alt.addWidget(self._btn_tercih)
         alt.addStretch()
@@ -338,8 +341,8 @@ class NobetHazirlikPage(QWidget):
 
                 if hedef==0 and tip=="sua":   sl,sr = "Şua — nöbet yok","#6b7280"
                 elif izin_gun>=ay_is:          sl,sr = "Tam ay izin","#6b7280"
-                elif devir>DEVIR_ESIK:         sl,sr = "⚠ Yüksek devir","#f59e0b"; uyari_sayi+=1
-                else:                          sl,sr = "✔ Hazır","#2ec98e"
+                elif devir>DEVIR_ESIK:         sl,sr = "Yüksek devir","#f59e0b"; uyari_sayi+=1
+                else:                          sl,sr = "Hazır","#2ec98e"
                 st_itm = _it(sl, pid); st_itm.setForeground(QColor(sr))
                 self._tbl.setItem(ri, 6, st_itm)
 
