@@ -446,6 +446,24 @@ class NobetVardiyaPage(QWidget):
             "2 = Personel aynı günde gündüz+gece tutabilir (24s)")
         form.addRow("Max Günlük:", self._spn_max_gun)
 
+        self._chk_hafta_sonu = QCheckBox("Atama yapılır")
+        self._chk_hafta_sonu.setChecked(True)
+        self._chk_hafta_sonu.setToolTip(
+            "Kapalıysa Cumartesi/Pazar günlerinde bu birim için atama yapılmaz.")
+        form.addRow("Hafta Sonu:", self._chk_hafta_sonu)
+
+        self._chk_resmi_tatil = QCheckBox("Atama yapılır")
+        self._chk_resmi_tatil.setChecked(True)
+        self._chk_resmi_tatil.setToolTip(
+            "Kapalıysa resmi/idari tatillerde bu birim için atama yapılmaz.")
+        form.addRow("Resmi Tatil:", self._chk_resmi_tatil)
+
+        self._chk_dini_bayram = QCheckBox("Atama yapılır")
+        self._chk_dini_bayram.setChecked(False)
+        self._chk_dini_bayram.setToolTip(
+            "Kapalıysa dini bayram günlerinde bu birim için atama yapılmaz.")
+        form.addRow("Dini Bayram:", self._chk_dini_bayram)
+
         gl.addLayout(form)
         self._btn_ayar_kaydet = self._btn("Kaydet", "action")
         self._btn_ayar_kaydet.setEnabled(False)
@@ -872,6 +890,15 @@ class NobetVardiyaPage(QWidget):
             # MaxGunlukSureDakika → 720=1 vardiya, 1440=2 vardiya
             max_dk = int((ayar or {}).get("MaxGunlukSureDakika", 720))
             self._spn_max_gun.setValue(2 if max_dk >= 1440 else 1)
+            self._chk_hafta_sonu.setChecked(
+                bool(int((ayar or {}).get("HaftasonuCalismaVar", 1))))
+            self._chk_resmi_tatil.setChecked(
+                bool(int((ayar or {}).get("ResmiTatilCalismaVar", 1))))
+            # Geriye uyumluluk: yeni kolon yoksa eski DiniBayramAtama'yı oku
+            dini_var = (ayar or {}).get("DiniBayramCalismaVar", None)
+            if dini_var is None:
+                dini_var = (ayar or {}).get("DiniBayramAtama", 0)
+            self._chk_dini_bayram.setChecked(bool(int(dini_var)))
         except Exception as e:
             logger.error(f"Birim ayar yükle: {e}")
 
@@ -1012,19 +1039,25 @@ class NobetVardiyaPage(QWidget):
         try:
             reg   = self._reg()
 
-            # MaxGunlukSureDakika kolonu yoksa migration çalıştır
+            # Yeni ayar kolonları yoksa migration çalıştır
             try:
                 test_rows = reg.get("NB_BirimAyar").get_all() or []
                 if test_rows:
-                    _ = test_rows[0].get("MaxGunlukSureDakika", None)
-                    if _ is None:
+                    ilk = test_rows[0]
+                    gerekenler = [
+                        "MaxGunlukSureDakika",
+                        "HaftasonuCalismaVar",
+                        "ResmiTatilCalismaVar",
+                        "DiniBayramCalismaVar",
+                    ]
+                    if any(ilk.get(k, None) is None for k in gerekenler):
                         raise KeyError("kolon yok")
             except Exception:
                 try:
                     from database.migrations import MigrationManager
                     db_path = getattr(self._db, "db_path", self._db)
                     MigrationManager(db_path).run_migrations()
-                    logger.info("Migration çalıştırıldı (MaxGunlukSureDakika)")
+                    logger.info("Migration çalıştırıldı (NB_BirimAyar kolonları)")
                 except Exception as me:
                     logger.error(f"Migration hatası: {me}")
 
@@ -1035,6 +1068,9 @@ class NobetVardiyaPage(QWidget):
                 "GunlukSlotSayisi":    self._spn_slot.value(),
                 "FmMaxSaat":           self._spn_fm_max.value(),
                 "MaxGunlukSureDakika": 1440 if self._spn_max_gun.value() >= 2 else 720,
+                "HaftasonuCalismaVar": 1 if self._chk_hafta_sonu.isChecked() else 0,
+                "ResmiTatilCalismaVar": 1 if self._chk_resmi_tatil.isChecked() else 0,
+                "DiniBayramCalismaVar": 1 if self._chk_dini_bayram.isChecked() else 0,
                 "updated_at":          _simdi(),
             }
             if ayar:
@@ -1050,7 +1086,10 @@ class NobetVardiyaPage(QWidget):
                 self, "Kaydedildi",
                 f"Slot: {self._spn_slot.value()}  |  "
                 f"FM Max: {self._spn_fm_max.value()} saat  |  "
-                f"Max günlük: {'24 saat (2 vardiya)' if self._spn_max_gun.value()>=2 else '12 saat (1 vardiya)'}")
+                f"Max günlük: {'24 saat (2 vardiya)' if self._spn_max_gun.value()>=2 else '12 saat (1 vardiya)'}\n"
+                f"Hafta sonu: {'Açık' if self._chk_hafta_sonu.isChecked() else 'Kapalı'}  |  "
+                f"Resmi tatil: {'Açık' if self._chk_resmi_tatil.isChecked() else 'Kapalı'}  |  "
+                f"Dini bayram: {'Açık' if self._chk_dini_bayram.isChecked() else 'Kapalı'}")
         except Exception as e:
             QMessageBox.critical(self, "Hata", str(e))
             logger.error(f"_birim_ayar_kaydet: {e}")

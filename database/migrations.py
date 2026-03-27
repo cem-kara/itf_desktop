@@ -119,7 +119,42 @@ class MigrationManager:
             logger.error(f"Migration hatasi: {e} | Yedek: {backup_path}")
             raise
 
-    CURRENT_VERSION = 5
+    CURRENT_VERSION = 6
+
+    def _migrate_to_v6(self):
+        """
+        v6: NB_BirimAyar'a birim bazlı çalışma günü anahtarları eklendi.
+        - HaftasonuCalismaVar  : Hafta sonu günlerinde bu birimde atama yapılır mı?
+        - ResmiTatilCalismaVar : Resmi tatillerde atama yapılır mı?
+        - DiniBayramCalismaVar : Dini bayram günlerinde atama yapılır mı?
+
+        Not:
+          Eski DiniBayramAtama alanı geriye uyumluluk için korunur.
+          Yeni akışta UI/servisler bu 3 alanı esas almalıdır.
+        """
+        conn = self.connect()
+        cur  = conn.cursor()
+        try:
+            kolonlar = [
+                ("HaftasonuCalismaVar", 1),
+                ("ResmiTatilCalismaVar", 1),
+                ("DiniBayramCalismaVar", 0),
+            ]
+            for kolon, varsayilan in kolonlar:
+                try:
+                    cur.execute(
+                        f"ALTER TABLE NB_BirimAyar "
+                        f"ADD COLUMN {kolon} INTEGER NOT NULL DEFAULT {varsayilan}"
+                    )
+                    logger.info(f"v6: NB_BirimAyar.{kolon} kolonu eklendi")
+                except Exception as e:
+                    if "duplicate column" in str(e).lower():
+                        logger.info(f"v6: {kolon} zaten var, atlandı")
+                    else:
+                        raise
+            conn.commit()
+        finally:
+            conn.close()
 
     def _migrate_to_v5(self):
         """
@@ -268,6 +303,9 @@ class MigrationManager:
             GunlukHedefDakika     INTEGER NOT NULL DEFAULT 420,
             HaftasonuNobetZorunlu INTEGER NOT NULL DEFAULT 1,
             DiniBayramAtama       INTEGER NOT NULL DEFAULT 0,
+            HaftasonuCalismaVar   INTEGER NOT NULL DEFAULT 1,
+            ResmiTatilCalismaVar  INTEGER NOT NULL DEFAULT 1,
+            DiniBayramCalismaVar  INTEGER NOT NULL DEFAULT 0,
             GeserlilikBaslangic   TEXT,
             GeserlilikBitis       TEXT,
             created_at            TEXT NOT NULL DEFAULT (datetime('now')),
