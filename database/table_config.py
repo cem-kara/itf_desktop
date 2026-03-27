@@ -347,6 +347,7 @@ TABLES = {
             "GunlukSlotSayisi", "GunlukSlotDakika", "CalismaModu",
             "OtomatikBolunme", "GunlukHedefDakika",
             "HaftasonuNobetZorunlu", "DiniBayramAtama",
+            "HaftasonuCalismaVar", "ResmiTatilCalismaVar", "DiniBayramCalismaVar",
             "GeserlilikBaslangic", "GeserlilikBitis",
             "FmMaxSaat", "MaxGunlukSureDakika",
             "created_at", "updated_at",
