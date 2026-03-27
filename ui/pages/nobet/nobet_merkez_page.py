@@ -692,14 +692,8 @@ class NobetMerkezPage(QWidget):
             reg   = self._reg()
             simdi = datetime.now().isoformat(sep=" ", timespec="seconds")
 
-            # NB_HazirlikOnay tablosu yoksa oluştur
-            try:
-                rows = reg.get("NB_HazirlikOnay").get_all() or []
-            except Exception:
-                from database.migrations import MigrationManager
-                db_path = getattr(self._db, "db_path", self._db)
-                MigrationManager(db_path).run_migrations()
-                rows = reg.get("NB_HazirlikOnay").get_all() or []
+            # NB_HazirlikOnay tablosu kontrolü (migration ana girişte yapılır)
+            rows = reg.get("NB_HazirlikOnay").get_all() or []
             kayit = next(
                 (r for r in rows
                  if str(r.get("BirimID","")) == self._birim_id

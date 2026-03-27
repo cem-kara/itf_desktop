@@ -348,6 +348,7 @@ TABLES = {
             "OtomatikBolunme", "GunlukHedefDakika",
             "HaftasonuNobetZorunlu", "DiniBayramAtama",
             "HaftasonuCalismaVar", "ResmiTatilCalismaVar", "DiniBayramCalismaVar",
+            "ArdisikGunIzinli",
             "GeserlilikBaslangic", "GeserlilikBitis",
             "FmMaxSaat", "MaxGunlukSureDakika",
             "created_at", "updated_at",

@@ -104,9 +104,9 @@ class AdminPanel(QWidget):
 
         # Nöbet Ayarları sekmesi (Birimler + Vardiyalar)
         try:
-            from ui.admin.nobet_ayarlar_page import NobetAyarlarPage
-            self.nobet_ayarlar_page = NobetAyarlarPage(self._db)
-            self._tabs.addTab(self.nobet_ayarlar_page, "Nöbet Ayarları")
+            from ui.admin.nobet_yonetim_page import NobetYonetimPage
+            self.nobet_yonetim_page = NobetYonetimPage(self._db)
+            self._tabs.addTab(self.nobet_yonetim_page, "Nöbet Ayarları")
             self._tabs.setTabIcon(7, Icons.get("settings"))
         except Exception as e:
             from core.logger import logger

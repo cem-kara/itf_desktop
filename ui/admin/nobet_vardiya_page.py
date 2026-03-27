@@ -8,7 +8,7 @@ Yerleşim:
   Sağ   (esnek) — Sekmeler: Vardiyalar | Personel | Nöbet Tercihleri
 
 Özellikler:
-  - Birim: ekle/düzenle, slot sayısı ve FM max saat ayarı
+  - Birim: sadece seçim ve ayar (ekle/düzenle ayrı sayfada)
   - Vardiya grubu: ekle/düzenle/sil, hazır şablon
   - Vardiya: ekle/düzenle/sil (VardiyaAdi, BasSaat, BitSaat, Süre, Rol)
   - Personel: ata / GorevYeri'nden aktar / görevden al
@@ -30,8 +30,9 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import QTime
 
-from core.di import get_registry
+from core.di import get_registry, get_nb_birim_service
 from core.logger import logger
+from ui.admin.nobet_birim_yonetim import _BirimDialog
 
 _simdi  = lambda: datetime.now().isoformat(sep=" ", timespec="seconds")
 _yeni_id = lambda: str(uuid.uuid4())
@@ -61,34 +62,6 @@ def _it(text: str, user=None) -> QTableWidgetItem:
 # ══════════════════════════════════════════════════════════════
 #  Dialoglar
 # ══════════════════════════════════════════════════════════════
-
-class _BirimDialog(QDialog):
-    def __init__(self, kayit: dict = None, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Birim Düzenle" if kayit else "Yeni Birim")
-        self.setModal(True)
-        self.setMinimumWidth(320)
-        self.setProperty("bg-role", "page")
-        lay = QVBoxLayout(self)
-        lay.setContentsMargins(20, 20, 20, 20)
-        form = QFormLayout()
-        self._adi = QLineEdit((kayit or {}).get("BirimAdi", ""))
-        self._adi.setPlaceholderText("Birim adı")
-        form.addRow("Birim Adı:", self._adi)
-        self._aciklama = QLineEdit((kayit or {}).get("Aciklama", ""))
-        form.addRow("Açıklama:", self._aciklama)
-        lay.addLayout(form)
-        btns = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok |
-            QDialogButtonBox.StandardButton.Cancel)
-        btns.accepted.connect(self.accept)
-        btns.rejected.connect(self.reject)
-        lay.addWidget(btns)
-
-    def get_data(self) -> dict:
-        return {"BirimAdi": self._adi.text().strip(),
-                "Aciklama": self._aciklama.text().strip()}
-
 
 class _GrupDialog(QDialog):
     def __init__(self, kayit: dict = None, parent=None):
@@ -390,16 +363,23 @@ class NobetVardiyaPage(QWidget):
         lay.setContentsMargins(8, 8, 8, 8)
         lay.setSpacing(6)
 
-        tb = QHBoxLayout()
-        self._btn_birim_yeni = self._btn("+ Birim", "action")
+        hdr = QHBoxLayout()
+        lbl = QLabel("Birimler")
+        lbl.setProperty("style-role", "section-title")
+        hdr.addWidget(lbl)
+        hdr.addStretch()
+        self._btn_birim_yeni = self._btn("+", "action")
+        self._btn_birim_yeni.setFixedWidth(28)
+        self._btn_birim_yeni.setToolTip("Yeni birim ekle")
         self._btn_birim_yeni.clicked.connect(self._birim_yeni)
-        tb.addWidget(self._btn_birim_yeni)
+        hdr.addWidget(self._btn_birim_yeni)
         self._btn_birim_dup = self._btn("✎")
         self._btn_birim_dup.setFixedWidth(28)
         self._btn_birim_dup.setEnabled(False)
+        self._btn_birim_dup.setToolTip("Seçili birimi düzenle")
         self._btn_birim_dup.clicked.connect(self._birim_duzenle)
-        tb.addWidget(self._btn_birim_dup)
-        lay.addLayout(tb)
+        hdr.addWidget(self._btn_birim_dup)
+        lay.addLayout(hdr)
 
         self._tbl_birim = QTableWidget(0, 1)
         self._tbl_birim.horizontalHeader().setVisible(False)
@@ -955,8 +935,8 @@ class NobetVardiyaPage(QWidget):
         self._secili_birim_id  = bid
         self._secili_birim_adi = itm.text() if itm else ""
         aktif = bool(bid)
-        for b in [self._btn_birim_dup, self._btn_grup_yeni,
-                  self._btn_sablon, self._btn_p_ata,
+        self._btn_birim_dup.setEnabled(aktif)
+        for b in [self._btn_grup_yeni, self._btn_sablon, self._btn_p_ata,
                   self._btn_p_migrate, self._btn_ayar_kaydet]:
             b.setEnabled(aktif)
         if aktif:
@@ -990,47 +970,78 @@ class NobetVardiyaPage(QWidget):
             self._tbl_tercih.currentRow() >= 0)
 
     # ──────────────────────────────────────────────────────────
-    #  Birim Aksiyonları
-    # ──────────────────────────────────────────────────────────
+    #  Birim Yönetimi (Form)
+
+    def _birim_svc(self):
+        try:
+            return get_nb_birim_service(self._db)
+        except Exception as e:
+            logger.error(f"NbBirimService: {e}")
+            return None
+
+    def _birim_sec_by_id(self, birim_id: str):
+        if not birim_id:
+            return
+        for row in range(self._tbl_birim.rowCount()):
+            itm = self._tbl_birim.item(row, 0)
+            if itm and itm.data(Qt.ItemDataRole.UserRole) == birim_id:
+                self._tbl_birim.setCurrentCell(row, 0)
+                break
 
     def _birim_yeni(self):
         dialog = _BirimDialog(parent=self)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
-        veri = dialog.get_data()
-        if not veri["BirimAdi"]:
-            QMessageBox.warning(self, "Uyarı", "Birim adı boş olamaz.")
+        svc = self._birim_svc()
+        if not svc:
+            QMessageBox.critical(self, "Hata", "Birim servisine erişilemedi.")
             return
-        try:
-            self._reg().get("NB_Birim").insert({
-                "BirimID":    _yeni_id(),
-                "BirimAdi":   veri["BirimAdi"],
-                "Aciklama":   veri["Aciklama"],
-                "Aktif":      1,
-                "created_at": _simdi(),
-            })
+        veri = dialog.get_data()
+        sonuc = svc.birim_ekle(
+            birim_adi=veri["BirimAdi"],
+            birim_kodu=veri["BirimKodu"],
+            birim_tipi=veri["BirimTipi"],
+            sira=veri["Sira"],
+            aciklama=veri["Aciklama"],
+        )
+        if sonuc.basarili:
             self._birimleri_yukle()
-        except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            self._birim_sec_by_id((sonuc.veri or {}).get("BirimID", ""))
+        else:
+            QMessageBox.critical(self, "Hata", str(sonuc.hata))
 
     def _birim_duzenle(self):
-        row = self._tbl_birim.currentRow()
-        if row < 0:
+        bid = self._secili_birim_id
+        if not bid:
             return
-        itm = self._tbl_birim.item(row, 0)
-        bid = itm.data(Qt.ItemDataRole.UserRole)
-        try:
-            reg   = self._reg()
-            rows  = reg.get("NB_Birim").get_all() or []
-            kayit = next((r for r in rows if r["BirimID"]==bid), None)
-            dialog = _BirimDialog(kayit, parent=self)
-            if dialog.exec() != QDialog.DialogCode.Accepted:
-                return
-            reg.get("NB_Birim").update(
-                bid, {**dialog.get_data(), "updated_at": _simdi()})
+        svc = self._birim_svc()
+        if not svc:
+            QMessageBox.critical(self, "Hata", "Birim servisine erişilemedi.")
+            return
+        kayit_s = svc.get_birim(bid)
+        if not kayit_s.basarili:
+            QMessageBox.critical(self, "Hata", "Birim bilgisi alınamadı.")
+            return
+        dialog = _BirimDialog(kayit=kayit_s.veri, parent=self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        veri = dialog.get_data()
+        sonuc = svc.birim_guncelle(
+            birim_id=bid,
+            birim_adi=veri["BirimAdi"],
+            birim_kodu=veri["BirimKodu"],
+            birim_tipi=veri["BirimTipi"],
+            sira=veri["Sira"],
+            aciklama=veri["Aciklama"],
+        )
+        if sonuc.basarili:
             self._birimleri_yukle()
-        except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            self._birim_sec_by_id(bid)
+        else:
+            QMessageBox.critical(self, "Hata", str(sonuc.hata))
+
+    #  Birim Ayarları
+    # ──────────────────────────────────────────────────────────
 
     def _birim_ayar_kaydet(self):
         bid = self._secili_birim_id
@@ -1052,14 +1063,9 @@ class NobetVardiyaPage(QWidget):
                     ]
                     if any(ilk.get(k, None) is None for k in gerekenler):
                         raise KeyError("kolon yok")
-            except Exception:
-                try:
-                    from database.migrations import MigrationManager
-                    db_path = getattr(self._db, "db_path", self._db)
-                    MigrationManager(db_path).run_migrations()
-                    logger.info("Migration çalıştırıldı (NB_BirimAyar kolonları)")
-                except Exception as me:
-                    logger.error(f"Migration hatası: {me}")
+            except Exception as e:
+                # Migration ana girişte yapılır; burada sadece uyar.
+                logger.error(f"NB_BirimAyar kolon kontrolü başarısız: {e}")
 
             rows  = reg.get("NB_BirimAyar").get_all() or []
             ayar  = next(

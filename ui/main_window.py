@@ -315,10 +315,6 @@ class MainWindow(QMainWindow):
             return page
 
         # ── NÖBET ────────────────────────────────────────────────────
-        if baslik == "Birim & Vardiyalar":
-            from ui.pages.nobet.nobet_vardiya_page import NobetVardiyaPage
-            return NobetVardiyaPage(db=self._db, action_guard=self._action_guard)
-
         if baslik == "Nöbet Planı":
             from ui.pages.nobet.nobet_merkez_page import NobetMerkezPage
             return NobetMerkezPage(db=self._db, action_guard=self._action_guard)

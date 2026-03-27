@@ -12,7 +12,7 @@ class MigrationManager:
     v1: Tüm tablolar — güncel şema (temiz kurulum)
     """
 
-    CURRENT_VERSION = 1
+    CURRENT_VERSION = 7
 
     def __init__(self, db_path):
         self.db_path = db_path
@@ -119,8 +119,6 @@ class MigrationManager:
             logger.error(f"Migration hatasi: {e} | Yedek: {backup_path}")
             raise
 
-    CURRENT_VERSION = 6
-
     def _migrate_to_v6(self):
         """
         v6: NB_BirimAyar'a birim bazlı çalışma günü anahtarları eklendi.
@@ -152,6 +150,29 @@ class MigrationManager:
                         logger.info(f"v6: {kolon} zaten var, atlandı")
                     else:
                         raise
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _migrate_to_v7(self):
+        """
+        v7: NB_BirimAyar'a ArdisikGunIzinli kolonu eklendi.
+        - ArdisikGunIzinli: 1 ise ardışık gün atamaya izin verilir.
+        """
+        conn = self.connect()
+        cur  = conn.cursor()
+        try:
+            try:
+                cur.execute(
+                    "ALTER TABLE NB_BirimAyar "
+                    "ADD COLUMN ArdisikGunIzinli INTEGER NOT NULL DEFAULT 0"
+                )
+                logger.info("v7: NB_BirimAyar.ArdisikGunIzinli kolonu eklendi")
+            except Exception as e:
+                if "duplicate column" in str(e).lower():
+                    logger.info("v7: ArdisikGunIzinli zaten var, atlandı")
+                else:
+                    raise
             conn.commit()
         finally:
             conn.close()
@@ -306,6 +327,7 @@ class MigrationManager:
             HaftasonuCalismaVar   INTEGER NOT NULL DEFAULT 1,
             ResmiTatilCalismaVar  INTEGER NOT NULL DEFAULT 1,
             DiniBayramCalismaVar  INTEGER NOT NULL DEFAULT 0,
+            ArdisikGunIzinli      INTEGER NOT NULL DEFAULT 0,
             GeserlilikBaslangic   TEXT,
             GeserlilikBitis       TEXT,
             created_at            TEXT NOT NULL DEFAULT (datetime('now')),

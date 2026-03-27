@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-nb_algoritma_v2.py — Nöbet Planlama Algoritması (sıfırdan)
+nb_algoritma_v2.py = Nöbet Planlama Algoritması (sıfırdan)
 
 Kurallar:
   - Bir personel aynı günde sadece 1 gruba girebilir
   - Dün nöbetteyse bugün atanamaz (üst üste yasak)
   - Slot doldurulamazsa boş bırak, uyarı ver
-  - Sıralama: az saat → az nöbet sayısı → az hafta sonu nöbeti
-  - Tolerans: ±1 nöbet, hedeften büyük olamaz
-  - Hedef: (ay_iş_günü - izin_iş_günü) × 420 dk  [Excel NETWORKDAYS mantığı]
+  - Sıralama: az saat Ã¢â€ â€™ az nöbet sayısı Ã¢â€ â€™ az hafta sonu nöbeti
+  - Tolerans: Ã‚Â±1 nöbet, hedeften büyük olamaz
+  - Hedef: (ay_iş_günü - izin_iş_günü) Ãƒâ€” 420 dk  [Excel NETWORKDAYS mantıÄŸı]
 """
 from __future__ import annotations
 
@@ -29,19 +29,19 @@ def _yeni_id() -> str:
     return str(uuid.uuid4())
 
 
-# ══════════════════════════════════════════════════════════════
+# ──────────────────────────────────────────────────────────────
 #  Sabitler
-# ══════════════════════════════════════════════════════════════
+# ──────────────────────────────────────────────────────────────
 
 ONAY_DURUMLAR    = {"Onaylandı", "onaylandi", "onaylı", "approved"}
-GUNLUK_DK        = 420   # 7 saat × 60 dk
+GUNLUK_DK        = 420   # 7 saat Ã— 60 dk
 VARSAYILAN_SLOT  = 4
 HAFTASONU        = {5, 6}   # Cumartesi, Pazar
 
 
-# ══════════════════════════════════════════════════════════════
+# ──────────────────────────────────────────────────────────────
 #  Ana Sınıf
-# ══════════════════════════════════════════════════════════════
+# ──────────────────────────────────────────────────────────────
 
 class NbAlgoritma:
 
@@ -49,15 +49,15 @@ class NbAlgoritma:
         self._r = registry
 
     # ──────────────────────────────────────────────────────────
-    #  ADIM 1 — Yardımcı Metodlar
+    #  ADIM 1 = Yardımcı Metodlar
     # ──────────────────────────────────────────────────────────
 
     @staticmethod
     def _networkdays(bas: date, bit: date,
                      tatiller: set[str]) -> int:
         """
-        Excel TAMİŞGÜNÜ.ULUSL karşılığı.
-        bas–bit arasındaki (her ikisi dahil) hafta içi iş günlerini sayar.
+        Excel TAMÄ°ÅGÃœNÃœ.ULUSL karşılıÄŸı.
+        bas-bit arasındaki (her ikisi dahil) hafta iÃ§i iş günlerini sayar.
         tatiller: 'YYYY-MM-DD' string seti.
         """
         if bas > bit:
@@ -151,15 +151,15 @@ class NbAlgoritma:
             logger.warning(f"_izin_map: {e}")
         return sonuc
 
-    # Hedef tipi → günlük çalışma saati
-    # Emzirme: günde 1.5 saat erken çıkış → 7 - 1.5 = 5.5s
-    # Sendika: günde 0.8 saat erken çıkış → 7 - 0.8 = 6.2s
+    # Hedef tipi Ã¢â€ â€™ günlük Ã§alışma saati
+    # Emzirme: günde 1.5 saat erken Ã§ıkış Ã¢â€ â€™ 7 - 1.5 = 5.5s
+    # Sendika: günde 0.8 saat erken Ã§ıkış Ã¢â€ â€™ 7 - 0.8 = 6.2s
     _GUNLUK_SAAT = {
         "normal":    7.0,
         "emzirme":   5.5,
         "sendika":   6.2,
-        "sua":       0.0,   # Şua izninde nöbet tutulmaz
-        "rapor":     7.0,   # Raporlu — normal hedef ama izin günleri düşülür
+        "sua":       0.0,   # Åua izninde nöbet tutulmaz
+        "rapor":     7.0,   # Raporlu = normal hedef ama izin günleri düşülür
         "yillik":    7.0,
         "idari":     7.0,
     }
@@ -170,13 +170,13 @@ class NbAlgoritma:
         Excel formülü:
           1. ay_is   = NETWORKDAYS(ay_bas, ay_bit, tatiller)
           2. izin_is = NETWORKDAYS(max(izin_bas,ay_bas), min(izin_bit,ay_bit), tatiller)
-          3. hedef   = (ay_is - izin_is) × günlük_dk
+          3. hedef   = (ay_is - izin_is) Ãƒâ€” günlük_dk
 
-        Günlük dakika: HedefTipi'ne göre değişir
+        Günlük dakika: HedefTipi'ne göre deÄŸişir
           Normal:   420 dk (7 saat)
           Emzirme:  330 dk (5.5 saat)
           Sendika:  372 dk (6.2 saat)
-          Şua:        0 dk (nöbet tutulmaz)
+          Åua:        0 dk (nöbet tutulmaz)
         """
         try:
             tatiller = self._tatil_set(yil, ay)
@@ -191,7 +191,7 @@ class NbAlgoritma:
             gunluk_saat = self._GUNLUK_SAAT.get(hedef_tipi, 7.0)
             gunluk_dk   = round(gunluk_saat * 60)
 
-            # Şua iznindeyse hiç atama yapılmaz
+            # Åua iznindeyse hiÃ§ atama yapılmaz
             if hedef_tipi == "sua":
                 return 0
 
@@ -218,8 +218,8 @@ class NbAlgoritma:
             logger.debug(
                 f"[Hedef] {personel_id} ({hedef_tipi}): "
                 f"ay_is={ay_is} izin_is={izin_is} "
-                f"net={ay_is-izin_is} × {gunluk_saat}s "
-                f"→ {hedef//60}s")
+                f"net={ay_is-izin_is} * {gunluk_saat}s "
+                f"Ã¢â€ â€™ {hedef//60}s")
             return hedef
         except Exception as e:
             logger.warning(f"_hedef_hesapla({personel_id}): {e}")
@@ -241,7 +241,7 @@ class NbAlgoritma:
             return "normal"
 
     # ──────────────────────────────────────────────────────────
-    #  ADIM 2 — Hazırlık
+    #  ADIM 2 = Hazırlık
     # ──────────────────────────────────────────────────────────
 
     def _hazirla(self, birim_id: str, yil: int, ay: int) -> dict:
@@ -285,6 +285,7 @@ class NbAlgoritma:
                      ayar.get("DiniBayramAtama", 0)),
             0
         )
+        ardisik_gun_izinli = _bool_ayar(ayar.get("ArdisikGunIzinli"), 0)
         logger.info(
             f"[Birim ayarı] slot={slot_sayisi} "
             f"FmMax={ayar.get('FmMaxSaat',60)}s "
@@ -329,10 +330,10 @@ class NbAlgoritma:
                 })
 
             if not gruplar:
-                sonuc["hata"] = "Hiçbir grupta ana rolünde aktif vardiya yok"
+                sonuc["hata"] = "HiÃ§bir grupta ana rolünde aktif vardiya yok"
                 return sonuc
 
-            # Grup yapısını logla — gerçek veriyi görmek için
+            # Grup yapısını logla = gerÃ§ek veriyi görmek iÃ§in
             for g in gruplar:
                 vlist = [
                     f"{v.get('VardiyaAdi','')} "
@@ -351,7 +352,7 @@ class NbAlgoritma:
 
         # ── Personel havuzları ────────────────────────────────
         try:
-            # NB_BirimPersonel → GorevYeri fallback
+            # NB_BirimPersonel Ã¢â€ â€™ GorevYeri fallback
             pid_listesi = []
             try:
                 bp_rows = self._r.get("NB_BirimPersonel").get_all() or []
@@ -382,8 +383,8 @@ class NbAlgoritma:
                 sonuc["hata"] = "Bu birime atanmış personel bulunamadı"
                 return sonuc
 
-            # Tercih haritası — sadece "fazla_mesai_gonullu" işaretlenir
-            # Herkes nöbet tutar; FM Gönüllü manuel ekleme için işaretlenir
+            # Tercih haritası = sadece "fazla_mesai_gonullu" işaretlenir
+            # Herkes nöbet tutar; FM Gönüllü manuel ekleme iÃ§in işaretlenir
             t_rows = self._r.get("NB_PersonelTercih").get_all() or []
             fm_gonullu_set: set[str] = set()
             for r in t_rows:
@@ -410,16 +411,16 @@ class NbAlgoritma:
         for pid in personeller + gonulluler:
             hedef_map[pid] = self._hedef_hesapla(pid, yil, ay)
             logger.info(
-                f"[Hedef] {pid} → {hedef_map[pid]}dk "
+                f"[Hedef] {pid} Ã¢â€ â€™ {hedef_map[pid]}dk "
                 f"= {hedef_map[pid]//60}s")
 
-        # ── İzin, tatil setleri ───────────────────────────────
-        tatil_set       = self._tatil_set(yil, ay)  # hedef hesabı için
+        # ── Ä°zin, tatil setleri ───────────────────────────────
+        tatil_set       = self._tatil_set(yil, ay)  # hedef hesabı iÃ§in
         resmi_tatil_set = self._resmi_tatil_set(yil, ay)
         dini_set        = self._dini_set(yil, ay)
         izin_map        = self._izin_map(yil, ay)
 
-        # ── Plan başlığı (mevcut taslak temizle) ─────────────
+        # ── Plan başlıÄŸı (mevcut taslak temizle) ─────────────
         try:
             pl_rows = self._r.get("NB_Plan").get_all() or []
             mevcut  = next(
@@ -433,7 +434,7 @@ class NbAlgoritma:
                 durum = str(mevcut.get("Durum",""))
                 if durum in ("onaylandi","yururlukte"):
                     sonuc["hata"] = (
-                        f"Plan '{durum}' durumunda, değiştirilemez")
+                        f"Plan '{durum}' durumunda, deÄŸiştirilemez")
                     return sonuc
                 # Mevcut tüm satırları fiziksel sil (DB şişmesini önle)
                 s_rows = self._r.get("NB_PlanSatir").get_all() or []
@@ -461,7 +462,7 @@ class NbAlgoritma:
                 })
 
         except Exception as e:
-            sonuc["hata"] = f"Plan başlığı oluşturulamadı: {e}"
+            sonuc["hata"] = f"Plan başlıÄŸı oluşturulamadı: {e}"
             return sonuc
 
         sonuc.update({
@@ -480,12 +481,13 @@ class NbAlgoritma:
             "hafta_sonu_calisma": hafta_sonu_calisma,
             "resmi_tatil_calisma": resmi_tatil_calisma,
             "dini_bayram_calisma": dini_bayram_calisma,
+            "ardisik_gun_izinli": ardisik_gun_izinli,
             "plan_id":     plan_id,
         })
         return sonuc
 
     # ──────────────────────────────────────────────────────────
-    #  ADIM 3 — Atama Döngüsü
+    #  ADIM 3 = Atama Döngüsü
     # ──────────────────────────────────────────────────────────
 
     def plan_olustur(self, birim_id: str, yil: int,
@@ -493,8 +495,8 @@ class NbAlgoritma:
         """
         Ana giriş noktası.
         1. Hazırlık (_hazirla)
-        2. Sayaçlar
-        3. Gün döngüsü → slot döngüsü → grup döngüsü → kişi seç
+        2. SayaÃ§lar
+        3. Gün döngüsü Ã¢â€ â€™ slot döngüsü Ã¢â€ â€™ grup döngüsü Ã¢â€ â€™ kişi seÃ§
         """
         try:
             h = self._hazirla(birim_id, yil, ay)
@@ -515,11 +517,12 @@ class NbAlgoritma:
             hafta_sonu_calisma = h["hafta_sonu_calisma"]
             resmi_tatil_calisma = h["resmi_tatil_calisma"]
             dini_bayram_calisma = h["dini_bayram_calisma"]
+            ardisik_gun_izinli = h["ardisik_gun_izinli"]
             plan_id     = h["plan_id"]
             ayar        = h["ayar"]
 
-            # ── Sayaçlar ──────────────────────────────────────
-            # Sıralama: az saat → az nöbet → az hafta sonu
+            # ── SayaÃ§lar ──────────────────────────────────────
+            # Sıralama: az saat Ã¢â€ â€™ az nöbet Ã¢â€ â€™ az hafta sonu
             saat_sayac: dict[str, int] = {p: 0 for p in personeller + gonulluler}
             nobet_sayac: dict[str, int] = {p: 0 for p in personeller + gonulluler}
             hs_sayac:   dict[str, int] = {p: 0 for p in personeller + gonulluler}
@@ -534,47 +537,56 @@ class NbAlgoritma:
             # FM Gönüllülerin fazla mesai saati (hedef üstü kısım)
             fm_saat_sayac: dict[str, int] = {p: 0 for p in gonulluler}
 
-            # Birim bazlı günlük max süre — NB_BirimAyar.MaxGunlukSureDakika
-            # 720dk = 12s → personel günde sadece 1 vardiya (gündüz VEYA gece)
-            # 1440dk = 24s → personel aynı günde 2 vardiya tutabilir (gündüz + gece)
+            # Önceki ay bakiyesi (alacak/verecek) — NB_MesaiHesap.DevireGidenDakika
+            prev_yil = yil - 1 if ay == 1 else yil
+            prev_ay  = 12      if ay == 1 else ay - 1
+            try:
+                mh_rows = self._r.get("NB_MesaiHesap").get_all() or []
+                devir_map: dict[str, int] = {
+                    str(r.get("PersonelID", "")): int(r.get("DevireGidenDakika", 0))
+                    for r in mh_rows
+                    if str(r.get("BirimID", "")) == str(birim_id)
+                    and int(r.get("Yil", 0)) == prev_yil
+                    and int(r.get("Ay",  0)) == prev_ay
+                }
+            except Exception:
+                devir_map = {}
+
+            # Bakiye sayacı (negatif = eksik, pozitif = fazla)
+            bakiye_sayac: dict[str, int] = {
+                p: int(devir_map.get(p, 0)) for p in (personeller + gonulluler)
+            }
+
+            # Birim bazlı günlük max süre = NB_BirimAyar.MaxGunlukSureDakika
+            # 720dk = 12s Ã¢â€ â€™ personel günde sadece 1 vardiya (gündüz VEYA gece)
+            # 1440dk = 24s Ã¢â€ â€™ personel aynı günde 2 vardiya tutabilir (gündüz + gece)
             BIRIM_MAX_GUN_DK = int(ayar.get("MaxGunlukSureDakika", 720))
             logger.info(
                 f"[Birim] MaxGunlukSureDakika={BIRIM_MAX_GUN_DK}dk "
-                f"({'24 saat — gündüz+gece izinli' if BIRIM_MAX_GUN_DK >= 1440 else '12 saat — tek vardiya'})"
+                f"({'24 saat = gündüz+gece izinli' if BIRIM_MAX_GUN_DK >= 1440 else '12 saat = tek vardiya'})"
             )
 
-            # Tolerans: tek bir vardiyanın süresi kadar (±1 nöbet)
-            # toplam_dk değil — çünkü her vardiya artık ayrı slot
-            _tum_v_sureler = [
-                int(v.get("SureDakika", 0))
-                for g in gruplar
-                for v in g["ana"]
-                if int(v.get("SureDakika", 0)) > 0
-            ]
-            _min_v_dk = min(_tum_v_sureler) if _tum_v_sureler else 720
+            # Tolerans: Â±7 saat (420 dk) — hedefi Ã§ok aşmamak iÃ§in sabit
+            _tolerans_dk = 7 * 60
 
             def _tolerans(pid: str) -> int:
-                """Kişiye özel tolerans — 1 vardiya kadar, hedeften büyük olamaz."""
-                return min(_min_v_dk, hedef_map.get(pid, 0))
+                """Kişiye özel tolerans = Â±7 saat, hedeften büyük olamaz."""
+                return min(_tolerans_dk, hedef_map.get(pid, 0))
 
-            # Sıralama: az saat → az nöbet sayısı → az hafta sonu
+            # Sıralama: az saat Ã¢â€ â€™ az nöbet sayısı Ã¢â€ â€™ az hafta sonu
             def _sirala(pid_listesi: list[str]) -> list[str]:
                 return sorted(pid_listesi, key=lambda p: (
-                    saat_sayac[p],
-                    nobet_sayac[p],
-                    hs_sayac[p],
-                ))
-                return sorted(pid_listesi, key=lambda p: (
+                    bakiye_sayac[p],
                     saat_sayac[p],
                     nobet_sayac[p],
                     hs_sayac[p],
                 ))
 
-            # Atanabilirlik kontrolü — zorunlu personel
+            # Atanabilirlik kontrolü = zorunlu personel
             def _atanabilir(pid: str, tarih_str: str,
                             gun: date, grup_id: str = "",
                             eklenecek_dk: int = 0) -> bool:
-                # İzin günü
+                # Ä°zin günü
                 if tarih_str in izin_map.get(pid, set()):
                     return False
                 son = son_nobet.get(pid)
@@ -582,16 +594,17 @@ class NbAlgoritma:
                     son_tarih, son_grup = son
                     if son_tarih == tarih_str and son_grup == grup_id:
                         return False
-                    dun = (gun - timedelta(days=1)).isoformat()
-                    if son_tarih == dun:
-                        return False
+                    if not ardisik_gun_izinli:
+                        dun = (gun - timedelta(days=1)).isoformat()
+                        if son_tarih == dun:
+                            return False
                 hedef = hedef_map.get(pid, 0)
                 if hedef == 0:
                     return False
                 ust     = hedef + _tolerans(pid)
                 sonraki = saat_sayac[pid] + eklenecek_dk
                 if saat_sayac[pid] == 0:
-                    pass  # İlk atama — günlük limit kontrolünü yine de yap
+                    pass  # Ä°lk atama = günlük limit kontrolünü yine de yap
                 elif sonraki > ust:
                     return False
                 # ── Birim bazlı günlük max süre kontrolü ─────
@@ -600,7 +613,7 @@ class NbAlgoritma:
                     return False
                 return True
 
-            # FM Gönüllü max saat — NB_BirimAyar'dan oku, varsayılan 60s
+            # FM Gönüllü max saat = NB_BirimAyar'dan oku, varsayılan 60s
             try:
                 a_rows = self._r.get("NB_BirimAyar").get_all() or []
                 ayar_r = next((r for r in a_rows
@@ -611,7 +624,7 @@ class NbAlgoritma:
 
             def _atanabilir_fm(pid: str, tarih_str: str,
                                gun: date, grup_id: str = "") -> bool:
-                # İzin günü
+                # Ä°zin günü
                 if tarih_str in izin_map.get(pid, set()):
                     return False
                 son = son_nobet.get(pid)
@@ -619,10 +632,11 @@ class NbAlgoritma:
                     son_tarih, son_grup = son
                     if son_tarih == tarih_str and son_grup == grup_id:
                         return False
-                    dun = (gun - timedelta(days=1)).isoformat()
-                    if son_tarih == dun:
-                        return False
-                # FM toplam saati max 60s'i geçemez
+                    if not ardisik_gun_izinli:
+                        dun = (gun - timedelta(days=1)).isoformat()
+                        if son_tarih == dun:
+                            return False
+                # FM toplam saati max 60s'i geÃ§emez
                 # fm_saat_sayac: sadece FM gönüllü olarak eklenen saatler
                 if fm_saat_sayac.get(pid, 0) >= FM_MAX_DK:
                     return False
@@ -645,23 +659,24 @@ class NbAlgoritma:
                 dk = int(vardiya.get("SureDakika", 0))
                 saat_sayac[pid]  += dk
                 nobet_sayac[pid] += 1
+                bakiye_sayac[pid] += dk
                 # Günlük toplam süre sayacını güncelle
                 gun_sure_sayac[pid][tarih_str] = (
                     gun_sure_sayac[pid].get(tarih_str, 0) + dk)
                 if is_hw:
                     hs_sayac[pid] += 1
-                # son_nobet: (tarih, grup_id) — dün yasağı + aynı grup yasağı
+                # son_nobet: (tarih, grup_id) = dün yasaÄŸı + aynı grup yasaÄŸı
                 son_nobet[pid] = (tarih_str, grup_id)
                 eklenen.append(pid)
 
             # ── Gün döngüsü ───────────────────────────────────
-            # Her slot için slot_sayisi kadar atama yapılır.
-            # Her grup içindeki her vardiya ayrı bağımsız slot.
-            # Yani: slot_sayisi × grup_vardiya_sayisi kadar kişi atanır.
+            # Her slot iÃ§in slot_sayisi kadar atama yapılır.
+            # Her grup iÃ§indeki her vardiya ayrı baÄŸımsız slot.
+            # Yani: slot_sayisi Ãƒâ€” grup_vardiya_sayisi kadar kişi atanır.
             #
-            # Excel mantığı:
-            #   08:00-20:00 → 4 slot → 4 farklı kişi
-            #   20:00-08:00 → 4 slot → 4 farklı kişi
+            # Excel mantıÄŸı:
+            #   08:00-20:00 Ã¢â€ â€™ 4 slot Ã¢â€ â€™ 4 farklı kişi
+            #   20:00-08:00 Ã¢â€ â€™ 4 slot Ã¢â€ â€™ 4 farklı kişi
             # Bu yapıda "grup" sadece görsel başlık, her vardiya kendi slotu.
             ay_son = monthrange(yil, ay)[1]
             gunler = [date(yil, ay, g) for g in range(1, ay_son + 1)]
@@ -669,7 +684,7 @@ class NbAlgoritma:
             for gun in gunler:
                 tarih_str = gun.isoformat()
 
-                # Birim tatil/hafta sonu çalışma politikası
+                # Birim tatil/hafta sonu Ã§alışma politikası
                 if tarih_str in dini_set and not dini_bayram_calisma:
                     continue
                 if tarih_str in resmi_set and not resmi_tatil_calisma:
@@ -681,7 +696,7 @@ class NbAlgoritma:
 
                 is_hw = gun.weekday() in HAFTASONU
 
-                # Her slot için, her grup içindeki her vardiyaya kişi ata
+                # Her slot iÃ§in, her grup iÃ§indeki her vardiyaya kişi ata
                 for slot_no in range(slot_sayisi):
                     for grup in gruplar:
                         grup_id = grup["GrupID"]
@@ -698,7 +713,7 @@ class NbAlgoritma:
                                 hedef = hedef_map.get(pid, 0)
                                 ust = hedef + _tolerans(pid)
                                 kalan_ust = ust - saat_sayac[pid]
-                                # 24 saat izinli olmak, 24 saat zorunlu demek değil.
+                                # 24 saat izinli olmak, 24 saat zorunlu demek deÄŸil.
                                 # Kalan üst limit 24s paketi taşımıyorsa tek vardiya moduna düş.
                                 if kalan_ust < toplam_grup_dk:
                                     continue
@@ -755,9 +770,9 @@ class NbAlgoritma:
                                         break
 
                             if atandi_24:
-                                continue  # Bu slot doldu, sıradaki slot'a geç
+                                continue  # Bu slot doldu, sıradaki slot'a geÃ§
 
-                            # 24s atanamadı → tek tek ata (aşağı düş)
+                            # 24s atanamadı Ã¢â€ â€™ tek tek ata (aşaÄŸı düş)
 
                         # ── Tek vardiya modu (12s veya 24s bulunamadıysa) ──
                         for vardiya in vardiyalar:
@@ -793,9 +808,9 @@ class NbAlgoritma:
                                 uyarilar.append(
                                     f"{tarih_str} | slot {slot_no+1} | "
                                     f"'{vardiya.get('VardiyaAdi','')}' "
-                                    f"doldurulamadı — boş")
+                                    f"doldurulamadı = boş")
 
-            # ── Özet ──────────────────────────────────────────
+            # ── Ãƒâ€“zet ──────────────────────────────────────────
             for pid in personeller + gonulluler:
                 dk  = saat_sayac[pid]
                 hdf = hedef_map[pid]
@@ -812,7 +827,7 @@ class NbAlgoritma:
                 f"{len(eklenen)} nöbet ataması yapıldı"
                 + (f"  |  {len(uyarilar)} uyarı" if uyarilar else ""))
             logger.info(
-                f"Algoritma: {birim_id} {yil}/{ay:02d} — {ozet}")
+                f"Algoritma: {birim_id} {yil}/{ay:02d} = {ozet}")
 
             return SonucYonetici.tamam(
                 mesaj=ozet,
@@ -821,3 +836,4 @@ class NbAlgoritma:
         except Exception as e:
             logger.error(f"plan_olustur: {e}", exc_info=True)
             return SonucYonetici.hata(e, "NbAlgoritma.plan_olustur")
+
