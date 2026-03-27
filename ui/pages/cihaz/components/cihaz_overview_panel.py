@@ -46,7 +46,7 @@ class CihazOverviewPanel(QWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # == Ã–zet kartlar şeridi (üst bant) ===================================
+        # == Özet kartlar şeridi (üst bant) ===================================
         ozet_bar = QFrame()
         ozet_bar.setProperty("bg-role", "elevated")
         ozet_bar.setMaximumHeight(80)
@@ -177,7 +177,7 @@ class CihazOverviewPanel(QWidget):
     def _goto_belgeler_tab(self):
         """Belgeler sekmesine geçiş için callback. Ãœst widget'ta override edilebilir veya sinyal ile bağlanabilir."""
         # Eğer üstte bir sekme yöneticisi varsa, burada uygun şekilde sekme değiştirilebilir.
-        # Ã–rneğin:
+        # Örneğin:
         # if hasattr(self.parent(), 'goto_belgeler_tab'):
         #     self.parent().goto_belgeler_tab()
         # Veya bir sinyal tetiklenebilir:
@@ -205,7 +205,7 @@ class CihazOverviewPanel(QWidget):
         # Butonlar
         btn_edit = self._create_icon_btn("edit", "Düzenle", lambda: self._toggle_edit(group_id, True))
         btn_save = self._create_icon_btn("save", "Kaydet", lambda: self._save_group(group_id), visible=False)
-        btn_cancel = self._create_icon_btn("x", "Ä°ptal", lambda: self._toggle_edit(group_id, False), visible=False)
+        btn_cancel = self._create_icon_btn("x", "İptal", lambda: self._toggle_edit(group_id, False), visible=False)
         
         # Stil özelleştirme
         btn_save.setProperty("style-role", "success")
@@ -217,7 +217,7 @@ class CihazOverviewPanel(QWidget):
         
         vbox.addLayout(header_row)
         
-        # Ä°çerik için placeholder widget
+        # İçerik için placeholder widget
         content_widget = QWidget()
         content_widget.setProperty("bg-role", "transparent")
         vbox.addWidget(content_widget)
@@ -234,7 +234,7 @@ class CihazOverviewPanel(QWidget):
         return grp
 
     def _create_icon_btn(self, icon_name, tooltip, callback, visible=True):
-        """Ä°kon butonu oluştur."""
+        """İkon butonu oluştur."""
         btn = QPushButton("")
         btn.setToolTip(tooltip)
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -340,7 +340,7 @@ class CihazOverviewPanel(QWidget):
         return f
 
     def _ozet_guncelle(self, key: str, deger: str, renk: str = None):
-        """Ã–zet kart değerini güncelle."""
+        """Özet kart değerini güncelle."""
         kart_map = {
             "ariza":      self._kart_ariza,
             "bakim":      self._kart_bakim,
@@ -409,7 +409,7 @@ class CihazOverviewPanel(QWidget):
                 else:
                     widget.setDate(QDate.currentDate())
 
-        # == Ã–zet kartları güncelle =============================================
+        # == Özet kartları güncelle =============================================
         self._ozet_kartlari_guncelle()
 
     def _ozet_kartlari_guncelle(self):
@@ -475,7 +475,7 @@ class CihazOverviewPanel(QWidget):
                 self._ozet_guncelle("kalibrasyon", "—")
 
         except Exception as e:
-            logger.debug(f"Ã–zet kartları güncellenemedi: {e}")
+            logger.debug(f"Özet kartları güncellenemedi: {e}")
 
     def _toggle_edit(self, group_id, edit_mode):
         """Grup düzenleme modunu aç/kapat."""
@@ -506,7 +506,7 @@ class CihazOverviewPanel(QWidget):
             if key in self._file_buttons:
                 self._file_buttons[key].setEnabled(edit_mode)
             
-            # Ä°ptal edilirse eski veriyi geri yükle
+            # İptal edilirse eski veriyi geri yükle
             if not edit_mode:
                 val = self.cihaz_data.get(key, "")
                 if isinstance(widget, QLineEdit):
