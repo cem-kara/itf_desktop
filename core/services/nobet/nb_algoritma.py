@@ -88,6 +88,21 @@ class NbAlgoritma:
         except Exception:
             return set()
 
+    def _resmi_tatil_set(self, yil: int, ay: int) -> set[str]:
+        """O aya ait resmi/idari tatil tarihlerini döner."""
+        try:
+            rows   = self._r.get("Tatiller").get_all() or []
+            ay_bas = f"{yil:04d}-{ay:02d}-01"
+            ay_bit = f"{yil:04d}-{ay:02d}-31"
+            return {
+                str(r.get("Tarih", ""))
+                for r in rows
+                if ay_bas <= str(r.get("Tarih", "")) <= ay_bit
+                and str(r.get("TatilTuru", "Resmi")) in ("Resmi", "Idari")
+            }
+        except Exception:
+            return set()
+
     def _dini_set(self, yil: int, ay: int) -> set[str]:
         """Sadece DiniBayram tarihlerini döner (atama yapılmaz)."""
         try:
@@ -233,7 +248,8 @@ class NbAlgoritma:
         """
         Plan oluşturmadan önce tüm verileri hazırlar.
         Döner: {ok, hata?, ayar, gruplar, personeller,
-                gonulluler, izin_map, dini_set, tatil_set,
+                gonulluler, izin_map, tatil_set, resmi_set, dini_set,
+                hafta_sonu_calisma, resmi_tatil_calisma, dini_bayram_calisma,
                 hedef_map, plan_id}
         """
         sonuc = {"ok": False}
@@ -252,11 +268,30 @@ class NbAlgoritma:
             sonuc["hata"] = f"Birim ayarı okunamadı: {e}"
             return sonuc
 
+        def _bool_ayar(deger, varsayilan: int = 1) -> bool:
+            if deger is None:
+                return bool(varsayilan)
+            if isinstance(deger, bool):
+                return deger
+            if isinstance(deger, (int, float)):
+                return int(deger) != 0
+            return str(deger).strip().lower() in ("1", "true", "evet", "yes")
+
         slot_sayisi = int(ayar.get("GunlukSlotSayisi", VARSAYILAN_SLOT))
+        hafta_sonu_calisma = _bool_ayar(ayar.get("HaftasonuCalismaVar"), 1)
+        resmi_tatil_calisma = _bool_ayar(ayar.get("ResmiTatilCalismaVar"), 1)
+        dini_bayram_calisma = _bool_ayar(
+            ayar.get("DiniBayramCalismaVar",
+                     ayar.get("DiniBayramAtama", 0)),
+            0
+        )
         logger.info(
             f"[Birim ayarı] slot={slot_sayisi} "
             f"FmMax={ayar.get('FmMaxSaat',60)}s "
-            f"MaxGunluk={ayar.get('MaxGunlukSureDakika',720)}dk"
+            f"MaxGunluk={ayar.get('MaxGunlukSureDakika',720)}dk "
+            f"HaftaSonu={'Evet' if hafta_sonu_calisma else 'Hayır'} "
+            f"ResmiTatil={'Evet' if resmi_tatil_calisma else 'Hayır'} "
+            f"DiniBayram={'Evet' if dini_bayram_calisma else 'Hayır'}"
         )
 
         # ── Vardiya grupları ──────────────────────────────────
@@ -378,10 +413,11 @@ class NbAlgoritma:
                 f"[Hedef] {pid} → {hedef_map[pid]}dk "
                 f"= {hedef_map[pid]//60}s")
 
-        # ── İzin, tatil, dini bayram setleri ─────────────────
-        tatil_set = self._tatil_set(yil, ay)
-        dini_set  = self._dini_set(yil, ay)
-        izin_map  = self._izin_map(yil, ay)
+        # ── İzin, tatil setleri ───────────────────────────────
+        tatil_set       = self._tatil_set(yil, ay)  # hedef hesabı için
+        resmi_tatil_set = self._resmi_tatil_set(yil, ay)
+        dini_set        = self._dini_set(yil, ay)
+        izin_map        = self._izin_map(yil, ay)
 
         # ── Plan başlığı (mevcut taslak temizle) ─────────────
         try:
@@ -439,7 +475,11 @@ class NbAlgoritma:
             "hedef_map":   hedef_map,
             "izin_map":    izin_map,
             "tatil_set":   tatil_set,
+            "resmi_set":   resmi_tatil_set,
             "dini_set":    dini_set,
+            "hafta_sonu_calisma": hafta_sonu_calisma,
+            "resmi_tatil_calisma": resmi_tatil_calisma,
+            "dini_bayram_calisma": dini_bayram_calisma,
             "plan_id":     plan_id,
         })
         return sonuc
@@ -468,9 +508,13 @@ class NbAlgoritma:
             gonulluler  = h["gonulluler"]
             hedef_map   = h["hedef_map"]
             izin_map    = h["izin_map"]
+            resmi_set   = h["resmi_set"]
             dini_set    = h["dini_set"]
             plan_id     = h["plan_id"]
             ayar        = h["ayar"]
+            hafta_sonu_calisma = h["hafta_sonu_calisma"]
+            resmi_tatil_calisma = h["resmi_tatil_calisma"]
+            dini_bayram_calisma = h["dini_bayram_calisma"]
 
             # ── Sayaçlar ──────────────────────────────────────
             # Sıralama: az saat → az nöbet → az hafta sonu
@@ -623,11 +667,15 @@ class NbAlgoritma:
             for gun in gunler:
                 tarih_str = gun.isoformat()
 
-                # Dini bayram → atama yapma
-                if tarih_str in dini_set:
+                # Birim tatil/hafta sonu çalışma politikası
+                if tarih_str in dini_set and not dini_bayram_calisma:
+                    continue
+                if tarih_str in resmi_set and not resmi_tatil_calisma:
                     continue
 
                 is_hw = gun.weekday() in HAFTASONU
+                if is_hw and not hafta_sonu_calisma:
+                    continue
 
                 # Her slot için, her grup içindeki her vardiyaya kişi ata
                 for slot_no in range(slot_sayisi):
