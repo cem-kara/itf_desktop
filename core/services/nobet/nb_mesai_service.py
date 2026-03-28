@@ -204,7 +204,7 @@ class NbMesaiService:
                 # NOT: tablodaki kayıt da izin düşülmüş olmalı.
                 # Güvenlik için her durumda _otomatik_hedef ile karşılaştır
                 # ve küçük olanı al (izin olan personel aleyhine olmasın).
-                hedef_otomatik = self._otomatik_hedef(pid, yil, ay)
+                hedef_otomatik = self._otomatik_hedef(pid, yil, ay, birim_id)
                 hedef_tercih   = hedef_map.get(pid)
                 if hedef_tercih is not None:
                     # Tabloda kayıt var: izin düşülmüş otomatikten
@@ -403,20 +403,46 @@ class NbMesaiService:
     # ──────────────────────────────────────────────────────────
 
     def _otomatik_hedef(self, personel_id: str,
-                        yil: int, ay: int) -> int:
+                        yil: int, ay: int,
+                        birim_id: str = "") -> int:
         """
-        (İş Günü − İzin İş Günü) × 420 dakika.
-        İzin günleri düşülerek kişiye özel hedef hesaplanır.
+        (İş Günü − İzin İş Günü) × günlük_dakika.
+        HedefTipi'ne göre günlük dakika değişir:
+          normal/rapor/yillik/idari → 420dk
+          emzirme  → 330dk
+          sendika  → 372dk
+          sua      → 0dk
         """
+        HEDEF_TIPI_DK = {
+            "normal": 420, "rapor": 420, "yillik": 420, "idari": 420,
+            "emzirme": 330, "sendika": 372, "sua": 0,
+        }
         try:
             from core.hesaplamalar import ay_is_gunu
-            tatiller = self._tatil_listesi_getir(yil, ay)
-            is_gunu  = ay_is_gunu(yil, ay, tatil_listesi=tatiller)
-            izin_gun = self._izin_is_gunu(personel_id, yil, ay, tatiller)
-            net_gun  = max(0, is_gunu - izin_gun)
-            return net_gun * GUNLUK_HEDEF_DAKIKA
+            tatiller  = self._tatil_listesi_getir(yil, ay)
+            is_gunu   = ay_is_gunu(yil, ay, tatil_listesi=tatiller)
+            izin_gun  = self._izin_is_gunu(personel_id, yil, ay, tatiller)
+            net_gun   = max(0, is_gunu - izin_gun)
+            # HedefTipi oku
+            hedef_tipi = "normal"
+            if birim_id:
+                try:
+                    t_rows = self._r.get("NB_PersonelTercih").get_all() or []
+                    k = next(
+                        (r for r in t_rows
+                         if str(r.get("PersonelID","")) == str(personel_id)
+                         and str(r.get("BirimID","")) == str(birim_id)
+                         and int(r.get("Yil",0)) == yil
+                         and int(r.get("Ay",0)) == ay),
+                        None)
+                    if k:
+                        hedef_tipi = str(k.get("HedefTipi","normal")).lower()
+                except Exception:
+                    pass
+            gun_dk = HEDEF_TIPI_DK.get(hedef_tipi, 420)
+            return net_gun * gun_dk
         except Exception:
-            return 20 * GUNLUK_HEDEF_DAKIKA  # Varsayılan: 20 iş günü
+            return 20 * GUNLUK_HEDEF_DAKIKA
 
     def _izin_is_gunu(self, personel_id: str, yil: int,
                       ay: int, tatiller: list[str]) -> int:

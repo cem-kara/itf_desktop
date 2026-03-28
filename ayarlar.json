@@ -41,6 +41,10 @@
       {
         "baslik": "Raporlar",
         "icon": "file_text"
+      },
+      {
+        "baslik": "Fazla Mesai",
+        "icon": "clock"
       }
     ],
     "CİHAZ": [
