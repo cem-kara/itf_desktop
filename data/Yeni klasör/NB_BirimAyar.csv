@@ -1,0 +1,5 @@
+AyarID,BirimID,GunlukSlotSayisi,GunlukSlotDakika,CalismaModu,OtomatikBolunme,GunlukHedefDakika,HaftasonuNobetZorunlu,DiniBayramAtama,GeserlilikBaslangic,GeserlilikBitis,created_at,updated_at,FmMaxSaat,MaxGunlukSureDakika,HaftasonuCalismaVar,ResmiTatilCalismaVar,DiniBayramCalismaVar,ArdisikGunIzinli
+49364873-2638-43c2-ae57-497db48e7aae,5505894462afe8439f27adab02d68abb,4,,tam_gun,1,420,1,0,,,2026-03-26 12:57:08,2026-03-26T13:03:14.587316,60,1440,1,1,0,0
+d95414c1-c4aa-42ea-92ba-f80f6da4d3f9,7d94777cf7c826219327ae614beeba8a,1,,tam_gun,1,420,0,0,,,2026-03-26 14:30:53,2026-03-27T22:28:15.732053,60,720,0,0,0,1
+93581636-6688-481c-b39d-713d8bcc29ae,54183ef77f83423ddf83053975cead87,1,,tam_gun,1,420,0,0,,,2026-03-27 13:38:52,2026-03-27 13:38:52,60,720,1,1,0,0
+2f37cc92-1c84-449e-9088-1b44eea414af,561c00528d971b676cd576e4d58cbfea,4,,tam_gun,1,420,1,1,,,2026-03-27 13:41:33,2026-03-27T13:42:24.185274,60,1440,1,1,1,0

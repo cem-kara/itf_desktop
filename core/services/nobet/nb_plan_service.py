@@ -241,6 +241,31 @@ class NbPlanService:
                             "Onaylı plana sadece 'fazla_mesai' türünde "
                             "satır eklenebilir."))
 
+            # Normal nöbetler için günlük slot kapasitesi aşılmasın.
+            # Bu kontrol kisit_atla ile bypass edilmez.
+            if nobet_turu != "fazla_mesai":
+                gunluk_kapasite = self._gunluk_slot_kapasitesi(
+                    str(plan.get("BirimID", "")))
+                if gunluk_kapasite > 0:
+                    gunluk_adet = self._gunluk_aktif_normal_satir_sayisi(
+                        plan_id, nobet_tarihi)
+                    if gunluk_adet >= gunluk_kapasite:
+                        return SonucYonetici.uyari(
+                            f"{nobet_tarihi} için günlük slot kapasitesi dolu "
+                            f"({gunluk_adet}/{gunluk_kapasite}).",
+                            "NbPlanService.satir_ekle",
+                        )
+
+            # Aynı gün aynı personel kontrolü — kisit_atla ile bypass edilmez.
+            # MaxGunlukSureDakika'ya göre denetim:
+            # - 1440+ dk (24 saat) → 2 vardiya izni (toplam süresi kontrol et)
+            # - < 1440 dk (12 saat) → 1 vardiya sınırı
+            birim_id = str(plan.get("BirimID", ""))
+            ayni_gun_kontrolu = self._ayni_gun_ayni_personel(
+                plan_id, personel_id, nobet_tarihi, vardiya_id, birim_id)
+            if ayni_gun_kontrolu:
+                return SonucYonetici.uyari(ayni_gun_kontrolu, "NbPlanService.satir_ekle")
+
             # Kısıt kontrolü — kisit_atla=True ise atla
             if not kisit_atla:
                 kisit = self._kisit_kontrol(
@@ -470,6 +495,117 @@ class NbPlanService:
             return f"{personel_id} dün de nöbet tuttu (üst üste yasak)"
 
         return None
+
+    def _gunluk_slot_kapasitesi(self, birim_id: str) -> int:
+        """Birim için günlük normal nöbet kapasitesini döner."""
+        try:
+            ayar_rows = self._r.get("NB_BirimAyar").get_all() or []
+            ayar = next(
+                (r for r in ayar_rows if str(r.get("BirimID", "")) == str(birim_id)),
+                None,
+            )
+            slot_sayisi = int((ayar or {}).get("GunlukSlotSayisi", 4) or 4)
+        except Exception:
+            slot_sayisi = 4
+
+        try:
+            grup_rows = self._r.get("NB_VardiyaGrubu").get_all() or []
+            aktif_grup_idleri = {
+                str(r.get("GrupID", ""))
+                for r in grup_rows
+                if str(r.get("BirimID", "")) == str(birim_id)
+                and int(r.get("Aktif", 1))
+            }
+            v_rows = self._r.get("NB_Vardiya").get_all() or []
+            aktif_ana_vardiya_sayisi = sum(
+                1
+                for v in v_rows
+                if str(v.get("GrupID", "")) in aktif_grup_idleri
+                and str(v.get("Rol", "ana")) == "ana"
+                and int(v.get("Aktif", 1))
+            )
+        except Exception:
+            aktif_ana_vardiya_sayisi = 0
+
+        if slot_sayisi <= 0 or aktif_ana_vardiya_sayisi <= 0:
+            return 0
+        return slot_sayisi * aktif_ana_vardiya_sayisi
+
+    def _gunluk_aktif_normal_satir_sayisi(self, plan_id: str, tarih: str) -> int:
+        """Belirli gün için aktif ve normal nöbet satırlarını sayar."""
+        try:
+            rows = self._r.get("NB_PlanSatir").get_all() or []
+            return sum(
+                1
+                for r in rows
+                if str(r.get("PlanID", "")) == str(plan_id)
+                and str(r.get("NobetTarihi", "")) == str(tarih)
+                and str(r.get("Durum", "")) == "aktif"
+                and str(r.get("NobetTuru", "normal")) != "fazla_mesai"
+            )
+        except Exception:
+            return 0
+
+    def _ayni_gun_ayni_personel(self, plan_id: str, personel_id: str, tarih: str,
+                                 yeni_vardiya_id: str, birim_id: str) -> Optional[str]:
+        """
+        Aynı gün aynı personelin vardiya çakışmasını kontrol eder.
+        MaxGunlukSureDakika'ya göre:
+          - 1440+ dk (24h): 2 vardiya izni, ama toplam süresi <= MaxGunlukSureDakika
+          - < 1440 dk (12h): sadece 1 vardiya/gün
+        """
+        try:
+            # Birim ayarlarından MaxGunlukSureDakika oku
+            ayar_rows = self._r.get("NB_BirimAyar").get_all() or []
+            ayar = next(
+                (r for r in ayar_rows if str(r.get("BirimID", "")) == str(birim_id)),
+                None,
+            )
+            max_gun_dk = int((ayar or {}).get("MaxGunlukSureDakika", 720) or 720)
+            
+            # O gün aynı personelle varolan aktif nöbetleri getir
+            ps_rows = self._r.get("NB_PlanSatir").get_all() or []
+            ayni_gun_satir = [
+                r for r in ps_rows
+                if str(r.get("PlanID", "")) == str(plan_id)
+                and str(r.get("PersonelID", "")) == str(personel_id)
+                and str(r.get("NobetTarihi", "")) == str(tarih)
+                and str(r.get("Durum", "")) == "aktif"
+            ]
+            
+            if not ayni_gun_satir:
+                return None  # İlk vardiya, denetim geçer
+            
+            # Eğer MaxGunlukSureDakika < 1440 (12 saat) ise 2. vardiya yasak
+            if max_gun_dk < 1440:
+                return (
+                    f"{personel_id} {tarih} tarihinde zaten bir nöbeti var "
+                    f"(bu birim tek vardiya/gün izni veriyor)."
+                )
+            
+            # MaxGunlukSureDakika >= 1440 (24 saat): 2. vardiyayı kontrol et
+            # Çakışan vardiya grubunda yoksa izin ver, varsa kontrol süresi
+            v_rows = self._r.get("NB_Vardiya").get_all() or []
+            v_map = {str(v["VardiyaID"]): v for v in v_rows}
+            
+            yeni_v = v_map.get(str(yeni_vardiya_id), {})
+            yeni_dk = int(yeni_v.get("SureDakika", 0))
+            
+            mevcut_toplam_dk = sum(
+                int(v_map.get(str(r.get("VardiyaID", "")), {}).get("SureDakika", 0))
+                for r in ayni_gun_satir
+            )
+            
+            if mevcut_toplam_dk + yeni_dk > max_gun_dk:
+                return (
+                    f"{personel_id} {tarih} tarihinde zaten {mevcut_toplam_dk} dk nöbeti var; "
+                    f"toplam {mevcut_toplam_dk + yeni_dk} dk > maksimum {max_gun_dk} dk."
+                )
+            
+            return None  # Süresi uyuyor, izin ver
+        except Exception as e:
+            logger.warning(f"_ayni_gun_ayni_personel: {e}")
+            return None
 
     def _izin_map_getir(self, yil: int, ay: int) -> dict[str, set[str]]:
         """Algoritma için personel bazlı izin günleri haritası."""

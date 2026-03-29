@@ -1,0 +1,26 @@
+PermissionId,PermissionKey,Description
+1,personel.read,Personel okuma
+2,personel.write,Personel yazma
+3,cihaz.read,Cihaz okuma
+4,cihaz.write,Cihaz yazma
+5,admin.panel,Admin panel erişimi
+6,admin.critical,Kritik admin işlemleri
+7,dis_alan.read,Dış alan okuma
+8,dis_alan.write,Dış alan yazma
+9,rke.read,RKE okuma
+10,rke.write,RKE yazma
+11,saglik.read,Sağlık okuma
+12,saglik.write,Sağlık yazma
+13,dozimetre.read,Dozimetre okuma
+14,dozimetre.write,Dozimetre yazma
+15,fhsz.read,FHSZ okuma
+16,fhsz.write,FHSZ yazma
+17,dokuman.read,Doküman okuma
+18,dokuman.write,Doküman yazma
+19,rapor.excel,Rapor Excel
+20,rapor.pdf,Rapor PDF
+21,backup.create,Yedek oluşturma
+22,backup.restore,Yedek geri yükleme
+23,nobet.plan,Nöbet Planı
+24,nobet.ozet,Personel Özeti
+25,nobet.rapor,Raporlar

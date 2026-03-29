@@ -186,7 +186,7 @@ class NobetPlanPage(QWidget):
         return w
 
     def _build_sag(self) -> QFrame:
-        p = QFrame(); p.setFixedWidth(260)
+        p = QFrame(); p.setFixedWidth(300)
         p.setProperty("bg-role","panel")
         lay = QVBoxLayout(p); lay.setContentsMargins(12,16,12,16); lay.setSpacing(10)
         hdr = QHBoxLayout()
@@ -521,6 +521,7 @@ class NobetPlanPage(QWidget):
                 or "çakış" in hata_msg.lower()
                 or "cakis" in hata_msg.lower()
                 or "üst üste" in hata_msg.lower()
+                or "çift" in hata_msg.lower()
             )
             if kisit_ihlali:
                 yanit = QMessageBox.question(
