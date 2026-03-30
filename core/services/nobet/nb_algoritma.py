@@ -423,12 +423,13 @@ class NbAlgoritma:
         # ── Plan başlığı (mevcut taslak temizle) ─────────────
         try:
             pl_rows = self._r.get("NB_Plan").get_all() or []
-            mevcut  = next(
-                (r for r in pl_rows
-                 if str(r.get("BirimID","")) == str(birim_id)
-                 and int(r.get("Yil", 0)) == yil
-                 and int(r.get("Ay",  0)) == ay),
-                None)
+            ilgili = [
+                r for r in pl_rows
+                if str(r.get("BirimID", "")) == str(birim_id)
+                and int(r.get("Yil", 0)) == yil
+                and int(r.get("Ay", 0)) == ay
+            ]
+            mevcut = max(ilgili, key=lambda r: int(r.get("Versiyon", 1))) if ilgili else None
 
             if mevcut:
                 durum = str(mevcut.get("Durum",""))
@@ -449,6 +450,16 @@ class NbAlgoritma:
                 if silinen:
                     logger.info(f"Eski taslak silindi: {silinen} satır")
                 plan_id = str(mevcut["PlanID"])
+
+                # Otomatik plan, revizyon modunu sonlandıran yeni bir taslak üretir.
+                # Bu nedenle önceki onay izi alanlarını temizle.
+                self._r.get("NB_Plan").update(plan_id, {
+                    "Durum": "taslak",
+                    "OnaylayanID": None,
+                    "OnayTarihi": None,
+                    "Notlar": "",
+                    "updated_at": _simdi(),
+                })
             else:
                 plan_id = _yeni_id()
                 self._r.get("NB_Plan").insert({

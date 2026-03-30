@@ -635,23 +635,27 @@ class NobetMerkezPage(QWidget):
         self._lbl_plan_durum.setStyleSheet(
             f"font-size:11px;color:{renk};padding:0 8px;" if renk else "")
 
-        onaylanmis = self._plan_onay_durumu in ("onaylandi","yururlukte")
+        durum_norm = str(self._plan_onay_durumu or "").strip().lower()
+        onaylanmis = durum_norm in ("onaylandi", "onaylandı", "onaylı", "yururlukte", "yürürlükte")
         plan_var   = bool(self._plan.get_plan_data())
+        taslak_var = (durum_norm == "taslak") or (plan_var and not onaylanmis)
         self._btn_onayla.setEnabled(
-            self._plan_onay_durumu == "taslak" and plan_var)
+            taslak_var and plan_var)
         self._btn_ogeri.setVisible(onaylanmis)
         self._btn_temizle.setEnabled(
-            self._plan_onay_durumu == "taslak" and not revizyon_modu)
+            taslak_var and not revizyon_modu)
         self._btn_temizle.setToolTip(
             ""
             if self._btn_temizle.isEnabled()
             else ("Revizyon modunda taslak temizleme kapalı"
-                  if revizyon_modu else "")
+                  if revizyon_modu
+                  else "Temizlenecek taslak plan bulunamadı")
         )
         self._oto_durum_guncelle()
 
     def _oto_durum_guncelle(self):
-        onaylanmis = self._plan_onay_durumu in ("onaylandi","yururlukte")
+        durum_norm = str(self._plan_onay_durumu or "").strip().lower()
+        onaylanmis = durum_norm in ("onaylandi", "onaylandı", "onaylı", "yururlukte", "yürürlükte")
         revizyon_modu = self._plan_revizyonda_mi()
         aktif = self._hazirlik_onaylandi and not onaylanmis and not revizyon_modu
         self._btn_oto.setEnabled(aktif)
@@ -679,9 +683,10 @@ class NobetMerkezPage(QWidget):
             plan = svc.plan.get_plan(self._birim_id, self._yil, self._ay)
             if not plan:
                 return False
+            notlar = str(plan.get("Notlar", "") or "")
             return (
                 str(plan.get("Durum", "")) == "taslak"
-                and bool(str(plan.get("OnayTarihi", "")).strip())
+                and "[REVIZYON_MODU]" in notlar
             )
         except Exception:
             return False

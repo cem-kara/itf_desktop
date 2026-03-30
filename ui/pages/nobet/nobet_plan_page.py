@@ -369,7 +369,8 @@ class NobetPlanPage(QWidget):
                                and r.get("TatilTuru") == "DiniBayram"}
             except Exception: self._tatil = set(); self._dini = set()
 
-            sonuc = svc.get_plan(self._yil, self._ay, self._birim_adi)
+            # Durum tutarlılığı için birim çözümünü metne bırakma; doğrudan BirimID kullan.
+            sonuc = svc.get_plan(self._yil, self._ay, self._birim_id)
             self._plan_data = sonuc.veri or [] if sonuc.basarili else []
             for r in self._plan_data:
                 if not r.get("AdSoyad"):
@@ -378,7 +379,7 @@ class NobetPlanPage(QWidget):
                     r["VardiyaAdi"] = self._v_map.get(
                         str(r.get("VardiyaID","")), {}).get("VardiyaAdi","")
             try:
-                rows = (svc.onay_getir(self._yil, self._ay, self._birim_adi).veri or [])
+                rows = (svc.onay_getir(self._yil, self._ay, self._birim_id).veri or [])
                 self._onay_durumu = rows[0].get("Durum","yok") if rows else "yok"
             except Exception: self._onay_durumu = "yok"
             self._eksik_slot_gunleri = self._eksik_slot_gunlerini_hesapla(reg)

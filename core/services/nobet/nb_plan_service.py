@@ -18,6 +18,8 @@ from typing import Optional
 from core.hata_yonetici import SonucYonetici, logger
 from database.repository_registry import RepositoryRegistry
 
+REVIZYON_NOTU_ISARETI = "[REVIZYON_MODU]"
+
 
 def _yeni_id() -> str:
     return str(uuid.uuid4())
@@ -490,8 +492,18 @@ class NbPlanService:
                     ValueError("Onaylanmamış plan için geri alma yapılamaz"))
 
             # Sadece durum değişir — satırlar aynen korunur
+            mevcut_not = str(plan.get("Notlar", "") or "").strip()
+            if REVIZYON_NOTU_ISARETI not in mevcut_not:
+                yeni_not = (
+                    f"{mevcut_not}\n{REVIZYON_NOTU_ISARETI}".strip()
+                    if mevcut_not else REVIZYON_NOTU_ISARETI
+                )
+            else:
+                yeni_not = mevcut_not
+
             self._r.get("NB_Plan").update(plan["PlanID"], {
                 "Durum":      "taslak",
+                "Notlar":     yeni_not,
                 "updated_at": _simdi(),
             })
 
