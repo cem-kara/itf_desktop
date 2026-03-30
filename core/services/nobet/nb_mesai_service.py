@@ -126,7 +126,8 @@ class NbMesaiService:
         Formül:
           CalisDakika    = Σ vardiya.SureDakika (aktif satırlar)
           HedefDakika    = NB_PersonelTercih.HedefDakika || otomatik
-          FazlaDakika    = CalisDakika − HedefDakika
+                    BayramDakika   = resmi/dini bayram günlerinde çalışılan toplam dakika
+                    FazlaDakika    = (CalisDakika − HedefDakika) + BayramDakika
           DevirDakika    = önceki ayın DevireGidenDakika
           ToplamFazla    = FazlaDakika + DevirDakika
           OdenenDakika   = kullanıcı girer (mevcut korunur)
@@ -148,13 +149,21 @@ class NbMesaiService:
                 for v in v_rows
             }
 
+            # Resmi + dini bayram günleri hedef dışı ekstra mesaiye yazılır.
+            bayram_tarihleri = set(self._tatil_listesi_getir(yil, ay))
+
             # Personel bazlı çalışılan dakika
             calisan: dict[str, int] = {}
+            bayram_ekstra: dict[str, int] = {}
             for r in aktif_satirlar:
                 pid  = str(r.get("PersonelID", ""))
                 vsid = str(r.get("VardiyaID", ""))
-                calisan[pid] = (calisan.get(pid, 0)
-                                + v_sure.get(vsid, GUNLUK_HEDEF_DAKIKA))
+                sure_dk = v_sure.get(vsid, GUNLUK_HEDEF_DAKIKA)
+                calisan[pid] = calisan.get(pid, 0) + sure_dk
+
+                tarih = str(r.get("NobetTarihi", "") or "")[:10]
+                if tarih in bayram_tarihleri:
+                    bayram_ekstra[pid] = bayram_ekstra.get(pid, 0) + sure_dk
 
             # Önceki ayın devir haritası
             prev_yil = yil - 1 if ay == 1 else yil
@@ -214,7 +223,8 @@ class NbMesaiService:
                 else:
                     hedef_dk = hedef_otomatik
 
-                fazla_dk  = calisan_dk - hedef_dk
+                bayram_dk = bayram_ekstra.get(pid, 0)
+                fazla_dk  = (calisan_dk - hedef_dk) + bayram_dk
                 devir_dk  = devir_map.get(pid, 0)
                 toplam_dk = fazla_dk + devir_dk
 

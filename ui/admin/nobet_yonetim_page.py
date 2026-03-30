@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-nobet_yonetim_page.py â€” Birleşik Nöbet Yönetim Ekranı
+nobet_yonetim_page.py = Birleşik Nöbet Yönetim Ekranı
 
 Eski iki dosyanın (nobet_birim_yonetim.py + nobet_vardiya_page.py) işlevselliği
 tek, tutarlı bir ekranda birleştirildi.
 
 Yerleşim:
-  Sol kenar Ã§ubuğu  (200px) â€” Birim listesi + "Yeni Birim" butonu
-  Ana alan  (esnek) â€” Başlık + 4 sekme:
+  Sol kenar çubuğu  (200px) = Birim listesi + "Yeni Birim" butonu
+  Ana alan  (esnek) = Başlık + 4 sekme:
       [Vardiyalar]  [Personel]  [Nöbet Tercihleri]  [Birim Ayarları]
 
 Özellikler:
@@ -35,6 +35,7 @@ from PySide6.QtWidgets import (
 
 from core.di import get_registry, get_nb_birim_service
 from core.logger import logger
+from ui.styles.icons import IconRenderer, IconColors
 
 # ──────────────────────────────────────────────────────────────
 #  Sabitler
@@ -51,10 +52,7 @@ HEDEF_TIPLER = [
     ("normal",  "Normal  (7.0 s/gün)"),
     ("emzirme", "Emzirme (5.5 s/gün)"),
     ("sendika", "Sendika (6.2 s/gün)"),
-    ("sua",     "Şua İzni (0 s/gün)"),
-    ("rapor",   "Raporlu (7.0 s/gün)"),
-    ("yillik",  "Yıllık İzin (7.0 s/gün)"),
-    ("idari",   "İdari İzin (7.0 s/gün)"),
+    
 ]
 
 _simdi   = lambda: datetime.now().isoformat(sep=" ", timespec="seconds")
@@ -123,7 +121,7 @@ class _BirimDialog(QDialog):
         self._spn_sira.setValue(int(self._kayit.get("Sira", 99)))
         _satir("Sıra", self._spn_sira)
 
-        self._inp_aciklama = _satir("AÃ§ıklama", QLineEdit(
+        self._inp_aciklama = _satir("Açıklama", QLineEdit(
             self._kayit.get("Aciklama", "")))
         self._inp_aciklama.setPlaceholderText("İsteğe bağlı")
 
@@ -238,7 +236,7 @@ class _VardiyaDialog(QDialog):
             return w
 
         self._bas = _time_w((kayit or {}).get("BasSaat", ""), "08:00")
-        form.addRow("BaşlangıÃ§:", self._bas)
+        form.addRow("Başlangıç:", self._bas)
 
         self._bit = _time_w((kayit or {}).get("BitSaat", ""), "20:00")
         form.addRow("Bitiş:", self._bit)
@@ -275,15 +273,26 @@ class _VardiyaDialog(QDialog):
         sep.setFrameShape(QFrame.Shape.HLine)
         sep.setProperty("bg-role", "elevated")
 
-        self._haftasonu = QCheckBox("Bu birimde hafta sonu Ã§alışma var")
-        self._haftasonu.setChecked(
-            bool(int((birim_ayar or {}).get("HaftasonuNobetZorunlu", 1))))
+        self._haftasonu = QCheckBox("Bu birimde hafta sonu çalışma var")
+        hafta_sonu_var = (birim_ayar or {}).get(
+            "HaftasonuCalismaVar",
+            (birim_ayar or {}).get("HaftasonuNobetZorunlu", 1),
+        )
+        self._haftasonu.setChecked(bool(int(hafta_sonu_var)))
         form.addRow("Hafta Sonu:", self._haftasonu)
 
-        self._tatil = QCheckBox("Bu birimde tatil günlerinde Ã§alışma var")
-        self._tatil.setChecked(
-            bool(int((birim_ayar or {}).get("DiniBayramAtama", 1))))
-        form.addRow("Tatiller:", self._tatil)
+        self._resmi_tatil = QCheckBox("Bu birimde resmi tatillerde çalışma var")
+        self._resmi_tatil.setChecked(
+            bool(int((birim_ayar or {}).get("ResmiTatilCalismaVar", 1))))
+        form.addRow("Resmi Tatil:", self._resmi_tatil)
+
+        self._dini_bayram = QCheckBox("Bu birimde dini bayramlarda çalışma var")
+        dini_bayram_var = (birim_ayar or {}).get(
+            "DiniBayramCalismaVar",
+            (birim_ayar or {}).get("DiniBayramAtama", 0),
+        )
+        self._dini_bayram.setChecked(bool(int(dini_bayram_var)))
+        form.addRow("Dini Bayram:", self._dini_bayram)
 
         lay.addLayout(form)
         btns = QDialogButtonBox(
@@ -313,13 +322,14 @@ class _VardiyaDialog(QDialog):
 
     def get_birim_ayar_data(self) -> dict:
         return {
-            "HaftasonuNobetZorunlu": 1 if self._haftasonu.isChecked() else 0,
-            "DiniBayramAtama":       1 if self._tatil.isChecked() else 0,
+            "HaftasonuCalismaVar":  1 if self._haftasonu.isChecked() else 0,
+            "ResmiTatilCalismaVar": 1 if self._resmi_tatil.isChecked() else 0,
+            "DiniBayramCalismaVar": 1 if self._dini_bayram.isChecked() else 0,
         }
 
 
 class _PersonelAtaDialog(QDialog):
-    """Personel listesinden birden fazla seÃ§im."""
+    """Personel listesinden birden fazla seçim."""
 
     def __init__(self, pid_listesi: list, p_map: dict,
                  mevcutlar: set, parent=None):
@@ -334,7 +344,7 @@ class _PersonelAtaDialog(QDialog):
         lay.setSpacing(8)
 
         ara = QLineEdit()
-        ara.setPlaceholderText("İsimle araâ€¦")
+        ara.setPlaceholderText("İsimle ara...")
         ara.textChanged.connect(self._filtrele)
         lay.addWidget(ara)
 
@@ -383,7 +393,7 @@ class _PersonelAtaDialog(QDialog):
             self._tbl.setItem(ri, 0, ad_i)
             self._tbl.setItem(ri, 1, QTableWidgetItem("teknisyen"))
             self._tbl.setItem(ri, 2,
-                QTableWidgetItem("Atanmış" if mevcut else "â€”"))
+                QTableWidgetItem("Atanmış" if mevcut else "="))
 
     def get_secilen(self) -> list:
         mevcutlar = {pid for pid, _, m in self._tum if m}
@@ -403,7 +413,7 @@ class _TercihDialog(QDialog):
     def __init__(self, pid: str, ad: str, yil: int, ay: int,
                  kayit: dict = None, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(f"Nöbet Tercihi â€” {ad}")
+        self.setWindowTitle(f"Nöbet Tercihi = {ad}")
         self.setModal(True)
         self.setMinimumWidth(380)
         self.setProperty("bg-role", "page")
@@ -412,7 +422,7 @@ class _TercihDialog(QDialog):
         lay.setContentsMargins(20, 20, 20, 20)
         lay.setSpacing(12)
 
-        baslik = QLabel(f"<b>{ad}</b>  â€”  {_AY_TR[ay]} {yil}")
+        baslik = QLabel(f"<b>{ad}</b>  =  {_AY_TR[ay]} {yil}")
         baslik.setAlignment(Qt.AlignmentFlag.AlignCenter)
         lay.addWidget(baslik)
 
@@ -470,7 +480,7 @@ class NobetYonetimPage(QWidget):
         self._yil = date.today().year
         self._ay  = date.today().month
 
-        # SeÃ§ili kayıt izi
+        # Seçili kayıt izi
         self._secili_birim_id:  str = ""
         self._secili_birim_adi: str = ""
         self._secili_grup_id:   str = ""
@@ -519,7 +529,7 @@ class NobetYonetimPage(QWidget):
         spl.setCollapsible(1, False)
         ana.addWidget(spl)
 
-    # ── Sol kenar Ã§ubuğu: Birim listesi ──────────────────────
+    # ── Sol kenar çubuğu: Birim listesi ──────────────────────
 
     def _build_sidebar(self) -> QWidget:
         w = QWidget()
@@ -538,13 +548,17 @@ class NobetYonetimPage(QWidget):
         self._btn_b_yeni = self._btn("+", "action")
         self._btn_b_yeni.setFixedWidth(28)
         self._btn_b_yeni.setToolTip("Yeni birim ekle")
+        IconRenderer.set_button_icon(
+            self._btn_b_yeni, "plus", color=IconColors.PRIMARY, size=14)
         self._btn_b_yeni.clicked.connect(self._birim_yeni)
         hdr.addWidget(self._btn_b_yeni)
 
-        self._btn_b_dup = self._btn("âœ")
+        self._btn_b_dup = self._btn("")
         self._btn_b_dup.setFixedWidth(28)
         self._btn_b_dup.setEnabled(False)
-        self._btn_b_dup.setToolTip("SeÃ§ili birimi düzenle")
+        self._btn_b_dup.setToolTip("Seçili birimi düzenle")
+        IconRenderer.set_button_icon(
+            self._btn_b_dup, "edit", color=IconColors.MUTED, size=14)
         self._btn_b_dup.clicked.connect(self._birim_duzenle)
         hdr.addWidget(self._btn_b_dup)
         lay.addLayout(hdr)
@@ -598,7 +612,7 @@ class NobetYonetimPage(QWidget):
         self._tabs.addTab(self._build_tab_ayar(),     "Birim Ayarları")
         lay.addWidget(self._tabs, 1)
 
-        # BaşlangıÃ§ta sekmeleri gizle
+        # Başlangıçta sekmeleri gizle
         self._tabs.setVisible(False)
         return w
 
@@ -608,7 +622,7 @@ class NobetYonetimPage(QWidget):
         lay = QHBoxLayout(w)
         lay.setContentsMargins(16, 8, 16, 8)
 
-        self._lbl_birim_adi = QLabel("Lütfen bir birim seÃ§in")
+        self._lbl_birim_adi = QLabel("Lütfen bir birim seçin")
         self._lbl_birim_adi.setProperty("style-role", "section-title")
         lay.addWidget(self._lbl_birim_adi)
 
@@ -619,13 +633,17 @@ class NobetYonetimPage(QWidget):
 
         lay.addStretch()
 
-        self._btn_toggle = self._btn("â¸  Pasife Al", h=28)
+        self._btn_toggle = self._btn("Pasife Al", h=28)
         self._btn_toggle.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_toggle, "x", color=IconColors.MUTED, size=14)
         self._btn_toggle.clicked.connect(self._birim_toggle)
         lay.addWidget(self._btn_toggle)
 
-        self._btn_b_sil = self._btn("âœ•  Sil", "danger", h=28)
+        self._btn_b_sil = self._btn("Sil", "danger", h=28)
         self._btn_b_sil.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_b_sil, "trash", color=IconColors.DANGER, size=14)
         self._btn_b_sil.clicked.connect(self._birim_sil)
         lay.addWidget(self._btn_b_sil)
 
@@ -664,12 +682,16 @@ class NobetYonetimPage(QWidget):
         self._btn_grup_yeni.setFixedWidth(28)
         self._btn_grup_yeni.setEnabled(False)
         self._btn_grup_yeni.setToolTip("Yeni grup ekle")
+        IconRenderer.set_button_icon(
+            self._btn_grup_yeni, "plus", color=IconColors.PRIMARY, size=14)
         self._btn_grup_yeni.clicked.connect(self._grup_yeni)
         hdr.addWidget(self._btn_grup_yeni)
 
-        self._btn_sablon = self._btn("âŠ Şablon")
+        self._btn_sablon = self._btn("Şablon")
         self._btn_sablon.setEnabled(False)
         self._btn_sablon.setToolTip("Hazır şablondan grup oluştur")
+        IconRenderer.set_button_icon(
+            self._btn_sablon, "bolt", color=IconColors.MUTED, size=14)
         self._btn_sablon.clicked.connect(self._grup_sablon)
         hdr.addWidget(self._btn_sablon)
         lay.addLayout(hdr)
@@ -692,15 +714,19 @@ class NobetYonetimPage(QWidget):
         lay.addWidget(self._tbl_grup, 1)
 
         alt = QHBoxLayout()
-        self._btn_grup_dup = self._btn("âœ")
+        self._btn_grup_dup = self._btn("")
         self._btn_grup_dup.setFixedWidth(28)
         self._btn_grup_dup.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_grup_dup, "edit", color=IconColors.MUTED, size=14)
         self._btn_grup_dup.clicked.connect(self._grup_duzenle)
         alt.addWidget(self._btn_grup_dup)
 
-        self._btn_grup_sil = self._btn("âœ•", "danger")
+        self._btn_grup_sil = self._btn("", "danger")
         self._btn_grup_sil.setFixedWidth(28)
         self._btn_grup_sil.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_grup_sil, "trash", color=IconColors.DANGER, size=14)
         self._btn_grup_sil.clicked.connect(self._grup_sil)
         alt.addWidget(self._btn_grup_sil)
         alt.addStretch()
@@ -714,7 +740,7 @@ class NobetYonetimPage(QWidget):
         lay.setSpacing(4)
 
         hdr = QHBoxLayout()
-        self._lbl_grup_adi = QLabel("â€” Grup seÃ§in â€”")
+        self._lbl_grup_adi = QLabel("= Grup seçin =")
         self._lbl_grup_adi.setProperty("style-role", "section-title")
         hdr.addWidget(self._lbl_grup_adi)
         hdr.addStretch()
@@ -727,7 +753,7 @@ class NobetYonetimPage(QWidget):
 
         self._tbl_v = QTableWidget(0, 6)
         self._tbl_v.setHorizontalHeaderLabels(
-            ["Vardiya Adı", "BaşlangıÃ§", "Bitiş", "Süre", "Rol", "Min P."])
+            ["Vardiya Adı", "Başlangıç", "Bitiş", "Süre", "Rol", "Min P."])
         self._tbl_v.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeMode.Stretch)
         for i in range(1, 6):
@@ -744,15 +770,19 @@ class NobetYonetimPage(QWidget):
         lay.addWidget(self._tbl_v, 1)
 
         alt = QHBoxLayout()
-        self._btn_v_dup = self._btn("âœ")
+        self._btn_v_dup = self._btn("")
         self._btn_v_dup.setFixedWidth(28)
         self._btn_v_dup.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_v_dup, "edit", color=IconColors.MUTED, size=14)
         self._btn_v_dup.clicked.connect(self._vardiya_duzenle)
         alt.addWidget(self._btn_v_dup)
 
-        self._btn_v_sil = self._btn("âœ•", "danger")
+        self._btn_v_sil = self._btn("", "danger")
         self._btn_v_sil.setFixedWidth(28)
         self._btn_v_sil.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_v_sil, "trash", color=IconColors.DANGER, size=14)
         self._btn_v_sil.clicked.connect(self._vardiya_sil)
         alt.addWidget(self._btn_v_sil)
         alt.addStretch()
@@ -775,13 +805,17 @@ class NobetYonetimPage(QWidget):
         tb = QHBoxLayout()
         self._btn_p_ata = self._btn("+ Personel Ata", "action", h=28)
         self._btn_p_ata.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_p_ata, "user_add", color=IconColors.PRIMARY, size=14)
         self._btn_p_ata.clicked.connect(self._personel_ata)
         tb.addWidget(self._btn_p_ata)
 
-        self._btn_p_migrate = self._btn("âŸ³  GorevYeri'nden Aktar", h=28)
+        self._btn_p_migrate = self._btn("GorevYeri'nden Aktar", h=28)
         self._btn_p_migrate.setEnabled(False)
         self._btn_p_migrate.setToolTip(
             "Personel.GorevYeri = birim adıyla eşleşen personeli aktar")
+        IconRenderer.set_button_icon(
+            self._btn_p_migrate, "refresh", color=IconColors.MUTED, size=14)
         self._btn_p_migrate.clicked.connect(self._personel_migrate)
         tb.addWidget(self._btn_p_migrate)
         tb.addStretch()
@@ -789,7 +823,7 @@ class NobetYonetimPage(QWidget):
 
         self._tbl_p = QTableWidget(0, 4)
         self._tbl_p.setHorizontalHeaderLabels(
-            ["Ad Soyad", "Rol", "Görev BaşlangıÃ§", "Durum"])
+            ["Ad Soyad", "Rol", "Görev Başlangıç", "Durum"])
         self._tbl_p.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeMode.Stretch)
         for i in range(1, 4):
@@ -805,8 +839,10 @@ class NobetYonetimPage(QWidget):
         lay.addWidget(self._tbl_p, 1)
 
         alt = QHBoxLayout()
-        self._btn_p_cikar = self._btn("âœ•  Görevden Al", "danger", h=28)
+        self._btn_p_cikar = self._btn("Görevden Al", "danger", h=28)
         self._btn_p_cikar.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_p_cikar, "x", color=IconColors.DANGER, size=14)
         self._btn_p_cikar.clicked.connect(self._personel_cikar)
         alt.addWidget(self._btn_p_cikar)
         alt.addStretch()
@@ -827,8 +863,10 @@ class NobetYonetimPage(QWidget):
         lay.setSpacing(6)
 
         nav = QHBoxLayout()
-        btn_g = self._btn("â€¹", h=26)
+        btn_g = self._btn("", h=26)
         btn_g.setFixedWidth(28)
+        IconRenderer.set_button_icon(
+            btn_g, "chevron_left", color=IconColors.MUTED, size=14)
         btn_g.clicked.connect(self._tercih_ay_geri)
         nav.addWidget(btn_g)
 
@@ -838,13 +876,15 @@ class NobetYonetimPage(QWidget):
         self._lbl_tercih_ay.setProperty("style-role", "section-title")
         nav.addWidget(self._lbl_tercih_ay)
 
-        btn_i = self._btn("â€º", h=26)
+        btn_i = self._btn("", h=26)
         btn_i.setFixedWidth(28)
+        IconRenderer.set_button_icon(
+            btn_i, "chevron_right", color=IconColors.MUTED, size=14)
         btn_i.clicked.connect(self._tercih_ay_ileri)
         nav.addWidget(btn_i)
         nav.addStretch()
 
-        hint = QLabel("Ã‡ift tıkla â†’ düzenle")
+        hint = QLabel("Çift tıkla, düzenle")
         hint.setProperty("color-role", "muted")
         hint.setStyleSheet("font-size: 10px;")
         nav.addWidget(hint)
@@ -870,8 +910,10 @@ class NobetYonetimPage(QWidget):
         lay.addWidget(self._tbl_tercih, 1)
 
         alt = QHBoxLayout()
-        self._btn_tercih_dup = self._btn("âœ  Düzenle", h=28)
+        self._btn_tercih_dup = self._btn("Düzenle", h=28)
         self._btn_tercih_dup.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_tercih_dup, "edit", color=IconColors.MUTED, size=14)
         self._btn_tercih_dup.clicked.connect(self._tercih_duzenle)
         alt.addWidget(self._btn_tercih_dup)
         alt.addStretch()
@@ -909,7 +951,7 @@ class NobetYonetimPage(QWidget):
         self._spn_slot.setRange(1, 10)
         self._spn_slot.setValue(4)
         self._spn_slot.setToolTip(
-            "Her vardiya iÃ§in günlük kaÃ§ farklı kişi atanır")
+            "Her vardiya için günlük kaç farklı kişi atanır")
         form_v.addRow("Günlük Slot Sayısı:", self._spn_slot)
 
         self._spn_fm_max = QSpinBox()
@@ -923,12 +965,12 @@ class NobetYonetimPage(QWidget):
         self._spn_max_gun.setRange(1, 2)
         self._spn_max_gun.setValue(1)
         self._spn_max_gun.setToolTip(
-            "1 = tek vardiya/gün (720 dk), 2 = Ã§ift vardiya (1440 dk)")
+            "1 = tek vardiya/gün (720 dk), 2 = çift vardiya (1440 dk)")
         form_v.addRow("Günlük Maks. Vardiya:", self._spn_max_gun)
         lay.addWidget(grp_var)
 
-        # Ã‡alışma takvimi
-        grp_tak = QGroupBox("Ã‡alışma Takvimi")
+        # Çalışma takvimi
+        grp_tak = QGroupBox("Çalışma Takvimi")
         grp_tak.setProperty("style-role", "group")
         form_t = QFormLayout(grp_tak)
         form_t.setSpacing(8)
@@ -955,8 +997,10 @@ class NobetYonetimPage(QWidget):
         # Kaydet butonu
         btn_row = QHBoxLayout()
         btn_row.addStretch()
-        self._btn_ayar_kaydet = self._btn("ğŸ’¾  Ayarları Kaydet", "action", h=30)
+        self._btn_ayar_kaydet = self._btn("Ayarları Kaydet", "action", h=30)
         self._btn_ayar_kaydet.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_ayar_kaydet, "save", color=IconColors.PRIMARY, size=14)
         self._btn_ayar_kaydet.clicked.connect(self._birim_ayar_kaydet)
         btn_row.addWidget(self._btn_ayar_kaydet)
         lay.addLayout(btn_row)
@@ -1003,7 +1047,7 @@ class NobetYonetimPage(QWidget):
             self._tbl_grup.setRowCount(0)
             self._tbl_v.setRowCount(0)
             self._secili_grup_id = ""
-            self._lbl_grup_adi.setText("â€” Grup seÃ§in â€”")
+            self._lbl_grup_adi.setText("= Grup seçin =")
             for r in rows:
                 ri  = self._tbl_grup.rowCount()
                 gid = r["GrupID"]
@@ -1013,7 +1057,7 @@ class NobetYonetimPage(QWidget):
                 self._tbl_grup.setItem(ri, 0, itm)
                 self._tbl_grup.setItem(ri, 1, _it(r.get("Sira", 1), gid))
                 aktif = int(r.get("Aktif", 1))
-                a_itm = QTableWidgetItem("âœ”" if aktif else "âœ•")
+                a_itm = QTableWidgetItem("Aktif" if aktif else "Pasif")
                 a_itm.setForeground(
                     QColor("#2ec98e" if aktif else "#e85555"))
                 a_itm.setData(Qt.ItemDataRole.UserRole, gid)
@@ -1039,7 +1083,7 @@ class NobetYonetimPage(QWidget):
                 self._tbl_v.setItem(ri, 2, _it(r.get("BitSaat", ""), vid))
                 self._tbl_v.setItem(
                     ri, 3,
-                    _it(f"{dk // 60}s {dk % 60:02d}dk" if dk else "â€”", vid))
+                    _it(f"{dk // 60}s {dk % 60:02d}dk" if dk else "=", vid))
                 rol_itm = _it(r.get("Rol", "ana"), vid)
                 if r.get("Rol", "ana") == "yardimci":
                     rol_itm.setForeground(QColor("#e8a030"))
@@ -1129,7 +1173,7 @@ class NobetYonetimPage(QWidget):
                 ad_i.setData(Qt.ItemDataRole.UserRole, pid)
                 self._tbl_tercih.setItem(ri, 0, ad_i)
 
-                fm_itm = QTableWidgetItem("â— FM Gönüllü" if fm else "â—‹")
+                fm_itm = QTableWidgetItem("FM Gönüllü" if fm else "Yok")
                 fm_itm.setForeground(
                     QColor("#4d9ee8" if fm else "#6b7280"))
                 fm_itm.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -1183,7 +1227,7 @@ class NobetYonetimPage(QWidget):
             return {}
 
     # ─────────────────────────────────────────────────────────
-    #  SeÃ§im Sinyalleri
+    #  Seçim Sinyalleri
     # ─────────────────────────────────────────────────────────
 
     def _on_birim_sec(self):
@@ -1207,7 +1251,7 @@ class NobetYonetimPage(QWidget):
             b.setEnabled(aktif)
 
         if not aktif:
-            self._lbl_birim_adi.setText("Lütfen bir birim seÃ§in")
+            self._lbl_birim_adi.setText("Lütfen bir birim seçin")
             self._lbl_birim_tip.setText("")
             return
 
@@ -1221,10 +1265,15 @@ class NobetYonetimPage(QWidget):
             aktif_durum = int(b_data.get("Aktif", 1))
             self._lbl_birim_adi.setText(self._secili_birim_adi)
             self._lbl_birim_tip.setText(
-                f"{tip}  Â·  {kod}"
+                f"{tip} | {kod}"
                 + ("  [PASİF]" if not aktif_durum else ""))
-            self._btn_toggle.setText(
-                "â¸  Pasife Al" if aktif_durum else "â–¶  Aktife Al")
+            self._btn_toggle.setText("Pasife Al" if aktif_durum else "Aktife Al")
+            IconRenderer.set_button_icon(
+                self._btn_toggle,
+                "x" if aktif_durum else "check",
+                color=IconColors.MUTED if aktif_durum else IconColors.SUCCESS,
+                size=14,
+            )
         except Exception:
             pass
 
@@ -1468,8 +1517,8 @@ class NobetYonetimPage(QWidget):
             ],
         }
         sablon_adi, ok = _secim_dialog(
-            list(sablonlar.keys()), "Şablon SeÃ§",
-            "Oluşturulacak şablonu seÃ§in:", parent=self)
+            list(sablonlar.keys()), "Şablon Seç",
+            "Oluşturulacak şablonu seçin:", parent=self)
         if not ok or not sablon_adi:
             return
         try:
@@ -1571,7 +1620,7 @@ class NobetYonetimPage(QWidget):
 
     def _vardiya_icin_birim_ayar_kaydet(
             self, birim_id: str, secim: dict):
-        """Vardiya formundaki hafta sonu / tatil seÃ§imini NB_BirimAyar'a yansıt."""
+        """Vardiya formundaki çalışma takvimi seçimini NB_BirimAyar'a yansıt."""
         if not birim_id:
             return
         try:
@@ -1581,9 +1630,10 @@ class NobetYonetimPage(QWidget):
                 (r for r in rows
                  if str(r.get("BirimID", "")) == birim_id), None)
             veri = {
-                "HaftasonuNobetZorunlu": int(secim.get("HaftasonuNobetZorunlu", 1)),
-                "DiniBayramAtama":       int(secim.get("DiniBayramAtama", 1)),
-                "updated_at":            _simdi(),
+                "HaftasonuCalismaVar": int(secim.get("HaftasonuCalismaVar", 1)),
+                "ResmiTatilCalismaVar": int(secim.get("ResmiTatilCalismaVar", 1)),
+                "DiniBayramCalismaVar": int(secim.get("DiniBayramCalismaVar", 0)),
+                "updated_at": _simdi(),
             }
             if ayar:
                 reg.get("NB_BirimAyar").update(ayar["AyarID"], veri)
@@ -1595,6 +1645,7 @@ class NobetYonetimPage(QWidget):
                     "FmMaxSaat":        self._spn_fm_max.value(),
                     "MaxGunlukSureDakika": (
                         1440 if self._spn_max_gun.value() >= 2 else 720),
+                    "ArdisikGunIzinli": 1 if self._chk_ardisik.isChecked() else 0,
                     "created_at": _simdi(),
                     **veri,
                 })
@@ -1771,12 +1822,12 @@ class NobetYonetimPage(QWidget):
 
 
 # ==============================================================
-#  Yardımcı: Basit seÃ§im dialogu (şablon vs.)
+#  Yardımcı: Basit seçim dialogu (şablon vs.)
 # ==============================================================
 
 def _secim_dialog(secenekler: list[str], baslik: str,
                   mesaj: str, parent=None) -> tuple[str, bool]:
-    """Bir ComboBox iÃ§eren küÃ§ük seÃ§im dialogu. (seÃ§im, tamam) döner."""
+    """Bir ComboBox içeren küçük seçim dialogu. (seçim, tamam) döner."""
     dlg = QDialog(parent)
     dlg.setWindowTitle(baslik)
     dlg.setModal(True)

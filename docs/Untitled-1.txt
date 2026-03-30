@@ -1,0 +1,236 @@
+
+
+Son kaldığımız yeri bul
+Devam eden görev yok
+
+
+"NB_MesaiHesap": {
+        "pk": "HesapID",
+        "columns": [
+            "HesapID", "PersonelID", "BirimID", "PlanID",
+            "Yil", "Ay",
+            "CalisDakika", "HedefDakika", "FazlaDakika",
+            "DevirDakika", "ToplamFazlaDakika",
+            "OdenenDakika", "DevireGidenDakika",
+            "HesapDurumu", "HesapTarihi",
+            "created_at", "updated_at",
+        ],
+        bir tablom var
+
+
+Süper, o zaman yeni tablo eklemeye gerek yok — NB_MesaiHesap tam bu iş için uygun. Buradaki alanları şöyle kullanabiliriz:
+
+CalisDakika: O ay gerçek çalışılan toplam dakika (vardiya süreleri toplamı)
+HedefDakika: O ay hedef dakika (iş günü − izin günü × 7s/ya da hedef tipi)
+FazlaDakika: CalisDakika - HedefDakika
+DevirDakika: Geçen aydan gelen bakiye
+ToplamFazlaDakika: DevirDakika + FazlaDakika
+DevireGidenDakika: Bu ay sonu devreden bakiye
+OdenenDakika: Eğer ödeme/mahsup varsa düşülecek kısım
+HesapDurumu / HesapTarihi: kayıt takibi
+Şimdi netleştirelim:
+
+DevirDakika → bir önceki ayın DevireGidenDakika değeri mi olacak?
+DevireGidenDakika = ToplamFazlaDakika - OdenenDakika mı olacak?
+Algoritma, bakiye (ToplamFazlaDakika) değerini sıralama/öncelik için kullanacak mı?
+Bunları netleştirirsek, algoritma tarafında “bakiye bazlı adil dağıtım”ı doğrudan kodlarım.
+
+
+netleştirmek istediklerinin ne için kullanılacağını anlamadım kararı sen ver
+
+
+
+1m 33s boyunca çalıştı
+Haklısın, kararı ben verdim ve uyguladım: bakiye kişi bazlı, vardiya süresine göre çalışacak şekilde algoritmaya entegre ettim. Mevcut NB_MesaiHesap.DevireGidenDakika üzerinden önceki ay bakiyesini çekiyorum ve atama sıralamasında eksik bakiyesi olanları öne alıyorum.
+
+Yapılan değişiklikler:
+
+Önceki ay bakiyesi (DevireGidenDakika) okunuyor.
+Bakiye sayaç oluşturuluyor (negatif = eksik, pozitif = fazla).
+Sıralama artık: bakiye → saat → nöbet → hafta sonu.
+Her atamada bakiye güncelleniyor (vardiya süresi kadar artıyor).
+Değiştirilen dosya:
+
+core/services/nobet/nb_algoritma.py
+Bu yaklaşım “alacak‑verecek” mantığını doğrudan dağıtıma yediriyor.
+Not: NB_MesaiHesap kayıtlarının güncel kalması için plan sonrası NbMesaiService.mesai_hesapla(...) çağrısı yapılması gerekir. Bu şu an farklı bir akışta olabilir; istersen bunu da plan onayı sonrası otomatikleştirebiliriz.
+
+Devam edelim mi:
+
+Plan onayı sonrası mesai hesabını otomatik çalıştırma
+Bakiye için “±7 saat tolerans” sınırını da ekleme
+
+NB_MesaiHesap kayıtlarının güncel kalması planlama sonrası değil ay sonunda manual olarak yapacağım planlama sonrası hsatlık gibi durumlarda liste değişebileceğinden hesaplarda hata olmasın
+
+
+Anladım, bu yaklaşım mantıklı — plan sonrası değil ay sonunda manuel hesap yapalım ki ara değişiklikler (hastalık vb.) yüzünden muhasebe kayması olmasın. O zaman algoritma sadece mevcut NB_MesaiHesap’tan devreden bakiyeyi okur, yeni kayıt üretmez; hesaplama ay sonunda senin manuel tetiklediğin akışla güncellenir.
+
+Bu durumda ek bir kod değişikliğine gerek yok; mevcut akışla uyumlu.
+Sadece şunu öneririm: planlama öncesi “bakiye verisi”nin son ay hesabı yapılmış olduğundan emin olmak için bir uyarı/etiket göstermek (isteğe bağlı).
+
+İstersen:
+
+Planlama ekranına “Bakiye en son hangi ay hesaplandı?” uyarısı ekleyeyim
+Hiç dokunmadan bu şekilde devam edelim
+
+hiç dokunmadan devam et
+
+
+Tamamdır, hiçbir ek değişiklik yapmıyorum. Mevcut haliyle devam ediyoruz.
+
+
+evet devam edelim
+
+
+Süper, devam edelim. Şu an hangi adımdan yürüyelim?
+
+Bakiye + adil sıralama için ±7 saat tolerans sınırını algoritmaya ekleyelim
+Yönetim tarafındaki tercih/kaçınılacak günler gibi kısıtları netleştirip birini uygulayalım
+Başka bir hedefin varsa ona geçelim
+
+1. madde ile algoritmayı uygulayalım
+
+
+
+14s boyunca çalıştı
+Harika, 1. maddeyi uyguladım: tolerans artık sabit ±7 saat (420 dk).
+
+Yapılan değişiklik:
+
+core/services/nobet/nb_algoritma.py
+Tolerans hesaplaması “1 vardiya süresi” yerine 7 saat sabit olarak güncellendi.
+Hedefin üstüne çıkmamak için yine min(420, hedef) kısıtı korunuyor.
+İstersen bir sonraki adımda toleransın alt sınır (hedef−7) etkisini de uygulayıp eksik kalanları önceliklendirebiliriz.
+
+
+1 dosya değiştirildi
+Geri Al
+
+İncele
+core/services/nobet/nb_algoritma.py
+fakat sen kodu yazarkem utf-8 bom oluşuyor düzeltebilirmisin
+
+
+
+10s boyunca çalıştı
+Haklısın; nb_algoritma.py dosyasında BOM oluşmuş. Şimdi kaldırdım.
+
+Düzeltilen dosya:
+
+core/services/nobet/nb_algoritma.py (UTF‑8 BOM kaldırıldı)
+İstersen diğer dokunduğumuz dosyalarda da BOM var mı hızlıca kontrol edip temizleyebilirim.
+
+
+şimdilik kalsın sadece bundan sonra dikkat edelim algoritma tarafında herşeyi hallettik mi
+
+
+Harika, bundan sonra BOM konusuna dikkat ederim. Algoritma tarafında şu an hedeflediklerimizin ana kısmı tamam:
+
+Tamamlananlar:
+
+Bakiye kişi bazlı devreden mantığı eklendi (NB_MesaiHesap.DevireGidenDakika okunuyor).
+Sıralama artık bakiye öncelikli.
+Tolerans ±7 saat olarak sabitlendi.
+Vardiya süresine göre gerçek saatler zaten çalışıyor.
+Henüz dokunmadıklarımız (isteğe bağlı kalanlar):
+
+Tercih edilen vardiyalar / kaçınılacak günler (sen “ayrıca konuşalım” demiştin).
+Alt sınır (hedef−7) için “eksik kalanları doldurma” zorunluluğu.
+MinPersonel gibi vardiya başına minimum kişi sayısı.
+Yani “algoritma tarafında her şeyi hallettik mi?” sorusuna cevabım:
+Temel adil dağıtım + bakiye dengesi tamam.
+İleri kısıtlar (tercihler/min kişi) ise henüz eklenmedi.
+
+İstersen burada durabiliriz veya kalanlardan birini açabiliriz.
+
+
+algoritma örneğin 08:00 15:00 çalışan bir birimde 1 kiş hafta içi hergün gelecek haftasonu ve bayram kısıtlamaları kontrol edecek durumda mı
+
+
+Güzel soru — kısa cevap: hafta sonu ve bayram kısıtlarını kontrol ediyor, ama “hafta içi her gün aynı kişi gelsin” kuralını şu an engelliyor.
+
+Neden?
+
+Algoritmada “dün nöbetteyse bugün atanamaz” kuralı var. Bu kural nedeniyle aynı kişi art arda günlere atanamaz.
+Bu yüzden 08:00–15:00 çalışan birimde bile “hafta içi her gün” tek kişiyle mümkün değil.
+İlgili blok: core/services/nobet/nb_algoritma.py içinde _atanabilir kontrolü.
+Hafta sonu / bayram kontrolü:
+
+Hafta sonu, resmi tatil, dini bayram günleri için birim ayarlarına göre tamamen atama yapılmıyor.
+İlgili blok: core/services/nobet/nb_algoritma.py içinde gün döngüsü (tatil/hafta sonu check).
+Özet:
+
+Kısıtlar çalışıyor (hafta sonu + bayram + resmi tatil).
+Ardışık gün yasağı var, bu yüzden aynı kişi her gün atanamaz.
+İstersen bu senaryoya özel bir opsiyon ekleyebilirim:
+“Aynı kişi ardışık gün atanabilir” gibi bir birim ayarı.
+
+
+pekala bu ve benzeri durumları göz önüne alırsak bu gibi ayarları nerede yapacağız ve algoritmayı nasıl yönlendireceğiz
+
+
+Güzel soru; bu tür “özel kurallar” için iki sağlam yol var. İkisini de net söyleyeyim, sen hangisini seçersen ona göre uygulayalım:
+
+Seçenek 1 — Birim Ayarlarına Ekleyelim (En pratik)
+
+Yeni alanlar NB_BirimAyar içinde olur.
+UI: nobet_yonetim_page.py → “Birim Ayarları” sekmesine checkbox/slider eklenir.
+Algoritma: bu alanları okuyup kuralı uygular.
+Örnek ayarlar:
+
+ArdisikGunIzinli (1/0)
+1 ise “dün nöbetteyse bugün atanamaz” kuralı devre dışı.
+MinKisiGun (gün başına min personel gibi)
+HaftaIciZorunlu vb.
+Seçenek 2 — Ayrı “Kural” Tablosu (Daha esnek ama daha fazla iş)
+
+NB_BirimKural gibi bir tablo (key/value) yapısı.
+UI’da dinamik ayar listesi.
+Algoritma bu tabloyu okuyarak yönlendirilir.
+Benim önerim: Seçenek 1 ile başlayalım. Hem hızlı hem yönetilebilir.
+
+İstersen şimdi “ardışık gün kuralı” için şu akışla gidelim:
+
+NB_BirimAyar’a ArdisikGunIzinli alanını ekleyelim
+UI’da checkbox olarak gösterelim
+Algoritmada _atanabilir içinde bu flag’e göre “dün nöbetteyse bugün atanamaz” kontrolünü koşullu yapalım
+Bunu onaylar mısın?
+
+
+tamam ozaman senin önerinle devam edelim
+
+
+
+
+2m 33s boyunca çalıştı
+Tamam, önerdiğimiz “ardışık gün izni” ayarını ekledim ve algoritmaya bağladım.
+
+Yaptıklarım
+
+DB şema
+
+NB_BirimAyar tablosuna ArdisikGunIzinli eklendi (varsayılan 0).
+database/migrations.py güncellendi (CURRENT_VERSION = 7, yeni v7 migration).
+database/table_config.py kolon listesine eklendi.
+Yönetim UI
+
+nobet_yonetim_page.py → Birim Ayarları’na “Ardışık Gün” checkbox eklendi.
+Kaydet/Yükle akışına bağlandı.
+Algoritma
+
+nb_algoritma.py → _hazirla içinde ArdisikGunIzinli okunuyor.
+_atanabilir ve _atanabilir_fm içinde “dün nöbetteyse bugün atanamaz” kontrolü bu ayara bağlı hale getirildi.
+Dokunulan dosyalar
+
+database/migrations.py
+database/table_config.py
+ui/admin/nobet_yonetim_page.py
+core/services/nobet/nb_algoritma.py
+Not
+
+nobet_yonetim_page.py dosyasındaki BOM oluşumunu temizledim.
+İstersen şimdi hızlıca bir py_compile ya da ilgili UI akışını kontrol edebiliriz.
+
+
+
+

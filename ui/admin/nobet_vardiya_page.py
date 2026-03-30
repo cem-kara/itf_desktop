@@ -33,6 +33,7 @@ from PySide6.QtCore import QTime
 from core.di import get_registry, get_nb_birim_service
 from core.logger import logger
 from ui.admin.nobet_birim_yonetim import _BirimDialog
+from ui.styles.icons import IconRenderer, IconColors
 
 _simdi  = lambda: datetime.now().isoformat(sep=" ", timespec="seconds")
 _yeni_id = lambda: str(uuid.uuid4())
@@ -148,14 +149,25 @@ class _VardiyaDialog(QDialog):
         form.addRow("", self._aktif)
 
         self._haftasonu = QCheckBox("Bu birimde hafta sonu çalışma var")
-        self._haftasonu.setChecked(
-            bool(int((birim_ayar or {}).get("HaftasonuNobetZorunlu", 1))))
+        hafta_sonu_var = (birim_ayar or {}).get(
+            "HaftasonuCalismaVar",
+            (birim_ayar or {}).get("HaftasonuNobetZorunlu", 1),
+        )
+        self._haftasonu.setChecked(bool(int(hafta_sonu_var)))
         form.addRow("Hafta Sonu:", self._haftasonu)
 
-        self._tatil = QCheckBox("Bu birimde tatil günlerinde çalışma var")
-        self._tatil.setChecked(
-            bool(int((birim_ayar or {}).get("DiniBayramAtama", 1))))
-        form.addRow("Tatiller:", self._tatil)
+        self._resmi_tatil = QCheckBox("Bu birimde resmi tatillerde çalışma var")
+        self._resmi_tatil.setChecked(
+            bool(int((birim_ayar or {}).get("ResmiTatilCalismaVar", 1))))
+        form.addRow("Resmi Tatil:", self._resmi_tatil)
+
+        self._dini_bayram = QCheckBox("Bu birimde dini bayramlarda çalışma var")
+        dini_bayram_var = (birim_ayar or {}).get(
+            "DiniBayramCalismaVar",
+            (birim_ayar or {}).get("DiniBayramAtama", 0),
+        )
+        self._dini_bayram.setChecked(bool(int(dini_bayram_var)))
+        form.addRow("Dini Bayram:", self._dini_bayram)
 
         lay.addLayout(form)
         btns = QDialogButtonBox(
@@ -178,8 +190,9 @@ class _VardiyaDialog(QDialog):
 
     def get_birim_ayar_data(self) -> dict:
         return {
-            "HaftasonuNobetZorunlu": 1 if self._haftasonu.isChecked() else 0,
-            "DiniBayramAtama":       1 if self._tatil.isChecked() else 0,
+            "HaftasonuCalismaVar":  1 if self._haftasonu.isChecked() else 0,
+            "ResmiTatilCalismaVar": 1 if self._resmi_tatil.isChecked() else 0,
+            "DiniBayramCalismaVar": 1 if self._dini_bayram.isChecked() else 0,
         }
 
 
@@ -371,12 +384,16 @@ class NobetVardiyaPage(QWidget):
         self._btn_birim_yeni = self._btn("+", "action")
         self._btn_birim_yeni.setFixedWidth(28)
         self._btn_birim_yeni.setToolTip("Yeni birim ekle")
+        IconRenderer.set_button_icon(
+            self._btn_birim_yeni, "plus", color=IconColors.PRIMARY, size=14)
         self._btn_birim_yeni.clicked.connect(self._birim_yeni)
         hdr.addWidget(self._btn_birim_yeni)
-        self._btn_birim_dup = self._btn("✎")
+        self._btn_birim_dup = self._btn("")
         self._btn_birim_dup.setFixedWidth(28)
         self._btn_birim_dup.setEnabled(False)
         self._btn_birim_dup.setToolTip("Seçili birimi düzenle")
+        IconRenderer.set_button_icon(
+            self._btn_birim_dup, "edit", color=IconColors.MUTED, size=14)
         self._btn_birim_dup.clicked.connect(self._birim_duzenle)
         hdr.addWidget(self._btn_birim_dup)
         lay.addLayout(hdr)
@@ -470,8 +487,10 @@ class NobetVardiyaPage(QWidget):
         self._btn_grup_yeni.setEnabled(False)
         self._btn_grup_yeni.clicked.connect(self._grup_yeni)
         tb.addWidget(self._btn_grup_yeni)
-        self._btn_sablon = self._btn("⚡ Şablon")
+        self._btn_sablon = self._btn("Şablon")
         self._btn_sablon.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_sablon, "bolt", color=IconColors.MUTED, size=14)
         self._btn_sablon.clicked.connect(self._sablon_uygula)
         tb.addWidget(self._btn_sablon)
         tb.addStretch()
@@ -496,14 +515,18 @@ class NobetVardiyaPage(QWidget):
         lay.addWidget(self._tbl_grup, 1)
 
         alt = QHBoxLayout()
-        self._btn_grup_dup = self._btn("✎")
+        self._btn_grup_dup = self._btn("")
         self._btn_grup_dup.setFixedWidth(28)
         self._btn_grup_dup.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_grup_dup, "edit", color=IconColors.MUTED, size=14)
         self._btn_grup_dup.clicked.connect(self._grup_duzenle)
         alt.addWidget(self._btn_grup_dup)
-        self._btn_grup_sil = self._btn("✕", "danger")
+        self._btn_grup_sil = self._btn("", "danger")
         self._btn_grup_sil.setFixedWidth(28)
         self._btn_grup_sil.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_grup_sil, "trash", color=IconColors.DANGER, size=14)
         self._btn_grup_sil.clicked.connect(self._grup_sil)
         alt.addWidget(self._btn_grup_sil)
         alt.addStretch()
@@ -560,14 +583,18 @@ class NobetVardiyaPage(QWidget):
         lay.addWidget(self._tbl_v, 1)
 
         alt = QHBoxLayout()
-        self._btn_v_dup = self._btn("✎")
+        self._btn_v_dup = self._btn("")
         self._btn_v_dup.setFixedWidth(28)
         self._btn_v_dup.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_v_dup, "edit", color=IconColors.MUTED, size=14)
         self._btn_v_dup.clicked.connect(self._vardiya_duzenle)
         alt.addWidget(self._btn_v_dup)
-        self._btn_v_sil = self._btn("✕", "danger")
+        self._btn_v_sil = self._btn("", "danger")
         self._btn_v_sil.setFixedWidth(28)
         self._btn_v_sil.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_v_sil, "trash", color=IconColors.DANGER, size=14)
         self._btn_v_sil.clicked.connect(self._vardiya_sil)
         alt.addWidget(self._btn_v_sil)
         alt.addStretch()
@@ -589,8 +616,10 @@ class NobetVardiyaPage(QWidget):
         self._btn_p_ata.setEnabled(False)
         self._btn_p_ata.clicked.connect(self._personel_ata)
         tb.addWidget(self._btn_p_ata)
-        self._btn_p_migrate = self._btn("⟳ GorevYeri'nden Aktar")
+        self._btn_p_migrate = self._btn("GorevYeri'nden Aktar")
         self._btn_p_migrate.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_p_migrate, "refresh", color=IconColors.MUTED, size=14)
         self._btn_p_migrate.clicked.connect(self._personel_migrate)
         tb.addWidget(self._btn_p_migrate)
         tb.addStretch()
@@ -614,8 +643,10 @@ class NobetVardiyaPage(QWidget):
         lay.addWidget(self._tbl_p, 1)
 
         alt = QHBoxLayout()
-        self._btn_p_cikar = self._btn("✕  Görevden Al", "danger")
+        self._btn_p_cikar = self._btn("Görevden Al", "danger")
         self._btn_p_cikar.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_p_cikar, "x", color=IconColors.DANGER, size=14)
         self._btn_p_cikar.clicked.connect(self._personel_cikar)
         alt.addWidget(self._btn_p_cikar)
         alt.addStretch()
@@ -676,8 +707,10 @@ class NobetVardiyaPage(QWidget):
         lay.addWidget(self._tbl_tercih, 1)
 
         alt = QHBoxLayout()
-        self._btn_tercih_dup = self._btn("✎  Düzenle")
+        self._btn_tercih_dup = self._btn("Düzenle")
         self._btn_tercih_dup.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_tercih_dup, "edit", color=IconColors.MUTED, size=14)
         self._btn_tercih_dup.clicked.connect(self._tercih_duzenle)
         alt.addWidget(self._btn_tercih_dup)
         alt.addStretch()
@@ -726,7 +759,7 @@ class NobetVardiyaPage(QWidget):
                 self._tbl_grup.setItem(ri, 0, itm)
                 self._tbl_grup.setItem(ri, 1, _it(r.get("Sira",1), gid))
                 aktif = int(r.get("Aktif",1))
-                a_itm = QTableWidgetItem("✔" if aktif else "✕")
+                a_itm = QTableWidgetItem("Aktif" if aktif else "Pasif")
                 a_itm.setForeground(QColor(
                     "#2ec98e" if aktif else "#e85555"))
                 a_itm.setData(Qt.ItemDataRole.UserRole, gid)
@@ -839,7 +872,7 @@ class NobetVardiyaPage(QWidget):
                 ad_i.setData(Qt.ItemDataRole.UserRole, pid)
                 self._tbl_tercih.setItem(ri, 0, ad_i)
 
-                fm_itm = QTableWidgetItem("● FM Gönüllü" if fm else "○")
+                fm_itm = QTableWidgetItem("FM Gönüllü" if fm else "Yok")
                 fm_itm.setForeground(QColor(
                     "#4d9ee8" if fm else "#6b7280"))
                 fm_itm.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -904,8 +937,9 @@ class NobetVardiyaPage(QWidget):
                 None,
             )
             veri = {
-                "HaftasonuNobetZorunlu": int(secim.get("HaftasonuNobetZorunlu", 1)),
-                "DiniBayramAtama": int(secim.get("DiniBayramAtama", 1)),
+                "HaftasonuCalismaVar": int(secim.get("HaftasonuCalismaVar", 1)),
+                "ResmiTatilCalismaVar": int(secim.get("ResmiTatilCalismaVar", 1)),
+                "DiniBayramCalismaVar": int(secim.get("DiniBayramCalismaVar", 0)),
                 "updated_at": _simdi(),
             }
             if ayar:
@@ -918,6 +952,7 @@ class NobetVardiyaPage(QWidget):
                     "FmMaxSaat": self._spn_fm_max.value(),
                     "MaxGunlukSureDakika": (
                         1440 if self._spn_max_gun.value() >= 2 else 720),
+                    "ArdisikGunIzinli": 1 if self._chk_ardisik.isChecked() else 0,
                     "created_at": _simdi(),
                     **veri,
                 })

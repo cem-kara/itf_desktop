@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.logger import logger
+from ui.styles.icons import IconRenderer, IconColors
 
 
 # ══════════════════════════════════════════════════════════════
@@ -161,9 +162,11 @@ class NobetBirimYonetimPage(QWidget):
         hdr.addWidget(aciklama)
         hdr.addStretch()
 
-        self._btn_yeni = QPushButton("+ Yeni Birim")
+        self._btn_yeni = QPushButton("Yeni Birim")
         self._btn_yeni.setProperty("style-role", "action")
         self._btn_yeni.setFixedWidth(130)
+        IconRenderer.set_button_icon(
+            self._btn_yeni, "plus", color=IconColors.PRIMARY, size=14)
         self._btn_yeni.clicked.connect(self._yeni)
         hdr.addWidget(self._btn_yeni)
         lay.addLayout(hdr)
@@ -198,21 +201,25 @@ class NobetBirimYonetimPage(QWidget):
         # Alt butonlar
         alt = QHBoxLayout()
 
-        self._btn_duzenle = QPushButton("✎  Düzenle")
+        self._btn_duzenle = QPushButton("Düzenle")
         self._btn_duzenle.setProperty("style-role", "secondary")
         self._btn_duzenle.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_duzenle, "edit", color=IconColors.MUTED, size=14)
         self._btn_duzenle.clicked.connect(self._duzenle)
         alt.addWidget(self._btn_duzenle)
 
-        self._btn_toggle = QPushButton("⏸  Pasife Al")
+        self._btn_toggle = QPushButton("Pasife Al")
         self._btn_toggle.setProperty("style-role", "secondary")
         self._btn_toggle.setEnabled(False)
         self._btn_toggle.clicked.connect(self._toggle)
         alt.addWidget(self._btn_toggle)
 
-        self._btn_sil = QPushButton("✕  Sil")
+        self._btn_sil = QPushButton("Sil")
         self._btn_sil.setProperty("style-role", "danger")
         self._btn_sil.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_sil, "trash", color=IconColors.DANGER, size=14)
         self._btn_sil.clicked.connect(self._sil)
         alt.addWidget(self._btn_sil)
 
@@ -292,7 +299,13 @@ class NobetBirimYonetimPage(QWidget):
             row   = self._tbl.currentRow()
             aktif = (self._tbl.item(row, 4).text() == "Aktif"
                      if self._tbl.item(row, 4) else True)
-            self._btn_toggle.setText("⏸  Pasife Al" if aktif else "▶  Aktife Al")
+            self._btn_toggle.setText("Pasife Al" if aktif else "Aktife Al")
+            IconRenderer.set_button_icon(
+                self._btn_toggle,
+                "x" if aktif else "check",
+                color=IconColors.MUTED if aktif else IconColors.SUCCESS,
+                size=14,
+            )
 
     # ─── Aksiyonlar ──────────────────────────────────────────
 

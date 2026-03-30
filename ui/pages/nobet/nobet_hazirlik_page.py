@@ -28,12 +28,10 @@ from ui.styles.icons import IconRenderer, IconColors
 _AY = ["","Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",
        "Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
 ONAY_DURUMLAR = {"Onaylandı","onaylandi","onaylı","approved"}
-HEDEF_GUNLUK  = {"normal":7.0,"emzirme":5.5,"sendika":6.2,
-                 "sua":0.0,"rapor":7.0,"yillik":7.0,"idari":7.0}
+HEDEF_GUNLUK  = {"normal":7.0,"emzirme":5.5,"sendika":6.2}
 HEDEF_TIPLER  = [
     ("normal","Normal  (7.0 s/gün)"),("emzirme","Emzirme (5.5 s/gün)"),
-    ("sendika","Sendika (6.2 s/gün)"),("sua","Şua İzni (0 s/gün)"),
-    ("rapor","Raporlu"),("yillik","Yıllık İzin"),("idari","İdari İzin"),
+    ("sendika","Sendika (6.2 s/gün)"),
 ]
 DEVIR_ESIK = 14.0
 
