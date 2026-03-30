@@ -1503,6 +1503,10 @@ class NobetYonetimPage(QWidget):
     def _grup_sablon(self):
         """Sık kullanılan şablonlardan hızlı grup + vardiya oluştur."""
         sablonlar = {
+            "24 Saat Nöbet": [
+                ("Gündüz Vardiyası", "08:00", "20:00", 720, "ana"),
+                ("Gece Vardiyası",   "20:00", "08:00", 720, "ana"),
+            ],
             "Gündüz / Gece (2 vardiya)": [
                 ("Gündüz Vardiyası", "08:00", "20:00", 720, "ana"),
                 ("Gece Vardiyası",   "20:00", "08:00", 720, "ana"),
@@ -1548,6 +1552,34 @@ class NobetYonetimPage(QWidget):
                     "Aktif":    1,
                     "created_at": _simdi(),
                 })
+
+            rows = reg.get("NB_BirimAyar").get_all() or []
+            ayar = next(
+                (r for r in rows if str(r.get("BirimID", "")) == self._secili_birim_id),
+                None,
+            )
+            max_dk = 1440 if sablon_adi == "24 Saat Nöbet" else 720
+            veri = {
+                "MaxGunlukSureDakika": max_dk,
+                "updated_at": _simdi(),
+            }
+            if ayar:
+                reg.get("NB_BirimAyar").update(ayar["AyarID"], veri)
+            else:
+                reg.get("NB_BirimAyar").insert({
+                    "AyarID": _yeni_id(),
+                    "BirimID": self._secili_birim_id,
+                    "GunlukSlotSayisi": self._spn_slot.value(),
+                    "FmMaxSaat": self._spn_fm_max.value(),
+                    "ArdisikGunIzinli": 1 if self._chk_ardisik.isChecked() else 0,
+                    "HaftasonuCalismaVar": 1 if self._chk_hafta_sonu.isChecked() else 0,
+                    "ResmiTatilCalismaVar": 1 if self._chk_resmi_tatil.isChecked() else 0,
+                    "DiniBayramCalismaVar": 1 if self._chk_dini_bayram.isChecked() else 0,
+                    "created_at": _simdi(),
+                    **veri,
+                })
+
+            self._spn_max_gun.setValue(2 if max_dk >= 1440 else 1)
             self._gruplari_yukle(self._secili_birim_id)
         except Exception as e:
             QMessageBox.critical(self, "Hata", str(e))

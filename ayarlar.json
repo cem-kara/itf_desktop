@@ -35,10 +35,6 @@
         "icon": "calendar"
       },
       {
-        "baslik": "Personel Özeti",
-        "icon": "bar_chart"
-      },
-      {
         "baslik": "Raporlar",
         "icon": "file_text"
       },
@@ -97,6 +93,6 @@
         "implemented": true,
         "note": "Toplu veri içe aktarma işlemleri"
       }
-    ]    
+    ]
   }
 }

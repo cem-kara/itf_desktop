@@ -125,7 +125,8 @@ class NbMesaiService:
 
         Formül:
           CalisDakika    = Σ vardiya.SureDakika (aktif satırlar)
-          HedefDakika    = NB_PersonelTercih.HedefDakika || otomatik
+                    HedefDakika    = NB_PersonelTercih.HedefDakika (varsa, direkt)
+                                                     yoksa otomatik
                     BayramDakika   = resmi/dini bayram günlerinde çalışılan toplam dakika
                     FazlaDakika    = (CalisDakika − HedefDakika) + BayramDakika
           DevirDakika    = önceki ayın DevireGidenDakika
@@ -177,15 +178,43 @@ class NbMesaiService:
                 and int(r.get("Ay",  0)) == prev_ay
             }
 
-            # Personel tercih/hedef haritası
-            t_rows  = self._r.get("NB_PersonelTercih").get_all() or []
-            hedef_map: dict[str, int] = {
-                str(r.get("PersonelID", "")): int(r.get("HedefDakika", 0))
-                for r in t_rows
+            # Personel tercih/hedef haritası (aynı aydaki en güncel kayıt baz alınır)
+            t_rows = self._r.get("NB_PersonelTercih").get_all() or []
+            tercih_rows = [
+                r for r in t_rows
                 if str(r.get("BirimID", "")) == str(birim_id)
                 and int(r.get("Yil", 0)) == yil
-                and int(r.get("Ay",  0)) == ay
-                and r.get("HedefDakika") is not None
+                and int(r.get("Ay", 0)) == ay
+            ]
+            tercih_rows.sort(
+                key=lambda r: (
+                    str(r.get("updated_at", "")),
+                    str(r.get("created_at", "")),
+                    str(r.get("TercihID", "")),
+                )
+            )
+
+            hedef_map: dict[str, int] = {}
+            for r in tercih_rows:
+                pid = str(r.get("PersonelID", ""))
+                if not pid:
+                    continue
+                hedef_raw = r.get("HedefDakika")
+                if hedef_raw is None:
+                    continue
+                try:
+                    hedef_map[pid] = int(hedef_raw)
+                except (TypeError, ValueError):
+                    continue
+
+            # Birime aktif bağlı personeller (çalışma/tercih/devir kaydı olmasa da)
+            bp_rows = self._r.get("NB_BirimPersonel").get_all() or []
+            aktif_birim_pid = {
+                str(r.get("PersonelID", ""))
+                for r in bp_rows
+                if str(r.get("BirimID", "")) == str(birim_id)
+                and str(r.get("Aktif", 1)).strip() not in ("0", "False", "false")
+                and str(r.get("PersonelID", "")).strip()
             }
 
             # Mevcut hesap kayıtları (OdenenDakika korumak için)
@@ -202,26 +231,25 @@ class NbMesaiService:
             # Ödeme kuralı
             kural = self.gecerli_kural(f"{yil:04d}-{ay:02d}-01")
 
-            tum_pid = set(calisan.keys()) | set(devir_map.keys())
+            # Hedefi tanımlı veya birime aktif bağlı olup bu ay çalışması/deviri
+            # olmayan personel de fazla mesai listesinde görünmeli.
+            tum_pid = (
+                set(calisan.keys())
+                | set(devir_map.keys())
+                | set(hedef_map.keys())
+                | aktif_birim_pid
+            )
             sonuclar: list[dict] = []
 
             for pid in tum_pid:
                 calisan_dk = calisan.get(pid, 0)
 
-                # Hedef: NB_PersonelTercih'te elle girilmiş kayıt varsa
-                # onu kullan; yoksa izin düşülmüş otomatik hesap yap.
-                # NOT: tablodaki kayıt da izin düşülmüş olmalı.
-                # Güvenlik için her durumda _otomatik_hedef ile karşılaştır
-                # ve küçük olanı al (izin olan personel aleyhine olmasın).
-                hedef_otomatik = self._otomatik_hedef(pid, yil, ay, birim_id)
                 hedef_tercih   = hedef_map.get(pid)
                 if hedef_tercih is not None:
-                    # Tabloda kayıt var: izin düşülmüş otomatikten
-                    # büyükse otomatik kullan (izin dikkate alınmamışsa)
-                    hedef_dk = min(hedef_tercih, hedef_otomatik) \
-                               if hedef_otomatik > 0 else hedef_tercih
+                    # Kişiye ait ay hedefi açıkça girildiyse doğrudan kullan.
+                    hedef_dk = int(hedef_tercih)
                 else:
-                    hedef_dk = hedef_otomatik
+                    hedef_dk = self._otomatik_hedef(pid, yil, ay, birim_id)
 
                 bayram_dk = bayram_ekstra.get(pid, 0)
                 fazla_dk  = (calisan_dk - hedef_dk) + bayram_dk
@@ -460,14 +488,17 @@ class NbMesaiService:
         from calendar import monthrange
         from datetime import date, timedelta
         try:
+            onay_durumlari = {
+                "onaylandı", "onaylandi", "onaylı", "approved"
+            }
             rows   = self._r.get("Izin_Giris").get_all() or []
             ay_bas = f"{yil:04d}-{ay:02d}-01"
             ay_bit = f"{yil:04d}-{ay:02d}-{monthrange(yil, ay)[1]:02d}"
             sayi   = 0
             for r in rows:
+                durum = str(r.get("Durum", "")).strip().lower()
                 if (str(r.get("Personelid", "")) != str(personel_id)
-                        or str(r.get("Durum", "")).lower() not in
-                        ("Onaylandı", "onaylandi", "onaylı", "approved")):
+                        or durum not in onay_durumlari):
                     continue
                 bas = str(r.get("BaslamaTarihi", "") or "")
                 bit = str(r.get("BitisTarihi",   "") or "")

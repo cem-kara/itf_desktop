@@ -618,7 +618,7 @@ class DisAlanImportService:
                     kapasite_dk     = is_gunu * 8 * 60   # 8 saatlik iş günü
                     if toplam_islem_dk > kapasite_dk:
                         hatalar.append(
-                            f"K1 FİZİKSEL İMKÂNSIZ: {vaka_k1} vaka × {ort_sure_k1} dk = "
+                            f"K1 FİZİKSEL İMKNSIZ: {vaka_k1} vaka × {ort_sure_k1} dk = "
                             f"{toplam_islem_dk} dk > {kapasite_dk} dk ({is_gunu} iş günü × 8 saat)"
                         )
 

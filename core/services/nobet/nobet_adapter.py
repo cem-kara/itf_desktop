@@ -136,6 +136,62 @@ class NobetAdapter:
     def plan_iptal(self, satir_id: str) -> SonucYonetici:
         return self.plan.satir_iptal(satir_id)
 
+    def plan_degistir(self, satir_id: str,
+                     yeni_personel_id: str,
+                     neden: str = "",
+                     olusturan_id: str = "") -> SonucYonetici:
+        return self.plan.satir_degistir(
+            eski_satir_id=satir_id,
+            yeni_personel_id=yeni_personel_id,
+            neden=neden,
+            olusturan_id=olusturan_id,
+        )
+
+    def gun_gecmisi_getir(self, yil: int, ay: int,
+                          birim: Optional[str],
+                          tarih: str) -> SonucYonetici:
+        try:
+            if not birim:
+                return SonucYonetici.tamam(veri=[])
+            bid = self._birim_id_coz(birim)
+            if not bid:
+                return SonucYonetici.tamam(veri=[])
+            plan = self.plan.get_plan(bid, yil, ay)
+            if not plan:
+                return SonucYonetici.tamam(veri=[])
+
+            sonuc = self.plan.get_satirlar(plan["PlanID"], sadece_aktif=False)
+            if not sonuc.basarili:
+                return sonuc
+
+            v_rows = self._r.get("NB_Vardiya").get_all() or []
+            v_map = {v["VardiyaID"]: dict(v) for v in v_rows}
+            p_rows = self._r.get("Personel").get_all() or []
+            p_map = {str(p.get("KimlikNo", "")): p.get("AdSoyad", "") for p in p_rows}
+
+            satirlar = []
+            for s in (sonuc.veri or []):
+                if str(s.get("NobetTarihi", "")) != tarih:
+                    continue
+                v = v_map.get(s.get("VardiyaID"), {})
+                pid = str(s.get("PersonelID", ""))
+                satirlar.append({
+                    **s,
+                    "AdSoyad": s.get("AdSoyad") or p_map.get(pid, pid),
+                    "VardiyaAdi": v.get("VardiyaAdi", ""),
+                    "BasSaat": v.get("BasSaat", ""),
+                    "BitSaat": v.get("BitSaat", ""),
+                })
+
+            satirlar.sort(key=lambda r: (
+                str(r.get("created_at", "")),
+                str(r.get("updated_at", "")),
+                str(r.get("SatirID", "")),
+            ))
+            return SonucYonetici.tamam(veri=satirlar)
+        except Exception as e:
+            return SonucYonetici.hata(e, "NobetAdapter.gun_gecmisi_getir")
+
     def taslak_temizle(self, yil: int, ay: int,
                        birim: Optional[str] = None) -> SonucYonetici:
         if not birim:

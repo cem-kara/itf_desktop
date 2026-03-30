@@ -390,6 +390,7 @@ class NbVardiyaService:
             "tam_gun_24h": {
                 "GrupAdi": "24 Saat Nöbet",
                 "GrupTuru": "zorunlu",
+                "MaxGunlukSureDakika": 1440,
                 "vardiyalar": [
                     {"VardiyaAdi": "Gündüz", "BasSaat": "08:00",
                      "BitSaat": "20:00", "Rol": "ana", "MinPersonel": 1, "Sira": 1},
@@ -400,6 +401,7 @@ class NbVardiyaService:
             "sadece_gunduz_12h": {
                 "GrupAdi": "Gündüz Nöbet",
                 "GrupTuru": "zorunlu",
+                "MaxGunlukSureDakika": 720,
                 "vardiyalar": [
                     {"VardiyaAdi": "Gündüz", "BasSaat": "08:00",
                      "BitSaat": "20:00", "Rol": "ana", "MinPersonel": 1, "Sira": 1},
@@ -408,6 +410,7 @@ class NbVardiyaService:
             "uzatilmis_gunduz": {
                 "GrupAdi": "Uzatılmış Gündüz",
                 "GrupTuru": "zorunlu",
+                "MaxGunlukSureDakika": 720,
                 "vardiyalar": [
                     {"VardiyaAdi": "Gündüz",      "BasSaat": "08:00",
                      "BitSaat": "20:00", "Rol": "ana",      "MinPersonel": 1, "Sira": 1},
@@ -418,6 +421,7 @@ class NbVardiyaService:
             "uc_vardiya_8h": {
                 "GrupAdi": "3 Vardiya",
                 "GrupTuru": "zorunlu",
+                "MaxGunlukSureDakika": 720,
                 "vardiyalar": [
                     {"VardiyaAdi": "Sabah",  "BasSaat": "08:00",
                      "BitSaat": "16:00", "Rol": "ana", "MinPersonel": 1, "Sira": 1},
@@ -436,9 +440,41 @@ class NbVardiyaService:
                     f"Geçerli: {', '.join(SABLONLAR)}"))
 
         s = SABLONLAR[sablon]
-        return self.grup_ekle(
+        sonuc = self.grup_ekle(
             birim_id=birim_id,
             grup_adi=s["GrupAdi"],
             grup_turu=s["GrupTuru"],
             vardiyalar=s["vardiyalar"],
         )
+        if not sonuc.basarili:
+            return sonuc
+
+        try:
+            rows = self._r.get("NB_BirimAyar").get_all() or []
+            ayar = next(
+                (r for r in rows if str(r.get("BirimID", "")) == str(birim_id)),
+                None,
+            )
+            veri = {
+                "MaxGunlukSureDakika": int(s.get("MaxGunlukSureDakika", 720)),
+                "updated_at": _simdi(),
+            }
+            if ayar:
+                self._r.get("NB_BirimAyar").update(ayar["AyarID"], veri)
+            else:
+                self._r.get("NB_BirimAyar").insert({
+                    "AyarID": _yeni_id(),
+                    "BirimID": str(birim_id),
+                    "GunlukSlotSayisi": 4,
+                    "FmMaxSaat": 60,
+                    "ArdisikGunIzinli": 0,
+                    "HaftasonuCalismaVar": 1,
+                    "ResmiTatilCalismaVar": 1,
+                    "DiniBayramCalismaVar": 0,
+                    "created_at": _simdi(),
+                    **veri,
+                })
+        except Exception as e:
+            logger.warning(f"Şablon birim ayarı kaydedilemedi: {e}")
+
+        return sonuc

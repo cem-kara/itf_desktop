@@ -20,7 +20,7 @@ from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QFrame, QLabel,
     QPushButton, QComboBox, QScrollArea, QGridLayout,
-    QSizePolicy, QMessageBox,
+    QSizePolicy, QMessageBox, QLineEdit,
 )
 from core.di import get_nobet_service
 from core.logger import logger
@@ -44,19 +44,32 @@ class _Hucre(QFrame):
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)
+        ust = QWidget()
+        ust_l = QHBoxLayout(ust)
+        ust_l.setContentsMargins(0, 0, 0, 0)
+        ust_l.setSpacing(4)
         self._lbl = QLabel()
         self._lbl.setStyleSheet("font-size:11px;font-weight:600;")
-        lay.addWidget(self._lbl)
+        self._revizyon_badge = QLabel("REV")
+        self._revizyon_badge.setVisible(False)
+        self._revizyon_badge.setStyleSheet(
+            "font-size:9px;font-weight:700;color:#f8fafc;"
+            "background:#f59e0b;padding:1px 4px;border-radius:6px;"
+        )
+        ust_l.addWidget(self._lbl, 1)
+        ust_l.addWidget(self._revizyon_badge, 0, Qt.AlignmentFlag.AlignRight)
+        lay.addWidget(ust)
         self._alan = QWidget()
         al = QVBoxLayout(self._alan)
         al.setContentsMargins(0,0,0,0); al.setSpacing(0)
         lay.addWidget(self._alan, 1)
 
     def guncelle(self, nobetler, tatil=False, dini=False, secili=False,
-                 eksik_slot=False):
+                 eksik_slot=False, revizyon_var=False):
         self._nobetler = nobetler
         g, a = self.gun.day, self.gun.weekday()
         hf = a >= 5
+        self._revizyon_badge.setVisible(revizyon_var)
         if secili:
             bg = "rgba(0,180,216,0.12)"
         elif dini:
@@ -129,9 +142,11 @@ class NobetPlanPage(QWidget):
         self._tatil:      set[str]        = set()
         self._dini:       set[str]        = set()
         self._eksik_slot_gunleri: set[str] = set()
+        self._revizyon_gunleri: set[str] = set()
         self._hucreler:   dict[str,_Hucre]= {}
         self._secili_gun: Optional[date]  = None
         self._hazirlik_ok: bool           = False
+        self._secili_satir: Optional[dict] = None
         self._build()
 
     def _svc(self): return get_nobet_service(self._db)
@@ -152,10 +167,12 @@ class NobetPlanPage(QWidget):
         p = QFrame(); p.setFixedWidth(260)
         p.setProperty("bg-role","panel")
         lay = QVBoxLayout(p); lay.setContentsMargins(12,16,12,16); lay.setSpacing(10)
-        lay.addWidget(QLabel("Personel Nöbet Sayısı",
-                    styleSheet="font-weight:600;color:#c2d8ef;"))
+        lbl_baslik = QLabel("Personel Nöbet Dağılımı")
+        lbl_baslik.setProperty("style-role", "section-title")
+        lay.addWidget(lbl_baslik)
         self._lbl_sol_ozet = QLabel("—")
         self._lbl_sol_ozet.setProperty("style-role","stat-label")
+        self._lbl_sol_ozet.setProperty("color-role", "muted")
         lay.addWidget(self._lbl_sol_ozet)
         self._sol_sc = QScrollArea(); self._sol_sc.setWidgetResizable(True)
         self._sol_sc.setFrameShape(QFrame.Shape.NoFrame)
@@ -186,11 +203,13 @@ class NobetPlanPage(QWidget):
         return w
 
     def _build_sag(self) -> QFrame:
-        p = QFrame(); p.setFixedWidth(300)
+        p = QFrame(); p.setFixedWidth(360)
         p.setProperty("bg-role","panel")
-        lay = QVBoxLayout(p); lay.setContentsMargins(12,16,12,16); lay.setSpacing(10)
+        lay = QVBoxLayout(p); lay.setContentsMargins(14,16,14,16); lay.setSpacing(10)
         hdr = QHBoxLayout()
-        hdr.addWidget(QLabel("Manuel Nöbet", styleSheet="font-weight:600;color:#c2d8ef;"))
+        lbl_hdr = QLabel("Plan Revizyonu")
+        lbl_hdr.setProperty("style-role", "section-title")
+        hdr.addWidget(lbl_hdr)
         hdr.addStretch()
         kapat = QPushButton(""); kapat.setFixedSize(24,24)
         kapat.setProperty("style-role","secondary")
@@ -198,21 +217,63 @@ class NobetPlanPage(QWidget):
             kapat, "x", color=IconColors.MUTED, size=12)
         kapat.clicked.connect(lambda: p.setVisible(False))
         hdr.addWidget(kapat); lay.addLayout(hdr)
-        self._lbl_m_gun = QLabel("—"); self._lbl_m_gun.setProperty("style-role","stat-label")
+        self._lbl_m_gun = QLabel("—")
+        self._lbl_m_gun.setProperty("style-role","stat-label")
+        self._lbl_m_gun.setProperty("color-role", "muted")
         lay.addWidget(self._lbl_m_gun)
-        lay.addWidget(QLabel("Mevcut nöbetler:", styleSheet="color:#6a90b4;font-size:11px;"))
+
+        lbl_mevcut = QLabel("Mevcut Nöbetler")
+        lbl_mevcut.setProperty("style-role", "section-title")
+        lay.addWidget(lbl_mevcut)
         self._ms = QScrollArea(); self._ms.setWidgetResizable(True)
-        self._ms.setFrameShape(QFrame.Shape.NoFrame); self._ms.setFixedHeight(200)
+        self._ms.setFrameShape(QFrame.Shape.NoFrame); self._ms.setFixedHeight(170)
+        self._ms.setProperty("bg-role", "elevated")
         self._mw = QWidget(); self._ml = QVBoxLayout(self._mw)
-        self._ml.setContentsMargins(0,0,0,0); self._ml.setSpacing(2)
+        self._ml.setContentsMargins(8,8,8,8); self._ml.setSpacing(6)
         self._ms.setWidget(self._mw); lay.addWidget(self._ms)
+
+        self._btn_form_ac = QPushButton("Ekle")
+        self._btn_form_ac.setProperty("style-role", "action")
+        self._btn_form_ac.setFixedHeight(28)
+        self._btn_form_ac.setVisible(False)
+        self._btn_form_ac.clicked.connect(lambda: self._revizyon_alani_goster(True))
+        lay.addWidget(self._btn_form_ac)
+
+        lbl_secili = QLabel("Seçili Revizyon Kaydı")
+        lbl_secili.setProperty("style-role", "section-title")
+        lay.addWidget(lbl_secili)
+        self._lbl_secili_satir = QLabel("Değiştirilecek kayıt seçilmedi")
+        self._lbl_secili_satir.setProperty("color-role", "muted")
+        self._lbl_secili_satir.setProperty("bg-role", "elevated")
+        self._lbl_secili_satir.setContentsMargins(10, 8, 10, 8)
+        self._lbl_secili_satir.setWordWrap(True)
+        lay.addWidget(self._lbl_secili_satir)
+
         sep = QFrame(); sep.setFrameShape(QFrame.Shape.HLine); lay.addWidget(sep)
-        lay.addWidget(QLabel("Yeni Ekle:", styleSheet="color:#8aabcf;font-size:11px;font-weight:600;"))
+
+        form_hdr = QHBoxLayout()
+        lbl_form = QLabel("Yeni Ekle / Revizyon")
+        lbl_form.setProperty("style-role", "section-title")
+        form_hdr.addWidget(lbl_form)
+        form_hdr.addStretch()
+
+        self._btn_form_toggle = QPushButton("Gizle")
+        self._btn_form_toggle.setProperty("style-role", "secondary")
+        self._btn_form_toggle.setFixedHeight(24)
+        self._btn_form_toggle.clicked.connect(self._revizyon_alani_toggle)
+        form_hdr.addWidget(self._btn_form_toggle)
+        lay.addLayout(form_hdr)
+
+        self._revizyon_form = QWidget()
+        form_lay = QVBoxLayout(self._revizyon_form)
+        form_lay.setContentsMargins(0, 0, 0, 0)
+        form_lay.setSpacing(8)
 
         def _row(l, w):
             h = QHBoxLayout(); lb = QLabel(l); lb.setFixedWidth(65)
-            lb.setStyleSheet("font-size:11px;color:#6a90b4;")
-            h.addWidget(lb); h.addWidget(w); lay.addLayout(h); return w
+            lb.setProperty("style-role", "stat-label")
+            lb.setProperty("color-role", "muted")
+            h.addWidget(lb); h.addWidget(w); form_lay.addLayout(h); return w
 
         self._cmb_mv = _row("Vardiya:", QComboBox())
         self._cmb_mp = _row("Personel:", QComboBox())
@@ -220,11 +281,50 @@ class NobetPlanPage(QWidget):
         self._cmb_mp.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         self._cmb_mt = _row("Tür:", QComboBox())
         for t in ["normal","fazla_mesai"]: self._cmb_mt.addItem(t)
-        self._btn_mekle = QPushButton("Kaydet")
+
+        self._txt_neden = _row("Neden:", QLineEdit())
+        self._txt_neden.setPlaceholderText("Örn: Raporlu personel yerine değişim")
+
+        self._btn_mekle = QPushButton("Yeni Ekle")
         self._btn_mekle.setProperty("style-role","action")
+        self._btn_mekle.setFixedHeight(32)
         self._btn_mekle.clicked.connect(self._manuel_kaydet)
-        lay.addWidget(self._btn_mekle); lay.addStretch()
+
+        self._btn_degistir = QPushButton("Nöbeti Değiştir")
+        self._btn_degistir.setProperty("style-role","warning")
+        self._btn_degistir.setFixedHeight(32)
+        self._btn_degistir.clicked.connect(self._nobet_degistir)
+
+        self._btn_secim_temizle = QPushButton("Seçimi Temizle")
+        self._btn_secim_temizle.setProperty("style-role","secondary")
+        self._btn_secim_temizle.setFixedHeight(30)
+        self._btn_secim_temizle.clicked.connect(self._degisim_secimini_temizle)
+
+        aksiyon = QHBoxLayout()
+        aksiyon.setSpacing(8)
+        aksiyon.addWidget(self._btn_mekle, 1)
+        aksiyon.addWidget(self._btn_degistir, 1)
+        form_lay.addLayout(aksiyon)
+        form_lay.addWidget(self._btn_secim_temizle)
+
+        lay.addWidget(self._revizyon_form)
+        self._revizyon_alani_goster(False)
+
+        sep2 = QFrame(); sep2.setFrameShape(QFrame.Shape.HLine); lay.addWidget(sep2)
+        self._btn_gecmis = QPushButton("Revizyon Geçmişi")
+        self._btn_gecmis.setProperty("style-role", "secondary")
+        self._btn_gecmis.setFixedHeight(30)
+        self._btn_gecmis.clicked.connect(self._revizyon_gecmisi_goster)
+        lay.addWidget(self._btn_gecmis)
+        lay.addStretch()
         return p
+
+    def _revizyon_alani_toggle(self):
+        self._revizyon_alani_goster(not self._revizyon_form.isVisible())
+
+    def _revizyon_alani_goster(self, gorunur: bool):
+        self._revizyon_form.setVisible(gorunur)
+        self._btn_form_toggle.setText("Gizle" if gorunur else "Göster")
 
     # ── Dışarıya Açık API ─────────────────────────────────────
 
@@ -282,13 +382,38 @@ class NobetPlanPage(QWidget):
                 self._onay_durumu = rows[0].get("Durum","yok") if rows else "yok"
             except Exception: self._onay_durumu = "yok"
             self._eksik_slot_gunleri = self._eksik_slot_gunlerini_hesapla(reg)
+            self._revizyon_gunleri = self._revizyon_gunlerini_hesapla()
         except Exception as e:
             logger.error(f"plan._yukle_data: {e}")
             self._plan_data = []; self._onay_durumu = "yok"
             self._eksik_slot_gunleri = set()
+            self._revizyon_gunleri = set()
         self._ciz()
         self._manuel_sec_yukle()
         self._sol_panel_guncelle()
+
+    def _revizyon_gunlerini_hesapla(self) -> set[str]:
+        if not self._birim_id:
+            return set()
+        try:
+            plan = self._svc().plan.get_plan(self._birim_id, self._yil, self._ay)
+            if not plan:
+                return set()
+            sonuc = self._svc().plan.get_satirlar(plan["PlanID"], sadece_aktif=False)
+            if not sonuc.basarili:
+                return set()
+
+            revizyon_gunleri: set[str] = set()
+            for satir in (sonuc.veri or []):
+                tarih = str(satir.get("NobetTarihi", "")).strip()
+                if not tarih:
+                    continue
+                if str(satir.get("Durum", "aktif")) != "aktif" or satir.get("OncekiSatirID"):
+                    revizyon_gunleri.add(tarih)
+            return revizyon_gunleri
+        except Exception as e:
+            logger.error(f"revizyon_gunlerini_hesapla: {e}")
+            return set()
 
     def _eksik_slot_gunlerini_hesapla(self, reg) -> set[str]:
         if self._onay_durumu == "yok" and not self._plan_data:
@@ -441,7 +566,8 @@ class NobetPlanPage(QWidget):
                 h.guncelle(nobet_map.get(t,[]),
                            tatil=(t in self._tatil), dini=(t in self._dini),
                            secili=(gun == self._secili_gun),
-                           eksik_slot=(t in self._eksik_slot_gunleri))
+                           eksik_slot=(t in self._eksik_slot_gunleri),
+                           revizyon_var=(t in self._revizyon_gunleri))
                 h.tiklandi.connect(self._gun_tiklandi)
                 self._tl.addWidget(h, row, col)
                 self._hucreler[t] = h
@@ -449,14 +575,21 @@ class NobetPlanPage(QWidget):
 
     def _gun_tiklandi(self, gun: date, nobetler: list):
         self._secili_gun = gun
+        self._secili_satir = None
+        secili_tarih = gun.isoformat()
         for t, h in self._hucreler.items():
             h.guncelle([n for n in self._plan_data
                         if str(n.get("NobetTarihi","")) == t],
                        tatil=(t in self._tatil), dini=(t in self._dini),
                        secili=(h.gun == self._secili_gun),
-                       eksik_slot=(t in self._eksik_slot_gunleri))
+                       eksik_slot=(t in self._eksik_slot_gunleri),
+                       revizyon_var=(t in self._revizyon_gunleri))
         self._sag.setVisible(True)
         self._lbl_m_gun.setText(f"{gun.day} {_AY[gun.month]} {gun.year}")
+        self._degisim_secimini_temizle()
+        bos_veya_eksik = (len(nobetler) == 0) or (secili_tarih in self._eksik_slot_gunleri)
+        self._btn_form_ac.setVisible(bos_veya_eksik)
+        self._revizyon_alani_goster(False)
         while self._ml.count():
             w = self._ml.takeAt(0).widget()
             if w: w.deleteLater()
@@ -465,15 +598,71 @@ class NobetPlanPage(QWidget):
             vas = n.get("VardiyaAdi",""); sid = str(n.get("SatirID",""))
             rw = QWidget(); rl = QHBoxLayout(rw); rl.setContentsMargins(0,0,0,0)
             lb = QLabel(f"{ad}  {vas}"); lb.setStyleSheet("font-size:11px;")
+            bd = QPushButton("Değiştir")
+            bd.setProperty("style-role", "secondary")
+            bd.setFixedHeight(20)
+            bd.clicked.connect(lambda _, satir=dict(n): self._degisim_sec(satir))
             bs = QPushButton(""); bs.setFixedSize(18,18)
             bs.setProperty("style-role","danger")
             IconRenderer.set_button_icon(
                 bs, "x", color=IconColors.DANGER, size=11)
             bs.clicked.connect(lambda _,s=sid: self._nobet_sil(s))
-            rl.addWidget(lb,1); rl.addWidget(bs); self._ml.addWidget(rw)
+            rl.addWidget(lb,1); rl.addWidget(bd); rl.addWidget(bs); self._ml.addWidget(rw)
         if not nobetler:
             self._ml.addWidget(QLabel("Nöbet yok",
                 styleSheet="color:#6a90b4;font-size:11px;"))
+
+    def _degisim_sec(self, satir: dict):
+        self._secili_satir = dict(satir)
+        self._revizyon_alani_goster(True)
+        ad = str(satir.get("AdSoyad") or satir.get("PersonelID", ""))
+        vardiya = str(satir.get("VardiyaAdi", ""))
+        self._lbl_secili_satir.setText(
+            f"Seçili kayıt: {ad} / {vardiya} değiştirilecek"
+        )
+        idx_v = self._cmb_mv.findData(satir.get("VardiyaID", ""))
+        if idx_v >= 0:
+            self._cmb_mv.setCurrentIndex(idx_v)
+
+    def _degisim_secimini_temizle(self):
+        self._secili_satir = None
+        self._lbl_secili_satir.setText("Değiştirilecek kayıt seçilmedi")
+
+    def _revizyon_gecmisi_goster(self):
+        if not self._secili_gun:
+            QMessageBox.information(self, "Revizyon Geçmişi", "Önce takvimden bir gün seçin.")
+            return
+        try:
+            tarih = self._secili_gun.isoformat()
+            sonuc = self._svc().gun_gecmisi_getir(
+                self._yil, self._ay, self._birim_id, tarih)
+            if not sonuc.basarili:
+                QMessageBox.critical(self, "Hata", str(sonuc.mesaj or sonuc.hata))
+                return
+
+            gecmis = [
+                r for r in (sonuc.veri or [])
+                if str(r.get("Durum", "")) != "aktif" or r.get("OncekiSatirID")
+            ]
+            if not gecmis:
+                QMessageBox.information(self, "Revizyon Geçmişi", "Bu gün için revizyon geçmişi yok.")
+                return
+
+            satirlar = []
+            for satir in gecmis:
+                durum = str(satir.get("Durum", "aktif"))
+                ad = str(satir.get("AdSoyad") or satir.get("PersonelID", ""))
+                vardiya = str(satir.get("VardiyaAdi", ""))
+                notlar = str(satir.get("Notlar", "") or "")
+                metin = f"- {ad} | {vardiya} | {durum}"
+                if notlar:
+                    metin += f" | Not: {notlar}"
+                satirlar.append(metin)
+
+            QMessageBox.information(self, "Revizyon Geçmişi", "\n".join(satirlar))
+        except Exception as e:
+            logger.error(f"revizyon_gecmisi_goster: {e}")
+            QMessageBox.critical(self, "Hata", str(e))
 
     # ── Manuel Panel ──────────────────────────────────────────
 
@@ -504,9 +693,11 @@ class NobetPlanPage(QWidget):
                 "VardiyaID": vid, "PersonelID": pid,
                 "NobetTarihi": self._secili_gun.isoformat(),
                 "NobetTuru": self._cmb_mt.currentText(),
+                "Notlar": self._txt_neden.text().strip(),
             }
             s = self._svc().plan_ekle(veri)
             if s.basarili:
+                self._txt_neden.clear()
                 self._yukle_data()
                 return
 
@@ -535,6 +726,7 @@ class NobetPlanPage(QWidget):
                     veri["KisitAtla"] = True
                     s2 = self._svc().plan_ekle(veri)
                     if s2.basarili:
+                        self._txt_neden.clear()
                         self._yukle_data()
                         return
                     msg2 = str(
@@ -547,6 +739,38 @@ class NobetPlanPage(QWidget):
 
             QMessageBox.critical(self,"Hata",hata_msg)
         except Exception as e: QMessageBox.critical(self,"Hata",str(e))
+
+    def _nobet_degistir(self):
+        if not self._secili_satir:
+            QMessageBox.warning(self, "Uyarı", "Önce değiştirilecek nöbet kaydını seçin.")
+            return
+        yeni_pid = self._cmb_mp.currentData()
+        if not yeni_pid:
+            QMessageBox.warning(self, "Uyarı", "Yeni personeli seçin.")
+            return
+        if str(yeni_pid) == str(self._secili_satir.get("PersonelID", "")):
+            QMessageBox.warning(self, "Uyarı", "Seçili nöbet zaten bu personele ait.")
+            return
+        try:
+            sonuc = self._svc().plan_degistir(
+                satir_id=str(self._secili_satir.get("SatirID", "")),
+                yeni_personel_id=str(yeni_pid),
+                neden=self._txt_neden.text().strip(),
+            )
+            if sonuc.basarili:
+                self._txt_neden.clear()
+                self._yukle_data()
+                if self._secili_gun:
+                    secili_tarih = self._secili_gun.isoformat()
+                    gun_satirlari = [
+                        n for n in self._plan_data
+                        if str(n.get("NobetTarihi", "")) == secili_tarih
+                    ]
+                    self._gun_tiklandi(self._secili_gun, gun_satirlari)
+                return
+            QMessageBox.critical(self, "Hata", str(sonuc.mesaj or sonuc.hata))
+        except Exception as e:
+            QMessageBox.critical(self, "Hata", str(e))
 
     def _nobet_sil(self, satir_id: str):
         if not satir_id: return

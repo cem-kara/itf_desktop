@@ -6,9 +6,9 @@ Kurallar:
   - Bir personel aynı günde sadece 1 gruba girebilir
   - Dün nöbetteyse bugün atanamaz (üst üste yasak)
   - Slot doldurulamazsa boş bırak, uyarı ver
-  - Sıralama: az saat Ã¢â€ â€™ az nöbet sayısı Ã¢â€ â€™ az hafta sonu nöbeti
-  - Tolerans: Ã‚Â±1 nöbet, hedeften büyük olamaz
-  - Hedef: (ay_iş_günü - izin_iş_günü) Ãƒ= 420 dk  [Excel NETWORKDAYS mantığı]
+  - Sıralama: az saat ââ€ ' az nöbet sayısı ââ€ ' az hafta sonu nöbeti
+  - Tolerans: ±1 nöbet, hedeften büyük olamaz
+  - Hedef: (ay_iş_günü - izin_iş_günü) Ï= 420 dk  [Excel NETWORKDAYS mantığı]
 """
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ def _yeni_id() -> str:
 # ──────────────────────────────────────────────────────────────
 
 ONAY_DURUMLAR    = {"Onaylandı", "onaylandi", "onaylı", "approved"}
-GUNLUK_DK        = 420   # 7 saat Ã— 60 dk
+GUNLUK_DK        = 420   # 7 saat Ï— 60 dk
 VARSAYILAN_SLOT  = 4
 HAFTASONU        = {5, 6}   # Cumartesi, Pazar
 
@@ -56,7 +56,7 @@ class NbAlgoritma:
     def _networkdays(bas: date, bit: date,
                      tatiller: set[str]) -> int:
         """
-        Excel TAMİŞGÃœNÃœ.ULUSL karşılığı.
+        Excel TAMİŞGÜNÜ.ULUSL karşılığı.
         bas-bit arasındaki (her ikisi dahil) hafta iÇi iş günlerini sayar.
         tatiller: 'YYYY-MM-DD' string seti.
         """
@@ -151,9 +151,9 @@ class NbAlgoritma:
             logger.warning(f"_izin_map: {e}")
         return sonuc
 
-    # Hedef tipi Ã¢â€ â€™ günlük Çalışma saati
-    # Emzirme: günde 1.5 saat erken Çıkış Ã¢â€ â€™ 7 - 1.5 = 5.5s
-    # Sendika: günde 0.8 saat erken Çıkış Ã¢â€ â€™ 7 - 0.8 = 6.2s
+    # Hedef tipi ââ€ ' günlük Çalışma saati
+    # Emzirme: günde 1.5 saat erken Çıkış ââ€ ' 7 - 1.5 = 5.5s
+    # Sendika: günde 0.8 saat erken Çıkış ââ€ ' 7 - 0.8 = 6.2s
     _GUNLUK_SAAT = {
         "normal":    7.0,
         "emzirme":   5.5,
@@ -170,7 +170,7 @@ class NbAlgoritma:
         Excel formülü:
           1. ay_is   = NETWORKDAYS(ay_bas, ay_bit, tatiller)
           2. izin_is = NETWORKDAYS(max(izin_bas,ay_bas), min(izin_bit,ay_bit), tatiller)
-          3. hedef   = (ay_is - izin_is) Ãƒ= günlük_dk
+          3. hedef   = (ay_is - izin_is) Ï= günlük_dk
 
         Günlük dakika: HedefTipi'ne göre değişir
           Normal:   420 dk (7 saat)
@@ -219,7 +219,7 @@ class NbAlgoritma:
                 f"[Hedef] {personel_id} ({hedef_tipi}): "
                 f"ay_is={ay_is} izin_is={izin_is} "
                 f"net={ay_is-izin_is} * {gunluk_saat}s "
-                f"Ã¢â€ â€™ {hedef//60}s")
+                f"ââ€ ' {hedef//60}s")
             return hedef
         except Exception as e:
             logger.warning(f"_hedef_hesapla({personel_id}): {e}")
@@ -352,7 +352,7 @@ class NbAlgoritma:
 
         # ── Personel havuzları ────────────────────────────────
         try:
-            # NB_BirimPersonel Ã¢â€ â€™ GorevYeri fallback
+            # NB_BirimPersonel ââ€ ' GorevYeri fallback
             pid_listesi = []
             try:
                 bp_rows = self._r.get("NB_BirimPersonel").get_all() or []
@@ -411,7 +411,7 @@ class NbAlgoritma:
         for pid in personeller + gonulluler:
             hedef_map[pid] = self._hedef_hesapla(pid, yil, ay)
             logger.info(
-                f"[Hedef] {pid} Ã¢â€ â€™ {hedef_map[pid]}dk "
+                f"[Hedef] {pid} ââ€ ' {hedef_map[pid]}dk "
                 f"= {hedef_map[pid]//60}s")
 
         # ── İzin, tatil setleri ───────────────────────────────
@@ -496,7 +496,7 @@ class NbAlgoritma:
         Ana giriş noktası.
         1. Hazırlık (_hazirla)
         2. SayaÇlar
-        3. Gün döngüsü Ã¢â€ â€™ slot döngüsü Ã¢â€ â€™ grup döngüsü Ã¢â€ â€™ kişi seÇ
+        3. Gün döngüsü ââ€ ' slot döngüsü ââ€ ' grup döngüsü ââ€ ' kişi seÇ
         """
         try:
             h = self._hazirla(birim_id, yil, ay)
@@ -522,7 +522,7 @@ class NbAlgoritma:
             ayar        = h["ayar"]
 
             # ── SayaÇlar ──────────────────────────────────────
-            # Sıralama: az saat Ã¢â€ â€™ az nöbet Ã¢â€ â€™ az hafta sonu
+            # Sıralama: az saat ââ€ ' az nöbet ââ€ ' az hafta sonu
             saat_sayac: dict[str, int] = {p: 0 for p in personeller + gonulluler}
             nobet_sayac: dict[str, int] = {p: 0 for p in personeller + gonulluler}
             hs_sayac:   dict[str, int] = {p: 0 for p in personeller + gonulluler}
@@ -558,22 +558,22 @@ class NbAlgoritma:
             }
 
             # Birim bazlı günlük max süre = NB_BirimAyar.MaxGunlukSureDakika
-            # 720dk = 12s Ã¢â€ â€™ personel günde sadece 1 vardiya (gündüz VEYA gece)
-            # 1440dk = 24s Ã¢â€ â€™ personel aynı günde 2 vardiya tutabilir (gündüz + gece)
+            # 720dk = 12s ââ€ ' personel günde sadece 1 vardiya (gündüz VEYA gece)
+            # 1440dk = 24s ââ€ ' personel aynı günde 2 vardiya tutabilir (gündüz + gece)
             BIRIM_MAX_GUN_DK = int(ayar.get("MaxGunlukSureDakika", 720))
             logger.info(
                 f"[Birim] MaxGunlukSureDakika={BIRIM_MAX_GUN_DK}dk "
                 f"({'24 saat = gündüz+gece izinli' if BIRIM_MAX_GUN_DK >= 1440 else '12 saat = tek vardiya'})"
             )
 
-            # Tolerans: Â±7 saat (420 dk) — hedefi Çok aşmamak iÇin sabit
+            # Tolerans: ±7 saat (420 dk) — hedefi Çok aşmamak iÇin sabit
             _tolerans_dk = 7 * 60
 
             def _tolerans(pid: str) -> int:
-                """Kişiye özel tolerans = Â±7 saat, hedeften büyük olamaz."""
+                """Kişiye özel tolerans = ±7 saat, hedeften büyük olamaz."""
                 return min(_tolerans_dk, hedef_map.get(pid, 0))
 
-            # Sıralama: az saat Ã¢â€ â€™ az nöbet sayısı Ã¢â€ â€™ az hafta sonu
+            # Sıralama: az saat ââ€ ' az nöbet sayısı ââ€ ' az hafta sonu
             def _sirala(pid_listesi: list[str]) -> list[str]:
                 return sorted(pid_listesi, key=lambda p: (
                     bakiye_sayac[p],
@@ -585,7 +585,8 @@ class NbAlgoritma:
             # Atanabilirlik kontrolü = zorunlu personel
             def _atanabilir(pid: str, tarih_str: str,
                             gun: date, grup_id: str = "",
-                            eklenecek_dk: int = 0) -> bool:
+                            eklenecek_dk: int = 0,
+                            gunluk_limit_dk: int | None = None) -> bool:
                 # İzin günü
                 if tarih_str in izin_map.get(pid, set()):
                     return False
@@ -609,7 +610,8 @@ class NbAlgoritma:
                     return False
                 # ── Birim bazlı günlük max süre kontrolü ─────
                 gun_toplam = gun_sure_sayac[pid].get(tarih_str, 0)
-                if gun_toplam + eklenecek_dk > BIRIM_MAX_GUN_DK:
+                limit_dk = gunluk_limit_dk or BIRIM_MAX_GUN_DK
+                if gun_toplam + eklenecek_dk > limit_dk:
                     return False
                 return True
 
@@ -669,14 +671,154 @@ class NbAlgoritma:
                 son_nobet[pid] = (tarih_str, grup_id)
                 eklenen.append(pid)
 
+            vardiya_meta: dict[str, tuple[int, str]] = {}
+            for grup in gruplar:
+                g_id = str(grup.get("GrupID", ""))
+                for v in (grup.get("ana") or []):
+                    v_id = str(v.get("VardiyaID", ""))
+                    if not v_id:
+                        continue
+                    vardiya_meta[v_id] = (int(v.get("SureDakika", 0)), g_id)
+
+            def _minimum_atama_dengele() -> None:
+                """Hedefi olan zorunlu personelin sıfır nöbet kalmasını önlemeye çalış."""
+                satirlar = [
+                    r for r in (self._r.get("NB_PlanSatir").get_all() or [])
+                    if str(r.get("PlanID", "")) == str(plan_id)
+                    and str(r.get("Durum", "aktif")) == "aktif"
+                ]
+                if not satirlar:
+                    return
+
+                tasinmis_satirlar: set[str] = set()
+
+                def _eksik_pidler() -> list[str]:
+                    return [
+                        pid for pid in personeller
+                        if hedef_map.get(pid, 0) > 0 and nobet_sayac.get(pid, 0) == 0
+                    ]
+
+                # 1. faz: donor en az 2 nöbetli olsun.
+                # 2. faz: hâlâ eksik varsa donor 1 nöbetli de olabilir.
+                for donor_min_nobet in (2, 1):
+                    while True:
+                        eksik_pidler = _eksik_pidler()
+                        if not eksik_pidler:
+                            return
+
+                        degisim_oldu = False
+                        for hedef_pid in eksik_pidler:
+                            adaylar = sorted(
+                                satirlar,
+                                key=lambda r: (
+                                    nobet_sayac.get(str(r.get("PersonelID", "")), 0),
+                                    saat_sayac.get(str(r.get("PersonelID", "")), 0),
+                                ),
+                                reverse=True,
+                            )
+                            for satir in adaylar:
+                                donor_pid = str(satir.get("PersonelID", ""))
+                                vardiya_id = str(satir.get("VardiyaID", ""))
+                                tarih_str = str(satir.get("NobetTarihi", ""))
+                                satir_id = str(satir.get("SatirID", ""))
+
+                                if not donor_pid or donor_pid == hedef_pid:
+                                    continue
+                                if not vardiya_id or not tarih_str or not satir_id:
+                                    continue
+                                if satir_id in tasinmis_satirlar:
+                                    continue
+                                if nobet_sayac.get(donor_pid, 0) < donor_min_nobet:
+                                    continue
+
+                                meta = vardiya_meta.get(vardiya_id)
+                                if not meta:
+                                    continue
+                                v_dk, grup_id = meta
+
+                                try:
+                                    gun = date.fromisoformat(tarih_str)
+                                except Exception:
+                                    continue
+
+                                donor_alt_limit = max(
+                                    0,
+                                    hedef_map.get(donor_pid, 0) - _tolerans(donor_pid),
+                                )
+                                donor_sonrasi = saat_sayac.get(donor_pid, 0) - v_dk
+                                if donor_sonrasi < donor_alt_limit:
+                                    # 2. fazda (donor_min_nobet=1),
+                                    # sıfır nöbetliyi kurtarmak için bir vardiya esneme izni ver.
+                                    if donor_min_nobet >= 2:
+                                        continue
+                                    relax_limit = max(0, donor_alt_limit - v_dk)
+                                    if donor_sonrasi < relax_limit:
+                                        continue
+                                    logger.info(
+                                        f"[Dengeleme/Esneme] donor={donor_pid} "
+                                        f"alt_limit={donor_alt_limit}dk -> {relax_limit}dk"
+                                    )
+
+                                if not _atanabilir(
+                                    hedef_pid,
+                                    tarih_str,
+                                    gun,
+                                    grup_id=f"{grup_id}_{vardiya_id}",
+                                    eklenecek_dk=v_dk,
+                                ):
+                                    continue
+
+                                self._r.get("NB_PlanSatir").update(satir_id, {
+                                    "PersonelID": hedef_pid,
+                                    "Kaynak": "algoritma_dengeleme",
+                                    "updated_at": _simdi(),
+                                })
+
+                                saat_sayac[donor_pid] = max(0, saat_sayac.get(donor_pid, 0) - v_dk)
+                                nobet_sayac[donor_pid] = max(0, nobet_sayac.get(donor_pid, 0) - 1)
+                                bakiye_sayac[donor_pid] = bakiye_sayac.get(donor_pid, 0) - v_dk
+                                gun_sure_sayac[donor_pid][tarih_str] = max(
+                                    0,
+                                    gun_sure_sayac[donor_pid].get(tarih_str, 0) - v_dk,
+                                )
+
+                                saat_sayac[hedef_pid] = saat_sayac.get(hedef_pid, 0) + v_dk
+                                nobet_sayac[hedef_pid] = nobet_sayac.get(hedef_pid, 0) + 1
+                                bakiye_sayac[hedef_pid] = bakiye_sayac.get(hedef_pid, 0) + v_dk
+                                gun_sure_sayac[hedef_pid][tarih_str] = (
+                                    gun_sure_sayac[hedef_pid].get(tarih_str, 0) + v_dk
+                                )
+
+                                if gun.weekday() in HAFTASONU:
+                                    hs_sayac[donor_pid] = max(0, hs_sayac.get(donor_pid, 0) - 1)
+                                    hs_sayac[hedef_pid] = hs_sayac.get(hedef_pid, 0) + 1
+
+                                son_nobet[hedef_pid] = (tarih_str, f"{grup_id}_{vardiya_id}")
+                                satir["PersonelID"] = hedef_pid
+                                tasinmis_satirlar.add(satir_id)
+                                degisim_oldu = True
+                                logger.info(
+                                    f"[Dengeleme] {hedef_pid} için {tarih_str} {vardiya_id} "
+                                    f"ataması {donor_pid} personelinden devralındı."
+                                )
+                                break
+
+                        if not degisim_oldu:
+                            break
+
+                for pid in _eksik_pidler():
+                    uyarilar.append(
+                        f"{pid} için minimum 1 nöbet dengelemesi yapılamadı"
+                    )
+
             # ── Gün döngüsü ───────────────────────────────────
             # Her slot iÇin slot_sayisi kadar atama yapılır.
             # Her grup iÇindeki her vardiya ayrı bağımsız slot.
-            # Yani: slot_sayisi Ãƒ= grup_vardiya_sayisi kadar kişi atanır.
+            # Yani: slot_sayisi Ï= grup_vardiya_sayisi kadar kişi atanır.
             #
             # Excel mantığı:
-            #   08:00-20:00 Ã¢â€ â€™ 4 slot Ã¢â€ â€™ 4 farklı kişi
-            #   20:00-08:00 Ã¢â€ â€™ 4 slot Ã¢â€ â€™ 4 farklı kişi
+            #   08:00-20:00 ââ€ ' 4 slot ââ€ ' 4 farklı kişi
+            #   20:00-08:00 ââ€ ' 4 slot ââ€ ' 4 farklı kişi
             # Bu yapıda "grup" sadece görsel başlık, her vardiya kendi slotu.
             ay_son = monthrange(yil, ay)[1]
             gunler = [date(yil, ay, g) for g in range(1, ay_son + 1)]
@@ -701,11 +843,20 @@ class NbAlgoritma:
                     for grup in gruplar:
                         grup_id = grup["GrupID"]
                         vardiyalar = grup["ana"]
+                        toplam_grup_dk = sum(
+                            int(v.get("SureDakika", 0)) for v in vardiyalar)
+                        grup_adi = str(grup.get("GrupAdi", "")).strip().lower()
+                        grup_24s_mod = (
+                            len(vardiyalar) > 1
+                            and toplam_grup_dk >= 1440
+                            and (
+                                BIRIM_MAX_GUN_DK >= 1440
+                                or "24 saat" in grup_adi
+                            )
+                        )
 
                         # ── 24s mod: aynı kişiyi grubun tüm vardiyalarına ata ──
-                        if BIRIM_MAX_GUN_DK >= 1440 and len(vardiyalar) > 1:
-                            toplam_grup_dk = sum(
-                                int(v.get("SureDakika", 0)) for v in vardiyalar)
+                        if grup_24s_mod:
                             atandi_24 = False
 
                             # Zorunlu personelden 24s tutabilecek biri var mı?
@@ -725,6 +876,10 @@ class NbAlgoritma:
                                         pid, tarih_str, gun,
                                         grup_id=f"{grup_id}_{v['VardiyaID']}",
                                         eklenecek_dk=ek_dk + v_dk,
+                                        gunluk_limit_dk=max(
+                                            BIRIM_MAX_GUN_DK,
+                                            toplam_grup_dk,
+                                        ),
                                     ):
                                         uygun = False
                                         break
@@ -772,7 +927,7 @@ class NbAlgoritma:
                             if atandi_24:
                                 continue  # Bu slot doldu, sıradaki slot'a geÇ
 
-                            # 24s atanamadı Ã¢â€ â€™ tek tek ata (aşağı düş)
+                            # 24s atanamadı ââ€ ' tek tek ata (aşağı düş)
 
                         # ── Tek vardiya modu (12s veya 24s bulunamadıysa) ──
                         for vardiya in vardiyalar:
@@ -810,7 +965,9 @@ class NbAlgoritma:
                                     f"'{vardiya.get('VardiyaAdi','')}' "
                                     f"doldurulamadı = boş")
 
-            # ── Ãƒâ€“zet ──────────────────────────────────────────
+            _minimum_atama_dengele()
+
+            # ── Ï–zet ──────────────────────────────────────────
             for pid in personeller + gonulluler:
                 dk  = saat_sayac[pid]
                 hdf = hedef_map[pid]

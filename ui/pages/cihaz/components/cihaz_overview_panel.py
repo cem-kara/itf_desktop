@@ -175,7 +175,7 @@ class CihazOverviewPanel(QWidget):
 
         
     def _goto_belgeler_tab(self):
-        """Belgeler sekmesine geçiş için callback. Ãœst widget'ta override edilebilir veya sinyal ile bağlanabilir."""
+        """Belgeler sekmesine geçiş için callback. Üst widget'ta override edilebilir veya sinyal ile bağlanabilir."""
         # Eğer üstte bir sekme yöneticisi varsa, burada uygun şekilde sekme değiştirilebilir.
         # Örneğin:
         # if hasattr(self.parent(), 'goto_belgeler_tab'):
@@ -320,7 +320,7 @@ class CihazOverviewPanel(QWidget):
             line.setText(path)
 
     def _ozet_kart(self, baslik: str, deger: str, renk: str) -> QFrame:
-        """Ãœst banttaki özet kart widget'ı."""
+        """Üst banttaki özet kart widget'ı."""
         f = QFrame()
         f.setStyleSheet(
             f"QFrame {{ border-left: 3px solid {renk}; "
@@ -413,7 +413,7 @@ class CihazOverviewPanel(QWidget):
         self._ozet_kartlari_guncelle()
 
     def _ozet_kartlari_guncelle(self):
-        """Ãœst banttaki özet kartları cihaz bazlı istatistiklerle doldurur."""
+        """Üst banttaki özet kartları cihaz bazlı istatistiklerle doldurur."""
         if not self.db or not self.cihaz_id:
             return
         try:
@@ -432,7 +432,7 @@ class CihazOverviewPanel(QWidget):
             try:
                 ariza_svc = _as(self.db)
                 arizalar = ariza_svc.get_ariza_listesi(self.cihaz_id).veri or []
-                acik = sum(1 for a in arizalar if str(a.get("Durum","")).strip() not in ("Kapalı","Ã‡özüldü"))
+                acik = sum(1 for a in arizalar if str(a.get("Durum","")).strip() not in ("Kapalı","Çözüldü"))
                 renk_a = "#ef4444" if acik > 0 else "#10b981"
                 self._ozet_guncelle("ariza", str(acik) if acik > 0 else "Yok", renk_a)
             except Exception:

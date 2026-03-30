@@ -312,15 +312,6 @@ class NobetMerkezPage(QWidget):
         hh.setContentsMargins(0,0,0,0)
         hh.setSpacing(8)
 
-        self._btn_tercih = QPushButton("Tercih Düzenle")
-        self._btn_tercih.setProperty("style-role","secondary")
-        self._btn_tercih.setFixedHeight(32)
-        self._btn_tercih.setEnabled(False)
-        IconRenderer.set_button_icon(
-            self._btn_tercih, "edit", color=IconColors.MUTED, size=14)
-        self._btn_tercih.clicked.connect(self._hazirlik.tercih_duzenle)
-        hh.addWidget(self._btn_tercih)
-
         self._btn_hazirlik_onayla = QPushButton("Hazırlığı Onayla")
         self._btn_hazirlik_onayla.setProperty("style-role","action")
         self._btn_hazirlik_onayla.setFixedHeight(32)
@@ -391,11 +382,6 @@ class NobetMerkezPage(QWidget):
         self._frm_plan_aks.setVisible(False)
 
         h.addStretch()
-
-        # Personel tercih seçim takibi (hazırlık tablosundaki seçim)
-        self._hazirlik._tbl.selectionModel().selectionChanged.connect(
-            lambda: self._btn_tercih.setEnabled(
-                self._hazirlik._tbl.currentRow() >= 0))
 
         return bar
 
@@ -634,6 +620,8 @@ class NobetMerkezPage(QWidget):
         except Exception:
             self._plan_onay_durumu = "yok"
 
+        revizyon_modu = self._plan_revizyonda_mi()
+
         d = {
             "yok":        ("",              ""),
             "taslak":     ("Taslak",        "#f59e0b"),
@@ -641,6 +629,8 @@ class NobetMerkezPage(QWidget):
             "yururlukte": ("Yürürlükte",    "#2ec98e"),
         }
         metin, renk = d.get(self._plan_onay_durumu, ("",""))
+        if revizyon_modu:
+            metin, renk = ("Revizyon Modu", "#f59e0b")
         self._lbl_plan_durum.setText(metin)
         self._lbl_plan_durum.setStyleSheet(
             f"font-size:11px;color:{renk};padding:0 8px;" if renk else "")
@@ -651,16 +641,25 @@ class NobetMerkezPage(QWidget):
             self._plan_onay_durumu == "taslak" and plan_var)
         self._btn_ogeri.setVisible(onaylanmis)
         self._btn_temizle.setEnabled(
-            self._plan_onay_durumu == "taslak")
+            self._plan_onay_durumu == "taslak" and not revizyon_modu)
+        self._btn_temizle.setToolTip(
+            ""
+            if self._btn_temizle.isEnabled()
+            else ("Revizyon modunda taslak temizleme kapalı"
+                  if revizyon_modu else "")
+        )
         self._oto_durum_guncelle()
 
     def _oto_durum_guncelle(self):
         onaylanmis = self._plan_onay_durumu in ("onaylandi","yururlukte")
-        aktif = self._hazirlik_onaylandi and not onaylanmis
+        revizyon_modu = self._plan_revizyonda_mi()
+        aktif = self._hazirlik_onaylandi and not onaylanmis and not revizyon_modu
         self._btn_oto.setEnabled(aktif)
         self._btn_oto.setToolTip(
             "" if aktif
-            else ("Önce 'Ön Hazırlık' onaylanmalıdır"
+            else ("Revizyon modunda otomatik plan kapalı"
+                  if revizyon_modu
+                  else "Önce 'Ön Hazırlık' onaylanmalıdır"
                   if not self._hazirlik_onaylandi
                   else "Plan onaylı, değiştirilemez"))
         # Uyarı kartı güncelle
@@ -671,6 +670,21 @@ class NobetMerkezPage(QWidget):
         self._kartlar["uyari"].setStyleSheet(
             f"font-size:18px;font-weight:bold;"
             f"color:{'#e85555' if uyari > 0 else '#2ec98e'};")
+
+    def _plan_revizyonda_mi(self) -> bool:
+        if not self._birim_id:
+            return False
+        try:
+            svc = self._plan._svc()
+            plan = svc.plan.get_plan(self._birim_id, self._yil, self._ay)
+            if not plan:
+                return False
+            return (
+                str(plan.get("Durum", "")) == "taslak"
+                and bool(str(plan.get("OnayTarihi", "")).strip())
+            )
+        except Exception:
+            return False
 
     # ──────────────────────────────────────────────────────────
     #  Hazırlık Onay Aksiyonları
@@ -798,6 +812,7 @@ class NobetMerkezPage(QWidget):
                 self._birim_id, self._yil, self._ay)
             if sonuc.basarili:
                 self._yukle()
+                QMessageBox.information(self, "Bilgi", sonuc.mesaj or "Taslak temizleme tamamlandı.")
             else:
                 QMessageBox.critical(self, "Hata", sonuc.mesaj)
         except Exception as e:
@@ -820,7 +835,9 @@ class NobetMerkezPage(QWidget):
     def _plan_onay_geri(self):
         if QMessageBox.question(
             self, "Onayı Geri Al",
-            "Plan onayı geri alınacak. Emin misiniz?",
+            "Plan taslak durumuna alınacak, mevcut nöbet satırları korunacak.\n"
+            "Bu mod sadece manuel revizyon içindir; otomatik plan ve taslak temizleme kapatılacak.\n"
+            "Devam edilsin mi?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
         ) != QMessageBox.StandardButton.Yes:
@@ -831,6 +848,7 @@ class NobetMerkezPage(QWidget):
                 self._birim_id, self._yil, self._ay)
             if sonuc.basarili:
                 self._yukle()
+                QMessageBox.information(self, "Revizyon Modu", sonuc.mesaj)
             else:
                 QMessageBox.critical(self, "Hata", sonuc.mesaj)
         except Exception as e:

@@ -170,33 +170,92 @@ class NbPlanService:
     def taslak_temizle(self, birim_id: str,
                        yil: int, ay: int) -> SonucYonetici:
         """
-        Taslak planın aktif satırlarını fiziksel olarak siler.
-        Onaylı satırlar dokunulmaz.
+        İlgili dönem/birimdeki tüm onaysız planların satırlarını siler.
+        Onaylı/yürürlükte planlara dokunmaz.
         """
         try:
-            plan = self.get_plan(birim_id, yil, ay)
-            if not plan:
-                return SonucYonetici.tamam("Temizlenecek plan yok", veri={"silinen": 0})
+            onayli_durumlar = {
+                "onaylandi", "onaylandı", "onaylı", "yururlukte", "yürürlükte"
+            }
 
-            if plan.get("Durum") in ("onaylandi", "yururlukte"):
+            plan_rows = self._r.get("NB_Plan").get_all() or []
+            donem_planlari = [
+                p for p in plan_rows
+                if str(p.get("BirimID", "")) == str(birim_id)
+                and int(p.get("Yil", 0)) == int(yil)
+                and int(p.get("Ay", 0)) == int(ay)
+            ]
+            if not donem_planlari:
+                return SonucYonetici.tamam(
+                    "Temizlenecek plan yok",
+                    veri={"silinen": 0, "silinenPlan": 0},
+                )
+
+            taslak_planlar = [
+                p for p in donem_planlari
+                if str(p.get("Durum", "taslak")).strip().lower() not in onayli_durumlar
+            ]
+            if not taslak_planlar:
+                return SonucYonetici.tamam(
+                    "Bu dönemde silinebilir taslak plan yok",
+                    veri={"silinen": 0, "silinenPlan": 0},
+                )
+
+            plan_id_set = {str(p.get("PlanID", "")) for p in taslak_planlar if p.get("PlanID")}
+            satir_rows = self._r.get("NB_PlanSatir").get_all() or []
+            mesai_rows = self._r.get("NB_MesaiHesap").get_all() or []
+
+            silinen_mesai = 0
+            for r in mesai_rows:
+                if str(r.get("PlanID", "")) in plan_id_set:
+                    hid = r.get("HesapID")
+                    if hid and self._r.get("NB_MesaiHesap").delete(hid):
+                        silinen_mesai += 1
+
+            silinen_satir = 0
+            for r in satir_rows:
+                if str(r.get("PlanID", "")) in plan_id_set:
+                    sid = r.get("SatirID")
+                    if sid and self._r.get("NB_PlanSatir").delete(sid):
+                        silinen_satir += 1
+
+            silinen_plan = 0
+            for p in taslak_planlar:
+                pid = str(p.get("PlanID", ""))
+                if not pid:
+                    continue
+                if self._r.get("NB_Plan").delete(pid):
+                    silinen_plan += 1
+
+            hedef_plan = len(plan_id_set)
+            basarisiz_plan = max(0, hedef_plan - silinen_plan)
+
+            logger.info(
+                "Taslak plan temizlendi: "
+                f"{silinen_plan}/{hedef_plan} plan, "
+                f"{silinen_satir} satır, {silinen_mesai} mesai kaydı silindi"
+            )
+
+            if silinen_plan == 0 and hedef_plan > 0:
                 return SonucYonetici.hata(
-                    ValueError("Onaylı plan silinemez."))
+                    ValueError(
+                        "Taslak planlar silinemedi. İlişkili kayıtlar nedeniyle bloklanmış olabilir."
+                    ),
+                    "NbPlanService.taslak_temizle",
+                )
 
-            plan_id = plan["PlanID"]
-            rows = self._r.get("NB_PlanSatir").get_all() or []
-            silinen = 0
-            for r in rows:
-                if str(r.get("PlanID","")) == plan_id:
-                    try:
-                        self._r.get("NB_PlanSatir").delete(r["SatirID"])
-                        silinen += 1
-                    except Exception:
-                        pass
-
-            logger.info(f"Taslak temizlendi: {silinen} satır silindi")
             return SonucYonetici.tamam(
-                f"{silinen} satır silindi",
-                veri={"silinen": silinen, "PlanID": plan_id})
+                f"{silinen_plan}/{hedef_plan} taslak plan, "
+                f"{silinen_satir} satır ve {silinen_mesai} mesai kaydı silindi"
+                + (f" ({basarisiz_plan} plan silinemedi)" if basarisiz_plan else ""),
+                veri={
+                    "silinen": silinen_satir,
+                    "silinenPlan": silinen_plan,
+                    "silinenMesai": silinen_mesai,
+                    "basarisizPlan": basarisiz_plan,
+                    "PlanIDler": sorted(plan_id_set),
+                },
+            )
         except Exception as e:
             return SonucYonetici.hata(e, "NbPlanService.taslak_temizle")
 

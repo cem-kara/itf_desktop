@@ -323,10 +323,6 @@ class MainWindow(QMainWindow):
             from ui.pages.nobet.nobet_merkez_page import NobetMerkezPage
             return NobetMerkezPage(db=self._db, action_guard=self._action_guard)
 
-        if baslik == "Personel Özeti":
-            from ui.pages.nobet.nobet_ozet_page import NobetOzetPage
-            return NobetOzetPage(db=self._db, action_guard=self._action_guard)
-
         if baslik == "Fazla Mesai":
             from ui.pages.nobet.nobet_fazla_mesai_page import NobetFazlaMesaiPage
             return NobetFazlaMesaiPage(db=self._db, action_guard=self._action_guard)
