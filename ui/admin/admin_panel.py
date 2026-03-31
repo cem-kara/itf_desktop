@@ -14,6 +14,7 @@ from ui.admin.roles_view import RolesView
 from ui.admin.log_viewer_page import LogViewerPage
 from ui.admin.yil_sonu_devir_page import YilSonuDevirPage
 from ui.admin.backup_page import BackupPage
+from ui.admin.nobet_mesai_kural_page import NobetMesaiKuralPage
 from ui.styles.colors import DarkTheme
 from ui.styles.icons import Icons, IconRenderer
 
@@ -111,6 +112,13 @@ class AdminPanel(QWidget):
         except Exception as e:
             from core.logger import logger
             logger.error(f"Nöbet Ayarları sekmesi yüklenemedi: {e}")
+
+        self.nobet_mesai_kural_page = NobetMesaiKuralPage(
+            self._db,
+            action_guard=self._action_guard,
+        )
+        self._tabs.addTab(self.nobet_mesai_kural_page, "Mesai Kuralı")
+        self._tabs.setTabIcon(self._tabs.count() - 1, Icons.get("clock"))
 
         layout.addWidget(self._tabs)
     

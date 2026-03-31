@@ -11,6 +11,7 @@ Temel farklar:
 """
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import date
 from typing import Optional
@@ -66,11 +67,126 @@ class NbMesaiService:
             ]
             if not gecerli:
                 return None
-            return dict(max(gecerli,
-                            key=lambda r: str(r.get("GeserlilikBaslangic", ""))))
+            kurum_genel = [
+                r for r in gecerli
+                if str(r.get("KuralTuru", "")).strip().lower() == "kurum_genel"
+            ]
+            adaylar = kurum_genel or gecerli
+            return dict(max(
+                adaylar,
+                key=lambda r: (
+                    str(r.get("GeserlilikBaslangic", "")),
+                    str(r.get("created_at", "")),
+                    str(r.get("KuralID", "")),
+                ),
+            ))
         except Exception as e:
             logger.error(f"gecerli_kural: {e}")
             return None
+
+    def get_kurum_genel_kural(self, tarih: Optional[str] = None) -> SonucYonetici:
+        """Aktif kurum-genel kuralı çözümlenmiş parametreleriyle döner."""
+        try:
+            kural = self.gecerli_kural(tarih)
+            param = self._kural_parametreleri(kural)
+            return SonucYonetici.tamam(veri={
+                "KuralID": (kural or {}).get("KuralID", ""),
+                "KuralAdi": (kural or {}).get("KuralAdi", "Kurum Genel Mesai Kuralı"),
+                "KuralTuru": (kural or {}).get("KuralTuru", "kurum_genel"),
+                "GeserlilikBaslangic": (kural or {}).get("GeserlilikBaslangic", ""),
+                "GeserlilikBitis": (kural or {}).get("GeserlilikBitis", ""),
+                "Aciklama": (kural or {}).get("Aciklama", ""),
+                **param,
+            })
+        except Exception as e:
+            return SonucYonetici.hata(e, "NbMesaiService.get_kurum_genel_kural")
+
+    @staticmethod
+    def _to_int(value, default: int = 0) -> int:
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
+    @staticmethod
+    def _to_bool(value, default: bool = False) -> bool:
+        if value is None:
+            return default
+        if isinstance(value, bool):
+            return value
+        return str(value).strip().lower() in ("1", "true", "evet", "yes")
+
+    def _kural_parametreleri(self, kural: Optional[dict]) -> dict:
+        """
+        NB_MesaiKural.Parametre JSON'unu çözer ve kurum-genel varsayılanları döner.
+
+        Desteklenen parametreler:
+          sabit_hedef_dakika: int (örn. 144 saat = 8640)
+          bildirim_esik_dakika: int (örn. 12 saat = 720)
+          bildirim_temeli: 'donem_farki' | 'net_bakiye'
+          kapanis_politikasi: 'devret' | 'tam_odeme_sifirla' | 'izinle_sifirla'
+          negatif_devir_izinli: bool
+        """
+        default = {
+            "sabit_hedef_dakika": 0,
+            "bildirim_esik_dakika": 0,
+            "bildirim_temeli": "donem_farki",
+            "kapanis_politikasi": "devret",
+            "negatif_devir_izinli": True,
+        }
+        if not kural:
+            return default
+
+        raw = kural.get("Parametre", "{}")
+        try:
+            parsed = json.loads(raw) if isinstance(raw, str) else dict(raw or {})
+        except Exception:
+            parsed = {}
+
+        temel = str(parsed.get("bildirim_temeli", default["bildirim_temeli"]))
+        if temel not in ("donem_farki", "net_bakiye"):
+            temel = default["bildirim_temeli"]
+
+        kapanis = str(parsed.get("kapanis_politikasi", default["kapanis_politikasi"]))
+        if kapanis not in ("devret", "tam_odeme_sifirla", "izinle_sifirla"):
+            kapanis = default["kapanis_politikasi"]
+
+        return {
+            "sabit_hedef_dakika": max(0, self._to_int(parsed.get("sabit_hedef_dakika", 0), 0)),
+            "bildirim_esik_dakika": max(0, self._to_int(parsed.get("bildirim_esik_dakika", 0), 0)),
+            "bildirim_temeli": temel,
+            "kapanis_politikasi": kapanis,
+            "negatif_devir_izinli": self._to_bool(
+                parsed.get("negatif_devir_izinli", default["negatif_devir_izinli"]),
+                default=True,
+            ),
+        }
+
+    def _kural_bildirim_dakika(self, fazla_dk: int, toplam_dk: int, param: dict) -> int:
+        temel = param.get("bildirim_temeli", "donem_farki")
+        esik = int(param.get("bildirim_esik_dakika", 0) or 0)
+        aday = toplam_dk if temel == "net_bakiye" else fazla_dk
+        if aday <= 0:
+            return 0
+        if aday <= esik:
+            return 0
+        return aday
+
+    def _kural_kapanis_hesapla(self, toplam_dk: int, mevcut_odenen: int, param: dict) -> tuple[int, int]:
+        """(odenen_dakika, devire_giden_dakika) döner."""
+        kapanis = param.get("kapanis_politikasi", "devret")
+        negatif_izinli = bool(param.get("negatif_devir_izinli", True))
+
+        if kapanis in ("tam_odeme_sifirla", "izinle_sifirla") and toplam_dk > 0:
+            odenen = toplam_dk
+            devir = 0
+        else:
+            odenen = max(0, mevcut_odenen)
+            devir = toplam_dk - odenen
+
+        if not negatif_izinli and devir < 0:
+            devir = 0
+        return odenen, devir
 
     def kural_ekle(self, kural_adi: str, kural_turu: str,
                    parametre: dict,
@@ -112,6 +228,35 @@ class NbMesaiService:
             gecerlilik_baslangic="2020-01-01",
             aciklama="7 saat (420 dakika) birikmesi halinde 1 blok ödenir. "
                      "Kalan devir sonraki aya geçer."
+        )
+
+    def kurum_genel_kural_kaydet(self,
+                                 aylik_hedef_saat: int = 144,
+                                 bildirim_esik_saat: int = 12,
+                                 bildirim_temeli: str = "donem_farki",
+                                 kapanis_politikasi: str = "devret",
+                                 negatif_devir_izinli: bool = True,
+                                 gecerlilik_baslangic: str = "2020-01-01") -> SonucYonetici:
+        """
+        Kurum-genel fazla mesai/bildirim kuralı oluşturur.
+
+        Not: Bu yapı ücret hesaplamaz, sadece bildirim ve devir davranışını belirler.
+        """
+        return self.kural_ekle(
+            kural_adi="Kurum Genel Mesai Kuralı",
+            kural_turu="kurum_genel",
+            parametre={
+                "sabit_hedef_dakika": max(0, int(aylik_hedef_saat)) * 60,
+                "bildirim_esik_dakika": max(0, int(bildirim_esik_saat)) * 60,
+                "bildirim_temeli": str(bildirim_temeli),
+                "kapanis_politikasi": str(kapanis_politikasi),
+                "negatif_devir_izinli": bool(negatif_devir_izinli),
+            },
+            gecerlilik_baslangic=gecerlilik_baslangic,
+            aciklama=(
+                "Kurum geneli sabit hedef + bildirim eşiği. "
+                "Ücret hesaplanmaz, sadece bildirim/devir yönetilir."
+            ),
         )
 
     # ──────────────────────────────────────────────────────────
@@ -228,8 +373,10 @@ class NbMesaiService:
                 and str(r.get("PlanID", "")) == str(plan_id)
             }
 
-            # Ödeme kuralı
+            # Kurum-genel kural parametreleri
             kural = self.gecerli_kural(f"{yil:04d}-{ay:02d}-01")
+            kural_param = self._kural_parametreleri(kural)
+            sabit_hedef_dk = int(kural_param.get("sabit_hedef_dakika", 0) or 0)
 
             # Hedefi tanımlı veya birime aktif bağlı olup bu ay çalışması/deviri
             # olmayan personel de fazla mesai listesinde görünmeli.
@@ -244,8 +391,10 @@ class NbMesaiService:
             for pid in tum_pid:
                 calisan_dk = calisan.get(pid, 0)
 
-                hedef_tercih   = hedef_map.get(pid)
-                if hedef_tercih is not None:
+                hedef_tercih = hedef_map.get(pid)
+                if sabit_hedef_dk > 0:
+                    hedef_dk = sabit_hedef_dk
+                elif hedef_tercih is not None:
                     # Kişiye ait ay hedefi açıkça girildiyse doğrudan kullan.
                     hedef_dk = int(hedef_tercih)
                 else:
@@ -256,10 +405,19 @@ class NbMesaiService:
                 devir_dk  = devir_map.get(pid, 0)
                 toplam_dk = fazla_dk + devir_dk
 
-                # Mevcut OdenenDakika'yı koru
+                # Mevcut OdenenDakika'yı koru veya politika gereği otomatik kapat.
                 mevcut = mevcut_map.get(pid)
                 odenen_dk = int(mevcut.get("OdenenDakika", 0)) if mevcut else 0
-                devire_dk = toplam_dk - odenen_dk
+                odenen_dk, devire_dk = self._kural_kapanis_hesapla(
+                    toplam_dk=toplam_dk,
+                    mevcut_odenen=odenen_dk,
+                    param=kural_param,
+                )
+                bildirim_dk = self._kural_bildirim_dakika(
+                    fazla_dk=fazla_dk,
+                    toplam_dk=toplam_dk,
+                    param=kural_param,
+                )
 
                 veri = {
                     "PersonelID":         pid,
@@ -287,7 +445,12 @@ class NbMesaiService:
                     veri["created_at"] = _simdi()
                     self._r.get("NB_MesaiHesap").insert(veri)
 
-                sonuclar.append(veri)
+                sonuclar.append({
+                    **veri,
+                    "BildirimDakika": bildirim_dk,
+                    "KuralKapanis": str(kural_param.get("kapanis_politikasi", "devret")),
+                    "KuralTemel": str(kural_param.get("bildirim_temeli", "donem_farki")),
+                })
 
             toplam_calisan = sum(r["CalisDakika"]       for r in sonuclar)
             toplam_fazla   = sum(r["ToplamFazlaDakika"] for r in sonuclar)
@@ -322,16 +485,21 @@ class NbMesaiService:
                     ValueError(f"Hesap bulunamadı: {hesap_id}"))
 
             toplam     = int(kayit.get("ToplamFazlaDakika", 0))
-            devire_dk  = toplam - odenen_dakika
+            param = self._kural_parametreleri(self.gecerli_kural())
+            odenen_dk, devire_dk = self._kural_kapanis_hesapla(
+                toplam_dk=toplam,
+                mevcut_odenen=int(odenen_dakika),
+                param={**param, "kapanis_politikasi": "devret"},
+            )
 
             self._r.get("NB_MesaiHesap").update(hesap_id, {
-                "OdenenDakika":      odenen_dakika,
-                "DevireGidenDakika": toplam - odenen_dakika,
+                "OdenenDakika":      odenen_dk,
+                "DevireGidenDakika": devire_dk,
                 "updated_at":        _simdi(),
             })
             return SonucYonetici.tamam(
-                f"Ödenen güncellendi: {odenen_dakika} dk "
-                f"(devir: {toplam - odenen_dakika} dk)")
+                f"Ödenen güncellendi: {odenen_dk} dk "
+                f"(devir: {devire_dk} dk)")
         except Exception as e:
             return SonucYonetici.hata(e, "NbMesaiService.odenen_guncelle")
 
@@ -344,6 +512,7 @@ class NbMesaiService:
         """
         try:
             rows = self._r.get("NB_MesaiHesap").get_all() or []
+            param = self._kural_parametreleri(self.gecerli_kural())
             guncellenen = 0
             for r in rows:
                 if (str(r.get("BirimID", "")) != str(birim_id)
@@ -356,9 +525,14 @@ class NbMesaiService:
                     continue
                 odenen  = odenen_map[pid]
                 toplam  = int(r.get("ToplamFazlaDakika", 0))
+                odenen_dk, devire_dk = self._kural_kapanis_hesapla(
+                    toplam_dk=toplam,
+                    mevcut_odenen=int(odenen),
+                    param={**param, "kapanis_politikasi": "devret"},
+                )
                 self._r.get("NB_MesaiHesap").update(r["HesapID"], {
-                    "OdenenDakika":      odenen,
-                    "DevireGidenDakika": toplam - odenen,
+                    "OdenenDakika":      odenen_dk,
+                    "DevireGidenDakika": devire_dk,
                     "updated_at":        _simdi(),
                 })
                 guncellenen += 1
@@ -387,6 +561,46 @@ class NbMesaiService:
             return SonucYonetici.tamam(veri=ilgili)
         except Exception as e:
             return SonucYonetici.hata(e, "NbMesaiService.get_hesaplar")
+
+    def muhasebe_bildirim_listesi(self, birim_id: str, plan_id: str,
+                                  yil: int, ay: int) -> SonucYonetici:
+        """
+        Ücret hesaplamadan, yalnızca fazla mesai bildirimi için liste üretir.
+        """
+        try:
+            hesap_sonuc = self.get_hesaplar(birim_id, plan_id, yil, ay)
+            if not hesap_sonuc.basarili:
+                return hesap_sonuc
+
+            kural = self.gecerli_kural(f"{yil:04d}-{ay:02d}-01")
+            param = self._kural_parametreleri(kural)
+
+            bildirimler = []
+            for r in (hesap_sonuc.veri or []):
+                fazla = int(r.get("FazlaDakika", 0))
+                toplam = int(r.get("ToplamFazlaDakika", 0))
+                bildirim_dk = self._kural_bildirim_dakika(fazla, toplam, param)
+                if bildirim_dk <= 0:
+                    continue
+                bildirimler.append({
+                    "PersonelID": str(r.get("PersonelID", "")),
+                    "Yil": yil,
+                    "Ay": ay,
+                    "BirimID": str(birim_id),
+                    "BildirimDakika": bildirim_dk,
+                    "BildirimSaat": round(bildirim_dk / 60, 2),
+                    "Kural": {
+                        "Temel": param.get("bildirim_temeli", "donem_farki"),
+                        "EsikDakika": int(param.get("bildirim_esik_dakika", 0) or 0),
+                    },
+                })
+
+            return SonucYonetici.tamam(
+                mesaj=f"{len(bildirimler)} personel için muhasebe bildirimi hazır.",
+                veri=bildirimler,
+            )
+        except Exception as e:
+            return SonucYonetici.hata(e, "NbMesaiService.muhasebe_bildirim_listesi")
 
     def get_personel_hesap(self, personel_id: str, birim_id: str,
                            plan_id: str,

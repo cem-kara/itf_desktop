@@ -567,6 +567,15 @@ class NbAlgoritma:
             bakiye_sayac: dict[str, int] = {
                 p: int(devir_map.get(p, 0)) for p in (personeller + gonulluler)
             }
+            
+            # Bakiye bilgisini logla
+            for p in personeller + gonulluler:
+                bakiye = bakiye_sayac.get(p, 0)
+                if bakiye != 0:
+                    logger.info(
+                        f"[Devir Bakiyesi] {p}: {bakiye//60:+.0f}s "
+                        f"({'eksik, nöbet ön sıraya' if bakiye < 0 else 'fazla, nöbet arka sıraya'})"
+                    )
 
             # Birim bazlı günlük max süre = NB_BirimAyar.MaxGunlukSureDakika
             # 720dk = 12s ââ€ ' personel günde sadece 1 vardiya (gündüz VEYA gece)
@@ -980,14 +989,14 @@ class NbAlgoritma:
 
             # ── Ï–zet ──────────────────────────────────────────
             for pid in personeller + gonulluler:
-                dk  = saat_sayac[pid]
-                hdf = hedef_map[pid]
-                tol = _tolerans(pid)
-                fm  = fm_saat_sayac.get(pid, 0)
+                dk   = saat_sayac[pid]
+                hdf  = hedef_map[pid]
+                tol  = _tolerans(pid)
+                fm   = fm_saat_sayac.get(pid, 0)
+                bakiye = bakiye_sayac.get(pid, 0)
                 logger.info(
-                    f"[Atama] {pid}: {dk}dk={dk//60}s "
-                    f"/ hedef={hdf//60}s tol={tol//60}s "
-                    f"/ üst={(hdf+tol)//60}s "
+                    f"[Atama] {pid}: bakiye_baslangic={bakiye//60:+.0f}s "
+                    f"-> saat={dk//60}s (hedef={hdf//60}s, tol=±{tol//60}s, üst={(hdf+tol)//60}s) "
                     f"/ nöbet={nobet_sayac[pid]}"
                     + (f" / FM={fm//60}s" if fm else ""))
 

@@ -44,7 +44,7 @@ from core.di import (
     get_nb_plan_service,
     get_personel_service,
 )
-from core.hata_yonetici import bilgi_goster, hata_logla_goster, uyari_goster, soru_sor
+from core.hata_yonetici import bilgi_goster, hata_logla_goster, uyari_goster, soru_sor, logger
 from ui.styles.icons import IconColors, IconRenderer
 
 _AY = [
@@ -52,7 +52,7 @@ _AY = [
     "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
 ]
 
-FM_BILDIRIM_ESIK_DK = 7 * 60
+FM_BILDIRIM_ESIK_DK = 12 * 60
 
 
 def _it(text: str, user_data=None) -> QTableWidgetItem:
@@ -71,12 +71,12 @@ def _fmt_dk(dakika: int) -> str:
     return f"{isaret}{dakika // 60}s {dakika % 60:02d}dk"
 
 
-def _status_bilgisi(toplam_dk: int) -> tuple[str, str]:
-    if toplam_dk >= FM_BILDIRIM_ESIK_DK:
+def _status_bilgisi(toplam_dk: int, esik_dk: int) -> tuple[str, str]:
+    if toplam_dk >= esik_dk:
         return "Bildirime Hazır", "#f59e0b"
     if toplam_dk > 0:
         return "Takip", "#4d9ee8"
-    if toplam_dk <= -FM_BILDIRIM_ESIK_DK:
+    if toplam_dk <= -esik_dk:
         return "Eksik", "#e85555"
     return "Dengede", "#2ec98e"
 
@@ -99,6 +99,7 @@ class NobetFazlaMesaiPage(QWidget):
         self._birim_adi = ""
         self._personel_ad_map: dict[str, str] = {}
         self._satirlar: list[dict] = []
+        self._bildirim_esik_dk = FM_BILDIRIM_ESIK_DK
 
         self._birim_svc = get_nb_birim_service(db) if db else None
         self._plan_svc = get_nb_plan_service(db) if db else None
@@ -194,6 +195,16 @@ class NobetFazlaMesaiPage(QWidget):
         )
         self._btn_hazirla.clicked.connect(self._mesai_hazirla)
         layout.addWidget(self._btn_hazirla)
+
+        self._btn_muhasebe_bildirim = QPushButton("Muhasebe Bildirimi")
+        self._btn_muhasebe_bildirim.setProperty("style-role", "secondary")
+        self._btn_muhasebe_bildirim.setFixedHeight(30)
+        self._btn_muhasebe_bildirim.setEnabled(False)
+        IconRenderer.set_button_icon(
+            self._btn_muhasebe_bildirim, "bell", color=IconColors.MUTED, size=14
+        )
+        self._btn_muhasebe_bildirim.clicked.connect(self._muhasebe_bildirim_al)
+        layout.addWidget(self._btn_muhasebe_bildirim)
 
         self._btn_yenile = QPushButton("Yenile")
         self._btn_yenile.setProperty("style-role", "secondary")
@@ -294,7 +305,7 @@ class NobetFazlaMesaiPage(QWidget):
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(6)
 
-        self._tbl = QTableWidget(0, 9)
+        self._tbl = QTableWidget(0, 11)
         self._tbl.setHorizontalHeaderLabels([
             "Personel",
             "Çalışılan",
@@ -305,10 +316,12 @@ class NobetFazlaMesaiPage(QWidget):
             "Toplam",
             "Durum",
             "Son Hesap",
+            "Bildirime",
+            "Ödeme Yap",
         ])
         header = self._tbl.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        for kolon in range(1, 9):
+        for kolon in range(1, 11):
             header.setSectionResizeMode(kolon, QHeaderView.ResizeMode.ResizeToContents)
         self._tbl.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._tbl.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -369,6 +382,18 @@ class NobetFazlaMesaiPage(QWidget):
             )
         self._cmb_birim.blockSignals(False)
         self._sayfa_yenile()
+
+    def _kural_yukle(self):
+        if not self._mesai_svc:
+            return
+        try:
+            sonuc = self._mesai_svc.get_kurum_genel_kural(f"{self._yil:04d}-{self._ay:02d}-01")
+            if not sonuc.basarili or not sonuc.veri:
+                return
+            veri = sonuc.veri or {}
+            self._bildirim_esik_dk = int(veri.get("bildirim_esik_dakika", FM_BILDIRIM_ESIK_DK))
+        except Exception as exc:
+            hata_logla_goster(self, "NobetFazlaMesaiPage._kural_yukle", exc)
 
     def _ay_geri(self):
         if self._ay == 1:
@@ -432,6 +457,7 @@ class NobetFazlaMesaiPage(QWidget):
 
     def _sayfa_yenile(self):
         self._lbl_ay.setText(f"{_AY[self._ay]} {self._yil}")
+        self._kural_yukle()
 
         if not self._birim_id:
             self._satirlar = []
@@ -442,6 +468,7 @@ class NobetFazlaMesaiPage(QWidget):
             )
             self._btn_pdf.setEnabled(False)
             self._btn_csv.setEnabled(False)
+            self._btn_muhasebe_bildirim.setEnabled(False)
             self._kartlari_guncelle([])
             self._detay_bosalt()
             return
@@ -456,11 +483,53 @@ class NobetFazlaMesaiPage(QWidget):
             )
             self._btn_pdf.setEnabled(False)
             self._btn_csv.setEnabled(False)
+            self._btn_muhasebe_bildirim.setEnabled(False)
             self._kartlari_guncelle([])
             self._detay_bosalt()
             return
 
         self._hesaplari_yukle(plan)
+
+    def _hesap_tablosunu_tazele(self):
+        self._tbl.blockSignals(True)
+        self._tbl.setRowCount(0)
+        for satir_idx, satir in enumerate(self._satirlar):
+            row = self._tbl.rowCount()
+            self._tbl.insertRow(row)
+
+            personel_itm = QTableWidgetItem(satir["AdSoyad"])
+            personel_itm.setData(Qt.ItemDataRole.UserRole, satir["PersonelID"])
+            self._tbl.setItem(row, 0, personel_itm)
+            self._tbl.setItem(row, 1, _it(_fmt_dk(satir["CalisDakika"])))
+            self._tbl.setItem(row, 2, _it(_fmt_dk(satir["HedefDakika"])))
+            self._tbl.setItem(row, 3, _it(_fmt_dk(satir["FazlaDakika"])))
+            self._tbl.setItem(row, 4, _it(_fmt_dk(satir["BayramEkstraDakika"])))
+            self._tbl.setItem(row, 5, _it(_fmt_dk(satir["DevirDakika"])))
+
+            toplam_itm = _it(_fmt_dk(satir["ToplamFazlaDakika"]))
+            toplam_itm.setForeground(QColor(satir["DurumRenk"]))
+            self._tbl.setItem(row, 6, toplam_itm)
+
+            durum_itm = _it(satir["Durum"])
+            durum_itm.setForeground(QColor(satir["DurumRenk"]))
+            self._tbl.setItem(row, 7, durum_itm)
+            self._tbl.setItem(row, 8, _it(satir["HesapTarihi"] or "-"))
+            bildirim_dk = int(satir.get("BildirimDakika", 0))
+            bildirim_itm = _it(_fmt_dk(bildirim_dk) if bildirim_dk > 0 else "—")
+            if bildirim_dk > 0:
+                bildirim_itm.setForeground(QColor("#f59e0b"))
+            self._tbl.setItem(row, 9, bildirim_itm)
+
+            # Checkbox: Ödeme yap seçimi (kolon 10)
+            chk = QTableWidgetItem()
+            chk.setCheckState(Qt.CheckState.Checked if satir.get("SeciliBildirim", False) else Qt.CheckState.Unchecked)
+            chk.setFlags(chk.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            chk.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            self._tbl.setItem(row, 10, chk)
+            chk.setData(Qt.ItemDataRole.UserRole, satir_idx)
+
+        self._tbl.blockSignals(False)
+        self._tbl.itemChanged.connect(self._checkbox_degisti)
 
     def _hesaplari_yukle(self, plan: dict):
         try:
@@ -479,7 +548,7 @@ class NobetFazlaMesaiPage(QWidget):
                 fazla_dk = int(kayit.get("FazlaDakika", 0))
                 toplam_dk = int(kayit.get("ToplamFazlaDakika", 0))
                 bayram_ekstra_dk = _bayram_ekstra_dk(calis_dk, hedef_dk, fazla_dk)
-                durum, renk = _status_bilgisi(toplam_dk)
+                durum, renk = _status_bilgisi(toplam_dk, self._bildirim_esik_dk)
                 self._satirlar.append({
                     "PersonelID": pid,
                     "AdSoyad": self._personel_ad_map.get(pid, pid),
@@ -493,30 +562,28 @@ class NobetFazlaMesaiPage(QWidget):
                     "Durum": durum,
                     "DurumRenk": renk,
                     "PlanDurum": plan_durum,
+                    "BildirimDakika": 0,
+                    "HesapID": str(kayit.get("HesapID", "")),
+                    "SeciliBildirim": False,
                 })
 
-            self._tbl.setRowCount(0)
-            for satir in self._satirlar:
-                row = self._tbl.rowCount()
-                self._tbl.insertRow(row)
+            # Bildirim dakikalarını hesapla ve satirlara işle
+            try:
+                plan_id = str(plan.get("PlanID", ""))
+                bildirim_sonuc = self._mesai_svc.muhasebe_bildirim_listesi(
+                    self._birim_id, plan_id, self._yil, self._ay
+                )
+                if bildirim_sonuc.basarili:
+                    bildirim_map = {
+                        str(b["PersonelID"]): int(b["BildirimDakika"])
+                        for b in (bildirim_sonuc.veri or [])
+                    }
+                    for satir in self._satirlar:
+                        satir["BildirimDakika"] = bildirim_map.get(satir["PersonelID"], 0)
+            except Exception:
+                pass
 
-                personel_itm = QTableWidgetItem(satir["AdSoyad"])
-                personel_itm.setData(Qt.ItemDataRole.UserRole, satir["PersonelID"])
-                self._tbl.setItem(row, 0, personel_itm)
-                self._tbl.setItem(row, 1, _it(_fmt_dk(satir["CalisDakika"])))
-                self._tbl.setItem(row, 2, _it(_fmt_dk(satir["HedefDakika"])))
-                self._tbl.setItem(row, 3, _it(_fmt_dk(satir["FazlaDakika"])))
-                self._tbl.setItem(row, 4, _it(_fmt_dk(satir["BayramEkstraDakika"])))
-                self._tbl.setItem(row, 5, _it(_fmt_dk(satir["DevirDakika"])))
-
-                toplam_itm = _it(_fmt_dk(satir["ToplamFazlaDakika"]))
-                toplam_itm.setForeground(QColor(satir["DurumRenk"]))
-                self._tbl.setItem(row, 6, toplam_itm)
-
-                durum_itm = _it(satir["Durum"])
-                durum_itm.setForeground(QColor(satir["DurumRenk"]))
-                self._tbl.setItem(row, 7, durum_itm)
-                self._tbl.setItem(row, 8, _it(satir["HesapTarihi"] or "-"))
+            self._hesap_tablosunu_tazele()
 
             self._lbl_durum.setText(
                 f"{self._birim_adi} | {_AY[self._ay]} {self._yil} | Plan durumu: {plan_durum}"
@@ -530,8 +597,10 @@ class NobetFazlaMesaiPage(QWidget):
                     "Bu plan için henüz mesai özeti hazırlanmadı. 'Mesai Saatlerini Hazırla' ile kayıt üretin."
                 )
 
+            bildirim_var = any(s.get("BildirimDakika", 0) > 0 for s in self._satirlar)
             self._btn_pdf.setEnabled(bool(self._satirlar))
             self._btn_csv.setEnabled(bool(self._satirlar))
+            self._btn_muhasebe_bildirim.setEnabled(bildirim_var)
             self._kartlari_guncelle(self._satirlar)
             self._detay_bosalt()
         except Exception as exc:
@@ -540,7 +609,7 @@ class NobetFazlaMesaiPage(QWidget):
     def _kartlari_guncelle(self, satirlar: list[dict]):
         personel_sayi = len(satirlar)
         bildirime_hazir = sum(
-            1 for satir in satirlar if satir.get("ToplamFazlaDakika", 0) >= FM_BILDIRIM_ESIK_DK
+            1 for satir in satirlar if satir.get("ToplamFazlaDakika", 0) >= self._bildirim_esik_dk
         )
         toplam_fazla = sum(
             max(0, int(satir.get("ToplamFazlaDakika", 0))) for satir in satirlar
@@ -586,9 +655,62 @@ class NobetFazlaMesaiPage(QWidget):
                 _fmt_dk(satir["ToplamFazlaDakika"]),
                 satir["Durum"],
                 satir["HesapTarihi"] or "-",
+                _fmt_dk(satir["BildirimDakika"]) if satir.get("BildirimDakika", 0) > 0 else "—",
             ]
             for satir in self._satirlar
         ]
+
+    def _checkbox_degisti(self, item: QTableWidgetItem):
+        """Checkbox seçimi değişti"""
+        if item.column() != 10:  # Ödeme checkbox'ı
+            return
+        satir_idx = int(item.data(Qt.ItemDataRole.UserRole) or -1)
+        if satir_idx < 0 or satir_idx >= len(self._satirlar):
+            return
+        self._satirlar[satir_idx]["SeciliBildirim"] = item.checkState() == Qt.CheckState.Checked
+
+    def _muhasebe_bildirim_al(self):
+        """Ödeme seçili olanlar için massal ödeme yap + kapanış politikası uygula"""
+        if not self._satirlar:
+            uyari_goster(self, "Önce mesai özeti hazırlayın.")
+            return
+
+        secili = [s for s in self._satirlar if s.get("SeciliBildirim", False)]
+        if not secili:
+            uyari_goster(self, "Ödeme yapılacak kimse seçilmedi. Tablodaki checkbox'ları işaretle.")
+            return
+
+        if not soru_sor(
+            self,
+            f"{len(secili)} kişi için ödeme yapılacak. Devam edilsin mi?\n\n"
+            f"{', '.join([s['AdSoyad'] for s in secili])}",
+        ):
+            return
+
+        try:
+            hata_sayisi = 0
+            for satir in secili:
+                hesap_id = satir.get("HesapID", "")
+                toplam_dk = int(satir.get("ToplamFazlaDakika", 0))
+                if not hesap_id or toplam_dk <= 0:
+                    continue
+                # Ödeme = Toplam (bakiye = 0)
+                sonuc = self._mesai_svc.odenen_guncelle(hesap_id, toplam_dk)
+                if not sonuc.basarili:
+                    hata_sayisi += 1
+                    logger.error(f"{satir['AdSoyad']} ödeme hatası: {sonuc.mesaj}")
+
+            if hata_sayisi == 0:
+                bilgi_goster(
+                    self,
+                    f"{len(secili)} kişi için ödeme kaydı tamamlandı. "
+                    f"Bakiyeler sıfırlandı/kapanış politikası uygulandı.",
+                )
+                self._sayfa_yenile()  # Tablo yenileme
+            else:
+                uyari_goster(self, f"{hata_sayisi} kişi için hata yaşandı.")
+        except Exception as exc:
+            hata_logla_goster(self, "NobetFazlaMesaiPage._muhasebe_bildirim_al", exc)
 
     def _pdf_al(self):
         if not self._satirlar:
@@ -665,12 +787,13 @@ class NobetFazlaMesaiPage(QWidget):
                 "Toplam",
                 "Durum",
                 "Son Hesap",
+                "Bildirime",
             ]]
             veri.extend(self._rapor_satirlari())
 
             tablo = Table(
                 veri,
-                colWidths=[4.2 * cm, 1.9 * cm, 1.9 * cm, 2.0 * cm, 2.0 * cm, 2.0 * cm, 2.0 * cm, 2.2 * cm, 1.8 * cm],
+                colWidths=[3.8 * cm, 1.8 * cm, 1.8 * cm, 1.9 * cm, 1.9 * cm, 1.9 * cm, 1.9 * cm, 2.0 * cm, 1.7 * cm, 1.8 * cm],
                 repeatRows=1,
             )
             tablo.setStyle(TableStyle([
@@ -720,6 +843,7 @@ class NobetFazlaMesaiPage(QWidget):
                     "Toplam",
                     "Durum",
                     "Son Hesap",
+                    "Bildirim Saati",
                 ])
                 yazici.writerows(self._rapor_satirlari())
             bilgi_goster(self, f"CSV kaydedildi: {yol}")
