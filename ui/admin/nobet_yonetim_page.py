@@ -545,7 +545,7 @@ class NobetYonetimPage(QWidget):
         hdr.addWidget(lbl)
         hdr.addStretch()
 
-        self._btn_b_yeni = self._btn("+", "action")
+        self._btn_b_yeni = self._btn("", "action")
         self._btn_b_yeni.setFixedWidth(28)
         self._btn_b_yeni.setToolTip("Yeni birim ekle")
         IconRenderer.set_button_icon(
@@ -678,7 +678,7 @@ class NobetYonetimPage(QWidget):
         hdr.addWidget(lbl)
         hdr.addStretch()
 
-        self._btn_grup_yeni = self._btn("+", "action")
+        self._btn_grup_yeni = self._btn("", "action")
         self._btn_grup_yeni.setFixedWidth(28)
         self._btn_grup_yeni.setEnabled(False)
         self._btn_grup_yeni.setToolTip("Yeni grup ekle")
@@ -745,9 +745,12 @@ class NobetYonetimPage(QWidget):
         hdr.addWidget(self._lbl_grup_adi)
         hdr.addStretch()
 
-        self._btn_v_yeni = self._btn("+ Vardiya", "action")
+        self._btn_v_yeni = self._btn("", "action")
         self._btn_v_yeni.setEnabled(False)
+        self._btn_v_yeni.setToolTip("Yeni vardiya ekle")
         self._btn_v_yeni.clicked.connect(self._vardiya_yeni)
+        IconRenderer.set_button_icon(
+            self._btn_v_yeni, "plus", color=IconColors.PRIMARY, size=14)
         hdr.addWidget(self._btn_v_yeni)
         lay.addLayout(hdr)
 
@@ -803,7 +806,7 @@ class NobetYonetimPage(QWidget):
         lay.setSpacing(6)
 
         tb = QHBoxLayout()
-        self._btn_p_ata = self._btn("+ Personel Ata", "action", h=28)
+        self._btn_p_ata = self._btn("Personel Ata", "action", h=28)
         self._btn_p_ata.setEnabled(False)
         IconRenderer.set_button_icon(
             self._btn_p_ata, "user_add", color=IconColors.PRIMARY, size=14)
