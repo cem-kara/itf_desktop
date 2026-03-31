@@ -2,145 +2,160 @@
 
 Tüm dikkate değer değişiklikler bu dosyada belgelenmiştir.
 
-Format şu kurallara uyar: [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/)
+Format: [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/)
 
 ---
 
-## [v0.3.0 - UI Stabilization] - 2026-03-06 (WIP)
+## [v0.4.0 — Code Quality & Architecture] - 2026-03-31
+
+Bu sürüm yeni özellik içermez; mevcut kod tabanının kalite, güvenlik ve
+mimari tutarlılığa kavuşturulmasına odaklanır. Değişikliklerin büyük çoğunluğu
+çoklu YZ destekli geliştirme sürecinde biriken teknik borcu temizler.
+
+### 🔐 Security
+
+- **`database/token.json` ve `database/credentials.json` repodan çıkarıldı**
+  - `token.json` içindeki gerçek Google OAuth token (refresh_token, client_secret dahil) güvenlik riski oluşturuyordu
+  - Google Cloud Console üzerinden token iptal edildi
+  - `.gitignore` güncellendi: `token.json`, `credentials.json`, `*.db`, `logs/` eklendi
+  - `database/credentials.example.json` şablon dosyası eklendi
+
+### 🧹 Dead Code Cleanup
+
+- **pyflakes + vulture analiziyle 285 sorun giderildi:**
+  - 219 kullanılmayan import (`autoflake --remove-all-unused-imports`)
+  - 42 kullanılmayan yerel değişken (ör. `renk1`, `embedded`, `doluluk_renk`)
+  - 13 boş f-string (`f"metin"` → `"metin"` veya değişken eklendi)
+    - `backup_service.py` ×4, `rke_merkez.py` ×2, `ariza_islem.py`, `personel_overview_panel.py` ×2, diğerleri
+  - 11 yeniden tanımlama: `nobet_service.py`'de `birim_ayar_kaydet` 3 kez, `main_window.py`'de `WelcomePage`, vb.
+  - 4 ulaşılamaz kod (`return` sonrası satırlar)
+
+### 💬 Dialog Sistemi
+
+- **324 doğrudan `QMessageBox` çağrısı `core/hata_yonetici` modülüne taşındı** (33 dosya)
+  - `QMessageBox.critical` → `hata_goster`
+  - `QMessageBox.warning` → `uyari_goster`
+  - `QMessageBox.information` → `bilgi_goster`
+  - `QMessageBox.question` → `soru_sor`
+  - En yoğun dosyalar: `settings_page.py` (40), `nobet_yonetim_page.py` (28), `backup_page.py` (24)
+  - `mesaj_kutusu.py` ve `action_guard.py` meşru wrapper/guard sınıfları — dokunulmadı
+
+### 🎨 Tema Sistemi
+
+- **106 `setStyleSheet` ihlali giderildi** — Python kodunda renk string'i kalmadı:
+  - 23 `setStyleSheet(f"...")` → `setProperty("style-role", ...)` / `setProperty("color-role", ...)`
+  - 75 `setStyleSheet(S.get(...))` / `STYLES[...]` → `setProperty`
+  - 8 ham `#hex` renk kodu → `setProperty` veya dinamik istisna kalıbı
+  - En yoğun dosya: `personel_ekle.py` (36 STYLES ihlali)
+
+### 🏗️ Mimari Katman
+
+- **`get_registry()` UI içinde kullanım — 23 bypass temizlendi** (12 dosya)
+  - `dis_alan_import_page.py`, `dozimetre_*_import`, `nobet_hazirlik_page.py`, vb.
+  - Her bypass için karşılık gelen servise yeni metod eklendi
+- **`_r.get()` UI'da doğrudan erişim — 23 bypass temizlendi** (8 dosya)
+  - `fhsz_yonetim.py`, `saglik_takip.py`, `personel_saglik_panel.py`, `nobet_rapor_page.py`, vb.
+- **Metod içinde yeni servis nesnesi — 62 ihlal temizlendi**
+  - `__init__`'te kurulan `self._svc` kullanılacak şekilde refactor edildi
+  - En yoğun: `rke_page.py` (5), `isten_ayrilik.py` (4), `toplu_bakim_panel.py` (4)
+
+### 📦 SonucYonetici
+
+- Servis katmanında kalan eski stil dönüşler (`return []`, `return None`, `return False`) temizlendi
+- `izin_service.py`, `dozimetre_service.py`, `personel_service.py` öncelikli
+- Private helper fonksiyonlar (`_atanabilir`, `_kisit_kontrol`) muaf tutuldu — bool döndürmeleri doğru
+
+### 🗄️ Migration
+
+- **`core/migrations.py` silindi** — 1375 satırlık zombie dosya; hiçbir yer import etmiyordu
+  - Dosya başlığı `# database/migrations.py` diyordu — yanlışlıkla `core/` altına kopyalanmıştı
+- **`database/migrations.py` sıfırdan yazıldı — temiz squash:**
+  - `CURRENT_VERSION = 1` (eski v1–v7 tek `create_tables()` çağrısına birleştirildi)
+  - v3–v7 arası eklenen tüm kolonlar (`FmMaxSaat`, `MaxGunlukSureDakika`, `HaftasonuCalismaVar`,
+    `ResmiTatilCalismaVar`, `DiniBayramCalismaVar`, `ArdisikGunIzinli`) ve `NB_HazirlikOnay` tablosu
+    doğrudan `CREATE TABLE` bloklarına dahil edildi
+  - `PRAGMA foreign_keys=ON` — her bağlantıda zorunlu (SQLite varsayılanı OFF'dur)
+  - FK kısıtları tüm yabancı anahtar kolonlarına eklendi (`Personel.KimlikNo`, `Cihazlar.Cihazid`, vb.)
+  - Mevcut kurulumlar (schema_version MAX ≥ 1): hiçbir değişiklik gerekmez
+  - `_set_schema_version` açık bağlantı alır — transaction bütünlüğü korunur
+
+### 👻 Nöbet Modülü
+
+- **`nobet_service.py` legacy durumu netleştirildi:**
+  - `core/di.py`'deki `get_nobet_service(db)` `NobetAdapter` döndürüyor, `NobetService` değil
+  - `nobet_service.py` DI üzerinden hiç instantiate edilmiyor — legacy kod olarak işaretlendi
+  - Aktif implementasyon: `core/services/nobet/nobet_adapter.py`
+- **Sessiz hata yutma → `logger.warning`:**
+  - `nb_algoritma.py` plan satırı silme (`:449`) ve veri yükleme (`:367`)
+  - `nobet_adapter.py` (`:429`, `:438`, `:610`)
+  - `nb_mesai_service.py` (`:693`)
+
+---
+
+## [v0.3.0 — UI Stabilization] - 2026-03-06
 
 ### 2026-03-12 Güncellemesi
 
 #### ✨ Fixed
-- `ui/pages/personel/personel_ekle.py`: kayıt sonrası "Evet" dalında `btn_kaydet.setEnabled(True)` çağrısı eksikti — düzeltildi
-- `ui/pages/personel/personel_ekle.py`: `QTabWidget` import satırına eklenmemişti — düzeltildi
+- `personel_ekle.py`: "Evet" dalında `btn_kaydet.setEnabled(True)` eksikti — düzeltildi
+- `personel_ekle.py`: `QTabWidget` import eksikliği — düzeltildi
 
 #### ✨ Added
-- `ui/pages/personel/personel_ekle.py`: Belge paneli sekmeli yapıya (QTabWidget) taşındı
-  - Tab 1 — "👤 Kişisel Bilgiler": mevcut form (scroll içinde)
-  - Tab 2 — "📎 Belgeler": kayıt öncesi kilitli (`setTabEnabled(1, False)`), kayıt sonrası otomatik açılır ve bu sekmeye geçer
-  - Edit modunda açılışta Belgeler sekmesi zaten aktif
-  - "Yeni Personel" reset akışında sekme tekrar kilitlenir
-
----
+- `personel_ekle.py`: Belge paneli sekmeli yapıya (QTabWidget) taşındı
+  - Tab 1 — "👤 Kişisel Bilgiler" / Tab 2 — "📎 Belgeler" (kayıt öncesi kilitli)
+  - Kayıt sonrası Belgeler sekmesi otomatik açılır; "Yeni Personel" reset akışında kilitlenir
 
 ### 2026-03-07 Güncellemesi
 
 #### ✨ Fixed
-- `ui/pages/personel/personel_ekle.py`: kayıt sonrası kapanış + belge yükleme akışı düzeltildi
-- `ui/components/base_dokuman_panel.py`: `set_entity_id()` sonrası form kontrollerinin enable/disable senkronu düzeltildi
-- `ui/pages/personel/components/hizli_izin_giris.py`: `float(None)` kaynaklı hızlı izin kaydetme hatası giderildi
-- `ui/pages/personel/izin_takip.py`: ilk açılışta kayıtların görünmesi için ay/yıl filtre varsayılanı `Tümü` yapıldı
+- `personel_ekle.py`: kayıt sonrası kapanış + belge yükleme akışı
+- `base_dokuman_panel.py`: `set_entity_id()` sonrası form kontrolleri senkronu
+- `hizli_izin_giris.py`: `float(None)` kaynaklı hata (`or 0` ile giderildi)
+- `izin_takip.py`: ilk açılışta kayıtların görünmesi — ay/yıl filtre varsayılanı `Tümü`
 
 #### ✨ Added
 - `core/services/izin_service.py`:
-  - yıllık hakediş hesaplama (`hesapla_yillik_hak`)
-  - personel eklemede `Izin_Bilgi` bootstrap (`create_or_update_izin_bilgi`)
-  - merkezi izin limit hesaplama/doğrulama (`get_izin_max_gun`, `validate_izin_sure_limit`)
-  - merkezi çakışma kontrolü (`has_izin_cakisma`)
-  - `Izin_Bilgi` sayısal alanlarda `None -> 0.0` normalize
-- `tests/test_izin_service.py`: limit, hakediş, normalize ve çakışma senaryoları dahil kapsam genişletildi
-
-#### 🔧 Changed
-- `ui/pages/personel/izin_takip.py` ve `ui/pages/personel/components/hizli_izin_giris.py` limit kuralını servis katmanından ortak kullanacak şekilde güncellendi
-- Limit aşımında kayıt akışı "uyarı + devam" yerine kesin engelleme davranışına alındı
-
-#### ✅ Test
+  - `hesapla_yillik_hak()` — 1–10 yıl: 20 gün, 10+: 30 gün
+  - `create_or_update_izin_bilgi()` — yeni personelde Izin_Bilgi bootstrap
+  - `get_izin_max_gun()` — Yıllık/Şua/diğer limit hesaplama
+  - `validate_izin_sure_limit()` — limit aşımında kesin engelleme
+  - `has_izin_cakisma()` — iptal hariç overlap kontrolü
+  - `Izin_Bilgi` numeric alanlar `None → 0.0` normalize
 - `tests/test_izin_service.py`: `59 passed`
 
-### 2026-03-06 Önceki WIP Değişiklikleri
+#### 🔧 Changed
+- `izin_takip.py` ve `hizli_izin_giris.py` limit kontrolünde aynı servis metodları kullanıyor
+- Limit ihlalinde "uyarı + devam" yerine kesin engelleme
 
-### ✨ Fixed
-- **Pylance 184+ type-checker uyarısı temizlendi**
-  - `ui/styles/colors.py`: Theme değerleri güvenli şekilde daraltıldı (Any cast)
-  - `ui/styles/components.py`: Dinamik C nesnesi Any tipine çevrildi
-  - `ui/theme_manager.py`: Tema adı normalize edildi, QPalette enums güncellendi
-  - `ui/pages/rke/rke_yonetim.py`: inputs Dict[str, Any], EditTrigger enums
+### 2026-03-06 Önceki WIP
 
-- **UI Sayfaları Pylance Uyarıları**
-  - `ui/pages/cihaz/ariza_islem.py`: reportOperatorIssue (in S) → S.get() güvenli erişim
-  - `ui/pages/personel/fhsz_yonetim.py`: Table item None guards, _item_text helper
-  - `ui/pages/personel/saglik_takip.py`: lineEdit() None guard, parse_date daraltma
-  - `ui/pages/personel/components/hizli_saglik_giris.py`: Optional date karşılaştırma
+#### ✨ Fixed
+- Pylance 184+ type-checker uyarısı temizlendi
+- Tatil yönetimi: `add_tatil()` duplicate tarih kontrolü eklendi
+- Personel Ekle / Belge Paneli akışı yeniden düzenlendi
+- Hızlı izin / izin girişi runtime hataları giderildi
 
-- **Tatil Yönetimi**
-  - `core/services/settings_service.py` - `add_tatil()`: UNIQUE constraint hatası için duplicate tarih kontrolü eklendi
-  - Aynı tarihte iki tatil eklemeyi önlemek için ON INSERT kontrol (fetchone pattern)
+#### ✨ Added
+- **Modern Dialog Sistemi** — `mesaj_kutusu.py`, `qmessagebox_yakala()` hook
+- **İzin hakediş ve limit motoru** — merkezi servis katmanı kuralları
+- **Test kapsamı** — `tests/test_izin_service.py`
 
-- **Personel Ekle / Belge Paneli akışı düzeltildi**
-  - `ui/pages/personel/personel_ekle.py`: kayıt sonrası form kapanma akışı yeniden düzenlendi
-  - Belge paneli için hatalı `set_personel()` çağrıları kaldırıldı, `set_entity_id()` kullanıldı
-  - "YENİ PERSONEL" butonu eklendi; form reset + yeni kayıt akışı stabilize edildi
-  - `ui/components/base_dokuman_panel.py`: entity ID güncellemesinde form kontrolleri enable/disable senkronu düzeltildi
-
-- **Hızlı İzin / İzin Girişi runtime hataları**
-  - `ui/pages/personel/components/hizli_izin_giris.py`: `float(None)` kaynaklı hata giderildi (`or 0` güvenli dönüşüm)
-  - `core/services/personel_service.py`: legacy TC doğrulama kaldırıldı, merkezi resmi algoritma ile hizalandı
-
-- **İzin Takip ilk açılış görünürlüğü**
-  - `ui/pages/personel/izin_takip.py`: Ay/Yıl filtreleri varsayılanı `Tümü` yapıldı
-  - İlk açılışta kayıtların boş görünmesi sorunu giderildi
-
-### ✨ Added
-- **Modern Message Dialog System**
-  - `ui/dialogs/mesaj_kutusu.py`: Yeni temalı mesaj kutusu (native QMessageBox yerine)
-  - QMessageBox global hook (`qmessagebox_yakala`) — tüm mevcut çağrılar otomatik temalı dialoga düşer
-  - Classic modal tasarım: yarı saydam overlay + elevation/shadow + kart layout
-  - Frameless + transparan arka plan ile modern yarı modal deneyimi
-  - Windows sistem temasından bağımsız (dark/light uyumluluk sorunu çözüldü)
-
-- **İzin hakediş ve limit motoru (merkezi servis kuralı)**
-  - `core/services/izin_service.py`:
-    - `hesapla_yillik_hak()` eklendi (1-10 yıl: 20 gün, 10+ yıl: 30 gün)
-    - `create_or_update_izin_bilgi()` eklendi (yeni personelde Izin_Bilgi bootstrap)
-    - `get_izin_max_gun()` eklendi (Yıllık: `min(30, YillikKalan)`, Şua: `SuaKullanilabilirHak`, diğerleri: `Sabitler.Aciklama`)
-    - `validate_izin_sure_limit()` eklendi (limit aşımında kesin engelleme)
-    - `has_izin_cakisma()` eklendi (iptal hariç overlap kontrolü)
-    - `Izin_Bilgi` numeric alanları için payload normalize (`None -> 0.0`)
-
-- **Test kapsamı genişletildi (izin servisleri)**
-  - `tests/test_izin_service.py`:
-    - Yıllık hakediş hesaplama testleri
-    - Izin_Bilgi create/update + None normalize testleri
-    - İzin limit doğrulama testleri
-    - `insert_izin_giris` limit enforcement testleri
-    - İzin çakışma testleri (sınır gün, iptal hariç, ignore_izin_id dahil)
-  - Toplam izin servis testi: `59 passed`
-
-### 🔧 Changed
-- **BaseTableModel Integration**
-  - `set_rows()` → `set_data()` standardizasyonu (ariza_islem, fhsz_yonetim)
-  - Model eager initialization (None → guard sonrası)
-
-- **PySide6 Enum Uyumluluğu**
-  - `Qt.WA_StyledBackground` → `Qt.WidgetAttribute.WA_StyledBackground`
-  - `QPalette.Window` → `QPalette.ColorRole.Window`
-  - `QAbstractItemView.NoEditTriggers` → `QAbstractItemView.EditTrigger.NoEditTriggers`
-
-- **Type Safety Improvements**
-  - Optional settings → safe narrowing (theme_name, donem_aralik)
-  - Cursor/last_rowid None guards (sqlite_manager, settings_service)
-  - Dynamic attributes → getattr() (logger.py)
-
-- **İzin kayıt davranışı standardize edildi**
-  - `ui/pages/personel/izin_takip.py` ve `ui/pages/personel/components/hizli_izin_giris.py` limit kontrolünde aynı servis metodlarını kullanır hale getirildi
-  - Bakiye yetersizliğinde "devam et" davranışı kaldırıldı; kural ihlalinde kayıt engellenir
-
-### 📚 Documentation
-- `.github/instructions/copilot-instructions.md` güncellendi (DEĞİŞİKLİK LOGU)
+#### 🔧 Changed
+- `BaseTableModel`: `set_rows()` → `set_data()` standardizasyonu
+- PySide6 enum uyumluluğu: `Qt.WA_StyledBackground` → `Qt.WidgetAttribute.WA_StyledBackground` vb.
+- Auth: `SQLiteManager` → `AuthRepository` ayrıştırması (Mart 2026)
+- `SonucYonetici` standart servis dönüş tipi olarak tanıtıldı
 
 ---
 
-## [v0.2.0 - Service & Repository Layer] - 2026-03-05
+## [v0.2.0 — Service & Repository Layer] - 2026-03-05
 
 ### ✨ Fixed
-- 20+ type-checker hatası sistemli düzeltme
-  - `core/services/*`: Type hints, None guards
-  - `database/*`: Repository API standardizasyonu
-  - `core/auth/*`: Permission system type-safety
+- 20+ type-checker hatası sistemli düzeltme (core/services, database, core/auth)
 
 ### 🎯 Added
-- DI Fabrika sistemi (15 service)
-- BaseRepository API (delete, get_by_pk, get_where)
+- DI Fabrika sistemi (15 servis)
+- BaseRepository API (`delete`, `get_by_pk`, `get_where`)
 - Abstract method compliance (CloudAdapter)
 
 ### 🔧 Changed
@@ -149,26 +164,23 @@ Format şu kurallara uyar: [Keep a Changelog](https://keepachangelog.com/tr/1.0.
 
 ---
 
-## [v0.1.0 - Core Infrastructure] - 2026-02-XX
+## [v0.1.0 — Core Infrastructure] - 2026-02-XX
 
 ### 🎯 Added
-- Theme system (dark/light)
-- BaseTableModel foundation
-- Icon system
-- Sidebar menu configuration
-
-### 🔧 Changed
-- Initial project structure
+- Tema sistemi (dark/light)
+- BaseTableModel altyapısı
+- Icon sistemi
+- Sidebar menü yapılandırması
 
 ---
 
 ## Format Kuralları
 
 - **Added**: Yeni özellikler
-- **Changed**: Mevcut özelliklerin değiştirilmesi  
+- **Changed**: Mevcut özelliklerin değiştirilmesi
 - **Fixed**: Hata düzeltmeleri
 - **Deprecated**: Yakında kaldırılacak
 - **Removed**: Silinen özellikler
 - **Security**: Güvenlik güncellemeleri
 
-Her commit messajında versiyonu yaz: `[v0.3.0]` veya `[WIP]`
+Her commit: `[v0.4.0] type(scope): Başlık`
