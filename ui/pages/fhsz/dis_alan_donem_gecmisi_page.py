@@ -22,7 +22,6 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QDate
 from PySide6.QtGui import QColor, QBrush, QFont
 
-from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 from core.di import get_dis_alan_service
 from core.logger import logger
@@ -42,7 +41,7 @@ def _float(v):
 class DisAlanDonemGecmisiPage(QWidget):
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(S["page"])
+        self.setProperty("bg-role", "page")
         self._db  = db
         self._svc = get_dis_alan_service(db) if db else None
         self._setup_ui()
@@ -57,7 +56,7 @@ class DisAlanDonemGecmisiPage(QWidget):
 
         # Filtre
         top = QFrame()
-        top.setStyleSheet(S["filter_panel"])
+        top.setProperty("bg-role", "panel")
         top.setMaximumHeight(56)
         tl = QHBoxLayout(top)
         tl.setContentsMargins(12, 6, 12, 6); tl.setSpacing(10)
@@ -90,7 +89,7 @@ class DisAlanDonemGecmisiPage(QWidget):
         tl.addWidget(self.cmb_durum)
 
         self.btn_yukle = QPushButton("Yükle")
-        self.btn_yukle.setStyleSheet(S["save_btn"])
+        self.btn_yukle.setProperty("style-role", "action")
         self.btn_yukle.setFixedHeight(36)
         self.btn_yukle.setFixedWidth(80)
         IconRenderer.set_button_icon(self.btn_yukle, "search", color="#FFFFFF")
@@ -123,7 +122,7 @@ class DisAlanDonemGecmisiPage(QWidget):
         self.tablo.setColumnCount(len(kolonlar))
         self.tablo.setHorizontalHeaderLabels([c[0] for c in kolonlar])
         self.tablo.verticalHeader().setVisible(False)
-        self.tablo.setStyleSheet(S["table"])
+        self.tablo.setProperty("style-role", "table")
         self.tablo.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tablo.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tablo.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -140,7 +139,7 @@ class DisAlanDonemGecmisiPage(QWidget):
 
         # Alt durum çubuğu
         bot = QFrame()
-        bot.setStyleSheet(S.get("filter_panel", ""))
+        bot.setProperty("bg-role", "panel")
         bot.setMaximumHeight(40)
         bl = QHBoxLayout(bot)
         bl.setContentsMargins(12, 4, 12, 4)

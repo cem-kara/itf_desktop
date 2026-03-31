@@ -424,10 +424,7 @@ class ArizaKayitForm(QWidget):
         Başlangıçta gizlidir; _open_ariza_form / _open_islem_form ile gösterilir.
         """
         surface = getattr(DarkTheme, "SURFACE", "#13161d")
-        panel_bg = getattr(DarkTheme, "PANEL",   "#191d26")
-        border   = getattr(DarkTheme, "BORDER",  "#242938")
-        text_pr  = getattr(DarkTheme, "TEXT_PRIMARY",   "#eef0f5")
-        text_sec = getattr(DarkTheme, "TEXT_SECONDARY", "#c8cdd8")
+        border = getattr(DarkTheme, "BORDER",  "#242938")
 
         self._form_panel = QWidget()
         self._form_panel.setVisible(False)
@@ -981,9 +978,6 @@ class ArizaKayitForm(QWidget):
 
     def _build_perf_tab(self) -> QWidget:
         """Performans tabının iskeletini oluşturur (içerik _refresh_perf_tab ile dolar)."""
-        surface = getattr(DarkTheme, "SURFACE", "#13161d")
-        border  = getattr(DarkTheme, "BORDER",  "#242938")
-
         outer = QScrollArea()
         outer.setWidgetResizable(True)
         # tema otomatik — outer scroll
@@ -1302,9 +1296,7 @@ class ArizaKayitForm(QWidget):
         ay_etiket = {}
         for i in range(12):
             ay_idx = (now.month - 1 - i) % 12
-            yil    = now.year if now.month - 1 - i >= 0 else now.year - 1
-            anahtar = f"{yil}-{ay_idx+1:02d}"
-            konum   = 11 - i
+            konum = 11 - i
             ay_sayim[konum] = 0
             ay_etiket[konum] = ["Oca","Şub","Mar","Nis","May","Haz",
                                   "Tem","Ağu","Eyl","Eki","Kas","Ara"][ay_idx]
@@ -1377,10 +1369,8 @@ class ArizaKayitForm(QWidget):
 
     # ── Tekrarlayan arızalar listesi ────────────────────
     def _build_repeat_list(self, rows: List[Dict]) -> QWidget:
-        panel  = getattr(DarkTheme, "PANEL",  "#191d26")
+        panel = getattr(DarkTheme, "PANEL",  "#191d26")
         border = getattr(DarkTheme, "BORDER", "#242938")
-        text   = getattr(DarkTheme, "TEXT_PRIMARY", "#eef0f5")
-        muted  = getattr(DarkTheme, "TEXT_MUTED",   "#5a6278")
 
         cutoff = datetime.now() - timedelta(days=90)
         recent = []

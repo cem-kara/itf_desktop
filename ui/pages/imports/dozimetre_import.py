@@ -11,13 +11,13 @@ from PySide6.QtCore import Qt, QThread, Signal as _Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel,
-    QPushButton, QTableView, QFileDialog, QMessageBox,
+    QPushButton, QTableView, QFileDialog,
     QProgressBar, QAbstractItemView,
 )
 from core.logger import logger
+from core.hata_yonetici import bilgi_goster, hata_goster, soru_sor
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
-from ui.styles.components import STYLES as S
 from ui.styles.icons import Icons
 
 PREVIEW_COLS = [
@@ -270,7 +270,7 @@ class DozimetreImportPage(QWidget):
             border-radius:6px;padding:6px 12px;color:{"muted"};font-size:12px;""")
         self.lbl_path.setMinimumWidth(300)
         self.btn_sec = QPushButton("📂  PDF Seç")
-        self.btn_sec.setStyleSheet(str(S.get("btn_default","") or ""))
+        self.btn_sec.setProperty("style-role", "secondary")
         self.btn_sec.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_sec.clicked.connect(self._pick_file)
         file_row.addWidget(self.lbl_path,1); file_row.addWidget(self.btn_sec)
@@ -310,12 +310,12 @@ class DozimetreImportPage(QWidget):
 
         btn_row = QHBoxLayout(); btn_row.setSpacing(8); btn_row.addStretch()
         self.btn_temizle = QPushButton("Temizle")
-        self.btn_temizle.setStyleSheet(str(S.get("btn_default","") or ""))
+        self.btn_temizle.setProperty("style-role", "secondary")
         self.btn_temizle.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_temizle.clicked.connect(self._clear)
         self.btn_temizle.setEnabled(False)
         self.btn_kaydet = QPushButton("💾  Veritabanına Kaydet")
-        self.btn_kaydet.setStyleSheet(str(S.get("btn_action","") or ""))
+        self.btn_kaydet.setProperty("style-role", "action")
         self.btn_kaydet.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_kaydet.clicked.connect(self._save)
         self.btn_kaydet.setEnabled(False)
@@ -431,28 +431,29 @@ class DozimetreImportPage(QWidget):
 
         if mevcut_sayisi > 0:
             if mevcut_sayisi >= yeni_sayisi:
-                QMessageBox.information(
+                bilgi_goster(
                     self, "Zaten Kayıtlı",
                     f"<b>{rapor_no}</b> raporunun tüm {mevcut_sayisi} kaydı "
-                    f"zaten veritabanında mevcut.<br>Herhangi bir ekleme yapılmadı."
+                    f"zaten veritabanında mevcut.<br>Herhangi bir ekleme yapılmadı.",
+                    "Zaten Kayıtlı",
                 )
                 return
-            cevap = QMessageBox.question(
-                self, "Mükerrer Kayıt Uyarısı",
+            cevap = soru_sor(
+                self,
                 f"<b>{rapor_no}</b> raporu için:<br><br>"
                 f"&nbsp;&nbsp;• <b>{yeni_sayisi}</b> satır okundu<br>"
                 f"&nbsp;&nbsp;• <b>{mevcut_sayisi}</b> kayıt zaten mevcut<br>"
                 f"&nbsp;&nbsp;• <b>{yeni_sayisi - mevcut_sayisi}</b> yeni kayıt eklenecek<br><br>"
                 f"Devam edilsin mi?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                "Mükerrer Kayıt Uyarısı",
             )
         else:
-            cevap = QMessageBox.question(
-                self, "Kaydet",
+            cevap = soru_sor(
+                self,
                 f"{yeni_sayisi} kayıt veritabanına eklenecek. Devam edilsin mi?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                "Kaydet",
             )
-        if cevap != QMessageBox.StandardButton.Yes: return
+        if not cevap: return
 
         self.btn_kaydet.setEnabled(False)
         self.btn_temizle.setEnabled(False)
@@ -475,7 +476,7 @@ class DozimetreImportPage(QWidget):
         self.lbl_status.setProperty("color-role", "primary")
         detail = f"{yeni} yeni kayıt veritabanına eklendi."
         if atlanan: detail += f"\n{atlanan} kayıt zaten mevcuttu, atlandı."
-        QMessageBox.information(self,"Başarılı", detail)
+        bilgi_goster(self, detail, "Başarılı")
 
     def _on_save_error(self, msg: str):
         self.progress.hide()
@@ -486,7 +487,7 @@ class DozimetreImportPage(QWidget):
         self.lbl_status.setPixmap(icon)
         self.lbl_status.setText(f" Kaydetme hatası: {msg}")
         self.lbl_status.setProperty("color-role", "primary")
-        QMessageBox.critical(self,"Hata",f"Kayıt sırasında hata oluştu:\n{msg}")
+        hata_goster(self, f"Kayıt sırasında hata oluştu:\n{msg}")
 
     def _clear(self):
         self._header = {}; self._rows = []

@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QGridLayout, 
-    QGroupBox, QScrollArea, QLineEdit, QPushButton, QMessageBox, QComboBox,
+    QGroupBox, QScrollArea, QLineEdit, QPushButton, QComboBox,
     QCompleter, QDateEdit, QFileDialog
 )
 from PySide6.QtCore import Qt, QDate, Signal, QThread
 from PySide6.QtGui import QCursor, QPixmap
 from core.di import get_personel_service, get_izin_service, get_dokuman_service
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 from core.logger import logger
 from core.paths import DB_PATH
 from ui.styles import DarkTheme
@@ -811,7 +812,7 @@ class PersonelOverviewPanel(QWidget):
         """Grup verilerini kaydet"""
         if not self._personel_svc:
             logger.error("Service yok, veri kaydı başarısız")
-            QMessageBox.critical(self, "Hata", "Veritabanı bağlantısı yoktur.")
+            hata_goster(self, "Veritabanı bağlantısı yoktur.")
             return
 
         grp = self._groups[group_id]
@@ -839,7 +840,7 @@ class PersonelOverviewPanel(QWidget):
                 update_data[key] = val
         except ValueError as e:
             logger.warning(f"Veri validasyon hatası ({group_id}): {e}")
-            QMessageBox.warning(self, "Girdi Hatası", str(e))
+            uyari_goster(self, str(e))
             return
             
         try:
@@ -869,7 +870,7 @@ class PersonelOverviewPanel(QWidget):
                 self._recalc_izin_if_needed(group_id, tc, update_data)
                 self._toggle_edit(group_id, False)
                 logger.info(f"Personel başarıyla güncellendi: {tc} ({group_id})")
-                QMessageBox.information(self, "Başarılı", "Veriler kaydedildi.")
+                bilgi_goster(self, "Veriler kaydedildi.")
                 return
 
             # Upload callback sonrası DB güncellemesi
@@ -890,19 +891,19 @@ class PersonelOverviewPanel(QWidget):
                 self._recalc_izin_if_needed(group_id, tc, update_data)
                 self._toggle_edit(group_id, False)
                 logger.info(f"Personel (dosya dahil) başarıyla güncellendi: {tc} ({group_id})")
-                QMessageBox.information(self, "Başarılı", "Veriler ve dosyalar kaydedildi.")
+                bilgi_goster(self, "Veriler ve dosyalar kaydedildi.")
 
             self._upload_files_to_drive(tc, _after_upload)
 
         except ValueError as ve:
             logger.warning(f"Veri hatası (kayıt): {ve}")
-            QMessageBox.warning(self, "Veri Hatası", str(ve))
+            uyari_goster(self, str(ve))
         except RuntimeError as re:
             logger.error(f"İşlem hatası: {re}")
-            QMessageBox.critical(self, "İşlem Hatası", str(re))
+            hata_goster(self, str(re))
         except Exception as e:
             logger.error(f"Beklenmeyen güncelleme hatası ({group_id}): {e}", exc_info=True)
-            QMessageBox.critical(self, "Sistem Hatası", f"Güncelleme başarısız:\nAyrıntılar için logları kontrol edin.")
+            hata_goster(self, "Güncelleme başarısız:\nAyrıntılar için logları kontrol edin.")
 
     def _on_photo_upload(self):
         """Fotoğraf seçim ve yükleme işlemini tetikler."""
@@ -922,7 +923,7 @@ class PersonelOverviewPanel(QWidget):
                 self._save_photo_to_db(path)
         except Exception as e:
             logger.warning(f"Fotoğraf yüklenemedi: {e}", exc_info=True)
-            QMessageBox.warning(self, "Fotoğraf Yükleme Hatası", f"İşlem gerçekleştirilemedi:\n{str(e)}")
+            uyari_goster(self, f"İşlem gerçekleştirilemedi:\n{str(e)}")
 
     def _save_photo_to_db(self, photo_path):
         """Resmi Drive'a yükleyip veritabanına kaydeder."""
@@ -952,7 +953,7 @@ class PersonelOverviewPanel(QWidget):
                         repo.update(tc, {"Resim": drive_link})
                         self.personel_data["Resim"] = drive_link
                         logger.info(f"Fotoğraf Drive'a yüklendi ve DB güncellendi: {tc}")
-                        QMessageBox.information(self, "Başarılı", "Fotoğraf başarıyla güncellendi.")
+                        bilgi_goster(self, "Fotoğraf başarıyla güncellendi.")
                     else:
                         # Drive yok, lokal dosyayı kaydet
                         local_path = self._save_file_locally(photo_path, tc, "Resim")
@@ -960,24 +961,24 @@ class PersonelOverviewPanel(QWidget):
                             repo.update(tc, {"Resim": local_path})
                             self.personel_data["Resim"] = local_path
                             logger.info(f"Fotoğraf lokal klasöre kaydedildi: {local_path}")
-                            QMessageBox.information(self, "Başarılı", "Fotoğraf güncellendi (lokal kayıt).")
+                            bilgi_goster(self, "Fotoğraf güncellendi (lokal kayıt).")
                         else:
                             raise RuntimeError("Dosya kaydedilemedi, lokal klasör oluşturulamadı")
                 except Exception as e:
                     logger.error(f"Upload callback hatası: {e}", exc_info=True)
-                    QMessageBox.critical(self, "Kayıt Hatası", f"Fotoğraf kaydedilemedi:\n{str(e)}")
+                    hata_goster(self, f"Fotoğraf kaydedilemedi:\n{str(e)}")
             
             self._upload_files_to_drive(tc, _after_upload)
             
         except ValueError as ve:
             logger.warning(f"Veri hatası (fotoğraf): {ve}")
-            QMessageBox.warning(self, "Veri Hatası", str(ve))
+            uyari_goster(self, str(ve))
         except RuntimeError as re:
             logger.error(f"İşlem hatası (fotoğraf): {re}")
-            QMessageBox.critical(self, "İşlem Hatası", str(re))
+            hata_goster(self, str(re))
         except Exception as e:
             logger.error(f"Fotoğraf kaydetme hatası: {e}", exc_info=True)
-            QMessageBox.critical(self, "Sistem Hatası", f"Fotoğraf kaydedilemedi:\nAyrıntılar için logları kontrol edin.")
+            hata_goster(self, "Fotoğraf kaydedilemedi:\nAyrıntılar için logları kontrol edin.")
 
     def _save_file_locally(self, source_file_path, tc_no, file_type):
         """
@@ -1166,7 +1167,7 @@ class PersonelOverviewPanel(QWidget):
                     logger.debug(f"Dosya tarayıcısı ile açıldı: {os.path.basename(link)}")
         except Exception as e:
             logger.error(f"Diploma görüntülenemiyor ({db_key}): {e}", exc_info=True)
-            QMessageBox.warning(self, "Açma Hatası", f"Diploma dosyası açılamadı:\n{str(e)}")
+            uyari_goster(self, f"Diploma dosyası açılamadı:\n{str(e)}")
 
     def _on_upload_error(self, alan_adi, hata):
         """Tek dosya yükleme hatası."""
@@ -1186,8 +1187,8 @@ class PersonelOverviewPanel(QWidget):
 
             if self._upload_errors:
                 logger.warning(f"Upload tamamlandı (hatalı): {len(self._upload_errors)} dosya yüklenemedi")
-                QMessageBox.warning(
-                    self, "Drive Yükleme Uyarısı",
+                uyari_goster(
+                    self,
                     f"Bazı dosyalar yüklenemedi ({len(self._upload_errors)} hata):\n" + "\n".join(self._upload_errors)
                 )
             else:
@@ -1198,7 +1199,7 @@ class PersonelOverviewPanel(QWidget):
                     self._upload_callback()
                 except Exception as e:
                     logger.error(f"Upload callback hatası: {e}", exc_info=True)
-                    QMessageBox.critical(self, "Callback Hatası", f"İşlem tamamlanamadı:\n{str(e)}")
+                    hata_goster(self, f"İşlem tamamlanamadı:\n{str(e)}")
         except Exception as e:
             logger.error(f"Finalize uploads hatası: {e}", exc_info=True)
 

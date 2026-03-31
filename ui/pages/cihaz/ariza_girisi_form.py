@@ -3,9 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from core.di import get_cihaz_service as _get_cihaz_service
-
-
 from PySide6.QtCore import QDate, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QGridLayout, QLabel, QLineEdit,
@@ -126,14 +123,12 @@ class ArizaGirisForm(QWidget):
         btn_layout = QVBoxLayout()
         btn_layout.setSpacing(8)
         btn_kaydet = QPushButton("Kaydet")
-        success_style = ""  # setProperty("style-role","success") kullan
         btn_kaydet.setProperty("style-role", "success")
         btn_kaydet.clicked.connect(self._save)
         if self._action_guard:
             self._action_guard.disable_if_unauthorized(btn_kaydet, "cihaz.write")
         btn_layout.addWidget(btn_kaydet)
         btn_temizle = QPushButton("Temizle")
-        cancel_style = ""  # İstenirse burada özel bir stil verilebilir
         btn_temizle.setProperty("style-role", "secondary")
         btn_temizle.clicked.connect(self._clear)
         btn_layout.addWidget(btn_temizle)

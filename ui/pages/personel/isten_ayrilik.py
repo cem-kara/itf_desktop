@@ -13,13 +13,13 @@ from PySide6.QtCore import Qt, QDate, QThread, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QProgressBar, QFrame, QComboBox, QDateEdit,
-    QGroupBox, QMessageBox, QFileDialog, QGridLayout,
+    QGroupBox, QFileDialog, QGridLayout,
     QTableWidget, QTableWidgetItem
 )
 from PySide6.QtGui import QCursor
 
 from core.logger import logger
-from core.hata_yonetici import exc_logla
+from core.hata_yonetici import exc_logla, bilgi_goster, hata_goster, uyari_goster, soru_sor
 from core.di import get_izin_service, get_dokuman_service
 from core.date_utils import to_ui_date
 from ui.styles.icons import IconRenderer
@@ -531,18 +531,18 @@ class IstenAyrilikPage(QWidget):
         ad = self._data.get("AdSoyad", "")
         neden = self.cmb_neden.currentText().strip()
         if not neden:
-            QMessageBox.warning(self, "Eksik", "Ayrılma nedeni seçilmeli.")
+            uyari_goster(self, "Ayrılma nedeni seçilmeli.", "Eksik")
             return
 
-        cevap = QMessageBox.question(
-            self, "Son Onay",
+        cevap = soru_sor(
+            self,
             f"{ad} personeli PASİF yapılacak ve dosyaları arşivlenecek.\n\n"
             f"Neden: {neden}\n"
             f"Tarih: {self.dt_tarih.date().toString('dd.MM.yyyy')}\n\n"
             "Devam etmek istiyor musunuz?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
+            "Son Onay",
         )
-        if cevap != QMessageBox.StandardButton.Yes:
+        if not cevap:
             return
 
         self._pending_ayrilis_data = {
@@ -584,11 +584,11 @@ class IstenAyrilikPage(QWidget):
 
         if self._archive_required and not arsiv_link:
             self.lbl_status.setText("Arşiv oluşturulamadı. Personel pasife alınmadı.")
-            QMessageBox.warning(
+            uyari_goster(
                 self,
-                "Arşiv Uyarısı",
                 f"{ad} için arşiv yüklenemedi.\n"
-                "Güvenli mod nedeniyle personel pasife alınmadı."
+                "Güvenli mod nedeniyle personel pasife alınmadı.",
+                "Arşiv Uyarısı",
             )
             return
 
@@ -599,11 +599,11 @@ class IstenAyrilikPage(QWidget):
         self.btn_onayla.setEnabled(True)
         self.lbl_status.setText(f"Arsiv hatasi: {hata}")
         logger.error(f"Arşiv hatası: {hata}")
-        QMessageBox.warning(
+        uyari_goster(
             self,
-            "Arşiv Uyarısı",
             f"Arşivleme hatası oluştu:\n{hata}\n\n"
-            "Güvenli mod nedeniyle personel pasife alınmadı."
+            "Güvenli mod nedeniyle personel pasife alınmadı.",
+            "Arşiv Uyarısı",
         )
 
     def _has_archive_source(self):
@@ -641,15 +641,15 @@ class IstenAyrilikPage(QWidget):
             logger.info(f"Personel pasif (güvenli mod): {tc}")
         except Exception as e:
             logger.error(f"Güvenli mod DB güncelleme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Güncelleme hatası:\n{e}")
+            hata_goster(self, f"Güncelleme hatası:\n{e}")
             return
 
         self.lbl_status.setText("Islem tamamlandi.")
-        QMessageBox.information(
+        bilgi_goster(
             self,
-            "Tamamlandı",
             f"{ad} personeli PASİF duruma getirildi.\n"
-            f"{'Dosyaları arşivlendi.' if arsiv_link else 'Arşivlenecek dosya bulunamadı.'}"
+            f"{'Dosyaları arşivlendi.' if arsiv_link else 'Arşivlenecek dosya bulunamadı.'}",
+            "Tamamlandı",
         )
         self._go_back()
 

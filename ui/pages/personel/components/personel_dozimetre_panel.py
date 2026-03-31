@@ -192,7 +192,7 @@ class _GaugeWidget(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         oran = min(self._deger / self._limit, 1.0) if self._limit else 0.0
-        w, h = self.width(), self.height()
+        w = self.width()
 
         p.setPen(QColor("#4d6070"))  # TEXT_MUTED
         p.setFont(QFont("", 8))
@@ -480,14 +480,12 @@ class PersonelDozimetrePanel(QWidget):
 
         # Periyot doluluk (son yıl)
         kayitli = {r.get("Periyot") for r in yil_veriler}
-        eksik   = [i for i in range(1, PERIYOT_SAYISI + 1) if i not in kayitli]
+        eksik = [i for i in range(1, PERIYOT_SAYISI + 1) if i not in kayitli]
         if not eksik:
             doluluk_metin = f"✔ {son_yil} yılı\n{PERIYOT_SAYISI}/{PERIYOT_SAYISI} periyot kayıtlı"
-            doluluk_renk  = "#4ade80"
         else:
             doluluk_metin = (f"⚠ {son_yil} yılı\n{len(kayitli)}/{PERIYOT_SAYISI} periyot  |  "
                              f"Eksik: {', '.join(str(e) for e in eksik)}. periyot")
-            doluluk_renk = "#facc15"
         self.lbl_periyot_doluluk.setText(doluluk_metin)
         self.lbl_periyot_doluluk.setProperty("color-role", "primary")
 

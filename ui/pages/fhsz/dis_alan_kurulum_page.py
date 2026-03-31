@@ -21,12 +21,12 @@ from datetime import date
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QFrame, QFormLayout, QSpinBox, QComboBox,
-    QMessageBox, QScrollArea
+    QScrollArea
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 
-from ui.styles.components import STYLES as S
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 from core.logger import logger
 
 
@@ -77,7 +77,7 @@ class _InfoKart(QFrame):
 class DisAlanKurulumPage(QWidget):
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(S["page"])
+        self.setProperty("bg-role", "page")
         self._db = db
         self._setup_ui()
         self._connect_signals()
@@ -235,7 +235,7 @@ class DisAlanKurulumPage(QWidget):
         btn_lay.addStretch()
 
         self.btn_hesapla = QPushButton("Hesapla ve Önizle")
-        self.btn_hesapla.setStyleSheet(S.get("secondary_btn", S["save_btn"]))
+        self.btn_hesapla.setProperty("style-role", "secondary")
         self.btn_hesapla.setFixedHeight(40)
         self.btn_hesapla.setFixedWidth(160)
 
@@ -342,10 +342,10 @@ class DisAlanKurulumPage(QWidget):
         yil   = self.spn_veri_yil.value()
 
         if not ana:
-            QMessageBox.warning(self, "Eksik", "Anabilim Dalı boş olamaz.")
+            uyari_goster(self, "Anabilim Dalı boş olamaz.")
             return
         if not birim:
-            QMessageBox.warning(self, "Eksik", "Birim boş olamaz.")
+            uyari_goster(self, "Birim boş olamaz.")
             return
 
         gun_ckollu = self.spn_ckollu_gun.value()
@@ -353,7 +353,7 @@ class DisAlanKurulumPage(QWidget):
         sure       = self.spn_sure.value()
 
         if gun_toplam == 0:
-            QMessageBox.warning(self, "Hata", "Günlük toplam işlem 0 olamaz.")
+            uyari_goster(self, "Günlük toplam işlem 0 olamaz.")
             return
 
         oran    = gun_ckollu / gun_toplam
@@ -402,11 +402,10 @@ class DisAlanKurulumPage(QWidget):
 
     def _kaydet(self):
         if not hasattr(self, "_onizle_veri"):
-            QMessageBox.warning(self, "Önce önizleyin",
-                                "Lütfen önce 'Hesapla ve Önizle' butonuna tıklayın.")
+            uyari_goster(self, "Lütfen önce 'Hesapla ve Önizle' butonuna tıklayın.")
             return
         if not self._db:
-            QMessageBox.critical(self, "Hata", "Veritabanı bağlantısı yok.")
+            hata_goster(self, "Veritabanı bağlantısı yok.")
             return
 
         v = self._onizle_veri
@@ -433,11 +432,11 @@ class DisAlanKurulumPage(QWidget):
             }
             ok = kat_svc.protokol_ekle(protokol)
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
             return
 
         if ok:
-            QMessageBox.information(
+            bilgi_goster(
                 self, "Kurulum Tamamlandı",
                 f"{v['ana']} / {v['birim']} için katsayı protokolü oluşturuldu.\n\n"
                 f"Katsayı : {v['katsayi']:.4f} saat/vaka\n"
@@ -448,7 +447,7 @@ class DisAlanKurulumPage(QWidget):
             self.btn_sablon.setEnabled(True)
             del self._onizle_veri
         else:
-            QMessageBox.warning(
+            uyari_goster(
                 self, "Eklenemedi",
                 f"{v['yil']}-01-01 başlangıç tarihli bir protokol zaten mevcut.\n"
                 "Önce Katsayı Protokolleri ekranından mevcut protokolü pasife alın."
@@ -587,7 +586,7 @@ class DisAlanKurulumPage(QWidget):
                     cell.fill = PatternFill("solid", fgColor=mavi)
 
             wb.save(path)
-            QMessageBox.information(
+            bilgi_goster(
                 self, "Şablon Hazır",
                 f"Şablon kaydedildi:\n{path}\n\n"
                 f"Anabilim Dalı ve Birim bilgileri dolu.\n"
@@ -595,7 +594,6 @@ class DisAlanKurulumPage(QWidget):
             )
 
         except ImportError:
-            QMessageBox.critical(self, "Eksik Paket",
-                                 "openpyxl kurulu değil.\npip install openpyxl")
+            hata_goster(self, "openpyxl kurulu değil.\npip install openpyxl")
         except Exception as e:
-            QMessageBox.critical(self, "Hata", f"Şablon oluşturulamadı:\n{e}")
+            hata_goster(self, f"Şablon oluşturulamadı:\n{e}")

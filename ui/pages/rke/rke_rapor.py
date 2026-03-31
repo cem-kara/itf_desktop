@@ -692,7 +692,6 @@ class RKERaporPenceresi(QWidget):
         fb = self.cmb_birim.currentText()
         # userData = "yyyy-MM-dd", "Tüm Tarihler" ise None
         ft_raw = self.cmb_tarih.currentData() or ""
-        ft_lbl = self.cmb_tarih.currentText()
 
         filtered = []
         for r in self._ham:

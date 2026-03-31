@@ -19,9 +19,10 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView,
-    QDialog, QDialogButtonBox, QFormLayout, QCheckBox, QComboBox, QMessageBox,
+    QDialog, QDialogButtonBox, QFormLayout, QCheckBox, QComboBox,
 )
 from core.di import get_registry
+from core.hata_yonetici import hata_goster
 from core.logger import logger
 from ui.styles.icons import IconRenderer, IconColors
 
@@ -227,17 +228,13 @@ class NobetHazirlikPage(QWidget):
                     "Ay":self._ay,"created_at":simdi,**veri})
             self._yukle_personel()
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e), "Hata")
 
     def personel_ozet(self):
         """Merkez kapasite barı için {izinli, fm, uyari}."""
         try:
             reg = self._reg()
             pidler = self._pid_listesi()
-            tatil  = _tatil_set(self._yil, self._ay, reg)
-            ay_bas = date(self._yil, self._ay, 1)
-            ay_bit = date(self._yil, self._ay, monthrange(self._yil, self._ay)[1])
-            ay_is  = _networkdays(ay_bas, ay_bit, tatil)
             izinli = fm = uyari = 0
             for pid, _ in pidler:
                 iz = self._izin_gun_sayisi(pid, reg)

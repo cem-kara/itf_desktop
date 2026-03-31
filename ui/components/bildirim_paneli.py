@@ -97,8 +97,6 @@ class BildirimPaneli(QWidget):
         self.setProperty("bg-role", "panel")
 
     def _satir_olustur(self, mod: str) -> QFrame:
-        border = _KRITIK_BORDER if mod == "kritik" else _UYARI_BORDER
-        bg     = _KRITIK_BG     if mod == "kritik" else _UYARI_BG
         icon   = "●" if mod == "kritik" else "●"
         label  = "KRİTİK" if mod == "kritik" else "UYARI"
 

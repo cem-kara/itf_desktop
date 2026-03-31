@@ -90,13 +90,13 @@ def html_nobet_listesi(veriler: list[dict], baslik: str,
             f"<div class='c'>{donem} &nbsp;|&nbsp; Rapor Tarihi: {tarih} "
             f"&nbsp;|&nbsp; Toplam: {len(veriler)} kayıt</div>"
             f"{icerik}"
-            f"<table style='border:none;margin-top:40px;'><tr>"
-            f"<td style='border:none;text-align:center;'>"
-            f"<b>Hazırlayan</b><br><br>_______________</td>"
-            f"<td style='border:none;text-align:center;'>"
-            f"<b>Onaylayan</b><br><br>_______________</td>"
-            f"</tr></table>"
-            f"</body></html>")
+            "<table style='border:none;margin-top:40px;'><tr>"
+            "<td style='border:none;text-align:center;'>"
+            "<b>Hazırlayan</b><br><br>_______________</td>"
+            "<td style='border:none;text-align:center;'>"
+            "<b>Onaylayan</b><br><br>_______________</td>"
+            "</tr></table>"
+            "</body></html>")
 
 
 # ─── Worker ──────────────────────────────────────────────
@@ -177,7 +177,7 @@ class _RaporWorker(QThread):
             for i, _ in enumerate(v_adlar)
         ) if v_adlar else ""
         th_kisi = "<th>Tarih</th><th>Gün</th>" + "".join(
-            f"<th>1</th><th>2</th><th>3</th><th>4</th>"
+            "<th>1</th><th>2</th><th>3</th><th>4</th>"
             for _ in v_adlar
         )
 
@@ -206,14 +206,14 @@ class _RaporWorker(QThread):
         return (f"<html><head><meta charset='utf-8'><style>{css}</style></head><body>"
                 f"<h1>{birim} — {ay} {yil} Nöbet Listesi</h1>"
                 f"<div class='c'>Rapor Tarihi: {tarih_str}</div>"
-                f"<table><thead>"
+                "<table><thead>"
                 f"<tr><th colspan='2'></th>{th_vardiya}</tr>"
                 f"<tr>{th_kisi}</tr></thead><tbody>{rows_html}</tbody></table>"
-                f"<br><h2>Personel Özeti</h2>"
-                f"<table><thead><tr><th class='l'>Ad Soyad</th>"
-                f"<th>Nöbet</th><th>Hedef</th><th>Çalışılan</th><th>Fazla</th>"
+                "<br><h2>Personel Özeti</h2>"
+                "<table><thead><tr><th class='l'>Ad Soyad</th>"
+                "<th>Nöbet</th><th>Hedef</th><th>Çalışılan</th><th>Fazla</th>"
                 f"</tr></thead><tbody>{ozet_rows}</tbody></table>"
-                f"</body></html>")
+                "</body></html>")
 
     def _excel_olustur(self) -> str:
         """Şablon yoksa openpyxl ile doğrudan oluştur."""

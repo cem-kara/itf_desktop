@@ -203,19 +203,19 @@ class RKEMerkezPage(QWidget):
     def _tab_qss(active: bool) -> str:
         if active:
             return (
-                f"QPushButton{{"
-                f"background:transparent; border:none;"
-                f"border-bottom:2px solid #3d8ef5;"
-                f"color:#e8edf5;"
-                f"font-size:13px; font-weight:700; padding:0 14px;"
-                f"}}"
+                "QPushButton{" 
+                "background:transparent; border:none;"
+                "border-bottom:2px solid #3d8ef5;"
+                "color:#e8edf5;"
+                "font-size:13px; font-weight:700; padding:0 14px;"
+                "}"
             )
         return (
-            f"QPushButton{{"
-            f"background:transparent; border:none;"
-            f"border-bottom:2px solid transparent;"
-            f"color:#4d6070;"
-            f"font-size:13px; font-weight:600; padding:0 14px;"
-            f"}}"
-            f"QPushButton:hover{{color:#e8edf5;}}"
+            "QPushButton{" 
+            "background:transparent; border:none;"
+            "border-bottom:2px solid transparent;"
+            "color:#4d6070;"
+            "font-size:13px; font-weight:600; padding:0 14px;"
+            "}"
+            "QPushButton:hover{color:#e8edf5;}"
         )

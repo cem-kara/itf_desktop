@@ -6,9 +6,9 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QLabel,
     QLineEdit,
-    QMessageBox,
     QVBoxLayout,
 )
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 
 
 class ChangePasswordDialog(QDialog):
@@ -61,22 +61,22 @@ class ChangePasswordDialog(QDialog):
         confirm_password = self._confirm_password.text()
 
         if not new_password:
-            QMessageBox.warning(self, "Uyari", "Yeni sifre bos olamaz.")
+            uyari_goster(self, "Yeni sifre bos olamaz.", "Uyari")
             self._new_password.setFocus()
             return
         if new_password != confirm_password:
-            QMessageBox.warning(self, "Uyari", "Sifreler eslesmiyor.")
+            uyari_goster(self, "Sifreler eslesmiyor.", "Uyari")
             self._confirm_password.setFocus()
             return
 
         pw_errors = self._validate_password(new_password)
         if pw_errors:
-            QMessageBox.warning(self, "Uyari", "\n".join(pw_errors))
+            uyari_goster(self, "\n".join(pw_errors), "Uyari")
             return
 
         try:
             self._auth.change_password(self._session_user.user_id, new_password)
-            QMessageBox.information(self, "Basarili", "Sifre guncellendi.")
+            bilgi_goster(self, "Sifre guncellendi.", "Basarili")
             self.accept()
         except Exception as exc:  # pragma: no cover - UI error path
-            QMessageBox.critical(self, "Hata", f"Sifre guncellenemedi:\n{exc}")
+            hata_goster(self, f"Sifre guncellenemedi:\n{exc}")

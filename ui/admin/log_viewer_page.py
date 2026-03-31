@@ -24,12 +24,12 @@ from PySide6.QtWidgets import (
     QSpinBox,
     QGroupBox,
     QCheckBox,
-    QMessageBox,
 )
 from PySide6.QtCore import Qt, QTimer, QDate
 from PySide6.QtGui import QColor
 
 from core.logger import logger
+from core.hata_yonetici import hata_goster, bilgi_goster
 from core.services.log_service import LogService
 from ui.components.base_table_model import BaseTableModel
 
@@ -292,7 +292,7 @@ class LogViewerPage(QWidget):
         except Exception as e:
             self._lbl_stats.setText(f"Hata: {str(e)}")
             logger.error(f"Log yükleme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Loglar yüklenemedi:\n{str(e)}")
+            hata_goster(self, f"Loglar yüklenemedi:\n{str(e)}", "Hata")
 
     def _clear_table(self):
         """Tabloyu temizle"""
@@ -319,12 +319,12 @@ class LogViewerPage(QWidget):
                 for row in rows:
                     f.write(row.get('raw', '') + '\n')
             
-            QMessageBox.information(self, "Başarılı", f"{len(rows)} log kaydedildi:\n{file_path}")
+            bilgi_goster(self, f"{len(rows)} log kaydedildi:\n{file_path}", "Başarılı")
             logger.info(f"Loglar dışa aktarıldı: {file_path}")
             
         except Exception as e:
             logger.error(f"Log dışa aktarma hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Loglar kaydedilemedi:\n{str(e)}")
+            hata_goster(self, f"Loglar kaydedilemedi:\n{str(e)}", "Hata")
 
     def _toggle_auto_refresh(self, state):
         """Otomatik yenilemeyi aç/kapat"""

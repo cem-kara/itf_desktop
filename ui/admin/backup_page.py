@@ -20,7 +20,6 @@ from PySide6.QtWidgets import (
     QPushButton,
     QLabel,
     QTableView,
-    QMessageBox,
     QGroupBox,
     QSpinBox,
     QFrame,
@@ -28,6 +27,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
+from core.hata_yonetici import bilgi_goster, hata_goster, soru_sor, uyari_goster
 from core.logger import logger
 from core.services.backup_service import BackupService
 from core.paths import DATA_DIR, LOG_DIR
@@ -237,7 +237,7 @@ class BackupPage(QWidget):
             logger.info(f"{len(backups)} yedek yüklendi")
         except Exception as e:
             logger.error(f"Yedek yükleme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Yedekler yüklenemedi:\n{str(e)}")
+            hata_goster(self, f"Yedekler yüklenemedi:\n{str(e)}")
 
     def _update_stats(self):
         """İstatistikleri güncelle"""
@@ -262,15 +262,7 @@ class BackupPage(QWidget):
 
     def _create_backup(self):
         """Yeni yedek oluştur"""
-        reply = QMessageBox.question(
-            self,
-            "Yedek Oluştur",
-            "Yeni yedek oluşturmak istediğinizden emin misiniz?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.Yes
-        )
-        
-        if reply != QMessageBox.StandardButton.Yes:
+        if not soru_sor(self, "Yeni yedek oluşturmak istediğinizden emin misiniz?"):
             return
         
         try:
@@ -280,18 +272,17 @@ class BackupPage(QWidget):
             result = self._service.create_backup(description="")
             
             if result["success"]:
-                QMessageBox.information(
+                bilgi_goster(
                     self,
-                    "Başarılı",
                     f"{result['message']}\n\nBoyut: {result['size_mb']:.2f} MB"
                 )
                 self._load_backups()
             else:
-                QMessageBox.critical(self, "Hata", result["message"])
+                hata_goster(self, result["message"])
                 
         except Exception as e:
             logger.error(f"Yedek oluşturma hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Yedek oluşturulamadı:\n{str(e)}")
+            hata_goster(self, f"Yedek oluşturulamadı:\n{str(e)}")
         finally:
             self._btn_create_backup.setEnabled(True)
             self._btn_create_backup.setText("Yedek Oluştur")
@@ -317,8 +308,6 @@ class BackupPage(QWidget):
                 templates_path = os.path.join(DATA_DIR, "templates")
                 if os.path.exists(templates_path):
                     include_folders.append(templates_path)
-            
-            description = ""
         except (RuntimeError, AttributeError):
             # Tab kapatılırken callback çalıştıysa widget silinmiş olabilir
             return
@@ -330,16 +319,8 @@ class BackupPage(QWidget):
             msg += "• " + "\n• ".join(folder_names)
         else:
             msg += "• Sadece veritabanı"
-        
-        reply = QMessageBox.question(
-            self,
-            "Tam Yedek Oluştur",
-            msg,
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.Yes
-        )
-        
-        if reply != QMessageBox.StandardButton.Yes:
+
+        if not soru_sor(self, msg):
             return
         
         try:
@@ -352,19 +333,18 @@ class BackupPage(QWidget):
             )
             
             if result["success"]:
-                QMessageBox.information(
+                bilgi_goster(
                     self,
-                    "Başarılı",
                     f"{result['message']}\n\n"
                     f"İçerik: Veritabanı + {len(include_folders) if include_folders else 0} klasör"
                 )
                 self._load_backups()
             else:
-                QMessageBox.critical(self, "Hata", result["message"])
+                hata_goster(self, result["message"])
                 
         except Exception as e:
             logger.error(f"Tam yedek oluşturma hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Tam yedek oluşturulamadı:\n{str(e)}")
+            hata_goster(self, f"Tam yedek oluşturulamadı:\n{str(e)}")
         finally:
             self._btn_create_full_backup.setEnabled(True)
             self._btn_create_full_backup.setText("Tam Yedek Oluştur")
@@ -373,7 +353,7 @@ class BackupPage(QWidget):
         """Seçili yedeği geri yükle"""
         selected = self._table.selectionModel().selectedRows()
         if not selected:
-            QMessageBox.warning(self, "Uyarı", "Lütfen geri yüklenecek yedeği seçin.")
+            uyari_goster(self, "Lütfen geri yüklenecek yedeği seçin.")
             return
         
         row_index = selected[0].row()
@@ -384,10 +364,9 @@ class BackupPage(QWidget):
         
         backup_path = backup['path']
         is_zip = backup_path.endswith('.zip')
-        
-        reply = QMessageBox.warning(
+
+        if not soru_sor(
             self,
-            "DİKKAT",
             f"Yedeği geri yüklemek istediğinizden emin misiniz?\n\n"
             f"Dosya: {backup['filename']}\n"
             f"Tarih: {backup['created']}\n"
@@ -395,11 +374,7 @@ class BackupPage(QWidget):
             f"MEVCUT VERİTABANI YEDEĞİ ALINACAK VE\n"
             f"SEÇİLİ YEDEK GERİ YÜKLENECEKTİR!\n\n"
             f"Bu işlem sonrası uygulama yeniden başlatılmalıdır.",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
-        
-        if reply != QMessageBox.StandardButton.Yes:
+        ):
             return
         
         try:
@@ -410,19 +385,19 @@ class BackupPage(QWidget):
                 result = self._service.restore_backup(backup_path)
             
             if result["success"]:
-                QMessageBox.information(self, "Başarılı", result["message"])
+                bilgi_goster(self, result["message"])
             else:
-                QMessageBox.critical(self, "Hata", result["message"])
+                hata_goster(self, result["message"])
                 
         except Exception as e:
             logger.error(f"Yedek geri yükleme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Yedek geri yüklenemedi:\n{str(e)}")
+            hata_goster(self, f"Yedek geri yüklenemedi:\n{str(e)}")
 
     def _delete_backup(self):
         """Seçili yedeği sil"""
         selected = self._table.selectionModel().selectedRows()
         if not selected:
-            QMessageBox.warning(self, "Uyarı", "Lütfen silinecek yedeği seçin.")
+            uyari_goster(self, "Lütfen silinecek yedeği seçin.")
             return
         
         row_index = selected[0].row()
@@ -431,46 +406,36 @@ class BackupPage(QWidget):
         if not backup:
             return
         
-        reply = QMessageBox.question(
+        if not soru_sor(
             self,
-            "Yedeği Sil",
             f"Bu yedeği silmek istediğinizden emin misiniz?\n\n"
             f"Dosya: {backup['filename']}\n"
             f"Tarih: {backup['created']}",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
-        
-        if reply != QMessageBox.StandardButton.Yes:
+        ):
             return
         
         try:
             result = self._service.delete_backup(backup["path"])
             
             if result["success"]:
-                QMessageBox.information(self, "Başarılı", result["message"])
+                bilgi_goster(self, result["message"])
                 self._load_backups()
             else:
-                QMessageBox.critical(self, "Hata", result["message"])
+                hata_goster(self, result["message"])
                 
         except Exception as e:
             logger.error(f"Yedek silme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Yedek silinemedi:\n{str(e)}")
+            hata_goster(self, f"Yedek silinemedi:\n{str(e)}")
 
     def _cleanup_old_backups(self):
         """Eski yedekleri temizle"""
         keep_count = self._spin_keep_count.value()
-        
-        reply = QMessageBox.question(
+
+        if not soru_sor(
             self,
-            "Eski Yedekleri Temizle",
             f"En yeni {keep_count} yedek hariç diğerleri silinecek.\n\n"
             f"Devam etmek istiyor musunuz?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
-        
-        if reply != QMessageBox.StandardButton.Yes:
+        ):
             return
         
         try:
@@ -478,21 +443,20 @@ class BackupPage(QWidget):
             
             if result["success"]:
                 if result["deleted_count"] > 0:
-                    QMessageBox.information(
+                    bilgi_goster(
                         self,
-                        "Başarılı",
                         f"{result['deleted_count']} yedek silindi.\n"
                         f"{result['freed_mb']:.2f} MB disk alanı boşaltıldı."
                     )
                 else:
-                    QMessageBox.information(self, "Bilgi", result["message"])
+                    bilgi_goster(self, result["message"])
                 self._load_backups()
             else:
-                QMessageBox.critical(self, "Hata", result["message"])
+                hata_goster(self, result["message"])
                 
         except Exception as e:
             logger.error(f"Yedek temizleme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Yedekler temizlenemedi:\n{str(e)}")
+            hata_goster(self, f"Yedekler temizlenemedi:\n{str(e)}")
 
     def _on_selection_changed(self):
         """Seçim değiştiğinde butonları aktifleştir"""

@@ -8,7 +8,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -18,6 +17,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QFont
 
 from core.logger import logger
+from core.hata_yonetici import hata_goster, uyari_goster
 from database.permission_repository import PermissionRepository
 
 from ui.styles.icons import IconRenderer
@@ -113,7 +113,7 @@ class PermissionsView(QWidget):
             logger.info(f"{len(rows)} yetki yüklendi")
         except Exception as e:
             logger.error(f"Yetkiler yüklenirken hata: {e}")
-            QMessageBox.critical(self, "Hata", f"Yetkiler yüklenirken hata oluştu:\n{e}")
+            hata_goster(self, f"Yetkiler yüklenirken hata oluştu:\n{e}", "Hata")
 
     def _add_permission(self) -> None:
         if self._action_guard and not self._action_guard.check_and_warn(
@@ -125,7 +125,7 @@ class PermissionsView(QWidget):
             return
         data = dialog.get_data()
         if not data["key"]:
-            QMessageBox.warning(self, "Uyarı", "Permission key boş olamaz!")
+            uyari_goster(self, "Permission key boş olamaz!", "Uyarı")
             return
         try:
             self._perm_repo.create_permission(data["key"], data["description"])
@@ -133,4 +133,4 @@ class PermissionsView(QWidget):
             self.load_permissions()
         except Exception as e:
             logger.error(f"Yetki oluşturulurken hata: {e}")
-            QMessageBox.critical(self, "Hata", f"Yetki oluşturulamadı:\n{e}")
+            hata_goster(self, f"Yetki oluşturulamadı:\n{e}", "Hata")

@@ -30,10 +30,11 @@ from PySide6.QtWidgets import (
     QPushButton, QTableWidget, QTableWidgetItem, QHeaderView,
     QAbstractItemView, QGroupBox, QFormLayout, QSpinBox,
     QLineEdit, QComboBox, QTabWidget, QDialog, QDialogButtonBox,
-    QMessageBox, QSplitter, QCheckBox, QTimeEdit, QScrollArea,
+    QSplitter, QCheckBox, QTimeEdit, QScrollArea,
 )
 
 from core.di import get_registry, get_nb_birim_service
+from core.hata_yonetici import bilgi_goster, hata_goster, soru_sor, uyari_goster
 from core.logger import logger
 from ui.styles.icons import IconRenderer, IconColors
 
@@ -148,7 +149,7 @@ class _BirimDialog(QDialog):
 
     def _kaydet(self):
         if not self._inp_adi.text().strip():
-            QMessageBox.warning(self, "Uyarı", "Birim adı boş olamaz.")
+            uyari_goster(self, "Birim adı boş olamaz.")
             self._inp_adi.setFocus()
             return
         self.accept()
@@ -199,7 +200,7 @@ class _GrupDialog(QDialog):
 
     def _kabul(self):
         if not self._adi.text().strip():
-            QMessageBox.warning(self, "Uyarı", "Grup adı boş olamaz.")
+            uyari_goster(self, "Grup adı boş olamaz.")
             return
         self.accept()
 
@@ -304,7 +305,7 @@ class _VardiyaDialog(QDialog):
 
     def _kabul(self):
         if not self._adi.text().strip():
-            QMessageBox.warning(self, "Uyarı", "Vardiya adı boş olamaz.")
+            uyari_goster(self, "Vardiya adı boş olamaz.")
             return
         self.accept()
 
@@ -1326,7 +1327,7 @@ class NobetYonetimPage(QWidget):
             return
         svc = self._birim_svc()
         if not svc:
-            QMessageBox.critical(self, "Hata", "Birim servisine erişilemedi.")
+            hata_goster(self, "Birim servisine erişilemedi.")
             return
         veri  = dialog.get_data()
         sonuc = svc.birim_ekle(
@@ -1340,7 +1341,7 @@ class NobetYonetimPage(QWidget):
             self._birimleri_yukle()
             self._birim_sec_by_id((sonuc.veri or {}).get("BirimID", ""))
         else:
-            QMessageBox.critical(self, "Hata", str(sonuc.hata))
+            hata_goster(self, str(sonuc.hata))
 
     def _birim_duzenle(self):
         bid = self._secili_birim_id
@@ -1348,11 +1349,11 @@ class NobetYonetimPage(QWidget):
             return
         svc = self._birim_svc()
         if not svc:
-            QMessageBox.critical(self, "Hata", "Birim servisine erişilemedi.")
+            hata_goster(self, "Birim servisine erişilemedi.")
             return
         kayit_s = svc.get_birim(bid)
         if not kayit_s.basarili:
-            QMessageBox.critical(self, "Hata", "Birim bilgisi alınamadı.")
+            hata_goster(self, "Birim bilgisi alınamadı.")
             return
         dialog = _BirimDialog(kayit=kayit_s.veri, parent=self)
         if dialog.exec() != QDialog.DialogCode.Accepted:
@@ -1370,7 +1371,7 @@ class NobetYonetimPage(QWidget):
             self._birimleri_yukle()
             self._birim_sec_by_id(bid)
         else:
-            QMessageBox.critical(self, "Hata", str(sonuc.hata))
+            hata_goster(self, str(sonuc.hata))
 
     def _birim_toggle(self):
         bid = self._secili_birim_id
@@ -1382,18 +1383,17 @@ class NobetYonetimPage(QWidget):
             self._birimleri_yukle()
             self._birim_sec_by_id(bid)
         else:
-            QMessageBox.critical(self, "Hata", str(sonuc.hata))
+            hata_goster(self, str(sonuc.hata))
 
     def _birim_sil(self):
         bid = self._secili_birim_id
         if not bid:
             return
-        cevap = QMessageBox.question(
-            self, "Onay",
+        if not soru_sor(
+            self,
             f"'{self._secili_birim_adi}' birimi silinsin mi?\n\n"
             "Bağlı vardiya grubu yoksa silinir. Bu işlem geri alınabilir.",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        if cevap != QMessageBox.StandardButton.Yes:
+        ):
             return
         svc   = self._birim_svc()
         sonuc = svc.birim_sil(bid)
@@ -1402,7 +1402,7 @@ class NobetYonetimPage(QWidget):
             self._secili_birim_adi = ""
             self._birimleri_yukle()
         else:
-            QMessageBox.critical(self, "Hata", str(sonuc.hata))
+            hata_goster(self, str(sonuc.hata))
 
     # ─────────────────────────────────────────────────────────
     #  Birim Ayarları
@@ -1438,10 +1438,10 @@ class NobetYonetimPage(QWidget):
                     "created_at": _simdi(),
                     **veri,
                 })
-            QMessageBox.information(self, "Tamam", "Ayarlar kaydedildi.")
+            bilgi_goster(self, "Ayarlar kaydedildi.")
         except Exception as e:
             logger.error(f"Birim ayar kaydet: {e}")
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     # ─────────────────────────────────────────────────────────
     #  Grup Aksiyonları
@@ -1460,7 +1460,7 @@ class NobetYonetimPage(QWidget):
             })
             self._gruplari_yukle(self._secili_birim_id)
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     def _grup_duzenle(self):
         row = self._tbl_grup.currentRow()
@@ -1478,7 +1478,7 @@ class NobetYonetimPage(QWidget):
                 gid, {**dialog.get_data(), "updated_at": _simdi()})
             self._gruplari_yukle(self._secili_birim_id)
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     def _grup_sil(self):
         row = self._tbl_grup.currentRow()
@@ -1487,11 +1487,10 @@ class NobetYonetimPage(QWidget):
         itm  = self._tbl_grup.item(row, 0)
         gid  = itm.data(Qt.ItemDataRole.UserRole)
         isim = itm.text()
-        if QMessageBox.question(
-            self, "Grup Sil",
+        if not soru_sor(
+            self,
             f"'{isim}' ve bağlı tüm vardiyalar silinecek. Emin misiniz?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        ) != QMessageBox.StandardButton.Yes:
+        ):
             return
         try:
             reg = self._reg()
@@ -1501,7 +1500,7 @@ class NobetYonetimPage(QWidget):
             reg.get("NB_VardiyaGrubu").delete(gid)
             self._gruplari_yukle(self._secili_birim_id)
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     def _grup_sablon(self):
         """Sık kullanılan şablonlardan hızlı grup + vardiya oluştur."""
@@ -1585,7 +1584,7 @@ class NobetYonetimPage(QWidget):
             self._spn_max_gun.setValue(2 if max_dk >= 1440 else 1)
             self._gruplari_yukle(self._secili_birim_id)
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     # ─────────────────────────────────────────────────────────
     #  Vardiya Aksiyonları
@@ -1609,7 +1608,7 @@ class NobetYonetimPage(QWidget):
                 dialog.get_birim_ayar_data())
             self._vardiyeleri_yukle(self._secili_grup_id)
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     def _vardiya_duzenle(self):
         row = self._tbl_v.currentRow()
@@ -1632,7 +1631,7 @@ class NobetYonetimPage(QWidget):
                 dialog.get_birim_ayar_data())
             self._vardiyeleri_yukle(self._secili_grup_id)
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     def _vardiya_sil(self):
         row = self._tbl_v.currentRow()
@@ -1641,17 +1640,13 @@ class NobetYonetimPage(QWidget):
         itm  = self._tbl_v.item(row, 0)
         vid  = itm.data(Qt.ItemDataRole.UserRole)
         isim = itm.text()
-        if QMessageBox.question(
-            self, "Vardiya Sil",
-            f"'{isim}' silinecek. Emin misiniz?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        ) != QMessageBox.StandardButton.Yes:
+        if not soru_sor(self, f"'{isim}' silinecek. Emin misiniz?"):
             return
         try:
             self._reg().get("NB_Vardiya").delete(vid)
             self._vardiyeleri_yukle(self._secili_grup_id)
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     def _vardiya_icin_birim_ayar_kaydet(
             self, birim_id: str, secim: dict):
@@ -1724,7 +1719,7 @@ class NobetYonetimPage(QWidget):
             self._personelleri_yukle(self._secili_birim_id)
             self._tercihleri_yukle()
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     def _personel_migrate(self):
         """GorevYeri = birim adı olan tüm personeli aktar."""
@@ -1754,12 +1749,11 @@ class NobetYonetimPage(QWidget):
                         "created_at":     _simdi(),
                     })
                     eklendi += 1
-            QMessageBox.information(
-                self, "Tamamlandı", f"{eklendi} personel aktarıldı.")
+            bilgi_goster(self, f"{eklendi} personel aktarıldı.")
             self._personelleri_yukle(self._secili_birim_id)
             self._tercihleri_yukle()
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     def _personel_cikar(self):
         row = self._tbl_p.currentRow()
@@ -1768,11 +1762,7 @@ class NobetYonetimPage(QWidget):
         itm    = self._tbl_p.item(row, 0)
         ata_id = itm.data(Qt.ItemDataRole.UserRole)
         isim   = itm.text()
-        if QMessageBox.question(
-            self, "Görevden Al",
-            f"'{isim}' bu birimden görevden alınacak. Emin misiniz?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        ) != QMessageBox.StandardButton.Yes:
+        if not soru_sor(self, f"'{isim}' bu birimden görevden alınacak. Emin misiniz?"):
             return
         try:
             self._reg().get("NB_BirimPersonel").update(
@@ -1780,7 +1770,7 @@ class NobetYonetimPage(QWidget):
             self._personelleri_yukle(self._secili_birim_id)
             self._tercihleri_yukle()
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     # ─────────────────────────────────────────────────────────
     #  Nöbet Tercihleri Aksiyonları
@@ -1840,7 +1830,7 @@ class NobetYonetimPage(QWidget):
                 })
             self._tercihleri_yukle()
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     # ─────────────────────────────────────────────────────────
     #  Dış Arayüz

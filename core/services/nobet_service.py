@@ -97,31 +97,6 @@ class NobetService:
             "OtomatikBolunme":  1,
         }
 
-    def birim_ayar_kaydet(self, birim_adi: str, slot_saat: Optional[float],
-                          slot_personel: int, calisma_modu: str,
-                          otomatik_bolunme: bool = True,
-                          aciklama: str = "") -> SonucYonetici:
-        try:
-            rows = self._r.get("Nobet_BirimAyar").get_all() or []
-            mevcut = next((r for r in rows
-                           if r.get("BirimAdi") == birim_adi), None)
-            veri = {
-                "BirimAdi":        birim_adi,
-                "GunlukSlotSaat":  slot_saat,
-                "SlotBasiPersonel": slot_personel,
-                "CalismaModu":     calisma_modu,
-                "OtomatikBolunme": 1 if otomatik_bolunme else 0,
-                "Aciklama":        aciklama,
-            }
-            if mevcut:
-                self._r.get("Nobet_BirimAyar").update(mevcut["AyarID"], veri)
-            else:
-                veri["AyarID"] = _yeni_id("BA-")
-                self._r.get("Nobet_BirimAyar").insert(veri)
-            return SonucYonetici.tamam(f"{birim_adi} birim ayarı kaydedildi")
-        except Exception as e:
-            return SonucYonetici.hata(e, "NobetService.birim_ayar_kaydet")
-
     def get_vardiyalar(self, birim_adi: Optional[str] = None) -> SonucYonetici:
         try:
             rows = self._r.get("Nobet_Vardiya").get_all() or []
@@ -693,36 +668,6 @@ class NobetService:
         except Exception:
             pass
         return None
-
-    def birim_ayar_kaydet(self, birim_adi: str,
-                          gunluk_slot_saat: Optional[float],
-                          slot_basi_personel: int = 4,
-                          calisma_modu: str = "tam_gun",
-                          aciklama: str = "") -> SonucYonetici:
-        """Birim nöbet ayarlarını kaydeder."""
-        try:
-            rows = self._r.get("Nobet_BirimAyar").get_all() or []
-            mevcut = next((r for r in rows
-                           if r.get("BirimAdi") == birim_adi), None)
-            veri = {
-                "BirimAdi":         birim_adi,
-                "GunlukSlotSaat":   gunluk_slot_saat,
-                "SlotBasiPersonel": slot_basi_personel,
-                "CalismaModu":      calisma_modu,
-                "Aciklama":         aciklama,
-            }
-            if mevcut:
-                self._r.get("Nobet_BirimAyar").update(mevcut["AyarID"], veri)
-            else:
-                veri["AyarID"] = _yeni_id("BA-")
-                self._r.get("Nobet_BirimAyar").insert(veri)
-            return SonucYonetici.tamam(
-                f"{birim_adi} ayarları kaydedildi "
-                f"({calisma_modu}, {gunluk_slot_saat or 'oto'}h/slot, "
-                f"{slot_basi_personel} personel)"
-            )
-        except Exception as e:
-            return SonucYonetici.hata(e, "NobetService.birim_ayar_kaydet")
 
     def birim_ayar_kaydet(self, birim_adi: str,
                           slot_saat: Optional[float],

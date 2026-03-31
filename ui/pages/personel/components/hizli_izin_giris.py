@@ -7,13 +7,14 @@ from datetime import timedelta
 from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox,
-    QDateEdit, QSpinBox, QGridLayout, QAbstractSpinBox, QMessageBox,
+    QDateEdit, QSpinBox, QGridLayout, QAbstractSpinBox,
     QDialog
 )
 from PySide6.QtGui import QCursor
 
 from core.logger import logger
 from core.date_utils import parse_date
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 from core.di import get_izin_service
 from database.repository_registry import RepositoryRegistry
 
@@ -212,7 +213,7 @@ class HizliIzinGirisDialog(QDialog):
                 tc=str(tc or ""), izin_tipi=izin_tipi, gun=gun
             )
             if not ok_limit:
-                QMessageBox.warning(self, "Limit Aşımı", limit_msg)
+                uyari_goster(self, limit_msg, "Limit Aşımı")
                 return
             
             # Çakışma kontrolü
@@ -226,7 +227,7 @@ class HizliIzinGirisDialog(QDialog):
                 vt_bas = parse_date(kayit.get("BaslamaTarihi", ""))
                 vt_bit = parse_date(kayit.get("BitisTarihi", ""))
                 if vt_bas and vt_bit and yeni_bas and yeni_bit and (yeni_bas <= vt_bit) and (yeni_bit >= vt_bas):
-                    QMessageBox.warning(self, "Çakışma", "Bu tarihlerde zaten bir izin kaydı mevcut.")
+                    uyari_goster(self, "Bu tarihlerde zaten bir izin kaydı mevcut.", "Çakışma")
                     return
 
             # Kaydet
@@ -242,13 +243,13 @@ class HizliIzinGirisDialog(QDialog):
                 self._bakiye_dus(registry, tc, izin_tipi, gun)
                 izin_svc.set_personel_pasif(str(tc), izin_tipi, gun)
 
-            QMessageBox.information(self, "Başarılı", "İzin başarıyla kaydedildi.")
+            bilgi_goster(self, "İzin başarıyla kaydedildi.", "Başarılı")
             self.izin_kaydedildi.emit()
             self.accept()
 
         except Exception as e:
             logger.error(f"Hızlı izin kaydetme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"İşlem başarısız: {e}")
+            hata_goster(self, f"İşlem başarısız: {e}")
 
     def _bakiye_dus(self, registry, tc, izin_tipi, gun):
         try:

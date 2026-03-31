@@ -517,17 +517,11 @@ class IzinTakipPage(QWidget):
         pass
 
     def _add_stat(self, grid, row, text, style_key):
-        _COLOR_MAP = {
-            "stat_green": DarkTheme.SUCCESS,
-            "stat_red":   DarkTheme.DANGER,
-            "stat_value": "primary",
-        }
         lbl = QLabel(text)
         lbl.setProperty("style-role", "stat-label")
         grid.addWidget(lbl, row, 0)
         val = QLabel("—")
         val.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        color = _COLOR_MAP.get(style_key, "primary")
         val.setProperty("bg-role", "panel")
         grid.addWidget(val, row, 1)
         return val

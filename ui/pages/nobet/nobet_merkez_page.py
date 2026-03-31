@@ -27,10 +27,10 @@ from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel,
     QPushButton, QComboBox, QStackedWidget, QProgressBar,
-    QMessageBox,
 )
 
 from core.di import get_registry
+from core.hata_yonetici import bilgi_goster, hata_goster, soru_sor, uyari_goster
 from core.logger import logger
 from ui.styles.icons import IconRenderer, IconColors
 
@@ -736,16 +736,14 @@ class NobetMerkezPage(QWidget):
             self._hazirlik_durum_guncelle()
             self._sekme_gec(1)
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     def _hazirlik_iptal(self):
-        cevap = QMessageBox.question(
-            self, "Hazırlık Onayı Geri Al",
+        if not soru_sor(
+            self,
             "Hazırlık onayı geri alınacak.\n"
             "Otomatik Plan butonu kilitlenecek. Emin misiniz?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No)
-        if cevap != QMessageBox.StandardButton.Yes:
+        ):
             return
         try:
             reg  = self._reg()
@@ -761,7 +759,7 @@ class NobetMerkezPage(QWidget):
             self._plan.hazirlik_onay_degisti(False)
             self._hazirlik_durum_guncelle()
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     # ──────────────────────────────────────────────────────────
     #  Plan Aksiyonları
@@ -769,17 +767,14 @@ class NobetMerkezPage(QWidget):
 
     def _oto_plan(self):
         if not self._hazirlik_onaylandi:
-            QMessageBox.warning(self, "Uyarı",
-                "Önce 'Ön Hazırlık' onaylanmalıdır.")
+            uyari_goster(self, "Önce 'Ön Hazırlık' onaylanmalıdır.")
             self._sekme_gec(0)
             return
-        cevap = QMessageBox.question(
-            self, "Otomatik Plan",
+        if not soru_sor(
+            self,
             f"{_AY[self._ay]} {self._yil} için otomatik plan oluşturulacak.\n"
             "Mevcut taslak silinecek. Devam edilsin mi?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No)
-        if cevap != QMessageBox.StandardButton.Yes:
+        ):
             return
         self._btn_oto.setEnabled(False)
         self._pbar.setVisible(True)
@@ -794,21 +789,16 @@ class NobetMerkezPage(QWidget):
         if sonuc.basarili:
             self._yukle()
         else:
-            QMessageBox.critical(self, "Hata", sonuc.mesaj)
+            hata_goster(self, sonuc.mesaj)
             self._oto_durum_guncelle()
 
     def _oto_plan_hata(self, msg: str):
         self._pbar.setVisible(False)
-        QMessageBox.critical(self, "Hata", msg)
+        hata_goster(self, msg)
         self._oto_durum_guncelle()
 
     def _taslak_temizle(self):
-        if QMessageBox.question(
-            self, "Taslağı Temizle",
-            "Tüm taslak satırlar silinecek. Emin misiniz?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        ) != QMessageBox.StandardButton.Yes:
+        if not soru_sor(self, "Tüm taslak satırlar silinecek. Emin misiniz?"):
             return
         try:
             svc   = self._plan._svc()
@@ -816,11 +806,11 @@ class NobetMerkezPage(QWidget):
                 self._birim_id, self._yil, self._ay)
             if sonuc.basarili:
                 self._yukle()
-                QMessageBox.information(self, "Bilgi", sonuc.mesaj or "Taslak temizleme tamamlandı.")
+                bilgi_goster(self, sonuc.mesaj or "Taslak temizleme tamamlandı.")
             else:
-                QMessageBox.critical(self, "Hata", sonuc.mesaj)
+                hata_goster(self, sonuc.mesaj)
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     def _plan_onayla(self):
         try:
@@ -830,21 +820,19 @@ class NobetMerkezPage(QWidget):
                 onaylayan_id="")
             if sonuc.basarili:
                 self._yukle()
-                QMessageBox.information(self, "Onaylandı", sonuc.mesaj)
+                bilgi_goster(self, sonuc.mesaj)
             else:
-                QMessageBox.critical(self, "Hata", sonuc.mesaj)
+                hata_goster(self, sonuc.mesaj)
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     def _plan_onay_geri(self):
-        if QMessageBox.question(
-            self, "Onayı Geri Al",
+        if not soru_sor(
+            self,
             "Plan taslak durumuna alınacak, mevcut nöbet satırları korunacak.\n"
             "Bu mod sadece manuel revizyon içindir; otomatik plan ve taslak temizleme kapatılacak.\n"
             "Devam edilsin mi?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        ) != QMessageBox.StandardButton.Yes:
+        ):
             return
         try:
             svc   = self._plan._svc()
@@ -852,11 +840,11 @@ class NobetMerkezPage(QWidget):
                 self._birim_id, self._yil, self._ay)
             if sonuc.basarili:
                 self._yukle()
-                QMessageBox.information(self, "Revizyon Modu", sonuc.mesaj)
+                bilgi_goster(self, sonuc.mesaj)
             else:
-                QMessageBox.critical(self, "Hata", sonuc.mesaj)
+                hata_goster(self, sonuc.mesaj)
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     # ──────────────────────────────────────────────────────────
     #  PDF

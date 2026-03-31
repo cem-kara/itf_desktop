@@ -48,7 +48,7 @@ class PersonelService:
         try:
             tc = str(tc).strip()
             return validate_tc_kimlik_no(tc)
-        except Exception as e:
+        except Exception:
             return False
     
     # ───────────────────────────────────────────────────────────

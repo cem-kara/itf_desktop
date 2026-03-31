@@ -51,11 +51,12 @@ from PySide6.QtCore import Qt, QDate, QModelIndex, Signal, QUrl
 from PySide6.QtGui  import QColor, QCursor, QDesktopServices
 from PySide6.QtWidgets import (
     QComboBox, QDateEdit, QFileDialog, QFrame, QHBoxLayout,
-    QHeaderView, QLabel, QLineEdit, QMessageBox, QPushButton,
+    QHeaderView, QLabel, QLineEdit, QPushButton,
     QSizePolicy, QTableView, QVBoxLayout, QWidget,
 )
 
 from core.date_utils import parse_date, to_db_date, to_ui_date
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 from core.logger import logger
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.icons import IconColors, IconRenderer
@@ -616,7 +617,7 @@ class PersonelSaglikPanel(QWidget):
 
         muayene_db, sonraki_db, sonuc, durum = self._compute_summary()
         if not sonuc:
-            QMessageBox.warning(self, "Eksik Bilgi", "En az bir muayene sonucu girilmelidir.")
+            uyari_goster(self, "En az bir muayene sonucu girilmelidir.")
             return
 
         aciklama = self._inp_not.text().strip()
@@ -626,7 +627,7 @@ class PersonelSaglikPanel(QWidget):
             for k in _EXAM_KEYS
         )
         if kritik and not aciklama:
-            QMessageBox.warning(
+            uyari_goster(
                 self, "Eksik Bilgi",
                 "Şartlı Uygun / Uygun Değil seçiminde açıklama zorunludur."
             )
@@ -689,13 +690,13 @@ class PersonelSaglikPanel(QWidget):
                     "Sonuc": sonuc.lower() if sonuc == "Uygun" else sonuc,
                 })
 
-            QMessageBox.information(self, "Başarılı", "Muayene kaydı kaydedildi.")
+            bilgi_goster(self, "Muayene kaydı kaydedildi.")
             self._close_form()
             self.load_data()
 
         except Exception as e:
             logger.error(f"Muayene kaydetme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Kayıt sırasında hata oluştu:\n{e}")
+            hata_goster(self, f"Kayıt sırasında hata oluştu:\n{e}")
 
     # ── Çift tıklama ─────────────────────────────────────────────────────────
     def _on_double_click(self, index: QModelIndex):
@@ -718,7 +719,7 @@ class PersonelSaglikPanel(QWidget):
     def _open_rapor(self, row: dict):
         doc = row.get("_RaporDoc")
         if not doc:
-            QMessageBox.information(self, "Bilgi", "Bu kayıt için rapor yüklenmemiş.")
+            bilgi_goster(self, "Bu kayıt için rapor yüklenmemiş.")
             return
         drive = str(doc.get("DrivePath","") or "").strip()
         local = str(doc.get("LocalPath","") or "").strip()
@@ -727,7 +728,7 @@ class PersonelSaglikPanel(QWidget):
                 QDesktopServices.openUrl(QUrl(drive))
                 return
             if not local:
-                QMessageBox.warning(self, "Dosya Bulunamadı", "Rapor dosya yolu bulunamadı.")
+                uyari_goster(self, "Rapor dosya yolu bulunamadı.")
                 return
             resolved = local
             if not os.path.isfile(resolved):
@@ -743,7 +744,7 @@ class PersonelSaglikPanel(QWidget):
                 except Exception:
                     pass
             if not os.path.isfile(resolved):
-                QMessageBox.warning(
+                uyari_goster(
                     self, "Dosya Bulunamadı",
                     f"Rapor dosyasına erişilemedi:\n{local}"
                 )
@@ -756,7 +757,7 @@ class PersonelSaglikPanel(QWidget):
                 subprocess.run(["xdg-open", str(resolved)])
         except Exception as e:
             logger.error(f"Rapor açma hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Rapor açılamadı:\n{e}")
+            hata_goster(self, f"Rapor açılamadı:\n{e}")
 
     # ── Dokümanlar sekmesine yönlendir ────────────────────────────────────────
     def _rapor_yukle_selected(self):
@@ -765,12 +766,12 @@ class PersonelSaglikPanel(QWidget):
             if self._table.selectionModel() else []
         )
         if not sel:
-            QMessageBox.information(self, "Bilgi", "Önce tablodan bir muayene kaydı seçin.")
+            bilgi_goster(self, "Önce tablodan bir muayene kaydı seçin.")
             return
         row = self._model.get_row(sel[0].row()) if hasattr(self._model, "get_row") else {}
         kno = str((row or {}).get("KayitNo","")).strip()
         if not kno:
-            QMessageBox.warning(self, "Hata", "Seçili kaydın KayitNo bilgisi bulunamadı.")
+            uyari_goster(self, "Seçili kaydın KayitNo bilgisi bulunamadı.")
             return
         self.open_documents.emit(kno)
 

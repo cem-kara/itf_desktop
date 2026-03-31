@@ -29,7 +29,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
-    QMessageBox,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -41,6 +40,7 @@ from PySide6.QtWidgets import (
 )
 
 import pandas as pd
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 
 from core.services.excel_import_service import (
 
@@ -156,7 +156,7 @@ class HataDuzeltmeWidget(QDialog):
     def _secilenler_dene(self):
         secili_satirlar = {idx.row() for idx in self._tablo.selectedIndexes()}
         if not secili_satirlar:
-            QMessageBox.information(self, "Bilgi", "Lütfen önce satır seçin.")
+            bilgi_goster(self, "Lütfen önce satır seçin.")
             return
 
         secili_liste: list[SatirSonucu] = []
@@ -350,7 +350,7 @@ class BaseImportPage(QWidget):
             )
             self._btn_ileri.setEnabled(True)
         except ValueError as exc:
-            QMessageBox.critical(self, "Hata", str(exc))
+            hata_goster(self, str(exc))
             self._df = None
             self._dosya_bilgi.setText("")
 
@@ -491,9 +491,6 @@ class BaseImportPage(QWidget):
                 combo.setProperty("bg-role", "panel")
             else:
                 secilen_excel[deger] = db_alan
-                at = next(
-                    (a for a in self._konfig_obj.alanlar if a.alan == db_alan), None
-                )
                 combo.setProperty("bg-role", "panel")
 
     def _haritayi_oku(self) -> dict[str, str]:
@@ -538,10 +535,11 @@ class BaseImportPage(QWidget):
                     eksik.append(f"{at.goruntu} (elle giriş boş)")
 
         if eksik:
-            QMessageBox.warning(
-                self, "Zorunlu Alan Eksik",
+            uyari_goster(
+                self,
                 "Şu zorunlu alanlar eşleştirilmedi veya boş bırakıldı:\n• "
-                + "\n• ".join(eksik)
+                + "\n• ".join(eksik),
+                "Zorunlu Alan Eksik",
             )
             return False
         return True
@@ -737,7 +735,6 @@ class BaseImportPage(QWidget):
         )
         # Özetin sayaçlarını satır durumlarından yeniden hesapla
         if self._sonuc:
-            svc = self._svc
             self._sonuc.basarili      = sum(1 for s in self._sonuc.satirlar if s.durum == "basarili")
             self._sonuc.hatali        = sum(1 for s in self._sonuc.satirlar if s.durum == "hatali")
             self._sonuc.zorunlu_eksik = sum(1 for s in self._sonuc.satirlar if s.durum == "zorunlu_eksik")
@@ -775,7 +772,7 @@ class BaseImportPage(QWidget):
 
         if mevcut == 0:
             if self._df is None:
-                QMessageBox.warning(self, "Uyarı", "Lütfen önce bir dosya seçin.")
+                uyari_goster(self, "Lütfen önce bir dosya seçin.")
                 return
             self._adim2_doldur()
             self._adima_git(1)
@@ -812,7 +809,7 @@ class BaseImportPage(QWidget):
         self._btn_ileri.setEnabled(True)
         self._btn_geri.setEnabled(True)
         if isinstance(sonuc, Exception):
-            QMessageBox.critical(self, "Import Hatası", f"Beklenmeyen hata:\n{sonuc}")
+            hata_goster(self, f"Beklenmeyen hata:\n{sonuc}", "Import Hatası")
             return
         self._sonuc = sonuc
         self._adim4_guncelle()

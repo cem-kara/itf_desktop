@@ -20,9 +20,10 @@ from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QFrame, QLabel,
     QPushButton, QComboBox, QScrollArea, QGridLayout,
-    QSizePolicy, QMessageBox, QLineEdit,
+    QSizePolicy, QLineEdit,
 )
 from core.di import get_nobet_service
+from core.hata_yonetici import bilgi_goster, hata_goster, soru_sor, uyari_goster
 from core.logger import logger
 from ui.styles.icons import IconRenderer, IconColors
 
@@ -632,14 +633,14 @@ class NobetPlanPage(QWidget):
 
     def _revizyon_gecmisi_goster(self):
         if not self._secili_gun:
-            QMessageBox.information(self, "Revizyon Geçmişi", "Önce takvimden bir gün seçin.")
+            bilgi_goster(self, "Önce takvimden bir gün seçin.")
             return
         try:
             tarih = self._secili_gun.isoformat()
             sonuc = self._svc().gun_gecmisi_getir(
                 self._yil, self._ay, self._birim_id, tarih)
             if not sonuc.basarili:
-                QMessageBox.critical(self, "Hata", str(sonuc.mesaj or sonuc.hata))
+                hata_goster(self, str(sonuc.mesaj or sonuc.hata))
                 return
 
             gecmis = [
@@ -647,7 +648,7 @@ class NobetPlanPage(QWidget):
                 if str(r.get("Durum", "")) != "aktif" or r.get("OncekiSatirID")
             ]
             if not gecmis:
-                QMessageBox.information(self, "Revizyon Geçmişi", "Bu gün için revizyon geçmişi yok.")
+                bilgi_goster(self, "Bu gün için revizyon geçmişi yok.")
                 return
 
             satirlar = []
@@ -661,10 +662,10 @@ class NobetPlanPage(QWidget):
                     metin += f" | Not: {notlar}"
                 satirlar.append(metin)
 
-            QMessageBox.information(self, "Revizyon Geçmişi", "\n".join(satirlar))
+            bilgi_goster(self, "\n".join(satirlar))
         except Exception as e:
             logger.error(f"revizyon_gecmisi_goster: {e}")
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     # ── Manuel Panel ──────────────────────────────────────────
 
@@ -688,7 +689,8 @@ class NobetPlanPage(QWidget):
         if not self._secili_gun: return
         vid = self._cmb_mv.currentData(); pid = self._cmb_mp.currentData()
         if not all([self._birim_id, vid, pid]):
-            QMessageBox.warning(self,"Uyarı","Vardiya ve personel seçin."); return
+            uyari_goster(self, "Vardiya ve personel seçin.")
+            return
         try:
             veri = {
                 "BirimID": self._birim_id, "BirimAdi": self._birim_adi,
@@ -717,14 +719,7 @@ class NobetPlanPage(QWidget):
                 or "çift" in hata_msg.lower()
             )
             if kisit_ihlali:
-                yanit = QMessageBox.question(
-                    self,
-                    "Kısıt Uyarısı",
-                    f"{hata_msg}\n\nBu kısıtı atlayıp manuel nöbet yazılsın mı?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                    QMessageBox.StandardButton.No,
-                )
-                if yanit == QMessageBox.StandardButton.Yes:
+                if soru_sor(self, f"{hata_msg}\n\nBu kısıtı atlayıp manuel nöbet yazılsın mı?"):
                     veri["KisitAtla"] = True
                     s2 = self._svc().plan_ekle(veri)
                     if s2.basarili:
@@ -736,22 +731,23 @@ class NobetPlanPage(QWidget):
                         or getattr(s2, "hata", "")
                         or "İşlem gerçekleştirilemedi."
                     )
-                    QMessageBox.critical(self,"Hata",msg2)
+                    hata_goster(self, msg2)
                     return
 
-            QMessageBox.critical(self,"Hata",hata_msg)
-        except Exception as e: QMessageBox.critical(self,"Hata",str(e))
+            hata_goster(self, hata_msg)
+        except Exception as e:
+            hata_goster(self, str(e))
 
     def _nobet_degistir(self):
         if not self._secili_satir:
-            QMessageBox.warning(self, "Uyarı", "Önce değiştirilecek nöbet kaydını seçin.")
+            uyari_goster(self, "Önce değiştirilecek nöbet kaydını seçin.")
             return
         yeni_pid = self._cmb_mp.currentData()
         if not yeni_pid:
-            QMessageBox.warning(self, "Uyarı", "Yeni personeli seçin.")
+            uyari_goster(self, "Yeni personeli seçin.")
             return
         if str(yeni_pid) == str(self._secili_satir.get("PersonelID", "")):
-            QMessageBox.warning(self, "Uyarı", "Seçili nöbet zaten bu personele ait.")
+            uyari_goster(self, "Seçili nöbet zaten bu personele ait.")
             return
         try:
             sonuc = self._svc().plan_degistir(
@@ -770,14 +766,14 @@ class NobetPlanPage(QWidget):
                     ]
                     self._gun_tiklandi(self._secili_gun, gun_satirlari)
                 return
-            QMessageBox.critical(self, "Hata", str(sonuc.mesaj or sonuc.hata))
+            hata_goster(self, str(sonuc.mesaj or sonuc.hata))
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     def _nobet_sil(self, satir_id: str):
         if not satir_id: return
         try:
             s = self._svc().plan_iptal(satir_id)
             if s.basarili: self._yukle_data()
-            else: QMessageBox.critical(self,"Hata",str(s.hata))
-        except Exception as e: QMessageBox.critical(self,"Hata",str(e))
+            else: hata_goster(self, str(s.hata))
+        except Exception as e: hata_goster(self, str(e))

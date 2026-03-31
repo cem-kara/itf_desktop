@@ -6,13 +6,13 @@ from datetime import datetime
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QFrame, QTableWidget, QTableWidgetItem,
-    QHeaderView, QMessageBox, QLineEdit, QDateEdit, QSplitter, QSpinBox
+    QHeaderView, QLineEdit, QDateEdit, QSplitter, QSpinBox
 )
 from PySide6.QtCore import Qt, QDate
 
 from core.hesaplamalar import tr_upper
 from core.auth.session_context import SessionContext
-from ui.styles.components import STYLES as S
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 from ui.styles.icons import IconRenderer
 
 # RKS Katsayıları — değer: kayıt anında snapshot alınır, servis bağımsız çalışır
@@ -29,7 +29,7 @@ KATSAYI_TABLOSU = {
 class TutanakliGirisPage(QWidget):
     def __init__(self, db=None, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(S["page"])
+        self.setProperty("bg-role", "page")
         self._db = db
         self._selected_personel_id = None
         self._selected_personel_ad = None
@@ -48,16 +48,15 @@ class TutanakliGirisPage(QWidget):
 
         # Üst Bar
         top_bar = QFrame()
-        top_bar.setStyleSheet(S["filter_panel"])
+        top_bar.setProperty("bg-role", "panel")
         top_bar.setMaximumHeight(54)
         top_layout = QHBoxLayout(top_bar)
         top_layout.setContentsMargins(12, 6, 12, 6)
         top_layout.setSpacing(12)
 
         lbl_title = QLabel("Tutanaklı Radyasyon Çalışma Girişi (RKS Denetimli)")
-        lbl_title.setStyleSheet(
-            "font-size: 15px; font-weight: bold; color: #1D75FE; letter-spacing: 0.5px;"
-        )
+        lbl_title.setProperty("style-role", "section-title")
+        lbl_title.setProperty("color-role", "accent")
         top_layout.addWidget(lbl_title)
         top_layout.addStretch()
 
@@ -88,18 +87,16 @@ class TutanakliGirisPage(QWidget):
 
         # Sol Panel: Personel Listesi
         left_panel = QFrame()
-        left_panel.setStyleSheet(S["filter_panel"])
+        left_panel.setProperty("bg-role", "panel")
         left_layout = QVBoxLayout(left_panel)
 
         lbl_kapsam = QLabel("Kapsamdaki Personel (Hemşire / Doktor)")
-        lbl_kapsam.setStyleSheet(
-            "font-size: 13px; font-weight: bold; color: #1D75FE; margin-bottom: 4px;"
-        )
+        lbl_kapsam.setProperty("style-role", "section-title")
+        lbl_kapsam.setProperty("color-role", "accent")
         left_layout.addWidget(lbl_kapsam)
 
         self.txt_ara = QLineEdit()
         self.txt_ara.setPlaceholderText("İsim veya TC ile ara...")
-        self.txt_ara.setStyleSheet(S["input"])
         left_layout.addWidget(self.txt_ara)
 
         self.list_personel = QTableWidget()
@@ -109,7 +106,6 @@ class TutanakliGirisPage(QWidget):
             QHeaderView.ResizeMode.Stretch
         )
         self.list_personel.verticalHeader().setVisible(False)
-        self.list_personel.setStyleSheet(S["table"])
         self.list_personel.setSelectionBehavior(
             QTableWidget.SelectionBehavior.SelectRows
         )
@@ -117,7 +113,7 @@ class TutanakliGirisPage(QWidget):
 
         # Sağ Panel: Form
         right_panel = QFrame()
-        right_panel.setStyleSheet(S["filter_panel"])
+        right_panel.setProperty("bg-role", "panel")
         right_panel.setMaximumWidth(420)
         right_panel.setMinimumWidth(340)
         right_panel_layout = QHBoxLayout(right_panel)
@@ -147,9 +143,7 @@ class TutanakliGirisPage(QWidget):
         # Hesaplanan Saat (salt okunur)
         self.inp_saat = QLineEdit()
         self.inp_saat.setReadOnly(True)
-        self.inp_saat.setStyleSheet(
-            "background-color: rgba(255,255,255,0.05); color: #66bb6a; font-weight: bold;"
-        )
+        self.inp_saat.setProperty("color-role", "ok")
         self._add_form_item("Hesaplanan Fiili Süre (Saat):", self.inp_saat)
 
         # Tutanak Bilgileri
@@ -166,7 +160,7 @@ class TutanakliGirisPage(QWidget):
 
         # Kaydet butonu
         self.btn_ekle = QPushButton("TUTANAĞI ONAYLA VE KAYDET")
-        self.btn_ekle.setStyleSheet(S["save_btn"])
+        self.btn_ekle.setProperty("style-role", "action")
         self.btn_ekle.setMinimumHeight(45)
         self.btn_ekle.setMaximumWidth(320)
         IconRenderer.set_button_icon(self.btn_ekle, "save", color="#FFFFFF")
@@ -174,7 +168,7 @@ class TutanakliGirisPage(QWidget):
 
         # Dönem özeti butonu
         self.btn_ozet = QPushButton("DÖNEM ÖZETİ HESAPLA")
-        self.btn_ozet.setStyleSheet(S.get("secondary_btn", S["save_btn"]))
+        self.btn_ozet.setProperty("style-role", "secondary")
         self.btn_ozet.setMinimumHeight(38)
         self.btn_ozet.setMaximumWidth(320)
         self.form_layout.addWidget(self.btn_ozet)
@@ -190,9 +184,8 @@ class TutanakliGirisPage(QWidget):
     def _add_form_item(self, label_text: str, widget):
         row = QVBoxLayout()
         lbl = QLabel(label_text)
-        lbl.setProperty("color-role", "primary")
+        lbl.setProperty("style-role", "form")
         row.addWidget(lbl)
-        widget.setStyleSheet(S["input"])
         row.addWidget(widget)
         self.form_layout.addLayout(row)
 
@@ -238,17 +231,17 @@ class TutanakliGirisPage(QWidget):
     def _kaydet(self):
         """Formu doğrular ve DB'ye yazar."""
         if not self._selected_personel_id:
-            QMessageBox.warning(self, "Eksik Bilgi", "Lütfen personel seçin.")
+            uyari_goster(self, "Lütfen personel seçin.", "Eksik Bilgi")
             return
         if self.inp_vaka.value() == 0:
-            QMessageBox.warning(self, "Eksik Bilgi", "Vaka sayısı 0 olamaz.")
+            uyari_goster(self, "Vaka sayısı 0 olamaz.", "Eksik Bilgi")
             return
         if not self.inp_tutanak_no.text().strip():
-            QMessageBox.warning(self, "Eksik Bilgi", "Tutanak numarası boş olamaz.")
+            uyari_goster(self, "Tutanak numarası boş olamaz.", "Eksik Bilgi")
             return
 
         if not self._db:
-            QMessageBox.critical(self, "Hata", "Veritabanı bağlantısı kurulamadı.")
+            hata_goster(self, "Veritabanı bağlantısı kurulamadı.")
             return
 
         from core.di import get_dis_alan_service
@@ -281,25 +274,25 @@ class TutanakliGirisPage(QWidget):
         basari = svc.calisma_kaydet(veri)
 
         if basari:
-            QMessageBox.information(
+            bilgi_goster(
                 self,
-                "Kaydedildi",
                 f"{self._selected_personel_ad} için\n"
                 f"{self.inp_saat.text()} saatlik çalışma kaydedildi.",
+                "Kaydedildi",
             )
             self._formu_temizle()
         else:
-            QMessageBox.warning(
+            uyari_goster(
                 self,
-                "Kayıt Hatası",
                 "Bu tutanak numarası bu dönem için zaten kayıtlı.\n"
                 "Lütfen tutanak numarasını kontrol edin.",
+                "Kayıt Hatası",
             )
 
     def _donem_ozeti_hesapla(self):
         """Seçili personelin mevcut dönemi için özet hesaplar ve gösterir."""
         if not self._selected_personel_id:
-            QMessageBox.warning(self, "Eksik Bilgi", "Önce personel seçin.")
+            uyari_goster(self, "Önce personel seçin.", "Eksik Bilgi")
             return
         if not self._db:
             return
@@ -318,20 +311,20 @@ class TutanakliGirisPage(QWidget):
         )
 
         if ozet:
-            QMessageBox.information(
+            bilgi_goster(
                 self,
-                "Dönem Özeti",
                 f"Personel : {ozet['PersonelAd']}\n"
                 f"Dönem    : {ay}/{yil}\n"
                 f"Toplam   : {ozet['ToplamSaat']:.2f} saat\n"
                 f"İzin Hakkı: {ozet['IzinGunHakki']:.1f} gün\n\n"
                 f"{ozet.get('Notlar', '')}",
+                "Dönem Özeti",
             )
         else:
-            QMessageBox.warning(
+            uyari_goster(
                 self,
-                "Hesaplanamadı",
                 "Bu dönem onaylanmış olabilir veya kayıt bulunamadı.",
+                "Hesaplanamadı",
             )
 
     def _formu_temizle(self):

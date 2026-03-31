@@ -17,13 +17,13 @@ from PySide6.QtWidgets import (
     QTextEdit,
     QProgressBar,
     QLabel,
-    QMessageBox,
     QCheckBox,
     QGroupBox,
 )
 from PySide6.QtCore import QThread, Signal
 
 from core.logger import logger
+from core.hata_yonetici import soru_sor, bilgi_goster, hata_goster
 from database.repository_registry import RepositoryRegistry
 
 
@@ -132,7 +132,7 @@ class DevirWorker(QThread):
             
             # Sonuç
             self.log_signal.emit("=" * 50)
-            self.log_signal.emit(f"✅ İşlem tamamlandı!")
+            self.log_signal.emit("✅ İşlem tamamlandı!")
             self.log_signal.emit(f"   Başarılı: {basarili}")
             self.log_signal.emit(f"   Hatalı: {hatali}")
             self.log_signal.emit("=" * 50)
@@ -247,16 +247,12 @@ class YilSonuDevirPage(QWidget):
     def _islemi_baslat(self):
         """Devir işlemini başlat"""
         # Son onay
-        reply = QMessageBox.question(
+        if not soru_sor(
             self,
-            "Son Onay",
             "Yıl sonu devir işlemini başlatmak istediğinizden emin misiniz?\n\n"
             "Bu işlem GERİ ALINAMAZ!",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
-        
-        if reply != QMessageBox.StandardButton.Yes:
+            "Son Onay",
+        ):
             return
         
         # UI'yı kilitle
@@ -291,16 +287,8 @@ class YilSonuDevirPage(QWidget):
         
         # Sonuç mesajı
         if success:
-            QMessageBox.information(
-                self,
-                "İşlem Tamamlandı",
-                f"Yıl sonu devir işlemi başarıyla tamamlandı.\n\n{message}"
-            )
+            bilgi_goster(self, f"Yıl sonu devir işlemi başarıyla tamamlandı.\n\n{message}", "İşlem Tamamlandı")
             logger.info(f"Yıl sonu devir işlemi tamamlandı: {message}")
         else:
-            QMessageBox.critical(
-                self,
-                "İşlem Başarısız",
-                f"Yıl sonu devir işlemi sırasında hata oluştu:\n\n{message}"
-            )
+            hata_goster(self, f"Yıl sonu devir işlemi sırasında hata oluştu:\n\n{message}", "İşlem Başarısız")
             logger.error(f"Yıl sonu devir işlemi başarısız: {message}")

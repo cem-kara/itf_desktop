@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTableWidget,
-    QTableWidgetItem, QHeaderView, QMessageBox, QDialog, QFormLayout,
+    QTableWidgetItem, QHeaderView, QDialog, QFormLayout,
     QLineEdit, QDialogButtonBox, QCheckBox, QLabel
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
 
+from core.hata_yonetici import bilgi_goster, hata_goster, soru_sor, uyari_goster
 from core.logger import logger
 from database.auth_repository import AuthRepository
 from database.permission_repository import PermissionRepository
@@ -183,7 +184,7 @@ class UsersView(QWidget):
             logger.info(f"{len(users)} kullanıcı yüklendi")
         except Exception as e:
             logger.error(f"Kullanıcılar yüklenirken hata: {e}")
-            QMessageBox.critical(self, "Hata", f"Kullanıcılar yüklenirken hata oluştu:\n{e}")
+            hata_goster(self, f"Kullanıcılar yüklenirken hata oluştu:\n{e}")
     
     def _add_user(self):
         """Yeni kullanıcı ekle"""
@@ -196,16 +197,16 @@ class UsersView(QWidget):
             data = dialog.get_data()
             
             if not data["username"]:
-                QMessageBox.warning(self, "Uyarı", "Kullanıcı adı boş olamaz!")
+                uyari_goster(self, "Kullanıcı adı boş olamaz!")
                 return
             
             if not data["password"]:
-                QMessageBox.warning(self, "Uyarı", "Şifre boş olamaz!")
+                uyari_goster(self, "Şifre boş olamaz!")
                 return
 
             pw_errors = self._validate_password(data["password"])
             if pw_errors:
-                QMessageBox.warning(self, "Uyarı", "\n".join(pw_errors))
+                uyari_goster(self, "\n".join(pw_errors))
                 return
             
             try:
@@ -217,12 +218,12 @@ class UsersView(QWidget):
                     must_change_password=True
                 )
                 logger.info(f"Yeni kullanıcı oluşturuldu: {data['username']} (ID: {user_id})")
-                QMessageBox.information(self, "Başarılı", "Kullanıcı başarıyla oluşturuldu!")
+                bilgi_goster(self, "Kullanıcı başarıyla oluşturuldu!")
                 self.load_users()
                 self.user_changed.emit()
             except Exception as e:
                 logger.error(f"Kullanıcı oluşturulurken hata: {e}")
-                QMessageBox.critical(self, "Hata", f"Kullanıcı oluşturulamadı:\n{e}")
+                hata_goster(self, f"Kullanıcı oluşturulamadı:\n{e}")
     
     def _edit_user(self):
         """Kullanıcıyı düzenle"""
@@ -232,7 +233,7 @@ class UsersView(QWidget):
             return
         row = self.table.currentRow()
         if row < 0:
-            QMessageBox.warning(self, "Uyarı", "Lütfen bir kullanıcı seçin!")
+            uyari_goster(self, "Lütfen bir kullanıcı seçin!")
             return
         
         item_0 = self.table.item(row, 0)
@@ -252,7 +253,7 @@ class UsersView(QWidget):
                 if data["password"]:
                     pw_errors = self._validate_password(data["password"])
                     if pw_errors:
-                        QMessageBox.warning(self, "Uyarı", "\n".join(pw_errors))
+                        uyari_goster(self, "\n".join(pw_errors))
                         return
                     password_hash = self._hasher.hash(data["password"])
                     self._auth_repo.update_user_password(user_id, password_hash)
@@ -262,12 +263,12 @@ class UsersView(QWidget):
                 
                 if user:
                     logger.info(f"Kullanıcı güncellendi: {user.username}")
-                QMessageBox.information(self, "Başarılı", "Kullanıcı başarıyla güncellendi!")
+                bilgi_goster(self, "Kullanıcı başarıyla güncellendi!")
                 self.load_users()
                 self.user_changed.emit()
             except Exception as e:
                 logger.error(f"Kullanıcı güncellenirken hata: {e}")
-                QMessageBox.critical(self, "Hata", f"Kullanıcı güncellenemedi:\n{e}")
+                hata_goster(self, f"Kullanıcı güncellenemedi:\n{e}")
     
     def _delete_user(self):
         """Kullanıcıyı sil"""
@@ -277,7 +278,7 @@ class UsersView(QWidget):
             return
         row = self.table.currentRow()
         if row < 0:
-            QMessageBox.warning(self, "Uyarı", "Lütfen bir kullanıcı seçin!")
+            uyari_goster(self, "Lütfen bir kullanıcı seçin!")
             return
         
         item_0 = self.table.item(row, 0)
@@ -286,24 +287,17 @@ class UsersView(QWidget):
             return
         user_id = int(item_0.text())
         username = item_1.text()
-        
-        reply = QMessageBox.question(
-            self,
-            "Onay",
-            f"'{username}' kullanıcısını silmek istediğinizden emin misiniz?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        
-        if reply == QMessageBox.StandardButton.Yes:
+
+        if soru_sor(self, f"'{username}' kullanıcısını silmek istediğinizden emin misiniz?"):
             try:
                 self._auth_repo.delete_user(user_id)
                 logger.info(f"Kullanıcı silindi: {username}")
-                QMessageBox.information(self, "Başarılı", "Kullanıcı başarıyla silindi!")
+                bilgi_goster(self, "Kullanıcı başarıyla silindi!")
                 self.load_users()
                 self.user_changed.emit()
             except Exception as e:
                 logger.error(f"Kullanıcı silinirken hata: {e}")
-                QMessageBox.critical(self, "Hata", f"Kullanıcı silinemedi:\n{e}")
+                hata_goster(self, f"Kullanıcı silinemedi:\n{e}")
     
     def _manage_roles(self):
         """Kullanıcının rollerini yönet"""
@@ -313,7 +307,7 @@ class UsersView(QWidget):
             return
         row = self.table.currentRow()
         if row < 0:
-            QMessageBox.warning(self, "Uyarı", "Lütfen bir kullanıcı seçin!")
+            uyari_goster(self, "Lütfen bir kullanıcı seçin!")
             return
 
         item_0 = self.table.item(row, 0)
@@ -338,7 +332,7 @@ class UsersView(QWidget):
             self.user_changed.emit()
         except Exception as e:
             logger.error(f"Kullanıcı rol güncelleme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Roller güncellenemedi:\n{e}")
+            hata_goster(self, f"Roller güncellenemedi:\n{e}")
 
 
 class RoleSelectDialog(QDialog):

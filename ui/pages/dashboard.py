@@ -16,9 +16,6 @@ from core.logger import logger
 from core.log_manager import LogStatistics
 from core.paths import DB_PATH
 from ui.styles.colors import DarkTheme
-from ui.styles.components import STYLES
-
-S = STYLES
 
 # ─── Renk sabitleri (açık tema) ──────────────────────────────────
 BG       = "page"
@@ -296,7 +293,7 @@ class DashboardPage(QWidget):
             pass
         self.refresh_button.setFixedHeight(34)
         self.refresh_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.refresh_button.setStyleSheet(str(S.get("btn_refresh") or ""))
+        self.refresh_button.setProperty("style-role", "refresh")
         self.refresh_button.clicked.connect(self.load_data)
 
         header.addLayout(greet_col)

@@ -74,7 +74,7 @@ class BackupService:
                     
             except PermissionError:
                 # WAL dosyaları kilitli olabilir - sadece main DB'yi kopyala
-                logger.warning(f"WAL dosyaları kopyalanamadı (kilitli), sadece main DB kopyalandı")
+                logger.warning("WAL dosyaları kopyalanamadı (kilitli), sadece main DB kopyalandı")
             
             # Dosya boyutu
             size_bytes = os.path.getsize(backup_path)
@@ -220,7 +220,7 @@ class BackupService:
             
             return {
                 "success": True,
-                "message": f"Yedek başarıyla geri yüklendi.\n\nUygulama yeniden başlatılmalıdır!"
+                "message": "Yedek başarıyla geri yüklendi.\n\nUygulama yeniden başlatılmalıdır!"
             }
             
         except Exception as e:
@@ -343,7 +343,7 @@ class BackupService:
             with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
                 # Veritabanı dosyasını ekle
                 zf.write(DB_PATH, arcname="local.db")
-                logger.info(f"ZIP'e eklendi: local.db")
+                logger.info("ZIP'e eklendi: local.db")
                 
                 # Seçili klasörleri ekle
                 if include_folders:
@@ -468,7 +468,7 @@ class BackupService:
             
             return {
                 "success": True,
-                "message": f"Tam yedek başarıyla geri yüklendi.\n\nUygulama yeniden başlatılmalıdır!"
+                "message": "Tam yedek başarıyla geri yüklendi.\n\nUygulama yeniden başlatılmalıdır!"
             }
             
         except Exception as e:

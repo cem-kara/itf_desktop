@@ -9,7 +9,6 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
-    QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -19,6 +18,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 
+from core.hata_yonetici import hata_goster, soru_sor, uyari_goster
 from core.logger import logger
 from database.permission_repository import PermissionRepository
 
@@ -191,7 +191,7 @@ class RolesView(QWidget):
             logger.info(f"{self.table.rowCount()} rol yüklendi")
         except Exception as e:
             logger.error(f"Roller yüklenirken hata: {e}")
-            QMessageBox.critical(self, "Hata", f"Roller yüklenirken hata oluştu:\n{e}")
+            hata_goster(self, f"Roller yüklenirken hata oluştu:\n{e}")
     
     def _add_role(self):
         """Yeni rol ekle"""
@@ -204,7 +204,7 @@ class RolesView(QWidget):
             return
         name = dialog.get_name()
         if not name:
-            QMessageBox.warning(self, "Uyarı", "Rol adı boş olamaz!")
+            uyari_goster(self, "Rol adı boş olamaz!")
             return
         try:
             role_id = self._perm_repo.create_role(name)
@@ -212,7 +212,7 @@ class RolesView(QWidget):
             self.load_roles()
         except Exception as e:
             logger.error(f"Rol oluşturulurken hata: {e}")
-            QMessageBox.critical(self, "Hata", f"Rol oluşturulamadı:\n{e}")
+            hata_goster(self, f"Rol oluşturulamadı:\n{e}")
     
     def _edit_permissions(self):
         """Rol yetkilerini düzenle"""
@@ -222,7 +222,7 @@ class RolesView(QWidget):
             return
         row = self.table.currentRow()
         if row < 0:
-            QMessageBox.warning(self, "Uyarı", "Lütfen bir rol seçin!")
+            uyari_goster(self, "Lütfen bir rol seçin!")
             return
 
         item = self.table.item(row, 0)
@@ -242,7 +242,7 @@ class RolesView(QWidget):
             self.load_roles()
         except Exception as e:
             logger.error(f"Rol yetkileri güncellenirken hata: {e}")
-            QMessageBox.critical(self, "Hata", f"Yetkiler güncellenemedi:\n{e}")
+            hata_goster(self, f"Yetkiler güncellenemedi:\n{e}")
 
     def _edit_role(self):
         if self._action_guard and not self._action_guard.check_and_warn(
@@ -251,7 +251,7 @@ class RolesView(QWidget):
             return
         row = self.table.currentRow()
         if row < 0:
-            QMessageBox.warning(self, "Uyarı", "Lütfen bir rol seçin!")
+            uyari_goster(self, "Lütfen bir rol seçin!")
             return
 
         id_item = self.table.item(row, 0)
@@ -265,7 +265,7 @@ class RolesView(QWidget):
             return
         new_name = dialog.get_name()
         if not new_name:
-            QMessageBox.warning(self, "Uyarı", "Rol adı boş olamaz!")
+            uyari_goster(self, "Rol adı boş olamaz!")
             return
         try:
             self._perm_repo.update_role(role_id, new_name)
@@ -273,7 +273,7 @@ class RolesView(QWidget):
             self.load_roles()
         except Exception as e:
             logger.error(f"Rol güncellenirken hata: {e}")
-            QMessageBox.critical(self, "Hata", f"Rol güncellenemedi:\n{e}")
+            hata_goster(self, f"Rol güncellenemedi:\n{e}")
     
     def _delete_role(self):
         """Rolü sil"""
@@ -283,7 +283,7 @@ class RolesView(QWidget):
             return
         row = self.table.currentRow()
         if row < 0:
-            QMessageBox.warning(self, "Uyarı", "Lütfen bir rol seçin!")
+            uyari_goster(self, "Lütfen bir rol seçin!")
             return
 
         id_item = self.table.item(row, 0)
@@ -296,22 +296,17 @@ class RolesView(QWidget):
         try:
             user_count = self._perm_repo.get_role_user_count(role_id)
             if user_count > 0:
-                QMessageBox.warning(
+                uyari_goster(
                     self,
-                    "Uyarı",
                     f"Rol silinemedi. Bu role bağlı {user_count} kullanıcı var.",
                 )
                 return
         except Exception as e:
             logger.error(f"Rol kullanım kontrolü hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Rol silinemedi:\n{e}")
+            hata_goster(self, f"Rol silinemedi:\n{e}")
             return
 
-        if QMessageBox.question(
-            self,
-            "Onay",
-            f"'{role_name}' rolünü silmek istediğinizden emin misiniz?",
-        ) != QMessageBox.StandardButton.Yes:
+        if not soru_sor(self, f"'{role_name}' rolünü silmek istediğinizden emin misiniz?"):
             return
 
         try:
@@ -320,5 +315,5 @@ class RolesView(QWidget):
             self.load_roles()
         except Exception as e:
             logger.error(f"Rol silinirken hata: {e}")
-            QMessageBox.critical(self, "Hata", f"Rol silinemedi:\n{e}")
+            hata_goster(self, f"Rol silinemedi:\n{e}")
 

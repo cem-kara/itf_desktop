@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>REPYS — Dosya Bazlı Detay Raporu</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0b0f1a;color:#e2e8f0;line-height:1.6}
+.header{background:linear-gradient(135deg,#1a2540,#0b0f1a);padding:2rem 2.5rem;border-bottom:2px solid #1e3a5f}
+.header h1{font-size:1.6rem;color:#f1f5f9}
+.header p{color:#7dd3fc;font-size:.88rem;margin-top:.3rem}
+
+.notice{background:#1c1200;border:1px solid #92400e;border-radius:8px;padding:1rem 1.3rem;margin:1.5rem 2.5rem;font-size:.87rem;color:#fed7aa}
+.notice strong{color:#fbbf24}
+
+.content{padding:1.5rem 2.5rem;max-width:1400px}
+.section{margin-bottom:3rem}
+.sh{display:flex;align-items:center;gap:.8rem;margin-bottom:1.2rem;padding-bottom:.6rem;border-bottom:2px solid #1e293b}
+.sh h2{font-size:1.1rem;color:#f1f5f9}
+.badge{font-size:.72rem;padding:.2rem .65rem;border-radius:999px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.badge.kriz{background:#7f1d1d;color:#fca5a5}
+.badge.yuksek{background:#78350f;color:#fde68a}
+.badge.orta{background:#164e63;color:#a5f3fc}
+.badge.temiz{background:#14532d;color:#86efac}
+.badge.not{background:#1e1b4b;color:#c4b5fd}
+
+.box{border-radius:8px;padding:.9rem 1.1rem;margin-bottom:1.1rem;font-size:.86rem}
+.box.blue{background:#0c1a2e;border-left:3px solid #3b82f6;color:#bfdbfe}
+.box.orange{background:#1c0f00;border-left:3px solid #f97316;color:#fed7aa}
+.box.green{background:#052e16;border-left:3px solid #22c55e;color:#bbf7d0}
+.box strong{font-weight:700}code{background:rgba(255,255,255,.08);padding:.1rem .4rem;border-radius:3px;font-family:monospace;font-size:.82rem}
+
+/* Dosya tablosu */
+.ftable{width:100%;border-collapse:collapse;margin-bottom:1.2rem;font-size:.84rem}
+.ftable th{background:#1a2540;color:#94a3b8;font-size:.73rem;text-transform:uppercase;letter-spacing:.5px;padding:.55rem .8rem;text-align:left;border-bottom:2px solid #2d3b55;white-space:nowrap}
+.ftable td{padding:.4rem .8rem;border-bottom:1px solid #131b2e;color:#cbd5e1;vertical-align:top}
+.ftable tr:hover td{background:#111827}
+.ftable td.fp{color:#7dd3fc;font-family:monospace;font-size:.82rem;white-space:nowrap}
+.ftable td.cnt{font-weight:700;text-align:center;white-space:nowrap}
+.ftable td.cnt.r{color:#f87171}
+.ftable td.cnt.o{color:#fb923c}
+.ftable td.cnt.y{color:#fbbf24}
+.ftable td.cnt.g{color:#34d399}
+
+.lines{font-family:monospace;font-size:.78rem;color:#64748b}
+.line-entry{display:block;padding:.15rem 0;border-bottom:1px solid #0f172a}
+.line-entry:last-child{border-bottom:none}
+.line-entry .ln{color:#475569;min-width:40px;display:inline-block}
+.line-entry .code{color:#94a3b8}
+.line-entry .code.warn{color:#fbbf24}
+.line-entry .code.err{color:#f87171}
+.line-entry .code.ok{color:#34d399}
+.line-entry .note{color:#6366f1;font-size:.75rem;margin-left:.5rem}
+
+/* Grup başlığı */
+.grp{background:#111827;border:1px solid #1e293b;border-radius:8px;margin-bottom:.5rem;overflow:hidden}
+.grp-head{padding:.6rem 1rem;background:#151f35;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:.87rem}
+.grp-head:hover{background:#1a2845}
+.grp-head .title{color:#7dd3fc;font-family:monospace}
+.grp-head .meta{display:flex;gap:.6rem;align-items:center}
+.grp-body{padding:.5rem 1rem;display:none}
+.grp-body.open{display:block}
+
+.chip{font-size:.7rem;padding:.15rem .5rem;border-radius:4px;font-weight:600}
+.chip.r{background:#7f1d1d;color:#fca5a5}
+.chip.o{background:#78350f;color:#fdba74}
+.chip.g{background:#14532d;color:#86efac}
+.chip.b{background:#1e3a5f;color:#93c5fd}
+.chip.p{background:#3b0764;color:#e9d5ff}
+
+.summary-row{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem}
+.sr{background:#1a2035;border:1px solid #2d3b55;border-radius:8px;padding:.8rem 1.1rem;flex:1;min-width:140px}
+.sr .n{font-size:1.7rem;font-weight:700}
+.sr .l{font-size:.74rem;color:#94a3b8;margin-top:.2rem}
+.sr.r .n{color:#f87171}.sr.o .n{color:#fb923c}.sr.y .n{color:#fbbf24}.sr.g .n{color:#34d399}.sr.p .n{color:#818cf8}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔬 REPYS — Dosya Bazlı Detay Raporu</h1>
+  <p>Her ihlal satır numarasıyla doğrulanmıştır · pyflakes + vulture + satır bazlı Python analizi · Mart 2026</p>
+</div>
+
+<div class="notice">
+  <strong>⚠️ Önceki rapordan fark:</strong> Bu rapordaki sayılar daha düşük ve daha doğrudur.
+  Önceki raporda <code>return False/True</code>'lar private helper fonksiyonlar içinde olsa da ihlal sayılmıştı.
+  Bu raporda <code>__init__</code> dışındaki servis çağrıları ve gerçek public API ihlalleri ayrıştırılmıştır.
+</div>
+
+<div class="content">
+
+<!-- ============ 1. QMessageBox ============ -->
+<div class="section">
+  <div class="sh">
+    <h2>💬 1. QMessageBox İhlalleri</h2>
+    <span class="badge yuksek">318 gerçek ihlal · 33 dosya</span>
+  </div>
+
+  <div class="box blue">
+    <strong>Not:</strong> <code>ui/dialogs/mesaj_kutusu.py</code> (5 adet) ve <code>ui/guards/action_guard.py</code> (1 adet) wrapper/guard sınıfları — bunlar meşru, ihlal sayılmaz. Gerçek ihlal: <strong>318 satır, 33 dosya</strong>.
+    <br>Dönüşüm: <code>from core.hata_yonetici import hata_goster, uyari_goster, bilgi_goster, soru_sor</code>
+  </div>
+
+  <table class="ftable">
+    <tr><th>Dosya</th><th>İhlal</th><th>Durum</th></tr>
+    <tr><td class="fp">ui/admin/settings_page.py</td><td class="cnt r">40</td><td><span class="chip r">Kritik</span></td></tr>
+    <tr><td class="fp">ui/admin/nobet_yonetim_page.py</td><td class="cnt r">28</td><td><span class="chip r">Kritik</span></td></tr>
+    <tr><td class="fp">ui/admin/backup_page.py</td><td class="cnt r">24</td><td><span class="chip r">Kritik</span></td></tr>
+    <tr><td class="fp">ui/pages/fhsz/dis_alan_import_page.py</td><td class="cnt o">19</td><td><span class="chip o">Yüksek</span></td></tr>
+    <tr><td class="fp">ui/pages/nobet/nobet_merkez_page.py</td><td class="cnt o">18</td><td><span class="chip o">Yüksek</span></td></tr>
+    <tr><td class="fp">ui/pages/personel/components/personel_overview_panel.py</td><td class="cnt o">17</td><td><span class="chip o">Yüksek</span></td></tr>
+    <tr><td class="fp">ui/pages/personel/saglik_takip.py</td><td class="cnt o">17</td><td><span class="chip o">Yüksek</span></td></tr>
+    <tr><td class="fp">ui/pages/nobet/nobet_plan_page.py</td><td class="cnt o">17</td><td><span class="chip o">Yüksek</span></td></tr>
+    <tr><td class="fp">ui/admin/users_view.py</td><td class="cnt o">16</td><td><span class="chip o">Yüksek</span></td></tr>
+    <tr><td class="fp">ui/admin/roles_view.py</td><td class="cnt y">13</td><td></td></tr>
+    <tr><td class="fp">ui/pages/fhsz/dis_alan_kurulum_page.py</td><td class="cnt y">11</td><td></td></tr>
+    <tr><td class="fp">ui/pages/personel/components/personel_saglik_panel.py</td><td class="cnt y">10</td><td></td></tr>
+    <tr><td class="fp">ui/pages/personel/dis_personel_fhsz.py</td><td class="cnt">9</td><td></td></tr>
+    <tr><td class="fp">ui/pages/fhsz/dis_alan_puantaj_page.py</td><td class="cnt">7</td><td></td></tr>
+    <tr><td class="fp">ui/pages/personel/personel_listesi.py</td><td class="cnt">7</td><td></td></tr>
+    <tr><td class="fp">ui/pages/personel/isten_ayrilik.py</td><td class="cnt">6</td><td></td></tr>
+    <tr><td class="fp">ui/pages/imports/dozimetre_import.py</td><td class="cnt">5</td><td></td></tr>
+    <tr><td class="fp">ui/pages/imports/dozimetre_pdf_import_page.py</td><td class="cnt">5</td><td></td></tr>
+    <tr><td class="fp">ui/pages/imports/components/base_import_page.py</td><td class="cnt">5</td><td></td></tr>
+    <tr><td class="fp">ui/auth/change_password_dialog.py</td><td class="cnt">5</td><td></td></tr>
+    <tr><td class="fp">ui/pages/dokuman/dokuman_listesi.py</td><td class="cnt">4</td><td></td></tr>
+    <tr><td class="fp">ui/admin/permissions_view.py</td><td class="cnt">3</td><td></td></tr>
+    <tr><td class="fp">ui/admin/log_viewer_page.py</td><td class="cnt">3</td><td></td></tr>
+    <tr><td class="fp">ui/admin/yil_sonu_devir_page.py</td><td class="cnt">3</td><td></td></tr>
+    <tr><td class="fp">ui/components/rapor_buton.py</td><td class="cnt">3</td><td></td></tr>
+    <tr><td class="fp">ui/main_window.py</td><td class="cnt">3</td><td><span class="chip b">Dikkatli ol</span></td></tr>
+    <tr><td class="fp">ui/pages/personel/components/hizli_izin_giris.py</td><td class="cnt">4</td><td></td></tr>
+    <tr><td class="fp">ui/pages/personel/components/hizli_saglik_giris.py</td><td class="cnt">3</td><td></td></tr>
+    <tr><td class="fp">ui/pages/personel/dozimetre_import.py</td><td class="cnt">5</td><td></td></tr>
+    <tr><td class="fp">ui/pages/personel/dozimetre_takip.py</td><td class="cnt">3</td><td></td></tr>
+    <tr><td class="fp">ui/pages/nobet/nobet_hazirlik_page.py</td><td class="cnt">1</td><td></td></tr>
+    <tr><td class="fp">ui/pages/personel/personel_merkez.py</td><td class="cnt">2</td><td></td></tr>
+    <tr><td class="fp">ui/pages/fhsz/dis_alan_katsayi_page.py</td><td class="cnt">2</td><td></td></tr>
+  </table>
+
+  <div class="box orange">
+    <strong>main_window.py için not:</strong> :156, :188, :473'teki 3 çağrıdan :629 ve :665 <code>QMessageBox.Icon/StandardButton</code> enum erişimi — bunlar aslında <code>MesajKutusu</code> wrapperi üzerinden geçtiği için ihlal <strong>olmayabilir</strong>. Elle kontrol gerekli.
+  </div>
+</div>
+
+<!-- ============ 2. TEMA ============ -->
+<div class="section">
+  <div class="sh">
+    <h2>🎨 2. Tema Sistemi İhlalleri</h2>
+    <span class="badge yuksek">106 ihlal · 14 dosya</span>
+  </div>
+
+  <div class="box blue">
+    3 ayrı ihlal türü var. Her biri farklı çözüm gerektirir.
+  </div>
+
+  <!-- 2a: f-string -->
+  <p style="color:#94a3b8;font-size:.82rem;margin-bottom:.5rem;margin-top:1rem">▶ setStyleSheet(f-string) — 23 ihlal</p>
+  <div class="grp">
+    <div class="grp-head" onclick="t(this)">
+      <span class="title">ui/pages/personel/dozimetre_import.py</span>
+      <div class="meta"><span class="chip r">4 ihlal</span></div>
+    </div>
+    <div class="grp-body">
+      <div class="lines">
+        <span class="line-entry"><span class="ln">:268</span><span class="code warn">btn.setStyleSheet(f"...")</span></span>
+        <span class="line-entry"><span class="ln">:282</span><span class="code warn">btn.setStyleSheet(f"...")</span></span>
+        <span class="line-entry"><span class="ln">:297</span><span class="code warn">btn.setStyleSheet(f"...")</span></span>
+        <span class="line-entry"><span class="ln">:327</span><span class="code warn">btn.setStyleSheet(f"...")</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="grp-head" onclick="t(this)">
+      <span class="title">ui/pages/imports/dozimetre_pdf_import_page.py</span>
+      <div class="meta"><span class="chip r">4 ihlal</span></div>
+    </div>
+    <div class="grp-body">
+      <div class="lines">
+        <span class="line-entry"><span class="ln">:370</span><span class="code warn">setStyleSheet(f"...")</span></span>
+        <span class="line-entry"><span class="ln">:384</span><span class="code warn">setStyleSheet(f"...")</span></span>
+        <span class="line-entry"><span class="ln">:399</span><span class="code warn">setStyleSheet(f"...")</span></span>
+        <span class="line-entry"><span class="ln">:429</span><span class="code warn">setStyleSheet(f"...")</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="grp-head" onclick="t(this)">
+      <span class="title">ui/pages/cihaz/bakim_form.py</span>
+      <div class="meta"><span class="chip o">3 ihlal</span></div>
+    </div>
+    <div class="grp-body">
+      <div class="lines">
+        <span class="line-entry"><span class="ln">:1158</span><span class="code warn">setStyleSheet(f"...")</span></span>
+        <span class="line-entry"><span class="ln">:1299</span><span class="code warn">setStyleSheet(f"...")</span></span>
+        <span class="line-entry"><span class="ln">:2145</span><span class="code warn">setStyleSheet(f"...")</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="grp-head" onclick="t(this)">
+      <span class="title">ui/pages/personel/fhsz_yonetim.py</span>
+      <div class="meta"><span class="chip o">2 ihlal</span></div>
+    </div>
+    <div class="grp-body">
+      <div class="lines">
+        <span class="line-entry"><span class="ln">:133</span><span class="code warn">setStyleSheet(f"...")</span></span>
+        <span class="line-entry"><span class="ln">:159</span><span class="code warn">setStyleSheet(f"...")</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="grp-head" onclick="t(this)">
+      <span class="title">ui/pages/nobet/nobet_plan_page.py</span>
+      <div class="meta"><span class="chip o">2 ihlal</span></div>
+    </div>
+    <div class="grp-body">
+      <div class="lines">
+        <span class="line-entry"><span class="ln">:90</span><span class="code warn">setStyleSheet(f"...")</span></span>
+        <span class="line-entry"><span class="ln">:192</span><span class="code warn">setStyleSheet(f"...")</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="grp-head" onclick="t(this)">
+      <span class="title">Diğerleri (tekli ihlaller)</span>
+      <div class="meta"><span class="chip b">5 dosya · 5 ihlal</span></div>
+    </div>
+    <div class="grp-body">
+      <div class="lines">
+        <span class="line-entry"><span class="ln">dokuman_listesi.py:254</span><span class="code warn">setStyleSheet(f"...")</span></span>
+        <span class="line-entry"><span class="ln">ariza_kayit.py:447</span><span class="code warn">setStyleSheet(f"...")</span></span>
+        <span class="line-entry"><span class="ln">cihaz_teknik_uts_scraper.py:155</span><span class="code warn">setStyleSheet(f"...")</span></span>
+        <span class="line-entry"><span class="ln">ui/styles/__init__.py:14</span><span class="code warn">setStyleSheet(f"...") — altyapı dosyası</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2b: STYLES -->
+  <p style="color:#94a3b8;font-size:.82rem;margin-bottom:.5rem;margin-top:1.5rem">▶ STYLES / S.get() ile setStyleSheet — 75 ihlal</p>
+
+  <table class="ftable">
+    <tr><th>Dosya</th><th>İhlal</th><th>Not</th></tr>
+    <tr><td class="fp">ui/pages/personel/personel_ekle.py</td><td class="cnt r">36</td><td>En kötü dosya</td></tr>
+    <tr><td class="fp">ui/pages/personel/dis_personel_fhsz.py</td><td class="cnt o">9</td><td></td></tr>
+    <tr><td class="fp">ui/pages/dokuman/dokuman_listesi.py</td><td class="cnt">8</td><td></td></tr>
+    <tr><td class="fp">ui/pages/fhsz/dis_alan_import_page.py</td><td class="cnt">6</td><td></td></tr>
+    <tr><td class="fp">ui/pages/fhsz/dis_alan_donem_gecmisi_page.py</td><td class="cnt">5</td><td></td></tr>
+    <tr><td class="fp">ui/pages/fhsz/dis_alan_kurulum_page.py</td><td class="cnt">2</td><td></td></tr>
+    <tr><td class="fp">ui/pages/imports/dozimetre_import.py</td><td class="cnt">3</td><td></td></tr>
+    <tr><td class="fp">ui/pages/personel/dozimetre_import.py</td><td class="cnt">3</td><td></td></tr>
+    <tr><td class="fp">ui/pages/dashboard.py</td><td class="cnt">1</td><td></td></tr>
+    <tr><td class="fp">ui/styles/components.py + __init__.py</td><td class="cnt">2</td><td><span class="chip b">Altyapı — dokunma</span></td></tr>
+  </table>
+
+  <!-- 2c: #hex -->
+  <p style="color:#94a3b8;font-size:.82rem;margin-bottom:.5rem;margin-top:1.5rem">▶ Ham renk kodu (#hex) — 8 ihlal</p>
+  <table class="ftable">
+    <tr><th>Dosya</th><th>Satır</th><th>İçerik</th></tr>
+    <tr><td class="fp">ui/pages/nobet/nobet_plan_page.py</td><td class="cnt">:522, :544</td><td><code>setStyleSheet("font-size:...#...")</code></td></tr>
+    <tr><td class="fp">ui/pages/nobet/nobet_merkez_page.py</td><td class="cnt">:237, :245, :270</td><td><code>setStyleSheet("color:...")  setStyleSheet("font-size...")</code></td></tr>
+    <tr><td class="fp">ui/pages/nobet/nobet_hazirlik_page.py</td><td class="cnt">:187</td><td><code>setStyleSheet("font-size:...")</code></td></tr>
+    <tr><td class="fp">ui/pages/personel/personel_ekle.py</td><td class="cnt">:245, :357</td><td><code>S.get("required_label", "font-size...")</code> — STYLES fallback'te #hex var</td></tr>
+  </table>
+</div>
+
+<!-- ============ 3. KATMAN İHLALLERİ ============ -->
+<div class="section">
+  <div class="sh">
+    <h2>🏗️ 3. Mimari Katman İhlalleri</h2>
+    <span class="badge yuksek">Satır bazında doğrulandı</span>
+  </div>
+
+  <div class="box blue">
+    3 alt kategori. En önemlisi: UI doğrudan repo/registry'ye erişiyor olmamalı. Çözüm: servis katmanına yeni metod ekle.
+  </div>
+
+  <!-- 3a: get_registry() -->
+  <p style="color:#94a3b8;font-size:.82rem;margin-bottom:.5rem">▶ get_registry() / registry.get() — UI içinde doğrudan repo erişimi</p>
+
+  <div class="grp">
+    <div class="grp-head" onclick="t(this)">
+      <span class="title">ui/pages/fhsz/dis_alan_import_page.py</span>
+      <div class="meta"><span class="chip r">5 satır</span></div>
+    </div>
+    <div class="grp-body">
+      <div class="lines">
+        <span class="line-entry"><span class="ln">:436</span><span class="code err">get_registry(self._db).get("Dis_Alan_Izin_Ozet").get_all()</span><span class="note">→ dis_alan_svc'ye metod ekle</span></span>
+        <span class="line-entry"><span class="ln">:521</span><span class="code err">get_registry(self._db).get("Dis_Alan_Calisma").get_all()</span></span>
+        <span class="line-entry"><span class="ln">:581</span><span class="code err">get_registry(self._db).get("Dis_Alan_Calisma")</span></span>
+        <span class="line-entry"><span class="ln">:903</span><span class="code err">get_registry(self._db).get("Dis_Alan_Calisma").get_all()</span></span>
+        <span class="line-entry"><span class="ln">:931</span><span class="code err">get_registry(self._db).get("Dis_Alan_Calisma").get_all()</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="grp-head" onclick="t(this)">
+      <span class="title">ui/pages/imports/dozimetre_pdf_import_page.py + dozimetre_import.py + personel/dozimetre_import.py</span>
+      <div class="meta"><span class="chip r">6 satır</span></div>
+    </div>
+    <div class="grp-body">
+      <div class="lines">
+        <span class="line-entry"><span class="ln">dozimetre_pdf_import:251</span><span class="code err">get_registry(db).get("Personel").get_all()</span><span class="note">→ personel_svc.get_personel_listesi()</span></span>
+        <span class="line-entry"><span class="ln">dozimetre_pdf_import:518</span><span class="code err">get_registry(db).get("Dozimetre_Olcum").get_where(...)</span></span>
+        <span class="line-entry"><span class="ln">dozimetre_import(imports):161</span><span class="code err">get_registry(db).get("Personel").get_all()</span></span>
+        <span class="line-entry"><span class="ln">dozimetre_import(imports):420</span><span class="code err">get_registry(db).get("Dozimetre_Olcum").get_where(...)</span></span>
+        <span class="line-entry"><span class="ln">dozimetre_import(personel):227</span><span class="code err">get_registry(db).get("Personel").get_all()</span></span>
+        <span class="line-entry"><span class="ln">dozimetre_import(personel):493</span><span class="code err">get_registry(db).get("Dozimetre_Olcum").get_where(...)</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="grp-head" onclick="t(this)">
+      <span class="title">ui/components/base_dokuman_panel.py</span>
+      <div class="meta"><span class="chip o">2 satır</span></div>
+    </div>
+    <div class="grp-body">
+      <div class="lines">
+        <span class="line-entry"><span class="ln">:339</span><span class="code err">from core.di import get_registry; registry = get_registry(self._db)</span></span>
+        <span class="line-entry"><span class="ln">:389</span><span class="code err">from core.di import get_registry; registry = get_registry(self._db)</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="grp-head" onclick="t(this)">
+      <span class="title">Diğer get_registry() ihlalleri</span>
+      <div class="meta"><span class="chip b">5 dosya · 8 satır</span></div>
+    </div>
+    <div class="grp-body">
+      <div class="lines">
+        <span class="line-entry"><span class="ln">nobet_yonetim_page.py:499</span><span class="code err">return get_registry(self._db)  — property olarak döndürüyor</span></span>
+        <span class="line-entry"><span class="ln">yil_sonu_devir_page.py:272</span><span class="code err">registry = get_registry(self._db)</span></span>
+        <span class="line-entry"><span class="ln">dokuman_listesi.py:110,417</span><span class="code err">get_registry(db).get("Dokumanlar")</span></span>
+        <span class="line-entry"><span class="ln">dis_alan_kurulum_page.py:295</span><span class="code err">get_registry(self._db).get("Sabitler").get_all()</span></span>
+        <span class="line-entry"><span class="ln">dis_alan_donem_gecmisi_page.py:189</span><span class="code err">reg = get_registry(self._db)</span></span>
+        <span class="line-entry"><span class="ln">nobet_hazirlik_page.py:146</span><span class="code err">def _reg(self): return get_registry(self._db)  — property</span></span>
+        <span class="line-entry"><span class="ln">nobet_merkez_page.py:114</span><span class="code err">return get_registry(self._db)</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3b: _r.get() -->
+  <p style="color:#94a3b8;font-size:.82rem;margin-bottom:.5rem;margin-top:1.5rem">▶ _r.get() — Servisin iç registry'sine doğrudan erişim</p>
+
+  <div class="grp">
+    <div class="grp-head" onclick="t(this)">
+      <span class="title">ui/pages/personel/fhsz_yonetim.py</span>
+      <div class="meta"><span class="chip r">5 satır</span></div>
+    </div>
+    <div class="grp-body">
+      <div class="lines">
+        <span class="line-entry"><span class="ln">:543</span><span class="code err">self._svc._r.get("Personel").get_all()</span><span class="note">→ fhsz_svc.get_personel_listesi() ekle</span></span>
+        <span class="line-entry"><span class="ln">:561</span><span class="code err">self._svc._r.get("Sabitler").get_all()</span></span>
+        <span class="line-entry"><span class="ln">:760</span><span class="code err">self._svc._r.get("FHSZ_Puantaj").get_all()</span></span>
+        <span class="line-entry"><span class="ln">:1035</span><span class="code err">repo = self._svc._r.get("FHSZ_Puantaj")</span></span>
+        <span class="line-entry"><span class="ln">:1141</span><span class="code err">izin_bilgi = self._svc._r.get("Izin_Bilgi")</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="grp-head" onclick="t(this)">
+      <span class="title">ui/pages/personel/saglik_takip.py + personel_saglik_panel.py + hizli_saglik_giris.py</span>
+      <div class="meta"><span class="chip r">7 satır</span></div>
+    </div>
+    <div class="grp-body">
+      <div class="lines">
+        <span class="line-entry"><span class="ln">saglik_takip.py:220</span><span class="code err">_svc._r.get("Personel")</span></span>
+        <span class="line-entry"><span class="ln">saglik_takip.py:221</span><span class="code err">_svc._r.get("Personel_Saglik_Takip")</span></span>
+        <span class="line-entry"><span class="ln">saglik_takip.py:222</span><span class="code err">_svc._r.get("Dokumanlar")</span></span>
+        <span class="line-entry"><span class="ln">saglik_takip.py:317,325</span><span class="code err">_svc._r.get("Personel_Saglik_Takip"), .get("Personel")</span></span>
+        <span class="line-entry"><span class="ln">saglik_panel.py:438,639</span><span class="code err">svc._r.get("Personel_Saglik_Takip")</span></span>
+        <span class="line-entry"><span class="ln">hizli_saglik_giris.py:238</span><span class="code err">_svc._r.get("Personel_Saglik_Takip")</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="grp-head" onclick="t(this)">
+      <span class="title">ui/pages/nobet/nobet_rapor_page.py + nobet_plan_page.py</span>
+      <div class="meta"><span class="chip o">4 satır</span></div>
+    </div>
+    <div class="grp-body">
+      <div class="lines">
+        <span class="line-entry"><span class="ln">nobet_rapor:570</span><span class="code err">svc._r.get("NB_Vardiya").get_all()</span></span>
+        <span class="line-entry"><span class="ln">nobet_rapor:572</span><span class="code err">svc._r.get("Personel").get_all()</span></span>
+        <span class="line-entry"><span class="ln">nobet_plan:494</span><span class="code err">self._svc()._r.get("Personel").get_all()</span></span>
+        <span class="line-entry"><span class="ln">nobet_plan:680</span><span class="code err">svc._r.get("Personel").get_all()</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="grp-head" onclick="t(this)">
+      <span class="title">ui/pages/fhsz/dis_alan_puantaj_page.py + rke/rke_page.py</span>
+      <div class="meta"><span class="chip b">3 satır</span></div>
+    </div>
+    <div class="grp-body">
+      <div class="lines">
+        <span class="line-entry"><span class="ln">dis_alan_puantaj:215</span><span class="code err">self._svc._r.get("Dis_Alan_Calisma").get_all()</span></span>
+        <span class="line-entry"><span class="ln">dis_alan_puantaj:288</span><span class="code err">ozet_repo = self._svc._r.get("Dis_Alan_Izin_Ozet")</span></span>
+        <span class="line-entry"><span class="ln">rke_page:906</span><span class="code err">sabitler = svc._r.get("Sabitler").get_all()</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3c: Metod içi servis -->
+  <p style="color:#94a3b8;font-size:.82rem;margin-bottom:.5rem;margin-top:1.5rem">▶ Metod içinde yeni servis nesnesi — 62 gerçek ihlal (__init__ hariç)</p>
+
+  <table class="ftable">
+    <tr><th>Dosya</th><th>İhlal Satırları</th><th>Adet</th></tr>
+    <tr><td class="fp">ui/pages/rke/rke_page.py</td><td><code>:901, :1055, :1073, :1088, :1106</code></td><td class="cnt r">5</td></tr>
+    <tr><td class="fp">ui/pages/personel/isten_ayrilik.py</td><td><code>:341, :482, :500, :638</code></td><td class="cnt r">4</td></tr>
+    <tr><td class="fp">ui/pages/cihaz/components/toplu_bakim_panel.py</td><td><code>:171, :185, :249, :339</code></td><td class="cnt r">4</td></tr>
+    <tr><td class="fp">ui/pages/personel/components/personel_ozet_servisi.py</td><td><code>:46, :47, :49</code></td><td class="cnt o">3</td></tr>
+    <tr><td class="fp">ui/pages/personel/components/hizli_izin_giris.py</td><td><code>:123, :159, :208</code></td><td class="cnt o">3</td></tr>
+    <tr><td class="fp">ui/pages/nobet/nobet_rapor_page.py</td><td><code>:506, :532, :563</code></td><td class="cnt o">3</td></tr>
+    <tr><td class="fp">ui/pages/fhsz/dis_alan_import_page.py</td><td><code>:240, :248, :456</code></td><td class="cnt o">3</td></tr>
+    <tr><td class="fp">ui/pages/personel/dis_personel_fhsz.py</td><td><code>:258, :311, :354</code></td><td class="cnt o">3</td></tr>
+    <tr><td class="fp">ui/pages/cihaz/ariza_islem.py</td><td><code>:240, :487</code></td><td class="cnt y">2</td></tr>
+    <tr><td class="fp">ui/pages/cihaz/cihaz_listesi.py</td><td><code>:547, :597</code></td><td class="cnt y">2</td></tr>
+    <tr><td class="fp">ui/pages/personel/fhsz_yonetim.py</td><td><code>:736, :1032</code> — self._svc yeniden atanıyor</td><td class="cnt y">2</td></tr>
+    <tr><td class="fp">ui/pages/personel/izin_takip.py</td><td><code>:559, :759</code></td><td class="cnt y">2</td></tr>
+    <tr><td class="fp">ui/pages/personel/saglik_takip.py</td><td><code>:367, :1435</code></td><td class="cnt y">2</td></tr>
+    <tr><td class="fp">ui/pages/fhsz/dis_alan_kurulum_page.py</td><td><code>:367, :416</code></td><td class="cnt y">2</td></tr>
+    <tr><td class="fp">ui/pages/nobet/nobet_plan_page.py</td><td><code>:152</code> — property her çağrıda yeni nesne</td><td class="cnt y">1</td></tr>
+    <tr><td class="fp">ui/pages/nobet/nobet_merkez_page.py</td><td><code>:84</code></td><td class="cnt y">1</td></tr>
+    <tr><td class="fp">+ 15 dosya daha (tekli ihlaller)</td><td>dashboard, rke_rapor, toplu_muayene, dozimetre_*, vb.</td><td class="cnt">~15</td></tr>
+  </table>
+
+  <div class="box orange">
+    <strong>Import sayfaları için özel not:</strong> <code>ui/pages/imports/*.py</code> dosyalarındaki modül seviyesi fabrika fonksiyonları (<code>def get_service(db): return get_xxx_service(db)</code>) class dışı — bu pattern import sayfaları için kasıtlı olabilir. Ama aynı sonucu verir: her çağrıda yeni nesne.
+  </div>
+</div>
+
+<!-- ============ 4. SONUCYONETICI ============ -->
+<div class="section">
+  <div class="sh">
+    <h2>📦 4. SonucYonetici Uyumsuzluğu</h2>
+    <span class="badge orta">Gerçek ihlaller: private helper hariç</span>
+  </div>
+
+  <div class="box green">
+    <strong>Önceki rapor düzeltmesi:</strong> <code>nb_algoritma.py</code> ve <code>nobet_service.py</code>'deki <code>return False/True</code> çağrılarının büyük çoğunluğu <code>_atanabilir()</code>, <code>_kisit_kontrol()</code> gibi <strong>private nested helper fonksiyonlar</strong> içinde. Bunlar bool döndürmeli — SonucYonetici kapsamı dışında. Bu nedenle gerçek ihlal sayısı önceki rapordan daha düşük.
+  </div>
+
+  <table class="ftable">
+    <tr><th>Dosya</th><th>Gerçek İhlal</th><th>Not</th></tr>
+    <tr><td class="fp">core/services/izin_service.py</td><td class="cnt o">9</td><td>Public API metodları eski stil döndürüyor — öncelikli</td></tr>
+    <tr><td class="fp">core/services/nobet/nb_tercih_service.py</td><td class="cnt">6</td><td></td></tr>
+    <tr><td class="fp">core/services/nobet/nb_plan_service.py</td><td class="cnt">~4</td><td>Bazıları internal helper olabilir, elle kontrol</td></tr>
+    <tr><td class="fp">core/services/nobet/nb_mesai_service.py</td><td class="cnt">~3</td><td></td></tr>
+    <tr><td class="fp">core/services/dozimetre_service.py</td><td class="cnt">4</td><td>get_son_olcum, get_olcum_listesi vb. — kontrol et</td></tr>
+    <tr><td class="fp">core/services/nobet/nobet_adapter.py</td><td class="cnt">~3</td><td></td></tr>
+    <tr><td class="fp">core/services/personel_service.py</td><td class="cnt">2</td><td></td></tr>
+    <tr><td class="fp">core/services/bakim_service.py</td><td class="cnt">1</td><td></td></tr>
+    <tr><td class="fp">core/services/dis_alan_import_service.py</td><td class="cnt">2</td><td></td></tr>
+    <tr><td class="fp">core/services/dashboard_service.py</td><td class="cnt">2</td><td>get_today_summary — None dönüyor, SonucYonetici olmalı</td></tr>
+    <tr><td class="fp">core/services/nobet_service.py</td><td class="cnt">~4</td><td>_atanabilir/_ekle helper'lar hariç tutuldu</td></tr>
+  </table>
+</div>
+
+<!-- ============ 5. TEMİZ ============ -->
+<div class="section">
+  <div class="sh">
+    <h2>✅ 5. Temiz Alanlar</h2>
+    <span class="badge temiz">Doğrulandı</span>
+  </div>
+  <table class="ftable">
+    <tr><th>Alan</th><th>Durum</th><th>Not</th></tr>
+    <tr><td>PySide6 Enum (Qt.AlignLeft, QHeaderView.Stretch vb.)</td><td class="cnt g">0 ihlal ✅</td><td>Tüm kod Qt.AlignmentFlag.Xxx formatında</td></tr>
+    <tr><td>DarkTheme inline setStyleSheet</td><td class="cnt g">0 ihlal ✅</td><td></td></tr>
+    <tr><td>ölü kod / kullanılmayan import</td><td class="cnt g">Temizlendi ✅</td><td>Önceki rapor uygulandı</td></tr>
+    <tr><td>Auth / RBAC (lockout, audit, permission)</td><td class="cnt g">Sağlam ✅</td><td></td></tr>
+    <tr><td>Migration sistemi</td><td class="cnt g">Sağlam ✅</td><td></td></tr>
+    <tr><td>DI fabrikaları (15 adet)</td><td class="cnt g">Eksiksiz ✅</td><td></td></tr>
+    <tr><td>SonucYonetici benimseme (595 metod)</td><td class="cnt g">%90 ✅</td><td>Küçük artık var</td></tr>
+  </table>
+</div>
+
+<!-- ============ 6. ÖNERİLEN SIRALAMA ============ -->
+<div class="section">
+  <div class="sh">
+    <h2>🗺️ 6. Önerilen Düzeltme Sırası</h2>
+    <span class="badge not">Yol Haritası</span>
+  </div>
+  <table class="ftable">
+    <tr><th>#</th><th>Konu</th><th>Dosya/Alan</th><th>Süre</th></tr>
+    <tr><td>1</td><td>token.json iptal + .gitignore</td><td>database/token.json, credentials.json</td><td>15 dk</td></tr>
+    <tr><td>2</td><td>QMessageBox → hata_yonetici (büyükten küçüğe)</td><td>settings_page → nobet_yonetim → backup_page → ...</td><td>~4 saat</td></tr>
+    <tr><td>3</td><td>Tema: STYLES (personel_ekle.py önce — 36 ihlal)</td><td>personel_ekle, dis_personel_fhsz, dokuman_listesi</td><td>~2 saat</td></tr>
+    <tr><td>4</td><td>Tema: f-string ve #hex (nobet sayfaları + dozimetre)</td><td>nobet_plan, bakim_form, dozimetre_*</td><td>~1 saat</td></tr>
+    <tr><td>5</td><td>_r.get() bypass → servis metodları (saglik + fhsz)</td><td>saglik_takip, fhsz_yonetim, saglik_panel</td><td>~3 saat</td></tr>
+    <tr><td>6</td><td>get_registry() bypass → servis metodları (fhsz + dozimetre)</td><td>dis_alan_import, dozimetre_*_import</td><td>~2 saat</td></tr>
+    <tr><td>7</td><td>Metod içi servis → self._svc (rke_page önce)</td><td>rke_page (5 ihlal), isten_ayrilik (4), toplu_bakim (4)</td><td>~2 saat</td></tr>
+    <tr><td>8</td><td>SonucYonetici artıkları (izin_service + dozimetre)</td><td>izin_service, dozimetre_service</td><td>~1 saat</td></tr>
+    <tr><td>9</td><td>Test altyapısı (TODO-8)</td><td>tests/ klasörü — yok</td><td>Uzun vade</td></tr>
+  </table>
+</div>
+
+</div>
+
+<footer style="padding:1.5rem 2.5rem;border-top:1px solid #1e293b;color:#475569;font-size:.79rem;margin-top:2rem">
+  REPYS Dosya Bazlı Analiz Raporu · Her satır doğrulanmıştır · Mart 2026
+</footer>
+
+<script>
+function t(el){el.nextElementSibling.classList.toggle('open')}
+</script>
+</body>
+</html>

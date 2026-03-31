@@ -12,7 +12,7 @@ from PySide6.QtCore import (
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QFrame, QProgressBar, QPushButton, QTableView,
-    QComboBox, QLineEdit, QMenu, QMessageBox, QStyledItemDelegate,
+    QComboBox, QLineEdit, QMenu, QStyledItemDelegate,
     QStyle, QToolTip,
 )
 from PySide6.QtGui import (
@@ -20,6 +20,7 @@ from PySide6.QtGui import (
 )
 
 from core.logger import logger
+from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster, soru_sor
 from core.di import get_personel_service, get_izin_service
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
@@ -1050,8 +1051,7 @@ class PersonelListesiPage(QWidget):
     def _tbl_mouse_press(self, event):
         idx = self.table.indexAt(event.pos())
         if idx.isValid():
-            src      = self._proxy.mapToSource(idx)
-            row_data = self._model.get_row(src.row())
+            self._proxy.mapToSource(idx)
             # Butonlar sadece double click'te gösterilsin, mouse press'e alet yapma
         QTableView.mousePressEvent(self.table, event)
 
@@ -1094,13 +1094,13 @@ class PersonelListesiPage(QWidget):
 
     def _change_durum(self, tc, ad, yeni):
         if not self._svc:
-            QMessageBox.critical(self, "Hata", "Servis bağlantısı yok")
+            hata_goster(self, "Servis bağlantısı yok")
             return
-        if QMessageBox.question(
-            self, "Durum Değiştir",
+        if not soru_sor(
+            self,
             f'"{ad}" personelinin durumu "{yeni}" olarak değiştirilsin mi?',
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No,
-        ) != QMessageBox.StandardButton.Yes:
+            "Durum Değiştir",
+        ):
             return
         try:
             # Service kullanarak güncelle
@@ -1109,10 +1109,10 @@ class PersonelListesiPage(QWidget):
                 logger.info(f"Durum: {tc} → {yeni}")
                 self.load_data()
             else:
-                QMessageBox.critical(self, "Hata", "Durum güncellemesi başarısız")
+                hata_goster(self, "Durum güncellemesi başarısız")
         except Exception as e:
             logger.error(f"Durum değiştirme: {e}")
-            QMessageBox.critical(self, "Hata", f"İşlem başarısız:\n{e}")
+            hata_goster(self, f"İşlem başarısız:\n{e}")
 
     # ─── Excel Export ────────────────────────────────────
 
@@ -1172,7 +1172,7 @@ class PersonelListesiPage(QWidget):
         export_data = self._get_all_filtered_data()
         
         if not export_data:
-            QMessageBox.warning(self, "Uyarı", "Dışa aktarılacak veri yok")
+            uyari_goster(self, "Dışa aktarılacak veri yok")
             return
         
         try:
@@ -1267,16 +1267,16 @@ class PersonelListesiPage(QWidget):
             # Dosyayı kaydet
             wb.save(file_path)
             
-            QMessageBox.information(
+            bilgi_goster(
                 self,
+                f"Excel dosyası başarıyla kaydedildi:\n{file_path}\n\nToplam: {len(export_data)} kayıt",
                 "Başarılı",
-                f"Excel dosyası başarıyla kaydedildi:\n{file_path}\n\nToplam: {len(export_data)} kayıt"
             )
             logger.info(f"Excel export: {file_path} ({len(export_data)} kayıt)")
             
         except Exception as e:
             logger.error(f"Excel export hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Excel dosyası oluşturulamadı:\n{e}")
+            hata_goster(self, f"Excel dosyası oluşturulamadı:\n{e}")
     
     def _build_export_sheet_name(self) -> str:
         """Filter durumuna göre sheet adı oluştur."""

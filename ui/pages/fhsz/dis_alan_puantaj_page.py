@@ -16,7 +16,7 @@ from datetime import datetime
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QFrame, QTableWidget, QTableWidgetItem,
-    QHeaderView, QAbstractItemView, QMessageBox, QFileDialog,
+    QHeaderView, QAbstractItemView, QFileDialog,
 )
 from PySide6.QtCore import Qt, QDate
 from PySide6.QtGui import QColor, QBrush
@@ -397,7 +397,7 @@ class DisAlanPuantajPage(QWidget):
 
     def _rks_onayla(self):
         if not self._svc:
-            QMessageBox.critical(self, "Hata", "Veritabanı hizmeti bulunamadı.")
+            hata_goster(self, "Veritabanı hizmeti bulunamadı.")
             return
 
         idx = self.tablo.currentRow()
@@ -460,8 +460,7 @@ class DisAlanPuantajPage(QWidget):
             except Exception:
                 fn, fnb = "Helvetica", "Helvetica-Bold"
         except ImportError:
-            QMessageBox.critical(self, "Eksik Paket",
-                                 "reportlab kurulu değil.\npip install reportlab")
+            hata_goster(self, "reportlab kurulu değil.\npip install reportlab", "Eksik Paket")
             return
 
         doc = SimpleDocTemplate(
@@ -475,7 +474,6 @@ class DisAlanPuantajPage(QWidget):
                              textColor=colors.HexColor("#1D3557"))
         sm = ParagraphStyle("S",  fontName=fn,  fontSize=8,  leading=11,
                              textColor=colors.HexColor("#555555"))
-        nm = ParagraphStyle("N",  fontName=fn,  fontSize=9,  leading=13)
 
         rows = self._tablo_rows
         toplam_personel = len(rows)
@@ -605,10 +603,9 @@ class DisAlanPuantajPage(QWidget):
 
         try:
             doc.build(elements)
-            QMessageBox.information(self, "PDF Oluşturuldu",
-                                    f"Rapor kaydedildi:\n{path}")
+            bilgi_goster(self, f"Rapor kaydedildi:\n{path}", "PDF Oluşturuldu")
         except Exception as e:
-            QMessageBox.critical(self, "Hata", f"PDF oluşturulamadı:\n{e}")
+            hata_goster(self, f"PDF oluşturulamadı:\n{e}")
 
     # ── Excel ──────────────────────────────────────────────────
 
@@ -670,10 +667,9 @@ class DisAlanPuantajPage(QWidget):
                 ws.column_dimensions[get_column_letter(idx)].width = max_len + 3
 
             wb.save(path)
-            QMessageBox.information(self, "Kaydedildi", f"Excel kaydedildi:\n{path}")
+            bilgi_goster(self, f"Excel kaydedildi:\n{path}", "Kaydedildi")
 
         except ImportError:
-            QMessageBox.critical(self, "Eksik Paket",
-                                 "openpyxl kurulu değil.\npip install openpyxl")
+            hata_goster(self, "openpyxl kurulu değil.\npip install openpyxl", "Eksik Paket")
         except Exception as e:
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))

@@ -1027,7 +1027,6 @@ class BakimKayitForm(QWidget):
     # ══════════════════════════════════════════════════════
     def _build_perf_tab(self) -> QWidget:
         """Performans tabının iskeletini oluşturur (içerik _refresh_perf_tab ile dolar)."""
-        surface = _C["surface"]
         outer = QScrollArea()
         outer.setWidgetResizable(True)
         outer.setProperty("bg-role", "panel")
@@ -1476,8 +1475,7 @@ class BakimKayitForm(QWidget):
 
         for i in range(12):
             ay_idx = (now.month - 1 - i) % 12
-            yil    = now.year if now.month - 1 - i >= 0 else now.year - 1
-            konum  = 11 - i
+            konum = 11 - i
             ay_sayim[konum] = 0
             ay_etiket[konum] = ay_isimleri[ay_idx]
 

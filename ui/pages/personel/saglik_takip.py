@@ -10,7 +10,7 @@ from PySide6.QtGui import QCursor, QDesktopServices
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame,
     QLabel, QComboBox, QLineEdit, QPushButton, QTableView,
-    QDateEdit, QMessageBox, QFileDialog, QSizePolicy,
+    QDateEdit, QFileDialog, QSizePolicy,
     QStyledItemDelegate,
 )
 # =============================================================================
@@ -32,6 +32,7 @@ class RaporButtonDelegate(QStyledItemDelegate):
         return super().editorEvent(event, model, option, index)
 
 from core.logger import logger
+from core.hata_yonetici import bilgi_goster, hata_goster, soru_sor, uyari_goster
 from core.date_utils import parse_date, to_db_date
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.icons import IconRenderer, IconColors, Icons
@@ -394,7 +395,6 @@ class SaglikTakipPage(QWidget):
         self.cmb_personel.clear()
         for p in aktif:
             ad = p.get("AdSoyad", "")
-            tc = p.get("KimlikNo", "")
             birim = p.get("GorevYeri", "") or p.get("Birim", "")
             self.cmb_personel.addItem(f"{ad}  ({birim})", p)
         if current_data:
@@ -821,13 +821,7 @@ class SaglikTakipPage(QWidget):
         dot = getattr(self, "_exam_status_dot", {}).get(key)
         if not dot:
             return
-        color_map = {
-            "Uygun":        "#16a34a",
-            "Şartlı Uygun": "#d97706",
-            "Uygun Değil":  "#dc2626",
-        }
-        color = color_map.get(durum, "#555")
-        tip   = durum if durum else "Seçilmedi"
+        tip = durum if durum else "Seçilmedi"
         dot.setProperty("bg-role", "panel")
         dot.setToolTip(tip)
 
@@ -857,7 +851,7 @@ class SaglikTakipPage(QWidget):
         """Tabloda görünen satırları CSV olarak dışa aktar."""
         rows = self.model._data if hasattr(self.model, "_data") else []
         if not rows:
-            QMessageBox.information(self, "Dışa Aktarma", "Aktarılacak satır bulunamadı.")
+            bilgi_goster(self, "Aktarılacak satır bulunamadı.")
             return
 
         yil  = self.cmb_yil.currentData() or date.today().year
@@ -902,14 +896,14 @@ class SaglikTakipPage(QWidget):
                         str(row.get(alan, "") or "").strip()
                         for alan, _ in alan_map
                     ])
-            QMessageBox.information(
+            bilgi_goster(
                 self, "Başarılı",
                 f"{len(rows)} satır dışa aktarıldı.\n\n{path}"
             )
             if platform.system() == "Windows":
                 os.startfile(path)
         except Exception as e:
-            QMessageBox.critical(self, "Hata", f"Dosya kaydedilemedi:\n{e}")
+            hata_goster(self, f"Dosya kaydedilemedi:\n{e}")
 
     def handle_rapor_button_clicked(self, row_idx: int, value: str):
         row = self.model.get_row(row_idx)
@@ -919,7 +913,7 @@ class SaglikTakipPage(QWidget):
             # Raporu aç fonksiyonu (mevcut)
             rapor_path = str(row.get("_RaporPath", "")).strip()
             if not rapor_path:
-                QMessageBox.information(self, "Bilgi", "Bu kayıt için rapor dosyası bulunmuyor.")
+                bilgi_goster(self, "Bu kayıt için rapor dosyası bulunmuyor.")
                 return
             try:
                 if rapor_path.startswith(("http://", "https://")):
@@ -944,7 +938,7 @@ class SaglikTakipPage(QWidget):
                             resolved_path = candidate
                             break
                 if not os.path.isfile(resolved_path):
-                    QMessageBox.warning(
+                    uyari_goster(
                         self, "Dosya Bulunamadı",
                         f"Rapor dosyası bulunamadı:\n\n{rapor_path}\n\nDosya silinmiş veya yol değişmiş olabilir."
                     )
@@ -959,7 +953,7 @@ class SaglikTakipPage(QWidget):
                 logger.info(f"Saglik raporu acildi (local): {resolved_path}")
             except Exception as e:
                 logger.error(f"Saglik raporu acma hatasi: {e}")
-                QMessageBox.critical(self, "Hata", f"Rapor açılamadı:\n\n{str(e)}\n\nYol: {rapor_path}")
+                hata_goster(self, f"Rapor açılamadı:\n\n{str(e)}\n\nYol: {rapor_path}")
         elif value == "⚠ Rapor Eksik":
             kayit_no = str(row.get("KayitNo", "")).strip()
             takip_row = next(
@@ -1318,7 +1312,6 @@ class SaglikTakipPage(QWidget):
         Birim/durum/arama değişikliklerinde bu metod çağrılmaz — gereksiz rebuild önlenir."""
         yil = self.cmb_yil.currentData()
         if yil and self._personel_rows:
-            yil_int = int(yil)
             self._rebuild_all_rows()
             self._fill_filter_combos()
         self._apply_filters()
@@ -1424,7 +1417,7 @@ class SaglikTakipPage(QWidget):
         if not self._selected_report_path:
             return self.inp_rapor.text().strip()
         if not os.path.exists(self._selected_report_path):
-            QMessageBox.warning(self, "Uyari", "Secilen rapor dosyasi bulunamadi.")
+            uyari_goster(self, "Secilen rapor dosyasi bulunamadi.")
             return ""
         try:
             ext         = os.path.splitext(self._selected_report_path)[1]
@@ -1444,14 +1437,14 @@ class SaglikTakipPage(QWidget):
             )
             if not sonuc.get("ok"):
                 err = str(sonuc.get("error", "Bilinmeyen yükleme hatası"))
-                QMessageBox.warning(self, "Yukleme Hatasi", f"Rapor yüklenemedi:\n{err}")
+                uyari_goster(self, f"Rapor yüklenemedi:\n{err}")
                 return ""
             rapor_ref = str(sonuc.get("drive_link") or sonuc.get("local_path") or "").strip()
 
             return rapor_ref
         except Exception as exc:
             logger.error(f"Saglik rapor yukleme hatasi: {exc}")
-            QMessageBox.critical(self, "Hata", f"Rapor yuklenemedi:\n{exc}")
+            hata_goster(self, f"Rapor yuklenemedi:\n{exc}")
             return ""
 
     # -------------------------------------------------------------------------
@@ -1504,7 +1497,7 @@ class SaglikTakipPage(QWidget):
     def _save_rapor_only(self):
         """Sadece RaporDosya alanını günceller — diğer alanlara dokunmaz."""
         if not self._editing_id:
-            QMessageBox.warning(self, "Hata", "Güncellenecek kayıt bulunamadı.")
+            uyari_goster(self, "Güncellenecek kayıt bulunamadı.")
             return
 
         # Hangi personele ait olduğunu mevcut kayıttan al
@@ -1514,7 +1507,7 @@ class SaglikTakipPage(QWidget):
             None,
         )
         if not takip_row:
-            QMessageBox.warning(self, "Hata", "Kayıt bulunamadı.")
+            uyari_goster(self, "Kayıt bulunamadı.")
             return
 
         tc_no = str(takip_row.get("Personelid", "")).strip()
@@ -1523,7 +1516,7 @@ class SaglikTakipPage(QWidget):
             return  # yükleme hatası zaten uyarıldı
 
         if not rapor_link:
-            QMessageBox.warning(self, "Eksik", "Lütfen bir rapor dosyası seçin.")
+            uyari_goster(self, "Lütfen bir rapor dosyası seçin.")
             return
 
         self._start_save(
@@ -1534,7 +1527,7 @@ class SaglikTakipPage(QWidget):
     def _save_full_record(self):
         """Tüm muayene alanlarını kaydeder."""
         if self.cmb_personel.currentIndex() < 0:
-            QMessageBox.warning(self, "Eksik Bilgi", "Lutfen personel seciniz.")
+            uyari_goster(self, "Lutfen personel seciniz.")
             return
 
         # Durum seçili ama tarih gelecekteyse uyar
@@ -1550,11 +1543,7 @@ class SaglikTakipPage(QWidget):
         ]
         if gelecek:
             mesaj = "Şu muayene(ler) için tarih bugünden ileri:\n\n" + ", ".join(gelecek) + "\n\nYine de kaydetmek istiyor musunuz?"
-            cevap = QMessageBox.question(
-                self, "Tarih Kontrolü", mesaj,
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            )
-            if cevap != QMessageBox.StandardButton.Yes:
+            if not soru_sor(self, mesaj):
                 return
 
         personel_data                        = self.cmb_personel.currentData()
@@ -1601,9 +1590,9 @@ class SaglikTakipPage(QWidget):
         self.btn_kaydet.setEnabled(True)
         self.form_panel.setEnabled(True)
         if result == "rapor_ok":
-            QMessageBox.information(self, "Başarılı", "Rapor kaydedildi.")
+            bilgi_goster(self, "Rapor kaydedildi.")
         else:
-            QMessageBox.information(self, "Başarılı", "Sağlık takip kaydı kaydedildi.")
+            bilgi_goster(self, "Sağlık takip kaydı kaydedildi.")
         self._clear_form()
         self.load_data()
 
@@ -1611,7 +1600,7 @@ class SaglikTakipPage(QWidget):
         self.btn_kaydet.setEnabled(True)
         self.form_panel.setEnabled(True)
         logger.error(f"Saglik takip kaydetme hatasi: {msg}")
-        QMessageBox.critical(self, "Hata", f"Kayıt sırasında hata oluştu:\n{msg}")
+        hata_goster(self, f"Kayıt sırasında hata oluştu:\n{msg}")
 
     # -------------------------------------------------------------------------
     # Seçim & Temizlik

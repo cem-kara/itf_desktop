@@ -24,12 +24,12 @@ from PySide6.QtGui import QColor, QDesktopServices
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel,
     QPushButton, QTableView, QLineEdit, QComboBox,
-    QAbstractItemView, QMessageBox, QCheckBox,
+    QAbstractItemView, QCheckBox,
 )
 
 from core.logger import logger
+from core.hata_yonetici import uyari_goster, hata_goster, soru_sor
 from ui.components.base_table_model import BaseTableModel
-from ui.styles.components import STYLES as S
 
 # ─────────────────────────────────────────────────────────────
 # Sütun tanımları
@@ -144,7 +144,7 @@ class DokumanListesiPage(QWidget):
         lbl = QLabel("Doküman Yönetimi")
         lbl.setProperty("color-role", "primary")
         self.btn_yenile = QPushButton("⟳  Yenile")
-        self.btn_yenile.setStyleSheet(str(S.get("refresh_btn", "") or ""))
+        self.btn_yenile.setProperty("style-role", "refresh")
         self.btn_yenile.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_yenile.clicked.connect(self.load_data)
         top.addWidget(lbl)
@@ -169,7 +169,7 @@ class DokumanListesiPage(QWidget):
 
         # Filtre çubuğu
         ff = QFrame()
-        ff.setStyleSheet(str(S.get("filter_panel", "") or ""))
+        ff.setProperty("bg-role", "panel")
         fb = QHBoxLayout(ff)
         fb.setContentsMargins(12, 8, 12, 8)
         fb.setSpacing(8)
@@ -178,7 +178,7 @@ class DokumanListesiPage(QWidget):
         self.cmb_belge  = self._cmb("Belge Türü")
         self.inp_arama  = QLineEdit()
         self.inp_arama.setPlaceholderText("Dosya adı / ID / açıklama ara...")
-        self.inp_arama.setStyleSheet(str(S.get("search", "") or ""))
+        self.inp_arama.setProperty("input-role", "search")
         self.inp_arama.setMinimumWidth(220)
 
         self.chk_drive = QCheckBox("Sadece Drive")
@@ -203,7 +203,6 @@ class DokumanListesiPage(QWidget):
         self.table.setSortingEnabled(True)
         self.table.verticalHeader().setVisible(False)
         self.table.setAlternatingRowColors(True)
-        self.table.setStyleSheet(str(S.get("table", "") or ""))
         self.table.doubleClicked.connect(self._ac)
         self._model = _DokumanModel(COLS)
         self.table.setModel(self._model)
@@ -213,19 +212,19 @@ class DokumanListesiPage(QWidget):
         # Alt çubuk
         bot = QHBoxLayout()
         self.btn_ac = QPushButton("📂  Dosyayı Aç")
-        self.btn_ac.setStyleSheet(str(S.get("btn_default", "") or ""))
+        self.btn_ac.setProperty("style-role", "secondary")
         self.btn_ac.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_ac.clicked.connect(self._ac_secili)
         self.btn_ac.setEnabled(False)
 
         self.btn_sil = QPushButton("🗑  Kaydı Sil")
-        self.btn_sil.setStyleSheet(str(S.get("close_btn", S.get("btn_danger", "")) or ""))
+        self.btn_sil.setProperty("style-role", "danger")
         self.btn_sil.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_sil.clicked.connect(self._sil)
         self.btn_sil.setEnabled(False)
 
         self.lbl_footer = QLabel("")
-        self.lbl_footer.setStyleSheet(str(S.get("footer_label", "") or ""))
+        self.lbl_footer.setProperty("style-role", "footer")
         bot.addWidget(self.lbl_footer)
         bot.addStretch()
         bot.addWidget(self.btn_ac)
@@ -241,7 +240,6 @@ class DokumanListesiPage(QWidget):
 
     def _cmb(self, ph: str) -> QComboBox:
         c = QComboBox()
-        c.setStyleSheet(str(S.get("combo_filter", "") or ""))
         c.addItem(f"Tümü ({ph})")
         c.setMinimumWidth(140)
         return c
@@ -381,8 +379,11 @@ class DokumanListesiPage(QWidget):
                 QDesktopServices.openUrl(QUrl(drive))
                 return
             if not local or not os.path.exists(local):
-                QMessageBox.warning(self, "Bulunamadı",
-                    f"Dosya bulunamadı:\n{local}\n\nDosya silinmiş veya taşınmış olabilir.")
+                uyari_goster(
+                    self,
+                    f"Dosya bulunamadı:\n{local}\n\nDosya silinmiş veya taşınmış olabilir.",
+                    "Bulunamadı",
+                )
                 return
             if platform.system() == "Windows":
                 os.startfile(local)
@@ -391,7 +392,7 @@ class DokumanListesiPage(QWidget):
             else:
                 subprocess.run(["xdg-open", local])
         except Exception as e:
-            QMessageBox.critical(self, "Hata", f"Dosya açılamadı:\n{e}")
+            hata_goster(self, f"Dosya açılamadı:\n{e}", "Hata")
 
     def _ac_secili(self):
         self._ac()
@@ -401,13 +402,13 @@ class DokumanListesiPage(QWidget):
         if not row:
             return
         dosya = row.get("DisplayName") or row.get("Belge", "")
-        cevap = QMessageBox.question(
-            self, "Kaydı Sil",
-            f"<b>{dosya}</b> belgesinin veritabanı kaydı silinecek.<br><br>"
-            f"Dosyanın kendisi silinmez, sadece kayıt kaldırılır.<br>Devam edilsin mi?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-        )
-        if cevap != QMessageBox.StandardButton.Yes:
+        if not soru_sor(
+            self,
+            f"{dosya} belgesinin veritabanı kaydı silinecek.\n\n"
+            "Dosyanın kendisi silinmez, sadece kayıt kaldırılır.\n"
+            "Devam edilsin mi?",
+            "Kaydı Sil",
+        ):
             return
         try:
             from core.di import get_registry
@@ -424,7 +425,7 @@ class DokumanListesiPage(QWidget):
             self.lbl_footer.setText(f"'{dosya}' kaydı silindi.")
         except Exception as e:
             logger.error(f"Doküman silme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Silme başarısız:\n{e}")
+            hata_goster(self, f"Silme başarısız:\n{e}", "Hata")
 
     def set_db(self, db):
         self._db = db

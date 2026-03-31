@@ -158,58 +158,60 @@ class CihazDelegate(QStyledItemDelegate):
     def sizeHint(self, option, index):
         return QSize(COLUMNS[index.column()][2], 46)
 
-        def paint(self, painter: QPainter, option, index):
-            painter.save()
-            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def paint(self, painter: QPainter, option, index):
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-            row = index.row()
-            col = index.column()
-            key = COLUMNS[col][0]
-            rect = option.rect
-            is_sel = bool(option.state & QStyle.StateFlag.State_Selected)
-            is_hover = (row == self._hover_row)
+        row = index.row()
+        col = index.column()
+        key = COLUMNS[col][0]
+        rect = option.rect
+        is_sel = bool(option.state & QStyle.StateFlag.State_Selected)
+        is_hover = (row == self._hover_row)
 
-            if is_sel:
-                c = QColor("#0ea5e9")
-                c.setAlpha(60)
-                painter.fillRect(rect, c)
-            elif is_hover:
-                c = QColor("#eef0f5")
-                c.setAlpha(10)
-                painter.fillRect(rect, c)
+        if is_sel:
+            c = QColor("#0ea5e9")
+            c.setAlpha(60)
+            painter.fillRect(rect, c)
+        elif is_hover:
+            c = QColor("#eef0f5")
+            c.setAlpha(10)
+            painter.fillRect(rect, c)
 
-            raw = index.model().data(index, BaseTableModel.RAW_ROW_ROLE)
-            if raw is None:
-                painter.restore()
-                return
+        raw = index.model().data(index, BaseTableModel.RAW_ROW_ROLE)
+        if raw is None:
+            painter.restore()
+            return
 
-            if key == "_cihaz":
-                self._draw_two(painter, rect,
-                               str(raw.get("Cihazid", "")),
-                               str(raw.get("CihazTipi", "") or "—"),
-                               mono_top=True)
-            elif key == "_marka_model":
-                self._draw_two(painter, rect,
-                               str(raw.get("Marka", "") or "—"),
-                               str(raw.get("Model", "") or "—"))
-            elif key == "_seri":
-                self._draw_two(painter, rect,
-                               str(raw.get("SeriNo", "") or "—"),
-                               str(raw.get("NDKSeriNo", "") or "—"),
-                               mono_top=True)
-            elif key == "Birim":
-                self._draw_two(painter, rect,
-                               str(raw.get("AnaBilimDali", "") or "—"),
-                               str(raw.get("Birim", "") or "—"))
-            elif key == "DemirbasNo":
-                self._draw_mono(painter, rect, str(raw.get("DemirbasNo", "") or "—"))
-            elif key == "Durum":
-                self._draw_status_pill(painter, rect, str(raw.get("Durum", "") or "—"))
-                # Bakım uyarısı rozeti
-                bakim_u = _bakim_uyari(raw)
-                kal_u   = _kalibrasyon_uyari(raw)
-                if bakim_u or kal_u:
-                    self._draw_uyari_rozet(painter, rect, bakim_u, kal_u)
+        if key == "_cihaz":
+            self._draw_two(painter, rect,
+                           str(raw.get("Cihazid", "")),
+                           str(raw.get("CihazTipi", "") or "—"),
+                           mono_top=True)
+        elif key == "_marka_model":
+            self._draw_two(painter, rect,
+                           str(raw.get("Marka", "") or "—"),
+                           str(raw.get("Model", "") or "—"))
+        elif key == "_seri":
+            self._draw_two(painter, rect,
+                           str(raw.get("SeriNo", "") or "—"),
+                           str(raw.get("NDKSeriNo", "") or "—"),
+                           mono_top=True)
+        elif key == "Birim":
+            self._draw_two(painter, rect,
+                           str(raw.get("AnaBilimDali", "") or "—"),
+                           str(raw.get("Birim", "") or "—"))
+        elif key == "DemirbasNo":
+            self._draw_mono(painter, rect, str(raw.get("DemirbasNo", "") or "—"))
+        elif key == "Durum":
+            self._draw_status_pill(painter, rect, str(raw.get("Durum", "") or "—"))
+            # Bakım uyarısı rozeti
+            bakim_u = _bakim_uyari(raw)
+            kal_u   = _kalibrasyon_uyari(raw)
+            if bakim_u or kal_u:
+                self._draw_uyari_rozet(painter, rect, bakim_u, kal_u)
+
+        painter.restore()
 
 
     # ── Çizim yardımcıları ───────────────────────────────

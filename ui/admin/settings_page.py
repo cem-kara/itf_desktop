@@ -21,7 +21,6 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QLineEdit,
     QDateEdit,
-    QMessageBox,
     QDialog,
     QTabWidget,
     QListWidget,
@@ -33,6 +32,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QDate
 
 from core.logger import logger
+from core.hata_yonetici import bilgi_goster, hata_goster, soru_sor, uyari_goster
 from core.config import AppConfig
 from core.services.settings_service import SettingsService
 from core.validators import validate_not_empty
@@ -136,12 +136,12 @@ class SabitEditDialog(QDialog):
         menu_eleman = self._txt_menu_eleman.text().strip()
         
         if not validate_not_empty(kod):
-            QMessageBox.warning(self, "Uyarı", "Kod alanı boş olamaz!")
+            uyari_goster(self, "Kod alanı boş olamaz!")
             self._txt_kod.setFocus()
             return False
         
         if not validate_not_empty(menu_eleman):
-            QMessageBox.warning(self, "Uyarı", "Menü Elemanı alanı boş olamaz!")
+            uyari_goster(self, "Menü Elemanı alanı boş olamaz!")
             self._txt_menu_eleman.setFocus()
             return False
         
@@ -241,7 +241,7 @@ class TatilEditDialog(QDialog):
         resmi_tatil = self._cmb_resmi_tatil.currentText().strip()
         
         if not validate_not_empty(resmi_tatil):
-            QMessageBox.warning(self, "Uyarı", "Tatil Adı boş olamaz!")
+            uyari_goster(self, "Tatil Adı boş olamaz!")
             self._cmb_resmi_tatil.setFocus()
             return False
         
@@ -644,7 +644,7 @@ class SettingsPage(QWidget):
             
         except Exception as e:
             logger.error(f"Sabitler yükleme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Sabitler yüklenemedi:\n{str(e)}")
+            hata_goster(self, f"Sabitler yüklenemedi:\n{str(e)}")
     
     def _on_kod_selected(self):
         """Kod seçildiğinde sağ tarafı güncelle"""
@@ -663,15 +663,15 @@ class SettingsPage(QWidget):
             kod, menu_eleman, aciklama = dialog.get_data()
             
             if not kod or not menu_eleman:
-                QMessageBox.warning(self, "Uyarı", "Kod ve Seçenek (MenuEleman) zorunludur")
+                uyari_goster(self, "Kod ve Seçenek (MenuEleman) zorunludur")
                 return
             
             result = self._service.add_sabit(kod, menu_eleman, aciklama)
             if result.basarili:
-                QMessageBox.information(self, "Başarılı", f"'{kod}' kategorisi oluşturuldu")
+                bilgi_goster(self, f"'{kod}' kategorisi oluşturuldu")
                 self._load_sabitler()
             else:
-                QMessageBox.critical(self, "Hata", result.mesaj)
+                hata_goster(self, result.mesaj)
     
     def _load_menu_elemanlari(self, kod: str | None = None):
         """Seçilen Kod'un MenuElemanlarını sağ tarafta göster"""
@@ -705,7 +705,7 @@ class SettingsPage(QWidget):
             
         except Exception as e:
             logger.error(f"MenuEleman yükleme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Menü elemanları yüklenemedi:\n{str(e)}")
+            hata_goster(self, f"Menü elemanları yüklenemedi:\n{str(e)}")
     
     def _load_tatiller(self):
         """Tatilleri yükle"""
@@ -762,7 +762,7 @@ class SettingsPage(QWidget):
             
         except Exception as e:
             logger.error(f"Tatiller yükleme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Tatiller yüklenemedi:\n{str(e)}")
+            hata_goster(self, f"Tatiller yüklenemedi:\n{str(e)}")
 
     def _get_unique_tatil_adlari(self) -> list[str]:
         """Tatiller tablosundaki benzersiz tatil adlarını döndür."""
@@ -793,15 +793,15 @@ class SettingsPage(QWidget):
                 kod, menu_eleman, aciklama = dialog.get_data()
                 
                 if not kod or not menu_eleman:
-                    QMessageBox.warning(self, "Uyarı", "Kod ve Seçenek (MenuEleman) zorunludur")
+                    uyari_goster(self, "Kod ve Seçenek (MenuEleman) zorunludur")
                     return
                 
                 result = self._service.add_sabit(kod, menu_eleman, aciklama)
                 if result.basarili:
-                    QMessageBox.information(self, "Başarılı", f"'{kod}' kategorisi oluşturuldu ve '{menu_eleman}' seçeneği eklendi")
+                    bilgi_goster(self, f"'{kod}' kategorisi oluşturuldu ve '{menu_eleman}' seçeneği eklendi")
                     self._load_sabitler()
                 else:
-                    QMessageBox.critical(self, "Hata", result.mesaj)
+                    hata_goster(self, result.mesaj)
             return
         
         # Kod seçili ise, yeni MenuEleman ekle
@@ -818,21 +818,21 @@ class SettingsPage(QWidget):
             _, menu_eleman, aciklama = dialog.get_data()
             
             if not menu_eleman:
-                QMessageBox.warning(self, "Uyarı", "Seçenek (MenuEleman) zorunludur")
+                uyari_goster(self, "Seçenek (MenuEleman) zorunludur")
                 return
             
             result = self._service.add_sabit(kod, menu_eleman, aciklama)
             if result.basarili:
-                QMessageBox.information(self, "Başarılı", f"'{menu_eleman}' seçeneği eklendi")
+                bilgi_goster(self, f"'{menu_eleman}' seçeneği eklendi")
                 self._on_kod_selected()  # Sağ tarafı yenile
             else:
-                QMessageBox.critical(self, "Hata", result.mesaj)
+                hata_goster(self, result.mesaj)
     
     def _edit_menu_eleman(self):
         """Seçili MenuEleman'ı düzenle"""
         row = self._table_menu_elemanlari.currentRow()
         if row < 0:
-            QMessageBox.warning(self, "Uyarı", "Lütfen düzenlemek için bir seçenek seçin")
+            uyari_goster(self, "Lütfen düzenlemek için bir seçenek seçin")
             return
         
         item_0 = self._table_menu_elemanlari.item(row, 0)
@@ -856,21 +856,21 @@ class SettingsPage(QWidget):
             _, menu_eleman, aciklama = dialog.get_data()
             
             if not menu_eleman:
-                QMessageBox.warning(self, "Uyarı", "Seçenek (MenuEleman) zorunludur")
+                uyari_goster(self, "Seçenek (MenuEleman) zorunludur")
                 return
             
             result = self._service.update_sabit(rowid, kod, menu_eleman, aciklama)
             if result.basarili:
-                QMessageBox.information(self, "Başarılı", "Seçenek güncellendi")
+                bilgi_goster(self, "Seçenek güncellendi")
                 self._on_kod_selected()  # Sağ tarafı yenile
             else:
-                QMessageBox.critical(self, "Hata", result.mesaj)
+                hata_goster(self, result.mesaj)
     
     def _delete_menu_eleman(self):
         """Seçili MenuEleman'ı sil"""
         row = self._table_menu_elemanlari.currentRow()
         if row < 0:
-            QMessageBox.warning(self, "Uyarı", "Lütfen silinecek seçeneği seçin")
+            uyari_goster(self, "Lütfen silinecek seçeneği seçin")
             return
         
         item_0 = self._table_menu_elemanlari.item(row, 0)
@@ -881,22 +881,14 @@ class SettingsPage(QWidget):
         rowid = item_0.data(Qt.ItemDataRole.UserRole)
         menu_eleman = item_0.text()
         aciklama = item_1.text()
-        
-        reply = QMessageBox.question(
-            self,
-            "Seçenek Sil",
-            f"'{menu_eleman}' seçeneğini silmek istediğinizden emin misiniz?\n\n({aciklama})",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
-        
-        if reply == QMessageBox.StandardButton.Yes:
+
+        if soru_sor(self, f"'{menu_eleman}' seçeneğini silmek istediğinizden emin misiniz?\n\n({aciklama})"):
             result = self._service.delete_sabit(rowid)
             if result.basarili:
-                QMessageBox.information(self, "Başarılı", "Seçenek silindi")
+                bilgi_goster(self, "Seçenek silindi")
                 self._on_kod_selected()  # Sağ tarafı yenile
             else:
-                QMessageBox.critical(self, "Hata", result.mesaj)
+                hata_goster(self, result.mesaj)
     
     def _add_tatil(self):
         """Yeni tatil ekle"""
@@ -908,21 +900,21 @@ class SettingsPage(QWidget):
             tarih, resmi_tatil = dialog.get_data()
             
             if not tarih or not resmi_tatil:
-                QMessageBox.warning(self, "Uyarı", "Tarih ve Tatil Adı zorunludur")
+                uyari_goster(self, "Tarih ve Tatil Adı zorunludur")
                 return
             
             result = self._service.add_tatil(tarih, resmi_tatil)
             if result.basarili:
-                QMessageBox.information(self, "Başarılı", result.mesaj)
+                bilgi_goster(self, result.mesaj)
                 self._load_tatiller()
             else:
-                QMessageBox.critical(self, "Hata", result.mesaj)
+                hata_goster(self, result.mesaj)
     
     def _edit_tatil(self):
         """Tatili düzenle"""
         row = self._table_tatiller.currentRow()
         if row < 0:
-            QMessageBox.warning(self, "Uyarı", "Lütfen düzenlemek için bir tatil seçin")
+            uyari_goster(self, "Lütfen düzenlemek için bir tatil seçin")
             return
         
         item_0 = self._table_tatiller.item(row, 0)
@@ -943,7 +935,7 @@ class SettingsPage(QWidget):
             new_tarih, resmi_tatil = dialog.get_data()
             
             if not new_tarih or not resmi_tatil:
-                QMessageBox.warning(self, "Uyarı", "Tarih ve Tatil Adı zorunludur")
+                uyari_goster(self, "Tarih ve Tatil Adı zorunludur")
                 return
             
             # Tarih değişiyorsa: eski sil, yeni ekle
@@ -954,16 +946,16 @@ class SettingsPage(QWidget):
                 result = self._service.update_tatil(tarih, resmi_tatil)
             
             if result.basarili:
-                QMessageBox.information(self, "Başarılı", result.mesaj)
+                bilgi_goster(self, result.mesaj)
                 self._load_tatiller()
             else:
-                QMessageBox.critical(self, "Hata", result.mesaj)
+                hata_goster(self, result.mesaj)
     
     def _delete_tatil(self):
         """Tatili sil"""
         row = self._table_tatiller.currentRow()
         if row < 0:
-            QMessageBox.warning(self, "Uyarı", "Lütfen silinecek tatili seçin")
+            uyari_goster(self, "Lütfen silinecek tatili seçin")
             return
         
         item_0 = self._table_tatiller.item(row, 0)
@@ -973,22 +965,14 @@ class SettingsPage(QWidget):
         
         tarih = item_0.text()
         resmi_tatil = item_1.text()
-        
-        reply = QMessageBox.question(
-            self,
-            "Tatil Sil",
-            f"'{resmi_tatil}' ({tarih}) tatilini silmek istediğinizden emin misiniz?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
-        
-        if reply == QMessageBox.StandardButton.Yes:
+
+        if soru_sor(self, f"'{resmi_tatil}' ({tarih}) tatilini silmek istediğinizden emin misiniz?"):
             result = self._service.delete_tatil(tarih)
             if result.basarili:
-                QMessageBox.information(self, "Başarılı", result.mesaj)
+                bilgi_goster(self, result.mesaj)
                 self._load_tatiller()
             else:
-                QMessageBox.critical(self, "Hata", result.mesaj)
+                hata_goster(self, result.mesaj)
 
     def _apply_theme(self):
         """Tema değişikliğini uygula"""
@@ -1009,7 +993,7 @@ class SettingsPage(QWidget):
             app = QApplication.instance()
             if not app:
                 logger.error("QApplication örneği bulunamadı")
-                QMessageBox.critical(self, "Hata", "Uygulama başlatılmamış")
+                hata_goster(self, "Uygulama başlatılmamış")
                 return
             
             # ThemeManager ile tema değiştir
@@ -1022,19 +1006,18 @@ class SettingsPage(QWidget):
                 # STYLES cache'ini sıfırla (kalan STYLES kullanımları için)
                 refresh_styles()
                 logger.info(f"Tema başarıyla değiştirildi: {tema}")
-                QMessageBox.information(
+                bilgi_goster(
                     self,
-                    "Başarılı",
                     f"Tema '{tema_adi}' olarak değiştirilmiştir.\n"
                     f"Değişiklikler anında uygulanmıştır."
                 )
             else:
                 logger.error("ThemeManager.set_theme False dönüştü")
-                QMessageBox.critical(self, "Hata", "Tema değişikliği başarısız oldu")
+                hata_goster(self, "Tema değişikliği başarısız oldu")
                 
         except Exception as e:
             logger.error(f"Tema değişikliği hatası: {e}", exc_info=True)
-            QMessageBox.critical(self, "Hata", f"Tema değişikliği başarısız:\n{str(e)}")
+            hata_goster(self, f"Tema değişikliği başarısız:\n{str(e)}")
 
     def refresh_theme(self):
         """
@@ -1137,14 +1120,13 @@ class SettingsPage(QWidget):
             AppConfig.set_app_mode(mode, persist=True)
             AppConfig.set_auto_sync(auto_sync, persist=True)
 
-            QMessageBox.information(
+            bilgi_goster(
                 self,
-                "Başarılı",
                 f"Sistem ayarları kaydedilmiştir.\n\n"
                 f"Mevcut Mod: {mod_text}\n"
                 f"Yeniden başlatmada geçerli olacaktır."
             )
         except Exception as e:
             logger.error(f"Sistem ayarları kaydetme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Ayarlar kaydedilemedi:\n{str(e)}")
+            hata_goster(self, f"Ayarlar kaydedilemedi:\n{str(e)}")
 

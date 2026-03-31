@@ -14,7 +14,7 @@ from datetime import datetime
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QFrame, QTableWidget, QTableWidgetItem,
-    QHeaderView, QMessageBox, QFileDialog, QCheckBox, QAbstractItemView,
+    QHeaderView, QFileDialog, QCheckBox, QAbstractItemView,
     QTabWidget, QListWidget, QListWidgetItem
 )
 from PySide6.QtCore import Qt, QThread, QObject, Signal, QDate
@@ -22,8 +22,7 @@ from PySide6.QtGui import QColor, QBrush
 
 from typing import Optional
 from core.logger import logger
-from core.hata_yonetici import hata_goster
-from ui.styles.components import STYLES as S
+from core.hata_yonetici import bilgi_goster, hata_goster, soru_sor, uyari_goster
 from ui.styles.icons import IconRenderer
 
 # Renk sabitleri (koyu tema uyumlu)
@@ -283,7 +282,7 @@ class DisAlanImportPage(QWidget):
     def _okuma_hatasi(self, mesaj):
         self.btn_oku.setEnabled(True)
         self.btn_oku.setText("Dosyayı Oku ve Doğrula")
-        QMessageBox.critical(self, "Okuma Hatası", mesaj)
+        hata_goster(self, mesaj)
 
     # ─────────────────────────────────────────────────────────
     #  Tablo doldurucu
@@ -387,7 +386,7 @@ class DisAlanImportPage(QWidget):
             return
 
         if not self._db:
-            QMessageBox.critical(self, "Hata", "Veritabanı bağlantısı yok.")
+            hata_goster(self, "Veritabanı bağlantısı yok.")
             return
 
         # Kaç satır işaretli?
@@ -401,7 +400,7 @@ class DisAlanImportPage(QWidget):
                     break
 
         if isaretsiz:
-            QMessageBox.warning(self, "Seçim Yok", "Kaydedilecek satır seçilmedi.")
+            uyari_goster(self, "Kaydedilecek satır seçilmedi.")
             return
 
         # Hatalı ama onaylananları uyar
@@ -410,15 +409,12 @@ class DisAlanImportPage(QWidget):
             if not s.gecerli and s.kullanici_onayladi
         ]
         if hatali_onaylananlar:
-            cevap = QMessageBox.question(
+            if not soru_sor(
                 self,
-                "Hatalı Satırlar Var",
                 f"{len(hatali_onaylananlar)} hatalı satır onaylanmış.\n"
                 "Bu satırlar eksik veya hatalı veriyle kaydedilecek.\n\n"
                 "Devam etmek istiyor musunuz?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-            )
-            if cevap != QMessageBox.StandardButton.Yes:
+            ):
                 return
 
         from core.di import get_registry, get_dis_alan_import_service
@@ -441,8 +437,8 @@ class DisAlanImportPage(QWidget):
                     ]
                     if kilitli_donem:
                         kisi_n = len(kilitli_donem)
-                        QMessageBox.critical(
-                            self, "Dönem Kilitli",
+                        hata_goster(
+                            self,
                             f"<b>{ana} / {birim}</b><br>"
                             f"{ay}/{yil} dönemi için <b>{kisi_n} kişi RKS onaylı</b>.<br><br>"
                             "Onaylanmış döneme yeni import yapılamaz.<br>"
@@ -476,9 +472,8 @@ class DisAlanImportPage(QWidget):
                 if guncellenmis.tutanak_no else ""
             )
 
-            QMessageBox.information(
+            bilgi_goster(
                 self,
-                "Import Tamamlandı",
                 f"Kaydedilen : {guncellenmis.kaydedilen} satır\n"
                 f"Atlanan    : {guncellenmis.atlanan} satır\n"
                 f"{tutanak_ozet}"
@@ -541,9 +536,8 @@ class DisAlanImportPage(QWidget):
             if n_tutanak >= 1:
                 ay_adlari = ["","Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",
                              "Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
-                QMessageBox.warning(
+                uyari_goster(
                     self,
-                    "⚠  Önceki Import Mevcut",
                     f"<b>{ana} / {birim}</b><br>"
                     f"{ay_adlari[ay]} {yil} dönemi için veritabanında zaten<br>"
                     f"<b>{n_tutanak} import</b> ve <b>{n_kisi} kişi</b> kayıtlı.<br><br>"
@@ -608,9 +602,8 @@ class DisAlanImportPage(QWidget):
                                  "Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
                     kisi_n = len({str(r.get("TCKimlik","")) or str(r.get("AdSoyad",""))
                                   for r in donem_rows})
-                    QMessageBox.warning(
+                    uyari_goster(
                         self,
-                        "Önceki Import Mevcut",
                         f"<b>{ana} / {birim}</b><br>"
                         f"{ay_adlari[ay]} {yil} dönemi için zaten "
                         f"<b>{len(tutanaklar)} import</b> ve <b>{kisi_n} kişi</b> "
@@ -622,16 +615,13 @@ class DisAlanImportPage(QWidget):
             else:
                 # Kayıt sonrası — karşılaştırma için yönlendir
                 if len(tutanaklar) > 1:
-                    cevap = QMessageBox.question(
+                    if soru_sor(
                         self,
-                        "Birden Fazla Import Tespit Edildi",
                         f"<b>{ana} / {birim}</b> — {ay}/{yil} dönemi için<br>"
                         f"<b>{len(tutanaklar)} farklı import</b> bulundu.<br><br>"
                         "Hangi listenin kullanılacağını belirlemek için<br>"
                         "<b>Import Karşılaştırma</b> sekmesine geçmek ister misiniz?",
-                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                    )
-                    if cevap == QMessageBox.StandardButton.Yes:
+                    ):
                         self._karsilastirma_widget.set_filtre(ana, birim, ay, yil)
                         self._tabs.setCurrentIndex(1)
 
@@ -682,7 +672,7 @@ class _KarsilastirmaWidget(QWidget):
 
         # Filtre
         top = QFrame()
-        top.setStyleSheet(S["filter_panel"])
+        top.setProperty("bg-role", "panel")
         top.setMaximumHeight(56)
         tl = QHBoxLayout(top)
         tl.setContentsMargins(12,6,12,6); tl.setSpacing(10)
@@ -714,7 +704,7 @@ class _KarsilastirmaWidget(QWidget):
         tl.addWidget(self.cmb_yil)
 
         self.btn_yukle = QPushButton("Yükle")
-        self.btn_yukle.setStyleSheet(S.get("secondary_btn", S["save_btn"]))
+        self.btn_yukle.setProperty("style-role", "secondary")
         self.btn_yukle.setFixedHeight(36); self.btn_yukle.setFixedWidth(80)
         tl.addWidget(self.btn_yukle)
 
@@ -746,7 +736,7 @@ class _KarsilastirmaWidget(QWidget):
         rgt.addWidget(self.lst_b)
 
         self.btn_karsilastir = QPushButton("Karşılaştır")
-        self.btn_karsilastir.setStyleSheet(S["save_btn"])
+        self.btn_karsilastir.setProperty("style-role", "action")
         self.btn_karsilastir.setFixedHeight(40)
         self.btn_karsilastir.setFixedWidth(120)
         self.btn_karsilastir.setEnabled(False)
@@ -779,7 +769,7 @@ class _KarsilastirmaWidget(QWidget):
         self.tablo.setColumnCount(len(kolonlar))
         self.tablo.setHorizontalHeaderLabels([c[0] for c in kolonlar])
         self.tablo.verticalHeader().setVisible(False)
-        self.tablo.setStyleSheet(S["table"])
+        self.tablo.setProperty("style-role", "table")
         self.tablo.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tablo.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
         hdr = self.tablo.horizontalHeader()
@@ -793,7 +783,7 @@ class _KarsilastirmaWidget(QWidget):
 
         # Alt butonlar
         bot = QFrame()
-        bot.setStyleSheet(S.get("filter_panel",""))
+        bot.setProperty("bg-role", "panel")
         bot.setMaximumHeight(50)
         bl = QHBoxLayout(bot)
         bl.setContentsMargins(12,6,12,6); bl.setSpacing(10)
@@ -829,7 +819,7 @@ class _KarsilastirmaWidget(QWidget):
         self.btn_birlestir.setEnabled(False)
 
         self.btn_pdf = QPushButton("PDF Rapor")
-        self.btn_pdf.setStyleSheet(S.get("secondary_btn", S["save_btn"]))
+        self.btn_pdf.setProperty("style-role", "secondary")
         self.btn_pdf.setFixedHeight(34)
         self.btn_pdf.setEnabled(False)
 
@@ -998,9 +988,11 @@ class _KarsilastirmaWidget(QWidget):
         tn_b = b_item[0].data(Qt.ItemDataRole.UserRole)
 
         if tn_a == tn_b:
-            QMessageBox.warning(self, "Aynı Liste",
-                                "Liste A ve Liste B için aynı import seçildi.\n"
-                                "Farklı iki import seçin.")
+            uyari_goster(
+                self,
+                "Liste A ve Liste B için aynı import seçildi.\n"
+                "Farklı iki import seçin.",
+            )
             return
 
         rows_a = {_kisi_key(r): r for r in self._rows_cache
@@ -1090,7 +1082,6 @@ class _KarsilastirmaWidget(QWidget):
         self._tablo_doldur(sonuclar)
         self._kartlar_guncelle(rows_a, rows_b)
 
-        sorun_var = eksik_a + eksik_b + fark_vaka > 0
         self.btn_sil_a.setEnabled(True)
         self.btn_sil_b.setEnabled(True)
         self.btn_birlestir.setEnabled(True)
@@ -1260,11 +1251,7 @@ class _KarsilastirmaWidget(QWidget):
             )
         msg += f"\nİşlem sonrası B listesi silinecek.\nDevam etmek istiyor musunuz?"
 
-        cevap = QMessageBox.question(
-            self, "Listeleri Birleştir", msg,
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        if cevap != QMessageBox.StandardButton.Yes:
+        if not soru_sor(self, msg):
             return
 
         # ── Birleştirme işlemi ────────────────────────────────
@@ -1327,8 +1314,8 @@ class _KarsilastirmaWidget(QWidget):
                 f"eklenen={eklenen} güncellenen={guncellenen} silinen={silinen}"
             )
 
-            QMessageBox.information(
-                self, "Birleştirme Tamamlandı",
+            bilgi_goster(
+                self,
                 f"Listelerin birleştirildi.\n\n"
                 f"• {eklenen} kişi A listesine eklendi\n"
                 f"• {guncellenen} kayıt B'deki değerle güncellendi\n"
@@ -1346,7 +1333,7 @@ class _KarsilastirmaWidget(QWidget):
 
         except Exception as e:
             logger.error(f"KarsilastirmaWidget._birlestir: {e}")
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     # ── Listeyi Sil ───────────────────────────────────────────
 
@@ -1358,14 +1345,12 @@ class _KarsilastirmaWidget(QWidget):
         kisi_n = len(self._analiz["rows_a"] if taraf == "A" else self._analiz["rows_b"])
         label  = f"Liste {'A' if taraf == 'A' else 'B'}"
 
-        cevap = QMessageBox.question(
-            self, f"{label}'yı Sil",
+        if not soru_sor(
+            self,
             f"<b>{label}</b> — Tutanak: {tn[:24]}…<br>"
             f"Bu listedeki <b>{kisi_n} kişi</b>ye ait tüm kayıtlar silinecek.<br><br>"
             "Bu işlem geri alınamaz. Devam etmek istiyor musunuz?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-        )
-        if cevap != QMessageBox.StandardButton.Yes:
+        ):
             return
 
         try:
@@ -1384,10 +1369,7 @@ class _KarsilastirmaWidget(QWidget):
                 repo.delete(pk)
                 silinen += 1
 
-            QMessageBox.information(
-                self, "Silindi",
-                f"{label} — {silinen} kayıt silindi."
-            )
+            bilgi_goster(self, f"{label} — {silinen} kayıt silindi.")
             self._analiz = None
             self.tablo.setRowCount(0)
             self.btn_sil_a.setEnabled(False)
@@ -1397,7 +1379,7 @@ class _KarsilastirmaWidget(QWidget):
             self._yukle()
         except Exception as e:
             logger.error(f"KarsilastirmaWidget._sil_liste: {e}")
-            QMessageBox.critical(self, "Hata", str(e))
+            hata_goster(self, str(e))
 
     # ── PDF Rapor ─────────────────────────────────────────────
 
@@ -1431,8 +1413,7 @@ class _KarsilastirmaWidget(QWidget):
             except Exception:
                 fn, fnb = "Helvetica", "Helvetica-Bold"
         except ImportError:
-            QMessageBox.critical(self, "Eksik Paket",
-                                 "reportlab kurulu değil.\npip install reportlab")
+            hata_goster(self, "reportlab kurulu değil.\npip install reportlab")
             return
 
         a   = self._analiz
@@ -1450,7 +1431,6 @@ class _KarsilastirmaWidget(QWidget):
         h1  = ParagraphStyle("H1", fontName=fnb, fontSize=14, leading=18, spaceAfter=4)
         h2  = ParagraphStyle("H2", fontName=fnb, fontSize=11, leading=14,
                              textColor=colors.HexColor("#1D3557"))
-        nm  = ParagraphStyle("N",  fontName=fn,  fontSize=9,  leading=13)
         sm  = ParagraphStyle("S",  fontName=fn,  fontSize=8,  leading=11,
                              textColor=colors.HexColor("#555555"))
 
@@ -1548,6 +1528,6 @@ class _KarsilastirmaWidget(QWidget):
 
         try:
             doc.build(elements)
-            QMessageBox.information(self, "PDF Oluşturuldu", f"Rapor kaydedildi:\n{path}")
+            bilgi_goster(self, f"Rapor kaydedildi:\n{path}")
         except Exception as e:
-            QMessageBox.critical(self, "Hata", f"PDF oluşturulamadı:\n{e}")
+            hata_goster(self, f"PDF oluşturulamadı:\n{e}")

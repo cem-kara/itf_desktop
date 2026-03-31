@@ -331,11 +331,7 @@ class KalibrasyonKayitForm(QWidget):
 
     # ── Sağ Panel (QStackedWidget) ────────────────────
     def _build_right_panel(self) -> QWidget:
-        surface  = _C["surface"]
-        panel_bg = _C["panel"]
-        border   = _C["border"]
-        text_pr  = _C["text"]
-        text_sec = getattr(DarkTheme, "TEXT_SECONDARY", "#c8cdd8")
+        border = _C["border"]
 
         self._right_stack = QStackedWidget()
         self._right_stack.setProperty("bg-role", "surface")
@@ -1251,7 +1247,6 @@ class _KalibrasyonGirisForm(QWidget):
         )
         hdr_l.addWidget(lbl_title)
         hdr_l.addStretch()
-        text_sec = getattr(DarkTheme, "TEXT_SECONDARY", "#c8cdd8")
         btn_kapat = QPushButton("✕")
         btn_kapat.setFixedSize(22, 22)
         btn_kapat.setProperty("style-role", "close")

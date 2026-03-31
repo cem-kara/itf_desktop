@@ -16,12 +16,10 @@ from core.di import get_personel_service, get_izin_service, get_dokuman_service
 from core.validators import validate_tc_kimlik_no, validate_email, validate_phone_number
 from core.services.personel_service import PersonelService
 from database.auth_repository import AuthRepository
-from ui.styles.components import STYLES as S
 from ui.styles.icons import Icons
 from ui.components.formatted_widgets import apply_title_case_formatting, apply_combo_title_case_formatting
 from ui.pages.personel.components.personel_dokuman_panel import PersonelDokumanPanel
 from ui.dialogs.mesaj_kutusu import MesajKutusu
-from ui.styles.icons import Icons
 
 class DokumanUploadWorker(QThread):
     """Tek bir dosya için DokumanService upload worker'ı."""
@@ -189,7 +187,7 @@ class PersonelEklePage(QWidget):
         # SOL KART — Fotoğraf ve Kimlik
         # ══════════════════════════════════════════════════════
         left_grp = QGroupBox("Fotograf ve Kimlik Bilgileri")
-        left_grp.setStyleSheet(S["group"])
+        left_grp.setProperty("gb-role", "section")
         left_grp.setFixedWidth(270)
         left_l = QVBoxLayout(left_grp)
         left_l.setSpacing(0)
@@ -200,9 +198,6 @@ class PersonelEklePage(QWidget):
         self.lbl_resim.setFixedSize(160, 180)
         self.lbl_resim.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_resim.setProperty("bg-role", "panel")
-        self.lbl_resim.setStyleSheet(
-            "border: 2px solid rgba(61,142,245,0.25); border-radius: 8px;"
-        )
         self.lbl_resim.setText("Fotoğraf")
         self.lbl_resim.setProperty("color-role", "muted")
         left_l.addWidget(self.lbl_resim, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -236,10 +231,9 @@ class PersonelEklePage(QWidget):
             """Etiket sol | Widget sağ şeklinde hizalar."""
             lbl = QLabel(label_txt)
             if required:
-                lbl.setStyleSheet(S.get("required_label", "font-size:10px; color:#e85555;"))
+                lbl.setProperty("style-role", "required")
             else:
-                lbl.setProperty("color-role", "muted")
-                lbl.setStyleSheet("font-size: 10px;")
+                lbl.setProperty("style-role", "form")
             lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             grid.addWidget(lbl, row, 0)
             grid.addWidget(widget, row, 1)
@@ -252,7 +246,6 @@ class PersonelEklePage(QWidget):
         tc_h.setSpacing(4)
         self.ui["tc"] = QLineEdit()
         self.ui["tc"].setMaxLength(11)
-        self.ui["tc"].setStyleSheet(S["input"])
         self.ui["tc"].setPlaceholderText("11 haneli")
         self.ui["tc"].textChanged.connect(self._validate_tc_on_change)
         # TC değişince belge sekmesi açılmaz; sadece kayıt sonrası açılır
@@ -263,21 +256,18 @@ class PersonelEklePage(QWidget):
         _field_row(kimlik_grid, 0, "TC Kimlik No ✱", tc_container, required=True)
 
         self.ui["ad_soyad"] = QLineEdit()
-        self.ui["ad_soyad"].setStyleSheet(S["input"])
         self.ui["ad_soyad"].setPlaceholderText("Ad Soyad")
         apply_title_case_formatting(self.ui["ad_soyad"])
         _field_row(kimlik_grid, 1, "Ad Soyad ✱", self.ui["ad_soyad"], required=True)
 
         self.ui["dogum_yeri"] = QComboBox()
         self.ui["dogum_yeri"].setEditable(True)
-        self.ui["dogum_yeri"].setStyleSheet(S["input_combo"])
         apply_combo_title_case_formatting(self.ui["dogum_yeri"])
         _field_row(kimlik_grid, 2, "Doğum Yeri", self.ui["dogum_yeri"])
 
         self.ui["dogum_tarihi"] = QDateEdit()
         self.ui["dogum_tarihi"].setCalendarPopup(True)
         self.ui["dogum_tarihi"].setDate(QDate.currentDate().addYears(-30))
-        self.ui["dogum_tarihi"].setStyleSheet(S["date"])
         _field_row(kimlik_grid, 3, "Doğum Tarihi", self.ui["dogum_tarihi"])
 
         left_l.addLayout(kimlik_grid)
@@ -293,7 +283,7 @@ class PersonelEklePage(QWidget):
 
         # ── İletişim Bilgileri ──
         contact_grp = QGroupBox("İletişim Bilgileri")
-        contact_grp.setStyleSheet(S["group"])
+        contact_grp.setProperty("gb-role", "section")
         contact_grid = QGridLayout(contact_grp)
         contact_grid.setSpacing(12)
         contact_grid.setContentsMargins(12, 8, 12, 12)
@@ -302,8 +292,7 @@ class PersonelEklePage(QWidget):
 
         def _contact_col(grid, col, label_txt, widget, status_lbl=None):
             lbl = QLabel(label_txt)
-            lbl.setProperty("color-role", "muted")
-            lbl.setStyleSheet("font-size: 11px;")
+            lbl.setProperty("style-role", "form")
             grid.addWidget(lbl, 0, col)
             if status_lbl:
                 row_w = QWidget()
@@ -318,7 +307,6 @@ class PersonelEklePage(QWidget):
                 grid.addWidget(widget, 1, col)
 
         self.ui["cep_tel"] = QLineEdit()
-        self.ui["cep_tel"].setStyleSheet(S["input"])
         self.ui["cep_tel"].setPlaceholderText("05XX XXX XX XX")
         self.ui["cep_tel"].textChanged.connect(self._validate_phone_on_change)
         self._phone_status = QLabel("")
@@ -326,7 +314,6 @@ class PersonelEklePage(QWidget):
         _contact_col(contact_grid, 0, "Cep Telefonu", self.ui["cep_tel"], self._phone_status)
 
         self.ui["eposta"] = QLineEdit()
-        self.ui["eposta"].setStyleSheet(S["input"])
         self.ui["eposta"].setPlaceholderText("ornek@email.com")
         self.ui["eposta"].textChanged.connect(self._validate_email_on_change)
         self._email_status = QLabel("")
@@ -337,7 +324,7 @@ class PersonelEklePage(QWidget):
 
         # ── Kurumsal Bilgiler ──
         corp_grp = QGroupBox("Kurumsal Bilgiler")
-        corp_grp.setStyleSheet(S["group"])
+        corp_grp.setProperty("gb-role", "section")
         corp_grid = QGridLayout(corp_grp)
         corp_grid.setSpacing(12)
         corp_grid.setContentsMargins(12, 8, 12, 12)
@@ -348,36 +335,30 @@ class PersonelEklePage(QWidget):
         def _corp_field(grid, row_lbl, row_inp, col, label_txt, widget, required=False):
             lbl = QLabel(label_txt)
             if required:
-                lbl.setStyleSheet(S.get("required_label", "font-size:11px; color:#e85555;"))
+                lbl.setProperty("style-role", "required")
             else:
-                lbl.setProperty("color-role", "muted")
-                lbl.setStyleSheet("font-size: 11px;")
+                lbl.setProperty("style-role", "form")
             grid.addWidget(lbl, row_lbl, col)
             grid.addWidget(widget, row_inp, col)
 
         self.ui["hizmet_sinifi"] = QComboBox()
-        self.ui["hizmet_sinifi"].setStyleSheet(S["input_combo"])
         apply_combo_title_case_formatting(self.ui["hizmet_sinifi"])
         _corp_field(corp_grid, 0, 1, 0, "Hizmet Sınıfı ✱", self.ui["hizmet_sinifi"], required=True)
 
         self.ui["kadro_unvani"] = QComboBox()
-        self.ui["kadro_unvani"].setStyleSheet(S["input_combo"])
         apply_combo_title_case_formatting(self.ui["kadro_unvani"])
         _corp_field(corp_grid, 0, 1, 1, "Kadro Ünvanı ✱", self.ui["kadro_unvani"], required=True)
 
         self.ui["gorev_yeri"] = QComboBox()
-        self.ui["gorev_yeri"].setStyleSheet(S["input_combo"])
         apply_combo_title_case_formatting(self.ui["gorev_yeri"])
         _corp_field(corp_grid, 0, 1, 2, "Görev Yeri", self.ui["gorev_yeri"])
 
         self.ui["baslama_tarihi"] = QDateEdit()
         self.ui["baslama_tarihi"].setCalendarPopup(True)
         self.ui["baslama_tarihi"].setDate(QDate.currentDate())
-        self.ui["baslama_tarihi"].setStyleSheet(S["date"])
         _corp_field(corp_grid, 2, 3, 0, "Başlama Tarihi", self.ui["baslama_tarihi"])
 
         self.ui["sicil_no"] = QLineEdit()
-        self.ui["sicil_no"].setStyleSheet(S["input"])
         self.ui["sicil_no"].setPlaceholderText("Kurum Sicil No")
         _corp_field(corp_grid, 2, 3, 1, "Kurum Sicil No", self.ui["sicil_no"])
 
@@ -385,7 +366,7 @@ class PersonelEklePage(QWidget):
 
         # ── Eğitim Bilgileri ──
         edu_grp = QGroupBox("Eğitim Bilgileri")
-        edu_grp.setStyleSheet(S["group"])
+        edu_grp.setProperty("gb-role", "section")
         edu_lay = QVBoxLayout(edu_grp)
         edu_lay.setSpacing(6)
         edu_lay.setContentsMargins(12, 8, 12, 12)
@@ -398,8 +379,7 @@ class PersonelEklePage(QWidget):
             for txt, stretch in [("Okul Adı", 3), ("Bölüm / Fakülte", 3),
                                   ("Mezuniyet Tarihi", 2), ("Diploma No", 2)]:
                 lbl = QLabel(txt)
-                lbl.setProperty("color-role", "muted")
-                lbl.setStyleSheet("font-size: 11px; font-weight: 600;")
+                lbl.setProperty("style-role", "section-title")
                 hdr.addWidget(lbl, stretch)
             layout.addLayout(hdr)
 
@@ -419,20 +399,17 @@ class PersonelEklePage(QWidget):
 
         self.ui["okul1"] = QComboBox()
         self.ui["okul1"].setEditable(True)
-        self.ui["okul1"].setStyleSheet(S["input_combo"])
         self.ui["okul1"].setPlaceholderText("Okul")
         apply_combo_title_case_formatting(self.ui["okul1"])
         edu_grid1.addWidget(self.ui["okul1"], 0, 0)
 
         self.ui["fakulte1"] = QComboBox()
         self.ui["fakulte1"].setEditable(True)
-        self.ui["fakulte1"].setStyleSheet(S["input_combo"])
         self.ui["fakulte1"].setPlaceholderText("Bölüm")
         apply_combo_title_case_formatting(self.ui["fakulte1"])
         edu_grid1.addWidget(self.ui["fakulte1"], 0, 1)
 
         self.ui["mezun_tarihi1"] = QDateEdit()
-        self.ui["mezun_tarihi1"].setStyleSheet(S["date"])
         self.ui["mezun_tarihi1"].setCalendarPopup(True)
         self.ui["mezun_tarihi1"].setDisplayFormat("dd.MM.yyyy")
         self.ui["mezun_tarihi1"].setToolTip("Mezuniyet tarihi (Gün.Ay.Yıl)")
@@ -441,7 +418,6 @@ class PersonelEklePage(QWidget):
         edu_grid1.addWidget(self.ui["mezun_tarihi1"], 0, 2)
 
         self.ui["diploma_no1"] = QLineEdit()
-        self.ui["diploma_no1"].setStyleSheet(S["input"])
         self.ui["diploma_no1"].setPlaceholderText("Diploma No")
         edu_grid1.addWidget(self.ui["diploma_no1"], 0, 3)
         edu_lay.addLayout(edu_grid1)
@@ -468,20 +444,17 @@ class PersonelEklePage(QWidget):
 
         self.ui["okul2"] = QComboBox()
         self.ui["okul2"].setEditable(True)
-        self.ui["okul2"].setStyleSheet(S["input_combo"])
         self.ui["okul2"].setPlaceholderText("Okul")
         apply_combo_title_case_formatting(self.ui["okul2"])
         edu_grid2.addWidget(self.ui["okul2"], 0, 0)
 
         self.ui["fakulte2"] = QComboBox()
         self.ui["fakulte2"].setEditable(True)
-        self.ui["fakulte2"].setStyleSheet(S["input_combo"])
         self.ui["fakulte2"].setPlaceholderText("Bölüm")
         apply_combo_title_case_formatting(self.ui["fakulte2"])
         edu_grid2.addWidget(self.ui["fakulte2"], 0, 1)
 
         self.ui["mezun_tarihi2"] = QDateEdit()
-        self.ui["mezun_tarihi2"].setStyleSheet(S["date"])
         self.ui["mezun_tarihi2"].setCalendarPopup(True)
         self.ui["mezun_tarihi2"].setDisplayFormat("dd.MM.yyyy")
         self.ui["mezun_tarihi2"].setToolTip("Mezuniyet tarihi (Gün.Ay.Yıl)")
@@ -490,7 +463,6 @@ class PersonelEklePage(QWidget):
         edu_grid2.addWidget(self.ui["mezun_tarihi2"], 0, 2)
 
         self.ui["diploma_no2"] = QLineEdit()
-        self.ui["diploma_no2"].setStyleSheet(S["input"])
         self.ui["diploma_no2"].setPlaceholderText("Diploma No")
         edu_grid2.addWidget(self.ui["diploma_no2"], 0, 3)
         edu_lay.addLayout(edu_grid2)
@@ -569,7 +541,6 @@ class PersonelEklePage(QWidget):
         self.progress.setFixedWidth(150)
         self.progress.setFixedHeight(16)
         self.progress.setVisible(False)
-        self.progress.setStyleSheet(S["progress"])
         footer.addWidget(self.progress)
         footer.addStretch()
 
@@ -646,10 +617,9 @@ class PersonelEklePage(QWidget):
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(4)
         lbl = QLabel(label)
-        lbl.setStyleSheet(S["required_label"] if required else S["label"])
+        lbl.setProperty("style-role", "required" if required else "form")
         lay.addWidget(lbl)
         inp = QLineEdit()
-        inp.setStyleSheet(S["input"])
         if placeholder:
             inp.setPlaceholderText(placeholder)
         lay.addWidget(inp)
@@ -668,10 +638,9 @@ class PersonelEklePage(QWidget):
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(4)
         lbl = QLabel(label)
-        lbl.setStyleSheet(S["required_label"] if required else S["label"])
+        lbl.setProperty("style-role", "required" if required else "form")
         lay.addWidget(lbl)
         cmb = QComboBox()
-        cmb.setStyleSheet(S["combo"])
         cmb.setEditable(editable)
         lay.addWidget(cmb)
         parent_layout.addWidget(container, stretch)
@@ -691,10 +660,9 @@ class PersonelEklePage(QWidget):
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(4)
         lbl = QLabel(label)
-        lbl.setStyleSheet(S["required_label"] if required else S["label"])
+        lbl.setProperty("style-role", "required" if required else "form")
         lay.addWidget(lbl)
         de = QDateEdit()
-        de.setStyleSheet(S["date"])
         de.setCalendarPopup(True)
         de.setDate(QDate.currentDate())
         de.setDisplayFormat("dd.MM.yyyy")
@@ -706,10 +674,9 @@ class PersonelEklePage(QWidget):
     # Dikey versiyon (eğitim bölümü için)
     def _make_input_v(self, label, parent_layout, placeholder="", auto_format=True):
         lbl = QLabel(label)
-        lbl.setStyleSheet(S["label"])
+        lbl.setProperty("style-role", "form")
         parent_layout.addWidget(lbl)
         inp = QLineEdit()
-        inp.setStyleSheet(S["input"])
         if placeholder:
             inp.setPlaceholderText(placeholder)
         parent_layout.addWidget(inp)
@@ -722,10 +689,9 @@ class PersonelEklePage(QWidget):
 
     def _make_combo_v(self, label, parent_layout, editable=False, auto_format=True):
         lbl = QLabel(label)
-        lbl.setStyleSheet(S["label"])
+        lbl.setProperty("style-role", "form")
         parent_layout.addWidget(lbl)
         cmb = QComboBox()
-        cmb.setStyleSheet(S["combo"])
         cmb.setEditable(editable)
         parent_layout.addWidget(cmb)
         
@@ -1008,7 +974,6 @@ class PersonelEklePage(QWidget):
 
     def _set_validation_status(self, label_widget, is_valid):
         """Validasyon statusunu ayarla: svg ikon ile (ok, err, muted)."""
-        style = "font-size: 16px;"
         if is_valid is None:
             # Boş/kontrol edilmemiş
             label_widget.setPixmap(Icons.pixmap("info", size=16, color="muted"))
@@ -1021,7 +986,6 @@ class PersonelEklePage(QWidget):
             # Geçersiz
             label_widget.setPixmap(Icons.pixmap("x", size=16, color="err"))
             label_widget.setProperty("color-role", "err")
-        label_widget.setStyleSheet(style)
 
     def _validate_tc_on_change(self):
         """TC Kimlik No real-time validasyonu (merkezi validator kullanır)."""

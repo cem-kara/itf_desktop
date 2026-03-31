@@ -8,12 +8,13 @@ from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QDateEdit, QLineEdit, QFrame, QGridLayout,
-    QMessageBox, QGroupBox, QScrollArea, QDialog
+    QGroupBox, QScrollArea, QDialog
 )
 from PySide6.QtGui import QCursor
 
 from core.logger import logger
 from core.date_utils import parse_date, to_db_date
+from core.hata_yonetici import uyari_goster, bilgi_goster, hata_goster
 
 STATUS_OPTIONS = ["", "Uygun", "Şartlı Uygun", "Uygun Değil"]
 
@@ -204,7 +205,7 @@ class HizliSaglikGirisDialog(QDialog):
         muayene_db, sonraki_db, sonuc, durum = self._compute_summary()
         
         if not sonuc:
-            QMessageBox.warning(self, "Eksik Bilgi", "En az bir muayene sonucu girilmelidir.")
+            uyari_goster(self, "En az bir muayene sonucu girilmelidir.", "Eksik Bilgi")
             return
 
         kayit_no = uuid.uuid4().hex[:12].upper()
@@ -246,10 +247,10 @@ class HizliSaglikGirisDialog(QDialog):
                 "Sonuc": personel_sonuc,
             })
 
-            QMessageBox.information(self, "Başarılı", "Sağlık takip kaydı başarıyla eklendi.")
+            bilgi_goster(self, "Sağlık takip kaydı başarıyla eklendi.", "Başarılı")
             self.saglik_kaydedildi.emit()
             self.accept()
 
         except Exception as e:
             logger.error(f"Hızlı sağlık kaydetme hatası: {e}")
-            QMessageBox.critical(self, "Hata", f"Kayıt sırasında hata oluştu:\n{e}")
+            hata_goster(self, f"Kayıt sırasında hata oluştu:\n{e}", "Hata")

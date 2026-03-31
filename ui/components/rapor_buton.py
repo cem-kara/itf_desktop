@@ -60,12 +60,13 @@ from __future__ import annotations
 from typing import Callable
 
 from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QPushButton, QMessageBox
+    QWidget, QHBoxLayout, QPushButton
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QCursor
 
 from core.logger import logger
+from core.hata_yonetici import uyari_goster, hata_goster, soru_sor
 from core.rapor_servisi import RaporServisi
 from ui.styles import Colors
 from ui.styles.icons import IconRenderer
@@ -166,7 +167,7 @@ class RaporButon(QWidget):
             tablo   = self._tablo_fn()
         except Exception as e:
             logger.error(f"Rapor verisi üretilirken hata: {e}")
-            QMessageBox.warning(self, "Hata", f"Rapor verisi alınamadı:\n{e}")
+            uyari_goster(self, f"Rapor verisi alınamadı:\n{e}", "Hata")
             return
 
         # 3) Raporu üret
@@ -176,23 +177,23 @@ class RaporButon(QWidget):
             yol = RaporServisi.pdf(self._sablon, context, tablo, kayit_yolu)
 
         if not yol:
-            QMessageBox.critical(
-                self, "Hata",
+            hata_goster(
+                self,
                 f"Rapor oluşturulamadı.\n"
                 f"Şablon mevcut mu? data/templates/{tur}/{self._sablon}"
-                f"{'xlsx' if tur == 'excel' else 'html'}"
+                f"{'xlsx' if tur == 'excel' else 'html'}",
+                "Hata",
             )
             return
 
         # 4) Başarı → aç mı?
-        cevap = QMessageBox.question(
-            self, "Rapor Hazır",
+        cevap = soru_sor(
+            self,
             f"{'Excel' if tur == 'excel' else 'PDF'} raporu kaydedildi.\n\n"
             f"{yol}\n\nDosya açılsın mı?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.Yes,
+            "Rapor Hazır",
         )
-        if cevap == QMessageBox.StandardButton.Yes:
+        if cevap:
             RaporServisi.ac(yol)
 
     # ── Durum kontrolü ───────────────────────────────────────────────────────

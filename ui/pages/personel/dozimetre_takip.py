@@ -31,10 +31,11 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel,
     QPushButton, QTableView, QLineEdit, QComboBox,
     QAbstractItemView, QSizePolicy, QSplitter, QTabWidget,
-    QFormLayout, QMessageBox, QDoubleSpinBox,
+    QFormLayout, QDoubleSpinBox,
 )
 
 from core.logger import logger
+from core.hata_yonetici import soru_sor, bilgi_goster, hata_goster
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer, IconColors
@@ -363,7 +364,7 @@ class _GaugeWidget(QWidget):
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         oran = min(self._deger / self._limit, 1.0) if self._limit else 0.0
-        w, h = self.width(), self.height()
+        w = self.width()
 
         # Başlık
         p.setPen(QColor("muted"))
@@ -1011,16 +1012,14 @@ class DozimetreTakipPage(QWidget):
         self._gauge_5yil.set_deger(bes_hp10)
 
         kayitli = {r.get("Periyot") for r in yil_veriler}
-        eksik   = [i for i in range(1, PERIYOT_SAYISI + 1) if i not in kayitli]
+        eksik = [i for i in range(1, PERIYOT_SAYISI + 1) if i not in kayitli]
         if not eksik:
             doluluk_metin = f"✔ {yil} yılı — {PERIYOT_SAYISI}/{PERIYOT_SAYISI} periyot kayıtlı"
-            doluluk_renk  = "#4ade80"
         else:
             doluluk_metin = (
                 f"⚠ {yil} yılı — {len(kayitli)}/{PERIYOT_SAYISI} periyot  |  "
                 f"Eksik: {', '.join(str(e) for e in eksik)}. periyot"
             )
-            doluluk_renk = "#facc15"
         self.lbl_periyot_doluluk.setText(doluluk_metin)
         self.lbl_periyot_doluluk.setProperty("color-role", "primary")
 
@@ -1055,17 +1054,16 @@ class DozimetreTakipPage(QWidget):
         yeni_durum = self._duzelt_durum.text().strip()
         yeni_dzm   = self._duzelt_dzm.text().strip()
 
-        cevap = QMessageBox.question(
-            self, "Kayıt Düzelt",
-            f"<b>KayitNo: {kayit_no}</b><br><br>"
-            f"Hp(10): <b>{yeni_hp10:.4f}</b> mSv<br>"
-            f"Hp(0,07): <b>{yeni_hp007:.4f}</b> mSv<br>"
-            f"Durum: <b>{yeni_durum}</b><br>"
-            f"Dozimetre No: <b>{yeni_dzm}</b><br><br>"
-            f"Kayıt güncellensin mi?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        if cevap != QMessageBox.StandardButton.Yes:
+        if not soru_sor(
+            self,
+            f"KayitNo: {kayit_no}\n\n"
+            f"Hp(10): {yeni_hp10:.4f} mSv\n"
+            f"Hp(0,07): {yeni_hp007:.4f} mSv\n"
+            f"Durum: {yeni_durum}\n"
+            f"Dozimetre No: {yeni_dzm}\n\n"
+            "Kayıt güncellensin mi?",
+            "Kayıt Düzelt",
+        ):
             return
 
         try:
@@ -1080,10 +1078,10 @@ class DozimetreTakipPage(QWidget):
             )
             conn.commit()
             if kapat: conn.close()
-            QMessageBox.information(self, "Başarılı", "Kayıt güncellendi.")
+            bilgi_goster(self, "Kayıt güncellendi.", "Başarılı")
             self.load_data()
         except Exception as exc:
-            QMessageBox.critical(self, "Hata", f"Güncelleme başarısız:\n{exc}")
+            hata_goster(self, f"Güncelleme başarısız:\n{exc}", "Hata")
             logger.error(f"Kayıt düzeltme hatası: {exc}")
 
     # ─── Import dialog ───────────────────────────────────────

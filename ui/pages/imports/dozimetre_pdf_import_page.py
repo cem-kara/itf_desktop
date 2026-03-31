@@ -11,10 +11,11 @@ from PySide6.QtCore import Qt, QThread, Signal as _Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel,
-    QPushButton, QTableView, QFileDialog, QMessageBox,
+    QPushButton, QTableView, QFileDialog,
     QProgressBar, QAbstractItemView,
 )
 from core.logger import logger
+from core.hata_yonetici import bilgi_goster, hata_goster, soru_sor
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
 #from ui.styles.components import STYLES as S
@@ -130,13 +131,10 @@ def _smart_parse_row(row: list) -> dict:
         # row[1] TC, row[2] ad
         tc_raw  = r1.split()[0]   # ilk token TC
         ad_soyad = r2
-        # row[1]'in geri kalanı birim olabilir, col[3]'e ek
-        birim_oneki = " ".join(r1.split()[1:])
     else:
         # Normal düzen: row[1] ad, row[2] TC
         ad_soyad = r1
         tc_raw   = r2.split()[0] if r2.split() else r2
-        birim_oneki = ""
 
     for i in range(3, len(row)):
         v = row[i]
@@ -527,27 +525,28 @@ class DozimetrePdfImportPage(QWidget):
 
         if mevcut_sayisi > 0:
             if mevcut_sayisi >= len(self._rows):
-                QMessageBox.information(
+                bilgi_goster(
                     self, "Zaten Kayıtlı",
                     f"<b>{rapor_no}</b> raporunun tüm kayıtları "
-                    f"zaten veritabanında mevcut.<br>Herhangi bir ekleme yapılmadı."
+                    f"zaten veritabanında mevcut.<br>Herhangi bir ekleme yapılmadı.",
+                    "Zaten Kayıtlı",
                 )
                 return
-            cevap = QMessageBox.question(
-                self, "Mükerrer Kayıt Uyarısı",
+            cevap = soru_sor(
+                self,
                 f"<b>{rapor_no}</b> raporu için:<br><br>"
                 f"&nbsp;&nbsp;• <b>{len(self._rows) - mevcut_sayisi}</b> yeni kayıt eklenecek<br>"
                 f"&nbsp;&nbsp;• <b>{mevcut_sayisi}</b> kayıt zaten mevcut<br><br>"
                 f"Devam edilsin mi?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                "Mükerrer Kayıt Uyarısı",
             )
         else:
-            cevap = QMessageBox.question(
-                self, "Kaydet",
+            cevap = soru_sor(
+                self,
                 f"{len(self._rows)} kayıt veritabanına eklenecek. Devam edilsin mi?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                "Kaydet",
             )
-        if cevap != QMessageBox.StandardButton.Yes: return
+        if not cevap: return
 
         self.btn_kaydet.setEnabled(False)
         self.btn_temizle.setEnabled(False)
@@ -570,7 +569,7 @@ class DozimetrePdfImportPage(QWidget):
         self.lbl_status.setProperty("color-role", "primary")
         detail = f"{yeni} yeni kayıt veritabanına eklendi."
         if atlanan: detail += f"\n{atlanan} kayıt zaten mevcuttu, atlandı."
-        QMessageBox.information(self,"Başarılı", detail)
+        bilgi_goster(self, detail, "Başarılı")
 
     def _on_save_error(self, msg: str):
         self.progress.hide()
@@ -579,7 +578,7 @@ class DozimetrePdfImportPage(QWidget):
         logger.error(f"Dozimetre kaydetme hatası: {msg}")
         self.lbl_status.setText(f"✗  Kaydetme hatası: {msg}")
         self.lbl_status.setProperty("color-role", "primary")
-        QMessageBox.critical(self,"Hata",f"Kayıt sırasında hata oluştu:\n{msg}")
+        hata_goster(self, f"Kayıt sırasında hata oluştu:\n{msg}")
 
     def _clear(self):
         self._header = {}; self._rows = []

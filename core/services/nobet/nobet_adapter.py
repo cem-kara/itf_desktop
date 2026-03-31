@@ -358,11 +358,7 @@ class NobetAdapter:
           HaftasonuSayisi, GunduzSayisi, GeceSayisi}]
         """
         try:
-            bid     = self._birim_id_coz(birim) if birim else ""
-            birim_adi = self._birim_adi_bul(bid) if bid else ""
-
-            ay_bas  = f"{yil:04d}-{ay:02d}-01"
-            ay_bit  = f"{yil:04d}-{ay:02d}-31"
+            bid = self._birim_id_coz(birim) if birim else ""
 
             # Plan satırları
             ps_rows = self._r.get("NB_PlanSatir").get_all() or []

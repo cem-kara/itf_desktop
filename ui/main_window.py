@@ -10,6 +10,7 @@ from PySide6.QtGui import QCloseEvent
 
 from core.config import AppConfig
 from core.logger import logger, log_ui_error
+from core.hata_yonetici import uyari_goster, hata_goster
 from core.paths import DB_PATH
 from ui.sidebar import Sidebar
 from ui.guards import ActionGuard, PageGuard
@@ -151,12 +152,11 @@ class MainWindow(QMainWindow):
             from ui.permissions.page_permissions import PAGE_PERMISSIONS
             perm_key = PAGE_PERMISSIONS.get(baslik)
             if perm_key and not self._page_guard.can_open(perm_key):
-                from PySide6.QtWidgets import QMessageBox
-                QMessageBox.warning(
+                uyari_goster(
                     self,
-                    "Yetki Hatası",
                     f"'{baslik}' sayfasına erişim yetkiniz bulunmamaktadır.\n\n"
-                    f"Gerekli yetki: {perm_key}"
+                    f"Gerekli yetki: {perm_key}",
+                    "Yetki Hatası",
                 )
                 logger.warning(f"Yetkisiz sayfa erişim denemesi: {baslik} (yetki: {perm_key})")
                 return
@@ -183,12 +183,11 @@ class MainWindow(QMainWindow):
                 page.apply_filters(filters)  # type: ignore[attr-defined]
         except Exception as e:
             log_ui_error("menu_click", e, group=group, page=baslik)
-            from PySide6.QtWidgets import QMessageBox
-            QMessageBox.critical(
+            hata_goster(
                 self,
-                "Sayfa Acma Hatasi",
                 f"'{baslik}' sayfasi acilirken bir hata olustu.\n"
-                f"Detaylar ui_log.log dosyasina yazildi.\n\n{type(e).__name__}: {e}"
+                f"Detaylar ui_log.log dosyasina yazildi.\n\n{type(e).__name__}: {e}",
+                "Sayfa Acma Hatasi",
             )
 
     def _create_page(self, group, baslik):
@@ -325,10 +324,6 @@ class MainWindow(QMainWindow):
         if baslik == "Fazla Mesai":
             from ui.pages.nobet.nobet_fazla_mesai_page import NobetFazlaMesaiPage
             return NobetFazlaMesaiPage(db=self._db, action_guard=self._action_guard)
-
-
-            from ui.pages.nobet.nobet_rapor_page import NobetRaporPage
-            return NobetRaporPage(db=self._db, action_guard=self._action_guard)
 
         return PlaceholderPage(
             title=baslik,
@@ -468,11 +463,10 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             log_ui_error("open_izin_giris", e)
-            from PySide6.QtWidgets import QMessageBox
-            QMessageBox.critical(
+            hata_goster(
                 self,
-                "İzin Girişi Hatası",
                 f"İzin girişi ekranı açılırken bir hata oluştu.\n\n{type(e).__name__}: {e}",
+                "İzin Girişi Hatası",
             )
 
     def _back_from_izin(self, izin_key, from_key=None):
@@ -622,12 +616,6 @@ class MainWindow(QMainWindow):
         self.last_sync_label.setText(f"Hata: {now}")
         self.last_sync_label.setToolTip(detail_msg)
         
-        # Opsiyonel: Kullanıcıya bildirim göster
-        from PySide6.QtWidgets import QMessageBox
-        msg_box = QMessageBox(self)
-        msg_box.setIcon(QMessageBox.Icon.Warning)
-        msg_box.setWindowTitle("Senkronizasyon Hatası")
-
         # API 503 (Servis Ulaşılamıyor) hatası için özel mesaj
         is_service_unavailable = "503" in detail_msg or "unavailable" in detail_msg.lower()
 
@@ -639,17 +627,19 @@ class MainWindow(QMainWindow):
                 "Lütfen birkaç dakika bekleyip tekrar deneyin. Uygulama, bir sonraki "
                 "otomatik senkronizasyonda veya manuel yenilemede tekrar deneyecektir."
             )
-            msg_box.setText(service_error_short)
-            msg_box.setInformativeText(service_error_info)
-            msg_box.setDetailedText(f"Hata Detayı:\n{detail_msg}")
+            uyari_goster(
+                self,
+                f"{service_error_info}\n\nHata detayı:\n{detail_msg}",
+                service_error_short,
+            )
             
             # UI'da da daha anlaşılır bir mesaj göster
             self.sidebar.set_sync_status(service_error_short, self.STATUS_ERROR_COLOR)
             self._set_sync_status_label(service_error_short, self.STATUS_ERROR_COLOR)
         else:
-            msg_box.setText(short_msg)
-            msg_box.setInformativeText(detail_msg)
-            msg_box.setDetailedText(
+            hata_goster(
+                self,
+                f"{short_msg}\n\n{detail_msg}\n\n"
                 f"Hata zamanı: {now}\n\n"
                 f"Çözüm önerileri:\n"
                 f"1. İnternet bağlantınızı kontrol edin.\n"
@@ -658,11 +648,9 @@ class MainWindow(QMainWindow):
                 f"4. Sorun devam ederse log dosyalarını kontrol edin:\n"
                 f"   - logs/app.log\n"
                 f"   - logs/sync.log\n"
-                f"   - logs/errors.log"
+                f"   - logs/errors.log",
+                "Senkronizasyon Hatası",
             )
-
-        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
-        msg_box.exec()
 
     def closeEvent(self, event):
         # Eğer sync çalışıyorsa kullanıcıyı bilgilendir ve animasyonlu modal göster

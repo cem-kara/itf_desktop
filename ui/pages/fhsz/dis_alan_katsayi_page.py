@@ -12,7 +12,7 @@ Dış Alan Katsayı Protokol Yönetim Sayfası
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QFrame, QTableView, QMessageBox, QDialog,
+    QFrame, QTableView, QDialog,
     QFormLayout, QLineEdit, QDoubleSpinBox, QSpinBox,
     QDateEdit, QDialogButtonBox, QAbstractItemView, QCheckBox
 )
@@ -21,7 +21,7 @@ from PySide6.QtCore import Qt, QDate
 from ui.styles.icons import IconRenderer
 from ui.pages.fhsz.dis_alan_katsayi_model import DisAlanKatsayiModel
 from core.di import get_dis_alan_katsayi_service
-from core.hata_yonetici import servis_calistir, bilgi_goster, hata_goster
+from core.hata_yonetici import servis_calistir, bilgi_goster, hata_goster, soru_sor, uyari_goster
 from core.logger import logger
 
 
@@ -198,15 +198,13 @@ class DisAlanKatsayiPage(QWidget):
         anabilim = satir.get("AnaBilimDali", "")
         birim    = satir.get("Birim", "")
 
-        cevap = QMessageBox.question(
+        if not soru_sor(
             self,
-            "Pasife Al",
-            f"<b>{anabilim} — {birim}</b> için aktif protokol pasife alınacak.\n\n"
+            f"{anabilim} — {birim} için aktif protokol pasife alınacak.\n\n"
             "Mevcut katsayı korunur, yeni kayıtlarda kullanılmaz.\n\n"
             "Devam etmek istiyor musunuz?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-        )
-        if cevap != QMessageBox.StandardButton.Yes:
+            "Pasife Al",
+        ):
             return
 
         servis_calistir(
@@ -309,7 +307,7 @@ class _ProtokolDialog(QDialog):
         birim    = self.txt_birim.text().strip()
 
         if not anabilim or not birim:
-            QMessageBox.warning(self, "Eksik Alan", "AnaBilim Dalı ve Birim zorunludur.")
+            uyari_goster(self, "AnaBilim Dalı ve Birim zorunludur.", "Eksik Alan")
             return
 
         veri = {

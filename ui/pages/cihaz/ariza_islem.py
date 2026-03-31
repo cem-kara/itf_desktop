@@ -266,7 +266,7 @@ class ArizaIslemForm(QWidget):
                             "YuklenmeTarihi": datetime.now().isoformat(),
                         }
                         svc.insert_cihaz_belge(belge_data)
-                        logger.info(f"Arıza işlem raporu Cihaz_Belgeler tablosuna kaydedildi")
+                        logger.info("Arıza işlem raporu Cihaz_Belgeler tablosuna kaydedildi")
                         
                 except Exception as e:
                     logger.error(f"Rapor belgesi kaydetme hatası: {e}")
@@ -348,7 +348,6 @@ class ArizaIslemPenceresi(QWidget):
 
     def _build_detail_panel(self) -> QWidget:
         """Seçili işlemin detaylarını gösteren panel."""
-        surface  = getattr(DarkTheme, "SURFACE",      "#13161d")
         panel_bg = getattr(DarkTheme, "PANEL",        "#191d26")
         border   = getattr(DarkTheme, "BORDER",       "#242938")
         text_pr  = getattr(DarkTheme, "TEXT_PRIMARY", "#eef0f5")

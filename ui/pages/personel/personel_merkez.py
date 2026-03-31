@@ -8,7 +8,7 @@ Hardcoded renk yok.
 import os
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QFrame, QStackedWidget, QScrollArea, QMessageBox,
+    QFrame, QStackedWidget, QScrollArea,
 )
 from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QCursor, QPixmap
@@ -19,6 +19,7 @@ from ui.theme_manager import ThemeManager
 from ui.pages.personel.personel_listesi import _get_status_text_color
 from ui.pages.personel.components.personel_ozet_servisi import personel_ozet_getir
 from core.logger import logger
+from core.hata_yonetici import uyari_goster, hata_goster
 from ui.pages.personel.components.personel_overview_panel import PersonelOverviewPanel
 from ui.pages.personel.components.personel_dokuman_panel import PersonelDokumanPanel
 from ui.pages.personel.components.personel_izin_panel import PersonelIzinPanel
@@ -449,7 +450,7 @@ class PersonelMerkezPage(QWidget):
 
     def _show_form(self, form_type: str):
         if not self.ozet_data.get("personel"):
-            QMessageBox.warning(self, "Hata", "Personel verisi henüz yüklenmedi.")
+            uyari_goster(self, "Personel verisi henüz yüklenmedi.", "Hata")
             return
 
         # Önceki formu temizle
@@ -477,7 +478,7 @@ class PersonelMerkezPage(QWidget):
 
         except Exception as e:
             logger.error(f"Form yükleme ({form_type}): {e}")
-            QMessageBox.critical(self, "Hata", f"Form yüklenemedi:\n{e}")
+            hata_goster(self, f"Form yüklenemedi:\n{e}", "Hata")
 
     def _hide_form(self):
         self.form_container.setVisible(False)
