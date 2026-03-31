@@ -15,7 +15,7 @@ Testi geçirmek için ariza_service.py satır 144'ü düzelt:
     veri.get("ArizaId")  →  veri.get("Arizaid")
 """
 import pytest
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 from core.services.ariza_service import ArizaService
 
 

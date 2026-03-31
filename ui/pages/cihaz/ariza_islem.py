@@ -4,22 +4,18 @@ from core.di import get_cihaz_service as _get_cihaz_service
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, Signal, QDate
+from PySide6.QtCore import Qt, QModelIndex, Signal, QDate
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QTableView,
-    QHeaderView, QLabel, QGridLayout, QTextEdit, QLineEdit,
-    QComboBox, QDateEdit, QPushButton, QMenu, QFileDialog, QMessageBox,
-    QFrame, QSizePolicy,
+    QLabel, QGridLayout, QTextEdit, QLineEdit, QComboBox,
+    QDateEdit, QPushButton, QFileDialog, QFrame,
 )
-from PySide6.QtGui import QCursor
 
-from core.date_utils import to_ui_date
 from core.logger import logger
-from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
+from core.hata_yonetici import hata_goster, uyari_goster
 from core.paths import DATA_DIR
 
 from ui.components.base_table_model import BaseTableModel
-from ui.styles.icons import IconRenderer
 from ui.styles import DarkTheme
 from datetime import datetime
 

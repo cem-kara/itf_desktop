@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
     QFrame,
 )
 from ui.dialogs.mesaj_kutusu import MesajKutusu
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QPixmap
 
 

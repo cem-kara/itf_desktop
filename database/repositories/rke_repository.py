@@ -19,7 +19,7 @@ NOT: RepositoryRegistry'ye "RKE_List" -> RKERepository olarak
      kayitlidir (repository_registry.py).
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Any
 
 from core.logger import logger
 

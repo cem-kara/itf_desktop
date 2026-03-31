@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 """Cihaz Ekle — v3 (Personel modulu mimarisi ile uyumlu)."""
-import re
-from typing import Any, cast
+from typing import Any
 
 from PySide6.QtCore import Qt, QDate, Signal, QThread
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QFrame, QGridLayout, QLineEdit,
-    QComboBox, QDateEdit, QFileDialog, QMessageBox, QTabWidget, QGroupBox
+    QComboBox, QDateEdit, QFileDialog, QTabWidget, QGroupBox
 )
 
 from core.logger import logger

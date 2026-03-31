@@ -20,16 +20,13 @@ from PySide6.QtWidgets import (
     QPushButton,
     QLabel,
     QTableView,
-    QHeaderView,
     QMessageBox,
     QGroupBox,
-    QLineEdit,
     QSpinBox,
     QFrame,
     QCheckBox,
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor
 
 from core.logger import logger
 from core.services.backup_service import BackupService

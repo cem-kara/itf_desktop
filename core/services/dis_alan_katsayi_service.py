@@ -1,8 +1,7 @@
-from typing import Optional, List, Tuple
-from core.hata_yonetici import SonucYonetici, logger
+from core.hata_yonetici import SonucYonetici
 
 from database.repository_registry import RepositoryRegistry
-from datetime import date, datetime
+from datetime import date
 
 class DisAlanKatsayiService:
     def __init__(self, registry: RepositoryRegistry):

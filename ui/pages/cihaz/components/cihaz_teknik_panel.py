@@ -7,11 +7,10 @@ Teknik Bilgiler sekmesi icin cihaz teknik verilerini gosterir.
 v2 tablo temasi + 2-cift-per-row duzeni, duzgun hizalama.
 """
 from pathlib import Path
-from typing import cast
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
-    QScrollArea, QSizePolicy, QGridLayout, QLineEdit, QPushButton, QMessageBox
+    QScrollArea, QSizePolicy, QLineEdit, QPushButton
 )
 from PySide6.QtCore import Qt, Signal
 

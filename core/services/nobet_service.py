@@ -1069,7 +1069,6 @@ class NobetService:
 
             # İzin günlerinden hafta sonu ve tatil olmayanları say
             # (hafta sonu ve tatiller zaten is_gunu'ndan düşüldü)
-            import calendar
             izin_is_gunu = 0
             for t_str in izin_gunleri:
                 try:

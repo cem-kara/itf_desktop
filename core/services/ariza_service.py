@@ -5,7 +5,7 @@ Sorumluluklar:
 - Arıza türleri ve durumları listesi
 - Arıza kaydı (INSERT/UPDATE/DELETE)
 """
-from typing import Optional, List, Dict
+from typing import Optional, Dict
 from core.hata_yonetici import SonucYonetici
 
 from database.repository_registry import RepositoryRegistry

@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>REPYS — Ölü Kod & Temizlik Raporu</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.6; }
+  
+  .header { background: linear-gradient(135deg, #1e293b, #0f172a); padding: 2rem 2.5rem; border-bottom: 1px solid #334155; }
+  .header h1 { font-size: 1.6rem; color: #f1f5f9; }
+  .header p { color: #94a3b8; margin-top: 0.3rem; font-size: 0.9rem; }
+
+  .stats-bar { display: flex; gap: 1rem; padding: 1.5rem 2.5rem; background: #0f1117; flex-wrap: wrap; border-bottom: 1px solid #1e293b; }
+  .stat { background: #1e293b; border-radius: 10px; padding: 1rem 1.4rem; flex: 1; min-width: 160px; border: 1px solid #334155; }
+  .stat .num { font-size: 2rem; font-weight: 700; }
+  .stat .lbl { font-size: 0.78rem; color: #94a3b8; margin-top: 2px; }
+  .stat.red .num { color: #f87171; }
+  .stat.yellow .num { color: #fbbf24; }
+  .stat.orange .num { color: #fb923c; }
+  .stat.purple .num { color: #c084fc; }
+  .stat.blue .num { color: #60a5fa; }
+  .stat.green .num { color: #34d399; }
+
+  .content { padding: 2rem 2.5rem; max-width: 1400px; }
+  
+  .section { margin-bottom: 2.5rem; }
+  .section-header { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid #1e293b; }
+  .section-header h2 { font-size: 1.1rem; color: #f1f5f9; }
+  .badge { font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 999px; font-weight: 600; }
+  .badge.red { background: #7f1d1d; color: #fca5a5; }
+  .badge.yellow { background: #78350f; color: #fde68a; }
+  .badge.orange { background: #7c2d12; color: #fdba74; }
+  .badge.purple { background: #4a1d96; color: #ddd6fe; }
+  .badge.blue { background: #1e3a5f; color: #93c5fd; }
+
+  .tip { background: #1e293b; border-left: 3px solid #38bdf8; padding: 0.8rem 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1.2rem; font-size: 0.87rem; color: #cbd5e1; }
+  .tip strong { color: #7dd3fc; }
+  .tip code { background: #0f172a; padding: 0.1rem 0.4rem; border-radius: 4px; font-family: monospace; font-size: 0.82rem; }
+
+  .file-group { margin-bottom: 0.6rem; border: 1px solid #1e293b; border-radius: 8px; overflow: hidden; }
+  .file-name { background: #1e293b; padding: 0.6rem 1rem; font-family: monospace; font-size: 0.85rem; color: #7dd3fc; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+  .file-name:hover { background: #263248; }
+  .file-name .count { background: #0f172a; border-radius: 999px; padding: 0.1rem 0.5rem; font-size: 0.75rem; color: #94a3b8; }
+  .file-items { display: none; }
+  .file-items.open { display: block; }
+  .item { padding: 0.45rem 1rem 0.45rem 1.5rem; font-size: 0.83rem; border-bottom: 1px solid #0f1117; display: flex; gap: 0.8rem; align-items: baseline; }
+  .item:last-child { border-bottom: none; }
+  .line-no { color: #64748b; font-family: monospace; min-width: 50px; font-size: 0.8rem; }
+  .msg { color: #cbd5e1; }
+  .msg .symbol { color: #fbbf24; font-family: monospace; }
+  .msg .action { color: #f87171; }
+
+  .critical-box { background: #2d1515; border: 1px solid #7f1d1d; border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.5rem; }
+  .critical-box h3 { color: #fca5a5; font-size: 0.95rem; margin-bottom: 0.6rem; }
+  .critical-box p { color: #fecaca; font-size: 0.85rem; }
+  .critical-box code { background: #450a0a; padding: 0.15rem 0.4rem; border-radius: 4px; font-family: monospace; }
+
+  .guide { background: #0c1a2e; border: 1px solid #1e3a5f; border-radius: 10px; padding: 1.4rem; margin-top: 2rem; }
+  .guide h2 { color: #60a5fa; font-size: 1rem; margin-bottom: 1rem; }
+  .steps { list-style: none; counter-reset: steps; }
+  .steps li { counter-increment: steps; padding: 0.7rem 0 0.7rem 2.5rem; position: relative; border-bottom: 1px solid #1e293b; font-size: 0.88rem; color: #cbd5e1; }
+  .steps li:last-child { border-bottom: none; }
+  .steps li::before { content: counter(steps); position: absolute; left: 0; background: #1e3a8a; color: #93c5fd; width: 1.6rem; height: 1.6rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; top: 0.8rem; }
+  .steps code { background: #0f172a; padding: 0.15rem 0.5rem; border-radius: 4px; font-family: monospace; color: #7dd3fc; font-size: 0.83rem; }
+
+  .toggle-all { background: #1e3a5f; color: #93c5fd; border: 1px solid #2563eb; border-radius: 6px; padding: 0.4rem 0.9rem; cursor: pointer; font-size: 0.8rem; margin-bottom: 0.8rem; }
+  .toggle-all:hover { background: #1d4ed8; color: white; }
+
+  summary { cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔍 REPYS — Ölü Kod & Temizlik Raporu</h1>
+  <p>pyflakes + vulture analizi · 273 dosya · ~74.000 satır Python</p>
+</div>
+
+<div class="stats-bar">
+  <div class="stat red"><div class="num">219</div><div class="lbl">Kullanılmayan import</div></div>
+  <div class="stat yellow"><div class="num">42</div><div class="lbl">Kullanılmayan değişken</div></div>
+  <div class="stat orange"><div class="num">13</div><div class="lbl">Boş f-string (f"..." içinde {} yok)</div></div>
+  <div class="stat purple"><div class="num">11</div><div class="lbl">Yeniden tanımlama (redefinition)</div></div>
+  <div class="stat blue"><div class="num">4</div><div class="lbl">Ulaşılamaz kod (unreachable)</div></div>
+  <div class="stat green"><div class="num">285</div><div class="lbl">Toplam sorun</div></div>
+</div>
+
+<div class="content">
+
+<!-- KRİTİK SORUNLAR -->
+<div class="section">
+  <div class="section-header">
+    <h2>🚨 Kritik Sorunlar (Önce Bunlar)</h2>
+    <span class="badge red">Hemen Düzelt</span>
+  </div>
+
+  <div class="critical-box">
+    <h3>⚠️ Boş f-string'ler — Sessiz Hata Kaynağı</h3>
+    <p>Aşağıdaki satırlarda <code>f"..."</code> kullanılmış ama içinde hiç <code>{değişken}</code> yok. Bu büyük ihtimalle bir kopyala-yapıştır hatasıdır; string düz <code>"..."</code> olmalıydı veya değişken unutuldu.</p>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">core/services/backup_service.py <span class="count">4 sorun</span></div>
+    <div class="file-items open">
+      <div class="item"><span class="line-no">:77</span><span class="msg"><span class="action">f-string boş placeholder</span> — f"..." içinde {} bulunamadı</span></div>
+      <div class="item"><span class="line-no">:223</span><span class="msg"><span class="action">f-string boş placeholder</span></span></div>
+      <div class="item"><span class="line-no">:346</span><span class="msg"><span class="action">f-string boş placeholder</span></span></div>
+      <div class="item"><span class="line-no">:471</span><span class="msg"><span class="action">f-string boş placeholder</span></span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">ui/pages/rke/rke_merkez.py <span class="count">2 sorun</span></div>
+    <div class="file-items open">
+      <div class="item"><span class="line-no">:209</span><span class="msg"><span class="action">f-string boş placeholder</span></span></div>
+      <div class="item"><span class="line-no">:217</span><span class="msg"><span class="action">f-string boş placeholder</span></span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">ui/pages/cihaz/ariza_islem.py <span class="count">1 sorun</span></div>
+    <div class="file-items open">
+      <div class="item"><span class="line-no">:273</span><span class="msg"><span class="action">f-string boş placeholder</span></span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">ui/pages/personel/components/personel_overview_panel.py <span class="count">2 sorun</span></div>
+    <div class="file-items open">
+      <div class="item"><span class="line-no">:905</span><span class="msg"><span class="action">f-string boş placeholder</span></span></div>
+      <div class="item"><span class="line-no">:980</span><span class="msg"><span class="action">f-string boş placeholder</span></span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">ui/pages/nobet/nobet_rapor_page.py · ui/admin/yil_sonu_devir_page.py · ui/sidebar.py <span class="count">3 sorun</span></div>
+    <div class="file-items open">
+      <div class="item"><span class="line-no">nobet_rapor_page.py:180</span><span class="msg"><span class="action">f-string boş placeholder</span></span></div>
+      <div class="item"><span class="line-no">yil_sonu_devir_page.py:136</span><span class="msg"><span class="action">f-string boş placeholder</span></span></div>
+      <div class="item"><span class="line-no">sidebar.py:304</span><span class="msg"><span class="action">f-string boş placeholder</span></span></div>
+    </div>
+  </div>
+
+  <br>
+  <div class="critical-box">
+    <h3>⚠️ Yeniden Tanımlama (Redefinition) — Kayıp Fonksiyon</h3>
+    <p>Aynı fonksiyon/değişken aynı dosyada iki kez tanımlanmış. İlk tanım hiç çalışmadan eziyet edilmiş demektir.</p>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">core/services/nobet_service.py — birim_ayar_kaydet <span class="count">2 sorun</span></div>
+    <div class="file-items open">
+      <div class="item"><span class="line-no">:100</span><span class="msg"><span class="symbol">birim_ayar_kaydet</span> tanımlandı — ama satır 697'de kullanılmadan ezildi</span></div>
+      <div class="item"><span class="line-no">:697</span><span class="msg"><span class="symbol">birim_ayar_kaydet</span> yeniden tanımlandı — ama satır 727'de kullanılmadan ezildi</span></div>
+      <div class="item"><span class="line-no">:727</span><span class="msg">Aktif olan bu, diğer ikisi ölü kod</span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">ui/main_window.py — WelcomePage <span class="count">1 sorun</span></div>
+    <div class="file-items open">
+      <div class="item"><span class="line-no">:16</span><span class="msg"><span class="symbol">WelcomePage</span> import edildi</span></div>
+      <div class="item"><span class="line-no">:103</span><span class="msg"><span class="symbol">WelcomePage</span> lokal import ile ezildi — satır 16'daki import tamamen gereksiz</span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">Diğer yeniden tanımlamalar <span class="count">5 sorun</span></div>
+    <div class="file-items">
+      <div class="item"><span class="line-no">ui/pages/cihaz/ariza_girisi_form.py:18</span><span class="msg"><span class="symbol">_get_cihaz_service</span> — satır 6'daki import ezilmiş</span></div>
+      <div class="item"><span class="line-no">ui/pages/cihaz/ariza_islem.py:467</span><span class="msg"><span class="symbol">to_ui_date</span> — satır 16'daki import ezilmiş</span></div>
+      <div class="item"><span class="line-no">ui/pages/personel/dozimetre_takip.py:1092</span><span class="msg"><span class="symbol">QDialog</span> — satır 30'daki import ezilmiş</span></div>
+      <div class="item"><span class="line-no">ui/pages/personel/personel_ekle.py:30</span><span class="msg"><span class="symbol">Icons</span> — satır 24'teki import ezilmiş</span></div>
+      <div class="item"><span class="line-no">ui/pages/imports/izin_bilgi_import_page.py:84</span><span class="msg"><span class="symbol">dataclass</span> — satır 67'deki import ezilmiş</span></div>
+      <div class="item"><span class="line-no">database/gsheet_manager.py:3</span><span class="msg"><span class="symbol">time</span> — satır 1'deki import ezilmiş</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- KULLANILMAYAN IMPORTLAR -->
+<div class="section">
+  <div class="section-header">
+    <h2>📦 Kullanılmayan İmportlar (219 adet)</h2>
+    <span class="badge yellow">Temizlenebilir</span>
+  </div>
+
+  <div class="tip"><strong>💡 Toplu temizlik için:</strong> <code>autoflake --in-place --remove-all-unused-imports -r .</code> komutu tüm dosyalarda otomatik temizler. Önce git commit alın!</div>
+
+  <button class="toggle-all" onclick="toggleAll('imports')">Tümünü Aç/Kapat</button>
+
+  <div data-section="imports">
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">ui/pages/personel/personel_ekle.py <span class="count">8 sorun</span></div>
+    <div class="file-items">
+      <div class="item"><span class="line-no">:3</span><span class="msg"><span class="symbol">re</span> — kullanılmayan import</span></div>
+      <div class="item"><span class="line-no">:4</span><span class="msg"><span class="symbol">datetime.datetime</span></span></div>
+      <div class="item"><span class="line-no">:5</span><span class="msg"><span class="symbol">QTimer</span></span></div>
+      <div class="item"><span class="line-no">:6</span><span class="msg"><span class="symbol">QMessageBox</span></span></div>
+      <div class="item"><span class="line-no">:19</span><span class="msg"><span class="symbol">turkish_title_case</span></span></div>
+      <div class="item"><span class="line-no">:22</span><span class="msg"><span class="symbol">DarkTheme</span></span></div>
+      <div class="item"><span class="line-no">:25</span><span class="msg"><span class="symbol">ThemeManager</span></span></div>
+      <div class="item"><span class="line-no">:28</span><span class="msg"><span class="symbol">get_current_theme</span></span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">ui/pages/personel/saglik_takip.py <span class="count">7 sorun</span></div>
+    <div class="file-items">
+      <div class="item"><span class="line-no">:7</span><span class="msg"><span class="symbol">Optional</span></span></div>
+      <div class="item"><span class="line-no">:9</span><span class="msg"><span class="symbol">QModelIndex</span></span></div>
+      <div class="item"><span class="line-no">:11</span><span class="msg"><span class="symbol">QApplication</span></span></div>
+      <div class="item"><span class="line-no">:36</span><span class="msg"><span class="symbol">to_ui_date</span></span></div>
+      <div class="item"><span class="line-no">:43</span><span class="msg"><span class="symbol">QPainter</span></span></div>
+      <div class="item"><span class="line-no">:214</span><span class="msg"><span class="symbol">get_dokuman_service</span> (lokal import)</span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">ui/pages/cihaz/ariza_islem.py <span class="count">7 sorun</span></div>
+    <div class="file-items">
+      <div class="item"><span class="line-no">:7</span><span class="msg"><span class="symbol">QAbstractTableModel</span></span></div>
+      <div class="item"><span class="line-no">:8</span><span class="msg"><span class="symbol">QHeaderView, QMenu, QMessageBox, QSizePolicy</span></span></div>
+      <div class="item"><span class="line-no">:14</span><span class="msg"><span class="symbol">QCursor</span></span></div>
+      <div class="item"><span class="line-no">:16</span><span class="msg"><span class="symbol">to_ui_date</span></span></div>
+      <div class="item"><span class="line-no">:18</span><span class="msg"><span class="symbol">bilgi_goster</span></span></div>
+      <div class="item"><span class="line-no">:22</span><span class="msg"><span class="symbol">IconRenderer</span></span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">ui/pages/personel/fhsz_yonetim.py <span class="count">5 sorun</span></div>
+    <div class="file-items">
+      <div class="item"><span class="line-no">:20</span><span class="msg"><span class="symbol">QSpinBox</span></span></div>
+      <div class="item"><span class="line-no">:26</span><span class="msg"><span class="symbol">QPointF</span></span></div>
+      <div class="item"><span class="line-no">:27</span><span class="msg"><span class="symbol">QPolygonF</span></span></div>
+      <div class="item"><span class="line-no">:34</span><span class="msg"><span class="symbol">Colors</span></span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">ui/pages/personel/dozimetre_takip.py <span class="count">4 sorun</span></div>
+    <div class="file-items">
+      <div class="item"><span class="line-no">:29</span><span class="msg"><span class="symbol">QBrush</span></span></div>
+      <div class="item"><span class="line-no">:30</span><span class="msg"><span class="symbol">QDialog, QDialogButtonBox</span></span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">ui/pages/personel/dis_personel_fhsz.py <span class="count">5 sorun</span></div>
+    <div class="file-items">
+      <div class="item"><span class="line-no">:12</span><span class="msg"><span class="symbol">QColor, QFont</span></span></div>
+      <div class="item"><span class="line-no">:14</span><span class="msg"><span class="symbol">logger</span></span></div>
+      <div class="item"><span class="line-no">:17</span><span class="msg"><span class="symbol">Colors, DarkTheme</span></span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">core/services/cihaz_service.py <span class="count">4 sorun</span></div>
+    <div class="file-items">
+      <div class="item"><span class="line-no">:11</span><span class="msg"><span class="symbol">Dict, List, Optional</span> (Python 3.9+ gereksiz)</span></div>
+      <div class="item"><span class="line-no">:12</span><span class="msg"><span class="symbol">logger</span></span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">core/services/dis_alan_katsayi_service.py <span class="count">5 sorun</span></div>
+    <div class="file-items">
+      <div class="item"><span class="line-no">:1</span><span class="msg"><span class="symbol">List, Optional, Tuple</span></span></div>
+      <div class="item"><span class="line-no">:2</span><span class="msg"><span class="symbol">logger</span></span></div>
+      <div class="item"><span class="line-no">:5</span><span class="msg"><span class="symbol">datetime</span></span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">core/logger.py <span class="count">4 sorun</span></div>
+    <div class="file-items">
+      <div class="item"><span class="line-no">:3</span><span class="msg"><span class="symbol">json</span></span></div>
+      <div class="item"><span class="line-no">:4</span><span class="msg"><span class="symbol">datetime</span></span></div>
+      <div class="item"><span class="line-no">:6</span><span class="msg"><span class="symbol">TimedRotatingFileHandler</span></span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">ui/admin/settings_page.py <span class="count">3 sorun</span></div>
+    <div class="file-items">
+      <div class="item"><span class="line-no">:13</span><span class="msg"><span class="symbol">QGroupBox</span></span></div>
+      <div class="item"><span class="line-no">:44</span><span class="msg"><span class="symbol">get_current_theme</span></span></div>
+      <div class="item"><span class="line-no">:45</span><span class="msg"><span class="symbol">STYLES</span></span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">Diğer tüm dosyalar (küçük sorunlar) <span class="count">~170 sorun</span></div>
+    <div class="file-items">
+      <div class="item"><span class="msg">core/services/ariza_service.py — List</span></div>
+      <div class="item"><span class="msg">core/services/backup_service.py — (boş fstring ile birlikte)</span></div>
+      <div class="item"><span class="msg">core/services/dashboard_service.py — math</span></div>
+      <div class="item"><span class="msg">core/services/dokuman_service.py — List</span></div>
+      <div class="item"><span class="msg">core/services/dozimetre_service.py — logger</span></div>
+      <div class="item"><span class="msg">core/services/fhsz_service.py — logger</span></div>
+      <div class="item"><span class="msg">core/services/nobet/nb_plan_service.py — monthrange</span></div>
+      <div class="item"><span class="msg">core/services/nobet/nobet_adapter.py — logger</span></div>
+      <div class="item"><span class="msg">core/services/log_service.py — LOG_FILE, ERROR_LOG_FILE vb. (4 adet)</span></div>
+      <div class="item"><span class="msg">core/rapor_servisi.py — shutil, QPageLayout</span></div>
+      <div class="item"><span class="msg">ui/admin/backup_page.py — QHeaderView, QLineEdit, QColor</span></div>
+      <div class="item"><span class="msg">ui/admin/log_viewer_page.py — QHeaderView</span></div>
+      <div class="item"><span class="msg">ui/admin/permissions_view.py — Icons</span></div>
+      <div class="item"><span class="msg">ui/admin/roles_view.py — Icons</span></div>
+      <div class="item"><span class="msg">ui/admin/users_view.py — Icons</span></div>
+      <div class="item"><span class="msg">ui/admin/yil_sonu_devir_page.py — Qt, IconRenderer, Icons</span></div>
+      <div class="item"><span class="msg">ui/auth/login_dialog.py — QTimer</span></div>
+      <div class="item"><span class="msg">ui/components/base_dokuman_panel.py — Qt, QColor, RepositoryRegistry</span></div>
+      <div class="item"><span class="msg">ui/components/rapor_buton.py — datetime, QSizePolicy, DarkTheme, STYLES</span></div>
+      <div class="item"><span class="msg">ui/pages/fhsz/*.py — QHeaderView, QTextEdit, QFont, STYLES (birden fazla)</span></div>
+      <div class="item"><span class="msg">ui/pages/imports/*.py — QHeaderView, dataclass vb.</span></div>
+      <div class="item"><span class="msg">ui/pages/nobet/nobet_merkez_page.py — QColor, QSizePolicy, QTabWidget</span></div>
+      <div class="item"><span class="msg">ui/pages/rke/*.py — QSize, Signal, bilgi_goster vb.</span></div>
+      <div class="item"><span class="msg">ui/sidebar.py — GROUP_ICON_MAP, IconColors, QFrame</span></div>
+      <div class="item"><span class="msg">ui/styles/icons.py — QColor</span></div>
+      <div class="item"><span class="msg">database/sync_service.py — time</span></div>
+      <div class="item"><span class="msg">database/repositories/personel_repository.py — datetime</span></div>
+      <div class="item"><span class="msg">database/repositories/rke_repository.py — Optional</span></div>
+    </div>
+  </div>
+
+  </div>
+</div>
+
+<!-- KULLANILMAYAN DEĞİŞKENLER -->
+<div class="section">
+  <div class="section-header">
+    <h2>📌 Kullanılmayan Değişkenler (42 adet)</h2>
+    <span class="badge orange">Orta Öncelik</span>
+  </div>
+
+  <div class="tip"><strong>💡 Kural:</strong> Bir değişkeni kasıtlı olarak kullanmıyorsanız adını <code>_</code> yapın. Örn: <code>_, bitiş = fonksiyon()</code></div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">core/services/nobet/nobet_adapter.py <span class="count">3 değişken</span></div>
+    <div class="file-items">
+      <div class="item"><span class="line-no">:362</span><span class="msg"><span class="symbol">birim_adi</span> — atandı ama hiç kullanılmadı</span></div>
+      <div class="item"><span class="line-no">:364</span><span class="msg"><span class="symbol">ay_bas</span></span></div>
+      <div class="item"><span class="line-no">:365</span><span class="msg"><span class="symbol">ay_bit</span></span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">ui/pages/personel/saglik_takip.py <span class="count">3 değişken</span></div>
+    <div class="file-items">
+      <div class="item"><span class="line-no">:399</span><span class="msg"><span class="symbol">tc</span></span></div>
+      <div class="item"><span class="line-no">:831</span><span class="msg"><span class="symbol">color</span></span></div>
+      <div class="item"><span class="line-no">:1323</span><span class="msg"><span class="symbol">yil_int</span></span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">ui/pages/rke/components/toplu_muayene_dialog.py <span class="count">4 değişken</span></div>
+    <div class="file-items">
+      <div class="item"><span class="line-no">:51</span><span class="msg"><span class="symbol">userData</span></span></div>
+      <div class="item"><span class="line-no">:152</span><span class="msg"><span class="symbol">checkable_combo_cls</span></span></div>
+      <div class="item"><span class="line-no">:153</span><span class="msg"><span class="symbol">worker_cls</span></span></div>
+      <div class="item"><span class="line-no">:154</span><span class="msg"><span class="symbol">use_sheets</span></span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">ui/components/bildirim_paneli.py <span class="count">2 değişken</span></div>
+    <div class="file-items">
+      <div class="item"><span class="line-no">:100</span><span class="msg"><span class="symbol">border</span></span></div>
+      <div class="item"><span class="line-no">:101</span><span class="msg"><span class="symbol">bg</span></span></div>
+    </div>
+  </div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">Diğer değişkenler <span class="count">~30 değişken</span></div>
+    <div class="file-items">
+      <div class="item"><span class="msg">ui/components/rapor_buton.py:136 — renk1, renk2</span></div>
+      <div class="item"><span class="msg">ui/pages/cihaz/ariza_islem.py:459 — previous</span></div>
+      <div class="item"><span class="msg">ui/pages/cihaz/ariza_islem.py:355 — surface</span></div>
+      <div class="item"><span class="msg">ui/pages/cihaz/ariza_kayit.py:1307 — anahtar</span></div>
+      <div class="item"><span class="msg">ui/pages/cihaz/ariza_kayit.py:1383 — text, muted</span></div>
+      <div class="item"><span class="msg">ui/pages/cihaz/components/cihaz_overview_panel.py:595 — embedded</span></div>
+      <div class="item"><span class="msg">ui/pages/cihaz/components/cihaz_teknik_panel.py:378 — embedded</span></div>
+      <div class="item"><span class="msg">ui/pages/personel/dozimetre_takip.py:961 — deselected</span></div>
+      <div class="item"><span class="msg">ui/pages/personel/dozimetre_takip.py:367 — h</span></div>
+      <div class="item"><span class="msg">ui/pages/personel/components/personel_dozimetre_panel.py:195 — h</span></div>
+      <div class="item"><span class="msg">ui/pages/personel/components/personel_dozimetre_panel.py:490 — doluluk_renk</span></div>
+      <div class="item"><span class="msg">ui/pages/personel/dozimetre_takip.py:1024 — doluluk_renk</span></div>
+      <div class="item"><span class="msg">ui/pages/personel/izin_takip.py:530 — color</span></div>
+      <div class="item"><span class="msg">ui/pages/personel/personel_listesi.py:1054 — row_data</span></div>
+      <div class="item"><span class="msg">ui/pages/fhsz/dis_alan_puantaj_page.py:479 — nm</span></div>
+      <div class="item"><span class="msg">ui/pages/imports/components/base_import_page.py:494 — at</span></div>
+      <div class="item"><span class="msg">ui/pages/imports/components/base_import_page.py:740 — svc</span></div>
+      <div class="item"><span class="msg">ui/pages/imports/dozimetre_pdf_import_page.py:139 — birim_oneki</span></div>
+      <div class="item"><span class="msg">ui/admin/backup_page.py:324 — description</span></div>
+      <div class="item"><span class="msg">ui/pages/nobet/nobet_hazirlik_page.py:240 — ay_is</span></div>
+      <div class="item"><span class="msg">ui/pages/rke/rke_rapor.py:695 — ft_lbl</span></div>
+      <div class="item"><span class="msg">core/services/personel_service.py:51 — e</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ULAŞILAMAZ KOD -->
+<div class="section">
+  <div class="section-header">
+    <h2>🚧 Ulaşılamaz Kod (4 adet)</h2>
+    <span class="badge purple">Temizle</span>
+  </div>
+
+  <div class="tip"><strong>💡 Return/raise</strong> sonrasına yazılan kod hiç çalışmaz. Genellikle eski kod kopyalanırken oluşur.</div>
+
+  <div class="file-group">
+    <div class="file-name" onclick="toggle(this)">Tüm unreachable satırlar <span class="count">4 adet</span></div>
+    <div class="file-items open">
+      <div class="item"><span class="line-no">core/services/dis_alan_import_service.py:84</span><span class="msg"><span class="action">return sonrası ulaşılamaz kod</span></span></div>
+      <div class="item"><span class="line-no">ui/main_window.py:331</span><span class="msg"><span class="action">return sonrası ulaşılamaz kod</span></span></div>
+      <div class="item"><span class="line-no">ui/pages/cihaz/cihaz_listesi.py:163</span><span class="msg"><span class="action">return sonrası ulaşılamaz kod</span></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- NASIL DÜZELTİLİR -->
+<div class="guide">
+  <h2>🛠️ Adım Adım Temizleme Rehberi</h2>
+  <ol class="steps">
+    <li>
+      <strong>Önce git commit alın!</strong> Temizlik öncesi mevcut hali kaydedin:
+      <br><code>git add -A && git commit -m "temizlik öncesi snapshot"</code>
+    </li>
+    <li>
+      <strong>Kritik sorunları manuel düzeltin:</strong> Boş f-string'leri (<code>f"metin"</code> → <code>"metin"</code>), üst üste tanımlı fonksiyonları ve ulaşılamaz kodları elle inceleyin. Bunlar araç çözemez.
+    </li>
+    <li>
+      <strong>Kullanılmayan importları otomatik temizleyin:</strong>
+      <br><code>pip install autoflake</code>
+      <br><code>autoflake --in-place --remove-all-unused-imports -r .</code>
+    </li>
+    <li>
+      <strong>Sonucu doğrulayın:</strong>
+      <br><code>python -m pyflakes . 2>&1 | wc -l</code>
+      <br>Sayı ciddi ölçüde düşmeli.
+    </li>
+    <li>
+      <strong>Kullanılmayan değişkenleri temizleyin:</strong> Her dosyayı ayrı açıp, atanan ama okunmayan değişkeni ya silin ya da <code>_</code> ile adlandırın.
+    </li>
+    <li>
+      <strong>Uygulamayı başlatıp test edin:</strong> <code>python main.pyw</code> çalışıyor mu? Her modülü kısaca gözden geçirin.
+    </li>
+  </ol>
+</div>
+
+</div>
+
+<script>
+function toggle(el) {
+  const items = el.nextElementSibling;
+  items.classList.toggle('open');
+}
+function toggleAll(section) {
+  const container = document.querySelector(`[data-section="${section}"]`);
+  const allItems = container.querySelectorAll('.file-items');
+  const anyOpen = Array.from(allItems).some(i => i.classList.contains('open'));
+  allItems.forEach(i => anyOpen ? i.classList.remove('open') : i.classList.add('open'));
+}
+</script>
+</body>
+</html>

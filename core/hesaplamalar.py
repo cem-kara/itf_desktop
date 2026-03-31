@@ -6,7 +6,6 @@ Hesaplama modülü
 - Türkçe karakter desteği
 """
 import numpy as np
-import bisect
 import math
 from datetime import timedelta
 

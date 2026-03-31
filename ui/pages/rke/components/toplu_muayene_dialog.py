@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """RKE Toplu Muayene Dialog — seçili ekipmanlara tek seferde muayene kaydı."""
 import uuid
-import os
 from typing import Optional
 
 from PySide6.QtCore import Qt, QDate, QThread, Signal as _Signal
@@ -9,7 +8,7 @@ from PySide6.QtGui import QCursor, QStandardItemModel, QStandardItem
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QGridLayout,
     QLabel, QComboBox, QDateEdit, QPushButton, QListWidget,
-    QProgressBar, QFileDialog,
+    QProgressBar,
 )
 
 from core.logger import logger

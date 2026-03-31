@@ -3,12 +3,12 @@
 Hızlı İzin Girişi Dialog
 """
 import uuid
-from datetime import datetime, timedelta, date
+from datetime import timedelta
 from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QComboBox, QDateEdit, QSpinBox, QFrame, QGridLayout,
-    QAbstractSpinBox, QMessageBox, QDialog
+    QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox,
+    QDateEdit, QSpinBox, QGridLayout, QAbstractSpinBox, QMessageBox,
+    QDialog
 )
 from PySide6.QtGui import QCursor
 
@@ -16,7 +16,6 @@ from core.logger import logger
 from core.date_utils import parse_date
 from core.di import get_izin_service
 from database.repository_registry import RepositoryRegistry
-from ui.styles.components import STYLES as S
 
 class HizliIzinGirisDialog(QDialog):
     """

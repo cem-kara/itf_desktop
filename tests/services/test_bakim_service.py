@@ -2,7 +2,7 @@
 BakimService teste — Bakım servisi test kası
 """
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from core.services.bakim_service import BakimService
 
 

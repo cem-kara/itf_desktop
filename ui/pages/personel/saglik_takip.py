@@ -4,15 +4,14 @@ import uuid
 import platform
 import subprocess
 from datetime import date, datetime
-from typing import Optional
 
-from PySide6.QtCore import Qt, QDate, QUrl, QModelIndex, QEvent, QThread, Signal as _Signal
+from PySide6.QtCore import Qt, QDate, QUrl, QEvent, QThread, Signal as _Signal
 from PySide6.QtGui import QCursor, QDesktopServices
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame,
     QLabel, QComboBox, QLineEdit, QPushButton, QTableView,
     QDateEdit, QMessageBox, QFileDialog, QSizePolicy,
-    QStyledItemDelegate, QApplication,
+    QStyledItemDelegate,
 )
 # =============================================================================
 # Delegate: Rapor Sütunu Buton
@@ -33,14 +32,13 @@ class RaporButtonDelegate(QStyledItemDelegate):
         return super().editorEvent(event, model, option, index)
 
 from core.logger import logger
-from core.date_utils import parse_date, to_db_date, to_ui_date
+from core.date_utils import parse_date, to_db_date
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.icons import IconRenderer, IconColors, Icons
 
 # =============================================================================
 # Delegate: IconCellDelegate — [icon:check] ve [icon:x] stringlerini svg ikon olarak çizer
 # =============================================================================
-from PySide6.QtGui import QPainter
 class IconCellDelegate(QStyledItemDelegate):
     def paint(self, painter, option, index):
         value = index.data()
@@ -211,7 +209,7 @@ class _SaglikLoader(QThread):
 
     def run(self):
         try:
-            from core.di import get_saglik_service as _svc_factory, get_dokuman_service
+            from core.di import get_saglik_service as _svc_factory
             from core.paths import DATA_DIR, DB_PATH
             from database.sqlite_manager import SQLiteManager
             db_path = self._db_path or DB_PATH

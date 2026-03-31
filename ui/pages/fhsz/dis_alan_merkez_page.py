@@ -13,14 +13,12 @@ Dış Alan Radyasyon Yönetim Merkezi
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QLabel, QFrame, QPushButton
 from PySide6.QtCore import Qt
 
-from ui.styles.components import STYLES as S
 from core.logger import logger
 
 
 
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QCursor
-from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer
 
 class DisAlanMerkezPage(QWidget):

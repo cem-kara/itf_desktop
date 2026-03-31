@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 
 from core.di import get_nobet_service
 from core.logger import logger
-from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
+from core.hata_yonetici import hata_goster, uyari_goster
 from ui.styles.icons import IconRenderer, IconColors
 
 _AY_ADLARI = ["","Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",

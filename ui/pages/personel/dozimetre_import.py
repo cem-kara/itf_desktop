@@ -11,8 +11,8 @@ from PySide6.QtCore import Qt, QThread, Signal as _Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel,
-    QPushButton, QTableView, QHeaderView, QFileDialog,
-    QMessageBox, QProgressBar, QAbstractItemView,
+    QPushButton, QTableView, QFileDialog, QMessageBox,
+    QProgressBar, QAbstractItemView,
 )
 from core.logger import logger
 from ui.components.base_table_model import BaseTableModel

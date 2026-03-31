@@ -26,12 +26,11 @@ from PySide6.QtWidgets import (
     QFileDialog, QTableWidget, QTableWidgetItem, QHeaderView,
     QAbstractItemView,
 )
-from PySide6.QtCore import Qt, QUrl, Signal
-from PySide6.QtGui import QDesktopServices, QColor
+from PySide6.QtCore import QUrl, Signal
+from PySide6.QtGui import QDesktopServices
 from ui.dialogs.mesaj_kutusu import MesajKutusu
 from core.logger import logger
 from core.services.dokuman_service import DokumanService
-from database.repository_registry import RepositoryRegistry
 
 
 

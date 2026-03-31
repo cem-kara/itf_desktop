@@ -37,7 +37,7 @@ from pathlib import Path
 from core.hata_yonetici import SonucYonetici
 
 
-from core.logger import logger, LOG_FILE, SYNC_LOG_FILE, ERROR_LOG_FILE, UI_LOG_FILE
+from core.logger import logger
 from core.paths import LOG_DIR
 
 

@@ -57,19 +57,17 @@ from ui.components.rapor_buton import RaporButon
 """
 from __future__ import annotations
 
-import datetime
 from typing import Callable
 
 from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QPushButton, QMessageBox, QSizePolicy
+    QWidget, QHBoxLayout, QPushButton, QMessageBox
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QCursor
 
 from core.logger import logger
 from core.rapor_servisi import RaporServisi
-from ui.styles import Colors, DarkTheme
-from ui.styles.components import STYLES as S
+from ui.styles import Colors
 from ui.styles.icons import IconRenderer
 
 

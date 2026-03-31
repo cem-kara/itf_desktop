@@ -64,7 +64,6 @@ class _IzinBilgiDirectAdapter:
         try:
             tc = str(kayit.get("TCKimlik", "")).strip()
             if not tc:
-                from dataclasses import dataclass
                 class _Err:
                     basarili = False
                     mesaj = "TCKimlik boş olamaz"
@@ -81,7 +80,6 @@ class _IzinBilgiDirectAdapter:
             else:
                 repo.insert(payload)
 
-            from dataclasses import dataclass
             class _Ok:
                 basarili = True
                 mesaj = ""

@@ -11,7 +11,7 @@ Sorumluluklar:
 - Dönem özeti oluşturma ve RKS onay akışı
 """
 from typing import Optional
-from core.hata_yonetici import SonucYonetici, logger
+from core.hata_yonetici import SonucYonetici
 
 from database.repository_registry import RepositoryRegistry
 

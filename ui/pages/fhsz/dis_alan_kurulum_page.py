@@ -20,8 +20,8 @@ from datetime import date
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QFrame, QFormLayout, QSpinBox, QDoubleSpinBox,
-    QComboBox, QMessageBox, QScrollArea, QSizePolicy
+    QFrame, QFormLayout, QSpinBox, QComboBox,
+    QMessageBox, QScrollArea
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont

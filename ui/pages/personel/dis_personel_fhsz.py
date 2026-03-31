@@ -9,12 +9,9 @@ from PySide6.QtWidgets import (
     QHeaderView, QMessageBox, QLineEdit, QDateEdit, QSplitter, QSpinBox
 )
 from PySide6.QtCore import Qt, QDate
-from PySide6.QtGui import QFont, QColor
 
-from core.logger import logger
 from core.hesaplamalar import tr_upper
 from core.auth.session_context import SessionContext
-from ui.styles import Colors, DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 

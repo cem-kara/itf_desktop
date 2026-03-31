@@ -3,8 +3,8 @@ import json, os
 from PySide6.QtCore import Qt, QSize, Signal
 from PySide6.QtGui import QCursor, QColor, QIcon
 from PySide6.QtWidgets import (
-    QFrame, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QVBoxLayout, QWidget, QGraphicsDropShadowEffect,
+    QHBoxLayout, QLabel, QPushButton, QScrollArea,
+    QVBoxLayout, QWidget, QGraphicsDropShadowEffect,
 )
 
 
@@ -18,7 +18,7 @@ from core.config import AppConfig
 from core.paths import BASE_DIR
 from ui.styles.colors import DarkTheme as T
 from ui.permissions.page_permissions import PAGE_PERMISSIONS
-from ui.styles.icons import GROUP_ICON_MAP, MENU_ICON_MAP, IconColors, Icons
+from ui.styles.icons import MENU_ICON_MAP, Icons
 
 # ── Renk sabitleri ──────────────────────────────────────────────
 BG            = "#0a1520"

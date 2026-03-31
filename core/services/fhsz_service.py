@@ -7,7 +7,6 @@ Sorumluluklar:
 - Personel sabitler (birim, çalışma koşulu)
 """
 from typing import Optional
-from core.logger import logger
 
 from core.hata_yonetici import SonucYonetici
 from database.repository_registry import RepositoryRegistry

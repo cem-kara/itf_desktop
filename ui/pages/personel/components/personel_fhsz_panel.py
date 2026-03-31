@@ -14,7 +14,6 @@ from core.di import get_fhsz_service
 from core.hesaplamalar import sua_hak_edis_hesapla
 from core.logger import logger
 from ui.components.base_table_model import BaseTableModel
-from ui.styles.components import STYLES as S
 
 AY_ISIMLERI = [
     "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
@@ -279,4 +278,3 @@ class PersonelFhszPanel(QWidget):
 
     def set_embedded_mode(self, mode):
         """Gömülü mod ayarı (gelecekte ihtiyaç duyulursa)."""
-        pass

@@ -15,7 +15,7 @@ gerçek tablo "Personel". Tablo adı içeren testler FAIL verir.
 personel_service.py'de tüm "Personeller"  →  "Personel" yap.
 """
 import pytest
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 from core.services.personel_service import PersonelService
 
 

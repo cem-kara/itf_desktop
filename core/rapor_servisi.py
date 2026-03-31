@@ -62,7 +62,6 @@ from __future__ import annotations
 import copy
 import os
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -286,7 +285,6 @@ class _PDFSablon:
                 _html_fallback("Qt stub tespit edildi")
                 return
 
-            from PySide6.QtGui import QPageLayout
             doc.setHtml(html)
 
             writer = QPdfWriter(kayit_yolu)

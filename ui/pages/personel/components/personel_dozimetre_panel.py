@@ -20,8 +20,8 @@ from PySide6.QtCore import Qt, QThread, Signal as _Signal
 from PySide6.QtGui import QColor, QPainter, QPen, QFont
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
-    QGroupBox, QTableView, QHeaderView, QAbstractItemView,
-    QPushButton, QSizePolicy,
+    QGroupBox, QTableView, QAbstractItemView, QPushButton,
+    QSizePolicy,
 )
 
 from core.logger import logger

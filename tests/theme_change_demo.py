@@ -12,9 +12,7 @@ root = Path(__file__).parent.parent
 sys.path.insert(0, str(root))
 
 from PySide6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QPushButton, QLabel
-from PySide6.QtCore import Qt
 from ui.theme_manager import ThemeManager
-from ui.styles.colors import DarkTheme
 from core.logger import logger
 
 

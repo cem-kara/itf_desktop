@@ -23,15 +23,12 @@ from PySide6.QtCore import Qt, QThread,QUrl, Signal as _Signal
 from PySide6.QtGui import QColor, QDesktopServices
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel,
-    QPushButton, QTableView, QHeaderView, QLineEdit,
-    QComboBox, QAbstractItemView, QMessageBox, 
-    QDateEdit, QCheckBox,
+    QPushButton, QTableView, QLineEdit, QComboBox,
+    QAbstractItemView, QMessageBox, QCheckBox,
 )
-from PySide6.QtCore import QDate
 
 from core.logger import logger
 from ui.components.base_table_model import BaseTableModel
-from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 
 # ─────────────────────────────────────────────────────────────

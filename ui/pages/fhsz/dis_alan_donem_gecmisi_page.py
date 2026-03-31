@@ -17,7 +17,7 @@ Her satır bir birim × dönem kombinasyonu:
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QFrame, QTableWidget, QTableWidgetItem,
-    QHeaderView, QAbstractItemView, QMessageBox
+    QHeaderView, QAbstractItemView
 )
 from PySide6.QtCore import Qt, QDate
 from PySide6.QtGui import QColor, QBrush, QFont

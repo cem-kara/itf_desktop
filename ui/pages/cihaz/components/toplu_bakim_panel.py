@@ -2,19 +2,18 @@ from core.di import get_cihaz_service as _get_cihaz_service
 # -*- coding: utf-8 -*-
 import time
 from datetime import datetime
-from typing import Dict, List, Optional, cast
+from typing import Dict, List, cast
 
 from dateutil.relativedelta import relativedelta
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QComboBox, QListWidget, QListWidgetItem,
-    QHBoxLayout, QPushButton, QDateEdit, QLineEdit, QMessageBox, QFileDialog,
+    QHBoxLayout, QPushButton, QDateEdit, QLineEdit, QFileDialog,
 )
 
 from core.logger import logger
 from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 
-from ui.styles.colors import C as _C
 
 
 def ay_ekle(kaynak_tarih: datetime, ay_sayisi: int) -> datetime:

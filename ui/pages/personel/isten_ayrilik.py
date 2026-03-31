@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QProgressBar, QFrame, QComboBox, QDateEdit,
     QGroupBox, QMessageBox, QFileDialog, QGridLayout,
-    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView
+    QTableWidget, QTableWidgetItem
 )
 from PySide6.QtGui import QCursor
 

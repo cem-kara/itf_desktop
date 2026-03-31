@@ -29,7 +29,6 @@ from PySide6.QtWidgets import (
     QSplitter,
     QCheckBox,
     QRadioButton,
-    QGroupBox,
 )
 from PySide6.QtCore import Qt, QDate
 
@@ -41,8 +40,8 @@ from ui.components.formatted_widgets import (
     apply_title_case_formatting,
     apply_combo_title_case_formatting,
 )
-from ui.styles.colors import DarkTheme, get_current_theme
-from ui.styles.components import STYLES, refresh_styles
+from ui.styles.colors import DarkTheme
+from ui.styles.components import refresh_styles
 from ui.styles.icons import Icons, IconRenderer
 
 
@@ -1101,7 +1100,6 @@ class SettingsPage(QWidget):
             self._chk_auto_sync.style().polish(self._chk_auto_sync)
         
         # Tablo ve liste stiller — global QSS kuralları geçerli, ek setStyleSheet gerekmez
-        pass
         
         logger.debug("SettingsPage tema stilleri yenilendi")
     

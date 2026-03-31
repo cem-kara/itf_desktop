@@ -14,7 +14,6 @@ Kullanım:
     1 → ihlal bulundu (pre-commit hook için)
 """
 
-import os
 import re
 import sys
 from pathlib import Path

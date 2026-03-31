@@ -12,14 +12,13 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from collections import defaultdict
 
-from PySide6.QtCore import Qt, QDate, QAbstractTableModel, QModelIndex, Signal
+from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame,
-    QTableView, QSplitter, QHeaderView, QTabWidget,
-    QGroupBox, QGridLayout,
-    QLabel, QLineEdit, QComboBox, QDateEdit, QTextEdit,
-    QPushButton, QMenu, QMessageBox, QSizePolicy, QScrollArea,
-    QStackedWidget,
+    QTableView, QSplitter, QTabWidget, QGroupBox,
+    QGridLayout, QLabel,
+    QLineEdit, QComboBox, QDateEdit, QTextEdit, QPushButton,
+    QMenu, QSizePolicy, QScrollArea, QStackedWidget,
 )
 from PySide6.QtGui import QColor, QPainter, QBrush
 

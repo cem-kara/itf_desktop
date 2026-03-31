@@ -21,12 +21,11 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QGroupBox,
 )
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import QThread, Signal
 
 from core.logger import logger
 from database.repository_registry import RepositoryRegistry
 
-from ui.styles.icons import Icons, IconRenderer
 
 
 class DevirWorker(QThread):

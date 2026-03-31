@@ -20,7 +20,6 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QTableView,
-    QHeaderView,
     QDateEdit,
     QSpinBox,
     QGroupBox,

@@ -5,7 +5,7 @@ Sorumluluklar:
 - TC Kimlik No doğrulama (resmi T.C. algoritması)
 - Personel kaydı (INSERT/UPDATE/DELETE)
 """
-from typing import Optional, List, Dict
+from typing import Optional, Dict
 from database.base_repository import BaseRepository
 
 from core.hata_yonetici import SonucYonetici, logger

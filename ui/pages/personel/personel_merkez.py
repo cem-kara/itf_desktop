@@ -24,6 +24,7 @@ from ui.pages.personel.components.personel_dokuman_panel import PersonelDokumanP
 from ui.pages.personel.components.personel_izin_panel import PersonelIzinPanel
 from ui.pages.personel.components.personel_saglik_panel import PersonelSaglikPanel
 from ui.pages.personel.components.personel_fhsz_panel import PersonelFhszPanel
+from ui.pages.personel.components.personel_nobet_mesai_panel import PersonelNobetMesaiPanel
 from ui.pages.personel.components.hizli_izin_giris import HizliIzinGirisDialog
 from ui.pages.personel.components.personel_dozimetre_panel import PersonelDozimetrePanel
 
@@ -33,6 +34,7 @@ C = DarkTheme
 TABS = [
     ("GENEL",   "Genel Bakış"),
     ("IZIN",    "İzinler"),
+    ("NOBET",   "Nöbet ve Mesai"),
     ("FHSZ",    "FHSZ Bilgileri"),
     ("SAGLIK",  "Sağlık"),
     ("DOZIMETRE", "Dozimetre"),
@@ -387,7 +389,7 @@ class PersonelMerkezPage(QWidget):
 
         # Sekmeye geçince gerekiyorsa veriyi tazele
         current = self._modules.get(code)
-        if current and hasattr(current, "load_data") and code in {"SAGLIK", "FHSZ", "DOKUMAN"}:
+        if current and hasattr(current, "load_data") and code in {"SAGLIK", "FHSZ", "DOKUMAN", "NOBET"}:
             try:
                 current.load_data()
             except Exception as e:
@@ -401,6 +403,8 @@ class PersonelMerkezPage(QWidget):
                     w.open_documents.connect(lambda: self._switch_tab("DOKUMAN"))
             elif code == "IZIN":
                 w = PersonelIzinPanel(self.db, self.personel_id)
+            elif code == "NOBET":
+                w = PersonelNobetMesaiPanel(self.db, self.personel_id)
             elif code == "SAGLIK":
                 w = PersonelSaglikPanel(self.db, self.personel_id)
                 if hasattr(w, "open_documents"):

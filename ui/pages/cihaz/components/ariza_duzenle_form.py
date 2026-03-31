@@ -6,11 +6,11 @@ from typing import Dict, cast, Any
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QGroupBox, QGridLayout, QComboBox, QLineEdit,
-    QTextEdit, QLabel, QHBoxLayout, QPushButton, QMessageBox,
+    QTextEdit, QLabel, QHBoxLayout, QPushButton,
 )
 
 from core.logger import logger
-from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
+from core.hata_yonetici import hata_goster, uyari_goster
 
 
 

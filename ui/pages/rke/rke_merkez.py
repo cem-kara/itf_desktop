@@ -10,19 +10,16 @@ Cihaz modülündeki cihaz_merkez.py tasarım prensibini takip eder:
 """
 from __future__ import annotations
 
-from typing import Optional
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QFrame, QStackedWidget,
 )
 from PySide6.QtGui import QCursor
 
-from core.di import get_rke_service
 from core.logger import logger
-from core.hata_yonetici import hata_goster
-from ui.styles.icons import IconRenderer, IconColors
+from ui.styles.icons import IconRenderer
 
 # ── Sekme tanımları ─────────────────────────────────────────────
 _TABS = [

@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 
 from core.logger import logger
 from core.di import get_rke_service
-from core.hata_yonetici import hata_goster, bilgi_goster, uyari_goster
+from core.hata_yonetici import hata_goster, uyari_goster
 from ui.components.base_table_model import BaseTableModel
 from ui.styles.icons import IconRenderer, IconColors
 

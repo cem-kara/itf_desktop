@@ -13,15 +13,14 @@ from pathlib import Path
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, Signal, QRect
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame,
-    QTableView, QSplitter, QHeaderView, QTabWidget,
-    QLabel, QLineEdit, QComboBox, QPushButton,
-    QMenu, QMessageBox, QSizePolicy, QScrollArea, QGridLayout,
-    QGroupBox, QTextEdit, QDialog,
+    QTableView, QSplitter, QTabWidget, QLabel,
+    QLineEdit, QComboBox, QPushButton, QMenu,
+    QSizePolicy, QScrollArea, QGridLayout, QDialog,
 )
-from PySide6.QtGui import QColor, QCursor, QPainter, QPen, QBrush
+from PySide6.QtGui import QColor, QPainter, QBrush
 
 from core.date_utils import to_ui_date
 from core.logger import logger

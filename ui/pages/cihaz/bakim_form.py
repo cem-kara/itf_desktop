@@ -12,18 +12,18 @@ Periyodik Bakım Formu
 import os
 import time
 from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta, date
+from datetime import datetime, date
 from collections import defaultdict
 from dateutil.relativedelta import relativedelta
 
 from PySide6.QtCore import Qt, QDate, Signal, QThread, QUrl
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame,
-    QTableView, QSplitter, QHeaderView, QTabWidget,
-    QGroupBox, QGridLayout,
-    QLabel, QLineEdit, QComboBox, QDateEdit, QTextEdit,
-    QPushButton, QMenu, QMessageBox, QSizePolicy, QScrollArea,
-    QFileDialog, QProgressBar, QStackedWidget, QListWidgetItem,
+    QTableView, QSplitter, QTabWidget, QGroupBox,
+    QGridLayout, QLabel,
+    QLineEdit, QComboBox, QDateEdit, QTextEdit, QPushButton,
+    QMenu, QSizePolicy, QScrollArea, QFileDialog, QProgressBar,
+    QStackedWidget,
 )
 from PySide6.QtGui import QColor, QDesktopServices, QPainter, QBrush
 

@@ -38,8 +38,6 @@ STYLES = _Forbidden()
 
 def refresh_styles():
     """Artık gerekmiyor — stil ThemeManager tarafından yönetilir."""
-    pass
 
 class ComponentStyles:
     """Artık gerekmiyor — setProperty() kullanın."""
-    pass

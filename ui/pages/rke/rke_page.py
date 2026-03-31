@@ -13,7 +13,7 @@ from typing import Optional
 
 from PySide6.QtCore import (
     Qt, QSortFilterProxyModel, Signal, QTimer,
-    QPropertyAnimation, QEasingCurve, QDate, QSize,
+    QPropertyAnimation, QEasingCurve, QDate,
 )
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import (

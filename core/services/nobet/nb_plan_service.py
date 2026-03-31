@@ -11,7 +11,6 @@ Tasarım ilkeleri:
 from __future__ import annotations
 
 import uuid
-from calendar import monthrange
 from datetime import date, timedelta
 from typing import Optional
 

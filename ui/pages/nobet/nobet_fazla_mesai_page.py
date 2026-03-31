@@ -2,7 +2,7 @@
 """
 nobet_fazla_mesai_page.py — Birim Bazlı Fazla Mesai Bildirim Ekranı
 
-Bu ekran ödeme işlemi yapmaz.
+Bu ekran mesai bildirimini üretir ve seçili satırlar için ödeme kaydı kapatabilir.
 
 Amaç:
   - Seçilen birim için aylık fazla mesai saatlerini özetlemek
@@ -14,11 +14,10 @@ Akış:
   2. Ay seç
   3. Mesai saatlerini hazırla
   4. Sonuçları gözden geçir
-  5. PDF / CSV çıktısı al
+    5. Mesaileri bildir veya PDF çıktısı al
 """
 from __future__ import annotations
 
-import csv
 from datetime import date, datetime
 
 from PySide6.QtCore import Qt
@@ -26,6 +25,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QFileDialog,
     QAbstractItemView,
+        QCheckBox,
     QComboBox,
     QFrame,
     QHBoxLayout,
@@ -61,6 +61,22 @@ def _it(text: str, user_data=None) -> QTableWidgetItem:
         item.setData(Qt.ItemDataRole.UserRole, user_data)
     item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
     return item
+
+
+def _checkbox_widget(checked: bool = False) -> tuple[QWidget, QCheckBox]:
+    kapsayici = QWidget()
+    layout = QHBoxLayout(kapsayici)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+    checkbox = QCheckBox()
+    checkbox.setChecked(checked)
+    checkbox.setCursor(Qt.CursorShape.PointingHandCursor)
+    checkbox.setStyleSheet(
+        "QCheckBox::indicator { width: 20px; height: 20px; }"
+    )
+    layout.addWidget(checkbox)
+    return kapsayici, checkbox
 
 
 def _fmt_dk(dakika: int) -> str:
@@ -136,8 +152,8 @@ class NobetFazlaMesaiPage(QWidget):
         layout.addWidget(baslik)
 
         alt = QLabel(
-            "Bu ekran ödeme işlemi yapmaz. Sadece idareye verilecek fazla mesai "
-            "çıktısını hazırlar ve sonraki nöbet çizelgeleri için denge verisi üretir."
+            "Bu ekran fazla mesai listesini hazırlar, seçili satırları bildirir ve "
+            "sonraki nöbet çizelgeleri için denge verisi üretir."
         )
         alt.setProperty("color-role", "muted")
         layout.addWidget(alt)
@@ -196,7 +212,7 @@ class NobetFazlaMesaiPage(QWidget):
         self._btn_hazirla.clicked.connect(self._mesai_hazirla)
         layout.addWidget(self._btn_hazirla)
 
-        self._btn_muhasebe_bildirim = QPushButton("Muhasebe Bildirimi")
+        self._btn_muhasebe_bildirim = QPushButton("Mesaileri Bildir")
         self._btn_muhasebe_bildirim.setProperty("style-role", "secondary")
         self._btn_muhasebe_bildirim.setFixedHeight(30)
         self._btn_muhasebe_bildirim.setEnabled(False)
@@ -224,16 +240,6 @@ class NobetFazlaMesaiPage(QWidget):
         )
         self._btn_pdf.clicked.connect(self._pdf_al)
         layout.addWidget(self._btn_pdf)
-
-        self._btn_csv = QPushButton("CSV")
-        self._btn_csv.setProperty("style-role", "secondary")
-        self._btn_csv.setFixedHeight(30)
-        self._btn_csv.setEnabled(False)
-        IconRenderer.set_button_icon(
-            self._btn_csv, "download", color=IconColors.MUTED, size=14
-        )
-        self._btn_csv.clicked.connect(self._csv_al)
-        layout.addWidget(self._btn_csv)
 
         return panel
 
@@ -323,6 +329,8 @@ class NobetFazlaMesaiPage(QWidget):
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         for kolon in range(1, 11):
             header.setSectionResizeMode(kolon, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(10, QHeaderView.ResizeMode.Fixed)
+        self._tbl.setColumnWidth(10, 92)
         self._tbl.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._tbl.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self._tbl.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -467,7 +475,6 @@ class NobetFazlaMesaiPage(QWidget):
                 "Bu ekran sadece birim bazında çalışır. Önce birim, sonra ay seçin."
             )
             self._btn_pdf.setEnabled(False)
-            self._btn_csv.setEnabled(False)
             self._btn_muhasebe_bildirim.setEnabled(False)
             self._kartlari_guncelle([])
             self._detay_bosalt()
@@ -482,7 +489,6 @@ class NobetFazlaMesaiPage(QWidget):
                 "Seçilen ay için nöbet planı yok. Önce plan oluşturulmalı veya onaylanmış plan açılmalı."
             )
             self._btn_pdf.setEnabled(False)
-            self._btn_csv.setEnabled(False)
             self._btn_muhasebe_bildirim.setEnabled(False)
             self._kartlari_guncelle([])
             self._detay_bosalt()
@@ -491,7 +497,6 @@ class NobetFazlaMesaiPage(QWidget):
         self._hesaplari_yukle(plan)
 
     def _hesap_tablosunu_tazele(self):
-        self._tbl.blockSignals(True)
         self._tbl.setRowCount(0)
         for satir_idx, satir in enumerate(self._satirlar):
             row = self._tbl.rowCount()
@@ -520,16 +525,18 @@ class NobetFazlaMesaiPage(QWidget):
                 bildirim_itm.setForeground(QColor("#f59e0b"))
             self._tbl.setItem(row, 9, bildirim_itm)
 
-            # Checkbox: Ödeme yap seçimi (kolon 10)
-            chk = QTableWidgetItem()
-            chk.setCheckState(Qt.CheckState.Checked if satir.get("SeciliBildirim", False) else Qt.CheckState.Unchecked)
-            chk.setFlags(chk.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-            chk.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            self._tbl.setItem(row, 10, chk)
-            chk.setData(Qt.ItemDataRole.UserRole, satir_idx)
-
-        self._tbl.blockSignals(False)
-        self._tbl.itemChanged.connect(self._checkbox_degisti)
+            kapsayici, checkbox = _checkbox_widget(bool(satir.get("SeciliBildirim", False)))
+            kapsayici.setStyleSheet(
+                "background-color: #fef3c7; border-radius: 6px;"
+                if satir.get("SeciliBildirim", False)
+                else "background-color: transparent;"
+            )
+            etkin = int(satir.get("ToplamFazlaDakika", 0)) > 0
+            checkbox.setEnabled(etkin)
+            checkbox.toggled.connect(
+                lambda durum, idx=satir_idx, panel=kapsayici: self._checkbox_degisti(idx, durum, panel)
+            )
+            self._tbl.setCellWidget(row, 10, kapsayici)
 
     def _hesaplari_yukle(self, plan: dict):
         try:
@@ -597,10 +604,9 @@ class NobetFazlaMesaiPage(QWidget):
                     "Bu plan için henüz mesai özeti hazırlanmadı. 'Mesai Saatlerini Hazırla' ile kayıt üretin."
                 )
 
-            bildirim_var = any(s.get("BildirimDakika", 0) > 0 for s in self._satirlar)
+            odeme_secilebilir = any(int(s.get("ToplamFazlaDakika", 0)) > 0 for s in self._satirlar)
             self._btn_pdf.setEnabled(bool(self._satirlar))
-            self._btn_csv.setEnabled(bool(self._satirlar))
-            self._btn_muhasebe_bildirim.setEnabled(bildirim_var)
+            self._btn_muhasebe_bildirim.setEnabled(odeme_secilebilir)
             self._kartlari_guncelle(self._satirlar)
             self._detay_bosalt()
         except Exception as exc:
@@ -640,10 +646,11 @@ class NobetFazlaMesaiPage(QWidget):
             f"hedef süre {_fmt_dk(satir['HedefDakika'])}. Bu ay farkı {_fmt_dk(satir['FazlaDakika'])}, "
             f"bayram ekstra {_fmt_dk(satir['BayramEkstraDakika'])}, "
             f"önceki devir {_fmt_dk(satir['DevirDakika'])}, toplam denge {_fmt_dk(satir['ToplamFazlaDakika'])}. "
-            f"Durum: {satir['Durum']}. Bu bilgi ödeme için değil, idari bildirim ve sonraki dağılım dengesi için referanstır."
+            f"Durum: {satir['Durum']}. Bu bilgi idari bildirim, seçili ödeme kapatmaları ve sonraki dağılım dengesi için referanstır."
         )
 
-    def _rapor_satirlari(self) -> list[list[str]]:
+    def _rapor_satirlari(self, satirlar: list[dict] | None = None) -> list[list[str]]:
+        kaynak = satirlar or self._satirlar
         return [
             [
                 satir["AdSoyad"],
@@ -657,20 +664,20 @@ class NobetFazlaMesaiPage(QWidget):
                 satir["HesapTarihi"] or "-",
                 _fmt_dk(satir["BildirimDakika"]) if satir.get("BildirimDakika", 0) > 0 else "—",
             ]
-            for satir in self._satirlar
+            for satir in kaynak
         ]
 
-    def _checkbox_degisti(self, item: QTableWidgetItem):
-        """Checkbox seçimi değişti"""
-        if item.column() != 10:  # Ödeme checkbox'ı
-            return
-        satir_idx = int(item.data(Qt.ItemDataRole.UserRole) or -1)
+    def _checkbox_degisti(self, satir_idx: int, secili: bool, kapsayici: QWidget):
         if satir_idx < 0 or satir_idx >= len(self._satirlar):
             return
-        self._satirlar[satir_idx]["SeciliBildirim"] = item.checkState() == Qt.CheckState.Checked
+        self._satirlar[satir_idx]["SeciliBildirim"] = bool(secili)
+        kapsayici.setStyleSheet(
+            "background-color: #fef3c7; border-radius: 6px;"
+            if secili else "background-color: transparent;"
+        )
 
     def _muhasebe_bildirim_al(self):
-        """Ödeme seçili olanlar için massal ödeme yap + kapanış politikası uygula"""
+        """Seçili mesaileri bildirir, ödemeyi uygular ve seçili liste için PDF üretir."""
         if not self._satirlar:
             uyari_goster(self, "Önce mesai özeti hazırlayın.")
             return
@@ -701,10 +708,12 @@ class NobetFazlaMesaiPage(QWidget):
                     logger.error(f"{satir['AdSoyad']} ödeme hatası: {sonuc.mesaj}")
 
             if hata_sayisi == 0:
+                if not self._pdf_al(secili_satirlar=secili, sadece_secili=True):
+                    return
                 bilgi_goster(
                     self,
-                    f"{len(secili)} kişi için ödeme kaydı tamamlandı. "
-                    f"Bakiyeler sıfırlandı/kapanış politikası uygulandı.",
+                    f"{len(secili)} kişi için bildirim ve ödeme kaydı tamamlandı. "
+                    f"Seçili liste PDF olarak dışa aktarıldı.",
                 )
                 self._sayfa_yenile()  # Tablo yenileme
             else:
@@ -712,10 +721,11 @@ class NobetFazlaMesaiPage(QWidget):
         except Exception as exc:
             hata_logla_goster(self, "NobetFazlaMesaiPage._muhasebe_bildirim_al", exc)
 
-    def _pdf_al(self):
-        if not self._satirlar:
+    def _pdf_al(self, secili_satirlar: list[dict] | None = None, sadece_secili: bool = False) -> bool:
+        rapor_kaynak = secili_satirlar or self._satirlar
+        if not rapor_kaynak:
             uyari_goster(self, "Önce mesai özeti hazırlayın.")
-            return
+            return False
         try:
             from reportlab.lib import colors
             from reportlab.lib.pagesizes import A4, landscape
@@ -726,11 +736,15 @@ class NobetFazlaMesaiPage(QWidget):
             yol, _ = QFileDialog.getSaveFileName(
                 self,
                 "PDF Kaydet",
-                f"FM_Bildirim_{self._birim_adi}_{_AY[self._ay]}_{self._yil}.pdf",
+                (
+                    f"Mesai_Bildirim_{self._birim_adi}_{_AY[self._ay]}_{self._yil}.pdf"
+                    if sadece_secili
+                    else f"FM_Bildirim_{self._birim_adi}_{_AY[self._ay]}_{self._yil}.pdf"
+                ),
                 "PDF (*.pdf)",
             )
             if not yol:
-                return
+                return False
 
             styles = getSampleStyleSheet()
             baslik_stili = ParagraphStyle(
@@ -759,13 +773,22 @@ class NobetFazlaMesaiPage(QWidget):
             icerik = []
             icerik.append(
                 Paragraph(
-                    f"Fazla Mesai Bildirim Özeti - {self._birim_adi} - {_AY[self._ay]} {self._yil}",
+                    (
+                        f"Mesaileri Bildir - {self._birim_adi} - {_AY[self._ay]} {self._yil}"
+                        if sadece_secili
+                        else f"Fazla Mesai Bildirim Özeti - {self._birim_adi} - {_AY[self._ay]} {self._yil}"
+                    ),
                     baslik_stili,
                 )
             )
             icerik.append(
                 Paragraph(
-                    "Bu rapor ödeme belgesi değildir. İdari bilgilendirme ve sonraki nöbet dağılım dengesini desteklemek için hazırlanmıştır.",
+                    (
+                        "Bu rapor seçili mesailer için bildirim amacıyla hazırlanmıştır. "
+                        "Ödeme uygulanan satırlar aynı işlemde kapatılmıştır."
+                        if sadece_secili
+                        else "Bu rapor ödeme belgesi değildir. İdari bilgilendirme ve sonraki nöbet dağılım dengesini desteklemek için hazırlanmıştır."
+                    ),
                     alt_stil,
                 )
             )
@@ -789,7 +812,7 @@ class NobetFazlaMesaiPage(QWidget):
                 "Son Hesap",
                 "Bildirime",
             ]]
-            veri.extend(self._rapor_satirlari())
+            veri.extend(self._rapor_satirlari(rapor_kaynak))
 
             tablo = Table(
                 veri,
@@ -813,42 +836,12 @@ class NobetFazlaMesaiPage(QWidget):
             ]))
             icerik.append(tablo)
             doc.build(icerik)
-            bilgi_goster(self, f"PDF kaydedildi: {yol}")
+            if not sadece_secili:
+                bilgi_goster(self, f"PDF kaydedildi: {yol}")
+            return True
         except Exception as exc:
             hata_logla_goster(self, "NobetFazlaMesaiPage._pdf_al", exc)
-
-    def _csv_al(self):
-        if not self._satirlar:
-            uyari_goster(self, "Önce mesai özeti hazırlayın.")
-            return
-        try:
-            yol, _ = QFileDialog.getSaveFileName(
-                self,
-                "CSV Kaydet",
-                f"FM_Bildirim_{self._birim_adi}_{_AY[self._ay]}_{self._yil}.csv",
-                "CSV (*.csv)",
-            )
-            if not yol:
-                return
-
-            with open(yol, "w", newline="", encoding="utf-8-sig") as dosya:
-                yazici = csv.writer(dosya)
-                yazici.writerow([
-                    "Personel",
-                    "Çalışılan",
-                    "Hedef",
-                    "Bu Ay Fazla",
-                    "Bayram Ekstra",
-                    "Önceki Devir",
-                    "Toplam",
-                    "Durum",
-                    "Son Hesap",
-                    "Bildirim Saati",
-                ])
-                yazici.writerows(self._rapor_satirlari())
-            bilgi_goster(self, f"CSV kaydedildi: {yol}")
-        except Exception as exc:
-            hata_logla_goster(self, "NobetFazlaMesaiPage._csv_al", exc)
+            return False
 
     def load_data(self):
         if self._db:

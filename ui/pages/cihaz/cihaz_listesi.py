@@ -3,16 +3,16 @@
 Cihaz Listesi — Personel Listesi mimarisi ile uyumlu (tema + delegate + lazy-loading).
 """
 from PySide6.QtCore import (
-    Qt, QSortFilterProxyModel, QModelIndex, QAbstractTableModel,
-    Signal, QRect, QPoint, QSize, QTimer
+    Qt, QSortFilterProxyModel, Signal, QRect,
+    QSize, QTimer
 )
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QFrame, QProgressBar, QPushButton, QHeaderView,
-    QTableView, QComboBox, QLineEdit, QStyledItemDelegate, QStyle
+    QFrame, QProgressBar, QPushButton, QTableView,
+    QComboBox, QLineEdit, QStyledItemDelegate, QStyle
 )
 from PySide6.QtGui import (
-    QColor, QCursor, QPainter, QBrush, QPen, QFont
+    QColor, QCursor, QPainter, QBrush, QFont
 )
 
 from core.logger import logger
@@ -22,7 +22,6 @@ from ui.styles.icons import IconRenderer
 
 
 # ── Bakım / Kalibrasyon uyarı hesaplamaları ───────────────────────────────────
-import calendar as _cal
 from datetime import date as _date, datetime as _dt
 
 def _parse_date(val) -> _date | None:
@@ -41,7 +40,6 @@ def _bakim_uyari(row: dict) -> str | None:
     Returns: "gecikmiş" | "yaklaşan" | None
     """
     try:
-        from core.di import get_cihaz_service as _cs
         pass
     except Exception:
         return None

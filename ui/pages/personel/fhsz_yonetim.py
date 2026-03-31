@@ -21,17 +21,17 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QFrame, QTableWidget, QTableWidgetItem,
     QHeaderView, QProgressBar, QStyledItemDelegate,
-    QAbstractItemView, QStyle, QSpinBox, QApplication
+    QAbstractItemView, QStyle, QApplication
 )
-from PySide6.QtCore import Qt, QRectF, QTimer, QSize, QPointF
-from PySide6.QtGui import QColor, QCursor, QFont, QPainter, QBrush, QPen, QPainterPath, QPolygonF
+from PySide6.QtCore import Qt, QRectF, QTimer, QSize
+from PySide6.QtGui import QColor, QCursor, QFont, QPainter, QBrush, QPen, QPainterPath
 
 from core.logger import logger
 from ui.dialogs.mesaj_kutusu import MesajKutusu
 from core.di import get_fhsz_service
 from core.date_utils import parse_date
 from core.hesaplamalar import sua_hak_edis_hesapla, is_gunu_hesapla, tr_upper
-from ui.styles import Colors, DarkTheme
+from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer
 
 def _parse_date_as_datetime(val):

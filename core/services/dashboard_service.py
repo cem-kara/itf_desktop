@@ -7,7 +7,7 @@ Sorumluluklar:
 - Aylık izinli personel istatistikleri
 - Tüm sorgular tek noktadan, UI'a hazır dict döndürür
 """
-import calendar, math
+import calendar
 from datetime import datetime, timedelta
 from typing import Optional
 from core.hata_yonetici import SonucYonetici

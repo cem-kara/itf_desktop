@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
-import re
-from datetime import datetime
-from PySide6.QtCore import Qt, QDate, QTimer, QThread, Signal, QSize
+from PySide6.QtCore import Qt, QDate, QThread, Signal, QSize
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton,
     QScrollArea, QProgressBar, QFrame, QComboBox, QLineEdit,
-    QDateEdit, QGroupBox, QMessageBox, QFileDialog, QTabWidget
+    QDateEdit, QGroupBox, QFileDialog, QTabWidget
 )
 from PySide6.QtGui import QCursor, QPixmap
 
@@ -16,16 +14,12 @@ from core.paths import DB_PATH
 from core.auth.password_hasher import PasswordHasher
 from core.di import get_personel_service, get_izin_service, get_dokuman_service
 from core.validators import validate_tc_kimlik_no, validate_email, validate_phone_number
-from core.text_utils import turkish_title_case
 from core.services.personel_service import PersonelService
 from database.auth_repository import AuthRepository
-from ui.styles import DarkTheme
 from ui.styles.components import STYLES as S
 from ui.styles.icons import Icons
-from ui.theme_manager import ThemeManager
 from ui.components.formatted_widgets import apply_title_case_formatting, apply_combo_title_case_formatting
 from ui.pages.personel.components.personel_dokuman_panel import PersonelDokumanPanel
-from ui.styles.colors import get_current_theme
 from ui.dialogs.mesaj_kutusu import MesajKutusu
 from ui.styles.icons import Icons
 

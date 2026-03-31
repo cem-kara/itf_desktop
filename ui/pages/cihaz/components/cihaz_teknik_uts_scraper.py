@@ -22,7 +22,6 @@ from ui.styles.icons import IconRenderer
 from core.logger import logger
 from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 from core.di import get_cihaz_service
-from database.repository_registry import RepositoryRegistry
 from ui.pages.cihaz.components.uts_parser import (
     scrape_uts,
     load_allowed_db_fields,

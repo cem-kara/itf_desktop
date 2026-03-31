@@ -9,19 +9,15 @@ Dış Alan Katsayı Protokol Yönetim Sayfası
   - Aktif protokolü pasife al
   - Tarihçeyi göster / gizle
 """
-from datetime import date
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QFrame, QTableView, QHeaderView, QMessageBox,
-    QDialog, QFormLayout, QLineEdit, QDoubleSpinBox,
-    QSpinBox, QDateEdit, QTextEdit, QDialogButtonBox,
-    QAbstractItemView, QCheckBox
+    QFrame, QTableView, QMessageBox, QDialog,
+    QFormLayout, QLineEdit, QDoubleSpinBox, QSpinBox,
+    QDateEdit, QDialogButtonBox, QAbstractItemView, QCheckBox
 )
 from PySide6.QtCore import Qt, QDate
-from PySide6.QtGui import QFont
 
-from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 from ui.pages.fhsz.dis_alan_katsayi_model import DisAlanKatsayiModel
 from core.di import get_dis_alan_katsayi_service

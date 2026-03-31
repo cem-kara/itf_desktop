@@ -153,7 +153,6 @@ class ThemeProxy(metaclass=_ThemeProxyMeta):
     DarkTheme için alias. Eski kod bozulmasın diye korunuyor.
     Yeni kodda DarkTheme kullanın.
     """
-    pass
 
 
 def get_current_theme():

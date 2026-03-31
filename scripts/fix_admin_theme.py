@@ -4,7 +4,6 @@
 Admin klasöründeki tema import'larını ve hardcoded renkleri düzelt
 """
 
-import os
 import re
 from pathlib import Path
 

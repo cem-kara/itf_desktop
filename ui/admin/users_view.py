@@ -13,7 +13,7 @@ from database.auth_repository import AuthRepository
 from database.permission_repository import PermissionRepository
 from core.auth.password_hasher import PasswordHasher
 
-from ui.styles.icons import Icons, IconRenderer
+from ui.styles.icons import IconRenderer
 
 
 class UserDialog(QDialog):

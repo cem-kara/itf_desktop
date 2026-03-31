@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from PySide6.QtWidgets import QStyledItemDelegate
-from PySide6.QtGui import QPainter
 from ui.styles.icons import Icons
 
 # =============================================================================

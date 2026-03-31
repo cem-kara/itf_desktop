@@ -32,7 +32,7 @@ Drive klasör yapısı (otomatik oluşturulur):
 import os
 import uuid
 from datetime import datetime
-from typing import Optional, List, Dict
+from typing import Optional, Dict
 
 from core.logger import logger
 

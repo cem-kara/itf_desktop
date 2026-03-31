@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from core.hata_yonetici import SonucYonetici, logger
+from core.hata_yonetici import SonucYonetici
 from core.services.nobet.nb_birim_service   import NbBirimService
 from core.services.nobet.nb_tercih_service  import NbTercihService
 from core.services.nobet.nb_vardiya_service import NbVardiyaService

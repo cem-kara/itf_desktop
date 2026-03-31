@@ -11,9 +11,9 @@ from PySide6.QtCore import (
 )
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QFrame, QProgressBar, QPushButton, QHeaderView,
-    QTableView, QComboBox, QLineEdit, QMenu, QMessageBox,
-    QStyledItemDelegate, QStyle, QToolTip,
+    QFrame, QProgressBar, QPushButton, QTableView,
+    QComboBox, QLineEdit, QMenu, QMessageBox, QStyledItemDelegate,
+    QStyle, QToolTip,
 )
 from PySide6.QtGui import (
     QColor, QCursor, QPainter, QBrush, QPen, QFont, QFontMetrics, QPixmap,

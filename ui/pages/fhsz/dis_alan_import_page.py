@@ -14,12 +14,11 @@ from datetime import datetime
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QFrame, QTableWidget, QTableWidgetItem,
-    QHeaderView, QMessageBox, QFileDialog, QCheckBox, QSplitter,
-    QTextEdit, QAbstractItemView, QTabWidget, QListWidget,
-    QListWidgetItem, QSizePolicy
+    QHeaderView, QMessageBox, QFileDialog, QCheckBox, QAbstractItemView,
+    QTabWidget, QListWidget, QListWidgetItem
 )
 from PySide6.QtCore import Qt, QThread, QObject, Signal, QDate
-from PySide6.QtGui import QColor, QBrush, QFont
+from PySide6.QtGui import QColor, QBrush
 
 from typing import Optional
 from core.logger import logger
@@ -1416,7 +1415,7 @@ class _KarsilastirmaWidget(QWidget):
 
         try:
             from reportlab.lib.pagesizes import A4
-            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.styles import ParagraphStyle
             from reportlab.lib.units import mm
             from reportlab.lib import colors
             from reportlab.platypus import (

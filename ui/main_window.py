@@ -13,9 +13,8 @@ from core.logger import logger, log_ui_error
 from core.paths import DB_PATH
 from ui.sidebar import Sidebar
 from ui.guards import ActionGuard, PageGuard
-from ui.pages.placeholder import WelcomePage, PlaceholderPage 
+from ui.pages.placeholder import PlaceholderPage 
 from ui.pages.imports.import_center import ImportCenterPage
-from ui.styles.colors import DarkTheme
 from database.sync_worker import SyncWorker
 from database.sqlite_manager import SQLiteManager
 from ui.dialogs.about_dialog import HakkindaDialog

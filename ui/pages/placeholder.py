@@ -1,9 +1,8 @@
 import os
-from ui.styles.icons import Icons, IconColors
+from ui.styles.icons import Icons
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QPixmap, QImage
-from core.config import AppConfig
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QPixmap
 
 class PlaceholderPage(QWidget):
 

@@ -2,23 +2,20 @@
 """
 Ana Gösterge Paneli (Dashboard) — v3 Açık Tema
 """
-import calendar
-from ui.styles.icons import Icons, IconColors
-from datetime import datetime, timedelta
+from ui.styles.icons import Icons
+from datetime import datetime
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QScrollArea,
-    QLabel, QPushButton, QFrame, QGraphicsDropShadowEffect, QSizePolicy
+    QLabel, QPushButton, QFrame, QGraphicsDropShadowEffect
 )
 from PySide6.QtCore import Qt, QThread, Signal, QSize
-from PySide6.QtGui import QCursor, QColor, QFont
+from PySide6.QtGui import QCursor, QColor
 
 from core.logger import logger
-from core.date_utils import parse_date, to_db_date
 from core.log_manager import LogStatistics
 from core.paths import DB_PATH
-from ui.theme_manager import ThemeManager
-from ui.styles.colors import Colors, DarkTheme
+from ui.styles.colors import DarkTheme
 from ui.styles.components import STYLES
 
 S = STYLES
@@ -230,7 +227,7 @@ def _section_header(title: str, icon: str = "") -> QWidget:
     row.setContentsMargins(0, 6, 0, 2)
     row.setSpacing(6)
     if icon:
-        from ui.styles.icons import Icons, IconColors
+        from ui.styles.icons import Icons
         lbl_icon = QLabel()
         lbl_icon.setPixmap(Icons.pixmap(icon, size=14, color=TXT2))
         lbl_icon.setFixedSize(14, 14)

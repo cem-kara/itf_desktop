@@ -19,13 +19,12 @@ from PySide6.QtWidgets import (
     QHeaderView, QAbstractItemView, QMessageBox, QFileDialog,
 )
 from PySide6.QtCore import Qt, QDate
-from PySide6.QtGui import QColor, QBrush, QFont
+from PySide6.QtGui import QColor, QBrush
 
-from ui.styles.components import STYLES as S
 from ui.styles.icons import IconRenderer
 from core.di import get_dis_alan_service
 from core.services.dis_alan_service import _izin_gunu_hesapla
-from core.hata_yonetici import servis_calistir, soru_sor, bilgi_goster, hata_goster
+from core.hata_yonetici import soru_sor, bilgi_goster, hata_goster
 from core.logger import logger
 
 AY_ADLARI = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",

@@ -1,9 +1,7 @@
 import logging
 import os
-import json
-from datetime import datetime
 from pathlib import Path
-from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
+from logging.handlers import RotatingFileHandler
 from core.paths import LOG_DIR
 from core.config import AppConfig
 

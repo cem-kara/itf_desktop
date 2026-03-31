@@ -25,7 +25,7 @@
 # -------------------------------------------------------------
 
 
-from PySide6.QtGui import QIcon, QPixmap, QPainter, QColor
+from PySide6.QtGui import QIcon, QPixmap, QPainter
 from PySide6.QtCore import Qt, QSize, QByteArray
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QPushButton, QLabel

@@ -5,14 +5,13 @@ Cihaz Overview Panel
 Genel Bakış sekmesi için cihaz detaylarını gösterir ve düzenleme imkanı sunar.
 Her grup için ayrı düzenle/kaydet/iptal butonları vardır.
 """
-import os
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QGridLayout,
     QScrollArea, QGroupBox, QLineEdit, QComboBox, QDateEdit, QPushButton,
-    QFileDialog, QMessageBox
+    QFileDialog
 )
 from PySide6.QtCore import Qt, QDate, Signal
-from PySide6.QtGui import QPixmap, QCursor
+from PySide6.QtGui import QCursor
 
 from ui.styles.icons import IconRenderer
 from core.logger import logger
@@ -594,5 +593,4 @@ class CihazOverviewPanel(QWidget):
 
     def set_embedded_mode(self, embedded: bool):
         """Gömülü mod ayarı."""
-        pass
 

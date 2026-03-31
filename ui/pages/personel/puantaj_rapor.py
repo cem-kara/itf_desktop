@@ -23,7 +23,7 @@ from PySide6.QtGui import QColor, QCursor, QFont, QPainter, QBrush, QPen, QPaint
 from core.logger import logger
 from ui.dialogs.mesaj_kutusu import MesajKutusu
 from core.hesaplamalar import sua_hak_edis_hesapla
-from ui.styles import Colors, DarkTheme
+from ui.styles import Colors
 from ui.styles.icons import IconRenderer
 
 
@@ -248,7 +248,6 @@ class PuantajRaporPage(QWidget):
 
     def load_data(self):
         """Sayfa açılışında çağrılır — henüz rapor oluşturma yok."""
-        pass
 
     # ═══════════════════════════════════════════
     #  📋 RAPOR OLUŞTUR

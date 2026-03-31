@@ -7,14 +7,12 @@ Hardcoded renk yok.
 """
 import os
 import threading
-from datetime import date, datetime
 import asyncio
 from pathlib import Path
-from typing import Optional, cast, Any
+from typing import cast, Any
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QFrame, QStackedWidget, QMessageBox,
-    QGridLayout,
+    QFrame, QStackedWidget,
 )
 from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QCursor, QPixmap

@@ -20,7 +20,7 @@ from PySide6.QtGui import QFont
 from core.logger import logger
 from database.permission_repository import PermissionRepository
 
-from ui.styles.icons import Icons, IconRenderer
+from ui.styles.icons import IconRenderer
 
 
 class PermissionDialog(QDialog):

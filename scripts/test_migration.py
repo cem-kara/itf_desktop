@@ -5,7 +5,6 @@ Test migration - yeni DB oluştur ve sabitler/tatilleri kontrol et
 
 import sys
 from pathlib import Path
-import shutil
 
 # Test için geçici bir DB dosyası oluştur
 test_db = Path("data/test_migration.db")

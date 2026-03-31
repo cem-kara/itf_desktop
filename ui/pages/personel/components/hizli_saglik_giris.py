@@ -8,13 +8,12 @@ from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QDateEdit, QLineEdit, QFrame, QGridLayout,
-    QMessageBox, QGroupBox, QScrollArea, QTextEdit, QDialog
+    QMessageBox, QGroupBox, QScrollArea, QDialog
 )
 from PySide6.QtGui import QCursor
 
 from core.logger import logger
 from core.date_utils import parse_date, to_db_date
-from ui.styles.components import STYLES as S
 
 STATUS_OPTIONS = ["", "Uygun", "Şartlı Uygun", "Uygun Değil"]
 

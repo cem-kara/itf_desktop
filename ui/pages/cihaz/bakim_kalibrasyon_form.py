@@ -22,7 +22,6 @@ _KAL_DURUM_COLOR = {
         "Geçersiz": "#e85555",
 }
 from typing import List, Dict, Any, Optional, cast
-from pathlib import Path
 from datetime import datetime, timedelta
 
 from PySide6.QtCore import Qt, QDate, QAbstractTableModel, QModelIndex, QPersistentModelIndex, Signal
@@ -31,13 +30,13 @@ from PySide6.QtWidgets import (
     QTableView, QSplitter, QHeaderView,
     QGroupBox, QGridLayout,
     QLabel, QLineEdit, QComboBox, QDateEdit, QTextEdit,
-    QPushButton, QMenu, QMessageBox, QSizePolicy, QScrollArea,
+    QPushButton, QMenu, QSizePolicy, QScrollArea,
 )
 from PySide6.QtGui import QColor
 
 from core.date_utils import to_ui_date
 from core.logger import logger
-from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
+from core.hata_yonetici import hata_goster, uyari_goster
 from database.repository_registry import RepositoryRegistry
 from ui.styles.icons import IconRenderer
 

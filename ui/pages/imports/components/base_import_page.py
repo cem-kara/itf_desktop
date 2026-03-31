@@ -835,4 +835,3 @@ class BaseImportPage(QWidget):
 
     def _kapat(self):
         """Ebeveyn pencereye bırakılır; gerekirse override edilebilir."""
-        pass

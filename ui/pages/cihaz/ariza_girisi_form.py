@@ -10,11 +10,11 @@ from PySide6.QtCore import QDate, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QGridLayout, QLabel, QLineEdit,
     QDateEdit, QComboBox, QTextEdit, QPushButton,
-    QMessageBox, QGroupBox
+    QGroupBox
 )
 
 from core.logger import logger
-from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
+from core.hata_yonetici import hata_goster, uyari_goster
 from core.di import get_cihaz_service as _get_cihaz_service
 
 

@@ -24,11 +24,10 @@ from calendar import monthrange
 from datetime import date, datetime, timedelta
 
 from PySide6.QtCore import Qt, QThread, Signal
-from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel,
-    QPushButton, QComboBox, QTabWidget, QStackedWidget,
-    QProgressBar, QMessageBox, QSizePolicy,
+    QPushButton, QComboBox, QStackedWidget, QProgressBar,
+    QMessageBox,
 )
 
 from core.di import get_registry

@@ -3,8 +3,8 @@
 # Personel Özet Servisi
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-from typing import Dict, Any, Optional
-from datetime import datetime, timedelta
+from typing import Dict, Any
+from datetime import datetime
 
 from core.logger import logger
 

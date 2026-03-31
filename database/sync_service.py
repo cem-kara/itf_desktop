@@ -1,4 +1,3 @@
-import time
 from core.logger import (
     logger, 
     log_sync_start, 

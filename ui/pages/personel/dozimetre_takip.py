@@ -26,13 +26,12 @@ from __future__ import annotations
 from typing import Optional
 
 from PySide6.QtCore import Qt, QThread, Signal as _Signal
-from PySide6.QtGui import QColor, QPainter, QPen, QFont, QBrush
+from PySide6.QtGui import QColor, QPainter, QPen, QFont
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel,
-    QPushButton, QTableView, QLineEdit, QDialog,
-    QComboBox, QAbstractItemView, QSizePolicy, QSplitter,
-    QTabWidget, QFormLayout, QDialogButtonBox, QMessageBox,
-    QDoubleSpinBox,
+    QPushButton, QTableView, QLineEdit, QComboBox,
+    QAbstractItemView, QSizePolicy, QSplitter, QTabWidget,
+    QFormLayout, QMessageBox, QDoubleSpinBox,
 )
 
 from core.logger import logger
