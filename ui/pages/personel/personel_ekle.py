@@ -714,9 +714,10 @@ class PersonelEklePage(QWidget):
 
         try:
             # ── Sabitler'den ──
-            sabitler = self._personel_svc.get_sabitler_repo()
-            if not sabitler:
+            sabitler_sonuc = self._personel_svc.get_sabitler_repo()
+            if not sabitler_sonuc.basarili or not sabitler_sonuc.veri:
                 return
+            sabitler = sabitler_sonuc.veri
             all_sabit = sabitler.get_all()
             self._all_sabit = all_sabit
 
@@ -743,9 +744,10 @@ class PersonelEklePage(QWidget):
             self.ui["gorev_yeri"].addItems(get_sabit("Gorev_Yeri"))
 
             # ── Personel'den benzersiz Doğum Yeri ──
-            personeller = self._personel_svc.get_personel_repo()
-            if not personeller:
+            personeller_sonuc = self._personel_svc.get_personel_repo()
+            if not personeller_sonuc.basarili or not personeller_sonuc.veri:
                 return
+            personeller = personeller_sonuc.veri
             all_personel = personeller.get_all()
 
             dogum_yerleri = sorted(set(

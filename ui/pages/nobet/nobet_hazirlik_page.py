@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
 from core.di import get_registry
 from core.hata_yonetici import hata_goster
 from core.logger import logger
+from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer, IconColors
 
 _AY = ["","Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",
@@ -153,8 +154,10 @@ class NobetHazirlikPage(QWidget):
         ust = QHBoxLayout()
         ust.addWidget(QLabel("Personel Durumu", styleSheet="font-weight:bold;"))
         ust.addStretch()
-        ust.addWidget(QLabel("Çift tıkla → FM / Hedef Tipi düzenle",
-                             styleSheet="font-size:10px;color:#6b7280;"))
+        lbl_ipucu = QLabel("Çift tıkla → FM / Hedef Tipi düzenle")
+        lbl_ipucu.setProperty("color-role", "secondary")
+        lbl_ipucu.setStyleSheet("font-size:10px;")
+        ust.addWidget(lbl_ipucu)
         lay.addLayout(ust)
 
         self._tbl = QTableWidget(0, 7)
@@ -185,7 +188,8 @@ class NobetHazirlikPage(QWidget):
         alt.addWidget(self._btn_tercih)
         alt.addStretch()
         self._lbl_alt = QLabel("")
-        self._lbl_alt.setStyleSheet("font-size:11px;color:#6b7280;")
+        self._lbl_alt.setProperty("color-role", "secondary")
+        self._lbl_alt.setStyleSheet("font-size:11px;")
         alt.addWidget(self._lbl_alt)
         lay.addLayout(alt)
 
@@ -317,27 +321,27 @@ class NobetHazirlikPage(QWidget):
 
                 tip_itm = _it(tip.capitalize() if tip else "Normal", pid)
                 if tip not in ("normal","rapor","yillik","idari",""):
-                    tip_itm.setForeground(QColor("#f59e0b"))
+                    tip_itm.setForeground(QColor(DarkTheme.STATUS_WARNING))
                 self._tbl.setItem(ri, 2, tip_itm)
 
                 fm_itm = _it("● FM" if fm else "○", pid)
-                fm_itm.setForeground(QColor("#4d9ee8" if fm else "#6b7280"))
+                fm_itm.setForeground(QColor(DarkTheme.ACCENT if fm else DarkTheme.TEXT_SECONDARY))
                 self._tbl.setItem(ri, 3, fm_itm)
 
                 iz_itm = _it(f"{izin_gun} gün" if izin_gun else "—", pid)
-                if izin_gun > 0: iz_itm.setForeground(QColor("#f59e0b"))
+                if izin_gun > 0: iz_itm.setForeground(QColor(DarkTheme.STATUS_WARNING))
                 self._tbl.setItem(ri, 4, iz_itm)
 
-                if devir==0:  dl,dr = "—","#6b7280"
-                elif devir>0: dl,dr = (f"+{devir:.0f} s","#f59e0b" if devir>DEVIR_ESIK else "#f3c55a")
-                else:         dl,dr = f"{devir:.0f} s","#e85555"
+                if devir==0:  dl,dr = "—", DarkTheme.TEXT_SECONDARY
+                elif devir>0: dl,dr = (f"+{devir:.0f} s", DarkTheme.STATUS_WARNING if devir > DEVIR_ESIK else DarkTheme.ACCENT2)
+                else:         dl,dr = f"{devir:.0f} s", DarkTheme.STATUS_ERROR
                 dv_itm = _it(dl, pid); dv_itm.setForeground(QColor(dr))
                 self._tbl.setItem(ri, 5, dv_itm)
 
-                if hedef==0 and tip=="sua":   sl,sr = "Şua — nöbet yok","#6b7280"
-                elif izin_gun>=ay_is:          sl,sr = "Tam ay izin","#6b7280"
-                elif devir>DEVIR_ESIK:         sl,sr = "Yüksek devir","#f59e0b"; uyari_sayi+=1
-                else:                          sl,sr = "Hazır","#2ec98e"
+                if hedef==0 and tip=="sua":   sl,sr = "Şua — nöbet yok", DarkTheme.TEXT_SECONDARY
+                elif izin_gun>=ay_is:          sl,sr = "Tam ay izin", DarkTheme.TEXT_SECONDARY
+                elif devir>DEVIR_ESIK:         sl,sr = "Yüksek devir", DarkTheme.STATUS_WARNING; uyari_sayi+=1
+                else:                          sl,sr = "Hazır", DarkTheme.STATUS_SUCCESS
                 st_itm = _it(sl, pid); st_itm.setForeground(QColor(sr))
                 self._tbl.setItem(ri, 6, st_itm)
 

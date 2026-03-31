@@ -15,7 +15,7 @@ from PySide6.QtGui import QCursor
 from core.logger import logger
 from core.date_utils import parse_date
 from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
-from core.di import get_izin_service
+from core.di import get_izin_service, get_fhsz_service
 from database.repository_registry import RepositoryRegistry
 
 class HizliIzinGirisDialog(QDialog):
@@ -35,6 +35,8 @@ class HizliIzinGirisDialog(QDialog):
         self.ui = {}
 
         self.setProperty("bg-role", "page")
+        self._izin_svc = get_izin_service(db) if db else None
+        self._fhsz_svc = get_fhsz_service(db) if db else None
 
         self._setup_ui()
         self._load_sabitler()
@@ -119,8 +121,9 @@ class HizliIzinGirisDialog(QDialog):
 
     def _load_sabitler(self):
         try:
-            from core.di import get_fhsz_service
-            fhsz_svc = get_fhsz_service(self._db)
+            fhsz_svc = self._fhsz_svc
+            if fhsz_svc is None:
+                return
             sabitler = fhsz_svc.get_sabitler_repo().get_all()
             self._izin_max_gun = {}
             tip_adlari = []
@@ -156,7 +159,7 @@ class HizliIzinGirisDialog(QDialog):
 
         max_gun = None
         try:
-            izin_svc = get_izin_service(self._db)
+            izin_svc = self._izin_svc
             if izin_svc and tip_text and tc:
                 max_gun = izin_svc.get_izin_max_gun(tc=tc, izin_tipi=tip_text).veri or []
         except Exception as e:
@@ -205,7 +208,7 @@ class HizliIzinGirisDialog(QDialog):
         gun = self.ui["gun"].value()
 
         try:
-            izin_svc = get_izin_service(self._db)
+            izin_svc = self._izin_svc
             registry = RepositoryRegistry(self._db)
 
             # Max gün kontrolü (kesin engelleme)

@@ -427,7 +427,10 @@ class NobetFazlaMesaiPage(QWidget):
     def _guncel_plan(self) -> dict | None:
         if not self._plan_svc or not self._birim_id:
             return None
-        return self._plan_svc.get_plan(self._birim_id, self._yil, self._ay)
+        sonuc = self._plan_svc.get_plan(self._birim_id, self._yil, self._ay)
+        if not sonuc.basarili:
+            return None
+        return sonuc.veri
 
     def _mesai_hazirla(self):
         if not self._birim_id:

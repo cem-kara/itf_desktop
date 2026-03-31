@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Optional
 
 from core.logger import logger
+from core.hata_yonetici import SonucYonetici
 
 from core.paths import DB_PATH, DATA_DIR, LOG_DIR
 
@@ -32,7 +33,7 @@ class BackupService:
         # Backup klasörünü oluştur
         os.makedirs(self.BACKUP_DIR, exist_ok=True)
     
-    def create_backup(self, description: str = "") -> dict:
+    def create_backup(self, description: str = "") -> SonucYonetici:
         """
         Yeni yedek oluştur.
         
@@ -45,12 +46,10 @@ class BackupService:
         try:
             # Veritabanı dosyası var mı?
             if not os.path.exists(DB_PATH):
-                return {
-                    "success": False,
-                    "path": "",
-                    "size_mb": 0,
-                    "message": "Veritabanı dosyası bulunamadı"
-                }
+                return SonucYonetici.hata(
+                    ValueError("Veritabanı dosyası bulunamadı"),
+                    "BackupService.create_backup"
+                )
             
             # Yedek dosya adı: backup_YYYYMMDD_HHMMSS.db
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -89,24 +88,19 @@ class BackupService:
             
             logger.info(f"Yedek oluşturuldu: {backup_filename} ({size_mb:.2f} MB)")
             
-            return {
-                "success": True,
-                "path": backup_path,
-                "size_mb": round(size_mb, 2),
-                "message": f"Yedek başarıyla oluşturuldu: {backup_filename}"
-            }
+            return SonucYonetici.tamam(
+                mesaj=f"Yedek başarıyla oluşturuldu: {backup_filename}",
+                veri={
+                    "path": backup_path,
+                    "size_mb": round(size_mb, 2),
+                }
+            )
             
         except Exception as e:
-            error_msg = f"Yedek oluşturma hatası: {str(e)}"
-            logger.error(error_msg, exc_info=True)
-            return {
-                "success": False,
-                "path": "",
-                "size_mb": 0,
-                "message": error_msg
-            }
+            logger.error(f"Yedek oluşturma hatası: {str(e)}", exc_info=True)
+            return SonucYonetici.hata(e, "BackupService.create_backup")
     
-    def get_backups(self) -> list[dict]:
+    def get_backups(self) -> SonucYonetici:
         """
         Tüm yedekleri listele (hem .db hem .zip dosyaları).
         
@@ -187,9 +181,9 @@ class BackupService:
         except Exception as e:
             logger.error(f"Yedek listesi hatası: {e}")
         
-        return backups
+        return SonucYonetici.tamam(veri=backups)
     
-    def restore_backup(self, backup_path: str) -> dict:
+    def restore_backup(self, backup_path: str) -> SonucYonetici:
         """
         Yedeği geri yükle.
         
@@ -202,10 +196,10 @@ class BackupService:
         try:
             # Yedek dosyası var mı?
             if not os.path.exists(backup_path):
-                return {
-                    "success": False,
-                    "message": "Yedek dosyası bulunamadı"
-                }
+                return SonucYonetici.hata(
+                    ValueError("Yedek dosyası bulunamadı"),
+                    "BackupService.restore_backup"
+                )
             
             # Mevcut veritabanını yedekle (güvenlik için)
             safety_backup_path = DB_PATH + ".before_restore"
@@ -218,20 +212,15 @@ class BackupService:
             
             logger.info(f"Yedek geri yüklendi: {os.path.basename(backup_path)}")
             
-            return {
-                "success": True,
-                "message": "Yedek başarıyla geri yüklendi.\n\nUygulama yeniden başlatılmalıdır!"
-            }
+            return SonucYonetici.tamam(
+                mesaj="Yedek başarıyla geri yüklendi.\n\nUygulama yeniden başlatılmalıdır!"
+            )
             
         except Exception as e:
-            error_msg = f"Yedek geri yükleme hatası: {str(e)}"
-            logger.error(error_msg, exc_info=True)
-            return {
-                "success": False,
-                "message": error_msg
-            }
+            logger.error(f"Yedek geri yükleme hatası: {str(e)}", exc_info=True)
+            return SonucYonetici.hata(e, "BackupService.restore_backup")
     
-    def delete_backup(self, backup_path: str) -> dict:
+    def delete_backup(self, backup_path: str) -> SonucYonetici:
         """
         Yedeği sil.
         
@@ -244,10 +233,10 @@ class BackupService:
         try:
             # Dosya var mı?
             if not os.path.exists(backup_path):
-                return {
-                    "success": False,
-                    "message": "Yedek dosyası bulunamadı"
-                }
+                return SonucYonetici.hata(
+                    ValueError("Yedek dosyası bulunamadı"),
+                    "BackupService.delete_backup"
+                )
             
             # Dosyayı silmeye çalış
             deleted_files = []
@@ -260,10 +249,7 @@ class BackupService:
                 errors.append(f"Ana dosya silinemiyor: {e}")
             except Exception as e:
                 errors.append(f"Ana dosya silinemiyor: {e}")
-                return {
-                    "success": False,
-                    "message": f"Yedek dosyası silinemedi: {str(e)}"
-                }
+                return SonucYonetici.hata(e, "BackupService.delete_backup")
             
             # Partner dosyaları sil (.txt açıklama dosyası)
             base_path = backup_path.rsplit('.', 1)[0]  # Uzantıyı kaldır
@@ -296,24 +282,20 @@ class BackupService:
             
             logger.info(f"Yedek silindi: {os.path.basename(backup_path)} ({len(deleted_files)} dosya)")
             
-            return {
-                "success": True,
-                "message": f"Yedek başarıyla silindi ({len(deleted_files)} dosya)"
-            }
+            return SonucYonetici.tamam(
+                mesaj=f"Yedek başarıyla silindi ({len(deleted_files)} dosya)",
+                veri={"deleted_files": deleted_files}
+            )
             
         except Exception as e:
-            error_msg = f"Yedek silme hatası: {str(e)}"
-            logger.error(error_msg, exc_info=True)
-            return {
-                "success": False,
-                "message": error_msg
-            }
+            logger.error(f"Yedek silme hatası: {str(e)}", exc_info=True)
+            return SonucYonetici.hata(e, "BackupService.delete_backup")
     
     def create_backup_with_files(
         self,
         description: str = "",
         include_folders: Optional[list[str]] = None
-    ) -> dict:
+    ) -> SonucYonetici:
         """
         Veritabanı + seçili dosya/klasörleri ZIP olarak yedekle.
         
@@ -327,12 +309,10 @@ class BackupService:
         """
         try:
             if not os.path.exists(DB_PATH):
-                return {
-                    "success": False,
-                    "path": "",
-                    "size_mb": 0,
-                    "message": "Veritabanı dosyası bulunamadı"
-                }
+                return SonucYonetici.hata(
+                    ValueError("Veritabanı dosyası bulunamadı"),
+                    "BackupService.create_backup_with_files"
+                )
             
             # ZIP dosya adı
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -384,24 +364,19 @@ class BackupService:
             
             logger.info(f"Tam yedek oluşturuldu: {zip_filename} ({size_mb:.2f} MB)")
             
-            return {
-                "success": True,
-                "path": zip_path,
-                "size_mb": round(size_mb, 2),
-                "message": f"Tam yedek başarıyla oluşturuldu: {zip_filename} ({size_mb:.2f} MB)"
-            }
+            return SonucYonetici.tamam(
+                mesaj=f"Tam yedek başarıyla oluşturuldu: {zip_filename} ({size_mb:.2f} MB)",
+                veri={
+                    "path": zip_path,
+                    "size_mb": round(size_mb, 2),
+                }
+            )
             
         except Exception as e:
-            error_msg = f"Tam yedek oluşturma hatası: {str(e)}"
-            logger.error(error_msg, exc_info=True)
-            return {
-                "success": False,
-                "path": "",
-                "size_mb": 0,
-                "message": error_msg
-            }
+            logger.error(f"Tam yedek oluşturma hatası: {str(e)}", exc_info=True)
+            return SonucYonetici.hata(e, "BackupService.create_backup_with_files")
     
-    def restore_backup_with_files(self, zip_path: str, restore_folders: bool = True) -> dict:
+    def restore_backup_with_files(self, zip_path: str, restore_folders: bool = True) -> SonucYonetici:
         """
         ZIP yedekten veritabanı ve dosyaları geri yükle.
         
@@ -414,10 +389,10 @@ class BackupService:
         """
         try:
             if not os.path.exists(zip_path):
-                return {
-                    "success": False,
-                    "message": "ZIP yedek dosyası bulunamadı"
-                }
+                return SonucYonetici.hata(
+                    ValueError("ZIP yedek dosyası bulunamadı"),
+                    "BackupService.restore_backup_with_files"
+                )
             
             # Güvenlik: Mevcut veritabanını yedekle
             safety_backup_path = DB_PATH + ".before_restore"
@@ -466,20 +441,15 @@ class BackupService:
             
             logger.info(f"ZIP yedek geri yüklendi: {os.path.basename(zip_path)}")
             
-            return {
-                "success": True,
-                "message": "Tam yedek başarıyla geri yüklendi.\n\nUygulama yeniden başlatılmalıdır!"
-            }
+            return SonucYonetici.tamam(
+                mesaj="Tam yedek başarıyla geri yüklendi.\n\nUygulama yeniden başlatılmalıdır!"
+            )
             
         except Exception as e:
-            error_msg = f"ZIP yedek geri yükleme hatası: {str(e)}"
-            logger.error(error_msg, exc_info=True)
-            return {
-                "success": False,
-                "message": error_msg
-            }
+            logger.error(f"ZIP yedek geri yükleme hatası: {str(e)}", exc_info=True)
+            return SonucYonetici.hata(e, "BackupService.restore_backup_with_files")
     
-    def cleanup_old_backups(self, keep_count: int = 10) -> dict:
+    def cleanup_old_backups(self, keep_count: int = 10) -> SonucYonetici:
         """
         Eski yedekleri temizle (en yeni N tanesini tut).
         
@@ -490,15 +460,16 @@ class BackupService:
             Dict: {"success": bool, "deleted_count": int, "freed_mb": float, "message": str}
         """
         try:
-            backups = self.get_backups()
+            backups_sonuc = self.get_backups()
+            if not backups_sonuc.basarili:
+                return backups_sonuc
+            backups = backups_sonuc.veri or []
             
             if len(backups) <= keep_count:
-                return {
-                    "success": True,
-                    "deleted_count": 0,
-                    "freed_mb": 0,
-                    "message": f"Temizlenecek yedek yok (toplam {len(backups)} yedek)"
-                }
+                return SonucYonetici.tamam(
+                    mesaj=f"Temizlenecek yedek yok (toplam {len(backups)} yedek)",
+                    veri={"deleted_count": 0, "freed_mb": 0}
+                )
             
             # Silinecek yedekler
             to_delete = backups[keep_count:]
@@ -509,30 +480,25 @@ class BackupService:
             for backup in to_delete:
                 size_mb = backup["size_mb"]
                 result = self.delete_backup(backup["path"])
-                if result["success"]:
+                if result.basarili:
                     deleted_count += 1
                     freed_space += size_mb
             
             logger.info(f"Eski yedekler temizlendi: {deleted_count} dosya, {freed_space:.2f} MB")
             
-            return {
-                "success": True,
-                "deleted_count": deleted_count,
-                "freed_mb": round(freed_space, 2),
-                "message": f"{deleted_count} eski yedek silindi ({freed_space:.2f} MB boşaltıldı)"
-            }
+            return SonucYonetici.tamam(
+                mesaj=f"{deleted_count} eski yedek silindi ({freed_space:.2f} MB boşaltıldı)",
+                veri={
+                    "deleted_count": deleted_count,
+                    "freed_mb": round(freed_space, 2),
+                }
+            )
             
         except Exception as e:
-            error_msg = f"Yedek temizleme hatası: {str(e)}"
-            logger.error(error_msg, exc_info=True)
-            return {
-                "success": False,
-                "deleted_count": 0,
-                "freed_mb": 0,
-                "message": error_msg
-            }
+            logger.error(f"Yedek temizleme hatası: {str(e)}", exc_info=True)
+            return SonucYonetici.hata(e, "BackupService.cleanup_old_backups")
     
-    def get_disk_space_info(self) -> dict:
+    def get_disk_space_info(self) -> SonucYonetici:
         """
         Disk alanı bilgisi.
         
@@ -545,32 +511,27 @@ class BackupService:
             # Veritabanı klasörünün bulunduğu disk
             disk_usage = psutil.disk_usage(DATA_DIR)
             
-            return {
+            return SonucYonetici.tamam(veri={
                 "total_mb": round(disk_usage.total / (1024 * 1024), 2),
                 "used_mb": round(disk_usage.used / (1024 * 1024), 2),
                 "free_mb": round(disk_usage.free / (1024 * 1024), 2),
                 "percent_used": round(disk_usage.percent, 2)
-            }
+            })
             
         except ImportError:
             # psutil yoksa basit bilgi döndür
             logger.warning("psutil yüklü değil, disk bilgisi sınırlı")
-            return {
+            return SonucYonetici.tamam(veri={
                 "total_mb": 0,
                 "used_mb": 0,
                 "free_mb": 0,
                 "percent_used": 0
-            }
+            })
         except Exception as e:
             logger.error(f"Disk bilgisi hatası: {e}")
-            return {
-                "total_mb": 0,
-                "used_mb": 0,
-                "free_mb": 0,
-                "percent_used": 0
-            }
+            return SonucYonetici.hata(e, "BackupService.get_disk_space_info")
     
-    def get_backup_stats(self) -> dict:
+    def get_backup_stats(self) -> SonucYonetici:
         """
         Yedekleme istatistikleri.
         
@@ -578,32 +539,30 @@ class BackupService:
             Dict: {"backup_count": int, "total_size_mb": float, "oldest": str, "newest": str}
         """
         try:
-            backups = self.get_backups()
+            backups_sonuc = self.get_backups()
+            if not backups_sonuc.basarili:
+                return backups_sonuc
+            backups = backups_sonuc.veri or []
             
             if not backups:
-                return {
+                return SonucYonetici.tamam(veri={
                     "backup_count": 0,
                     "total_size_mb": 0,
                     "oldest": "",
                     "newest": ""
-                }
+                })
             
             total_size = sum(b["size_mb"] for b in backups)
             oldest = backups[-1]["created"] if backups else ""
             newest = backups[0]["created"] if backups else ""
             
-            return {
+            return SonucYonetici.tamam(veri={
                 "backup_count": len(backups),
                 "total_size_mb": round(total_size, 2),
                 "oldest": oldest,
                 "newest": newest
-            }
+            })
             
         except Exception as e:
             logger.error(f"Yedek istatistikleri hatası: {e}")
-            return {
-                "backup_count": 0,
-                "total_size_mb": 0,
-                "oldest": "",
-                "newest": ""
-            }
+            return SonucYonetici.hata(e, "BackupService.get_backup_stats")

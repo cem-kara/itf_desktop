@@ -316,6 +316,7 @@ class CihazListesiPage(QWidget):
         self._current_page = 1
         self._total_count = 0
         self._is_loading = False
+        self._svc = _get_cihaz_service(db) if db else None
 
         self._setup_ui()
         self._connect_signals()
@@ -536,7 +537,7 @@ class CihazListesiPage(QWidget):
     # ─── Veri Yükleme ────────────────────────────────────
 
     def load_data(self):
-        if not self._db:
+        if not self._svc:
             logger.warning("Cihaz listesi: DB yok")
             return
         try:
@@ -544,7 +545,7 @@ class CihazListesiPage(QWidget):
             self._total_count = 0
             self._all_data = []
 
-            svc = _get_cihaz_service(self._db)
+            svc = self._svc
             page_data, total = svc.get_cihaz_paginated(
                 page=self._current_page,
                 page_size=self._page_size
@@ -587,14 +588,14 @@ class CihazListesiPage(QWidget):
             logger.error(f"Cihaz yükleme: {e}")
 
     def _load_more_data(self):
-        if self._is_loading or not self._db:
+        if self._is_loading or not self._svc:
             return
         try:
             self._is_loading = True
             self.btn_load_more.setEnabled(False)
             self.progress.setVisible(True)
 
-            svc = _get_cihaz_service(self._db)
+            svc = self._svc
             self._current_page += 1
             page_data, _ = svc.get_cihaz_paginated(
                 page=self._current_page,

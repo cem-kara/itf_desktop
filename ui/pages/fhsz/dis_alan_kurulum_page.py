@@ -28,6 +28,7 @@ from PySide6.QtGui import QFont
 
 from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
 from core.logger import logger
+from core.di import get_dis_alan_katsayi_service
 
 
 # ─────────────────────────────────────────────────────────────
@@ -79,6 +80,7 @@ class DisAlanKurulumPage(QWidget):
         super().__init__(parent)
         self.setProperty("bg-role", "page")
         self._db = db
+        self._kat_svc = get_dis_alan_katsayi_service(db) if db else None
         self._setup_ui()
         self._connect_signals()
 
@@ -361,10 +363,9 @@ class DisAlanKurulumPage(QWidget):
 
         # Mevcut protokol kontrolü
         uyari_metni = ""
-        if self._db:
+        if self._kat_svc:
             try:
-                from core.di import get_dis_alan_katsayi_service
-                mevcut = get_dis_alan_katsayi_service(self._db).get_aktif_katsayi(ana, birim)
+                mevcut = self._kat_svc.get_aktif_katsayi(ana, birim)
                 if mevcut:
                     uyari_metni = (
                         f"⚠  Bu birim için zaten aktif bir protokol var "
@@ -411,8 +412,7 @@ class DisAlanKurulumPage(QWidget):
         v = self._onizle_veri
 
         try:
-            from core.di import get_dis_alan_katsayi_service
-            kat_svc = get_dis_alan_katsayi_service(self._db)
+            kat_svc = self._kat_svc
             protokol = {
                 "AnaBilimDali":        v["ana"],
                 "Birim":               v["birim"],

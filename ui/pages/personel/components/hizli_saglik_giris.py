@@ -235,17 +235,9 @@ class HizliSaglikGirisDialog(QDialog):
         try:
             from core.di import get_saglik_service as _sf
             _svc = _sf(self._db)
-            takip_repo = _svc._r.get("Personel_Saglik_Takip")
-            personel_repo = _svc._r.get("Personel")
-            
-            takip_repo.insert(payload)
-
-            # Ana personel tablosundaki özet bilgiyi de güncelle
-            personel_sonuc = "uygun" if sonuc == "Uygun" else sonuc
-            personel_repo.update(payload["Personelid"], {
-                "MuayeneTarihi": muayene_db,
-                "Sonuc": personel_sonuc,
-            })
+            kaydet_sonuc = _svc.upsert_saglik_kaydi(payload)
+            if not kaydet_sonuc.basarili:
+                raise RuntimeError(kaydet_sonuc.mesaj)
 
             bilgi_goster(self, "Sağlık takip kaydı başarıyla eklendi.", "Başarılı")
             self.saglik_kaydedildi.emit()

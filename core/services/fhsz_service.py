@@ -28,6 +28,16 @@ class FhszService:
         """Sabitler repository'sine eriş."""
         return SonucYonetici.tamam(veri=self._r.get("Sabitler"))
 
+    def get_sabitler_listesi(self, kod: Optional[str] = None) -> SonucYonetici:
+        try:
+            rows = self._r.get("Sabitler").get_all() or []
+            if kod is not None:
+                hedef = str(kod).strip()
+                rows = [r for r in rows if str(r.get("Kod", "")).strip() == hedef]
+            return SonucYonetici.tamam(veri=rows)
+        except Exception as e:
+            return SonucYonetici.hata(e, "FhszService.get_sabitler_listesi")
+
     # ───────────────────────────────────────────────────────────
     #  Puantaj Kayıtları
     # ───────────────────────────────────────────────────────────
@@ -59,6 +69,72 @@ class FhszService:
             return SonucYonetici.tamam(veri=tum)
         except Exception as e:
             return SonucYonetici.hata(e, "FhszService.get_puantaj_listesi")
+
+    def get_donem_puantaj_listesi(self, yil: str | int, donem: str | int) -> SonucYonetici:
+        try:
+            data = self.get_puantaj_listesi(yil=int(str(yil)), donem=str(donem))
+            if not data.basarili:
+                return data
+            return SonucYonetici.tamam(veri=data.veri or [])
+        except Exception as e:
+            return SonucYonetici.hata(e, "FhszService.get_donem_puantaj_listesi")
+
+    def sua_bakiye_guncelle(self, yil_str: str) -> SonucYonetici:
+        try:
+            tum = self._r.get("FHSZ_Puantaj").get_all() or []
+            personel_toplam: dict[str, float] = {}
+            for r in tum:
+                if str(r.get("AitYil", "")).strip() != str(yil_str):
+                    continue
+                tc = str(r.get("Personelid", "")).strip()
+                try:
+                    saat = float(str(r.get("FiiliCalismaSaat", 0)).replace(",", "."))
+                except (ValueError, TypeError):
+                    saat = 0.0
+                personel_toplam[tc] = personel_toplam.get(tc, 0.0) + saat
+
+            izin_bilgi = self._r.get("Izin_Bilgi")
+            for tc, toplam_saat in personel_toplam.items():
+                from core.hesaplamalar import sua_hak_edis_hesapla
+                yeni_hak = sua_hak_edis_hesapla(toplam_saat)
+                mevcut = izin_bilgi.get_by_id(tc)
+                if not mevcut:
+                    continue
+                try:
+                    eski = float(str(mevcut.get("SuaCariYilKazanim", 0)).replace(",", "."))
+                except (ValueError, TypeError):
+                    eski = -1.0
+                if eski != yeni_hak:
+                    izin_bilgi.update(tc, {"SuaCariYilKazanim": yeni_hak})
+            return SonucYonetici.tamam(veri=len(personel_toplam))
+        except Exception as e:
+            return SonucYonetici.hata(e, "FhszService.sua_bakiye_guncelle")
+
+    def donem_puantaj_kaydet(self, yil: str | int, donem: str | int, kayitlar: list[dict]) -> SonucYonetici:
+        try:
+            yil_str = str(yil)
+            donem_str = str(donem)
+            repo = self._r.get("FHSZ_Puantaj")
+            tum = repo.get_all() or []
+            for r in tum:
+                if str(r.get("AitYil", "")).strip() == yil_str and str(r.get("Donem", "")).strip() == donem_str:
+                    pk = [
+                        str(r.get("Personelid", "")),
+                        str(r.get("AitYil", "")),
+                        str(r.get("Donem", "")),
+                    ]
+                    try:
+                        repo.delete(pk)
+                    except Exception:
+                        pass
+            for kayit in kayitlar:
+                repo.insert(kayit)
+            sonuc = self.sua_bakiye_guncelle(yil_str)
+            if not sonuc.basarili:
+                return sonuc
+            return SonucYonetici.tamam(veri=len(kayitlar))
+        except Exception as e:
+            return SonucYonetici.hata(e, "FhszService.donem_puantaj_kaydet")
 
     def puantaj_kaydet(self, veri: dict) -> SonucYonetici:
         """

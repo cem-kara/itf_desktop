@@ -45,6 +45,25 @@ from core.di import get_dozimetre_service
     def _personel_repo(self):
         return self._r.get("Personel")
 
+    def get_personel_listesi(self, aktif_only: bool = False) -> SonucYonetici:
+        try:
+            rows = self._personel_repo().get_all() or []
+            if aktif_only:
+                rows = [
+                    r for r in rows
+                    if str(r.get("Durum", "")).strip().lower() != "pasif"
+                ]
+            return SonucYonetici.tamam(veri=rows)
+        except Exception as exc:
+            return SonucYonetici.hata(exc, "DozimetreService.get_personel_listesi")
+
+    def get_rapor_olcumleri(self, rapor_no: str) -> SonucYonetici:
+        try:
+            data = self._repo().get_where({"RaporNo": str(rapor_no or "")}) or []
+            return SonucYonetici.tamam(veri=data)
+        except Exception as exc:
+            return SonucYonetici.hata(exc, "DozimetreService.get_rapor_olcumleri")
+
     # ──────────────────────────────────────────────────────────
     #  Sorgular
     # ──────────────────────────────────────────────────────────

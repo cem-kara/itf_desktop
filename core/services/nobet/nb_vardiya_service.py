@@ -120,17 +120,17 @@ class NbVardiyaService:
         except Exception as e:
             return SonucYonetici.hata(e, "NbVardiyaService.get_vardiyalar")
 
-    def get_vardiya(self, vardiya_id: str) -> Optional[dict]:
-        """Tek vardiya kaydı — yok ise None."""
+    def get_vardiya(self, vardiya_id: str) -> SonucYonetici:
+        """Tek vardiya kaydını döner; yok ise veri alanında None taşır."""
         try:
             rows = self._r.get("NB_Vardiya").get_all() or []
             kayit = next(
                 (r for r in rows if r.get("VardiyaID") == vardiya_id), None)
-            return dict(kayit) if kayit else None
-        except Exception:
-            return None
+            return SonucYonetici.tamam(veri=dict(kayit) if kayit else None)
+        except Exception as e:
+            return SonucYonetici.hata(e, "NbVardiyaService.get_vardiya")
 
-    def slot_suresi_getir(self, birim_id: str) -> int:
+    def slot_suresi_getir(self, birim_id: str) -> SonucYonetici:
         """
         Bir slotun toplam süresi (dakika).
         Önce NB_BirimAyar.GunlukSlotDakika — yoksa Σ ana vardiya süresi.
@@ -146,17 +146,17 @@ class NbVardiyaService:
                 None
             )
             if ayar and ayar.get("GunlukSlotDakika"):
-                return int(ayar["GunlukSlotDakika"])
+                return SonucYonetici.tamam(veri=int(ayar["GunlukSlotDakika"]))
 
             # Yoksa ana vardiyas toplamı
             v_sonuc = self.get_vardiyalar(birim_id, sadece_ana=True)
             if v_sonuc.basarili and v_sonuc.veri:
-                return sum(int(v.get("SureDakika", 0))
-                           for v in v_sonuc.veri)
+                return SonucYonetici.tamam(veri=sum(int(v.get("SureDakika", 0))
+                                                    for v in v_sonuc.veri))
         except Exception as e:
             logger.debug(f"slot_suresi_getir: {e}")
 
-        return 24 * 60  # Fallback: 24 saat
+        return SonucYonetici.tamam(veri=24 * 60)  # Fallback: 24 saat
 
     # ──────────────────────────────────────────────────────────
     #  Grup Yazma
@@ -350,9 +350,12 @@ class NbVardiyaService:
                 guncelleme["Sira"] = sira
 
             if bas_saat or bit_saat:
-                mevcut = self.get_vardiya(vardiya_id)
-                yeni_bas = bas_saat or (mevcut or {}).get("BasSaat", "08:00")
-                yeni_bit = bit_saat or (mevcut or {}).get("BitSaat", "20:00")
+                mevcut_sonuc = self.get_vardiya(vardiya_id)
+                if not mevcut_sonuc.basarili:
+                    return mevcut_sonuc
+                mevcut = mevcut_sonuc.veri or {}
+                yeni_bas = bas_saat or mevcut.get("BasSaat", "08:00")
+                yeni_bit = bit_saat or mevcut.get("BitSaat", "20:00")
                 guncelleme["BasSaat"]    = yeni_bas
                 guncelleme["BitSaat"]    = yeni_bit
                 guncelleme["SureDakika"] = _sure_dakika(yeni_bas, yeni_bit)

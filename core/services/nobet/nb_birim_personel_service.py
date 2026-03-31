@@ -125,7 +125,7 @@ class NbBirimPersonelService:
         except Exception as e:
             return SonucYonetici.hata(e, "NbBirimPersonelService.personel_birimleri")
 
-    def atama_var_mi(self, birim_id: str, personel_id: str) -> bool:
+    def _atama_var_mi(self, birim_id: str, personel_id: str) -> bool:
         """Aktif atama kaydı var mı?"""
         try:
             rows = self._r.get("NB_BirimPersonel").get_all() or []
@@ -139,7 +139,14 @@ class NbBirimPersonelService:
         except Exception:
             return False
 
-    def personel_pid_listesi(self, birim_id: str) -> list[str]:
+    def atama_var_mi(self, birim_id: str, personel_id: str) -> SonucYonetici:
+        """Aktif atama kaydı var mı?"""
+        try:
+            return SonucYonetici.tamam(veri=self._atama_var_mi(birim_id, personel_id))
+        except Exception as e:
+            return SonucYonetici.hata(e, "NbBirimPersonelService.atama_var_mi")
+
+    def _personel_pid_listesi(self, birim_id: str) -> list[str]:
         """
         Birime atanmış aktif personel ID listesi.
         Algoritma ve tercih servisi için hızlı erişim.
@@ -156,6 +163,13 @@ class NbBirimPersonelService:
             ]
         except Exception:
             return []
+
+    def personel_pid_listesi(self, birim_id: str) -> SonucYonetici:
+        """Birime atanmış aktif personel ID listesini döner."""
+        try:
+            return SonucYonetici.tamam(veri=self._personel_pid_listesi(birim_id))
+        except Exception as e:
+            return SonucYonetici.hata(e, "NbBirimPersonelService.personel_pid_listesi")
 
     # ──────────────────────────────────────────────────────────
     #  Yazma
@@ -175,7 +189,7 @@ class NbBirimPersonelService:
                 return SonucYonetici.hata(
                     ValueError(f"Geçersiz rol: {rol}. Geçerli: {ROLLER}"))
 
-            if self.atama_var_mi(birim_id, personel_id):
+            if self._atama_var_mi(birim_id, personel_id):
                 return SonucYonetici.hata(
                     ValueError("Bu personelin bu birimde zaten aktif ataması var."))
 
@@ -284,7 +298,7 @@ class NbBirimPersonelService:
             atlanan = 0
             for p in hedefler:
                 pid = str(p["KimlikNo"])
-                if self.atama_var_mi(birim_id, pid):
+                if self._atama_var_mi(birim_id, pid):
                     atlanan += 1
                     continue
                 self.personel_ata(birim_id, pid, rol="teknisyen",

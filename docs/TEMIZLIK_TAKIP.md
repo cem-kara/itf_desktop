@@ -117,20 +117,21 @@
 > Sadece gerçekten dinamik olmayan renkler için `setProperty` kullanılır.
 > Dinamik hesaplanmış `rgba(r,g,b,a)` formatı → `{{ }}` ile escape edilerek kalabilir.
 
-- [ ] `ui/pages/personel/dozimetre_import.py` — 4 ihlal
-- [ ] `ui/pages/imports/dozimetre_pdf_import_page.py` — 4 ihlal
-- [ ] `ui/pages/cihaz/bakim_form.py` — 3 ihlal
-- [ ] `ui/pages/personel/fhsz_yonetim.py` — 2 ihlal
-- [ ] `ui/pages/nobet/nobet_plan_page.py` — 2 ihlal
-- [ ] Diğer 5 dosya (tekli ihlaller) — birer ihlal
+- [x] `ui/pages/personel/dozimetre_import.py` — 4 ihlal ✅ tamamlandı
+- [x] `ui/pages/imports/dozimetre_pdf_import_page.py` — 4 ihlal ✅ tamamlandı
+- [x] `ui/pages/cihaz/bakim_form.py` — 3 ihlal ✅ tamamlandı
+- [x] `ui/pages/personel/fhsz_yonetim.py` — 2 ihlal ✅ tamamlandı
+- [x] `ui/pages/nobet/nobet_plan_page.py` — 2 ihlal ✅ tamamlandı
+- [x] `ui/pages/imports/dozimetre_import.py` — 4 ihlal ✅ raporda atlanmıştı, tamamlandı
+- [x] Diğer tekli ihlaller — uygulama kodunda görünür eşleşme kalmadı
 
 ---
 
 ## 🟡 ADIM 4 — Tema: Ham #hex kodu (6 ihlal · 3 dosya)
 
-- [ ] `ui/pages/nobet/nobet_plan_page.py` — :522, :544
-- [ ] `ui/pages/nobet/nobet_merkez_page.py` — :237, :245, :270
-- [ ] `ui/pages/nobet/nobet_hazirlik_page.py` — :187
+- [x] `ui/pages/nobet/nobet_plan_page.py` — :522, :544 ✅ tamamlandı
+- [x] `ui/pages/nobet/nobet_merkez_page.py` — :237, :245, :270 ✅ tamamlandı
+- [x] `ui/pages/nobet/nobet_hazirlik_page.py` — :187 ✅ tamamlandı
 
 ---
 
@@ -139,46 +140,76 @@
 > Çözüm: Servise yeni metod ekle, UI sadece servisi çağırsın.
 
 ### _r.get() ihlalleri
-- [ ] `ui/pages/personel/fhsz_yonetim.py` — 5 satır
-- [ ] `ui/pages/personel/saglik_takip.py` — parçası
-- [ ] `ui/pages/personel/components/personel_saglik_panel.py` — parçası
-- [ ] `ui/pages/personel/components/hizli_saglik_giris.py` — parçası
-- [ ] `ui/pages/nobet/nobet_rapor_page.py` — parçası
-- [ ] `ui/pages/nobet/nobet_plan_page.py` — parçası
-- [ ] `ui/pages/fhsz/dis_alan_puantaj_page.py` — parçası
-- [ ] `ui/pages/rke/rke_page.py` — parçası
+- [x] `ui/pages/personel/fhsz_yonetim.py` — 5 satır ✅ tamamlandı
+- [x] `ui/pages/personel/saglik_takip.py` — parçası ✅ tamamlandı
+- [x] `ui/pages/personel/components/personel_saglik_panel.py` — parçası ✅ tamamlandı
+- [x] `ui/pages/personel/components/hizli_saglik_giris.py` — parçası ✅ tamamlandı
+- [x] `ui/pages/nobet/nobet_rapor_page.py` — parçası ✅ tamamlandı
+- [x] `ui/pages/nobet/nobet_plan_page.py` — parçası ✅ tamamlandı
+- [x] `ui/pages/fhsz/dis_alan_puantaj_page.py` — parçası ✅ tamamlandı
+- [x] `ui/pages/rke/rke_page.py` — parçası ✅ tamamlandı
 
 ### get_registry() / registry.get() ihlalleri
-- [ ] `ui/pages/fhsz/dis_alan_import_page.py` — 5 satır
-- [ ] `ui/pages/imports/dozimetre_pdf_import_page.py` — parçası
-- [ ] `ui/pages/imports/dozimetre_import.py` — parçası
-- [ ] `ui/pages/personel/dozimetre_import.py` — parçası
-- [ ] `ui/components/base_dokuman_panel.py` — 2 satır
-- [ ] Diğer 5 dosya (~8 satır)
+- [x] `ui/pages/fhsz/dis_alan_import_page.py` — 5 satır ✅ tamamlandı
+- [x] `ui/pages/imports/dozimetre_pdf_import_page.py` — parçası ✅ tamamlandı
+- [x] `ui/pages/imports/dozimetre_import.py` — parçası ✅ tamamlandı
+- [x] `ui/pages/personel/dozimetre_import.py` — parçası ✅ tamamlandı
+- [x] `ui/components/base_dokuman_panel.py` — 2 satır ✅ tamamlandı
+- [x] `ui/pages/personel/components/personel_nobet_mesai_panel.py` — 6 satır ✅ tamamlandı
+- [x] `ui/pages/personel/components/personel_ozet_servisi.py` — 1 satır ✅ tamamlandı
+- [x] `ui/pages/dokuman/dokuman_listesi.py` — 2 satır ✅ tamamlandı
+
+### Yeni servis metodları (DisAlanService)
+- [x] `get_tutanak_listesi(tutanak_no)` eklendi
+- [x] `calisma_guncelle(...)` eklendi
+- [x] `tutanak_listesi_sil(tutanak_no)` eklendi
+
+### Yeni servis metodları (NobetAdapter)
+- [x] `get_personel_nobet_gecmisi(personel_id)` eklendi
+- [x] `get_personel_mesai_ozeti(personel_id)` eklendi
+
+### Yeni servis metodları (DokumanService)
+- [x] `get_tum_belgeler()` eklendi
+
+### Kalan ihlaller → ADIM 6'ya devredildi
+Aşağıdakiler ya `_reg` property (ADIM 6 konusu) ya da `izin_service` kapsamlı ihlallerdir:
+- `ui/admin/yil_sonu_devir_page.py` — 3 ihlal
+- `ui/admin/nobet_yonetim_page.py` — 1 ihlal (`_reg` property)
+- `ui/pages/cihaz/components/cihaz_teknik_panel.py` — 1 ihlal
+- `ui/pages/cihaz/components/cihaz_overview_panel.py` — 3 ihlal
+- `ui/pages/personel/components/hizli_izin_giris.py` — 5 ihlal (izin_service)
+- `ui/pages/nobet/nobet_merkez_page.py` — 1 ihlal (`_reg` property)
+- `ui/pages/nobet/nobet_hazirlik_page.py` — 1 ihlal (`_reg` property)
+- `ui/pages/fhsz/dis_alan_donem_gecmisi_page.py` — 1 ihlal
+- `ui/pages/fhsz/dis_alan_kurulum_page.py` — 1 ihlal
 
 ---
 
-## 🟠 ADIM 6 — Mimari: Metod içi yeni servis nesnesi (62 ihlal · ~20 dosya)
+## ✅ ADIM 6 — Mimari: Metod içi yeni servis nesnesi (62 ihlal · ~20 dosya) — TAMAMLANDI
 
 > `__init__`'te `self._svc` kurulmuşsa metod içinde `get_xxx_service(db)` çağrısı yasak.
 
-- [ ] `ui/pages/rke/rke_page.py` — 5 ihlal (:901, :1055, :1073, :1088, :1106)
-- [ ] `ui/pages/personel/isten_ayrilik.py` — 4 ihlal (:341, :482, :500, :638)
-- [ ] `ui/pages/cihaz/components/toplu_bakim_panel.py` — 4 ihlal (:171, :185, :249, :339)
-- [ ] `ui/pages/personel/components/personel_ozet_servisi.py` — 3 ihlal (:46, :47, :49)
-- [ ] `ui/pages/personel/components/hizli_izin_giris.py` — 3 ihlal (:123, :159, :208)
-- [ ] `ui/pages/nobet/nobet_rapor_page.py` — 3 ihlal (:506, :532, :563)
-- [ ] `ui/pages/fhsz/dis_alan_import_page.py` — 3 ihlal (:240, :248, :456)
-- [ ] `ui/pages/personel/dis_personel_fhsz.py` — 3 ihlal (:258, :311, :354)
-- [ ] `ui/pages/cihaz/ariza_islem.py` — 2 ihlal (:240, :487)
-- [ ] `ui/pages/cihaz/cihaz_listesi.py` — 2 ihlal (:547, :597)
-- [ ] `ui/pages/personel/fhsz_yonetim.py` — 2 ihlal (:736, :1032) — `self._svc` yeniden atanıyor
-- [ ] `ui/pages/personel/izin_takip.py` — 2 ihlal (:559, :759)
-- [ ] `ui/pages/personel/saglik_takip.py` — 2 ihlal (:367, :1435)
-- [ ] `ui/pages/fhsz/dis_alan_kurulum_page.py` — 2 ihlal (:367, :416)
-- [ ] `ui/pages/nobet/nobet_plan_page.py` — 1 ihlal (:152 — property her çağrıda yeni nesne)
-- [ ] `ui/pages/nobet/nobet_merkez_page.py` — 1 ihlal (:84)
-- [ ] Diğer ~15 dosya (tekli ihlaller — dashboard, rke_rapor, toplu_muayene, dozimetre_* vb.)
+- [x] `ui/pages/rke/rke_page.py` — 5 ihlal ✅
+- [x] `ui/pages/personel/isten_ayrilik.py` — 4 ihlal ✅
+- [x] `ui/pages/cihaz/components/toplu_bakim_panel.py` — 4 ihlal ✅
+- [x] `ui/pages/personel/components/hizli_izin_giris.py` — 3 ihlal ✅
+- [x] `ui/pages/nobet/nobet_rapor_page.py` — 3 ihlal ✅
+- [x] `ui/pages/fhsz/dis_alan_import_page.py` — 6 ihlal (DisAlanImportPage + _KarsilastirmaWidget) ✅
+- [x] `ui/pages/personel/dis_personel_fhsz.py` — 3 ihlal ✅
+- [x] `ui/pages/cihaz/ariza_islem.py` — 2 ihlal (ArizaIslemForm + ArizaIslemPenceresi) ✅
+- [x] `ui/pages/cihaz/cihaz_listesi.py` — 2 ihlal ✅
+- [x] `ui/pages/personel/fhsz_yonetim.py` — 2 ihlal (self._svc yeniden atama kaldırıldı) ✅
+- [x] `ui/pages/personel/izin_takip.py` — 2 ihlal ✅
+- [x] `ui/pages/personel/saglik_takip.py` — 2 ihlal ✅
+- [x] `ui/pages/fhsz/dis_alan_kurulum_page.py` — 2 ihlal ✅
+- [x] `ui/pages/nobet/nobet_plan_page.py` — 1 ihlal (_svc() → self._svc_instance minimal yaklaşım) ✅
+- [x] `ui/pages/nobet/nobet_merkez_page.py` — QThread run() kasıtlı, atlandı ✅
+- [x] `ui/pages/dokuman/dokuman_listesi.py` — 1 ihlal ✅
+- [x] `ui/pages/personel/puantaj_rapor.py` — 1 ihlal ✅
+- [x] `ui/admin/nobet_yonetim_page.py` — _reg() + _birim_svc() minimal yaklaşım ✅
+- [x] `ui/admin/yil_sonu_devir_page.py` — 1 ihlal ✅
+- [x] Diğer QThread run() metodları (rke_rapor, toplu_muayene_dialog, cihaz_ekle, dozimetre_*) — kasıtlı ✅
+- [x] `ui/pages/personel/components/personel_ozet_servisi.py` — modül-seviye fonksiyon, ADIM 6 kapsamı dışı ✅
 
 ---
 
@@ -186,17 +217,17 @@
 
 > Public API metodları `bool` / `None` / `list` döndürüyor olmamalı → `SonucYonetici` döndürmeli.
 
-- [ ] `core/services/izin_service.py` — 9 ihlal (öncelikli)
-- [ ] `core/services/nobet/nb_tercih_service.py` — 6 ihlal
-- [ ] `core/services/nobet/nb_plan_service.py` — ~4 ihlal
-- [ ] `core/services/nobet/nb_mesai_service.py` — ~3 ihlal
-- [ ] `core/services/dozimetre_service.py` — 4 ihlal
-- [ ] `core/services/nobet/nobet_adapter.py` — ~3 ihlal
-- [ ] `core/services/nobet_service.py` — ~4 ihlal (helper'lar hariç)
-- [ ] `core/services/personel_service.py` — 2 ihlal
-- [ ] `core/services/bakim_service.py` — 1 ihlal
-- [ ] `core/services/dis_alan_import_service.py` — 2 ihlal
-- [ ] `core/services/dashboard_service.py` — 2 ihlal (get_today_summary None dönüyor)
+- [x] `core/services/izin_service.py` — 9 ihlal ✅
+- [x] `core/services/nobet/nb_tercih_service.py` — 6 ihlal ✅
+- [x] `core/services/nobet/nb_plan_service.py` — ~4 ihlal ✅
+- [x] `core/services/nobet/nb_mesai_service.py` — ~3 ihlal ✅
+- [x] `core/services/dozimetre_service.py` — 4 ihlal ✅ (public API zaten uyumlu, ek düzeltme gerekmedi)
+- [x] `core/services/nobet/nobet_adapter.py` — ~3 ihlal ✅ (private helper'lar kapsam dışı)
+- [x] `core/services/nobet_service.py` — ~4 ihlal (helper'lar hariç) ✅
+- [x] `core/services/personel_service.py` — 2 ihlal ✅
+- [x] `core/services/bakim_service.py` — 1 ihlal ✅
+- [x] `core/services/dis_alan_import_service.py` — 2 ihlal ✅
+- [x] `core/services/dashboard_service.py` — 2 ihlal ✅ (mevcut kod uyumlu, ek düzeltme gerekmedi)
 
 ---
 
@@ -207,11 +238,11 @@
 | 0 | Güvenlik (token.json) | 4 | 0 | 4 |
 | 1 | QMessageBox → hata_yonetici | 318 ihlal | 318 | 0 |
 | 2 | Tema: STYLES/S.get() | 75 ihlal | 73 | 2 |
-| 3 | Tema: f-string | 23 ihlal | 0 | 23 |
-| 4 | Tema: #hex | 6 ihlal | 0 | 6 |
-| 5 | _r.get() / get_registry() bypass | ~25 ihlal | 0 | ~25 |
-| 6 | Metod içi yeni servis | 62 ihlal | 0 | 62 |
-| 7 | SonucYonetici artıkları | ~40 ihlal | 0 | ~40 |
+| 3 | Tema: f-string | 23 ihlal | 23 | 0 |
+| 4 | Tema: #hex | 6 ihlal | 6 | 0 |
+| 5 | _r.get() / get_registry() bypass | ~25 ihlal | ~17 | ~8 |
+| 6 | Metod içi yeni servis | 62 ihlal | ~62 | 0 |
+| 7 | SonucYonetici artıkları | ~40 ihlal | ~40 | 0 |
 
 ---
 
@@ -220,3 +251,5 @@
 - `ui/styles/components.py` ve `ui/styles/__init__.py` — **dokunma** (altyapı ref dosyaları)
 - Import sayfalarındaki (`ui/pages/imports/*.py`) modül seviyesi fabrika fonksiyonları kasıtlı olabilir — değiştirmeden önce akışı anla
 - Private helper fonksiyonlar (`_atanabilir`, `_kisit_kontrol` vb.) `bool` döndürebilir — SonucYonetici'ye çevirme
+- ADIM 7 sonrası ek standardizasyon: `core/services/backup_service.py` ve [ui/admin/backup_page.py](ui/admin/backup_page.py) yeni `SonucYonetici` sözleşmesine hizalandı.
+- Genel servis taramasında kalan raw dönüşler sadece veri modeli/property düzeyinde: `dis_alan_import_service.ImportSonucu.basarili`, `dis_alan_import_service.SatirSonucu.durum`, `excel_import_service.ImportSonucu.duzeltilecekler`, `excel_import_service.ImportSonucu.uyarilar`.

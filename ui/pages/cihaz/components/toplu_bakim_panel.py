@@ -1,4 +1,4 @@
-from core.di import get_cihaz_service as _get_cihaz_service
+from core.di import get_cihaz_service as _get_cihaz_service, get_dokuman_service
 # -*- coding: utf-8 -*-
 import time
 from datetime import datetime
@@ -30,6 +30,8 @@ class TopluBakimPlanPanel(QWidget):
         self._all_cihazlar: List[Dict] = []
         self._on_success = on_success
         self._on_close = on_close
+        self._cihaz_svc = _get_cihaz_service(db) if db else None
+        self._dok_svc   = get_dokuman_service(db) if db else None
         self._setup_ui()
 
     def _setup_ui(self):
@@ -167,8 +169,8 @@ class TopluBakimPlanPanel(QWidget):
         self.cmb_marka_filter.clear()
         self.cmb_marka_filter.addItem("Tüm Markalar", None)
         try:
-            svc = _get_cihaz_service(self._db)
-            self._all_cihazlar = svc.get_cihaz_listesi().veri or []
+            svc = self._cihaz_svc
+            self._all_cihazlar = svc.get_cihaz_listesi().veri or [] if svc else []
         except Exception as e:
             logger.error(f"Cihaz listesi yüklenemedi: {e}")
             self._all_cihazlar = []
@@ -181,8 +183,8 @@ class TopluBakimPlanPanel(QWidget):
         # load sozlesme list from Dokumanlar where EntityType='sozlesme'
         try:
             from core.di import get_dokuman_service
-            svc = get_dokuman_service(self._db)
-            sozler = svc.get_belgeler("sozlesme").veri or []
+            svc = self._dok_svc
+            sozler = svc.get_belgeler("sozlesme").veri or [] if svc else []
             # Expecting each row to have DokumanId and DisplayName
             self.cmb_sozlesme.clear()
             self.cmb_sozlesme.addItem("(Yok)", None)
@@ -245,7 +247,7 @@ class TopluBakimPlanPanel(QWidget):
             file_path = paths[0]
 
             from core.di import get_dokuman_service
-            svc = get_dokuman_service(self._db)
+            svc = self._dok_svc
             # Use entryid=<marka> as entity_id so we can track which brand the
             # agreement belongs to
             entity_id = f"{marka}"
@@ -335,7 +337,7 @@ class TopluBakimPlanPanel(QWidget):
                 kayitlar.append(kayit)
 
         try:
-            svc = _get_cihaz_service(self._db)
+            svc = self._cihaz_svc
             # If user selected a sozlesme, use its DokumanId
             selected_soz = None
             try:

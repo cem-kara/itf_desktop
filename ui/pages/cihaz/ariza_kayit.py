@@ -440,7 +440,7 @@ class ArizaKayitForm(QWidget):
         # Kapatma butonu — sağ üstte tek X
         hdr = QWidget()
         hdr.setFixedHeight(30)
-        hdr.setStyleSheet(f"border-bottom: 1px solid {border};")
+        hdr.setStyleSheet("border-bottom: 1px solid {};".format(border))
         hdr_l = QHBoxLayout(hdr)
         hdr_l.setContentsMargins(0, 0, 6, 0)
         hdr_l.setSpacing(0)

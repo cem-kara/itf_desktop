@@ -31,17 +31,24 @@ class PersonelService:
     #  Repository Accessors
     # ───────────────────────────────────────────────────────────
     
-    def get_personel_repo(self) -> BaseRepository:
-        """Personel repository'sine eriş."""
+    def _get_personel_repo(self) -> BaseRepository:
+        """Personel repository'sine dahili erişim."""
         return self._r.get("Personel")
+
+    def get_personel_repo(self) -> SonucYonetici:
+        """Personel repository'sini SonucYonetici ile döndür."""
+        try:
+            return SonucYonetici.tamam(veri=self._get_personel_repo())
+        except Exception as e:
+            return SonucYonetici.hata(e, "PersonelService.get_personel_repo")
     
     # ───────────────────────────────────────────────────────────
     #  İş Kuralları
     # ───────────────────────────────────────────────────────────
     
-    def validate_tc(self, tc: str) -> bool:
+    def _validate_tc(self, tc: str) -> bool:
         """
-        TC Kimlik No doğrulaması.
+        TC Kimlik No doğrulaması için dahili yardımcı.
         
         Merkezi validator kullanır (core.validators.validate_tc_kimlik_no)
         """
@@ -50,6 +57,13 @@ class PersonelService:
             return validate_tc_kimlik_no(tc)
         except Exception:
             return False
+
+    def validate_tc(self, tc: str) -> SonucYonetici:
+        """TC Kimlik No doğrulama sonucunu SonucYonetici ile döndür."""
+        try:
+            return SonucYonetici.tamam(veri=self._validate_tc(tc))
+        except Exception as e:
+            return SonucYonetici.hata(e, "PersonelService.validate_tc")
     
     # ───────────────────────────────────────────────────────────
     #  Veri Yükleme
@@ -167,7 +181,7 @@ class PersonelService:
         try:
             # KimlikNo (yeni akış) veya TC (geri uyumluluk) doğrula
             tc = str(veri.get("KimlikNo") or veri.get("TC") or "").strip()
-            if not self.validate_tc(tc):
+            if not self._validate_tc(tc):
                 return SonucYonetici.hata(Exception(f"Geçersiz TC Kimlik No: {tc}"), "PersonelService.ekle")
             
             self._r.get("Personel").insert(veri)
@@ -212,13 +226,16 @@ class PersonelService:
     #  Repository Accessor Methods
     # ───────────────────────────────────────────────────────────
 
-    def get_sabitler_repo(self) -> Optional[BaseRepository]:
-        """Sabitler repository'sini döndür (combo verisi için)."""
+    def _get_sabitler_repo(self) -> BaseRepository:
+        """Sabitler repository'sine dahili erişim."""
+        return self._r.get("Sabitler")
+
+    def get_sabitler_repo(self) -> SonucYonetici:
+        """Sabitler repository'sini SonucYonetici ile döndür."""
         try:
-            return self._r.get("Sabitler")
+            return SonucYonetici.tamam(veri=self._get_sabitler_repo())
         except Exception as e:
-            logger.error(f"Sabitler repository erişim hatası: {e}")
-            return None
+            return SonucYonetici.hata(e, "PersonelService.get_sabitler_repo")
 
     def get_personel_by_tc(self, tc: str) -> SonucYonetici:
         """TC'ye göre personel kaydını getir."""

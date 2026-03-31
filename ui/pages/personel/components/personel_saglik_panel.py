@@ -434,32 +434,14 @@ class PersonelSaglikPanel(QWidget):
             return
         try:
             from core.di import get_saglik_service as _sf
-            svc          = _sf(self.db)
-            takip_repo   = svc._r.get("Personel_Saglik_Takip")
-            dokuman_repo = svc._r.get("Dokumanlar")
-
-            all_rows = takip_repo.get_all() or []
-            self._records = [
-                r for r in all_rows
-                if str(r.get("Personelid","")).strip() == self.personel_id
-            ]
-            self._records.sort(key=lambda x: str(x.get("MuayeneTarihi","")), reverse=True)
-
-            # Rapor eşle
-            self._rapor_map = {}
-            knolar = {str(r.get("KayitNo","")).strip() for r in self._records}
-            docs = dokuman_repo.get_where({
-                "EntityType": "personel",
-                "EntityId":   self.personel_id,
-            }) or []
-            for doc in docs:
-                if str(doc.get("IliskiliBelgeTipi","")).strip() != "Personel_Saglik_Takip":
-                    continue
-                rel = str(doc.get("IliskiliBelgeID","")).strip()
-                if rel in knolar and rel not in self._rapor_map:
-                    self._rapor_map[rel] = doc
-            for r in self._records:
-                r["_RaporDoc"] = self._rapor_map.get(str(r.get("KayitNo","")).strip())
+            svc = _sf(self.db)
+            sonuc = svc.get_personel_saglik_kayitlari_detay(self.personel_id)
+            self._records = sonuc.veri or [] if sonuc.basarili else []
+            self._rapor_map = {
+                str(r.get("KayitNo", "")).strip(): r.get("_RaporDoc")
+                for r in self._records
+                if r.get("_RaporDoc")
+            }
 
             # Durum yeniden hesapla
             for r in self._records:
@@ -635,10 +617,9 @@ class PersonelSaglikPanel(QWidget):
 
         try:
             from core.di import get_saglik_service as _sf
-            svc           = _sf(self.db)
-            takip_repo    = svc._r.get("Personel_Saglik_Takip")
-            personel_repo = svc._r.get("Personel")
-            pdata         = personel_repo.get_by_id(self.personel_id) or {}
+            svc = _sf(self.db)
+            pdata_sonuc = svc.get_personel(self.personel_id)
+            pdata = pdata_sonuc.veri or {}
 
             # IlkMuayene kaydı varsa onu güncelle
             if not self._editing_no:
@@ -673,22 +654,10 @@ class PersonelSaglikPanel(QWidget):
                 "RaporDosya":               self._selected_rapor_path,
             }
 
-            mevcut = takip_repo.get_by_id(kayit_no)
-            if mevcut:
-                takip_repo.update(kayit_no, payload)
-            else:
-                takip_repo.insert(payload)
+            kaydet_sonuc = svc.upsert_saglik_kaydi(payload)
+            if not kaydet_sonuc.basarili:
+                raise RuntimeError(kaydet_sonuc.mesaj)
             self._last_kayit = kayit_no
-
-            # Personel tablosu özet — sadece en yeni muayeneyse güncelle
-            mevcut_p = personel_repo.get_by_id(self.personel_id) or {}
-            mevcut_t = parse_date(str(mevcut_p.get("MuayeneTarihi","") or ""))
-            yeni_t   = parse_date(muayene_db)
-            if yeni_t and (not mevcut_t or yeni_t >= mevcut_t):
-                personel_repo.update(self.personel_id, {
-                    "MuayeneTarihi": muayene_db,
-                    "Sonuc": sonuc.lower() if sonuc == "Uygun" else sonuc,
-                })
 
             bilgi_goster(self, "Muayene kaydı kaydedildi.")
             self._close_form()

@@ -29,7 +29,9 @@ from PySide6.QtWidgets import (
 
 from core.logger import logger
 from core.hata_yonetici import uyari_goster, hata_goster, soru_sor
+from core.di import get_dokuman_service
 from ui.components.base_table_model import BaseTableModel
+from ui.styles import DarkTheme
 
 # ─────────────────────────────────────────────────────────────
 # Sütun tanımları
@@ -98,15 +100,15 @@ class _Loader(QThread):
     def run(self):
         try:
             from database.sqlite_manager import SQLiteManager
-            from core.di import get_registry
+            from core.di import get_dokuman_service
             from core.paths import DB_PATH
 
             db_path: str = getattr(self._db, "db_path", None) or str(self._db) if self._db else DB_PATH
             db = SQLiteManager(db_path=db_path, check_same_thread=False)
             try:
-                repo = get_registry(db).get("Dokumanlar")
-                rows = repo.get_all() or []
-                # Yükleme tarihi DESC sırala
+                svc  = get_dokuman_service(db)
+                sonuc = svc.get_tum_belgeler()
+                rows  = sonuc.veri or [] if sonuc.basarili else []
                 rows.sort(
                     key=lambda r: str(r.get("YuklenmeTarihi") or ""),
                     reverse=True,
@@ -129,6 +131,7 @@ class DokumanListesiPage(QWidget):
         self._rows:   list[dict] = []
         self._filter: list[dict] = []
         self._loader: Optional[_Loader] = None
+        self._dok_svc = get_dokuman_service(db) if db else None
         self._build_ui()
         if db:
             self.load_data()
@@ -246,11 +249,15 @@ class DokumanListesiPage(QWidget):
 
     def _stat(self, title: str, value: str, color: str) -> QFrame:
         f = QFrame()
-        f.setStyleSheet(f"""
-            QFrame {{background:{"panel"};
-                    border:1px solid {"primary"};
+        f.setStyleSheet("""
+            QFrame {{background:{panel};
+                    border:1px solid {border};
                     border-left:3px solid {color};border-radius:6px;}}
-        """)
+        """.format(
+            panel=DarkTheme.BG_SECONDARY,
+            border=DarkTheme.BORDER_PRIMARY,
+            color=color,
+        ))
         lay = QVBoxLayout(f)
         lay.setContentsMargins(12, 8, 12, 8)
         lay.setSpacing(2)
@@ -411,22 +418,25 @@ class DokumanListesiPage(QWidget):
         ):
             return
         try:
-            from core.di import get_registry
-            registry = get_registry(self._db)
-            repo = registry.get("Dokumanlar")
-            pk = {
-                "EntityType": row.get("EntityType"),
-                "EntityId":   row.get("EntityId"),
-                "BelgeTuru":  row.get("BelgeTuru"),
-                "Belge":      row.get("Belge"),
-            }
-            repo.delete(pk)
-            self.load_data()
-            self.lbl_footer.setText(f"'{dosya}' kaydı silindi.")
+            if not self._dok_svc:
+                return
+            svc = self._dok_svc
+            sonuc = svc.sil(
+                entity_type=row.get("EntityType", ""),
+                entity_id=str(row.get("EntityId", "")),
+                belge_turu=str(row.get("BelgeTuru", "")),
+                belge=str(row.get("Belge", "")),
+            )
+            if sonuc.basarili:
+                self.load_data()
+                self.lbl_footer.setText(f"'{dosya}' kaydı silindi.")
+            else:
+                hata_goster(self, f"Silme başarısız:\n{sonuc.mesaj}", "Hata")
         except Exception as e:
             logger.error(f"Doküman silme hatası: {e}")
             hata_goster(self, f"Silme başarısız:\n{e}", "Hata")
 
     def set_db(self, db):
         self._db = db
+        self._dok_svc = get_dokuman_service(db) if db else None
         self.load_data()

@@ -49,6 +49,16 @@ class RkeService:
         except Exception as e:
             return SonucYonetici.hata(e, "RkeService.get_rke_listesi")
 
+    def get_sabitler_listesi(self, kod: Optional[str] = None) -> SonucYonetici:
+        try:
+            rows = self._r.get("Sabitler").get_all() or []
+            if kod is not None:
+                hedef = str(kod).strip()
+                rows = [r for r in rows if str(r.get("Kod", "")).strip() == hedef]
+            return SonucYonetici.tamam(veri=rows)
+        except Exception as e:
+            return SonucYonetici.hata(e, "RkeService.get_sabitler_listesi")
+
     def get_rke(self, ekipman_no: str) -> SonucYonetici:
         """Tek RKE kaydını ekipman no'ya göre getir."""
         try:

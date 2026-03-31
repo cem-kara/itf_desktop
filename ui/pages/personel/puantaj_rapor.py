@@ -21,6 +21,7 @@ from PySide6.QtCore import Qt, QRectF
 from PySide6.QtGui import QColor, QCursor, QFont, QPainter, QBrush, QPen, QPainterPath
 
 from core.logger import logger
+from core.di import get_fhsz_service
 from ui.dialogs.mesaj_kutusu import MesajKutusu
 from core.hesaplamalar import sua_hak_edis_hesapla
 from ui.styles import Colors
@@ -96,6 +97,7 @@ class PuantajRaporPage(QWidget):
         self.setProperty("bg-role", "page")
         self._db = db
         self._rapor_data = []     # Tablodaki satırlar (dict list)
+        self._fhsz_svc = get_fhsz_service(db) if db else None
 
         self._setup_ui()
         self._connect_signals()
@@ -272,8 +274,9 @@ class PuantajRaporPage(QWidget):
         self.lbl_durum.setText("Rapor hazırlanıyor...")
 
         try:
-            from core.di import get_fhsz_service
-            fhsz_svc = get_fhsz_service(self._db)
+            if not self._fhsz_svc:
+                return
+            fhsz_svc = self._fhsz_svc
             
             tum = fhsz_svc.get_puantaj_listesi().veri or []
 

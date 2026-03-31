@@ -67,7 +67,8 @@ class ArizaIslemForm(QWidget):
         else:
             self._cihaz_id = None
             self._docs_dir = self._base_docs_dir
-        
+
+        self._svc = _get_cihaz_service(db) if db else None
         self._setup_ui()
 
     def set_ariza_id(self, ariza_id: Optional[str]):
@@ -233,7 +234,7 @@ class ArizaIslemForm(QWidget):
         }
 
         try:
-            svc = _get_cihaz_service(self._db)
+            svc = self._svc
             svc.insert_ariza_islem(data)
 
             # Ana arızanın durumunu güncelle
@@ -299,6 +300,7 @@ class ArizaIslemPenceresi(QWidget):
         self._db = db
         self._ariza_id = None
         self._model = ArizaIslemTableModel()
+        self._svc = _get_cihaz_service(db) if db else None
         self._setup_ui()
 
     def set_ariza_id(self, ariza_id: Optional[str]):
@@ -473,13 +475,13 @@ class ArizaIslemPenceresi(QWidget):
 
     def load_data(self):
         """Seçili arızanın işlemlerini yükle."""
-        if not self._db or not self._ariza_id:
+        if not self._svc or not self._ariza_id:
             self._model.set_data([])
             self.lbl_count.setText("0 kayit")
             return
 
         try:
-            svc = _get_cihaz_service(self._db)
+            svc = self._svc
             rows = svc.get_ariza_islemler(self._ariza_id).veri or []
             # En yeni işlemler altta olacak şekilde ters sırala
             rows.sort(key=lambda r: (r.get("Tarih", "") or "", r.get("Saat", "") or ""), reverse=True)

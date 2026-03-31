@@ -30,6 +30,14 @@ PREVIEW_COLS = [
     ("_eslesti_label", "Eşleşme",    90),
 ]
 
+
+def _resolve_theme_color(color: str) -> str:
+    return {
+        "primary": DarkTheme.TEXT_PRIMARY,
+        "muted": DarkTheme.TEXT_MUTED,
+        "accent": DarkTheme.ACCENT,
+    }.get(color, color)
+
 # ─── Eşleştirme ────────────────────────────────────────────────
 def _match_tc(masked: str, real: str) -> bool:
     m = re.match(r"^([0-9]+)(\*+)([0-9]+)$", masked)
@@ -222,9 +230,10 @@ class _PdfLoader(QThread):
             if db_path:
                 try:
                     from database.sqlite_manager import SQLiteManager
-                    from core.di import get_registry
+                    from core.di import get_dozimetre_service
                     db = SQLiteManager(db_path=db_path, check_same_thread=False)
-                    personel_list = get_registry(db).get("Personel").get_all() or []
+                    sonuc = get_dozimetre_service(db).get_personel_listesi()
+                    personel_list = sonuc.veri or []
                     db.close()
                 except Exception:
                     pass
@@ -342,9 +351,9 @@ class DozimetreImportPage(QWidget):
 
         file_row = QHBoxLayout(); file_row.setSpacing(8)
         self.lbl_path = QLabel("Henüz dosya seçilmedi")
-        self.lbl_path.setStyleSheet(f"""
-            background:{"panel"};border:1px solid {"primary"};
-            border-radius:6px;padding:6px 12px;color:{"muted"};font-size:12px;""")
+        self.lbl_path.setProperty("border-role", "panel")
+        self.lbl_path.setProperty("color-role", "muted")
+        self.lbl_path.setStyleSheet("padding:6px 12px;font-size:12px;")
         self.lbl_path.setMinimumWidth(300)
         self.btn_sec = QPushButton("📂  PDF Seç")
         self.btn_sec.setProperty("style-role", "secondary")
@@ -356,9 +365,6 @@ class DozimetreImportPage(QWidget):
         self.progress = QProgressBar()
         self.progress.setRange(0,0); self.progress.setFixedHeight(4)
         self.progress.setTextVisible(False)
-        self.progress.setStyleSheet(f"""
-            QProgressBar{{background:{DarkTheme.BG_TERTIARY};border-radius:2px;border:none;}}
-            QProgressBar::chunk{{background:{"accent"};border-radius:2px;}}""")
         self.progress.hide()
         root.addWidget(self.progress)
 
@@ -371,15 +377,6 @@ class DozimetreImportPage(QWidget):
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.verticalHeader().setVisible(False)
         self.table.setAlternatingRowColors(True)
-        self.table.setStyleSheet(f"""
-            QTableView{{background:{"panel"};
-                alternate-background-color:{DarkTheme.BG_TERTIARY};
-                border:1px solid {"primary"};border-radius:8px;
-                gridline-color:{"primary"};font-size:12px;color:{"primary"};}}
-            QTableView::item:selected{{background:{"accent"};color:#ffffff;}}
-            QHeaderView::section{{background:{DarkTheme.BG_TERTIARY};color:{"muted"};
-                font-size:11px;font-weight:600;padding:6px;border:none;
-                border-bottom:1px solid {"primary"};}}""")
         self._model = _PreviewModel(PREVIEW_COLS)
         self.table.setModel(self._model)
         self._model.setup_columns(self.table, stretch_keys=["AdSoyad"])
@@ -401,8 +398,7 @@ class DozimetreImportPage(QWidget):
 
     def _make_info_card(self) -> QFrame:
         card = QFrame()
-        card.setStyleSheet(f"""QFrame{{background:{"panel"};
-            border:1px solid {"primary"};border-radius:8px;}}""")
+        card.setProperty("border-role", "panel")
         lay = QHBoxLayout(card)
         lay.setContentsMargins(16,12,16,12); lay.setSpacing(32)
         def _lbl(t):
@@ -423,9 +419,10 @@ class DozimetreImportPage(QWidget):
         return card
 
     def _rich(self, title: str, value: str, color: str = "") -> str:
-        c = color or "primary"
-        return (f"<span style='color:{"muted"};font-size:10px;'>{title}</span><br>"
-                f"<span style='color:{c};font-size:13px;font-weight:600;'>{value}</span>")
+        c = _resolve_theme_color(color or "primary")
+        muted = DarkTheme.TEXT_MUTED
+        return (f"<span style='color:{muted};font-size:10px;'>{title}</span><br>"
+            f"<span style='color:{c};font-size:13px;font-weight:600;'>{value}</span>")
 
     def _update_info_card(self, eslesen: int = 0, eslesmez: int = 0):
         h = self._header
@@ -486,16 +483,12 @@ class DozimetreImportPage(QWidget):
         mevcut_sayisi: int = 0
         try:
             from database.sqlite_manager import SQLiteManager
-            from core.di import get_registry
+            from core.di import get_dozimetre_service
             db_path: str = _DbSaver._db_path(self._db)
             db = SQLiteManager(db_path=db_path, check_same_thread=False)
-            try:
-                mevcut_kayitlar = get_registry(db).get("Dozimetre_Olcum").get_where(
-                    {"RaporNo": rapor_no}
-                )
-                mevcut_sayisi = len(mevcut_kayitlar)
-            except Exception:
-                pass
+            sonuc = get_dozimetre_service(db).get_rapor_olcumleri(rapor_no)
+            if sonuc.basarili:
+                mevcut_sayisi = len(sonuc.veri or [])
             db.close()
         except Exception:
             pass

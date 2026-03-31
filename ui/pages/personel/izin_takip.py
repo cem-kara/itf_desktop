@@ -109,6 +109,7 @@ class IzinTakipPage(QWidget):
         self.setProperty("bg-role", "page")
         self._db = db
         self._svc = get_izin_service(db) if db else None
+        self._personel_svc = get_personel_service(db) if db else None
         self._all_izin = []
         self._all_personel = []
         self._tatiller = []
@@ -547,10 +548,10 @@ class IzinTakipPage(QWidget):
     # ═══════════════════════════════════════════
 
     def load_data(self):
-        if not self._db:
+        if not self._svc:
             return
         try:
-            personel_svc = get_personel_service(self._db)
+            personel_svc = self._personel_svc
 
             # ── Personeller ──
             self._all_personel = personel_svc.get_personel_listesi().veri or []
@@ -746,11 +747,11 @@ class IzinTakipPage(QWidget):
     # ═══════════════════════════════════════════
 
     def _load_bakiye(self, tc):
-        if not self._db or not tc:
+        if not self._svc or not tc:
             self._clear_bakiye()
             return
         try:
-            izin_svc = get_izin_service(self._db)
+            izin_svc = self._svc
             izin_repo = izin_svc.get_izin_bilgi_repo().veri
             izin = izin_repo.get_by_id(tc) if izin_repo else None
             if izin:
