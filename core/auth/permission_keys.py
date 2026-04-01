@@ -25,6 +25,10 @@ class PermissionKeys:
     RAPOR_PDF = "rapor.pdf"
     BACKUP_CREATE = "backup.create"
     BACKUP_RESTORE = "backup.restore"
+    NOBET_PLAN = "nobet.plan"
+    NOBET_OZET = "nobet.ozet"
+    NOBET_RAPOR = "nobet.rapor"
+    NOBET_WRITE = "nobet.write"
 
     @classmethod
     def all(cls) -> list[str]:
@@ -51,4 +55,8 @@ class PermissionKeys:
             cls.RAPOR_PDF,
             cls.BACKUP_CREATE,
             cls.BACKUP_RESTORE,
+            cls.NOBET_PLAN,
+            cls.NOBET_OZET,
+            cls.NOBET_RAPOR,
+            cls.NOBET_WRITE,
         ]

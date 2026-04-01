@@ -31,6 +31,52 @@ def _get_or_create_permission_id(db, perm_repo: PermissionRepository, key: str) 
     return perm_repo.create_permission(key=key, description="")
 
 
+def _assign_permissions_if_missing(
+    db,
+    perm_repo: PermissionRepository,
+    role_id: int,
+    permission_keys: list[str],
+) -> None:
+    mevcut_ids = set(perm_repo.get_role_permissions(role_id))
+    for perm_key in permission_keys:
+        perm_id = _get_or_create_permission_id(db, perm_repo, perm_key)
+        if perm_id in mevcut_ids:
+            continue
+        perm_repo.assign_permission_to_role(role_id=role_id, permission_id=perm_id)
+        mevcut_ids.add(perm_id)
+
+
+def seed_initial_admin_user(db) -> int:
+    """İlk kurulum için admin kullanıcısını ve admin rol atamasını garanti eder."""
+    auth_repo = AuthRepository(db)
+    perm_repo = PermissionRepository(db)
+    hasher = PasswordHasher()
+
+    admin_user = auth_repo.get_user_by_username("admin")
+    if not admin_user:
+        password_hash = hasher.hash("admin123")
+        admin_user_id = auth_repo.create_user(
+            username="admin",
+            password_hash=password_hash,
+            is_active=True,
+        )
+        logger.info("İlk kurulum admin kullanıcısı oluşturuldu: admin / admin123")
+    else:
+        admin_user_id = admin_user.id
+        logger.info("İlk kurulum admin kullanıcısı zaten mevcut")
+
+    admin_role_id = _get_or_create_role_id(db, perm_repo, "admin")
+
+    _assign_permissions_if_missing(db, perm_repo, admin_role_id, PermissionKeys.all())
+
+    try:
+        auth_repo.assign_role(user_id=admin_user_id, role_id=admin_role_id)
+    except Exception:
+        pass
+
+    return admin_user_id
+
+
 def seed_test_users(db):
     """
     Test kullanıcıları oluştur:
@@ -42,32 +88,7 @@ def seed_test_users(db):
     hasher = PasswordHasher()
 
     # === ADMIN KULLANICISI ===
-    admin_user = auth_repo.get_user_by_username("admin")
-    if not admin_user:
-        password_hash = hasher.hash("admin123")
-        admin_user_id = auth_repo.create_user(
-            username="admin",
-            password_hash=password_hash,
-            is_active=True
-        )
-        logger.info("Admin kullanıcısı oluşturuldu: admin / admin123")
-    else:
-        admin_user_id = admin_user.id
-        logger.info("Admin kullanıcısı zaten mevcut")
-
-    # Admin rolü
-    admin_role_id = _get_or_create_role_id(db, perm_repo, "admin")
-    
-    # Admin rolüne tüm yetkileri ata
-    for perm_key in PermissionKeys.all():
-        perm_id = _get_or_create_permission_id(db, perm_repo, perm_key)
-        perm_repo.assign_permission_to_role(role_id=admin_role_id, permission_id=perm_id)
-    
-    # Kullanıcıya rolü ata
-    try:
-        auth_repo.assign_role(user_id=admin_user_id, role_id=admin_role_id)
-    except Exception:
-        pass  # Already assigned
+    admin_user_id = seed_initial_admin_user(db)
 
     # === VIEWER KULLANICISI (SADECE OKUMA) ===
     viewer_user = auth_repo.get_user_by_username("viewer")
@@ -92,9 +113,7 @@ def seed_test_users(db):
         PermissionKeys.CIHAZ_READ,
     ]
     
-    for perm_key in read_permissions:
-        perm_id = _get_or_create_permission_id(db, perm_repo, perm_key)
-        perm_repo.assign_permission_to_role(role_id=viewer_role_id, permission_id=perm_id)
+    _assign_permissions_if_missing(db, perm_repo, viewer_role_id, read_permissions)
     
     # Kullanıcıya rolü ata
     try:
