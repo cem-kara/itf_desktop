@@ -231,7 +231,10 @@ class BackupPage(QWidget):
     def _load_backups(self):
         """Yedekleri yükle"""
         try:
-            backups = self._service.get_backups()
+            backups_sonuc = self._service.get_backups()
+            if not backups_sonuc.basarili:
+                raise RuntimeError(backups_sonuc.mesaj or "Yedekler alınamadı")
+            backups = backups_sonuc.veri or []
             self._model.set_data(backups)
             self._update_stats()
             logger.info(f"{len(backups)} yedek yüklendi")
@@ -243,12 +246,14 @@ class BackupPage(QWidget):
         """İstatistikleri güncelle"""
         try:
             # Yedek istatistikleri
-            stats = self._service.get_backup_stats()
+            stats_sonuc = self._service.get_backup_stats()
+            stats = stats_sonuc.veri or {}
             self._lbl_backup_count.setText(f"Yedek Sayısı: {stats.get('backup_count', 0)}")
             self._lbl_total_size.setText(f"Toplam Boyut: {stats.get('total_size_mb', 0):.2f} MB")
             
             # Disk bilgisi
-            disk = self._service.get_disk_space_info()
+            disk_sonuc = self._service.get_disk_space_info()
+            disk = disk_sonuc.veri or {}
             if disk.get("total_mb", 0) > 0:
                 free_gb = disk.get("free_mb", 0) / 1024
                 self._lbl_disk_free.setText(
@@ -271,14 +276,15 @@ class BackupPage(QWidget):
             
             result = self._service.create_backup(description="")
             
-            if result["success"]:
+            if result.basarili:
+                veri = result.veri or {}
                 bilgi_goster(
                     self,
-                    f"{result['message']}\n\nBoyut: {result['size_mb']:.2f} MB"
+                    f"{result.mesaj}\n\nBoyut: {veri.get('size_mb', 0):.2f} MB"
                 )
                 self._load_backups()
             else:
-                hata_goster(self, result["message"])
+                hata_goster(self, result.mesaj)
                 
         except Exception as e:
             logger.error(f"Yedek oluşturma hatası: {e}")
@@ -332,15 +338,15 @@ class BackupPage(QWidget):
                 include_folders=include_folders if include_folders else None
             )
             
-            if result["success"]:
+            if result.basarili:
                 bilgi_goster(
                     self,
-                    f"{result['message']}\n\n"
+                    f"{result.mesaj}\n\n"
                     f"İçerik: Veritabanı + {len(include_folders) if include_folders else 0} klasör"
                 )
                 self._load_backups()
             else:
-                hata_goster(self, result["message"])
+                hata_goster(self, result.mesaj)
                 
         except Exception as e:
             logger.error(f"Tam yedek oluşturma hatası: {e}")
@@ -384,10 +390,10 @@ class BackupPage(QWidget):
             else:
                 result = self._service.restore_backup(backup_path)
             
-            if result["success"]:
-                bilgi_goster(self, result["message"])
+            if result.basarili:
+                bilgi_goster(self, result.mesaj)
             else:
-                hata_goster(self, result["message"])
+                hata_goster(self, result.mesaj)
                 
         except Exception as e:
             logger.error(f"Yedek geri yükleme hatası: {e}")
@@ -417,11 +423,11 @@ class BackupPage(QWidget):
         try:
             result = self._service.delete_backup(backup["path"])
             
-            if result["success"]:
-                bilgi_goster(self, result["message"])
+            if result.basarili:
+                bilgi_goster(self, result.mesaj)
                 self._load_backups()
             else:
-                hata_goster(self, result["message"])
+                hata_goster(self, result.mesaj)
                 
         except Exception as e:
             logger.error(f"Yedek silme hatası: {e}")
@@ -441,18 +447,19 @@ class BackupPage(QWidget):
         try:
             result = self._service.cleanup_old_backups(keep_count)
             
-            if result["success"]:
-                if result["deleted_count"] > 0:
+            if result.basarili:
+                veri = result.veri or {}
+                if veri.get("deleted_count", 0) > 0:
                     bilgi_goster(
                         self,
-                        f"{result['deleted_count']} yedek silindi.\n"
-                        f"{result['freed_mb']:.2f} MB disk alanı boşaltıldı."
+                        f"{veri.get('deleted_count', 0)} yedek silindi.\n"
+                        f"{veri.get('freed_mb', 0):.2f} MB disk alanı boşaltıldı."
                     )
                 else:
-                    bilgi_goster(self, result["message"])
+                    bilgi_goster(self, result.mesaj)
                 self._load_backups()
             else:
-                hata_goster(self, result["message"])
+                hata_goster(self, result.mesaj)
                 
         except Exception as e:
             logger.error(f"Yedek temizleme hatası: {e}")

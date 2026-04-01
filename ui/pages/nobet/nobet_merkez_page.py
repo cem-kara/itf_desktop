@@ -32,6 +32,7 @@ from PySide6.QtWidgets import (
 from core.di import get_registry
 from core.hata_yonetici import bilgi_goster, hata_goster, soru_sor, uyari_goster
 from core.logger import logger
+from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer, IconColors
 
 _AY = ["","Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",
@@ -212,15 +213,15 @@ class NobetMerkezPage(QWidget):
 
         self._kartlar: dict[str,QLabel] = {}
         bilgiler = [
-            ("toplam_gun",  "Toplam Gün",     "#4d9ee8"),
-            ("is_gunu",     "İş Günü",         "#4d9ee8"),
-            ("resmi_tatil", "Resmi Tatil",      "#6b7280"),
-            ("dini_bayram", "Dini Bayram",      "#6b7280"),
-            ("toplam_nobet","Toplam Nöbet",     "#2ec98e"),
-            ("hedef_mesai", "Kişi Baş Hedef",  "#f59e0b"),
-            ("izinli_kisi", "İzinli Personel", "#f59e0b"),
-            ("fm_gonullu",  "FM Gönüllü",      "#4d9ee8"),
-            ("uyari",       "Uyarı",            "#e85555"),
+            ("toplam_gun",  "Toplam Gün",     DarkTheme.ACCENT),
+            ("is_gunu",     "İş Günü",        DarkTheme.ACCENT),
+            ("resmi_tatil", "Resmi Tatil",    DarkTheme.TEXT_SECONDARY),
+            ("dini_bayram", "Dini Bayram",    DarkTheme.TEXT_SECONDARY),
+            ("toplam_nobet","Toplam Nöbet",   DarkTheme.STATUS_SUCCESS),
+            ("hedef_mesai", "Kişi Baş Hedef", DarkTheme.STATUS_WARNING),
+            ("izinli_kisi", "İzinli Personel", DarkTheme.STATUS_WARNING),
+            ("fm_gonullu",  "FM Gönüllü",     DarkTheme.ACCENT),
+            ("uyari",       "Uyarı",          DarkTheme.STATUS_ERROR),
         ]
         for key, baslik, renk in bilgiler:
             f = QFrame()
@@ -233,7 +234,8 @@ class NobetMerkezPage(QWidget):
                 f"font-size:18px;font-weight:bold;color:{renk};")
             b = QLabel(baslik)
             b.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            b.setStyleSheet("font-size:9px;color:#6b7280;")
+            b.setProperty("color-role", "secondary")
+            b.setStyleSheet("font-size:9px;")
             fl.addWidget(v)
             fl.addWidget(b)
             self._kartlar[key] = v
@@ -241,7 +243,7 @@ class NobetMerkezPage(QWidget):
             if key != "uyari":
                 sep = QFrame()
                 sep.setFrameShape(QFrame.Shape.VLine)
-                sep.setStyleSheet("color:#2a3a4a;")
+                sep.setStyleSheet(f"color:{DarkTheme.BORDER_PRIMARY};")
                 h.addWidget(sep)
         return bar
 
@@ -266,7 +268,8 @@ class NobetMerkezPage(QWidget):
         h.addWidget(self._btn_adim_hazirlik)
 
         self._lbl_ok = QLabel("  →  ")
-        self._lbl_ok.setStyleSheet("color:#3a5a7a;font-size:16px;")
+        self._lbl_ok.setProperty("color-role", "secondary")
+        self._lbl_ok.setStyleSheet("font-size:16px;")
         self._lbl_ok.setAlignment(Qt.AlignmentFlag.AlignCenter)
         h.addWidget(self._lbl_ok)
 
@@ -285,14 +288,14 @@ class NobetMerkezPage(QWidget):
 
         # Hazırlık onay durumu göstergesi
         self._lbl_hazirlik_durum = QLabel("Hazırlık onaylanmadı")
-        self._lbl_hazirlik_durum.setStyleSheet(
-            "font-size:11px;color:#e85555;padding:0 16px;")
+        self._lbl_hazirlik_durum.setProperty("color-role", "err")
+        self._lbl_hazirlik_durum.setStyleSheet("font-size:11px;padding:0 16px;")
         h.addWidget(self._lbl_hazirlik_durum)
 
         # Plan onay durumu göstergesi
         self._lbl_plan_durum = QLabel("")
-        self._lbl_plan_durum.setStyleSheet(
-            "font-size:11px;color:#6b7280;padding:0 8px;")
+        self._lbl_plan_durum.setProperty("color-role", "secondary")
+        self._lbl_plan_durum.setStyleSheet("font-size:11px;padding:0 8px;")
         h.addWidget(self._lbl_plan_durum)
         return bar
 
@@ -540,7 +543,7 @@ class NobetMerkezPage(QWidget):
             self._kartlar["izinli_kisi"].setText(str(izinli))
             self._kartlar["izinli_kisi"].setStyleSheet(
                 f"font-size:18px;font-weight:bold;"
-                f"color:{'#f59e0b' if izinli > 0 else '#6b7280'};")
+                f"color:{DarkTheme.STATUS_WARNING if izinli > 0 else DarkTheme.TEXT_SECONDARY};")
             self._kartlar["fm_gonullu"].setText(str(fm_sayi))
         except Exception as e:
             logger.error(f"_yukle_kapasite: {e}")
@@ -576,7 +579,7 @@ class NobetMerkezPage(QWidget):
                 tarih = str(kayit.get("OnayTarihi",""))[:10]
                 self._lbl_hazirlik_durum.setText(f"Hazırlık onaylandı ({tarih})")
                 self._lbl_hazirlik_durum.setStyleSheet(
-                    "font-size:11px;color:#2ec98e;padding:0 16px;")
+                    f"font-size:11px;color:{DarkTheme.STATUS_SUCCESS};padding:0 16px;")
                 self._btn_adim_plan.setText("  Nöbet Planı  ")
                 IconRenderer.set_button_icon(
                     self._btn_adim_plan, "calendar",
@@ -587,7 +590,7 @@ class NobetMerkezPage(QWidget):
             else:
                 self._lbl_hazirlik_durum.setText("Hazırlık onaylanmadı")
                 self._lbl_hazirlik_durum.setStyleSheet(
-                    "font-size:11px;color:#e85555;padding:0 16px;")
+                    f"font-size:11px;color:{DarkTheme.STATUS_ERROR};padding:0 16px;")
                 self._btn_adim_plan.setText("  Nöbet Planı  ")
                 IconRenderer.set_button_icon(
                     self._btn_adim_plan, "lock",
@@ -602,7 +605,7 @@ class NobetMerkezPage(QWidget):
             self._hazirlik_onaylandi = False
             self._lbl_hazirlik_durum.setText("Hazırlık onaylanmadı")
             self._lbl_hazirlik_durum.setStyleSheet(
-                "font-size:11px;color:#e85555;padding:0 16px;")
+                f"font-size:11px;color:{DarkTheme.STATUS_ERROR};padding:0 16px;")
             self._btn_adim_plan.setText("  Nöbet Planı  ")
             IconRenderer.set_button_icon(
                 self._btn_adim_plan, "lock",
@@ -623,13 +626,13 @@ class NobetMerkezPage(QWidget):
 
         d = {
             "yok":        ("",              ""),
-            "taslak":     ("Taslak",        "#f59e0b"),
-            "onaylandi":  ("Plan Onaylı",   "#2ec98e"),
-            "yururlukte": ("Yürürlükte",    "#2ec98e"),
+            "taslak":     ("Taslak",        DarkTheme.STATUS_WARNING),
+            "onaylandi":  ("Plan Onaylı",   DarkTheme.STATUS_SUCCESS),
+            "yururlukte": ("Yürürlükte",    DarkTheme.STATUS_SUCCESS),
         }
         metin, renk = d.get(self._plan_onay_durumu, ("",""))
         if revizyon_modu:
-            metin, renk = ("Revizyon Modu", "#f59e0b")
+            metin, renk = ("Revizyon Modu", DarkTheme.STATUS_WARNING)
         self._lbl_plan_durum.setText(metin)
         self._lbl_plan_durum.setStyleSheet(
             f"font-size:11px;color:{renk};padding:0 8px;" if renk else "")
@@ -672,14 +675,17 @@ class NobetMerkezPage(QWidget):
         self._kartlar["uyari"].setText(str(uyari) if uyari else "0")
         self._kartlar["uyari"].setStyleSheet(
             f"font-size:18px;font-weight:bold;"
-            f"color:{'#e85555' if uyari > 0 else '#2ec98e'};")
+            f"color:{DarkTheme.STATUS_ERROR if uyari > 0 else DarkTheme.STATUS_SUCCESS};")
 
     def _plan_revizyonda_mi(self) -> bool:
         if not self._birim_id:
             return False
         try:
             svc = self._plan._svc()
-            plan = svc.plan.get_plan(self._birim_id, self._yil, self._ay)
+            plan_sonuc = svc.plan.get_plan(self._birim_id, self._yil, self._ay)
+            if not plan_sonuc.basarili:
+                return False
+            plan = plan_sonuc.veri
             if not plan:
                 return False
             notlar = str(plan.get("Notlar", "") or "")

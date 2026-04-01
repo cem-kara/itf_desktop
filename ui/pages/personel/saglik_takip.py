@@ -5,6 +5,8 @@ import platform
 import subprocess
 from datetime import date, datetime
 
+from core.di import get_settings_service, get_dokuman_service
+
 from PySide6.QtCore import Qt, QDate, QUrl, QEvent, QThread, Signal as _Signal
 from PySide6.QtGui import QCursor, QDesktopServices
 from PySide6.QtWidgets import (
@@ -211,83 +213,18 @@ class _SaglikLoader(QThread):
     def run(self):
         try:
             from core.di import get_saglik_service as _svc_factory
-            from core.paths import DATA_DIR, DB_PATH
+            from core.paths import DB_PATH
             from database.sqlite_manager import SQLiteManager
             db_path = self._db_path or DB_PATH
             db = SQLiteManager(db_path=db_path)
-            _svc          = _svc_factory(db)
-            personel_repo = _svc._r.get("Personel")
-            takip_repo    = _svc._r.get("Personel_Saglik_Takip")
-            dokuman_repo  = _svc._r.get("Dokumanlar")
-
-            all_personel  = personel_repo.get_all()
-            personel_rows = [
-                p for p in all_personel
-                if str(p.get("Durum", "")).strip().lower() != "pasif"
-            ]
-            takip_rows = takip_repo.get_all()
-
-            rapor_map: dict = {}
-            docs = dokuman_repo.get_where({"EntityType": "personel"})
-            for doc in docs:
-                if str(doc.get("IliskiliBelgeTipi", "")).strip() != "Personel_Saglik_Takip":
-                    continue
-                entity_id = str(doc.get("EntityId", "")).strip()
-                rel_id    = str(doc.get("IliskiliBelgeID", "")).strip()
-                if entity_id and rel_id:
-                    rapor_map[(entity_id, rel_id)] = doc
-
-            for takip in takip_rows:
-                personelid = str(takip.get("Personelid", "")).strip()
-                kayit_no   = str(takip.get("KayitNo",    "")).strip()
-                doc        = rapor_map.get((personelid, kayit_no))
-
-                rapor_path = ""
-                if doc:
-                    local_path = str(doc.get("LocalPath", "")).strip()
-                    drive_path = str(doc.get("DrivePath", "")).strip()
-                    belge_adi  = str(doc.get("Belge",     "")).strip()
-                    tc_no      = str(doc.get("EntityId",  "")).strip() or personelid
-
-                    if local_path and os.path.isfile(local_path):
-                        rapor_path = local_path
-                    elif drive_path:
-                        rapor_path = drive_path
-                    else:
-                        rapor_path = local_path
-
-                    canonical_path = ""
-                    if belge_adi and tc_no:
-                        canonical_path = os.path.join(
-                            DATA_DIR, "offline_uploads", "personel", tc_no, belge_adi
-                        )
-                    if canonical_path and os.path.isfile(canonical_path):
-                        rapor_path = canonical_path
-                    elif local_path and os.path.isdir(local_path) and belge_adi:
-                        joined = os.path.join(local_path, belge_adi)
-                        if os.path.isfile(joined):
-                            rapor_path = joined
-
-                if not rapor_path:
-                    rapor_dosya = str(takip.get("RaporDosya", "")).strip()
-                    if rapor_dosya:
-                        if not os.path.isabs(rapor_dosya) and not rapor_dosya.startswith(
-                            ("http://", "https://")
-                        ):
-                            basename  = os.path.basename(rapor_dosya)
-                            canonical = os.path.join(
-                                DATA_DIR, "offline_uploads", "personel", personelid, basename
-                            )
-                            rapor_path = canonical if os.path.isfile(canonical) else rapor_dosya
-                        else:
-                            rapor_path = rapor_dosya
-
-                takip["_RaporPath"] = rapor_path
-
-            self.finished.emit({
-                "all_personel":  all_personel,
-                "personel_rows": personel_rows,
-                "takip_rows":    takip_rows,
+            _svc = _svc_factory(db)
+            sonuc = _svc.get_ekran_yukleme_verisi()
+            if not sonuc.basarili:
+                raise RuntimeError(sonuc.mesaj)
+            self.finished.emit(sonuc.veri or {
+                "all_personel": [],
+                "personel_rows": [],
+                "takip_rows": [],
             })
         except Exception as exc:
             self.error.emit(str(exc))
@@ -312,33 +249,18 @@ class _SaglikSaver(QThread):
             from core.paths import DB_PATH
             db_path = self._db_path or DB_PATH
             db = SQLiteManager(db_path=db_path)
-            _svc       = _svc_factory(db)
-            takip_repo = _svc._r.get("Personel_Saglik_Takip")
+            _svc = _svc_factory(db)
 
             if self._mode == "rapor":
-                takip_repo.update(self._payload["KayitNo"], {"RaporDosya": self._payload["RaporDosya"]})
+                sonuc = _svc.kaydet_rapor_dosya(self._payload["KayitNo"], self._payload["RaporDosya"])
+                if not sonuc.basarili:
+                    raise RuntimeError(sonuc.mesaj)
                 self.finished.emit("rapor_ok")
                 return
 
-            # full kayıt
-            personel_repo = _svc._r.get("Personel")
-            mevcut = takip_repo.get_by_id(self._payload["KayitNo"])
-            if mevcut:
-                takip_repo.update(self._payload["KayitNo"], self._payload)
-            else:
-                takip_repo.insert(self._payload)
-
-            muayene_db = self._payload.get("MuayeneTarihi", "")
-            if muayene_db:
-                from core.date_utils import parse_date as _pd
-                mevcut_p = personel_repo.get_by_id(self._payload["Personelid"]) or {}
-                mevcut_t = _pd(mevcut_p.get("MuayeneTarihi"))
-                yeni_t   = _pd(muayene_db)
-                if yeni_t and (not mevcut_t or yeni_t >= mevcut_t):
-                    personel_repo.update(self._payload["Personelid"], {
-                        "MuayeneTarihi": muayene_db,
-                        "Sonuc":         self._payload.get("Sonuc", ""),
-                    })
+            sonuc = _svc.upsert_saglik_kaydi(self._payload)
+            if not sonuc.basarili:
+                raise RuntimeError(sonuc.mesaj)
             self.finished.emit("ok")
         except Exception as exc:
             self.error.emit(str(exc))
@@ -362,8 +284,7 @@ class SaglikTakipPage(QWidget):
     def _fill_hizmet_sinifi_combo(self):
         """Hizmet sınıfı combobox'unu Sabitler tablosundan doldur."""
         try:
-            from core.di import get_settings_service
-            svc = get_settings_service(self._db) if self._db else None
+            svc = self._settings_svc
             sinifler = []
             if svc:
                 # Sabitler tablosunda Kod='HizmetSinifi' olanları çek
@@ -414,6 +335,8 @@ class SaglikTakipPage(QWidget):
         self._exam_keys = ["Dermatoloji", "Dahiliye", "Goz", "Goruntuleme"]
         self._exam_widgets = {}
         self._exam_status_dot = {}
+        self._settings_svc = get_settings_service(db) if db else None
+        self._dok_svc      = get_dokuman_service(db) if db else None
         self._setup_ui()
         self._connect_signals()
         self._set_icon_delegate()
@@ -1422,8 +1345,7 @@ class SaglikTakipPage(QWidget):
         try:
             ext         = os.path.splitext(self._selected_report_path)[1]
             custom_name = f"{tc_no}_{kayit_no}_SaglikRapor{ext}"
-            from core.di import get_dokuman_service
-            svc         = get_dokuman_service(self._db)
+            svc         = self._dok_svc
             sonuc       = svc.upload_and_save(
                 file_path    = self._selected_report_path,
                 entity_type  = "personel",

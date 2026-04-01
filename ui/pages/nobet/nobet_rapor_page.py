@@ -365,6 +365,7 @@ class NobetRaporPage(QWidget):
         self._worker: Optional[_RaporWorker] = None
         self._yil    = datetime.date.today().year
         self._ay     = datetime.date.today().month
+        self._svc    = get_nobet_service(db) if db else None
         self._setup_ui()
         if db:
             self.load_data()
@@ -500,10 +501,10 @@ class NobetRaporPage(QWidget):
     # ─── Veri ────────────────────────────────────────────
 
     def load_data(self):
-        if not self._db:
+        if not self._svc:
             return
         try:
-            svc   = get_nobet_service(self._db)
+            svc   = self._svc
             sonuc = svc.get_birimler()
             cur   = self.cmb_birim.currentData()
             self.cmb_birim.blockSignals(True)
@@ -529,7 +530,7 @@ class NobetRaporPage(QWidget):
             yil  = self.spn_yil.value()
             ay   = self.cmb_ay.currentData()
             brid = self.cmb_birim.currentData()
-            svc  = get_nobet_service(self._db)
+            svc  = self._svc
             ozet = svc.personel_nobet_ozeti(yil, ay, brid)
             plan = svc.get_plan(yil, ay, brid)
             rows = ozet.veri or []
@@ -560,17 +561,15 @@ class NobetRaporPage(QWidget):
         ay   = self.cmb_ay.currentData()
         brid = self.cmb_birim.currentData()
         try:
-            svc   = get_nobet_service(self._db)
+            svc   = self._svc
             sonuc = svc.get_plan(yil, ay, brid)
             plan  = sonuc.veri or []
             if not plan:
                 uyari_goster(self, "Bu dönemde nöbet planı yok.")
                 return
 
-            v_rows = svc._r.get("NB_Vardiya").get_all() or []
-            v_map  = {v["VardiyaID"]: v for v in v_rows}
-            p_rows = svc._r.get("Personel").get_all() or []
-            p_map  = {str(p["KimlikNo"]): p.get("AdSoyad","") for p in p_rows}
+            v_map = svc.get_vardiya_haritasi().veri or {}
+            p_map = svc.get_personel_haritasi().veri or {}
 
             # Gün → vardiya prefix → kişiler listesi
             gun_plan: dict[str, dict] = collections.defaultdict(

@@ -20,7 +20,7 @@ from PySide6.QtGui import QCursor
 
 from core.logger import logger
 from core.hata_yonetici import exc_logla, bilgi_goster, hata_goster, uyari_goster, soru_sor
-from core.di import get_izin_service, get_dokuman_service
+from core.di import get_izin_service, get_dokuman_service, get_fhsz_service, get_personel_service
 from core.date_utils import to_ui_date
 from ui.styles.icons import IconRenderer
 
@@ -212,6 +212,10 @@ class IstenAyrilikPage(QWidget):
         self._arsiv_worker = None
         self._pending_ayrilis_data = None
         self._archive_required = False
+        self._dok_svc      = get_dokuman_service(db) if db else None
+        self._fhsz_svc     = get_fhsz_service(db) if db else None
+        self._izin_svc     = get_izin_service(db) if db else None
+        self._personel_svc = get_personel_service(db) if db else None
 
         self._setup_ui()
         self._load_drive_folders()
@@ -338,8 +342,8 @@ class IstenAyrilikPage(QWidget):
             dg.addWidget(fallback)
         else:
             try:
-                svc = get_dokuman_service(self._db)
-                doks = svc.get_belgeler("personel", tc).veri or []
+                svc = self._dok_svc
+                doks = svc.get_belgeler("personel", tc).veri or [] if svc else []
 
                 table = QTableWidget()
                 table.setColumnCount(4)
@@ -478,9 +482,8 @@ class IstenAyrilikPage(QWidget):
         if not self._db:
             return
         try:
-            from core.di import get_fhsz_service
-            fhsz_svc = get_fhsz_service(self._db)
-            sabit_repo = fhsz_svc.get_sabitler_repo().veri
+            fhsz_svc = self._fhsz_svc
+            sabit_repo = fhsz_svc.get_sabitler_repo().veri if fhsz_svc else None
             all_sabit = sabit_repo.get_all() if sabit_repo else []
             self._drive_folders = {
                 str(r.get("MenuEleman") or "").strip(): str(r.get("Aciklama") or "").strip()
@@ -497,8 +500,8 @@ class IstenAyrilikPage(QWidget):
         if not self._db or not tc:
             return
         try:
-            izin_svc = get_izin_service(self._db)
-            izin_repo = izin_svc.get_izin_bilgi_repo().veri
+            izin_svc = self._izin_svc
+            izin_repo = izin_svc.get_izin_bilgi_repo().veri if izin_svc else None
             izin = izin_repo.get_by_id(tc) if izin_repo else None
             if izin:
                 self.lbl_y_toplam.setText(str(izin.get("YillikToplamHak", "0")))
@@ -634,9 +637,11 @@ class IstenAyrilikPage(QWidget):
             })
 
         try:
-            from core.di import get_personel_service
-            personel_svc = get_personel_service(self._db)
-            personel_svc.get_personel_repo().update(tc, update_data)
+            personel_svc = self._personel_svc
+            if personel_svc:
+                repo_sonuc = personel_svc.get_personel_repo()
+                if repo_sonuc.basarili and repo_sonuc.veri:
+                    repo_sonuc.veri.update(tc, update_data)
             self._data.update(update_data)
             logger.info(f"Personel pasif (güvenli mod): {tc}")
         except Exception as e:

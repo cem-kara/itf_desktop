@@ -23,6 +23,7 @@ from PySide6.QtGui import QColor, QBrush
 from typing import Optional
 from core.logger import logger
 from core.hata_yonetici import bilgi_goster, hata_goster, soru_sor, uyari_goster
+from core.di import get_dis_alan_import_service, get_dis_alan_katsayi_service, get_dis_alan_service
 from ui.styles.icons import IconRenderer
 
 # Renk sabitleri (koyu tema uyumlu)
@@ -81,6 +82,9 @@ class DisAlanImportPage(QWidget):
         self._db     = db
         self._sonuc  = None   # Son okunan ImportSonucu
         self._thread = None
+        self._import_svc  = get_dis_alan_import_service(db) if db else None
+        self._katsayi_svc = get_dis_alan_katsayi_service(db) if db else None
+        self._dis_alan_svc = get_dis_alan_service(db) if db else None
 
         self._tabs = QTabWidget()
         self._tabs.setDocumentMode(True)
@@ -233,9 +237,9 @@ class DisAlanImportPage(QWidget):
 
         # Katsayı verisini ANA THREAD'de çek — worker thread'de DB'ye dokunulmaz
         katsayi_cache = {}
-        if self._db:
+        if self._katsayi_svc:
             try:
-                katsayi_sonuc = get_dis_alan_katsayi_service(self._db).get_tum_aktif_dict()
+                katsayi_sonuc = self._katsayi_svc.get_tum_aktif_dict()
                 if katsayi_sonuc.basarili:
                     katsayi_cache = katsayi_sonuc.data or {}
                 else:
@@ -243,7 +247,7 @@ class DisAlanImportPage(QWidget):
             except Exception as e:
                 logger.warning(f"Katsayı cache yüklenemedi: {e}")
 
-        svc = get_dis_alan_import_service(self._db) if self._db else None
+        svc = self._import_svc
 
         # Dönem F3'ten okunacak — 0 geçiyoruz
         self._worker = _OkuyucuWorker(svc, self._dosya_yolu, 0, 0, katsayi_cache)
@@ -417,21 +421,22 @@ class DisAlanImportPage(QWidget):
             ):
                 return
 
-        from core.di import get_registry, get_dis_alan_import_service
+        from core.di import get_dis_alan_service, get_dis_alan_import_service
         from core.auth.session_context import SessionContext
 
         # Dönem kilidi — onaylı döneme import engeli
-        if self._db and self._sonuc:
+        if self._dis_alan_svc and self._sonuc:
             try:
                 ana   = str(self._sonuc.anabilim_dali or "").strip()
                 birim = str(self._sonuc.birim or "").strip()
                 ay    = self._sonuc.donem_ay
                 yil   = self._sonuc.donem_yil
                 if ana and birim and ay and yil:
-                    kilitli = get_registry(self._db).get("Dis_Alan_Izin_Ozet").get_all() or []
+                    svc_dis_alan = self._dis_alan_svc
+                    kilitli = svc_dis_alan.get_yillik_ozet_listesi(yil).veri or []
                     kilitli_donem = [
                         r for r in kilitli
-                        if str(r.get("DonemAy",""))  == str(ay)
+                        if str(r.get("DonemAy","")) == str(ay)
                         and str(r.get("DonemYil","")) == str(yil)
                         and int(r.get("RksOnay", 0)) == 1
                     ]
@@ -448,7 +453,7 @@ class DisAlanImportPage(QWidget):
             except Exception as e:
                 logger.warning(f"Dönem kilidi kontrolü: {e}")
 
-        svc = get_dis_alan_import_service(self._db)
+        svc = self._import_svc
 
         try:
             kaydeden = getattr(SessionContext(), "current_user", None) or "Import"
@@ -511,8 +516,8 @@ class DisAlanImportPage(QWidget):
                 f"onceki_import_kontrol_db sorgulaniyor: "
                 f"ana='{ana}' birim='{birim}' ay={ay} yil={yil}"
             )
-            from core.di import get_registry
-            tum = get_registry(self._db).get("Dis_Alan_Calisma").get_all() or []
+            from core.di import get_dis_alan_service
+            tum = self._dis_alan_svc.get_calisma_listesi().veri or [] if self._dis_alan_svc else []
 
             ana_l   = ana.lower()
             birim_l = birim.lower()
@@ -570,9 +575,8 @@ class DisAlanImportPage(QWidget):
             return
 
         try:
-            from core.di import get_registry
-            repo  = get_registry(self._db).get("Dis_Alan_Calisma")
-            tum   = repo.get_all() or []
+            from core.di import get_dis_alan_service
+            tum = self._dis_alan_svc.get_calisma_listesi().veri or [] if self._dis_alan_svc else []
 
             ana_lower   = ana.lower()
             birim_lower = birim.lower()
@@ -660,6 +664,7 @@ class _KarsilastirmaWidget(QWidget):
         self._db = db
         self._rows_cache: list[dict] = []
         self._analiz: dict | None    = None
+        self._dis_alan_svc = get_dis_alan_service(db) if db else None
         self._setup_ui()
         self._connect_signals()
 
@@ -885,11 +890,10 @@ class _KarsilastirmaWidget(QWidget):
         self._yukle()
 
     def _ana_degisti(self):
-        if not self._db:
+        if not self._dis_alan_svc:
             return
         try:
-            from core.di import get_registry
-            rows = get_registry(self._db).get("Dis_Alan_Calisma").get_all() or []
+            rows = self._dis_alan_svc.get_calisma_listesi().veri or []
             ana = self.cmb_ana.currentText()
             birimler = sorted({
                 str(r.get("Birim","")).strip()
@@ -906,7 +910,7 @@ class _KarsilastirmaWidget(QWidget):
     # ── Veri yükle ────────────────────────────────────────────
 
     def _yukle(self):
-        if not self._db:
+        if not self._dis_alan_svc:
             self.lbl_durum.setText("Veritabanı bağlantısı yok")
             return
 
@@ -916,8 +920,7 @@ class _KarsilastirmaWidget(QWidget):
         yil   = int(self.cmb_yil.currentText())
 
         try:
-            from core.di import get_registry
-            rows = get_registry(self._db).get("Dis_Alan_Calisma").get_all() or []
+            rows = self._dis_alan_svc.get_calisma_listesi().veri or []
         except Exception as e:
             logger.error(f"KarsilastirmaWidget._yukle: {e}")
             return
@@ -1256,8 +1259,7 @@ class _KarsilastirmaWidget(QWidget):
 
         # ── Birleştirme işlemi ────────────────────────────────
         try:
-            from core.di import get_registry
-            repo = get_registry(self._db).get("Dis_Alan_Calisma")
+            svc = self._dis_alan_svc
             tn_a = a["tn_a"]
             tn_b = a["tn_b"]
             eklenen = guncellenen = 0
@@ -1267,14 +1269,8 @@ class _KarsilastirmaWidget(QWidget):
                 rb = a["rows_b"][s["key"]]
                 yeni = dict(rb)
                 yeni["TutanakNo"] = tn_a   # A listesine dahil et
-                pk = (
-                    str(yeni.get("TCKimlik","")),
-                    str(yeni.get("DonemAy","")),
-                    str(yeni.get("DonemYil","")),
-                    str(yeni.get("TutanakNo","")),
-                )
-                if not repo.get_by_pk(pk):
-                    repo.insert(yeni)
+                kaydet_sonuc = svc.calisma_kaydet(yeni)
+                if kaydet_sonuc.basarili:
                     eklenen += 1
 
             # 2. Fark olanlar için B tercih edilmişse A kaydını güncelle
@@ -1282,32 +1278,23 @@ class _KarsilastirmaWidget(QWidget):
                 if s["key"] in tercih_b:
                     ra = a["rows_a"][s["key"]]
                     rb = a["rows_b"][s["key"]]
-                    pk_a = (
-                        str(ra.get("TCKimlik","")),
-                        str(ra.get("DonemAy","")),
-                        str(ra.get("DonemYil","")),
-                        str(ra.get("TutanakNo","")),
+                    guncelle_sonuc = svc.calisma_guncelle(
+                        ra.get("TCKimlik", ""),
+                        ra.get("DonemAy", ""),
+                        ra.get("DonemYil", ""),
+                        ra.get("TutanakNo", ""),
+                        {
+                            "VakaSayisi": rb.get("VakaSayisi"),
+                            "HesaplananSaat": rb.get("HesaplananSaat"),
+                            "Katsayi": rb.get("Katsayi"),
+                        },
                     )
-                    repo.update(pk_a, {
-                        "VakaSayisi":    rb.get("VakaSayisi"),
-                        "HesaplananSaat":rb.get("HesaplananSaat"),
-                        "Katsayi":       rb.get("Katsayi"),
-                    })
-                    guncellenen += 1
+                    if guncelle_sonuc.basarili:
+                        guncellenen += 1
 
             # 3. B listesini tamamen sil
-            b_rows = [r for r in self._rows_cache
-                      if str(r.get("TutanakNo","")) == tn_b]
-            silinen = 0
-            for r in b_rows:
-                pk = (
-                    str(r.get("TCKimlik","")),
-                    str(r.get("DonemAy","")),
-                    str(r.get("DonemYil","")),
-                    str(r.get("TutanakNo","")),
-                )
-                repo.delete(pk)
-                silinen += 1
+            sil_sonuc = svc.tutanak_listesi_sil(tn_b)
+            silinen = sil_sonuc.veri or 0
 
             logger.info(
                 f"Import birleştirme: "
@@ -1338,7 +1325,7 @@ class _KarsilastirmaWidget(QWidget):
     # ── Listeyi Sil ───────────────────────────────────────────
 
     def _sil_liste(self, taraf: str):
-        if not self._analiz or not self._db:
+        if not self._analiz or not self._dis_alan_svc:
             return
 
         tn = self._analiz["tn_a"] if taraf == "A" else self._analiz["tn_b"]
@@ -1354,20 +1341,8 @@ class _KarsilastirmaWidget(QWidget):
             return
 
         try:
-            from core.di import get_registry
-            repo = get_registry(self._db).get("Dis_Alan_Calisma")
-            rows = [r for r in self._rows_cache
-                    if str(r.get("TutanakNo","")) == tn]
-            silinen = 0
-            for r in rows:
-                pk = (
-                    str(r.get("TCKimlik","")),
-                    str(r.get("DonemAy","")),
-                    str(r.get("DonemYil","")),
-                    str(r.get("TutanakNo","")),
-                )
-                repo.delete(pk)
-                silinen += 1
+            sil_sonuc = self._dis_alan_svc.tutanak_listesi_sil(tn)
+            silinen = sil_sonuc.veri or 0
 
             bilgi_goster(self, f"{label} — {silinen} kayıt silindi.")
             self._analiz = None

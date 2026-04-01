@@ -59,9 +59,9 @@ class NobetService:
     #  VARDİYA
     # ═══════════════════════════════════════════════════
 
-    def get_birim_ayar(self, birim_adi: str) -> dict:
+    def get_birim_ayar(self, birim_adi: str) -> SonucYonetici:
         """
-        Birim ayarını döner. Yoksa varsayılan üretir.
+        Birim ayarını döner. Yoksa varsayılanı veri alanında üretir.
         Slot süresi: GunlukSlotSaat || Σ ana vardiya SaatSuresi
         """
         try:
@@ -69,9 +69,9 @@ class NobetService:
             kayit = next((r for r in rows
                           if r.get("BirimAdi") == birim_adi), None)
             if kayit:
-                return dict(kayit)
-        except Exception:
-            pass
+                return SonucYonetici.tamam(veri=dict(kayit))
+        except Exception as e:
+            return SonucYonetici.hata(e, "NobetService.get_birim_ayar")
 
         # Varsayılan: ana vardiyaların saatini topla
         slot_saat = None
@@ -89,13 +89,13 @@ class NobetService:
         except Exception:
             pass
 
-        return {
+        return SonucYonetici.tamam(veri={
             "BirimAdi":         birim_adi,
             "GunlukSlotSaat":   slot_saat or 24.0,
             "SlotBasiPersonel": 4,
             "CalismaModu":      "tam_gun",
             "OtomatikBolunme":  1,
-        }
+        })
 
     def get_vardiyalar(self, birim_adi: Optional[str] = None) -> SonucYonetici:
         try:
@@ -216,7 +216,10 @@ class NobetService:
         """
         try:
             # ── Birim ayarı ───────────────────────────────────
-            ayar = self.get_birim_ayar(birim_adi)
+            ayar_sonuc = self.get_birim_ayar(birim_adi)
+            if not ayar_sonuc.basarili:
+                return ayar_sonuc
+            ayar = ayar_sonuc.veri or {}
             slot_basi    = int(ayar.get("SlotBasiPersonel", 4))
             slot_saat    = float(ayar.get("GunlukSlotSaat", 24.0))
             oto_bolunme  = bool(int(ayar.get("OtomatikBolunme", 1)))
@@ -702,13 +705,14 @@ class NobetService:
         except Exception as e:
             return SonucYonetici.hata(e, "NobetService.birim_ayar_kaydet")
 
-    def birim_ayar_getir(self, birim_adi: str) -> Optional[dict]:
-        """Birim ayarını döner. Kayıt yoksa None."""
+    def birim_ayar_getir(self, birim_adi: str) -> SonucYonetici:
+        """Birim ayarını döner. Kayıt yoksa veri alanında None taşır."""
         try:
             rows = self._r.get("Nobet_BirimAyar").get_all() or []
-            return next((r for r in rows if r.get("BirimAdi") == birim_adi), None)
-        except Exception:
-            return None
+            kayit = next((r for r in rows if r.get("BirimAdi") == birim_adi), None)
+            return SonucYonetici.tamam(veri=kayit)
+        except Exception as e:
+            return SonucYonetici.hata(e, "NobetService.birim_ayar_getir")
 
     def _slot_saat_hesapla(self, birim_adi: str,
                            vardiyalar: list[dict],

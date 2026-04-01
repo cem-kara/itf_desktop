@@ -98,10 +98,10 @@ class NbBirimService:
         except Exception as e:
             return SonucYonetici.hata(e, "NbBirimService.get_birim")
 
-    def birim_id_bul(self, birim_adi: str) -> Optional[str]:
+    def birim_id_bul(self, birim_adi: str) -> SonucYonetici:
         """
         BirimAdi'nden BirimID döner.
-        Bulamazsa None — çağıran kod Sabitler fallback ile devam eder.
+        Bulamazsa veri alanında None taşır.
         """
         try:
             rows = self._r.get("NB_Birim").get_all() or []
@@ -111,9 +111,9 @@ class NbBirimService:
                  and not int(r.get("is_deleted", 0))),
                 None
             )
-            return kayit["BirimID"] if kayit else None
-        except Exception:
-            return None
+            return SonucYonetici.tamam(veri=kayit["BirimID"] if kayit else None)
+        except Exception as e:
+            return SonucYonetici.hata(e, "NbBirimService.birim_id_bul")
 
     # ──────────────────────────────────────────────────────────
     #  Yazma

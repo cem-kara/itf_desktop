@@ -485,6 +485,8 @@ class NobetYonetimPage(QWidget):
         self._secili_birim_id:  str = ""
         self._secili_birim_adi: str = ""
         self._secili_grup_id:   str = ""
+        self._reg_instance       = get_registry(db) if db else None
+        self._birim_svc_instance = get_nb_birim_service(db) if db else None
 
         self.setProperty("bg-role", "page")
         self._build()
@@ -497,14 +499,10 @@ class NobetYonetimPage(QWidget):
     # ─────────────────────────────────────────────────────────
 
     def _reg(self):
-        return get_registry(self._db)
+        return self._reg_instance
 
     def _birim_svc(self):
-        try:
-            return get_nb_birim_service(self._db)
-        except Exception as e:
-            logger.error(f"NbBirimService: {e}")
-            return None
+        return self._birim_svc_instance
 
     def _btn(self, metin: str, stil: str = "secondary",
              h: int = 26) -> QPushButton:

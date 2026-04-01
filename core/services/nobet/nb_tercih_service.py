@@ -68,14 +68,14 @@ class NbTercihService:
     # ──────────────────────────────────────────────────────────
 
     def get_tercih(self, personel_id: str, birim_id: str,
-                   yil: int, ay: int) -> Optional[dict]:
+                   yil: int, ay: int) -> SonucYonetici:
         """
         Tek personelin aylık tercih kaydını döner.
         Kayıt yoksa None — çağıran otomatik hesaba geçer.
         """
         try:
             rows = self._r.get("NB_PersonelTercih").get_all() or []
-            return next(
+            kayit = next(
                 (dict(r) for r in rows
                  if str(r.get("PersonelID", "")) == str(personel_id)
                  and str(r.get("BirimID", ""))    == str(birim_id)
@@ -83,9 +83,9 @@ class NbTercihService:
                  and int(r.get("Ay",  0)) == ay),
                 None
             )
+            return SonucYonetici.tamam(veri=kayit)
         except Exception as e:
-            logger.error(f"get_tercih: {e}")
-            return None
+            return SonucYonetici.hata(e, "NbTercihService.get_tercih")
 
     def get_birim_tercihler(self, birim_id: str,
                             yil: int, ay: int) -> SonucYonetici:
@@ -106,7 +106,7 @@ class NbTercihService:
             return SonucYonetici.hata(e, "NbTercihService.get_birim_tercihler")
 
     def tercih_map_getir(self, birim_id: str,
-                         yil: int, ay: int) -> dict[str, str]:
+                         yil: int, ay: int) -> SonucYonetici:
         """
         Algoritma için hızlı erişim haritası döner.
         {personel_id: nobet_tercihi}
@@ -114,20 +114,20 @@ class NbTercihService:
         """
         try:
             rows = self._r.get("NB_PersonelTercih").get_all() or []
-            return {
+            tercih_map = {
                 str(r.get("PersonelID", "")): str(r.get("NobetTercihi", "zorunlu"))
                 for r in rows
                 if str(r.get("BirimID", "")) == str(birim_id)
                 and int(r.get("Yil", 0)) == yil
                 and int(r.get("Ay",  0)) == ay
             }
+            return SonucYonetici.tamam(veri=tercih_map)
         except Exception as e:
-            logger.error(f"tercih_map_getir: {e}")
-            return {}
+            return SonucYonetici.hata(e, "NbTercihService.tercih_map_getir")
 
     def hedef_dakika_getir(self, personel_id: str, birim_id: str,
                            yil: int, ay: int,
-                           otomatik: bool = True) -> Optional[int]:
+                           otomatik: bool = True) -> SonucYonetici:
         """
         Kişinin aylık hedef dakikasını döner.
 
@@ -135,22 +135,28 @@ class NbTercihService:
         Yoksa otomatik=True ise → (iş_günü - izin_günü) × 420 dakika
         Yoksa otomatik=False ise → None
         """
-        kayit = self.get_tercih(personel_id, birim_id, yil, ay)
+        kayit_sonuc = self.get_tercih(personel_id, birim_id, yil, ay)
+        if not kayit_sonuc.basarili:
+            return kayit_sonuc
+        kayit = kayit_sonuc.veri
         if kayit and kayit.get("HedefDakika") is not None:
-            return int(kayit["HedefDakika"])
+            return SonucYonetici.tamam(veri=int(kayit["HedefDakika"]))
 
         if not otomatik:
-            return None
+            return SonucYonetici.tamam(veri=None)
 
-        return self._hesapla_hedef_dakika(personel_id, yil, ay)
+        return SonucYonetici.tamam(veri=self._hesapla_hedef_dakika(personel_id, yil, ay))
 
     def ayar_var_mi(self, personel_id: str, birim_id: str,
-                    yil: int, ay: int) -> bool:
+                    yil: int, ay: int) -> SonucYonetici:
         """Bu ay için kayıt var mı?"""
-        return self.get_tercih(personel_id, birim_id, yil, ay) is not None
+        tercih_sonuc = self.get_tercih(personel_id, birim_id, yil, ay)
+        if not tercih_sonuc.basarili:
+            return tercih_sonuc
+        return SonucYonetici.tamam(veri=tercih_sonuc.veri is not None)
 
     def eksik_personel_listesi(self, birim_id: str, yil: int,
-                               ay: int) -> list[str]:
+                               ay: int) -> SonucYonetici:
         """
         Birimde kayıtlı olup bu ay tercih/hedef girişi olmayan
         personellerin ID listesini döner.
@@ -175,10 +181,9 @@ class NbTercihService:
                 and int(r.get("Yil", 0)) == yil
                 and int(r.get("Ay",  0)) == ay
             }
-            return [pid for pid in personeller if pid not in kayitli]
+            return SonucYonetici.tamam(veri=[pid for pid in personeller if pid not in kayitli])
         except Exception as e:
-            logger.error(f"eksik_personel_listesi: {e}")
-            return []
+            return SonucYonetici.hata(e, "NbTercihService.eksik_personel_listesi")
 
     # ──────────────────────────────────────────────────────────
     #  Yazma
@@ -229,7 +234,10 @@ class NbTercihService:
                 "updated_at":        _simdi(),
             }
 
-            mevcut = self.get_tercih(personel_id, birim_id, yil, ay)
+            mevcut_sonuc = self.get_tercih(personel_id, birim_id, yil, ay)
+            if not mevcut_sonuc.basarili:
+                return mevcut_sonuc
+            mevcut = mevcut_sonuc.veri
             if mevcut:
                 self._r.get("NB_PersonelTercih").update(
                     mevcut["TercihID"], veri)
@@ -257,7 +265,10 @@ class NbTercihService:
             return SonucYonetici.hata(
                 ValueError(f"Geçersiz tercih: {nobet_tercihi}"))
 
-        mevcut = self.get_tercih(personel_id, birim_id, yil, ay)
+        mevcut_sonuc = self.get_tercih(personel_id, birim_id, yil, ay)
+        if not mevcut_sonuc.basarili:
+            return mevcut_sonuc
+        mevcut = mevcut_sonuc.veri
         if mevcut:
             self._r.get("NB_PersonelTercih").update(
                 mevcut["TercihID"],
@@ -288,7 +299,10 @@ class NbTercihService:
             for p in personeller:
                 pid    = str(p["KimlikNo"])
                 hedef  = self._hesapla_hedef_dakika(pid, yil, ay)
-                mevcut = self.get_tercih(pid, birim_id, yil, ay)
+                mevcut_sonuc = self.get_tercih(pid, birim_id, yil, ay)
+                if not mevcut_sonuc.basarili:
+                    return mevcut_sonuc
+                mevcut = mevcut_sonuc.veri
                 if mevcut:
                     self._r.get("NB_PersonelTercih").update(
                         mevcut["TercihID"],

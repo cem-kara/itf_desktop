@@ -44,6 +44,45 @@ class NobetAdapter:
     def get_birimler(self) -> SonucYonetici:
         return self.birim.get_birimler()
 
+    def get_personel_listesi(self, gorev_yeri: Optional[str] = None) -> SonucYonetici:
+        try:
+            rows = self._r.get("Personel").get_all() or []
+            if gorev_yeri:
+                hedef = str(gorev_yeri).strip()
+                rows = [
+                    r for r in rows
+                    if str(r.get("GorevYeri", "")).strip() == hedef
+                ]
+            return SonucYonetici.tamam(
+                veri=sorted(rows, key=lambda r: str(r.get("AdSoyad", "")))
+            )
+        except Exception as e:
+            return SonucYonetici.hata(e, "NobetAdapter.get_personel_listesi")
+
+    def get_personel_haritasi(self) -> SonucYonetici:
+        try:
+            rows = self._r.get("Personel").get_all() or []
+            data = {
+                str(r.get("KimlikNo", "")).strip(): str(r.get("AdSoyad", "")).strip()
+                for r in rows
+                if str(r.get("KimlikNo", "")).strip()
+            }
+            return SonucYonetici.tamam(veri=data)
+        except Exception as e:
+            return SonucYonetici.hata(e, "NobetAdapter.get_personel_haritasi")
+
+    def get_vardiya_haritasi(self) -> SonucYonetici:
+        try:
+            rows = self._r.get("NB_Vardiya").get_all() or []
+            data = {
+                str(r.get("VardiyaID", "")).strip(): dict(r)
+                for r in rows
+                if str(r.get("VardiyaID", "")).strip()
+            }
+            return SonucYonetici.tamam(veri=data)
+        except Exception as e:
+            return SonucYonetici.hata(e, "NobetAdapter.get_vardiya_haritasi")
+
     # ──────────────────────────────────────────────────────────
     #  Vardiya
     # ──────────────────────────────────────────────────────────
@@ -82,7 +121,10 @@ class NobetAdapter:
             bid     = self._birim_id_coz(birim)
             if not bid:
                 return SonucYonetici.tamam(veri=[])
-            plan    = self.plan.get_plan(bid, yil, ay)
+            plan_sonuc = self.plan.get_plan(bid, yil, ay)
+            if not plan_sonuc.basarili:
+                return plan_sonuc
+            plan = plan_sonuc.veri
             if not plan:
                 return SonucYonetici.tamam(veri=[])
             sonuc = self.plan.get_satirlar(plan["PlanID"])
@@ -156,7 +198,10 @@ class NobetAdapter:
             bid = self._birim_id_coz(birim)
             if not bid:
                 return SonucYonetici.tamam(veri=[])
-            plan = self.plan.get_plan(bid, yil, ay)
+            plan_sonuc = self.plan.get_plan(bid, yil, ay)
+            if not plan_sonuc.basarili:
+                return plan_sonuc
+            plan = plan_sonuc.veri
             if not plan:
                 return SonucYonetici.tamam(veri=[])
 
@@ -207,7 +252,10 @@ class NobetAdapter:
             if not birim:
                 return SonucYonetici.tamam(veri=[])
             bid    = self._birim_id_coz(birim)
-            durum  = self.plan.onay_durumu(bid, yil, ay)
+            durum_sonuc = self.plan.onay_durumu(bid, yil, ay)
+            if not durum_sonuc.basarili:
+                return durum_sonuc
+            durum  = durum_sonuc.veri
             return SonucYonetici.tamam(veri=[{"Durum": durum}])
         except Exception as e:
             return SonucYonetici.hata(e, "NobetAdapter.onay_getir")
@@ -230,7 +278,10 @@ class NobetAdapter:
         bid = self._birim_id_coz(birim)
         if not bid:
             return {}
-        return self.tercih.tercih_map_getir(bid, yil, ay)
+        sonuc = self.tercih.tercih_map_getir(bid, yil, ay)
+        if not sonuc.basarili:
+            return {}
+        return sonuc.veri or {}
 
     def sadece_tercih_guncelle(self, personel_id: str, yil: int, ay: int,
                                 nobet_tercihi: str,
@@ -324,8 +375,11 @@ class NobetAdapter:
         bid = birim_id or self._personelin_birim_id(personel_id)
         if not bid:
             return None
-        dk = self.tercih.hedef_dakika_getir(
+        dk_sonuc = self.tercih.hedef_dakika_getir(
             personel_id, bid, yil, ay, otomatik=False)
+        if not dk_sonuc.basarili:
+            return None
+        dk = dk_sonuc.veri
         return round(dk / 60, 2) if dk is not None else None
 
     # ──────────────────────────────────────────────────────────
@@ -488,7 +542,10 @@ class NobetAdapter:
                             birim: Optional[str] = None) -> SonucYonetici:
         try:
             bid  = self._birim_id_coz(birim) if birim else ""
-            plan = self.plan.get_plan(bid, yil, ay) if bid else None
+            plan_sonuc = self.plan.get_plan(bid, yil, ay) if bid else SonucYonetici.tamam(veri=None)
+            if not plan_sonuc.basarili:
+                return plan_sonuc
+            plan = plan_sonuc.veri
             if not plan:
                 return SonucYonetici.hata(ValueError("Plan bulunamadı"))
             sonuc = self.mesai.mesai_hesapla(bid, plan["PlanID"], yil, ay)
@@ -606,7 +663,10 @@ class NobetAdapter:
             pass
 
         # BirimAdi → BirimID
-        return self.birim.birim_id_bul(birim) or ""
+        sonuc = self.birim.birim_id_bul(birim)
+        if not sonuc.basarili:
+            return ""
+        return sonuc.veri or ""
 
     def _birim_adi_bul(self, birim_id: str) -> str:
         try:
@@ -626,6 +686,84 @@ class NobetAdapter:
             if not p:
                 return ""
             gorev_yeri = str(p.get("GorevYeri","")).strip()
-            return self.birim.birim_id_bul(gorev_yeri) or ""
+            sonuc = self.birim.birim_id_bul(gorev_yeri)
+            if not sonuc.basarili:
+                return ""
+            return sonuc.veri or ""
         except Exception:
             return ""
+
+    # ──────────────────────────────────────────────────────────
+    #  Personel bazlı geçmiş sorgular (UI paneli için)
+    # ──────────────────────────────────────────────────────────
+
+    def get_personel_nobet_gecmisi(self, personel_id: str) -> SonucYonetici:
+        """
+        Bir personelin tüm aktif nöbet geçmişini döner (son 60 kayıt).
+        Dönen liste: [{NobetTarihi, BirimAdi, VardiyaAdi, SaatAraligi,
+                       SureDakika, PlanDurum}]
+        """
+        try:
+            plan_rows    = self._r.get("NB_Plan").get_all() or []
+            satir_rows   = self._r.get("NB_PlanSatir").get_all() or []
+            vardiya_rows = self._r.get("NB_Vardiya").get_all() or []
+            birim_rows   = self._r.get("NB_Birim").get_all() or []
+
+            plan_map    = {str(r.get("PlanID","")): dict(r) for r in plan_rows}
+            vardiya_map = {str(r.get("VardiyaID","")): dict(r) for r in vardiya_rows}
+            birim_map   = {str(r.get("BirimID","")): str(r.get("BirimAdi","")) for r in birim_rows}
+
+            sonuc = []
+            for satir in satir_rows:
+                if str(satir.get("PersonelID","")) != str(personel_id):
+                    continue
+                if str(satir.get("Durum","aktif")) != "aktif":
+                    continue
+                plan    = plan_map.get(str(satir.get("PlanID","")), {})
+                vardiya = vardiya_map.get(str(satir.get("VardiyaID","")), {})
+                sure_dk = int(vardiya.get("SureDakika",0) or 0)
+                sonuc.append({
+                    "NobetTarihi": str(satir.get("NobetTarihi","")),
+                    "BirimAdi":    birim_map.get(str(plan.get("BirimID","")), ""),
+                    "VardiyaAdi":  str(vardiya.get("VardiyaAdi","")),
+                    "SaatAraligi": f"{vardiya.get('BasSaat','')}-{vardiya.get('BitSaat','')}".strip("-"),
+                    "SureDakika":  sure_dk,
+                    "PlanDurum":   str(plan.get("Durum","taslak")).title(),
+                })
+            sonuc.sort(key=lambda r: str(r.get("NobetTarihi","")), reverse=True)
+            return SonucYonetici.tamam(veri=sonuc[:60])
+        except Exception as e:
+            return SonucYonetici.hata(e, "NobetAdapter.get_personel_nobet_gecmisi")
+
+    def get_personel_mesai_ozeti(self, personel_id: str) -> SonucYonetici:
+        """
+        Bir personelin mesai hesap özetini döner (son 24 dönem).
+        Dönen liste: [{Donem, BirimAdi, CalisDakika, HedefDakika, FazlaDakika,
+                       DevirDakika, ToplamFazlaDakika, OdenenDakika,
+                       DevireGidenDakika, Yil, Ay}]
+        """
+        try:
+            mesai_rows = self._r.get("NB_MesaiHesap").get_all() or []
+            birim_rows = self._r.get("NB_Birim").get_all() or []
+            birim_map  = {str(r.get("BirimID","")): str(r.get("BirimAdi","")) for r in birim_rows}
+
+            ilgili = [
+                dict(r) for r in mesai_rows
+                if str(r.get("PersonelID","")) == str(personel_id)
+            ]
+            ilgili.sort(
+                key=lambda r: (
+                    int(r.get("Yil",0) or 0),
+                    int(r.get("Ay",0) or 0),
+                    str(r.get("updated_at","")),
+                    str(r.get("HesapID","")),
+                ),
+                reverse=True,
+            )
+            sonuc = []
+            for row in ilgili[:24]:
+                row["BirimAdi"] = birim_map.get(str(row.get("BirimID","")), "")
+                sonuc.append(row)
+            return SonucYonetici.tamam(veri=sonuc)
+        except Exception as e:
+            return SonucYonetici.hata(e, "NobetAdapter.get_personel_mesai_ozeti")

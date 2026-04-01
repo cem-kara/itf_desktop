@@ -1154,7 +1154,7 @@ class BakimKayitForm(QWidget):
         for title, value, color in items:
             card = QWidget()
             card.setProperty("bg-role", "panel")
-            card.setStyleSheet(f"border:1px solid {_C['border']};border-radius:6px;")
+            card.setStyleSheet("border:1px solid {};border-radius:6px;".format(_C["border"]))
             cl = QVBoxLayout(card)
             cl.setContentsMargins(10, 8, 10, 8)
             cl.setSpacing(2)
@@ -1295,7 +1295,7 @@ class BakimKayitForm(QWidget):
 
             card = QWidget()
             card.setProperty("bg-role", "panel")
-            card.setStyleSheet(f"border:1px solid {_C['border']};border-radius:8px;")
+            card.setStyleSheet("border:1px solid {};border-radius:8px;".format(_C["border"]))
             cl = QVBoxLayout(card)
             cl.setContentsMargins(14, 12, 14, 12)
             cl.setSpacing(8)
@@ -2140,7 +2140,8 @@ class _BakimGirisForm(QWidget):
         # ═══════════════════════════════════════════════════════
         btn_container = QWidget()
         btn_container.setProperty("bg-role", "surface")
-        btn_container.setStyleSheet(f"border-top:1px solid {_C['border']};border-radius:0px;padding:12px;")
+        btn_container.setProperty("border-role", "top")
+        btn_container.setStyleSheet("border-radius:0px;padding:12px;")
         btns = QHBoxLayout(btn_container)
         btns.setContentsMargins(8, 8, 8, 8)
         btns.setSpacing(8)

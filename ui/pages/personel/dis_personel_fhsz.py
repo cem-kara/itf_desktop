@@ -13,6 +13,7 @@ from PySide6.QtCore import Qt, QDate
 from core.hesaplamalar import tr_upper
 from core.auth.session_context import SessionContext
 from core.hata_yonetici import bilgi_goster, hata_goster, uyari_goster
+from core.di import get_dis_alan_service
 from ui.styles.icons import IconRenderer
 
 # RKS Katsayıları — değer: kayıt anında snapshot alınır, servis bağımsız çalışır
@@ -34,6 +35,7 @@ class TutanakliGirisPage(QWidget):
         self._selected_personel_id = None
         self._selected_personel_ad = None
         self._all_personel = []
+        self._svc = get_dis_alan_service(db) if db else None
 
         self._setup_ui()
         self._connect_signals()
@@ -240,12 +242,11 @@ class TutanakliGirisPage(QWidget):
             uyari_goster(self, "Tutanak numarası boş olamaz.", "Eksik Bilgi")
             return
 
-        if not self._db:
+        if not self._svc:
             hata_goster(self, "Veritabanı bağlantısı kurulamadı.")
             return
 
-        from core.di import get_dis_alan_service
-        svc = get_dis_alan_service(self._db)
+        svc = self._svc
 
         islem = self.cmb_islem.currentText()
         ay = self.cmb_ay.currentIndex() + 1
@@ -294,11 +295,10 @@ class TutanakliGirisPage(QWidget):
         if not self._selected_personel_id:
             uyari_goster(self, "Önce personel seçin.", "Eksik Bilgi")
             return
-        if not self._db:
+        if not self._svc:
             return
 
-        from core.di import get_dis_alan_service
-        svc = get_dis_alan_service(self._db)
+        svc = self._svc
 
         ay = self.cmb_ay.currentIndex() + 1
         yil = int(self.cmb_yil.currentText())
@@ -338,11 +338,9 @@ class TutanakliGirisPage(QWidget):
 
     def load_data(self):
         """Sayfa açılışında veya dönem değişiminde çağrılır."""
-        if not self._db:
+        if not self._svc:
             return
-        from core.di import get_dis_alan_service
-        svc = get_dis_alan_service(self._db)
-        self._all_personel = svc.get_dis_alan_personeli().veri or []
+        self._all_personel = self._svc.get_dis_alan_personeli().veri or []
         self._listeyi_doldur(self._all_personel)
 
     def _listeyi_doldur(self, data: list[dict]):

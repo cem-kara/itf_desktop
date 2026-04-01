@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
 from core.di import get_nobet_service
 from core.hata_yonetici import bilgi_goster, hata_goster, soru_sor, uyari_goster
 from core.logger import logger
+from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer, IconColors
 
 _AY  = ["","Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",
@@ -54,8 +55,8 @@ class _Hucre(QFrame):
         self._revizyon_badge = QLabel("REV")
         self._revizyon_badge.setVisible(False)
         self._revizyon_badge.setStyleSheet(
-            "font-size:9px;font-weight:700;color:#f8fafc;"
-            "background:#f59e0b;padding:1px 4px;border-radius:6px;"
+            f"font-size:9px;font-weight:700;color:white;"
+            f"background:{DarkTheme.STATUS_WARNING};padding:1px 4px;border-radius:6px;"
         )
         ust_l.addWidget(self._lbl, 1)
         ust_l.addWidget(self._revizyon_badge, 0, Qt.AlignmentFlag.AlignRight)
@@ -81,15 +82,23 @@ class _Hucre(QFrame):
             bg = "transparent"
 
         if eksik_slot:
-            border = "3px solid #e85555"
+            border = f"3px solid {DarkTheme.STATUS_ERROR}"
         elif secili:
-            border = "3px solid #00b4d8"
+            border = f"3px solid {DarkTheme.ACCENT}"
         elif dini:
-            border = "2px solid #e8a030"
+            border = f"2px solid {DarkTheme.STATUS_WARNING}"
         else:
             border = "2px solid rgba(255,255,255,0.06)"
-        self.setStyleSheet(f"_Hucre{{background:{bg};border:{border};border-radius:0px;}}")
-        renk = "#e8a030" if dini else ("#e85555" if tatil else "#4d9ee8" if hf else "#8aabcf")
+        self.setStyleSheet("_Hucre{{background:{bg};border:{border};border-radius:0px;}}".format(
+            bg=bg,
+            border=border,
+        ))
+        renk = (
+            DarkTheme.STATUS_WARNING if dini else
+            DarkTheme.STATUS_ERROR if tatil else
+            DarkTheme.ACCENT if hf else
+            DarkTheme.ACCENT2
+        )
         etiket = "(Dini Tatil)" if dini else ("(Resmi Tatil)" if tatil else "")
         self._lbl.setText(
             f"<span style='color:{renk}'>{g} {_GUN[a]} {etiket}</span>")
@@ -101,11 +110,13 @@ class _Hucre(QFrame):
             ad = str(n.get("AdSoyad") or n.get("PersonelID",""))[:15]
             lb = QLabel(ad)
             lb.setStyleSheet("font-size:10px;padding:1px 3px;border-radius:2px;"
-                             "background:rgba(0,180,216,0.15);color:#a8d4ef;")
+                             f"background:rgba(0,180,216,0.15);color:{DarkTheme.ACCENT2};")
             al.addWidget(lb)
         if len(nobetler) > 8:
-            al.addWidget(QLabel(f"+{len(nobetler)-8}",
-                                styleSheet="font-size:9px;color:#6a90b4;"))
+            lbl_fazla = QLabel(f"+{len(nobetler)-8}")
+            lbl_fazla.setProperty("color-role", "secondary")
+            lbl_fazla.setStyleSheet("font-size:9px;")
+            al.addWidget(lbl_fazla)
 
     def mousePressEvent(self, e):
         self.tiklandi.emit(self.gun, self._nobetler)
@@ -148,9 +159,10 @@ class NobetPlanPage(QWidget):
         self._secili_gun: Optional[date]  = None
         self._hazirlik_ok: bool           = False
         self._secili_satir: Optional[dict] = None
+        self._svc_instance = get_nobet_service(db) if db else None
         self._build()
 
-    def _svc(self): return get_nobet_service(self._db)
+    def _svc(self): return self._svc_instance
 
     # ── UI ────────────────────────────────────────────────────
 
@@ -190,8 +202,9 @@ class NobetPlanPage(QWidget):
         hl = QGridLayout(hdr); hl.setContentsMargins(8,0,8,0); hl.setSpacing(1)
         for i, g in enumerate(_GUN):
             lb = QLabel(g); lb.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            lb.setStyleSheet(f"font-size:11px;font-weight:600;"
-                             f"color:{'#e85555' if i>=5 else '#6a90b4'};")
+            lb.setStyleSheet("font-size:11px;font-weight:600;color:{};".format(
+                DarkTheme.STATUS_ERROR if i >= 5 else DarkTheme.TEXT_SECONDARY
+            ))
             hl.addWidget(lb, 0, i)
         wl.addWidget(hdr)
         sc = QScrollArea(); sc.setWidgetResizable(True)
@@ -398,7 +411,10 @@ class NobetPlanPage(QWidget):
         if not self._birim_id:
             return set()
         try:
-            plan = self._svc().plan.get_plan(self._birim_id, self._yil, self._ay)
+            plan_sonuc = self._svc().plan.get_plan(self._birim_id, self._yil, self._ay)
+            if not plan_sonuc.basarili:
+                return set()
+            plan = plan_sonuc.veri
             if not plan:
                 return set()
             sonuc = self._svc().plan.get_satirlar(plan["PlanID"], sadece_aktif=False)
@@ -479,8 +495,10 @@ class NobetPlanPage(QWidget):
 
         if not self._birim_id:
             self._lbl_sol_ozet.setText("Birim seçin")
-            self._sol_l.addWidget(QLabel("Personel listesi için birim seçin",
-                styleSheet="color:#6a90b4;font-size:11px;"))
+            lbl_birim = QLabel("Personel listesi için birim seçin")
+            lbl_birim.setProperty("color-role", "secondary")
+            lbl_birim.setStyleSheet("font-size:11px;")
+            self._sol_l.addWidget(lbl_birim)
             self._sol_l.addStretch()
             return
 
@@ -492,13 +510,13 @@ class NobetPlanPage(QWidget):
 
         personeller: list[tuple[str, str]] = []
         try:
-            p_rows = self._svc()._r.get("Personel").get_all() or []
-            for p in sorted(p_rows, key=lambda x: x.get("AdSoyad", "")):
-                if str(p.get("GorevYeri", "")).strip() == self._birim_adi:
-                    pid = str(p.get("KimlikNo", ""))
-                    ad = p.get("AdSoyad", "")
-                    if pid:
-                        personeller.append((pid, ad))
+            sonuc = self._svc().get_personel_listesi(self._birim_adi)
+            p_rows = sonuc.veri or []
+            for p in p_rows:
+                pid = str(p.get("KimlikNo", ""))
+                ad = p.get("AdSoyad", "")
+                if pid:
+                    personeller.append((pid, ad))
         except Exception as e:
             logger.error(f"sol_panel_personel: {e}")
 
@@ -511,8 +529,10 @@ class NobetPlanPage(QWidget):
             f"{len(personeller)} personel • {toplam_nobet} nöbet")
 
         if not personeller:
-            self._sol_l.addWidget(QLabel("Personel bulunamadı",
-                styleSheet="color:#6a90b4;font-size:11px;"))
+            lbl_bos = QLabel("Personel bulunamadı")
+            lbl_bos.setProperty("color-role", "secondary")
+            lbl_bos.setStyleSheet("font-size:11px;")
+            self._sol_l.addWidget(lbl_bos)
             self._sol_l.addStretch()
             return
 
@@ -520,12 +540,13 @@ class NobetPlanPage(QWidget):
             rw = QWidget(); rl = QHBoxLayout(rw)
             rl.setContentsMargins(0,0,0,0); rl.setSpacing(8)
             lb_ad = QLabel(ad or pid)
-            lb_ad.setStyleSheet("font-size:11px;color:#cfe4f6;")
+            lb_ad.setProperty("color-role", "primary")
+            lb_ad.setStyleSheet("font-size:11px;")
             lb_say = QLabel(str(sayim.get(pid, 0)))
             lb_say.setAlignment(Qt.AlignmentFlag.AlignCenter)
             lb_say.setMinimumWidth(28)
             lb_say.setStyleSheet(
-                "font-size:11px;font-weight:600;color:#a8d4ef;"
+                f"font-size:11px;font-weight:600;color:{DarkTheme.ACCENT2};"
                 "padding:1px 6px;border-radius:8px;"
                 "background:rgba(0,180,216,0.15);")
             rl.addWidget(lb_ad, 1); rl.addWidget(lb_say, 0)
@@ -542,7 +563,8 @@ class NobetPlanPage(QWidget):
         if not self._birim_id:
             lbl = QLabel("Birim seçin")
             lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            lbl.setStyleSheet("color:#6b7280;font-size:14px;")
+            lbl.setProperty("color-role", "secondary")
+            lbl.setStyleSheet("font-size:14px;")
             self._tl.addWidget(lbl, 0, 0, 1, 7); return
 
         nobet_map: dict[str,list] = {}
@@ -612,8 +634,10 @@ class NobetPlanPage(QWidget):
             bs.clicked.connect(lambda _,s=sid: self._nobet_sil(s))
             rl.addWidget(lb,1); rl.addWidget(bd); rl.addWidget(bs); self._ml.addWidget(rw)
         if not nobetler:
-            self._ml.addWidget(QLabel("Nöbet yok",
-                styleSheet="color:#6a90b4;font-size:11px;"))
+            lbl_yok = QLabel("Nöbet yok")
+            lbl_yok.setProperty("color-role", "secondary")
+            lbl_yok.setStyleSheet("font-size:11px;")
+            self._ml.addWidget(lbl_yok)
 
     def _degisim_sec(self, satir: dict):
         self._secili_satir = dict(satir)
@@ -678,11 +702,10 @@ class NobetPlanPage(QWidget):
                 self._cmb_mv.addItem(
                     f"{v.get('VardiyaAdi','')} ({v.get('BasSaat','')}-{v.get('BitSaat','')})",
                     userData=v.get("VardiyaID",""))
-            p_rows = svc._r.get("Personel").get_all() or []
-            for p in sorted(p_rows, key=lambda x: x.get("AdSoyad","")):
-                if str(p.get("GorevYeri","")).strip() == self._birim_adi:
-                    self._cmb_mp.addItem(p.get("AdSoyad",""),
-                                        userData=str(p["KimlikNo"]))
+            p_rows = svc.get_personel_listesi(self._birim_adi).veri or []
+            for p in p_rows:
+                self._cmb_mp.addItem(p.get("AdSoyad",""),
+                                    userData=str(p["KimlikNo"]))
         except Exception as e: logger.error(f"manuel_sec_yukle: {e}")
 
     def _manuel_kaydet(self):

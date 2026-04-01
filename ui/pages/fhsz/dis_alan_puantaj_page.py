@@ -211,7 +211,8 @@ class DisAlanPuantajPage(QWidget):
         if not self._svc:
             return
         try:
-            self._rows_cache = self._svc._r.get("Dis_Alan_Calisma").get_all() or []
+            sonuc = self._svc.get_calisma_listesi()
+            self._rows_cache = sonuc.veri or [] if sonuc.basarili else []
         except Exception as e:
             logger.error(f"PuantajPage._load_all_rows: {e}")
             self._rows_cache = []
@@ -281,10 +282,18 @@ class DisAlanPuantajPage(QWidget):
             ozet[k]["saat"] += _float(r.get("HesaplananSaat", 0))
 
         # Onay + kümülatif
-        ozet_repo = None
+        ozet_map = {}
         if self._svc:
             try:
-                ozet_repo = self._svc._r.get("Dis_Alan_Izin_Ozet")
+                ozet_rows = self._svc.get_yillik_ozet_listesi(yil).veri or []
+                ozet_map = {
+                    (
+                        str(r.get("TCKimlik", "")).strip(),
+                        str(r.get("DonemAy", "")).strip(),
+                        str(r.get("DonemYil", "")).strip(),
+                    ): r
+                    for r in ozet_rows
+                }
             except Exception:
                 pass
 
@@ -293,10 +302,10 @@ class DisAlanPuantajPage(QWidget):
             o["kum"]    = round(kum.get(k, 0.0), 2)
             o["izin"]   = int(_izin_gunu_hesapla(o["kum"]))
             o["onay"]   = 0
-            if ozet_repo and o["tc"]:
+            if o["tc"]:
                 try:
-                    rec = ozet_repo.get_by_pk((o["tc"], o["ad"], str(ay), str(yil)))
-                    o["onay"] = int((rec or {}).get("RksOnay", 0))
+                    rec = ozet_map.get((o["tc"], str(ay), str(yil))) or {}
+                    o["onay"] = int(rec.get("RksOnay", 0))
                 except Exception:
                     pass
 

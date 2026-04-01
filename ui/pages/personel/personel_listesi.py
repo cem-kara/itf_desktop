@@ -777,7 +777,11 @@ class PersonelListesiPage(QWidget):
             self._total_count = 0
             self._all_data = []
             
-            personel_repo = self._svc.get_personel_repo()
+            personel_repo_sonuc = self._svc.get_personel_repo()
+            if not personel_repo_sonuc.basarili or not personel_repo_sonuc.veri:
+                logger.warning("Personel repository alınamadı")
+                return
+            personel_repo = personel_repo_sonuc.veri
             
             # ✅ LAZY-LOADING: İlk sayfayı yükle (sayfa boyutu: 100 kayıt)
             page_data, total_count = personel_repo.get_paginated_with_bakiye(
@@ -816,7 +820,11 @@ class PersonelListesiPage(QWidget):
             self.btn_load_more.setEnabled(False)
             self.progress.setVisible(True)
             
-            personel_repo = self._svc.get_personel_repo()
+            personel_repo_sonuc = self._svc.get_personel_repo()
+            if not personel_repo_sonuc.basarili or not personel_repo_sonuc.veri:
+                logger.warning("Personel repository alınamadı")
+                return
+            personel_repo = personel_repo_sonuc.veri
             
             # Sonraki sayfa
             self._current_page += 1
@@ -1123,7 +1131,10 @@ class PersonelListesiPage(QWidget):
         
         try:
             # TÜM personel verilerini çek (pagination olmadan)
-            personel_repo = self._svc.get_personel_repo()
+            personel_repo_sonuc = self._svc.get_personel_repo()
+            if not personel_repo_sonuc.basarili or not personel_repo_sonuc.veri:
+                return []
+            personel_repo = personel_repo_sonuc.veri
             all_data = personel_repo.get_all_with_bakiye() or []
             
             # Mevcut filtreleri uygula

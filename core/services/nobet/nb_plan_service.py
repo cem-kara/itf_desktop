@@ -49,7 +49,7 @@ class NbPlanService:
     # ──────────────────────────────────────────────────────────
 
     def get_plan(self, birim_id: str, yil: int,
-                 ay: int) -> Optional[dict]:
+                 ay: int) -> SonucYonetici:
         """
         Birimin en güncel (en yüksek versiyonlu) planını döner.
         Yoksa None.
@@ -63,11 +63,12 @@ class NbPlanService:
                 and int(r.get("Ay",  0)) == ay
             ]
             if not ilgili:
-                return None
-            return dict(max(ilgili, key=lambda r: int(r.get("Versiyon", 1))))
+                return SonucYonetici.tamam(veri=None)
+            return SonucYonetici.tamam(
+                veri=dict(max(ilgili, key=lambda r: int(r.get("Versiyon", 1))))
+            )
         except Exception as e:
-            logger.error(f"get_plan: {e}")
-            return None
+            return SonucYonetici.hata(e, "NbPlanService.get_plan")
 
     def get_satirlar(self, plan_id: str,
                      sadece_aktif: bool = True) -> SonucYonetici:
@@ -99,15 +100,18 @@ class NbPlanService:
             return SonucYonetici.hata(e, "NbPlanService.get_gun_satirlari")
 
     def onay_durumu(self, birim_id: str,
-                    yil: int, ay: int) -> str:
+                    yil: int, ay: int) -> SonucYonetici:
         """
         Plan onay durumunu döner.
         'yok' | 'taslak' | 'onaylandi' | 'yururlukte'
         """
-        plan = self.get_plan(birim_id, yil, ay)
+        plan_sonuc = self.get_plan(birim_id, yil, ay)
+        if not plan_sonuc.basarili:
+            return plan_sonuc
+        plan = plan_sonuc.veri
         if not plan:
-            return "yok"
-        return str(plan.get("Durum", "taslak"))
+            return SonucYonetici.tamam(veri="yok")
+        return SonucYonetici.tamam(veri=str(plan.get("Durum", "taslak")))
 
     # ──────────────────────────────────────────────────────────
     #  Plan Yazma
@@ -127,7 +131,10 @@ class NbPlanService:
         temizle=False → Sadece PlanID al/oluştur, satırlara dokunma (manuel ekleme).
         """
         try:
-            mevcut = self.get_plan(birim_id, yil, ay)
+            mevcut_sonuc = self.get_plan(birim_id, yil, ay)
+            if not mevcut_sonuc.basarili:
+                return mevcut_sonuc
+            mevcut = mevcut_sonuc.veri
             if mevcut:
                 durum = mevcut.get("Durum", "taslak")
                 if durum in ("onaylandi", "yururlukte"):
@@ -429,7 +436,10 @@ class NbPlanService:
         Onay anında iptal satırlar fiziksel olarak silinir (DB şişmesini önler).
         """
         try:
-            plan = self.get_plan(birim_id, yil, ay)
+            plan_sonuc = self.get_plan(birim_id, yil, ay)
+            if not plan_sonuc.basarili:
+                return plan_sonuc
+            plan = plan_sonuc.veri
             if not plan:
                 return SonucYonetici.hata(
                     ValueError("Onaylanacak plan bulunamadı"))
@@ -482,7 +492,10 @@ class NbPlanService:
         Mevcut plan satırları korunur, plan taslak olarak düzenlenebilir.
         """
         try:
-            plan = self.get_plan(birim_id, yil, ay)
+            plan_sonuc = self.get_plan(birim_id, yil, ay)
+            if not plan_sonuc.basarili:
+                return plan_sonuc
+            plan = plan_sonuc.veri
             if not plan:
                 return SonucYonetici.hata(
                     ValueError("Plan bulunamadı"))

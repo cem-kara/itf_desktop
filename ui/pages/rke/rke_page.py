@@ -694,6 +694,7 @@ class RKEPage(QWidget):
         self._action_guard  = action_guard
         self._kullanici_adi = kullanici_adi
         self._all_data: list[dict] = []
+        self._svc           = get_rke_service(db) if db else None
 
         self._search_timer = QTimer(self)
         self._search_timer.setInterval(250)
@@ -895,15 +896,16 @@ class RKEPage(QWidget):
     # ─── Veri ────────────────────────────────────────────
 
     def load_data(self):
-        if not self._db:
+        if not self._svc:
             return
         try:
-            svc = get_rke_service(self._db)
+            svc = self._svc
             sonuc = svc.get_rke_listesi()
             self._all_data = (sonuc.veri or []) if sonuc.basarili else []
 
             try:
-                sabitler = svc._r.get("Sabitler").get_all() or []
+                sabitler_sonuc = svc.get_sabitler_listesi()
+                sabitler = sabitler_sonuc.veri or []
 
                 def liste(kod): return sorted({
                     str(r.get("MenuEleman","")).strip()
@@ -1049,10 +1051,10 @@ class RKEPage(QWidget):
     # ─── Panel kaydet / sil ──────────────────────────────
 
     def _on_ekipman_kaydet(self, veri: dict):
-        if not self._db:
+        if not self._svc:
             return
         try:
-            svc = get_rke_service(self._db)
+            svc = self._svc
             if self._panel.inp_ekipman_no.isReadOnly():
                 sonuc = svc.rke_guncelle(veri["EkipmanNo"], veri)
             else:
@@ -1067,10 +1069,10 @@ class RKEPage(QWidget):
             hata_goster(self, str(e))
 
     def _on_ekipman_sil(self, ekipman_no: str):
-        if not soru_sor(self, f"<b>{ekipman_no}</b> silinsin mi?"):
+        if not self._svc or not soru_sor(self, f"<b>{ekipman_no}</b> silinsin mi?"):
             return
         try:
-            svc = get_rke_service(self._db)
+            svc = self._svc
             sonuc = svc.rke_sil(ekipman_no)
             if sonuc.basarili:
                 bilgi_goster(self, sonuc.mesaj)
@@ -1082,10 +1084,10 @@ class RKEPage(QWidget):
             hata_goster(self, str(e))
 
     def _on_muayene_kaydet(self, veri: dict):
-        if not self._db:
+        if not self._svc:
             return
         try:
-            svc = get_rke_service(self._db)
+            svc = self._svc
             if self._panel._kayit_no:
                 sonuc = svc.muayene_guncelle(veri["KayitNo"], veri)
             else:
@@ -1100,10 +1102,10 @@ class RKEPage(QWidget):
             hata_goster(self, str(e))
 
     def _on_muayene_sil(self, kayit_no: str):
-        if not soru_sor(self, f"<b>{kayit_no}</b> muayene kaydı silinsin mi?"):
+        if not self._svc or not soru_sor(self, f"<b>{kayit_no}</b> muayene kaydı silinsin mi?"):
             return
         try:
-            svc = get_rke_service(self._db)
+            svc = self._svc
             sonuc = svc.muayene_sil(kayit_no)
             if sonuc.basarili:
                 bilgi_goster(self, sonuc.mesaj)

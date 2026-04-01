@@ -82,22 +82,24 @@ class BakimService:
             return SonucYonetici.tamam(veri=rows)
         except Exception as e:
             return SonucYonetici.hata(e, "BakimService.get_cihaz_listesi")
-    def get_cihaz_adlari(self) -> List[str]:
+    def get_cihaz_adlari(self) -> SonucYonetici:
         """
         Cihaz adlarını getir (formlar için).
         
         Returns:
-            Cihaz adları listesi
+            SonucYonetici
         """
         sonuc = self.get_cihaz_listesi()
-        if not sonuc.basarili or not sonuc.data:
-            return []
+        if not sonuc.basarili:
+            return sonuc
+        if not sonuc.veri:
+            return SonucYonetici.tamam(veri=[])
         adlar = [
             str(c.get("CihazAdi", "")).strip()
-            for c in sonuc.data
+            for c in sonuc.veri
             if str(c.get("CihazAdi", "")).strip()
         ]
-        return sorted(list(set(adlar)))
+        return SonucYonetici.tamam(veri=sorted(list(set(adlar))))
     
     def get_cihaz(self, cihaz_id: str) -> SonucYonetici:
         """

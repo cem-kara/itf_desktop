@@ -179,96 +179,67 @@ class PersonelNobetMesaiPanel(QWidget):
             self._clear_summary()
 
     def _nobet_gecmisi_getir(self) -> list[dict]:
-        plan_rows = self._svc._r.get("NB_Plan").get_all() or []
-        satir_rows = self._svc._r.get("NB_PlanSatir").get_all() or []
-        vardiya_rows = self._svc._r.get("NB_Vardiya").get_all() or []
-        birim_rows = self._svc._r.get("NB_Birim").get_all() or []
+        sonuc_yonetici = self._svc.get_personel_nobet_gecmisi(self.personel_id)
+        rows = sonuc_yonetici.veri or [] if sonuc_yonetici.basarili else []
 
-        plan_map = {str(row.get("PlanID", "")): dict(row) for row in plan_rows}
-        vardiya_map = {str(row.get("VardiyaID", "")): dict(row) for row in vardiya_rows}
-        birim_map = {str(row.get("BirimID", "")): str(row.get("BirimAdi", "")) for row in birim_rows}
-
-        sonuc = []
         toplam_nobet_sayisi = 0
         toplam_nobet_dakika = 0
-        for satir in satir_rows:
-            if str(satir.get("PersonelID", "")) != self.personel_id:
-                continue
-            if str(satir.get("Durum", "aktif")) != "aktif":
-                continue
-
-            plan = plan_map.get(str(satir.get("PlanID", "")), {})
-            vardiya = vardiya_map.get(str(satir.get("VardiyaID", "")), {})
-            sure_dk = int(vardiya.get("SureDakika", 0) or 0)
+        gosterim = []
+        for r in rows:
+            sure_dk = int(r.get("SureDakika", 0) or 0)
             toplam_nobet_sayisi += 1
             toplam_nobet_dakika += sure_dk
-            sonuc.append({
-                "NobetTarihi": str(satir.get("NobetTarihi", "")),
-                "BirimAdi": birim_map.get(str(plan.get("BirimID", "")), ""),
-                "VardiyaAdi": str(vardiya.get("VardiyaAdi", "")),
-                "SaatAraligi": f"{vardiya.get('BasSaat', '')}-{vardiya.get('BitSaat', '')}".strip("-"),
-                "Sure": self._fmt_saat(sure_dk),
+            gosterim.append({
+                "NobetTarihi": r.get("NobetTarihi", ""),
+                "BirimAdi":    r.get("BirimAdi", ""),
+                "VardiyaAdi":  r.get("VardiyaAdi", ""),
+                "SaatAraligi": r.get("SaatAraligi", ""),
+                "Sure":        self._fmt_saat(sure_dk),
                 "_SureDakika": sure_dk,
-                "PlanDurum": str(plan.get("Durum", "taslak")).title(),
+                "PlanDurum":   r.get("PlanDurum", ""),
             })
 
-        sonuc.sort(key=lambda row: str(row.get("NobetTarihi", "")), reverse=True)
         self._toplam_nobet_sayisi = toplam_nobet_sayisi
         self._toplam_nobet_dakika = toplam_nobet_dakika
-        return sonuc[:60]
+        return gosterim
 
     def _mesai_ozeti_getir(self) -> list[dict]:
-        mesai_rows = self._svc._r.get("NB_MesaiHesap").get_all() or []
-        birim_rows = self._svc._r.get("NB_Birim").get_all() or []
-        birim_map = {str(row.get("BirimID", "")): str(row.get("BirimAdi", "")) for row in birim_rows}
-
-        ilgili = [
-            dict(row) for row in mesai_rows
-            if str(row.get("PersonelID", "")) == self.personel_id
-        ]
-        ilgili.sort(
-            key=lambda row: (
-                int(row.get("Yil", 0) or 0),
-                int(row.get("Ay", 0) or 0),
-                str(row.get("updated_at", "")),
-                str(row.get("HesapID", "")),
-            ),
-            reverse=True,
-        )
+        sonuc_yonetici = self._svc.get_personel_mesai_ozeti(self.personel_id)
+        ilgili = sonuc_yonetici.veri or [] if sonuc_yonetici.basarili else []
 
         sonuc = []
         toplam_fazla_dakika = 0
         son_bakiye_dakika = 0
         for row in ilgili:
-            calis = int(row.get("CalisDakika", 0) or 0)
-            hedef = int(row.get("HedefDakika", 0) or 0)
-            fazla = int(row.get("FazlaDakika", 0) or 0)
-            devir = int(row.get("DevirDakika", 0) or 0)
-            toplam = int(row.get("ToplamFazlaDakika", 0) or 0)
-            odenen = int(row.get("OdenenDakika", 0) or 0)
+            calis        = int(row.get("CalisDakika", 0) or 0)
+            hedef        = int(row.get("HedefDakika", 0) or 0)
+            fazla        = int(row.get("FazlaDakika", 0) or 0)
+            devir        = int(row.get("DevirDakika", 0) or 0)
+            toplam       = int(row.get("ToplamFazlaDakika", 0) or 0)
+            odenen       = int(row.get("OdenenDakika", 0) or 0)
             devire_giden = int(row.get("DevireGidenDakika", 0) or 0)
             toplam_fazla_dakika += fazla
             if not sonuc:
                 son_bakiye_dakika = devire_giden
 
             sonuc.append({
-                "Donem": f"{int(row.get('Ay', 0) or 0):02d}/{int(row.get('Yil', 0) or 0)}",
-                "BirimAdi": birim_map.get(str(row.get("BirimID", "")), ""),
-                "Calisilan": self._fmt_saat(calis),
-                "Hedef": self._fmt_saat(hedef),
-                "Fazla": self._fmt_saat(fazla),
-                "Devir": self._fmt_saat(devir),
-                "Toplam": self._fmt_saat(toplam),
-                "Odenen": self._fmt_saat(odenen),
+                "Donem":       f"{int(row.get('Ay', 0) or 0):02d}/{int(row.get('Yil', 0) or 0)}",
+                "BirimAdi":    row.get("BirimAdi", ""),
+                "Calisilan":   self._fmt_saat(calis),
+                "Hedef":       self._fmt_saat(hedef),
+                "Fazla":       self._fmt_saat(fazla),
+                "Devir":       self._fmt_saat(devir),
+                "Toplam":      self._fmt_saat(toplam),
+                "Odenen":      self._fmt_saat(odenen),
                 "DevireGiden": self._fmt_saat(devire_giden),
-                "_Fazla": fazla,
-                "_Toplam": toplam,
-                "_DevireGiden": devire_giden,
+                "_Fazla":      fazla,
+                "_Toplam":     toplam,
+                "_DevireGiden":devire_giden,
             })
 
         self._toplam_fazla_dakika = toplam_fazla_dakika
-        self._son_bakiye_dakika = son_bakiye_dakika
-        return sonuc[:24]
+        self._son_bakiye_dakika   = son_bakiye_dakika
+        return sonuc
 
     def _update_summary(self):
         self.lbl_toplam_nobet.setText(str(self._toplam_nobet_sayisi))

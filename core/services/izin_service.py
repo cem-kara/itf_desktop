@@ -76,7 +76,7 @@ class IzinService:
     #  İş Kuralları
     # ───────────────────────────────────────────────────────────
     
-    def should_set_pasif(self, izin_tipi: str, gun: int) -> bool:
+    def _should_set_pasif(self, izin_tipi: str, gun: int) -> bool:
         """
         Personeli pasif yapıp yapmayacağını belirle.
         
@@ -149,7 +149,7 @@ class IzinService:
         except (TypeError, ValueError):
             return None
 
-    def get_izin_max_gun(self, tc: str, izin_tipi: str) -> Optional[int]:
+    def get_izin_max_gun(self, tc: str, izin_tipi: str) -> SonucYonetici:
         """
         İzin tipi + personel bazlı max gün sınırını döndürür.
 
@@ -160,7 +160,7 @@ class IzinService:
         tip = str(izin_tipi or "").strip()
         tc_str = str(tc or "").strip()
         if not tip:
-            return None
+            return SonucYonetici.tamam(veri=None)
 
         try:
             izin_bilgi = self._r.get("Izin_Bilgi").get_by_id(tc_str) if tc_str else None
@@ -183,12 +183,12 @@ class IzinService:
                     continue
                 if str(row.get("MenuEleman", "")).strip() != tip:
                     continue
-                return self._parse_max_from_aciklama(str(row.get("Aciklama", "")))
+                return SonucYonetici.tamam(veri=self._parse_max_from_aciklama(str(row.get("Aciklama", ""))))
 
-            return None
+            return SonucYonetici.tamam(veri=None)
         except Exception as e:
             logger.error(f"Max izin gün hesaplama hatası: {e}")
-            return None
+            return SonucYonetici.hata(e, "IzinService.get_izin_max_gun")
 
     def validate_izin_sure_limit(self, tc: str, izin_tipi: str, gun: int) -> SonucYonetici:
         """İzin süresi limitini doğrular; limit aşımı varsa kaydı engeller."""
@@ -196,7 +196,10 @@ class IzinService:
             if gun <= 0:
                 return SonucYonetici.hata(Exception("İzin gün sayısı 0'dan büyük olmalıdır."), "IzinService.validate_izin_sure_limit")
 
-            max_gun = self.get_izin_max_gun(tc=tc, izin_tipi=izin_tipi)
+            max_gun_sonuc = self.get_izin_max_gun(tc=tc, izin_tipi=izin_tipi)
+            if not max_gun_sonuc.basarili:
+                return max_gun_sonuc
+            max_gun = max_gun_sonuc.veri
             if max_gun is None:
                 return SonucYonetici.tamam()
 
@@ -208,7 +211,7 @@ class IzinService:
             logger.error(f"İzin limit doğrulama hatası: {e}")
             return SonucYonetici.hata(e, "IzinService.validate_izin_sure_limit")
 
-    def hesapla_yillik_hak(self, baslama_tarihi: str) -> float:
+    def hesapla_yillik_hak(self, baslama_tarihi: str) -> SonucYonetici:
         """
         Memuriyete başlama tarihine göre yıllık izin hakkını hesapla.
 
@@ -220,7 +223,7 @@ class IzinService:
         try:
             baslama = parse_date(baslama_tarihi or "")
             if not baslama:
-                return 0.0
+                return SonucYonetici.tamam(veri=0.0)
 
             bugun = date.today()
             hizmet_yili = bugun.year - baslama.year
@@ -228,13 +231,13 @@ class IzinService:
                 hizmet_yili -= 1
 
             if hizmet_yili < 1:
-                return 0.0
+                return SonucYonetici.tamam(veri=0.0)
             if hizmet_yili <= 10:
-                return 20.0
-            return 30.0
+                return SonucYonetici.tamam(veri=20.0)
+            return SonucYonetici.tamam(veri=30.0)
         except Exception as e:
             logger.error(f"Yıllık hak hesaplama hatası: {e}")
-            return 0.0
+            return SonucYonetici.hata(e, "IzinService.hesapla_yillik_hak")
 
     def create_or_update_izin_bilgi(self, tc: str, ad_soyad: str, baslama_tarihi: str) -> SonucYonetici:
         """
@@ -246,7 +249,10 @@ class IzinService:
             if not tc:
                 return SonucYonetici.hata(Exception("TC Kimlik No boş olamaz."), "IzinService.create_or_update_izin_bilgi")
 
-            yillik_hak = self._to_float(self.hesapla_yillik_hak(baslama_tarihi), 0.0)
+            yillik_hak_sonuc = self.hesapla_yillik_hak(baslama_tarihi)
+            if not yillik_hak_sonuc.basarili:
+                return yillik_hak_sonuc
+            yillik_hak = self._to_float(yillik_hak_sonuc.veri, 0.0)
             payload = {
                 "TCKimlik": tc,
                 "AdSoyad": str(ad_soyad or "").strip(),
@@ -508,7 +514,7 @@ class IzinService:
         except Exception as e:
             return SonucYonetici.hata(e, "IzinService.has_izin_cakisma")
 
-    def calculate_carryover(self, mevcut_kalan: float, yillik_hakedis: float) -> float:
+    def calculate_carryover(self, mevcut_kalan: float, yillik_hakedis: float) -> SonucYonetici:
         """
         657 SK md.102 devir hesaplaması.
         
@@ -532,7 +538,7 @@ class IzinService:
             hakediş = float(yillik_hakedis or 0)
             
             if kalan < 0 or hakediş < 0:
-                return 0.0
+                return SonucYonetici.tamam(veri=0.0)
             
             # 2 yıllık zamanaşımı limiti
             max_devir = hakediş * 2
@@ -540,10 +546,10 @@ class IzinService:
             # Devir miktarı hesapla
             devir = min(kalan, hakediş, max_devir)
             
-            return max(0.0, devir)
+            return SonucYonetici.tamam(veri=max(0.0, devir))
         except (ValueError, TypeError) as e:
             logger.error(f"IzinService.calculate_carryover: {e}")
-            return 0.0
+            return SonucYonetici.hata(e, "IzinService.calculate_carryover")
 
     def bakiye_dus(self, tc: str, izin_tipi: str, gun: int) -> SonucYonetici:
         """
@@ -586,10 +592,20 @@ class IzinService:
         Uzun/ücretsiz izin kaydedilince personeli pasif yap.
         should_set_pasif() koşulunu kontrol eder.
         """
-        if not tc or not self.should_set_pasif(izin_tipi, gun):
+        should_set_pasif_sonuc = self.should_set_pasif(izin_tipi, gun)
+        if not should_set_pasif_sonuc.basarili:
+            return should_set_pasif_sonuc
+        if not tc or not bool(should_set_pasif_sonuc.veri):
             return SonucYonetici.tamam("Personel pasif yapılmadı (koşul sağlanmadı).")
         try:
             self._r.get("Personel").update(tc, {"Durum": "Pasif"})
             return SonucYonetici.tamam(f"Personel pasif yapıldı: {tc} — {izin_tipi} — {gun} gün")
         except Exception as e:
             return SonucYonetici.hata(e, "IzinService.set_personel_pasif")
+
+    def should_set_pasif(self, izin_tipi: str, gun: int) -> SonucYonetici:
+        """Personelin pasif yapılma kuralını SonucYonetici ile döndürür."""
+        try:
+            return SonucYonetici.tamam(veri=self._should_set_pasif(izin_tipi, gun))
+        except Exception as e:
+            return SonucYonetici.hata(e, "IzinService.should_set_pasif")

@@ -8,8 +8,7 @@ from datetime import date
 from core.date_utils import parse_date, to_ui_date
 
 from core.logger import logger
-from core.di import get_personel_service, get_izin_service
-from database.repository_registry import RepositoryRegistry
+from core.di import get_personel_service, get_izin_service, get_fhsz_service
 
 
 def personel_ozet_getir(db, personel_id: str) -> dict:
@@ -105,13 +104,9 @@ def personel_ozet_getir(db, personel_id: str) -> dict:
                 ozet["kritikler"].append("Saglik kontrol tarihi yaklasiyor.")
 
         # FHSZ kayit adedi
-        registry = RepositoryRegistry(db)
-        fhsz_kayitlari = [
-            r
-            for r in registry.get("FHSZ_Puantaj").get_all()
-            if str(r.get("Personelid", "")).strip() == tc
-        ]
-        ozet["fhsz_kayit_sayisi"] = len(fhsz_kayitlari)
+        fhsz_svc = get_fhsz_service(db)
+        fhsz_sonuc = fhsz_svc.get_puantaj_listesi(personel_id=tc)
+        ozet["fhsz_kayit_sayisi"] = len(fhsz_sonuc.veri or []) if fhsz_sonuc.basarili else 0
 
     except Exception as exc:
         logger.error(f"Personel ozet servis hatasi: {exc}")

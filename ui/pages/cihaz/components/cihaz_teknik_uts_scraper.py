@@ -151,7 +151,7 @@ class _Sec(QWidget):
     def row(self, l1, v1, l2="", v2=None):
         bg = _BG_ODD if self._r % 2 else _BG_EVEN; self._r += 1
         rw = QWidget()
-        rw.setStyleSheet(f"border-bottom: {_BC};")
+        rw.setStyleSheet("border-bottom: {};".format(_BC))
         rw.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         rh = QHBoxLayout(rw); rh.setContentsMargins(0,0,0,0); rh.setSpacing(0)
         rh.addWidget(_mk_pair(l1, v1, bg), stretch=1)

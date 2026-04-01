@@ -178,6 +178,42 @@ class DokumanService:
         except Exception as e:
             return SonucYonetici.hata(e, "DokumanService.get_belgeler")
 
+    def entity_exists(self, entity_type: str, entity_id: str) -> SonucYonetici:
+        """Belge ilişkilendirilecek ana kaydın gerçekten var olup olmadığını kontrol eder."""
+        try:
+            table_name = {
+                "personel": "Personel",
+                "cihaz": "Cihazlar",
+                "rke": "RKE_List",
+            }.get(str(entity_type or "").strip().lower())
+            if not table_name:
+                return SonucYonetici.tamam(veri=True)
+            repo = self._registry.get(table_name)
+            mevcut = repo.get_by_id(entity_id) or repo.get_by_pk(entity_id)
+            return SonucYonetici.tamam(veri=bool(mevcut))
+        except Exception as e:
+            return SonucYonetici.hata(e, "DokumanService.entity_exists")
+
+    def update_saglik_rapor_dosyasi(self, kayit_no: str, rapor_dosya: str) -> SonucYonetici:
+        """İlişkili sağlık takip kaydının RaporDosya alanını günceller."""
+        try:
+            self._registry.get("Personel_Saglik_Takip").update(
+                str(kayit_no),
+                {"RaporDosya": str(rapor_dosya or "")},
+            )
+            return SonucYonetici.tamam("Sağlık rapor yolu güncellendi.")
+        except Exception as e:
+            return SonucYonetici.hata(e, "DokumanService.update_saglik_rapor_dosyasi")
+
+    def get_tum_belgeler(self) -> SonucYonetici:
+        """Dokumanlar tablosundaki tüm kayıtları döner."""
+        try:
+            repo = self._registry.get("Dokumanlar")
+            data = repo.get_all() or []
+            return SonucYonetici.tamam(veri=data)
+        except Exception as e:
+            return SonucYonetici.hata(e, "DokumanService.get_tum_belgeler")
+
     def sil(self, entity_type: str, entity_id: str, belge_turu: str, belge: str) -> SonucYonetici:
         """Belge kaydını DB'den sil (fiziksel dosyaya dokunmaz)."""
         try:

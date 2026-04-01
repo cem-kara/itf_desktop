@@ -130,11 +130,11 @@ class KosulDelegate(QStyledItemDelegate):
         editor.addItems(_KOSUL_ITEMS)
         # Büyük popup için özel view
         view = QListView()
-        view.setStyleSheet(f"""
+        view.setStyleSheet("""
             QListView {{
-                background-color: {"panel"};
-                color: {"primary"};
-                border: 1.5px solid {DarkTheme.INPUT_BORDER_FOCUS};
+                background-color: {panel};
+                color: {primary};
+                border: 1.5px solid {focus};
                 font-size: 12px;
                 font-weight: 700;
                 outline: none;
@@ -149,18 +149,22 @@ class KosulDelegate(QStyledItemDelegate):
                 background-color: rgba(29,117,254,0.18);
                 color: #fff;
             }}
-        """)
+        """.format(
+            panel=DarkTheme.BG_SECONDARY,
+            primary=DarkTheme.TEXT_PRIMARY,
+            focus=DarkTheme.INPUT_BORDER_FOCUS,
+        ))
         view.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         view.setUniformItemSizes(True)
         editor.setView(view)
         editor.setMinimumHeight(48)
         editor.setFixedHeight(54)
-        editor.setStyleSheet(f"""
+        editor.setStyleSheet("""
             QComboBox {{
-                background-color: {DarkTheme.INPUT_BG};
-                color: {"primary"};
-                border: 2px solid {DarkTheme.INPUT_BORDER_FOCUS};
+                background-color: {input_bg};
+                color: {primary};
+                border: 2px solid {focus};
                 border-radius: 5px;
                 padding: 8px 16px;
                 font-size: 16px;
@@ -170,10 +174,14 @@ class KosulDelegate(QStyledItemDelegate):
             QComboBox::down-arrow {{
                 border-left: 7px solid transparent;
                 border-right: 7px solid transparent;
-                border-top: 9px solid {DarkTheme.INPUT_BORDER_FOCUS};
+                border-top: 9px solid {focus};
                 margin-right: 10px;
             }}
-        """)
+        """.format(
+            input_bg=DarkTheme.INPUT_BG,
+            primary=DarkTheme.TEXT_PRIMARY,
+            focus=DarkTheme.INPUT_BORDER_FOCUS,
+        ))
         # Tek tıkta popup açılsın
         QTimer.singleShot(0, editor.showPopup)
         return editor
@@ -540,7 +548,7 @@ class FHSZYonetimPage(QWidget):
                 return
 
             # 1. Personeller
-            self._all_personel = self._svc._r.get("Personel").get_all()
+            self._all_personel = self._svc.get_personel_listesi().veri or []
 
             # 2. İzinler
             self._all_izin = self._svc.get_izin_listesi().veri or []
@@ -558,8 +566,7 @@ class FHSZYonetimPage(QWidget):
 
             # 4. Sabitler → Kod="Gorev_Yeri"
             #    MenuEleman = birim adı | Aciklama = "Çalışma Koşulu A / B"
-            sabitler_raw = self._svc._r.get("Sabitler").get_all()
-            sabitler = sabitler_raw
+            sabitler = self._svc.get_sabitler_listesi().veri or []
 
             self._birim_kosul_map = {}
 
@@ -730,13 +737,9 @@ class FHSZYonetimPage(QWidget):
         ay_str = self.cmb_ay.currentText()
 
         try:
-            # Servis yoksa yeniden oluşturmayı dene
             if not self._svc:
-                if self._db:
-                    self._svc = get_fhsz_service(self._db)
-                if not self._svc:
-                    MesajKutusu.uyari(self, "Veritabanı bağlantısı yok.")
-                    return
+                MesajKutusu.uyari(self, "Veritabanı bağlantısı yok.")
+                return
 
             # Veriler yüklenmediyse otomatik yükle
             if not self._all_personel:
@@ -757,12 +760,7 @@ class FHSZYonetimPage(QWidget):
             QApplication.processEvents()
 
             # Mevcut kayıtları kontrol et
-            tum_puantaj = self._svc._r.get("FHSZ_Puantaj").get_all()
-            mevcut = [
-                r for r in tum_puantaj
-                if str(r.get("AitYil", "")).strip() == yil_str
-                and str(r.get("Donem", "")).strip() == ay_str
-            ]
+            mevcut = self._svc.get_donem_puantaj_listesi(yil_str, ay_str).veri or []
 
             if mevcut:
                 self._kayitli_veriyi_yukle(mevcut)
@@ -1028,19 +1026,9 @@ class FHSZYonetimPage(QWidget):
 
         try:
             if not self._svc:
-                if self._db:
-                    self._svc = get_fhsz_service(self._db)
-                if not self._svc:
-                    return
-            repo = self._svc._r.get("FHSZ_Puantaj")
-
-            # Mevcut kayıt kontrol
-            tum = repo.get_all()
-            mevcut_sayisi = sum(
-                1 for r in tum
-                if str(r.get("AitYil", "")).strip() == yil_str
-                and str(r.get("Donem", "")).strip() == ay_str
-            )
+                return
+            mevcut = self._svc.get_donem_puantaj_listesi(yil_str, ay_str).veri or []
+            mevcut_sayisi = len(mevcut)
 
             # Onay
             if mevcut_sayisi > 0:
@@ -1058,27 +1046,10 @@ class FHSZYonetimPage(QWidget):
             self.btn_kaydet.setEnabled(False)
             self.progress.setVisible(True)
 
-            # 1. Eski kayıtları sil
-            if mevcut_sayisi > 0:
-                self.lbl_durum.setText("Eski kayitlar temizleniyor...")
-                for r in tum:
-                    if str(r.get("AitYil", "")).strip() == yil_str \
-                       and str(r.get("Donem", "")).strip() == ay_str:
-                        pk = [
-                            str(r.get("Personelid", "")),
-                            str(r.get("AitYil", "")),
-                            str(r.get("Donem", ""))
-                        ]
-                        try:
-                            repo.delete(pk)
-                        except Exception:
-                            pass
-
-            # 2. Yeni kaydet (tablodan oku)
             self.lbl_durum.setText("Guncel veriler kaydediliyor...")
-            kayit_sayisi = 0
+            kayitlar = []
             for r in range(self.tablo.rowCount()):
-                data = {
+                kayitlar.append({
                     "Personelid": self._item_text(r, C_KIMLIK, ""),
                     "AdSoyad": self._item_text(r, C_AD, ""),
                     "Birim": self._item_text(r, C_BIRIM, ""),
@@ -1088,13 +1059,12 @@ class FHSZYonetimPage(QWidget):
                     "AylikGun": self._item_text(r, C_GUN, "0"),
                     "KullanilanIzin": self._item_text(r, C_IZIN, "0"),
                     "FiiliCalismaSaat": self._item_text(r, C_SAAT, "0"),
-                }
-                repo.insert(data)
-                kayit_sayisi += 1
+                })
 
-            # 3. Şua bakiyesi güncelle
-            self.lbl_durum.setText("Sua hesaplaniyor...")
-            self._sua_bakiye_guncelle(repo, yil_str)
+            kaydet_sonuc = self._svc.donem_puantaj_kaydet(yil_str, ay_str, kayitlar)
+            if not kaydet_sonuc.basarili:
+                raise RuntimeError(kaydet_sonuc.mesaj)
+            kayit_sayisi = len(kayitlar)
 
             self.progress.setVisible(False)
             self.btn_kaydet.setEnabled(True)
@@ -1116,44 +1086,13 @@ class FHSZYonetimPage(QWidget):
     # ═══════════════════════════════════════════
 
     def _sua_bakiye_guncelle(self, repo_puantaj, yil_str):
-        """
-        Orijinaldeki _sua_bakiye_guncelle:
-        1. FHSZ_Puantaj'dan yıla ait tüm kayıtları topla
-        2. Personel başına yıllık toplam saat hesapla
-        3. sua_hak_edis_hesapla → İzin_Bilgi.SuaCariYilKazanim güncelle
-        """
         try:
             if not self._svc:
                 return
-
-            tum = repo_puantaj.get_all()
-            personel_toplam = {}
-            for r in tum:
-                if str(r.get("AitYil", "")).strip() != yil_str:
-                    continue
-                tc = str(r.get("Personelid", "")).strip()
-                try:
-                    saat = float(str(r.get("FiiliCalismaSaat", 0)).replace(",", "."))
-                except (ValueError, TypeError):
-                    saat = 0
-                personel_toplam[tc] = personel_toplam.get(tc, 0) + saat
-
-            izin_bilgi = self._svc._r.get("Izin_Bilgi")
-            for tc, toplam_saat in personel_toplam.items():
-                yeni_hak = sua_hak_edis_hesapla(toplam_saat)
-                try:
-                    mevcut = izin_bilgi.get_by_id(tc)
-                    if mevcut:
-                        try:
-                            eski = float(str(mevcut.get("SuaCariYilKazanim", 0)).replace(",", "."))
-                        except (ValueError, TypeError):
-                            eski = -1
-                        if eski != yeni_hak:
-                            izin_bilgi.update(tc, {"SuaCariYilKazanim": yeni_hak})
-                except Exception:
-                    pass
-
-            logger.info(f"Şua bakiyesi güncellendi: {len(personel_toplam)} personel")
-
+            sonuc = self._svc.sua_bakiye_guncelle(yil_str)
+            if sonuc.basarili:
+                logger.info(f"Şua bakiyesi güncellendi: {sonuc.veri} personel")
+            else:
+                logger.error(f"Şua bakiye güncelleme hatası: {sonuc.mesaj}")
         except Exception as e:
             logger.error(f"Şua bakiye güncelleme hatası: {e}")

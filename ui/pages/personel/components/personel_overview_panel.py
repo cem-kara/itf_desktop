@@ -404,11 +404,12 @@ class PersonelOverviewPanel(QWidget):
             if self.sabitler_cache:
                 all_sabit = self.sabitler_cache
             else:
-                sabitler_repo = self._personel_svc.get_sabitler_repo()
-                if not sabitler_repo:
+                sabitler_sonuc = self._personel_svc.get_sabitler_repo()
+                if not sabitler_sonuc.basarili or not sabitler_sonuc.veri:
                     logger.warning("Sabitler repository bulunamadı")
                     return
-                    
+
+                sabitler_repo = sabitler_sonuc.veri
                 all_sabit = sabitler_repo.get_all() or []
 
             def get_sabit(kod):
@@ -441,8 +442,9 @@ class PersonelOverviewPanel(QWidget):
                     apply_combo_title_case_formatting(combo)
 
             # Populate Eğitim combos (Okul ve Fakülte listeleri)
-            personel_repo = self._personel_svc.get_personel_repo()
-            if personel_repo:
+            personel_repo_sonuc = self._personel_svc.get_personel_repo()
+            if personel_repo_sonuc.basarili and personel_repo_sonuc.veri:
+                personel_repo = personel_repo_sonuc.veri
                 all_personel = personel_repo.get_all() or []
 
                 for col_key, combo_keys in [
@@ -845,9 +847,10 @@ class PersonelOverviewPanel(QWidget):
             
         try:
             # Service üzerinden Personel repository'sini al
-            repo = self._personel_svc.get_personel_repo()
-            if not repo:
+            repo_sonuc = self._personel_svc.get_personel_repo()
+            if not repo_sonuc.basarili or not repo_sonuc.veri:
                 raise RuntimeError("Personel repository bulunamadı.")
+            repo = repo_sonuc.veri
 
             tc = self.personel_data.get("KimlikNo")
             if not tc:
@@ -931,9 +934,10 @@ class PersonelOverviewPanel(QWidget):
             if not self._personel_svc:
                 raise RuntimeError("Service başlatılmamış, fotoğraf kaydedilemez")
             
-            repo = self._personel_svc.get_personel_repo()
-            if not repo:
+            repo_sonuc = self._personel_svc.get_personel_repo()
+            if not repo_sonuc.basarili or not repo_sonuc.veri:
                 raise RuntimeError("Personel repository bulunamadı")
+            repo = repo_sonuc.veri
             
             tc = self.personel_data.get("KimlikNo")
             if not tc:

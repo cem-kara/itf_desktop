@@ -90,6 +90,47 @@ class DisAlanService:
         except Exception as e:
             return SonucYonetici.hata(e, "DisAlanService.get_calisma_listesi")
 
+    def get_tutanak_listesi(self, tutanak_no: str) -> SonucYonetici:
+        try:
+            rows = self._r.get("Dis_Alan_Calisma").get_all() or []
+            hedef = str(tutanak_no).strip()
+            rows = [r for r in rows if str(r.get("TutanakNo", "")).strip() == hedef]
+            return SonucYonetici.tamam(veri=rows)
+        except Exception as e:
+            return SonucYonetici.hata(e, "DisAlanService.get_tutanak_listesi")
+
+    def calisma_guncelle(
+        self,
+        tckimlik: str,
+        donem_ay: int,
+        donem_yil: int,
+        tutanak_no: str,
+        veri: dict,
+    ) -> SonucYonetici:
+        try:
+            pk = (str(tckimlik), str(donem_ay), str(donem_yil), str(tutanak_no))
+            self._r.get("Dis_Alan_Calisma").update(pk, veri)
+            return SonucYonetici.tamam(veri=pk)
+        except Exception as e:
+            return SonucYonetici.hata(e, "DisAlanService.calisma_guncelle")
+
+    def tutanak_listesi_sil(self, tutanak_no: str) -> SonucYonetici:
+        try:
+            rows = self.get_tutanak_listesi(tutanak_no).veri or []
+            silinen = 0
+            for r in rows:
+                pk = (
+                    str(r.get("TCKimlik", "")),
+                    str(r.get("DonemAy", "")),
+                    str(r.get("DonemYil", "")),
+                    str(r.get("TutanakNo", "")),
+                )
+                self._r.get("Dis_Alan_Calisma").delete(pk)
+                silinen += 1
+            return SonucYonetici.tamam(veri=silinen)
+        except Exception as e:
+            return SonucYonetici.hata(e, "DisAlanService.tutanak_listesi_sil")
+
     def calisma_kaydet(self, veri: dict) -> SonucYonetici:
         """
         Yeni tutanak kaydı ekler.

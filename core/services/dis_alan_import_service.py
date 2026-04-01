@@ -585,9 +585,9 @@ class DisAlanImportService:
             uyarilar=uyarilar,
             gecerli=len(hatalar) == 0,
         )
-    def get_birim_listesi(self):
+    def get_birim_listesi(self) -> SonucYonetici:
         if not self._katsayi_service:
-            return []
+            return SonucYonetici.tamam(veri=[])
         return self._katsayi_service.get_birim_listesi()
 
     # ── 3. Kaydetme ──────────────────────────────────────────

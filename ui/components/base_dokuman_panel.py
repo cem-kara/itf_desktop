@@ -335,25 +335,14 @@ class BaseDokumanPanel(QWidget):
 
         # ⚠️ DB'de entity gerçekten var mı kontrol et
         try:
-            from core.di import get_registry; registry = get_registry(self._db)
-            # entity_type'a göre tablo adını belirle
-            table_name_map = {
-                "personel": "Personel",
-                "cihaz": "Cihaz",
-                "rke": "RKE",
-            }
-            table_name = table_name_map.get(self._entity_type)
-            if table_name:
-                repo = registry.get(table_name)
-                if repo:
-                    existing = repo.get_by_id(self._entity_id)
-                    if not existing:
-                        MesajKutusu.uyari(
-                            self, "Hata",
-                            f"Bu {self._entity_type} kaydı henüz oluşturulmamış.\n\n"
-                            f"Lütfen önce kaydı kaydediniz, sonra belge yükleyiniz."
-                        )
-                        return
+            sonuc = self._svc.entity_exists(self._entity_type, self._entity_id)
+            if sonuc.basarili and not sonuc.veri:
+                MesajKutusu.uyari(
+                    self, "Hata",
+                    f"Bu {self._entity_type} kaydı henüz oluşturulmamış.\n\n"
+                    f"Lütfen önce kaydı kaydediniz, sonra belge yükleyiniz."
+                )
+                return
         except Exception as e:
             logger.warning(f"BaseDokumanPanel: Entity DB kontrol hatası: {e}")
             # Kontrol başarısız olsa da devam et
@@ -374,22 +363,20 @@ class BaseDokumanPanel(QWidget):
                 iliskili_tip= self._iliskili_tip,
             )
 
-            if not sonuc["ok"]:
-                MesajKutusu.hata(self, "Hata", f"Yükleme başarısız:\n{sonuc['error']}")
+            if not sonuc.basarili:
+                MesajKutusu.hata(self, "Hata", f"Yükleme başarısız:\n{sonuc.mesaj}")
                 return
 
-            mod_text = "Drive'a yüklendi" if sonuc["mode"] == "drive" else "Yerel klasöre kaydedildi"
+            veri = sonuc.veri or {}
+            mod_text = "Drive'a yüklendi" if veri.get("mode") == "drive" else "Yerel klasöre kaydedildi"
             self._inp_dosya.clear()
             self._inp_aciklama.clear()
             self._load_dokumanlari()
 
             if self._iliskili_tip == "Personel_Saglik_Takip" and self._iliskili_id:
                 try:
-                    from core.di import get_registry; registry = get_registry(self._db)
-                    saglik_repo = registry.get("Personel_Saglik_Takip")
-                    saglik_repo.update(self._iliskili_id, {
-                        "RaporDosya": sonuc.get("drive_link") or sonuc.get("belge_adi") or ""
-                    })
+                    rapor_dosya = veri.get("drive_link") or veri.get("local_path") or veri.get("belge_adi") or ""
+                    self._svc.update_saglik_rapor_dosyasi(self._iliskili_id, rapor_dosya)
                 except Exception as upd_err:
                     logger.warning(f"BaseDokumanPanel: RaporDosya güncellenemedi: {upd_err}")
 

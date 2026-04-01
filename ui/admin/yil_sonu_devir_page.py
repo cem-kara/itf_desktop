@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import QThread, Signal
 
 from core.logger import logger
+from core.di import get_registry
 from core.hata_yonetici import soru_sor, bilgi_goster, hata_goster
 from database.repository_registry import RepositoryRegistry
 
@@ -176,6 +177,7 @@ class YilSonuDevirPage(QWidget):
         super().__init__(parent)
         self._db = db
         self._worker = None
+        self._registry = get_registry(db)
         
         self._setup_ui()
 
@@ -263,8 +265,7 @@ class YilSonuDevirPage(QWidget):
         self.txt_log.clear()
         
         # Worker başlat
-        from core.di import get_registry
-        registry = get_registry(self._db)
+        registry = self._registry
         
         self._worker = DevirWorker(registry)
         self._worker.log_signal.connect(self._log_ekle)
