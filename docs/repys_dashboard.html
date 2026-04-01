@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>REPYS Dashboard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#070b11;--bg1:#0c1320;--bg2:#101828;--bg3:#162036;--bg4:#1c2a44;
+  --border:rgba(90,130,200,0.10);--border2:rgba(90,130,200,0.22);
+  --text:#cdd8f0;--text2:#6e88b0;--text3:#3a506e;--text4:#1e3050;
+  --accent:#3479ff;--accent2:#5b9bff;--accent3:#8cbfff;
+  --green:#1db86a;--green2:#24e07f;
+  --red:#e83a5a;--red2:#ff6080;
+  --amber:#e8a020;--amber2:#ffbb40;
+  --purple:#8b5cf6;--purple2:#a78bfa;
+  --teal:#0d9488;--teal2:#2dd4bf;
+  --pink:#db2777;--pink2:#f472b6;
+  --fh:'Syne',sans-serif;--fb:'DM Sans',sans-serif;--fm:'DM Mono',monospace;
+}
+body{background:var(--bg0);color:var(--text);font-family:var(--fb);font-size:12.5px;overflow:hidden}
+.shell{display:grid;grid-template-columns:200px 1fr;grid-template-rows:44px 1fr;height:100vh}
+.topbar{grid-column:1/-1;background:var(--bg1);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 14px;gap:10px;z-index:20}
+.logo{font-family:var(--fh);font-weight:800;font-size:12.5px;letter-spacing:.08em;
+  color:var(--accent2);display:flex;align-items:center;gap:7px;white-space:nowrap}
+.logo-icon{width:22px;height:22px;border-radius:5px;background:linear-gradient(135deg,var(--accent),var(--purple));
+  display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.logo span{color:var(--text3);font-size:9px;font-weight:400;letter-spacing:.14em}
+.tb-sep{flex:1}
+.tb-search{background:var(--bg2);border:1px solid var(--border);border-radius:7px;
+  padding:5px 10px;color:var(--text2);font-family:var(--fb);font-size:11px;
+  display:flex;align-items:center;gap:6px;cursor:pointer;width:180px}
+.tb-notif{width:28px;height:28px;border-radius:7px;background:var(--bg2);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;
+  position:relative;transition:all .15s}
+.notif-badge{position:absolute;top:-3px;right:-3px;width:12px;height:12px;border-radius:50%;
+  background:var(--red);color:#fff;font-size:7px;display:flex;align-items:center;justify-content:center;
+  font-weight:700;border:2px solid var(--bg0)}
+.clock{font-family:var(--fm);font-size:10.5px;color:var(--text3);letter-spacing:.06em;white-space:nowrap}
+.av{width:26px;height:26px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--purple2));
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.live-dot{display:flex;align-items:center;gap:4px;font-size:9.5px;color:var(--green2);
+  font-family:var(--fm);letter-spacing:.06em;white-space:nowrap}
+.live-dot::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green2);
+  box-shadow:0 0 6px var(--green2);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.sidebar{background:var(--bg1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;padding:8px 0;overflow:hidden}
+.sb-section{padding:6px 10px 4px;font-size:9px;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--text4);font-family:var(--fm)}
+.sb-item{display:flex;align-items:center;gap:8px;padding:7px 12px;
+  cursor:pointer;margin:0 6px;border-radius:7px;
+  font-size:11.5px;color:var(--text2);transition:all .15s;position:relative}
+.sb-item:hover{background:var(--bg3);color:var(--text)}
+.sb-item.active{background:linear-gradient(90deg,rgba(52,121,255,.12),transparent);
+  color:var(--accent2);border-left:2px solid var(--accent);padding-left:10px}
+.sb-icon{width:16px;text-align:center;flex-shrink:0;font-size:13px}
+.sb-badge{margin-left:auto;color:#fff;font-size:9px;padding:1px 5px;border-radius:4px;font-family:var(--fm);font-weight:700}
+.sb-badge.r{background:var(--red)}.sb-badge.a{background:var(--amber)}.sb-badge.b{background:var(--accent)}
+.sb-footer{margin-top:auto;padding:10px;border-top:1px solid var(--border)}
+.sb-user{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;transition:.15s}
+.sb-user:hover{background:var(--bg3)}
+.sb-user-name{font-size:11px;color:var(--text);font-weight:500}
+.sb-user-role{font-size:9px;color:var(--text3);margin-top:1px}
+.main{overflow-y:auto;background:var(--bg0);padding:14px;display:flex;flex-direction:column;gap:12px}
+.main::-webkit-scrollbar{width:3px}
+.main::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:10px;
+  padding:14px;transition:border-color .2s;position:relative;overflow:hidden}
+.card:hover{border-color:var(--border2)}
+.card-sm{padding:10px 12px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+.card-title{font-family:var(--fh);font-size:12px;font-weight:700;color:var(--text);
+  display:flex;align-items:center;gap:6px}
+.card-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.card-link{font-size:9.5px;color:var(--accent2);cursor:pointer;font-family:var(--fm);letter-spacing:.04em}
+.g{display:grid;gap:10px}
+.g44{grid-template-columns:repeat(4,1fr)}
+.g32{grid-template-columns:3fr 2fr}
+.g321{grid-template-columns:3fr 2fr 1fr}
+.stat-val{font-family:var(--fh);font-size:28px;font-weight:800;line-height:1;letter-spacing:-.5px}
+.stat-label{font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-family:var(--fm);margin-bottom:8px}
+.stat-sub{display:flex;align-items:center;gap:5px;margin-top:7px;font-size:10.5px;color:var(--text3)}
+.delta{display:inline-flex;align-items:center;gap:2px;padding:1px 5px;border-radius:3px;font-size:9.5px;font-family:var(--fm);font-weight:500}
+.delta.up{background:rgba(29,184,106,.12);color:var(--green2)}
+.delta.dn{background:rgba(232,58,90,.12);color:var(--red2)}
+.delta.ne{background:rgba(90,130,200,.1);color:var(--text2)}
+.prog{height:2px;background:var(--bg4);border-radius:1px;margin-top:9px;overflow:hidden}
+.prog-fill{height:100%;border-radius:1px}
+.mbar-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.mbar-row{display:flex;align-items:center;gap:7px}
+.mbar-lbl{font-size:10.5px;color:var(--text2);width:80px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mbar-track{flex:1;height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.mbar-fill{height:100%;border-radius:2px}
+.mbar-val{font-family:var(--fm);font-size:9.5px;color:var(--text3);width:22px;text-align:right}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-family:var(--fm);padding:5px 8px;text-align:left;border-bottom:1px solid var(--border)}
+.tbl td{padding:7px 8px;font-size:11.5px;color:var(--text2);border-bottom:1px solid rgba(90,130,200,.04)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(90,130,200,.03)}
+.tbl td.n{color:var(--text);font-weight:500}
+.tbl td.m{font-family:var(--fm);font-size:10px}
+.pill{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:9.5px;font-family:var(--fm)}
+.pill::before{content:'';width:3.5px;height:3.5px;border-radius:50%;background:currentColor}
+.pill.g{background:rgba(29,184,106,.1);color:var(--green2)}
+.pill.r{background:rgba(232,58,90,.1);color:var(--red2)}
+.pill.a{background:rgba(232,160,32,.1);color:var(--amber2)}
+.pill.b{background:rgba(52,121,255,.1);color:var(--accent2)}
+.pill.p{background:rgba(139,92,246,.1);color:var(--purple2)}
+.pill.t{background:rgba(45,212,191,.1);color:var(--teal2)}
+.alert{display:flex;align-items:flex-start;gap:9px;padding:9px 11px;border-radius:8px;border:1px solid transparent;margin-bottom:6px}
+.alert.r{background:rgba(232,58,90,.06);border-color:rgba(232,58,90,.18)}
+.alert.a{background:rgba(232,160,32,.06);border-color:rgba(232,160,32,.18)}
+.alert.b{background:rgba(52,121,255,.06);border-color:rgba(52,121,255,.14)}
+.alert-ic{font-size:13px;flex-shrink:0;margin-top:1px}
+.alert-tit{font-size:11px;font-weight:500;color:var(--text)}
+.alert-desc{font-size:10px;color:var(--text3);margin-top:2px}
+.tl{display:flex;flex-direction:column;gap:0}
+.tl-row{display:grid;grid-template-columns:52px 1fr;gap:0 10px;padding-bottom:12px;position:relative}
+.tl-row:last-child{padding-bottom:0}
+.tl-t{font-family:var(--fm);font-size:9.5px;color:var(--text3);text-align:right;padding-top:3px}
+.tl-r{position:relative}
+.tl-r::before{content:'';position:absolute;left:-11px;top:10px;bottom:-12px;width:1px;background:var(--border)}
+.tl-row:last-child .tl-r::before{display:none}
+.tl-dot{position:absolute;left:-15px;top:4px;width:8px;height:8px;border-radius:50%;border:2px solid var(--bg1)}
+.tl-name{font-size:11.5px;color:var(--text);font-weight:500}
+.tl-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.tl-tag{display:inline-flex;align-items:center;gap:3px;padding:1px 5px;border-radius:3px;font-size:9px;font-family:var(--fm);margin-top:3px}
+.feed{display:flex;flex-direction:column;gap:0}
+.feed-item{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid rgba(90,130,200,.05)}
+.feed-item:last-child{border-bottom:none}
+.feed-av{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff}
+.feed-text{flex:1;font-size:11px;color:var(--text2);line-height:1.4}
+.feed-text b{color:var(--text);font-weight:500}
+.feed-time{font-family:var(--fm);font-size:9px;color:var(--text4);margin-top:2px}
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.metric-tile{background:var(--bg2);border-radius:7px;padding:9px 10px}
+.metric-v{font-family:var(--fh);font-size:18px;font-weight:800}
+.metric-l{font-size:8.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-family:var(--fm);margin-top:2px}
+.tabs{display:flex;gap:2px;background:var(--bg2);border-radius:7px;padding:2px;margin-bottom:10px}
+.tab{padding:4px 10px;border-radius:5px;font-size:10.5px;cursor:pointer;color:var(--text3);transition:.15s;font-family:var(--fm)}
+.tab.active{background:var(--bg3);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.btn{padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);
+  color:var(--text2);font-family:var(--fb);font-size:10.5px;cursor:pointer}
+.btn.primary{border:none;background:var(--accent);color:#fff}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-icon">⬡</div>
+    REPYS <span>V0.4.0</span>
+  </div>
+  <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
+  <div class="tb-sep"></div>
+  <div class="tb-search">🔍 <span style="color:var(--text3)">Hızlı ara...</span><span style="margin-left:auto;font-family:var(--fm);font-size:9px;color:var(--text4)">Ctrl+K</span></div>
+  <div class="tb-notif">🔔<div class="notif-badge">5</div></div>
+  <div class="live-dot">SİSTEM AKTİF</div>
+  <div class="clock" id="clk">--:--:--</div>
+  <div style="width:1px;height:20px;background:var(--border)"></div>
+  <div class="av">AB</div>
+</div>
+
+<div class="sidebar">
+  <div class="sb-section">Ana Menü</div>
+  <div class="sb-item active"><div class="sb-icon">⊞</div>Dashboard</div>
+  <div class="sb-item"><div class="sb-icon">👤</div>Personel<div class="sb-badge b">47</div></div>
+  <div class="sb-item"><div class="sb-icon">📅</div>İzin Takip<div class="sb-badge a">6</div></div>
+  <div class="sb-item"><div class="sb-icon">🏥</div>Sağlık Takip</div>
+  <div class="sb-item"><div class="sb-icon">📊</div>Dozimetre</div>
+  <div class="sb-section" style="margin-top:6px">Cihaz</div>
+  <div class="sb-item"><div class="sb-icon">⚙</div>Cihaz Listesi</div>
+  <div class="sb-item"><div class="sb-icon">🔧</div>Arıza Takip<div class="sb-badge r">9</div></div>
+  <div class="sb-item"><div class="sb-icon">🔬</div>Bakım & Kalibrasyon</div>
+  <div class="sb-item"><div class="sb-icon">🛡</div>RKE Envanter</div>
+  <div class="sb-section" style="margin-top:6px">Nöbet</div>
+  <div class="sb-item"><div class="sb-icon">🌙</div>Nöbet Planı</div>
+  <div class="sb-item"><div class="sb-icon">⏰</div>Fazla Mesai</div>
+  <div class="sb-section" style="margin-top:6px">Sistem</div>
+  <div class="sb-item"><div class="sb-icon">📁</div>Dökümanlar</div>
+  <div class="sb-item"><div class="sb-icon">📈</div>Raporlar</div>
+  <div class="sb-item"><div class="sb-icon">⚙</div>Yönetim</div>
+  <div class="sb-footer">
+    <div class="sb-user">
+      <div class="av" style="width:28px;height:28px;font-size:11px">AB</div>
+      <div>
+        <div class="sb-user-name">Admin</div>
+        <div class="sb-user-role">Sistem Yöneticisi</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between">
+    <div>
+      <div style="font-family:var(--fh);font-size:18px;font-weight:800;letter-spacing:-.3px">Dashboard</div>
+      <div style="font-size:10.5px;color:var(--text3);margin-top:2px;font-family:var(--fm)">
+        Radyoloji Bölümü · <span id="date-str"></span> · Son güncelleme: <span id="upd-time"></span>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="btn" onclick="refreshAll()" id="refresh-btn">↻ Yenile</button>
+      <button class="btn">↓ Excel</button>
+      <button class="btn primary">+ Yeni Kayıt</button>
+    </div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="g g44">
+    <div class="card card-sm">
+      <div class="stat-label">Aktif Personel</div>
+      <div class="stat-val" style="color:var(--accent2)"><span class="cnt" data-target="47">0</span></div>
+      <div class="prog"><div class="prog-fill" style="width:78%;background:var(--accent)"></div></div>
+      <div class="stat-sub"><span class="delta up">↑ 2</span> bu ay · 6 izinli</div>
+    </div>
+    <div class="card card-sm">
+      <div class="stat-label">Kayıtlı Cihaz</div>
+      <div class="stat-val" style="color:var(--teal2)"><span class="cnt" data-target="83">0</span></div>
+      <div class="prog"><div class="prog-fill" style="width:88%;background:var(--teal)"></div></div>
+      <div class="stat-sub"><span class="delta dn">↓ 3</span> arızada · 2 bakımda</div>
+    </div>
+    <div class="card card-sm">
+      <div class="stat-label">Açık Arıza</div>
+      <div class="stat-val" style="color:var(--red2)"><span class="cnt" data-target="9">0</span></div>
+      <div class="prog"><div class="prog-fill" style="width:39%;background:var(--red)"></div></div>
+      <div class="stat-sub"><span class="delta dn">↑ 2</span> bu hafta · 5 yüksek</div>
+    </div>
+    <div class="card card-sm">
+      <div class="stat-label">Bu Ayki Nöbet</div>
+      <div class="stat-val" style="color:var(--amber2)"><span class="cnt" data-target="124">0</span></div>
+      <div class="prog"><div class="prog-fill" style="width:62%;background:var(--amber)"></div></div>
+      <div class="stat-sub"><span class="delta ne">—</span> 19 gün kaldı · plan tamam</div>
+    </div>
+  </div>
+
+  <!-- Row 2 -->
+  <div class="g g321">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><div class="card-dot" style="background:var(--accent)"></div>Aylık Aktivite Özeti</div>
+        <div style="display:flex;gap:10px;font-size:9.5px;color:var(--text3)">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--accent);display:inline-block"></span>Arıza</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--green);display:inline-block"></span>Bakım</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--amber);display:inline-block"></span>İzin</span>
+        </div>
+      </div>
+      <svg width="100%" height="110" id="line-svg" viewBox="0 0 400 110" preserveAspectRatio="none"></svg>
+      <div style="display:flex;justify-content:space-between;margin-top:3px;font-size:8.5px;color:var(--text4);font-family:var(--fm)">
+        <span>Ekim</span><span>Kasım</span><span>Aralık</span><span>Ocak</span><span>Şubat</span><span>Mart</span><span>Nisan</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><div class="card-dot" style="background:var(--red)"></div>Uyarılar</div>
+        <span class="card-link">Tümü (8) →</span>
+      </div>
+      <div class="alert r"><div class="alert-ic">⚠</div><div><div class="alert-tit">MRI-01 Kalibrasyon Süresi Doldu</div><div class="alert-desc">17 gün önce — acil yenileme</div></div></div>
+      <div class="alert r"><div class="alert-ic">🔴</div><div><div class="alert-tit">CT-02 Yüksek Öncelik Arıza</div><div class="alert-desc">Güç kaynağı — servis çağrıldı</div></div></div>
+      <div class="alert a"><div class="alert-ic">⏰</div><div><div class="alert-tit">Mamografi Bakımı — 5 gün</div><div class="alert-desc">Periyodik bakım tarihi yaklaşıyor</div></div></div>
+      <div class="alert a"><div class="alert-ic">📋</div><div><div class="alert-tit">USG-03 NDK Lisansı — 12 gün</div><div class="alert-desc">Yenileme gerekli</div></div></div>
+      <div class="alert b"><div class="alert-ic">ℹ</div><div><div class="alert-tit">Mayıs Nöbet Planı Onayda</div><div class="alert-desc">Onay bekleniyor</div></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><div class="card-dot" style="background:var(--purple)"></div>Son İşlemler</div>
+      </div>
+      <div class="feed">
+        <div class="feed-item"><div class="feed-av" style="background:var(--accent)">AK</div><div><div class="feed-text"><b>Ayşe K.</b> yeni arıza kaydı — CT-02</div><div class="feed-time">2 dk önce</div></div></div>
+        <div class="feed-item"><div class="feed-av" style="background:var(--green)">MD</div><div><div class="feed-text"><b>Mehmet D.</b> bakım tamamlandı</div><div class="feed-time">18 dk önce</div></div></div>
+        <div class="feed-item"><div class="feed-av" style="background:var(--purple)">ZA</div><div><div class="feed-text"><b>Zeynep A.</b> izin talebi onaylandı</div><div class="feed-time">1 saat önce</div></div></div>
+        <div class="feed-item"><div class="feed-av" style="background:var(--amber)">FŞ</div><div><div class="feed-text"><b>Fatma Ş.</b> dozimetre verisi yüklendi</div><div class="feed-time">2 saat önce</div></div></div>
+        <div class="feed-item"><div class="feed-av" style="background:var(--teal)">AY</div><div><div class="feed-text"><b>Ali Y.</b> RKE muayene raporu eklendi</div><div class="feed-time">3 saat önce</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3 -->
+  <div class="g g32">
+    <div class="card">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab(0)">Arıza Kayıtları</div>
+        <div class="tab" onclick="switchTab(1)">Bakım Planı</div>
+        <div class="tab" onclick="switchTab(2)">Kalibrasyon</div>
+      </div>
+      <div id="tab0">
+        <table class="tbl">
+          <thead><tr><th>Cihaz</th><th>Arıza</th><th>Birim</th><th>Tarih</th><th>Durum</th><th>Öncelik</th></tr></thead>
+          <tbody>
+            <tr><td class="n">CT-02</td><td>Güç kaynağı</td><td>Anjiografi</td><td class="m">01.04.26</td><td><span class="pill r">Açık</span></td><td><span class="pill r">Yüksek</span></td></tr>
+            <tr><td class="n">MRI-01</td><td>Soğutma sis.</td><td>MRI Ünitesi</td><td class="m">31.03.26</td><td><span class="pill a">İşlemde</span></td><td><span class="pill a">Orta</span></td></tr>
+            <tr><td class="n">USG-03</td><td>Ekran hatası</td><td>USG</td><td class="m">30.03.26</td><td><span class="pill a">İşlemde</span></td><td><span class="pill b">Düşük</span></td></tr>
+            <tr><td class="n">Mamografi-01</td><td>Kompresör</td><td>Mamografi</td><td class="m">28.03.26</td><td><span class="pill g">Çözüldü</span></td><td><span class="pill a">Orta</span></td></tr>
+            <tr><td class="n">Röntgen-04</td><td>Yazılım güncl.</td><td>Acil Rad.</td><td class="m">27.03.26</td><td><span class="pill g">Çözüldü</span></td><td><span class="pill b">Düşük</span></td></tr>
+            <tr><td class="n">CT-01</td><td>Görüntü kalitesi</td><td>BT Ünite</td><td class="m">25.03.26</td><td><span class="pill r">Açık</span></td><td><span class="pill a">Orta</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="tab1" style="display:none">
+        <table class="tbl">
+          <thead><tr><th>Cihaz</th><th>Bakım Türü</th><th>Planlanan</th><th>Sorumlu</th><th>Durum</th></tr></thead>
+          <tbody>
+            <tr><td class="n">MRI-01</td><td>Periyodik</td><td class="m">05.04.26</td><td>Tekniker A</td><td><span class="pill b">Planlandı</span></td></tr>
+            <tr><td class="n">CT-01</td><td>Filtre değişimi</td><td class="m">08.04.26</td><td>Tekniker B</td><td><span class="pill b">Planlandı</span></td></tr>
+            <tr><td class="n">Mamografi-01</td><td>Periyodik</td><td class="m">06.04.26</td><td>Tekniker A</td><td><span class="pill a">Yaklaşıyor</span></td></tr>
+            <tr><td class="n">USG-01</td><td>Yazılım güncl.</td><td class="m">10.04.26</td><td>Tekniker C</td><td><span class="pill b">Planlandı</span></td></tr>
+            <tr><td class="n">Röntgen-02</td><td>Tüp kontrolü</td><td class="m">15.03.26</td><td>Tekniker B</td><td><span class="pill r">Gecikti</span></td></tr>
+            <tr><td class="n">Anjiografi-01</td><td>Kapsamlı bakım</td><td class="m">20.03.26</td><td>Servis Firması</td><td><span class="pill g">Tamamlandı</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="tab2" style="display:none">
+        <table class="tbl">
+          <thead><tr><th>Cihaz</th><th>Firma</th><th>Son Kalibrasyon</th><th>Geçerlilik</th><th>Durum</th></tr></thead>
+          <tbody>
+            <tr><td class="n">MRI-01</td><td>MedTech TR</td><td class="m">15.03.25</td><td class="m">15.03.26</td><td><span class="pill r">Süresi Doldu</span></td></tr>
+            <tr><td class="n">CT-01</td><td>Siemens Hizmet</td><td class="m">01.04.25</td><td class="m">01.04.26</td><td><span class="pill a">Yenileme</span></td></tr>
+            <tr><td class="n">Anjiografi-01</td><td>Philips Servis</td><td class="m">10.04.25</td><td class="m">10.04.26</td><td><span class="pill a">Yaklaşıyor</span></td></tr>
+            <tr><td class="n">USG-01</td><td>Lokal Lab</td><td class="m">20.06.25</td><td class="m">20.06.26</td><td><span class="pill g">Geçerli</span></td></tr>
+            <tr><td class="n">Mamografi-01</td><td>MedTech TR</td><td class="m">30.09.25</td><td class="m">30.09.26</td><td><span class="pill g">Geçerli</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><div class="card-dot" style="background:var(--amber)"></div>Bugünkü Nöbet</div>
+          <span class="card-link">Plana Git →</span>
+        </div>
+        <div class="tl">
+          <div class="tl-row"><div class="tl-t">08:00</div><div class="tl-r"><div class="tl-dot" style="background:var(--green2)"></div><div class="tl-name">Dr. Ayşe Kaya</div><div class="tl-sub">Gündüz · Acil Radyoloji</div><div class="tl-tag" style="background:rgba(29,184,106,.1);color:var(--green2)">Aktif</div></div></div>
+          <div class="tl-row"><div class="tl-t">08:00</div><div class="tl-r"><div class="tl-dot" style="background:var(--green2)"></div><div class="tl-name">Tk. Mehmet Demir</div><div class="tl-sub">Gündüz · MRI Ünitesi</div><div class="tl-tag" style="background:rgba(29,184,106,.1);color:var(--green2)">Aktif</div></div></div>
+          <div class="tl-row"><div class="tl-t">16:00</div><div class="tl-r"><div class="tl-dot" style="background:var(--amber2)"></div><div class="tl-name">Tk. Zeynep Arslan</div><div class="tl-sub">Öğleden Sonra · USG</div><div class="tl-tag" style="background:rgba(232,160,32,.1);color:var(--amber2)">Bekliyor</div></div></div>
+          <div class="tl-row"><div class="tl-t">20:00</div><div class="tl-r"><div class="tl-dot" style="background:var(--purple2)"></div><div class="tl-name">Dr. Ali Yıldız</div><div class="tl-sub">Gece · Nöbetçi Radyolog</div><div class="tl-tag" style="background:rgba(139,92,246,.1);color:var(--purple2)">Bekliyor</div></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><div class="card-dot" style="background:var(--teal2)"></div>RKE & Personel Özeti</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div>
+            <div style="font-size:9.5px;color:var(--text3);font-family:var(--fm);margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em">RKE Durumu</div>
+            <div class="mbar-list">
+              <div class="mbar-row"><div class="mbar-lbl">Uygun</div><div class="mbar-track"><div class="mbar-fill" style="width:80%;background:var(--green)"></div></div><div class="mbar-val">171</div></div>
+              <div class="mbar-row"><div class="mbar-lbl">Hatalı</div><div class="mbar-track"><div class="mbar-fill" style="width:11%;background:var(--red)"></div></div><div class="mbar-val">24</div></div>
+              <div class="mbar-row"><div class="mbar-lbl">Muayene Bkl</div><div class="mbar-track"><div class="mbar-fill" style="width:9%;background:var(--amber)"></div></div><div class="mbar-val">19</div></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:9.5px;color:var(--text3);font-family:var(--fm);margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em">İzin Dağılımı</div>
+            <div class="mbar-list">
+              <div class="mbar-row"><div class="mbar-lbl">Yıllık İzin</div><div class="mbar-track"><div class="mbar-fill" style="width:50%;background:var(--purple)"></div></div><div class="mbar-val">3</div></div>
+              <div class="mbar-row"><div class="mbar-lbl">Şua İzni</div><div class="mbar-track"><div class="mbar-fill" style="width:33%;background:var(--accent)"></div></div><div class="mbar-val">2</div></div>
+              <div class="mbar-row"><div class="mbar-lbl">Rapor</div><div class="mbar-track"><div class="mbar-fill" style="width:17%;background:var(--amber)"></div></div><div class="mbar-val">1</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="metric-grid">
+          <div class="metric-tile"><div class="metric-v" style="color:var(--teal2)">214</div><div class="metric-l">Toplam RKE</div></div>
+          <div class="metric-tile"><div class="metric-v" style="color:var(--purple2)">6</div><div class="metric-l">İzindeki Personel</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+function tick(){
+  const n=new Date();
+  const el=document.getElementById('clk');
+  if(el) el.textContent=n.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const ds=document.getElementById('date-str');
+  if(ds) ds.textContent=n.toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const ut=document.getElementById('upd-time');
+  if(ut) ut.textContent=n.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+}
+tick(); setInterval(tick,1000);
+
+document.querySelectorAll('.cnt').forEach(el=>{
+  const target=+el.dataset.target,dur=900;
+  let start=null;
+  const step=ts=>{if(!start)start=ts;const p=Math.min((ts-start)/dur,1);el.textContent=Math.floor(p*target);if(p<1)requestAnimationFrame(step);else el.textContent=target;};
+  requestAnimationFrame(step);
+});
+
+(function(){
+  const months=['Ekim','Kas','Ara','Oca','Şub','Mar','Nis'];
+  const ariza=[7,9,5,12,8,11,9],bakim=[14,12,16,10,18,15,19],izin=[4,6,5,8,7,5,6];
+  const W=400,H=110,PAD=10;
+  const maxV=Math.max(...ariza,...bakim,...izin);
+  const sx=i=>PAD+(i/(months.length-1))*(W-PAD*2);
+  const sy=v=>H-PAD-(v-0)/(maxV-0)*(H-PAD*2);
+  const path=(data,color)=>{
+    let d=`M ${sx(0)} ${sy(data[0])}`;
+    for(let i=1;i<data.length;i++){const cx=(sx(i-1)+sx(i))/2;d+=` C ${cx} ${sy(data[i-1])}, ${cx} ${sy(data[i])}, ${sx(i)} ${sy(data[i])}`;}
+    const area=d+` L ${sx(data.length-1)} ${H-PAD} L ${sx(0)} ${H-PAD} Z`;
+    return `<path d="${area}" fill="${color}" fill-opacity="0.07"/><path d="${d}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>`;
+  };
+  const dots=(data,color)=>data.map((v,i)=>`<circle cx="${sx(i)}" cy="${sy(v)}" r="2.5" fill="${color}"/>`).join('');
+  const gridLines=[0,5,10,15,20].map(v=>`<line x1="${PAD}" y1="${sy(v)}" x2="${W-PAD}" y2="${sy(v)}" stroke="rgba(90,130,200,0.07)" stroke-width="1"/>`).join('');
+  const svg=document.getElementById('line-svg');
+  if(svg) svg.innerHTML=gridLines+path(bakim,'#1db86a')+path(ariza,'#3479ff')+path(izin,'#e8a020')+dots(bakim,'#1db86a')+dots(ariza,'#3479ff')+dots(izin,'#e8a020');
+})();
+
+function switchTab(n){
+  document.querySelectorAll('.tabs .tab').forEach((t,i)=>t.classList.toggle('active',i===n));
+  [0,1,2].forEach(i=>{const el=document.getElementById('tab'+i);if(el)el.style.display=i===n?'block':'none';});
+}
+
+function refreshAll(){
+  const btn=document.getElementById('refresh-btn');
+  if(!btn)return;
+  btn.textContent='↻ Yenileniyor...';btn.style.color='var(--accent2)';
+  setTimeout(()=>{btn.textContent='↻ Yenile';btn.style.color='';},1200);
+}
+</script>
+</body>
+</html>

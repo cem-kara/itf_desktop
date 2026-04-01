@@ -100,7 +100,7 @@ class SaglikService:
             kayitlar_sonuc = self.get_saglik_kayitlari(personel_id)
             if not kayitlar_sonuc.basarili:
                 return kayitlar_sonuc
-            kayitlar = kayitlar_sonuc.data or []
+            kayitlar = kayitlar_sonuc.veri or []
 
             son_kayit = None
             if kayitlar:

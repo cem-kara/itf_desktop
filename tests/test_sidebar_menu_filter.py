@@ -23,8 +23,8 @@ class FakePageGuard:
 
 def test_sidebar_filters_menu_items():
     _get_app()
-    # Allow only personel.read; admin.panel should be filtered
-    page_guard = FakePageGuard({"personel.read"})
+    # Personel Listesi icin dis_alan.read izni gerekir.
+    page_guard = FakePageGuard({"dis_alan.read"})
     sidebar = Sidebar(page_guard=page_guard)
 
     # Known items from ayarlar.json

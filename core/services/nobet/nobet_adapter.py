@@ -150,6 +150,137 @@ class NobetAdapter:
         except Exception as e:
             return SonucYonetici.hata(e, "NobetAdapter.get_plan")
 
+    def get_onayli_rapor_verisi(self, yil: int, ay: int,
+                                birim: Optional[str] = None) -> SonucYonetici:
+        """
+        Onaylı/yürürlükte planlardan rapor verisini döner.
+
+        Dönüş:
+            {
+                "planlar":   [{PlanID, BirimID, BirimAdi, Durum, OnayTarihi, OnaylayanID}],
+                "satirlar":  [{..., AdSoyad, BirimAdi, VardiyaAdi, SaatAraligi, PlanDurum}],
+            }
+        """
+        try:
+            birim_hedefleri: list[tuple[str, str]] = []
+            if birim:
+                bid = self._birim_id_coz(birim)
+                if not bid:
+                    return SonucYonetici.tamam(veri={"planlar": [], "satirlar": []})
+                b_sonuc = self.birim.get_birim(bid)
+                b_adi = bid
+                if b_sonuc.basarili and b_sonuc.veri:
+                    b_adi = str(b_sonuc.veri.get("BirimAdi", bid))
+                birim_hedefleri.append((bid, b_adi))
+            else:
+                for row in (self.get_birimler().veri or []):
+                    bid = str(row.get("BirimID", "")).strip()
+                    b_adi = str(row.get("BirimAdi", "")).strip()
+                    if bid:
+                        birim_hedefleri.append((bid, b_adi))
+
+            p_rows = self._r.get("Personel").get_all() or []
+            v_rows = self._r.get("NB_Vardiya").get_all() or []
+            p_map = {str(p.get("KimlikNo", "")).strip(): str(p.get("AdSoyad", "")).strip() for p in p_rows}
+            v_map = {str(v.get("VardiyaID", "")).strip(): dict(v) for v in v_rows}
+
+            onayli_durumlar = {"onaylandi", "onaylandı", "onaylı", "yururlukte", "yürürlükte"}
+            planlar: list[dict] = []
+            satirlar: list[dict] = []
+
+            for bid, b_adi in birim_hedefleri:
+                plan_sonuc = self.plan.get_plan(bid, yil, ay)
+                if not plan_sonuc.basarili:
+                    return plan_sonuc
+                plan = plan_sonuc.veri
+                if not plan:
+                    continue
+
+                durum = str(plan.get("Durum", "")).strip().lower()
+                if durum not in onayli_durumlar:
+                    continue
+
+                planlar.append({
+                    "PlanID": plan.get("PlanID", ""),
+                    "BirimID": bid,
+                    "BirimAdi": b_adi,
+                    "Durum": str(plan.get("Durum", "")),
+                    "OnayTarihi": str(plan.get("OnayTarihi", "") or ""),
+                    "OnaylayanID": str(plan.get("OnaylayanID", "") or ""),
+                })
+
+                satir_sonuc = self.plan.get_satirlar(str(plan.get("PlanID", "")))
+                if not satir_sonuc.basarili:
+                    return satir_sonuc
+                for satir in (satir_sonuc.veri or []):
+                    vardiya = v_map.get(str(satir.get("VardiyaID", "")).strip(), {})
+                    satirlar.append({
+                        **satir,
+                        "BirimID": bid,
+                        "BirimAdi": b_adi,
+                        "AdSoyad": p_map.get(str(satir.get("PersonelID", "")).strip(), ""),
+                        "VardiyaAdi": str(vardiya.get("VardiyaAdi", "")),
+                        "BasSaat": str(vardiya.get("BasSaat", "")),
+                        "BitSaat": str(vardiya.get("BitSaat", "")),
+                        "SaatAraligi": f"{vardiya.get('BasSaat', '')}-{vardiya.get('BitSaat', '')}".strip("-"),
+                        "SureDakika": int(vardiya.get("SureDakika", 0) or 0),
+                        "PlanDurum": str(plan.get("Durum", "")).title(),
+                        "OnayTarihi": str(plan.get("OnayTarihi", "") or ""),
+                    })
+
+            satirlar.sort(key=lambda r: (
+                str(r.get("BirimAdi", "")),
+                str(r.get("NobetTarihi", "")),
+                str(r.get("BasSaat", "")),
+                str(r.get("AdSoyad", "")),
+            ))
+            planlar.sort(key=lambda r: str(r.get("BirimAdi", "")))
+
+            ozet_map: dict[str, dict] = {}
+            for satir in satirlar:
+                pid = str(satir.get("PersonelID", "")).strip()
+                if not pid:
+                    continue
+                if pid not in ozet_map:
+                    hedef = self._kisi_hedef_saat(pid, yil, ay)
+                    try:
+                        from core.hesaplamalar import ay_is_gunu
+                        tatiller = self._tatil_listesi_getir(yil, ay)
+                        hedef = hedef or ay_is_gunu(yil, ay, tatiller) * 7.0
+                    except Exception:
+                        hedef = hedef or 0
+                    ozet_map[pid] = {
+                        "PersonelID": pid,
+                        "AdSoyad": str(satir.get("AdSoyad", "")),
+                        "ToplamSayisi": 0,
+                        "CalisanSaat": 0.0,
+                        "HedefSaat": float(hedef or 0),
+                    }
+                ozet_map[pid]["ToplamSayisi"] += 1
+                ozet_map[pid]["CalisanSaat"] += round(int(satir.get("SureDakika", 0) or 0) / 60, 2)
+
+            ozet = []
+            for item in ozet_map.values():
+                hedef_saat = float(item.get("HedefSaat", 0) or 0)
+                calisan_saat = round(float(item.get("CalisanSaat", 0) or 0), 2)
+                ozet.append({
+                    "PersonelID": item["PersonelID"],
+                    "AdSoyad": item["AdSoyad"],
+                    "ToplamSayisi": item["ToplamSayisi"],
+                    "HedefSaat": f"{hedef_saat:.0f}",
+                    "CalisanSaat": f"{calisan_saat:.0f}",
+                    "FazlaMesai": f"{calisan_saat - hedef_saat:+.0f}",
+                })
+            ozet.sort(key=lambda r: str(r.get("AdSoyad", "")))
+
+            return SonucYonetici.tamam(veri={
+                "planlar": planlar,
+                "satirlar": satirlar,
+                "ozet": ozet,
+            })
+        except Exception as e:
+            return SonucYonetici.hata(e, "NobetAdapter.get_onayli_rapor_verisi")
+
     def plan_ekle(self, veri: dict) -> SonucYonetici:
         """Manuel nöbet ekleme — UI'dan gelen veri."""
         try:

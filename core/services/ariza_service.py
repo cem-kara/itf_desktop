@@ -146,9 +146,9 @@ class ArizaService:
         try:
             repo = self._r.get("Cihaz_Ariza")
             if guncelle:
-                ariza_id = veri.get("ArizaId")
+                ariza_id = veri.get("Arizaid")
                 if not ariza_id:
-                    return SonucYonetici.hata("UPDATE için ArizaId gerekli", "ArizaService.kaydet")
+                    return SonucYonetici.hata("UPDATE için Arizaid gerekli", "ArizaService.kaydet")
                 repo.update(ariza_id, veri)
                 return SonucYonetici.tamam(f"Arıza #{ariza_id} güncellendi.")
             else:

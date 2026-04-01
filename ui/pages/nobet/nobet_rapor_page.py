@@ -8,12 +8,14 @@ from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel,
     QPushButton, QComboBox, QGroupBox, QGridLayout,
-    QRadioButton, QButtonGroup, QApplication,
+    QRadioButton, QButtonGroup, QApplication, QTableView,
+    QAbstractItemView,
 )
 
 from core.di import get_nobet_service
 from core.logger import logger
 from core.hata_yonetici import hata_goster, uyari_goster
+from ui.components.base_table_model import BaseTableModel
 from ui.styles.icons import IconRenderer, IconColors
 
 _AY_ADLARI = ["","Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",
@@ -97,6 +99,48 @@ def html_nobet_listesi(veriler: list[dict], baslik: str,
             "<b>Onaylayan</b><br><br>_______________</td>"
             "</tr></table>"
             "</body></html>")
+
+
+_RAPOR_COLUMNS = [
+    ("NobetTarihi", "Tarih", 95),
+    ("Gun", "Gün", 70),
+    ("BirimAdi", "Birim", 180),
+    ("VardiyaAdi", "Vardiya", 150),
+    ("SaatAraligi", "Saat", 95),
+    ("AdSoyad", "Personel", 220),
+    ("NobetTuru", "Tür", 110),
+    ("PlanDurum", "Plan", 105),
+]
+
+
+class _OnayliNobetModel(BaseTableModel):
+    DATE_KEYS = frozenset({"NobetTarihi"})
+    ALIGN_CENTER = frozenset({"NobetTarihi", "Gun", "SaatAraligi", "NobetTuru", "PlanDurum"})
+
+    def __init__(self, rows=None, parent=None):
+        super().__init__(_RAPOR_COLUMNS, rows, parent)
+
+    def _display(self, key: str, row: dict) -> str:
+        if key == "NobetTuru":
+            return str(row.get(key, "")).replace("_", " ").title()
+        if key == "PlanDurum":
+            val = str(row.get(key, "")).strip().lower()
+            if val == "yururlukte":
+                return "Yürürlükte"
+            if val == "onaylandi":
+                return "Onaylandı"
+        return super()._display(key, row)
+
+    def _fg(self, key: str, row: dict):
+        if key == "NobetTuru" and str(row.get("NobetTuru", "")) == "fazla_mesai":
+            return self.status_fg("Beklemede")
+        if key == "PlanDurum":
+            durum = str(row.get("PlanDurum", "")).strip().lower()
+            if durum == "yururlukte":
+                return self.status_fg("Aktif")
+            if durum == "onaylandi":
+                return self.status_fg("Onaylandı")
+        return None
 
 
 # ─── Worker ──────────────────────────────────────────────
@@ -366,7 +410,14 @@ class NobetRaporPage(QWidget):
         self._yil    = datetime.date.today().year
         self._ay     = datetime.date.today().month
         self._svc    = get_nobet_service(db) if db else None
+        self._rapor_planlar: list[dict] = []
+        self._rapor_satirlari: list[dict] = []
+        self._rapor_ozet: list[dict] = []
+        self._rapor_izinli = True
         self._setup_ui()
+        self.spn_yil.valueChanged.connect(self._istatistik_goster)
+        self.cmb_ay.currentIndexChanged.connect(self._istatistik_goster)
+        self.cmb_birim.currentIndexChanged.connect(self._istatistik_goster)
         if db:
             self.load_data()
 
@@ -463,6 +514,7 @@ class NobetRaporPage(QWidget):
         self.btn_rapor.clicked.connect(self._rapor_olustur)
         if self._ag:
             self._ag.disable_if_unauthorized(self.btn_rapor, "nobet.write")
+        self._rapor_izinli = self.btn_rapor.isEnabled()
         il.addWidget(self.btn_rapor)
         lay.addWidget(grp_isl, 1)
         return frame
@@ -474,17 +526,62 @@ class NobetRaporPage(QWidget):
         lay.setContentsMargins(16, 16, 16, 16)
         lay.setSpacing(8)
 
-        lbl_ozet = QLabel("Özet")
+        lbl_ozet = QLabel("Onaylı Plan Önizlemesi")
         lbl_ozet.setProperty("style-role", "section-title")
         lbl_ozet.setProperty("color-role", "primary")
         lay.addWidget(lbl_ozet)
 
-        self.lbl_istatistik = QLabel("Veriler yükleniyor…")
+        self.lbl_istatistik = QLabel("Onaylanmış veya yürürlükteki nöbet planları yükleniyor…")
         self.lbl_istatistik.setProperty("color-role", "muted")
         self.lbl_istatistik.setWordWrap(True)
         lay.addWidget(self.lbl_istatistik)
-        lay.addStretch()
+
+        kart_row = QHBoxLayout()
+        kart_row.setSpacing(10)
+        self.k_plan = self._istat_karti("Onaylı Plan", "—", "stat-highlight")
+        self.k_nobet = self._istat_karti("Toplam Nöbet", "—", "stat-value")
+        self.k_personel = self._istat_karti("Personel", "—", "stat-green")
+        self.k_fm = self._istat_karti("Fazla Mesai", "—", "stat-red")
+        self.k_onay = self._istat_karti("Son Onay", "—", "stat-value")
+        for kart in (self.k_plan, self.k_nobet, self.k_personel, self.k_fm, self.k_onay):
+            kart_row.addWidget(kart)
+        lay.addLayout(kart_row)
+
+        self.lbl_onay_bilgi = QLabel("")
+        self.lbl_onay_bilgi.setProperty("color-role", "secondary")
+        self.lbl_onay_bilgi.setWordWrap(True)
+        lay.addWidget(self.lbl_onay_bilgi)
+
+        self.table_preview = QTableView()
+        self.table_preview.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table_preview.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table_preview.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.table_preview.verticalHeader().setVisible(False)
+        self.table_preview.setAlternatingRowColors(True)
+        self._preview_model = _OnayliNobetModel([])
+        self.table_preview.setModel(self._preview_model)
+        self._preview_model.setup_columns(self.table_preview, stretch_keys=["AdSoyad"])
+        lay.addWidget(self.table_preview, 1)
         return frame
+
+    def _istat_karti(self, baslik: str, deger: str, value_role: str) -> QFrame:
+        frame = QFrame()
+        frame.setProperty("bg-role", "panel")
+        lay = QVBoxLayout(frame)
+        lay.setContentsMargins(14, 10, 14, 10)
+        lay.setSpacing(3)
+        lbl_baslik = QLabel(baslik)
+        lbl_baslik.setProperty("style-role", "stat-label")
+        lbl_deger = QLabel(deger)
+        lbl_deger.setProperty("style-role", value_role)
+        lay.addWidget(lbl_baslik)
+        lay.addWidget(lbl_deger)
+        frame._value_label = lbl_deger
+        return frame
+
+    def _istat_guncelle(self, kart: QFrame, deger: str):
+        if hasattr(kart, "_value_label"):
+            kart._value_label.setText(deger)
 
     def _build_footer(self) -> QFrame:
         frame = QFrame()
@@ -531,27 +628,77 @@ class NobetRaporPage(QWidget):
             ay   = self.cmb_ay.currentData()
             brid = self.cmb_birim.currentData()
             svc  = self._svc
-            ozet = svc.personel_nobet_ozeti(yil, ay, brid)
-            plan = svc.get_plan(yil, ay, brid)
-            rows = ozet.veri or []
-            plan_rows = plan.veri or []
-            if not plan_rows:
-                self.lbl_istatistik.setText("Bu dönemde henüz nöbet planı yok.")
+            sonuc = svc.get_onayli_rapor_verisi(yil, ay, brid)
+            if not sonuc.basarili:
+                self._bos_durum(sonuc.mesaj or "Onaylı plan bilgisi alınamadı.")
                 return
-            toplam   = len(plan_rows)
-            onaylanan = sum(1 for r in plan_rows if r.get("Durum")=="onaylandi")
-            taslak   = sum(1 for r in plan_rows if r.get("Durum")=="taslak")
-            fm       = sum(1 for r in plan_rows if r.get("NobetTuru")=="fazla_mesai")
-            personel = len(rows)
-            ort_nobet = sum(r.get("NobetSayisi",0) for r in rows) / max(personel,1)
+            veri = sonuc.veri or {}
+            self._rapor_planlar = veri.get("planlar", []) or []
+            self._rapor_satirlari = veri.get("satirlar", []) or []
+            self._rapor_ozet = veri.get("ozet", []) or []
+
+            if not self._rapor_planlar:
+                self._bos_durum("Bu dönem için onaylanmış veya yürürlükte plan bulunamadı.")
+                return
+
+            self._preview_model.set_data(self._rapor_satirlari)
+
+            toplam = len(self._rapor_satirlari)
+            plan_adet = len(self._rapor_planlar)
+            fm = sum(1 for r in self._rapor_satirlari if r.get("NobetTuru") == "fazla_mesai")
+            personel = len({str(r.get("PersonelID", "")) for r in self._rapor_satirlari if str(r.get("PersonelID", ""))})
+            son_onay = sorted([
+                str(p.get("OnayTarihi", "") or "") for p in self._rapor_planlar if str(p.get("OnayTarihi", "") or "")
+            ])[-1] if any(str(p.get("OnayTarihi", "") or "") for p in self._rapor_planlar) else "—"
+
+            self._istat_guncelle(self.k_plan, str(plan_adet))
+            self._istat_guncelle(self.k_nobet, str(toplam))
+            self._istat_guncelle(self.k_personel, str(personel))
+            self._istat_guncelle(self.k_fm, str(fm))
+            self._istat_guncelle(self.k_onay, self._fmt_dt(son_onay))
+
+            tek_birim = brid is not None or plan_adet == 1
+            self.btn_rapor.setEnabled(self._rapor_izinli and tek_birim and bool(self._rapor_satirlari))
+            if tek_birim:
+                self.lbl_onay_bilgi.setText(
+                    "Onaylı plan önizlemesi hazır. PDF veya Excel çıktısı üretebilirsiniz."
+                )
+            else:
+                self.lbl_onay_bilgi.setText(
+                    "Birden fazla onaylı birim bulundu. Resmi çıktı almak için tek birim seçin."
+                )
+
             self.lbl_istatistik.setText(
-                f"Toplam nöbet: {toplam}  |  Onaylı: {onaylanan}  |  "
-                f"Taslak: {taslak}  |  Fazla Mesai: {fm}\n"
-                f"Personel sayısı: {personel}  |  "
-                f"Kişi başı ortalama: {ort_nobet:.1f} nöbet"
+                f"{_AY_ADLARI[ay]} {yil} dönemi için {plan_adet} onaylı plan bulundu. "
+                f"Önizleme yalnız onaylanmış/yürürlükte nöbet satırlarını gösterir."
             )
+            self.lbl_durum.setText(f"{toplam} onaylı nöbet satırı listelendi.")
         except Exception as e:
             logger.error(f"İstatistik: {e}")
+
+    def _bos_durum(self, mesaj: str):
+        self._rapor_planlar = []
+        self._rapor_satirlari = []
+        self._rapor_ozet = []
+        self._preview_model.set_data([])
+        self._istat_guncelle(self.k_plan, "0")
+        self._istat_guncelle(self.k_nobet, "0")
+        self._istat_guncelle(self.k_personel, "0")
+        self._istat_guncelle(self.k_fm, "0")
+        self._istat_guncelle(self.k_onay, "—")
+        self.lbl_istatistik.setText(mesaj)
+        self.lbl_onay_bilgi.setText("Çıktı üretmek için önce onaylı bir nöbet planı bulunmalı.")
+        self.lbl_durum.setText(mesaj)
+        self.btn_rapor.setEnabled(False)
+
+    @staticmethod
+    def _fmt_dt(value: str) -> str:
+        try:
+            if not value:
+                return "—"
+            return datetime.datetime.fromisoformat(value).strftime("%d.%m.%Y %H:%M")
+        except Exception:
+            return value or "—"
 
     # ─── Rapor ───────────────────────────────────────────
 
@@ -561,15 +708,14 @@ class NobetRaporPage(QWidget):
         ay   = self.cmb_ay.currentData()
         brid = self.cmb_birim.currentData()
         try:
-            svc   = self._svc
-            sonuc = svc.get_plan(yil, ay, brid)
-            plan  = sonuc.veri or []
-            if not plan:
-                uyari_goster(self, "Bu dönemde nöbet planı yok.")
+            if not self._rapor_satirlari:
+                uyari_goster(self, "Bu dönem için onaylı nöbet kaydı bulunamadı.")
+                return
+            if brid is None and len(self._rapor_planlar) > 1:
+                uyari_goster(self, "Resmi çıktı almak için tek birim seçin.")
                 return
 
-            v_map = svc.get_vardiya_haritasi().veri or {}
-            p_map = svc.get_personel_haritasi().veri or {}
+            plan = list(self._rapor_satirlari)
 
             # Gün → vardiya prefix → kişiler listesi
             gun_plan: dict[str, dict] = collections.defaultdict(
@@ -579,12 +725,12 @@ class NobetRaporPage(QWidget):
             v_adi_idx: dict[str, str] = {}
             prefix_idx = 0
             for r in sorted(plan, key=lambda x: x.get("NobetTarihi","")):
-                v_adi = v_map.get(r.get("VardiyaID",""),{}).get("VardiyaAdi","")
+                v_adi = str(r.get("VardiyaAdi", ""))
                 if v_adi and v_adi not in v_adi_idx:
                     v_adi_idx[v_adi] = chr(ord("A") + prefix_idx)
                     prefix_idx += 1
                 prefix = v_adi_idx.get(v_adi, "Z")
-                ad     = p_map.get(str(r.get("PersonelID","")), "")
+                ad     = str(r.get("AdSoyad", ""))
                 gun_plan[r.get("NobetTarihi","")][prefix].append(ad)
 
             _GUN = ["Pazartesi","Salı","Çarşamba","Perşembe",
@@ -603,40 +749,21 @@ class NobetRaporPage(QWidget):
                         satir[f"{prefix}{ki}"] = kisi
                 tablo.append(satir)
 
-            # Personel özeti
-            pid_set = {str(r.get("PersonelID","")) for r in plan}
-            ozet_tablo = []
-            for pid in sorted(pid_set, key=lambda p: p_map.get(p,p)):
-                ad = p_map.get(pid, pid)
-                sayilar: dict[str, int] = {}
-                for r in plan:
-                    if str(r.get("PersonelID","")) == pid:
-                        v_adi = v_map.get(r.get("VardiyaID",""),{}).get("VardiyaAdi","")
-                        sayilar[v_adi] = sayilar.get(v_adi, 0) + 1
-                toplam = sum(sayilar.values())
-                h = svc._kisi_hedef_saat(pid, yil, ay)
-                try:
-                    from core.hesaplamalar import ay_is_gunu
-                    GUNLUK_HEDEF_SAAT = 7.0  # 7 saat/gün
-                    tatiller = svc._tatil_listesi_getir(yil, ay)
-                    h = h or ay_is_gunu(yil, ay, tatiller) * GUNLUK_HEDEF_SAAT
-                except Exception:
-                    h = h or 0
-                calisan = sum(
-                    float(v_map.get(r.get("VardiyaID",""),{}).get("SaatSuresi",0))
-                    for r in plan if str(r.get("PersonelID","")) == pid
-                )
-                ozet_tablo.append({
-                    "AdSoyad":      ad,
-                    "ToplamSayisi": toplam,
-                    "HedefSaat":    f"{h:.0f}",
-                    "CalisanSaat":  f"{calisan:.0f}",
-                    "FazlaMesai":   f"{calisan - h:+.0f}",
-                })
+            ozet_tablo = list(self._rapor_ozet)
 
             # Vardiya saat bilgilerini context'e al (ilk 3 vardiya)
-            v_list = sorted(v_adi_idx.keys(),
-                            key=lambda n: v_adi_idx[n])
+            v_list = sorted(v_adi_idx.keys(), key=lambda n: v_adi_idx[n])
+            v_rows = []
+            for v_adi in v_list:
+                ilk = next((r for r in plan if str(r.get("VardiyaAdi", "")) == v_adi), None)
+                if not ilk:
+                    continue
+                v_rows.append({
+                    "VardiyaAdi": v_adi,
+                    "BasSaat": str(ilk.get("BasSaat", "")),
+                    "BitSaat": str(ilk.get("BitSaat", "")),
+                })
+
             def _saat(idx, alan):
                 if idx < len(v_list):
                     vn = v_list[idx]
@@ -649,7 +776,10 @@ class NobetRaporPage(QWidget):
             hata_goster(self, str(e)); return
 
         from core.rapor_servisi import RaporServisi
-        birim_adi = self.cmb_birim.currentText()
+        if brid is None and len(self._rapor_planlar) == 1:
+            birim_adi = str(self._rapor_planlar[0].get("BirimAdi", "Tüm Birimler"))
+        else:
+            birim_adi = self.cmb_birim.currentText()
         mod  = 1 if self.rb_pdf.isChecked() else 2
         isim = f"Nobet_{yil}_{ay:02d}"
         tur  = "pdf" if mod == 1 else "excel"
@@ -684,7 +814,8 @@ class NobetRaporPage(QWidget):
 
     def _rapor_tamam(self):
         QApplication.restoreOverrideCursor()
-        self.btn_rapor.setEnabled(True)
+        tek_birim = self.cmb_birim.currentData() is not None or len(self._rapor_planlar) == 1
+        self.btn_rapor.setEnabled(self._rapor_izinli and tek_birim and bool(self._rapor_satirlari))
 
     def closeEvent(self, event):
         if self._worker and self._worker.isRunning():

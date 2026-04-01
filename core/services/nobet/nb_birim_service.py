@@ -53,6 +53,7 @@ class NbBirimService:
         Dönüş: [{"BirimID", "BirimKodu", "BirimAdi", "Sira", "Aktif"}, ...]
         """
         try:
+            self._sync_missing_sabit_birimler()
             rows = self._r.get("NB_Birim").get_all() or []
 
             if rows:
@@ -87,6 +88,7 @@ class NbBirimService:
     def get_birim(self, birim_id: str) -> SonucYonetici:
         """Tek birim kaydını döner."""
         try:
+            self._sync_missing_sabit_birimler()
             rows = self._r.get("NB_Birim").get_all() or []
             kayit = next(
                 (r for r in rows if r.get("BirimID") == birim_id), None
@@ -104,6 +106,7 @@ class NbBirimService:
         Bulamazsa veri alanında None taşır.
         """
         try:
+            self._sync_missing_sabit_birimler()
             rows = self._r.get("NB_Birim").get_all() or []
             kayit = next(
                 (r for r in rows
@@ -254,6 +257,47 @@ class NbBirimService:
         if len(kelimeler) == 1:
             return kelimeler[0][:6]
         return "_".join(k[:3] for k in kelimeler[:3])
+
+    def _sync_missing_sabit_birimler(self) -> None:
+        """Sabitler.Birim içinde olup NB_Birim'de olmayan kayıtları ekler."""
+        try:
+            nb_rows = self._r.get("NB_Birim").get_all() or []
+            mevcut_adlar = {
+                str(r.get("BirimAdi", "")).strip()
+                for r in nb_rows
+                if str(r.get("BirimAdi", "")).strip()
+            }
+            sabit_rows = self._r.get("Sabitler").get_all() or []
+            eksikler = []
+            for row in sabit_rows:
+                if str(row.get("Kod", "")).strip() != "Birim":
+                    continue
+                birim_adi = str(row.get("MenuEleman", "")).strip()
+                if not birim_adi or birim_adi in mevcut_adlar:
+                    continue
+                eksikler.append(birim_adi)
+
+            if not eksikler:
+                return
+
+            sira = max((int(r.get("Sira", 99) or 99) for r in nb_rows), default=98)
+            for birim_adi in sorted(set(eksikler)):
+                sira += 1
+                self._r.get("NB_Birim").insert({
+                    "BirimID": _yeni_id(),
+                    "BirimKodu": self._adi_to_kod(birim_adi),
+                    "BirimAdi": birim_adi,
+                    "BirimTipi": "radyoloji",
+                    "Aktif": 1,
+                    "Sira": sira,
+                    "Aciklama": "Sabitler.Birim senkronizasyonu",
+                    "is_deleted": 0,
+                    "created_at": _simdi(),
+                })
+                mevcut_adlar.add(birim_adi)
+            logger.info(f"NB_Birim senkronize edildi: {len(eksikler)} yeni birim")
+        except Exception as e:
+            logger.error(f"NbBirimService._sync_missing_sabit_birimler: {e}")
 
     def _get_birimler_sabitler(self) -> SonucYonetici:
         """Geçiş dönemi fallback — Sabitler tablosundan birim listesi."""

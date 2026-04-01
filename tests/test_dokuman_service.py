@@ -1,124 +1,150 @@
 """
-Test DokumanService file path handling
+DokumanService Test Suite
+
+Kapsam:
+- Başlatma doğrulaması
+- get_belgeler: entity filtresi ve doğru SonucYonetici döndürme
+- sil
+- upload_and_save: offline mod (SonucYonetici döndürür)
+
+Not: Tüm metodlar SonucYonetici döndürür. Test'ler SonucYonetici.basarili ve SonucYonetici.veri'yi doğrular.
 """
-import os
-import tempfile
-import shutil
-from pathlib import Path
-
-def test_dokuman_service_local_path():
-    """
-    Test eğer personel ile dosya yüklerse, DokumanService
-    dosyayı data/offline_uploads/personel/<TC>/ klasörüne kaydeder mi?
-    """
-import sys
-    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-    
-from database.sqlite_manager import SQLiteManager
-
-from database.migrations import MigrationManager
-from database.repository_registry import RepositoryRegistry
+import pytest
+from unittest.mock import MagicMock, patch
 from core.services.dokuman_service import DokumanService
-import tempfile
-    
-    # Test DB oluştur
-    test_db_path = os.path.join(tempfile.gettempdir(), "repys_test_dokuman.db")
-    if os.path.exists(test_db_path):
-        os.remove(test_db_path)
-    
-    try:
-        # DB'yi migrate et
-        migration_mgr = MigrationManager(test_db_path)
-        conn = migration_mgr.connect()
-        cur = conn.cursor()
-        migration_mgr.create_tables(cur)
-        migration_mgr._seed_auth_data(cur)
-        conn.commit()
-        conn.close()
-        
-        # SQLiteManager'ı başlat
-        db = SQLiteManager(test_db_path)
-        registry = RepositoryRegistry(db)
-        
-        # Test dosyası oluştur
-        test_file = os.path.join(tempfile.gettempdir(), "test_rapor.pdf")
-        with open(test_file, "wb") as f:
-            f.write(b"Test PDF content")
-        
-        # DokumanService ile yükle
-        svc = DokumanService(db)
+
+
+# ─────────────────────────────────────────────────────────────
+#  Fixture'lar
+# ─────────────────────────────────────────────────────────────
+
+@pytest.fixture
+def reg():
+    return MagicMock()
+
+
+@pytest.fixture
+def db():
+    return MagicMock()
+
+
+@pytest.fixture
+def svc(db, reg):
+    return DokumanService(db, reg)
+
+
+# ─────────────────────────────────────────────────────────────
+#  Başlatma
+# ─────────────────────────────────────────────────────────────
+
+class TestInit:
+    def test_none_db_ile_olusturulur(self, reg):
+        s = DokumanService(None, reg)
+        assert s is not None
+
+    def test_registry_saklanir(self, db, reg):
+        s = DokumanService(db, reg)
+        assert s._registry is reg
+
+
+# ─────────────────────────────────────────────────────────────
+#  get_belgeler
+# ─────────────────────────────────────────────────────────────
+
+class TestGetBelgeler:
+    def test_entity_filtresi(self, svc, reg):
+        reg.get("Dokumanlar").get_where.return_value = [
+            {"EntityType": "personel", "EntityId": "111", "BelgeTuru": "Diploma",   "Belge": "d1.pdf"},
+            {"EntityType": "personel", "EntityId": "111", "BelgeTuru": "Sertifika", "Belge": "s1.pdf"},
+        ]
+        result = svc.get_belgeler("personel", "111")
+        assert result.basarili is True
+        assert len(result.veri) == 2
+        assert all(d["EntityId"] == "111" for d in result.veri)
+
+    def test_entity_sadece_tip(self, svc, reg):
+        """Entity ID olmadan sadece tip ile filtrele."""
+        reg.get("Dokumanlar").get_where.return_value = [
+            {"EntityType": "cihaz", "EntityId": "C01", "BelgeTuru": "Lisans", "Belge": "l1.pdf"},
+            {"EntityType": "cihaz", "EntityId": "C02", "BelgeTuru": "Lisans", "Belge": "l2.pdf"},
+        ]
+        result = svc.get_belgeler("cihaz")
+        assert result.basarili is True
+        assert len(result.veri) == 2
+
+    def test_eslesme_yok_bos_liste(self, svc, reg):
+        reg.get("Dokumanlar").get_where.return_value = []
+        result = svc.get_belgeler("personel", "999")
+        assert result.basarili is True
+        assert result.veri == []
+
+    def test_repo_hatasi(self, svc, reg):
+        reg.get("Dokumanlar").get_where.side_effect = Exception("Hata")
+        result = svc.get_belgeler("personel", "111")
+        assert result.basarili is False
+
+
+# ─────────────────────────────────────────────────────────────
+#  upload_and_save — offline mod
+# ─────────────────────────────────────────────────────────────
+
+class TestUploadAndSave:
+    def test_offline_mod_local_path_kaydeder(self, svc, reg, tmp_path):
+        """
+        Offline modda dosya yerel diske kopyalanır,
+        DrivePath boş, mode='local' döner.
+        """
+        test_file = tmp_path / "rapor.pdf"
+        test_file.write_bytes(b"PDF content")
+
+        mock_repo = MagicMock()
+        reg.get.return_value = mock_repo
+
+        with patch("core.config.AppConfig.is_online_mode", return_value=False), \
+             patch("shutil.copy2"), \
+             patch("os.makedirs"):
+            result = svc.upload_and_save(
+                file_path=str(test_file),
+                entity_type="personel",
+                entity_id="12345678901",
+                belge_turu="SaglikRapor",
+                folder_name="Saglik_Raporlari",
+                doc_type="Personel_Belge",
+                custom_name="test_rapor.pdf",
+            )
+
+        assert result.basarili is True
+        assert result.veri["mode"] == "local"
+        assert result.veri.get("drive_link") in (None, "")
+
+    def test_dosya_bulunamadiysa_basarisiz(self, svc):
+        """Var olmayan dosya yolu → ok=False"""
         result = svc.upload_and_save(
-            file_path=test_file,
+            file_path="/tmp/kesinlikle_yok_12345.pdf",
             entity_type="personel",
-            entity_id="12345678901",  # Test TC
-            belge_turu="SaglikRapor",
-            folder_name="Saglik_Raporlari",  # Bu parametreyi etkisiz mi?
+            entity_id="111",
+            belge_turu="Diploma",
+            folder_name="Personel_Diploma",
             doc_type="Personel_Belge",
-            custom_name="12345678901_SaglikRapor_test.pdf",
-            iliskili_id="KAYIT_001",
-            iliskili_tip="Personel_Saglik_Takip",
         )
-        
-        print("\n=== UPLOAD RESULT ===")
-        print(f"OK: {result['ok']}")
-        print(f"Mode: {result['mode']}")
-        print(f"LocalPath: {result['local_path']}")
-        print(f"DriveLink: {result['drive_link']}")
-        print(f"Error: {result['error']}")
-        
-        # Dokumanlar tablosundan oku
-        dokuman_repo = registry.get("Dokumanlar")
-        docs = dokuman_repo.get_where({
-            "EntityType": "personel",
-            "BelgeTuru": "SaglikRapor",
-        })
-        
-        print("\n=== DOKUMANLAR TABLE RECORDS ===")
-        for doc in docs:
-            print(f"\nBelge: {doc.get('Belge')}")
-            print(f"  EntityId: {doc.get('EntityId')}")
-            print(f"  LocalPath: {doc.get('LocalPath')}")
-            print(f"  DrivePath: {doc.get('DrivePath')}")
-            print(f"  IliskiliBelgeID: {doc.get('IliskiliBelgeID')}")
-            
-            # Path var mı kontrol et
-            if doc.get("LocalPath"):
-                exists = os.path.exists(doc.get("LocalPath"))
-                print(f"  ✅ Dosya var: {exists}" if exists else f"  ❌ Dosya YOHHHH")
-        
-        # Kontrol: LocalPath'in offline_uploads/personel/<TC> altında olup olmadığını kont
-        assert result['ok'], "Upload başarısız oldu"
-        assert result['mode'] == 'local', f"Expected 'local' mode, got '{result['mode']}'"
-        
-        # Path kontrolü
-        expected_dir = os.path.join("data", "offline_uploads", "personel", "12345678901")
-        assert expected_dir in result['local_path'], \
-            f"Path '{result['local_path']}' içermediği '{expected_dir}'"
-        
-        # Dokumanlar tablosunda LocalPath var mı
-        if docs:
-            assert docs[0].get("LocalPath"), "LocalPath boş kaydedildi!"
-            print("\n✅ TEST PASSED: Dosya doğru yola kaydedildi ve DB'de kayıtlandı")
-        else:
-            print("\n❌ TEST FAILED: Dokumanlar tablosuna kayıt eklenmedi")
-        
-    finally:
-        # Temizle
-        try:
-            db.close()
-        except:
-            pass
-        try:
-            if os.path.exists(test_db_path):
-                os.remove(test_db_path)
-        except:
-            pass
-        try:
-            if os.path.exists(test_file):
-                os.remove(test_file)
-        except:
-            pass
+        assert result.basarili is False
 
 
-if __name__ == "__main__":
-    test_dokuman_service_local_path()
+# ─────────────────────────────────────────────────────────────
+#  sil
+# ─────────────────────────────────────────────────────────────
+
+class TestSil:
+    def test_sil_basarili(self, svc, reg):
+        mock_repo = MagicMock()
+        reg.get.return_value = mock_repo
+        result = svc.sil("personel", "111", "Diploma", "dosya.pdf")
+        assert result.basarili is True
+        mock_repo.delete.assert_called_once()
+
+    def test_sil_hatasi_false(self, svc, reg):
+        mock_repo = MagicMock()
+        mock_repo.delete.side_effect = Exception("Hata")
+        reg.get.return_value = mock_repo
+        result = svc.sil("personel", "111", "Diploma", "dosya.pdf")
+        assert result.basarili is False
