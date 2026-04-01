@@ -1,3 +1,0 @@
-UserId,Username,PasswordHash,IsActive,MustChangePassword,CreatedAt,LastLoginAt
-1,admin,pbkdf2_sha256$120000$gfxtJTda7l7QPUi6kTw2PQ==$tRlU3Y99R+nBSuxM5DASjkvyhwDdIIZipxfaApfb1KY=,1,0,2026-03-17T19:07:05.214792,
-2,viewer,pbkdf2_sha256$120000$7uGCrO/glXoS40r+MfOqmQ==$HWMpE4gexReUZG27EKh62hnJ7JRmIU4Idc50arRGmVw=,1,0,2026-03-17T19:07:05.284151,
