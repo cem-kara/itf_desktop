@@ -248,6 +248,26 @@ _SVG_PATHS: dict[str, str] = {
         <circle cx="12" cy="15" r="0.5" fill="currentColor" stroke="none"/>
     """,
 
+    "shield_cog": """
+        <path d="m10.929 14.467-.383.924"/>
+        <path d="M10.929 8.923 10.546 8"/>
+        <path d="M13.225 8.923 13.608 8"/>
+        <path d="m13.607 15.391-.382-.924"/>
+        <path d="m14.849 10.547.923-.383"/>
+        <path d="m14.849 12.843.923.383"/>
+        <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+        <path d="m9.305 10.547-.923-.383"/>
+        <path d="m9.305 12.843-.923.383"/>
+        <circle cx="12.077" cy="11.695" r="3"/>
+    """,
+
+    "radiation": """
+        <path d="M12 12h.01"/>
+        <path d="M14 15.4641a4 4 0 0 1-4 0L7.52786 19.74597 A 1 1 0 0 0 7.99303 21.16211 10 10 0 0 0 16.00697 21.16211 1 1 0 0 0 16.47214 19.74597z"/>
+        <path d="M16 12a4 4 0 0 0-2-3.464l2.472-4.282a1 1 0 0 1 1.46-.305 10 10 0 0 1 4.006 6.94A1 1 0 0 1 21 12z"/>
+        <path d="M8 12a4 4 0 0 1 2-3.464L7.528 4.254a1 1 0 0 0-1.46-.305 10 10 0 0 0-4.006 6.94A1 1 0 0 0 3 12z"/>
+    """,
+
     "lock": """
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
         <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke-linecap="round"/>
@@ -579,6 +599,12 @@ MENU_ICON_MAP: dict[str, str] = {
     "RKE Raporlama":     "file_text",
     "Yıl Sonu İzin":     "calendar_year",
     "Ayarlar":           "settings",
+    "Dozimetre Takip":      "radiation",
+    "Diğer Rad. Gör. FHSZ Yön.": "shield_alert",
+    "Yönetici İşlemleri": "settings_sliders",
+    "Nöbet Planı": "calendar_check",
+    "Fazla Mesai": "clock",
+    "Nöbetçi Listesi": "users",
 }
 
 GROUP_ICON_MAP: dict[str, str] = {
@@ -586,6 +612,7 @@ GROUP_ICON_MAP: dict[str, str] = {
     "CİHAZ":              "microscope",
     "RKE":                "shield",
     "YÖNETİCİ İŞLEMLERİ": "settings_sliders",
+    "NÖBET":              "calendar_check",
 }
 
 
@@ -889,7 +916,7 @@ class IconColors:
 #   # Menü öğesi rengi ile otomatik badge:
 #   btn.setIcon(Icons.menu_badge("Personel Listesi"))
 #
-#   # Özel arka plan + ikon rengi:
+#   # :Özel arka plan + ikon rengi
 #   Icons.badge("settings", bg="#1e3a5f", icon_color="#22d3ee")
 # ================================================================
 
@@ -902,6 +929,11 @@ MENU_BADGE_COLORS: dict[str, str] = {
     "Dozimetre Takip":               "#a78bfa",
     "İzin Takip ve FHSZ Yönetim":   "#38bdf8",
     "Diğer Rad. Gör. FHSZ Yön.":    "#7dd3fc",
+
+    #Nöbet 
+    "Nöbet Planı":                   "#1c55f1",
+    "Nöbetçi Listesi":                "#a325d4",
+    "Fazla Mesai":                   "#5371f7",
 
     # CİHAZ  —  mavi ailesi
     "Cihaz Listesi":                 "#4080e0",
@@ -929,6 +961,7 @@ GROUP_BADGE_COLORS: dict[str, str] = {
     "RKE":                 "#a855f7",
     "YÖNETİCİ İŞLEMLERİ": "#f59e0b",
     "AYARLAR":             "#64748b",
+    "NÖBET":              "#1c55f1",
 }
 
 

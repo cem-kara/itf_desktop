@@ -313,7 +313,7 @@ class MainWindow(QMainWindow):
             return page
 
         # ── NÖBET ────────────────────────────────────────────────────
-        if baslik == "Raporlar":
+        if baslik == "Nöbet Listeleri":
             from ui.pages.nobet.nobet_rapor_page import NobetRaporPage
             return NobetRaporPage(db=self._db, action_guard=self._action_guard)
 
