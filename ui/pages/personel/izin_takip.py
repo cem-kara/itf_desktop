@@ -717,7 +717,7 @@ class IzinTakipPage(QWidget):
 
         max_gun = None
         if self._svc and tip_text and tc:
-            max_gun = self._svc.get_izin_max_gun(tc=tc, izin_tipi=tip_text).veri or []
+            max_gun = self._svc.get_izin_max_gun(tc=tc, izin_tipi=tip_text)
 
         # Personel seçili değilse veya servis yoksa sabit limit fallback
         if max_gun is None:
@@ -874,11 +874,11 @@ class IzinTakipPage(QWidget):
 
         # Max gün kontrolü (servis bazlı, kesin engelleme)
         if self._svc:
-            ok_limit, limit_msg = self._svc.validate_izin_sure_limit(
+            limit_sonuc = self._svc.validate_izin_sure_limit(
                 tc=str(tc), izin_tipi=izin_tipi, gun=gun
             )
-            if not ok_limit:
-                MesajKutusu.uyari(self, limit_msg)
+            if not limit_sonuc.basarili:
+                MesajKutusu.uyari(self, limit_sonuc.mesaj)
                 return
 
         # ═══════════════════════════════════════════════

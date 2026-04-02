@@ -430,27 +430,29 @@ class DisAlanKurulumPage(QWidget):
                 "Aktif":               1,
                 "KaydedenKullanici":   "Kurulum Sihirbazı",
             }
-            ok = kat_svc.protokol_ekle(protokol)
+            sonuc = kat_svc.protokol_ekle(protokol)
         except Exception as e:
             hata_goster(self, str(e))
             return
 
-        if ok:
+        if sonuc.basarili:
             bilgi_goster(
-                self, "Kurulum Tamamlandı",
+                self,
                 f"{v['ana']} / {v['birim']} için katsayı protokolü oluşturuldu.\n\n"
                 f"Katsayı : {v['katsayi']:.4f} saat/vaka\n"
                 f"Geçerlilik : {v['yil']}-01-01 tarihinden itibaren\n\n"
-                f"Artık bu birimden Excel import yapabilirsiniz."
+                f"Artık bu birimden Excel import yapabilirsiniz.",
+                "Kurulum Tamamlandı"
             )
             self.btn_kaydet.setEnabled(False)
             self.btn_sablon.setEnabled(True)
             del self._onizle_veri
         else:
             uyari_goster(
-                self, "Eklenemedi",
+                self,
                 f"{v['yil']}-01-01 başlangıç tarihli bir protokol zaten mevcut.\n"
-                "Önce Katsayı Protokolleri ekranından mevcut protokolü pasife alın."
+                "Önce Katsayı Protokolleri ekranından mevcut protokolü pasife alın.",
+                "Eklenemedi"
             )
 
     def _sablon_indir(self):
@@ -587,10 +589,11 @@ class DisAlanKurulumPage(QWidget):
 
             wb.save(path)
             bilgi_goster(
-                self, "Şablon Hazır",
+                self,
                 f"Şablon kaydedildi:\n{path}\n\n"
                 f"Anabilim Dalı ve Birim bilgileri dolu.\n"
-                f"Dönem ayını D3 hücresine, yılı D4'e yazın."
+                f"Dönem ayını D3 hücresine, yılı D4'e yazın.",
+                "Şablon Hazır"
             )
 
         except ImportError:

@@ -122,13 +122,19 @@ class HizliIzinGirisDialog(QDialog):
     def _load_sabitler(self):
         try:
             fhsz_svc = self._fhsz_svc
-            if fhsz_svc is None:
-                return
-            sabitler = fhsz_svc.get_sabitler_repo().get_all()
+            sabitler = []
+            if fhsz_svc is not None:
+                sabitler = fhsz_svc.get_sabitler_listesi().veri or []
+            # FHSZ servisi üzerinden sabitler alınamazsa izin servisinden dene.
+            if not sabitler and self._izin_svc is not None:
+                sabitler = self._izin_svc.get_sabitler_raw().veri or []
+
             self._izin_max_gun = {}
             tip_adlari = []
             for r in sabitler:
-                if str(r.get("Kod", "")).strip() != "İzin_Tipi": continue
+                kod = str(r.get("Kod", "")).strip()
+                if kod not in ("İzin_Tipi", "Izin_Tipi"):
+                    continue
                 tip_adi = str(r.get("MenuEleman", "")).strip()
                 if not tip_adi: continue
                 tip_adlari.append(tip_adi)
@@ -136,10 +142,18 @@ class HizliIzinGirisDialog(QDialog):
                 if aciklama:
                     try: self._izin_max_gun[tip_adi] = int(aciklama)
                     except ValueError: pass
-            
+
+            if not tip_adlari:
+                tip_adlari = [
+                    "Yıllık İzin", "Şua İzni", "Mazeret İzni", "Sağlık Raporu",
+                    "Ücretsiz İzin", "Doğum İzni", "Babalık İzni",
+                    "Evlilik İzni", "Ölüm İzni", "Diğer",
+                ]
+
             self._izin_tipleri = sorted(tip_adlari)
             self.ui["izin_tipi"].clear()
             self.ui["izin_tipi"].addItems(self._izin_tipleri)
+            self._on_izin_tipi_changed(self.ui["izin_tipi"].currentText())
             
             registry = RepositoryRegistry(self._db)
             tatiller = registry.get("Tatiller").get_all()
@@ -161,7 +175,7 @@ class HizliIzinGirisDialog(QDialog):
         try:
             izin_svc = self._izin_svc
             if izin_svc and tip_text and tc:
-                max_gun = izin_svc.get_izin_max_gun(tc=tc, izin_tipi=tip_text).veri or []
+                max_gun = izin_svc.get_izin_max_gun(tc=tc, izin_tipi=tip_text)
         except Exception as e:
             logger.error(f"Hızlı izin max gün hesaplama hatası: {e}")
 
@@ -212,11 +226,11 @@ class HizliIzinGirisDialog(QDialog):
             registry = RepositoryRegistry(self._db)
 
             # Max gün kontrolü (kesin engelleme)
-            ok_limit, limit_msg = izin_svc.validate_izin_sure_limit(
+            limit_sonuc = izin_svc.validate_izin_sure_limit(
                 tc=str(tc or ""), izin_tipi=izin_tipi, gun=gun
             )
-            if not ok_limit:
-                uyari_goster(self, limit_msg, "Limit Aşımı")
+            if not limit_sonuc.basarili:
+                uyari_goster(self, limit_sonuc.mesaj, "Limit Aşımı")
                 return
             
             # Çakışma kontrolü

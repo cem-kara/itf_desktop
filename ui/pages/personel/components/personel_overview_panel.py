@@ -42,12 +42,12 @@ class DokumanUploadWorker(QThread):
                 doc_type=self._job["doc_type"],
                 custom_name=self._job["custom_name"],
             )
-            if sonuc.get("ok"):
-                self.upload_finished.emit(self._job["db_field"], sonuc)
+            if sonuc.basarili:
+                self.upload_finished.emit(self._job["db_field"], sonuc.veri or {})
             else:
                 self.upload_error.emit(
                     self._job["db_field"],
-                    sonuc.get("error", "Bilinmeyen yükleme hatası")
+                    sonuc.mesaj or "Bilinmeyen yükleme hatası"
                 )
         except Exception as e:
             self.upload_error.emit(self._job.get("db_field", ""), str(e))

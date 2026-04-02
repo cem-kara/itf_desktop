@@ -113,6 +113,12 @@ class BaseDokumanPanel(QWidget):
         self._iliskili_id = str(iliskili_id).strip() if iliskili_id else None
         self._iliskili_tip = str(iliskili_tip).strip() if iliskili_tip else None
 
+    def set_default_belge_turu(self, tur: str):
+        """Belge türü combo box'ında verilen değeri seç (varsa)."""
+        idx = self._combo_tur.findText(tur)
+        if idx >= 0:
+            self._combo_tur.setCurrentIndex(idx)
+
     # Geriye dönük uyumluluk alias'ları
     def set_cihaz_id(self, cihaz_id: str):
         self.set_entity_id(cihaz_id)
