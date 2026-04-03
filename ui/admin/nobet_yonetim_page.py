@@ -333,8 +333,9 @@ class _PersonelAtaDialog(QDialog):
     """Personel listesinden birden fazla seçim."""
 
     def __init__(self, pid_listesi: list, p_map: dict,
-                 mevcutlar: set, parent=None):
+                 mevcutlar: set, rol_map: dict = None, parent=None):
         super().__init__(parent)
+        self._rol_map = rol_map or {}
         self.setWindowTitle("Personel Ata")
         self.setModal(True)
         self.setMinimumSize(420, 520)
@@ -392,7 +393,7 @@ class _PersonelAtaDialog(QDialog):
             if mevcut:
                 ad_i.setForeground(QColor("#2ec98e"))
             self._tbl.setItem(ri, 0, ad_i)
-            self._tbl.setItem(ri, 1, QTableWidgetItem("teknisyen"))
+            self._tbl.setItem(ri, 1, QTableWidgetItem(self._rol_map.get(pid, "teknisyen")))
             self._tbl.setItem(ri, 2,
                 QTableWidgetItem("Atanmış" if mevcut else "="))
 
@@ -1689,6 +1690,10 @@ class NobetYonetimPage(QWidget):
             reg   = self._reg()
             p_all = reg.get("Personel").get_all() or []
             p_map = {str(p["KimlikNo"]): p.get("AdSoyad", "") for p in p_all}
+            rol_map = {
+                str(p["KimlikNo"]): str(p.get("HizmetSinifi") or "teknisyen")
+                for p in p_all
+            }
             pid_list = sorted(
                 [str(p["KimlikNo"]) for p in p_all
                  if str(p.get("Durum", "Aktif")).strip() == "Aktif"],
@@ -1700,7 +1705,7 @@ class NobetYonetimPage(QWidget):
                 and int(r.get("Aktif", 1))
             }
             dialog = _PersonelAtaDialog(
-                pid_list, p_map, mevcutlar, parent=self)
+                pid_list, p_map, mevcutlar, rol_map=rol_map, parent=self)
             if dialog.exec() != QDialog.DialogCode.Accepted:
                 return
             for pid in dialog.get_secilen():
@@ -1708,7 +1713,7 @@ class NobetYonetimPage(QWidget):
                     "ID":             _yeni_id(),
                     "BirimID":        self._secili_birim_id,
                     "PersonelID":     pid,
-                    "Rol":            "teknisyen",
+                    "Rol":            rol_map.get(pid, "teknisyen"),
                     "AnabirimMi":     1,
                     "Aktif":          1,
                     "GorevBaslangic": date.today().isoformat(),
@@ -1740,7 +1745,7 @@ class NobetYonetimPage(QWidget):
                         "ID":             _yeni_id(),
                         "BirimID":        self._secili_birim_id,
                         "PersonelID":     pid,
-                        "Rol":            "teknisyen",
+                        "Rol":            str(p.get("HizmetSinifi") or "teknisyen"),
                         "AnabirimMi":     1,
                         "Aktif":          1,
                         "GorevBaslangic": date.today().isoformat(),

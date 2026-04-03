@@ -265,6 +265,7 @@ class _PdfLoader(QThread):
                 if p:
                     r["PersonelID"]     = str(p["KimlikNo"]).strip()
                     r["AdSoyad"]        = str(p["AdSoyad"]).strip()
+                    r["CalistiBirim"]   = str(p.get("GorevYeri", "") or r.get("CalistiBirim", ""))
                     r["_eslesti"]       = True
                     r["_eslesti_label"] = "✔ Eşleşti"
                     eslesen += 1
@@ -303,6 +304,9 @@ class _DbSaver(QThread):
             rno = self._header.get("RaporNo", "")
             yeni = atlanan = 0
             for r in self._rows:
+                if not r.get("_eslesti"):
+                    atlanan += 1
+                    continue
                 kayit = {
                     "KayitNo":       uuid.uuid4().hex[:12].upper(),
                     "RaporNo":       rno,
@@ -534,9 +538,14 @@ class DozimetrePdfImportPage(QWidget):
                 "Mükerrer Kayıt Uyarısı",
             )
         else:
+            eslesen_say = sum(1 for r in self._rows if r.get("_eslesti"))
+            eslesmez_say = len(self._rows) - eslesen_say
+            mesaj = f"{eslesen_say} eşleşen kayıt veritabanına eklenecek."
+            if eslesmez_say:
+                mesaj += f"\n{eslesmez_say} eşleşmeyen kayıt atlanacak."
             cevap = soru_sor(
                 self,
-                f"{len(self._rows)} kayıt veritabanına eklenecek. Devam edilsin mi?",
+                mesaj,
                 "Kaydet",
             )
         if not cevap: return

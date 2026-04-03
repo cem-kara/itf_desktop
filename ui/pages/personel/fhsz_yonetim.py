@@ -725,7 +725,7 @@ class FHSZYonetimPage(QWidget):
 
         # 26.04.2022 eşik kontrolü
         if donem_bit < FHSZ_ESIK:
-            MesajKutusu.uyari(self, "26.04.2022 öncesi hesaplanamaz.")
+            MesajKutusu.uyari(self, "26.04.2022 tarihli Resmî Gazete’de yayımlanan Radyoloji Hizmetleri Yönetmeliği gereğince, bu tarihten önceki süreler için fiili hizmet süresi zammı ve şua izni hesaplaması yapılamamaktadır. Lütfen hesaplama başlangıç tarihini kontrol ediniz.")
             return
 
         self.tablo.setRowCount(0)
