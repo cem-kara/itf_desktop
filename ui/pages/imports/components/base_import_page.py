@@ -705,11 +705,11 @@ class BaseImportPage(QWidget):
         f.setPointSize(22)
         f.setBold(True)
         sayi_lbl.setFont(f)
-        sayi_lbl.setProperty("color-role", "primary")
+        sayi_lbl.setProperty("color-role", "disabled")
 
         etiket_lbl = QLabel(etiket)
         etiket_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        etiket_lbl.setProperty("color-role", "primary")
+        etiket_lbl.setProperty("color-role", "disabled")
 
         kutu.addWidget(sayi_lbl)
         kutu.addWidget(etiket_lbl)
