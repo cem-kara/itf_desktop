@@ -31,11 +31,9 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel,
     QPushButton, QTableView, QLineEdit, QComboBox,
     QAbstractItemView, QSizePolicy, QSplitter, QTabWidget,
-    QFormLayout, QDoubleSpinBox,
 )
 
 from core.logger import logger
-from core.hata_yonetici import soru_sor, bilgi_goster, hata_goster
 from ui.components.base_table_model import BaseTableModel
 from ui.styles import DarkTheme
 from ui.styles.icons import IconRenderer, IconColors
@@ -534,7 +532,6 @@ class DozimetreTakipPage(QWidget):
         self._tabs.addTab(self._build_kars_tab(),      "⚖️  Periyot Karşılaştırma")
         self._tabs.addTab(self._build_birim_tab(),     "🏗️  Birim Risk Haritası")
         self._tabs.addTab(self._build_anomali_tab(),   "⚠️  Anomali Listesi")
-        self._tabs.addTab(self._build_duzelt_tab(),    "✏️  Kayıt Düzelt")
         splitter.addWidget(self._tabs)
         splitter.setSizes([420, 250])
         root.addWidget(splitter, 1)
@@ -669,7 +666,7 @@ class DozimetreTakipPage(QWidget):
         self._update_anomali_listesi()
         self.lbl_footer.setText(f"{len(rows)} ölçüm kaydı yüklendi.")
         if stats.get("anomali_say", 0):
-            self._tabs.setTabText(4, f"⚠️  Anomali ({stats['anomali_say']})")
+            self._tabs.setTabText(3, f"⚠️  Anomali ({stats['anomali_say']})")
 
     def _on_load_error(self, msg: str):
         self.btn_yenile.setEnabled(True)
@@ -755,48 +752,6 @@ class DozimetreTakipPage(QWidget):
         self.tbl_anomali.setModel(self._anomali_model)
         self._anomali_model.setup_columns(self.tbl_anomali, stretch_keys=["AdSoyad"])
         lay.addWidget(self.tbl_anomali)
-        return w
-
-    def _build_duzelt_tab(self) -> QWidget:
-        w = QWidget()
-        lay = QVBoxLayout(w)
-        lay.setContentsMargins(12, 8, 12, 8); lay.setSpacing(8)
-
-        lbl = QLabel("Ana tablodan bir satır seçin, ardından aşağıdaki formu düzenleyip kaydedin.")
-        lbl.setProperty("color-role","muted")
-        lay.addWidget(lbl)
-
-        # Seçili kayıt bilgisi
-        self.lbl_duzelt_secili = QLabel("— Kayıt seçilmedi —")
-        self.lbl_duzelt_secili.setProperty("style-role","section-title")
-        lay.addWidget(self.lbl_duzelt_secili)
-
-        # Form
-        form = QFormLayout(); form.setSpacing(8)
-        self._duzelt_hp10  = QDoubleSpinBox()
-        self._duzelt_hp10.setRange(0.0, 500.0)
-        self._duzelt_hp10.setDecimals(4); self._duzelt_hp10.setSuffix(" mSv")
-        self._duzelt_hp007 = QDoubleSpinBox()
-        self._duzelt_hp007.setRange(0.0, 500.0)
-        self._duzelt_hp007.setDecimals(4); self._duzelt_hp007.setSuffix(" mSv")
-        self._duzelt_durum = QLineEdit()
-        self._duzelt_dzm   = QLineEdit()
-        form.addRow("Hp(10) mSv:", self._duzelt_hp10)
-        form.addRow("Hp(0,07) mSv:", self._duzelt_hp007)
-        form.addRow("Durum:", self._duzelt_durum)
-        form.addRow("Dozimetre No:", self._duzelt_dzm)
-        lay.addLayout(form)
-
-        btn_row = QHBoxLayout()
-        self.btn_duzelt_kaydet = QPushButton("💾  Kaydet")
-        self.btn_duzelt_kaydet.setProperty("style-role","action")
-        self.btn_duzelt_kaydet.setEnabled(False)
-        self.btn_duzelt_kaydet.clicked.connect(self._duzelt_kaydet)
-        btn_row.addStretch(); btn_row.addWidget(self.btn_duzelt_kaydet)
-        lay.addLayout(btn_row)
-        lay.addStretch()
-
-        self._duzelt_kayit_no: Optional[str] = None
         return w
 
     # ─── Yeni sekme iş mantığı ──────────────────────────────
@@ -957,7 +912,6 @@ class DozimetreTakipPage(QWidget):
         self.lbl_sonuc.setText(f"{len(self._filter)} kayıt")
         self._fill_kars_combos()
 
-    # ─── Kayıt düzeltme ─────────────────────────────────────
     def _on_select(self, selected, deselected):
         indexes = self.table.selectionModel().selectedRows()
         if not indexes:
@@ -969,18 +923,6 @@ class DozimetreTakipPage(QWidget):
         pid = row.get("PersonelID", "")
         ad  = row.get("AdSoyad", "")
         yil = row.get("Yil", "")
-
-        # Düzelt sekmesini doldur
-        kayit_no = row.get("KayitNo","")
-        self._duzelt_kayit_no = kayit_no
-        self.lbl_duzelt_secili.setText(
-            f"{ad}  —  {pid}  |  {yil}/{row.get('Periyot','')}  |  KayitNo: {kayit_no}"
-        )
-        self._duzelt_hp10.setValue(_hp(row.get("Hp10")) or 0.0)
-        self._duzelt_hp007.setValue(_hp(row.get("Hp007")) or 0.0)
-        self._duzelt_durum.setText(str(row.get("Durum","") or ""))
-        self._duzelt_dzm.setText(str(row.get("DozimetreNo","") or ""))
-        self.btn_duzelt_kaydet.setEnabled(bool(kayit_no))
 
         # Geçmiş panel
         gecmis = sorted(
@@ -1043,46 +985,6 @@ class DozimetreTakipPage(QWidget):
         dzm_no = row.get("DozimetreNo", "")
         if dzm_no:
             self._tabs.setCurrentIndex(0)
-
-    def _duzelt_kaydet(self):
-        kayit_no = self._duzelt_kayit_no
-        if not kayit_no or not self._db:
-            return
-
-        yeni_hp10  = self._duzelt_hp10.value()
-        yeni_hp007 = self._duzelt_hp007.value()
-        yeni_durum = self._duzelt_durum.text().strip()
-        yeni_dzm   = self._duzelt_dzm.text().strip()
-
-        if not soru_sor(
-            self,
-            f"KayitNo: {kayit_no}\n\n"
-            f"Hp(10): {yeni_hp10:.4f} mSv\n"
-            f"Hp(0,07): {yeni_hp007:.4f} mSv\n"
-            f"Durum: {yeni_durum}\n"
-            f"Dozimetre No: {yeni_dzm}\n\n"
-            "Kayıt güncellensin mi?",
-            "Kayıt Düzelt",
-        ):
-            return
-
-        try:
-            loader = _Loader.__new__(_Loader)
-            loader._db = self._db
-            conn, kapat = loader._conn()
-            conn.execute(
-                """UPDATE Dozimetre_Olcum
-                   SET Hp10=?, Hp007=?, Durum=?, DozimetreNo=?
-                   WHERE KayitNo=?""",
-                (yeni_hp10, yeni_hp007, yeni_durum, yeni_dzm, kayit_no)
-            )
-            conn.commit()
-            if kapat: conn.close()
-            bilgi_goster(self, "Kayıt güncellendi.", "Başarılı")
-            self.load_data()
-        except Exception as exc:
-            hata_goster(self, f"Güncelleme başarısız:\n{exc}", "Hata")
-            logger.error(f"Kayıt düzeltme hatası: {exc}")
 
     # ─── Import dialog ───────────────────────────────────────
     def _open_import(self):

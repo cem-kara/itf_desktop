@@ -354,8 +354,8 @@ class _PersonelAtaDialog(QDialog):
         self._tbl.setHorizontalHeaderLabels(["Ad Soyad", "Rol", "Durum"])
         self._tbl.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeMode.Stretch)
-        self._tbl.setColumnWidth(1, 90)
-        self._tbl.setColumnWidth(2, 80)
+        self._tbl.setColumnWidth(1, 120)
+        self._tbl.setColumnWidth(2, 120)
         self._tbl.setSelectionBehavior(
             QAbstractItemView.SelectionBehavior.SelectRows)
         self._tbl.setEditTriggers(
