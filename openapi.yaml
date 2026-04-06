@@ -1,0 +1,340 @@
+openapi: 3.0.3
+info:
+  title: REPYS Next API
+  version: 0.1.0
+  description: Sprint-1 API Taslağı (Adım 3)
+
+servers:
+  - url: https://api.repys.local
+    description: Local/Staging
+
+tags:
+  - name: Auth
+  - name: Employees
+  - name: Leaves
+  - name: Documents
+  - name: System
+
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Kullanıcı girişi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Başarılı giriş
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokens'
+        '401':
+          description: Geçersiz kimlik bilgisi
+
+  /employees:
+    get:
+      tags: [Employees]
+      summary: Personel listele
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: department
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string, enum: [active, passive, left] }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: page_size
+          schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+      responses:
+        '200':
+          description: Personel listesi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEmployees'
+    post:
+      tags: [Employees]
+      summary: Personel oluştur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEmployeeRequest'
+      responses:
+        '201':
+          description: Oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        '409':
+          description: National ID çakışması
+
+  /employees/{employee_id}:
+    get:
+      tags: [Employees]
+      summary: Personel detayı
+      parameters:
+        - $ref: '#/components/parameters/EmployeeId'
+      responses:
+        '200':
+          description: Personel detayı
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        '404':
+          description: Bulunamadı
+    patch:
+      tags: [Employees]
+      summary: Personel güncelle
+      parameters:
+        - $ref: '#/components/parameters/EmployeeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEmployeeRequest'
+      responses:
+        '200':
+          description: Güncellendi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+
+  /leaves:
+    post:
+      tags: [Leaves]
+      summary: İzin talebi oluştur
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLeaveRequest'
+      responses:
+        '201':
+          description: Oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+        '422':
+          description: Policy ihlali
+
+  /employees/{employee_id}/leave-balance:
+    get:
+      tags: [Leaves]
+      summary: Personel izin bakiyesi
+      parameters:
+        - $ref: '#/components/parameters/EmployeeId'
+      responses:
+        '200':
+          description: Bakiye
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveBalance'
+
+  /documents/upload:
+    post:
+      tags: [Documents]
+      summary: Belge yükle ve varlığa bağla
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, entity_type, entity_id]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                entity_type:
+                  type: string
+                  enum: [employee, leave, health, fhsz, dosimeter, shift]
+                entity_id:
+                  type: string
+      responses:
+        '201':
+          description: Yüklendi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+
+  /employees/{employee_id}/documents:
+    get:
+      tags: [Documents]
+      summary: Personel belgeleri
+      parameters:
+        - $ref: '#/components/parameters/EmployeeId'
+      responses:
+        '200':
+          description: Belge listesi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Document'
+
+components:
+  parameters:
+    EmployeeId:
+      in: path
+      name: employee_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+
+    AuthTokens:
+      type: object
+      required: [access_token, refresh_token, token_type]
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string }
+        token_type: { type: string, example: Bearer }
+
+    Employee:
+      type: object
+      required: [employee_id, national_id, first_name, last_name, status]
+      properties:
+        employee_id: { type: string, format: uuid }
+        national_id: { type: string }
+        first_name: { type: string }
+        last_name: { type: string }
+        department_code: { type: string }
+        title_code: { type: string }
+        status: { type: string, enum: [active, passive, left] }
+        start_date: { type: string, format: date, nullable: true }
+        leave_date: { type: string, format: date, nullable: true }
+
+    CreateEmployeeRequest:
+      type: object
+      required: [national_id, first_name, last_name]
+      properties:
+        national_id: { type: string }
+        first_name: { type: string }
+        last_name: { type: string }
+        department_code: { type: string }
+        title_code: { type: string }
+        start_date: { type: string, format: date }
+
+    UpdateEmployeeRequest:
+      type: object
+      properties:
+        first_name: { type: string }
+        last_name: { type: string }
+        department_code: { type: string }
+        title_code: { type: string }
+        status: { type: string, enum: [active, passive, left] }
+        leave_date: { type: string, format: date }
+
+    PaginatedEmployees:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Employee'
+        page: { type: integer }
+        page_size: { type: integer }
+        total: { type: integer }
+
+    CreateLeaveRequest:
+      type: object
+      required: [employee_id, leave_type, start_date, end_date]
+      properties:
+        employee_id: { type: string, format: uuid }
+        leave_type:
+          type: string
+          enum: [annual, sua, unpaid, medical, administrative]
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+        reason: { type: string }
+
+    LeaveRequest:
+      type: object
+      required: [leave_request_id, employee_id, leave_type, start_date, end_date, days, status]
+      properties:
+        leave_request_id: { type: string, format: uuid }
+        employee_id: { type: string, format: uuid }
+        leave_type:
+          type: string
+          enum: [annual, sua, unpaid, medical, administrative]
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+        days: { type: number, format: float }
+        status: { type: string, enum: [pending, approved, rejected, cancelled] }
+        reason: { type: string, nullable: true }
+
+    LeaveBalance:
+      type: object
+      required: [employee_id]
+      properties:
+        employee_id: { type: string, format: uuid }
+        annual_entitled: { type: number }
+        annual_used: { type: number }
+        annual_remaining: { type: number }
+        sua_entitled: { type: number }
+        sua_used: { type: number }
+        sua_remaining: { type: number }
+
+    Document:
+      type: object
+      required: [document_id, file_name, mime_type, storage_key]
+      properties:
+        document_id: { type: string, format: uuid }
+        file_name: { type: string }
+        mime_type: { type: string }
+        file_size: { type: integer }
+        checksum: { type: string }
+        storage_key: { type: string }
+        uploaded_at: { type: string, format: date-time }
