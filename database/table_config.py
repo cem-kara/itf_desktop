@@ -288,6 +288,23 @@ TABLES = {
     "sync": False,
 },
 
+    "Doz_Arastirma_Formu": {
+        # v9: Sadeleştirilmiş meta tablo — detaylar PDF'de
+        "pk": "FormNo",
+        "columns": [
+            "FormNo",
+            "PersonelID",
+            "OlcumKayitNo",
+            "Yil",
+            "Periyot",
+            "OlculenDoz",
+            "PdfYolu",
+            "OlusturmaTarihi",
+        ],
+        "date_fields": ["OlusturmaTarihi"],
+        "sync": False,
+    },
+
     "Dozimetre_Olcum": {
         "pk": "KayitNo",
         "columns": [

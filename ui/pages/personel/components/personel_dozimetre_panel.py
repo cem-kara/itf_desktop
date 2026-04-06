@@ -1,589 +1,51 @@
 # -*- coding: utf-8 -*-
+# REPYS v0.4.0 — 2026-04-06  (yeniden yapılandırılmış)
 """
-personel_dozimetre_panel.py
-──────────────────────────
+ui/pages/personel/components/personel_dozimetre_panel.py
+─────────────────────────────────────────────────────────
 PersonelMerkezPage içinde kullanılmak üzere tek bir personelin
-Dozimetre_Olcum geçmişini gösteren panel.
+dozimetre geçmişini gösteren ana panel.
 
-Kullanım
---------
-from ui.pages.personel.components.personel_dozimetre_panel import PersonelDozimetrePanel
+Bağımlı modüller (aynı klasörde):
+    _dozimetre_widgets.py   → _DozModel, _TrendWidget, _GaugeWidget
+    _yuksek_doz_panel.py    → _YuksekDozBildirimPanel
 
+Kullanım:
+    from ui.pages.personel.components.personel_dozimetre_panel import PersonelDozimetrePanel
     panel = PersonelDozimetrePanel(db=self.db, personel_id=self.personel_id)
-    # personel_id → Personel.KimlikNo (TC kimlik no)
 """
 from __future__ import annotations
 
+import os
+import sys
+import subprocess
 from typing import Optional
 
 from PySide6.QtCore import Qt, QThread, Signal as _Signal
-from PySide6.QtGui import QColor, QPainter, QPen, QFont
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
     QGroupBox, QTableView, QAbstractItemView, QPushButton,
-    QScrollArea, QSizePolicy,
+    QSizePolicy,
 )
 
 from core.logger import logger
-from ui.components.base_table_model import BaseTableModel
+
+from ._dozimetre_widgets import (
+    _DozModel, _TrendWidget, _GaugeWidget,
+    GECMIS_COLS, HP10_UYARI, HP10_TEHLIKE,
+    YILLIK_LIMIT, BES_YILLIK, CALISMA_A, PERIYOT_SAYISI,
+)
+from ._yuksek_doz_panel import _YuksekDozBildirimPanel
 from ui.styles.icons import IconRenderer, IconColors
 
-# NDK Doz Limitleri (Radyasyon Güvenliği Yönetmeliği)
-HP10_UYARI     = 2.0    # mSv — periyot inceleme düzeyi
-HP10_TEHLIKE   = 5.0    # mSv — tehlike eşiği
-YILLIK_LIMIT   = 20.0   # mSv — 5 yıl ortalaması
-YILLIK_MAX     = 50.0   # mSv — tek yılda mutlak max
-BES_YILLIK     = 100.0  # mSv — ardışık 5 yıl toplamı
-CALISMA_A      = 6.0    # mSv — Çalışma Koşulu A eşiği
-PERIYOT_SAYISI = 4      # RADAT yılda 4 periyot
 
-GECMIS_COLS = [
-    ("Yil",          "Yıl",        100),
-    ("Periyot",      "Per.",        40),
-    ("PeriyotAdi",   "Dönem",      110),
-    ("DozimetreNo",  "Dzm. No",     75),
-    ("VucutBolgesi", "Bölge",      100),
-    ("Hp10",         "Hp(10)",      65),
-    ("Hp007",        "Hp(0,07)",    65),
-    ("Durum",        "Durum",      115),
-]
+# ─── Arka plan veri yükleyici ────────────────────────────────
 
-
-# ─── Model ──────────────────────────────────────────────────
-class _DozModel(BaseTableModel):
-    ALIGN_CENTER = frozenset({"Yil", "Periyot", "Hp10", "Hp007", "DozimetreNo"})
-
-    def _display(self, key: str, row: dict) -> str:
-        val = row.get(key)
-        if val is None:
-            return ""
-        if key in ("Hp10", "Hp007"):
-            try:
-                return f"{float(val):.3f}"
-            except (ValueError, TypeError):
-                return str(val)
-        return str(val)
-
-    def _fg(self, key: str, row: dict):
-        if key == "Hp10":
-            try:
-                v = float(row.get("Hp10") or 0)
-                if v >= HP10_TEHLIKE: return QColor("#f87171")
-                if v >= HP10_UYARI:   return QColor("#facc15")
-                return QColor("#4ade80")
-            except (ValueError, TypeError):
-                pass
-        if key == "Hp007":
-            try:
-                v = float(row.get("Hp007") or 0)
-                if v >= HP10_TEHLIKE: return QColor("#f87171")
-                if v >= HP10_UYARI:   return QColor("#facc15")
-                return QColor("#4ade80")
-            except (ValueError, TypeError):
-                pass
-        if key == "Durum":
-            return QColor("#f87171") if "Aşım" in str(row.get("Durum", "")) else QColor("#4ade80")
-        return None
-
-
-# ─── Trend Widget ────────────────────────────────────────────
-class _TrendWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self._rows: list[dict] = []
-        self.setMinimumHeight(80)
-        self.setMaximumHeight(100)
-        self.setProperty("bg-role", "transparent")
-
-    def set_data(self, rows: list[dict]):
-        self._rows = rows
-        self.update()
-
-    def paintEvent(self, event):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        p.setFont(QFont("", 7))
-
-        rows   = self._rows
-        hp10s  = []
-        hp007s = []
-        labels = []
-        for r in rows:
-            try:
-                hp10s.append(float(r.get("Hp10") or 0))
-                hp007s.append(float(r.get("Hp007") or 0))
-                labels.append(f"{r.get('Yil','')}-{r.get('Periyot','')}")
-            except (ValueError, TypeError):
-                pass
-
-        if len(hp10s) < 2:
-            p.setPen(QColor("#4d6070"))  # TEXT_MUTED
-            p.setFont(QFont("", 9))
-            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter,
-                       "Trend için en az 2 periyot gerekli")
-            return
-
-        mx  = max(max(hp10s), max(hp007s), HP10_UYARI + 0.1, 0.1)
-        w, h = self.width(), self.height()
-        pl, pr, pt, pb = 10, 10, 10, 22
-        cw, ch = w - pl - pr, h - pt - pb
-        n = len(hp10s)
-
-        def px(i): return int(pl + i * cw / (n - 1))
-        def py(v): return int(pt + ch - v / mx * ch)
-
-        # İnceleme eşiği çizgisi
-        if 0 < HP10_UYARI <= mx:
-            p.setPen(QPen(QColor("#facc1550"), 1, Qt.PenStyle.DashLine))
-            p.drawLine(pl, py(HP10_UYARI), w - pr, py(HP10_UYARI))
-
-        # Hp(10) — mavi, kalın
-        p.setPen(QPen(QColor("#3d8ef5"), 2))  # ACCENT
-        for i in range(n - 1):
-            p.drawLine(px(i), py(hp10s[i]), px(i + 1), py(hp10s[i + 1]))
-        for i, v in enumerate(hp10s):
-            c = ("#f87171" if v >= HP10_TEHLIKE else
-                 "#facc15" if v >= HP10_UYARI else "#4ade80")
-            p.setBrush(QColor(c)); p.setPen(Qt.PenStyle.NoPen)
-            p.drawEllipse(px(i) - 4, py(v) - 4, 8, 8)
-
-        # Hp(0,07) — turuncu, kesik
-        p.setPen(QPen(QColor("#fb923c"), 1, Qt.PenStyle.DashLine))
-        for i in range(n - 1):
-            p.drawLine(px(i), py(hp007s[i]), px(i + 1), py(hp007s[i + 1]))
-        for i, v in enumerate(hp007s):
-            p.setBrush(QColor("#fb923c")); p.setPen(Qt.PenStyle.NoPen)
-            p.drawEllipse(px(i) - 2, py(v) - 2, 5, 5)
-
-        # Etiketler
-        p.setPen(QColor("#4d6070"))  # TEXT_MUTED
-        if labels:
-            p.drawText(pl, h - 5, labels[0])
-            p.drawText(w - pr - 45, h - 5, labels[-1])
-
-        # Legend
-        p.setPen(QColor("#3d8ef5"))  # ACCENT
-        p.drawText(w - pr - 90, pt + 10, "— Hp(10)")
-        p.setPen(QColor("#fb923c"))
-        p.drawText(w - pr - 90, pt + 20, "-- Hp(0,07)")
-
-
-# ─── Gauge Widget ────────────────────────────────────────────
-class _GaugeWidget(QWidget):
-    """Yıllık veya 5 yıllık doz limitine göre doluluk çubuğu."""
-
-    def __init__(self, baslik: str, limit: float,
-                 esik_sari: float = 0.5, esik_kirmizi: float = 0.75,
-                 parent=None):
-        super().__init__(parent)
-        self._baslik = baslik
-        self._limit  = limit
-        self._esik1  = esik_sari
-        self._esik2  = esik_kirmizi
-        self._deger  = 0.0
-        self.setFixedHeight(46)
-        self.setMinimumWidth(140)
-
-    def set_deger(self, deger: float):
-        self._deger = deger
-        self.update()
-
-    def paintEvent(self, event):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        oran = min(self._deger / self._limit, 1.0) if self._limit else 0.0
-        w = self.width()
-
-        p.setPen(QColor("#4d6070"))  # TEXT_MUTED
-        p.setFont(QFont("", 8))
-        p.drawText(0, 12, self._baslik)
-
-        bar_y, bar_h = 18, 10
-        p.setBrush(QColor("#232a3a")); p.setPen(Qt.PenStyle.NoPen)  # BG_TERTIARY
-        p.drawRoundedRect(0, bar_y, w, bar_h, 4, 4)
-
-        if oran > 0:
-            renk = (QColor("#f87171") if oran >= self._esik2 else
-                    QColor("#facc15") if oran >= self._esik1 else
-                    QColor("#4ade80"))
-            p.setBrush(renk)
-            p.drawRoundedRect(0, bar_y, int(w * oran), bar_h, 4, 4)
-
-        p.setPen(QColor("#e8edf5"))  # TEXT_PRIMARY
-        p.setFont(QFont("", 8, QFont.Weight.Bold))
-        p.drawText(0, bar_y + bar_h + 14,
-                   f"{self._deger:.2f} / {self._limit:.0f} mSv  (%{oran*100:.0f})")
-
-
-# ─── Yüksek Doz Bildirim Paneli ─────────────────────────────
-
-# Önlem metinleri — doz seviyesine göre
-_ONLEM_METNI = {
-    "tehlike": (
-        "⛔ Acil Değerlendirme Gerekli\n"
-        "• Radyasyon güvenliği sorumlusu derhal bilgilendirilmeli\n"
-        "• Bölüm amiri onayı ile çalışma kısıtlaması uygulanabilir\n"
-        "• Sağlık muayenesi planlanmalı\n"
-        "• TAEK'e 30 gün içinde bildirim zorunlu"
-    ),
-    "uyari": (
-        "⚠ İnceleme Başlatılmalı\n"
-        "• Doz kaynağı araştırılmalı\n"
-        "• Çalışma yöntemi gözden geçirilmeli\n"
-        "• Ekipmanlardaki zayıflık kontrol edilmeli\n"
-        "• Sonraki periyotta yakın takip"
-    ),
-}
-
-
-class _YuksekDozKartWidget(QFrame):
-    """
-    Tek bir yüksek doz periyodunu gösteren kompakt kart.
-    """
-
-    def __init__(self, row: dict, limit_tipi: str, parent=None):
-        super().__init__(parent)
-        self.setProperty("bg-role", "panel")
-        self.setProperty(
-            "style-role",
-            "danger-card" if limit_tipi == "tehlike" else "warning-card",
-        )
-        self.setFrameShape(QFrame.Shape.StyledPanel)
-
-        lay = QHBoxLayout(self)
-        lay.setContentsMargins(12, 8, 12, 8)
-        lay.setSpacing(12)
-
-        # Sol — ikon + seviye
-        ikon_col = QVBoxLayout()
-        ikon_col.setAlignment(Qt.AlignmentFlag.AlignTop)
-        ikon_lbl = QLabel("⛔" if limit_tipi == "tehlike" else "⚠")
-        ikon_lbl.setProperty("color-role",
-                             "danger" if limit_tipi == "tehlike" else "warning")
-        ikon_lbl.setProperty("style-role", "icon-large")
-        ikon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        seviye_lbl = QLabel("TEHLİKE" if limit_tipi == "tehlike" else "UYARI")
-        seviye_lbl.setProperty("color-role",
-                               "danger" if limit_tipi == "tehlike" else "warning")
-        seviye_lbl.setProperty("style-role", "badge")
-        seviye_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        ikon_col.addWidget(ikon_lbl)
-        ikon_col.addWidget(seviye_lbl)
-        lay.addLayout(ikon_col)
-
-        # Dikey ayraç
-        sep = QFrame()
-        sep.setFrameShape(QFrame.Shape.VLine)
-        sep.setProperty("color-role", "muted")
-        lay.addWidget(sep)
-
-        # Orta — periyot + doz bilgisi
-        bilgi_col = QVBoxLayout()
-        bilgi_col.setSpacing(3)
-
-        yil     = str(row.get("Yil", "—"))
-        periyot = str(row.get("Periyot", "—"))
-        per_adi = str(row.get("PeriyotAdi", ""))
-        dzm_no  = str(row.get("DozimetreNo", ""))
-        bolge   = str(row.get("VucutBolgesi", ""))
-
-        # Başlık satırı
-        baslik_lay = QHBoxLayout()
-        per_lbl = QLabel(f"📅 {yil} yılı — {periyot}. Periyot")
-        per_lbl.setProperty("color-role", "primary")
-        per_lbl.setProperty("style-role", "bold")
-        baslik_lay.addWidget(per_lbl)
-
-        if per_adi:
-            adi_lbl = QLabel(f"({per_adi})")
-            adi_lbl.setProperty("color-role", "muted")
-            baslik_lay.addWidget(adi_lbl)
-        baslik_lay.addStretch()
-        bilgi_col.addLayout(baslik_lay)
-
-        # Doz değerleri
-        doz_lay = QHBoxLayout()
-        doz_lay.setSpacing(16)
-        try:
-            hp10  = float(row.get("Hp10")  or 0)
-            hp007 = float(row.get("Hp007") or 0)
-        except (ValueError, TypeError):
-            hp10, hp007 = 0.0, 0.0
-
-        hp10_renk = (
-            "danger"  if hp10 >= HP10_TEHLIKE else
-            "warning" if hp10 >= HP10_UYARI   else
-            "success"
-        )
-        hp10_lbl = QLabel(f"Hp(10) = {hp10:.3f} mSv")
-        hp10_lbl.setProperty("color-role", hp10_renk)
-        hp10_lbl.setProperty("style-role", "mono")
-        doz_lay.addWidget(hp10_lbl)
-
-        if hp007 > 0:
-            hp007_lbl = QLabel(f"Hp(0,07) = {hp007:.3f} mSv")
-            hp007_lbl.setProperty("color-role", "muted")
-            hp007_lbl.setProperty("style-role", "mono")
-            doz_lay.addWidget(hp007_lbl)
-
-        # Aşım miktarı
-        esik = HP10_TEHLIKE if limit_tipi == "tehlike" else HP10_UYARI
-        asim = hp10 - esik
-        if asim > 0:
-            asim_lbl = QLabel(f"(+{asim:.3f} mSv eşik üstü)")
-            asim_lbl.setProperty(
-                "color-role",
-                "danger" if limit_tipi == "tehlike" else "warning",
-            )
-            doz_lay.addWidget(asim_lbl)
-
-        doz_lay.addStretch()
-        bilgi_col.addLayout(doz_lay)
-
-        # Alt bilgi — dozimetre no + bölge
-        alt_lay = QHBoxLayout()
-        alt_lay.setSpacing(16)
-        if dzm_no:
-            dzm_lbl = QLabel(f"Dzm. No: {dzm_no}")
-            dzm_lbl.setProperty("color-role", "muted")
-            dzm_lbl.setProperty("style-role", "mono-small")
-            alt_lay.addWidget(dzm_lbl)
-        if bolge:
-            bolge_lbl = QLabel(f"Bölge: {bolge}")
-            bolge_lbl.setProperty("color-role", "muted")
-            alt_lay.addWidget(bolge_lbl)
-        durum = str(row.get("Durum", ""))
-        if durum:
-            durum_lbl = QLabel(f"Kayıt Durumu: {durum}")
-            durum_lbl.setProperty(
-                "color-role",
-                "danger" if "Aşım" in durum else "muted",
-            )
-            alt_lay.addWidget(durum_lbl)
-        alt_lay.addStretch()
-        bilgi_col.addLayout(alt_lay)
-
-        lay.addLayout(bilgi_col, 1)
-
-    # Yeni kart eklendikçe hafif giriş animasyonu (QSS transition)
-    def showEvent(self, event):
-        super().showEvent(event)
-        self.setProperty("animate-in", "true")
-        self.style().unpolish(self)
-        self.style().polish(self)
-
-
-class _YuksekDozBildirimPanel(QGroupBox):
-    """
-    Formda kullanılmak üzere yüksek doz periyotlarını
-    kronolojik sırayla listeleyen bildirim paneli.
-
-    - Tehlike (≥ 5 mSv) → kırmızı kart
-    - Uyarı   (≥ 2 mSv) → sarı kart
-    - Hiç aşım yoksa → yeşil özet mesajı
-
-    Kullanım:
-        self._yuksek_doz_panel = _YuksekDozBildirimPanel()
-        self._yuksek_doz_panel.guncelle(rows)
-        # Form açma butonunu en yüksek dozlu kayda bağla
-        try:
-            self._yuksek_doz_panel._btn_form_ac.clicked.disconnect()
-        except RuntimeError:
-            pass
-        if rows:
-            son_yuksek = max(
-                (r for r in rows if float(r.get("Hp10") or 0) >= 2.0),
-                key=lambda r: float(r.get("Hp10") or 0),
-                default=rows[-1],
-            )
-            self._yuksek_doz_panel._btn_form_ac.clicked.connect(
-                lambda: self._ac_doz_arastirma_formu(son_yuksek)
-            )
-    """
-
-    def __init__(self, parent=None):
-        super().__init__("🔔 Yüksek Doz Bildirimleri", parent)
-        self.setProperty("style-role", "group")
-        self._build_ui()
-
-    def _build_ui(self):
-        root = QVBoxLayout(self)
-        root.setContentsMargins(12, 10, 12, 10)
-        root.setSpacing(6)
-
-        # ── Özet satırı ──────────────────────────────────────
-        ozet_bar = QHBoxLayout()
-        ozet_bar.setSpacing(16)
-
-        self._lbl_tehlike_sayisi = self._ozet_chip("tehlike")
-        self._lbl_uyari_sayisi   = self._ozet_chip("uyari")
-        self._lbl_son_asim       = self._ozet_chip("son")
-        self._lbl_son_asim.setMinimumWidth(200)
-
-        ozet_bar.addWidget(self._lbl_tehlike_sayisi)
-        ozet_bar.addWidget(self._lbl_uyari_sayisi)
-        ozet_bar.addWidget(self._lbl_son_asim)
-        ozet_bar.addStretch()
-        root.addLayout(ozet_bar)
-
-        # ── Ayraç ────────────────────────────────────────────
-        self._sep = QFrame()
-        self._sep.setFrameShape(QFrame.Shape.HLine)
-        self._sep.setProperty("color-role", "muted")
-        root.addWidget(self._sep)
-
-        # ── Kart listesi (scroll) ─────────────────────────────
-        from PySide6.QtWidgets import QScrollArea
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setProperty("bg-role", "transparent")
-        scroll.setMinimumHeight(120)
-        scroll.setMaximumHeight(340)
-
-        self._kartlar_widget = QWidget()
-        self._kartlar_widget.setProperty("bg-role", "transparent")
-        self._kartlar_lay = QVBoxLayout(self._kartlar_widget)
-        self._kartlar_lay.setContentsMargins(0, 0, 0, 0)
-        self._kartlar_lay.setSpacing(6)
-
-        # Yeşil mesaj (aşım yoksa gösterilir)
-        self._lbl_temiz = QLabel("✅  İncelenen periyotlarda doz limiti aşımı tespit edilmedi.")
-        self._lbl_temiz.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._lbl_temiz.setProperty("color-role", "success")
-        self._lbl_temiz.setProperty("style-role", "subtitle")
-        self._kartlar_lay.addWidget(self._lbl_temiz)
-        self._kartlar_lay.addStretch()
-
-        scroll.setWidget(self._kartlar_widget)
-        root.addWidget(scroll, 1)
-
-        # ── Form açma butonu ──────────────────────────────────
-        self._btn_form_ac = QPushButton("📋  Doz Araştırma Formu Aç")
-        self._btn_form_ac.setProperty("style-role", "action")
-        self._btn_form_ac.hide()
-        root.addWidget(self._btn_form_ac, alignment=Qt.AlignmentFlag.AlignRight)
-
-        # ── Önlem notu ────────────────────────────────────────
-        self._onlem_lbl = QLabel("")
-        self._onlem_lbl.setWordWrap(True)
-        self._onlem_lbl.setProperty("color-role", "muted")
-        self._onlem_lbl.setProperty("style-role", "info-box")
-        self._onlem_lbl.hide()
-        root.addWidget(self._onlem_lbl)
-
-    # ── Yardımcı: özet chip ──────────────────────────────────
-    @staticmethod
-    def _ozet_chip(tip: str) -> QLabel:
-        lbl = QLabel("—")
-        lbl.setProperty("style-role", "stat-chip")
-        lbl.setProperty(
-            "color-role",
-            "danger"  if tip == "tehlike" else
-            "warning" if tip == "uyari"   else
-            "muted",
-        )
-        return lbl
-
-    # ── Ana güncelleme metodu ─────────────────────────────────
-    def guncelle(self, rows: list[dict]):
-        """
-        rows: dozimetre_service.get_olcumler_by_personel() sonucu.
-        Tüm kartları temizler, yüksek doz periyotları yeniden çizer.
-        """
-        # Eski kartları kaldır (temiz mesaj + stretch hariç)
-        while self._kartlar_lay.count() > 2:
-            item = self._kartlar_lay.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-
-        tehlike_rows = []
-        uyari_rows   = []
-
-        for r in rows:
-            try:
-                hp10 = float(r.get("Hp10") or 0)
-            except (ValueError, TypeError):
-                continue
-            if hp10 >= HP10_TEHLIKE:
-                tehlike_rows.append(r)
-            elif hp10 >= HP10_UYARI:
-                uyari_rows.append(r)
-
-        toplam_asim = len(tehlike_rows) + len(uyari_rows)
-        bos         = toplam_asim == 0
-
-        # Özet chip'leri güncelle
-        self._lbl_tehlike_sayisi.setText(
-            f"⛔ Tehlike Aşımı: {len(tehlike_rows)} periyot"
-        )
-        self._lbl_uyari_sayisi.setText(
-            f"⚠ Uyarı Aşımı: {len(uyari_rows)} periyot"
-        )
-
-        # Son aşım tarihi
-        tum_asim = sorted(
-            tehlike_rows + uyari_rows,
-            key=lambda r: (
-                int(r.get("Yil") or 0),
-                int(r.get("Periyot") or 0),
-            ),
-        )
-        if tum_asim:
-            son = tum_asim[-1]
-            self._lbl_son_asim.setText(
-                f"Son Aşım: {son.get('Yil','?')} / {son.get('Periyot','?')}. Periyot"
-            )
-        else:
-            self._lbl_son_asim.setText("Son Aşım: —")
-
-        # Yeşil mesaj / kartlar
-        self._lbl_temiz.setVisible(bos)
-        self._sep.setVisible(not bos)
-
-        if not bos:
-            # Önce tehlike, sonra uyarı — zaman sırasına göre azalan
-            siralananlar = sorted(
-                [(r, "tehlike") for r in tehlike_rows] +
-                [(r, "uyari")   for r in uyari_rows],
-                key=lambda x: (
-                    -int(x[0].get("Yil") or 0),
-                    -int(x[0].get("Periyot") or 0),
-                ),
-            )
-            for r, tip in siralananlar:
-                kart = _YuksekDozKartWidget(r, tip, self._kartlar_widget)
-                # Stretch'ten önce ekle (index = count-1)
-                self._kartlar_lay.insertWidget(
-                    self._kartlar_lay.count() - 1, kart
-                )
-
-        # Önlem notu
-        if tehlike_rows:
-            self._onlem_lbl.setText(_ONLEM_METNI["tehlike"])
-            self._onlem_lbl.setProperty("color-role", "danger")
-            self._onlem_lbl.show()
-        elif uyari_rows:
-            self._onlem_lbl.setText(_ONLEM_METNI["uyari"])
-            self._onlem_lbl.setProperty("color-role", "warning")
-            self._onlem_lbl.show()
-        else:
-            self._onlem_lbl.hide()
-
-        # Form açma butonu — aşım varsa göster
-        self._btn_form_ac.setVisible(not bos)
-
-        # QSS refresh
-        self.style().unpolish(self)
-        self.style().polish(self)
-
-# ─── Worker ─────────────────────────────────────────────────
 class _Loader(QThread):
     finished = _Signal(list)
     error    = _Signal(str)
 
-    def __init__(self, db: str, personel_id: str):
+    def __init__(self, db, personel_id: str):
         super().__init__()
         self._db          = db
         self._personel_id = personel_id
@@ -594,10 +56,13 @@ class _Loader(QThread):
             from core.di import get_dozimetre_service
             from core.paths import DB_PATH
 
-            db_path = getattr(self._db, "db_path", None) or str(self._db) if self._db else DB_PATH
-            db = SQLiteManager(db_path=db_path, check_same_thread=False)
-            svc = get_dozimetre_service(db)
-
+            db_path = (
+                getattr(self._db, "db_path", None)
+                or str(self._db)
+                if self._db else DB_PATH
+            )
+            db   = SQLiteManager(db_path=db_path, check_same_thread=False)
+            svc  = get_dozimetre_service(db)
             rows = svc.get_olcumler_by_personel(self._personel_id).veri or []
             db.close()
             self.finished.emit(rows)
@@ -605,45 +70,47 @@ class _Loader(QThread):
             self.error.emit(str(exc))
 
 
-# ─── Panel ──────────────────────────────────────────────────
+# ─── Ana Panel ───────────────────────────────────────────────
+
 class PersonelDozimetrePanel(QWidget):
     """
     Tek personelin dozimetre geçmişini gösteren panel.
 
     Parameters
     ----------
-    db          : str  — SQLite dosya yolu
-    personel_id : str  — Personel.KimlikNo  (TC kimlik no)
+    db          : SQLiteManager veya db_path string
+    personel_id : Personel.KimlikNo (TC kimlik no)
     """
 
-    def __init__(self, db: str = "", personel_id: str = "", parent=None):
+    def __init__(self, db=None, personel_id: str = "", parent=None):
         super().__init__(parent)
         self._db          = db
         self._personel_id = str(personel_id).strip()
-        self._rows:  list[dict]      = []
+        self._rows:  list[dict]         = []
         self._loader: Optional[_Loader] = None
         self._build_ui()
         if db and personel_id:
             self.load_data()
 
-    # ─── UI ─────────────────────────────────────────────────
+    # ─── UI ──────────────────────────────────────────────────
+
     def _build_ui(self):
         root = QVBoxLayout(self)
         root.setContentsMargins(20, 20, 20, 20)
-        root.setSpacing(16)
+        root.setSpacing(14)
 
-        # ── Özet grup ──
+        # ── Özet kartı ──────────────────────────────────────
         ozet_group = QGroupBox("Dozimetre Özeti")
         ozet_group.setProperty("style-role", "group")
         ozet_lay = QHBoxLayout(ozet_group)
-        ozet_lay.setContentsMargins(16, 12, 16, 12)
-        ozet_lay.setSpacing(32)
+        ozet_lay.setContentsMargins(16, 10, 16, 10)
+        ozet_lay.setSpacing(28)
 
-        self._s_periyot  = self._stat_lbl("Ölçüm Sayısı")
-        self._s_son_yil  = self._stat_lbl("Son Yıl / Periyot")
-        self._s_ort_hp10 = self._stat_lbl("Ort. Hp(10)")
-        self._s_max_hp10 = self._stat_lbl("Maks. Hp(10)")
-        self._s_durum    = self._stat_lbl("Genel Durum")
+        self._s_periyot  = self._stat_card("Ölçüm Sayısı")
+        self._s_son_yil  = self._stat_card("Son Yıl / Periyot")
+        self._s_ort_hp10 = self._stat_card("Ort. Hp(10)")
+        self._s_max_hp10 = self._stat_card("Maks. Hp(10)")
+        self._s_durum    = self._stat_card("Genel Durum")
 
         for w in (self._s_periyot, self._s_son_yil,
                   self._s_ort_hp10, self._s_max_hp10, self._s_durum):
@@ -656,13 +123,15 @@ class PersonelDozimetrePanel(QWidget):
         self.btn_yenile.setFixedSize(32, 32)
         self.btn_yenile.setProperty("style-role", "refresh")
         self.btn_yenile.setCursor(Qt.CursorShape.PointingHandCursor)
-        IconRenderer.set_button_icon(self.btn_yenile, "refresh", color=IconColors.MUTED, size=14)
+        IconRenderer.set_button_icon(
+            self.btn_yenile, "refresh", color=IconColors.MUTED, size=14
+        )
         self.btn_yenile.clicked.connect(self.load_data)
         ozet_lay.addWidget(self.btn_yenile, alignment=Qt.AlignmentFlag.AlignVCenter)
         root.addWidget(ozet_group)
 
-        # ── Trend ──
-        trend_group = QGroupBox("Hp(10) ── Hp(0,07) --  Trend")
+        # ── Trend grafiği ─────────────────────────────────────
+        trend_group = QGroupBox("Hp(10) \u2500\u2500 Hp(0,07) --  Trend")
         trend_group.setProperty("style-role", "group")
         trend_lay = QVBoxLayout(trend_group)
         trend_lay.setContentsMargins(12, 8, 12, 8)
@@ -670,20 +139,20 @@ class PersonelDozimetrePanel(QWidget):
         trend_lay.addWidget(self._trend)
         root.addWidget(trend_group)
 
-        # ── NDK Limit Gauge'ları ──
+        # ── NDK Limit Gauge'ları ──────────────────────────────
         limit_group = QGroupBox("NDK Doz Limitleri")
         limit_group.setProperty("style-role", "group")
         limit_lay = QHBoxLayout(limit_group)
-        limit_lay.setContentsMargins(16, 12, 16, 12)
+        limit_lay.setContentsMargins(16, 10, 16, 10)
         limit_lay.setSpacing(24)
 
         self._gauge_yillik = _GaugeWidget(
-            f"Yıllık Kümülatif Hp(10)  [NDK: {YILLIK_LIMIT:.0f} mSv]",
-            YILLIK_LIMIT, 0.5, 0.75
+            f"Y\u0131ll\u0131k K\u00fcm\u00fclatif Hp(10)  [NDK: {YILLIK_LIMIT:.0f} mSv]",
+            YILLIK_LIMIT, 0.5, 0.75,
         )
         self._gauge_5yil = _GaugeWidget(
-            f"5 Yıllık Kümülatif Hp(10)  [NDK: {BES_YILLIK:.0f} mSv]",
-            BES_YILLIK, 0.5, 0.75
+            f"5 Y\u0131ll\u0131k K\u00fcm\u00fclatif Hp(10)  [NDK: {BES_YILLIK:.0f} mSv]",
+            BES_YILLIK, 0.5, 0.75,
         )
         self.lbl_periyot_doluluk = QLabel("")
         self.lbl_periyot_doluluk.setWordWrap(True)
@@ -694,12 +163,12 @@ class PersonelDozimetrePanel(QWidget):
         limit_lay.addWidget(self.lbl_periyot_doluluk, 1)
         root.addWidget(limit_group)
 
-        # ── Yüksek Doz Bildirimleri ──
+        # ── Y\u00fcksek Doz Bildirimleri ───────────────────────────
         self._yuksek_doz_panel = _YuksekDozBildirimPanel()
         root.addWidget(self._yuksek_doz_panel)
 
-        # ── Geçmiş tablo ──
-        tablo_group = QGroupBox("Periyot Geçmişi")
+        # ── Ge\u00e7mi\u015f tablo ──────────────────────────────────────
+        tablo_group = QGroupBox("Periyot Ge\u00e7mi\u015fi")
         tablo_group.setProperty("style-role", "group")
         tablo_lay = QVBoxLayout(tablo_group)
         tablo_lay.setContentsMargins(8, 8, 8, 8)
@@ -716,23 +185,22 @@ class PersonelDozimetrePanel(QWidget):
         tablo_lay.addWidget(self._table)
         root.addWidget(tablo_group, 1)
 
-        # ── Durum / boş mesaj ──
-        self.lbl_bos = QLabel("Bu personel için dozimetre kaydı bulunamadı.")
+        self.lbl_bos = QLabel("Bu personel i\u00e7in dozimetre kayd\u0131 bulunamad\u0131.")
         self.lbl_bos.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_bos.setProperty("color-role", "primary")
         self.lbl_bos.hide()
         root.addWidget(self.lbl_bos)
 
-    def _stat_lbl(self, title: str) -> QFrame:
+    def _stat_card(self, baslik: str) -> QFrame:
         f = QFrame()
         f.setProperty("bg-role", "transparent")
         lay = QVBoxLayout(f)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(2)
-        t = QLabel(title)
+        t = QLabel(baslik)
         t.setProperty("color-role", "muted")
         t.setProperty("style-role", "stat-label")
-        v = QLabel("—")
+        v = QLabel("\u2014")
         v.setProperty("color-role", "primary")
         v.setProperty("style-role", "stat-value")
         v.setObjectName("val")
@@ -742,15 +210,15 @@ class PersonelDozimetrePanel(QWidget):
         return f
 
     @staticmethod
-    def _set_stat(card: QFrame, text: str, color: str = ""):
+    def _set_stat(card: QFrame, metin: str, renk: str = ""):
         lbl = card.findChild(QLabel, "val")
         if lbl:
-            lbl.setText(text)
-            if color:
-                lbl.setStyleSheet(
-                    f"color:{color};font-size:14px;font-weight:600;")
+            lbl.setText(metin)
+            if renk:
+                lbl.setStyleSheet(f"color:{renk};font-size:14px;font-weight:600;")
 
-    # ─── Yükleme ────────────────────────────────────────────
+    # ─── Y\u00fckleme ─────────────────────────────────────────────
+
     def load_data(self):
         if not self._db or not self._personel_id:
             return
@@ -769,133 +237,196 @@ class PersonelDozimetrePanel(QWidget):
         self._trend.set_data(rows)
         self._update_ozet()
         self._yuksek_doz_panel.guncelle(rows)
-        # Form açma butonunu en yüksek dozlu kayda bağla
-        try:
-            self._yuksek_doz_panel._btn_form_ac.clicked.disconnect()
-        except RuntimeError:
-            pass
-        if rows:
-            son_yuksek = max(
-                (r for r in rows if float(r.get("Hp10") or 0) >= 2.0),
-                key=lambda r: float(r.get("Hp10") or 0),
-                default=rows[-1],
-            )
-            self._yuksek_doz_panel._btn_form_ac.clicked.connect(
-                lambda: self._ac_doz_arastirma_formu(son_yuksek)
-            )
-
-        bos = len(rows) == 0
+        self._bagla_form_butonu(rows)
+        bos = not rows
         self.lbl_bos.setVisible(bos)
         self._table.setVisible(not bos)
 
-    def _ac_doz_arastirma_formu(self, row: dict):
-        """En yüksek dozlu kaydı seçerek Doz Araştırma Formu'nu açar."""
-        try:
-            from ui.dialogs.doz_arastirma_formu_dialog import DozArastirmaFormuDialog
-            # Personel bilgilerini kayda ekle
-            kayit = dict(row)
-            kayit.setdefault("KimlikNo", self._personel_id)
-            dlg = DozArastirmaFormuDialog(olcum_kaydi=kayit, parent=self)
-            if dlg.exec():
-                veri = dlg.get_form_data()
-                logger.info(
-                    f"Doz Araştırma Formu kaydedildi: "
-                    f"{kayit.get('AdSoyad','')} "
-                    f"{veri.get('Yil','')}/{veri.get('Periyot','')}"
-                )
-        except Exception as exc:
-            logger.error(f"Doz Araştırma Formu açma hatası: {exc}")
-
     def _on_load_error(self, msg: str):
         self.btn_yenile.setEnabled(True)
-        logger.error(f"PersonelDozimetrePanel yükleme hatası ({self._personel_id}): {msg}")
+        logger.error(f"PersonelDozimetrePanel y\u00fckleme hatas\u0131 ({self._personel_id}): {msg}")
+
+    # ─── Form butonu y\u00f6netimi ─────────────────────────────────
+
+    def _bagla_form_butonu(self, rows: list):
+        asim_rows = [r for r in rows if float(r.get("Hp10") or 0) >= HP10_UYARI]
+        if not asim_rows:
+            self._yuksek_doz_panel.bagla_form_butonu(None)
+            return
+
+        hedef  = max(asim_rows, key=lambda r: float(r.get("Hp10") or 0))
+        mevcut = self._form_kayit_getir(hedef)
+
+        if mevcut:
+            pdf = mevcut["PdfYolu"]
+            self._yuksek_doz_panel.bagla_form_butonu(
+                lambda checked=False, p=pdf: self._pdf_ac(p),
+                buton_metni="\U0001f4c4  Formu G\u00f6r\u00fcnt\u00fcle",
+            )
+        else:
+            self._yuksek_doz_panel.bagla_form_butonu(
+                lambda checked=False, r=hedef: self._form_doldur(r),
+                buton_metni="\U0001f4cb  Doz Ara\u015ft\u0131rma Formu A\u00e7",
+            )
+
+    def _form_kayit_getir(self, row: dict) -> dict | None:
+        if not self._db:
+            return None
+        try:
+            from core.di import get_dozimetre_service
+            svc = get_dozimetre_service(self._db)
+            return svc.form_var_mi(
+                self._personel_id,
+                int(row.get("Yil") or 0),
+                int(row.get("Periyot") or 0),
+            )
+        except Exception as exc:
+            logger.warning(f"Form kayit sorgu hatas\u0131: {exc}")
+            return None
+
+    def _pdf_ac(self, pdf_yolu: str):
+        if not os.path.exists(pdf_yolu):
+            logger.warning(f"PDF bulunamad\u0131: {pdf_yolu}")
+            return
+        try:
+            if sys.platform == "win32":
+                os.startfile(pdf_yolu)
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", pdf_yolu])
+            else:
+                subprocess.Popen(["xdg-open", pdf_yolu])
+        except Exception as exc:
+            logger.error(f"PDF a\u00e7ma hatas\u0131: {exc}")
+
+    def _form_doldur(self, row: dict):
+        try:
+            from ui.dialogs.doz_arastirma_formu_dialog import DozArastirmaFormuDialog
+            kayit = dict(row)
+            kayit.setdefault("KimlikNo", self._personel_id)
+            dlg = DozArastirmaFormuDialog(
+                olcum_kaydi=kayit,
+                db=self._db,
+                personel_id=self._personel_id,
+                parent=self,
+            )
+            if dlg.exec():
+                pdf_yolu = dlg.get_saved_pdf_path()
+                if pdf_yolu and self._db:
+                    self._form_meta_kaydet(row, pdf_yolu)
+                if pdf_yolu:
+                    self._yuksek_doz_panel.bagla_form_butonu(
+                        lambda checked=False, p=pdf_yolu: self._pdf_ac(p),
+                        buton_metni="\U0001f4c4  Formu G\u00f6r\u00fcnt\u00fcle",
+                    )
+                logger.info(f"Doz Ara\u015ft\u0131rma Formu olu\u015fturuldu: {pdf_yolu}")
+        except Exception as exc:
+            logger.error(f"Form doldurma hatas\u0131: {exc}")
+
+    def _form_meta_kaydet(self, row: dict, pdf_yolu: str):
+        try:
+            from core.di import get_dozimetre_service
+            svc = get_dozimetre_service(self._db)
+            svc.form_kaydet(
+                personel_id    = self._personel_id,
+                yil            = int(row.get("Yil") or 0),
+                periyot        = int(row.get("Periyot") or 0),
+                olculen_doz    = float(row.get("Hp10") or 0),
+                pdf_yolu       = pdf_yolu,
+                olcum_kayit_no = str(row.get("KayitNo") or ""),
+            )
+        except Exception as exc:
+            logger.error(f"Form meta kayit hatas\u0131: {exc}")
+
+    # ─── \u00d6zet g\u00fcncelleme ─────────────────────────────────────
 
     def _update_ozet(self):
         rows = self._rows
         if not rows:
             for card in (self._s_periyot, self._s_son_yil,
                          self._s_ort_hp10, self._s_max_hp10, self._s_durum):
-                self._set_stat(card, "—")
+                self._set_stat(card, "\u2014")
             self._gauge_yillik.set_deger(0.0)
             self._gauge_5yil.set_deger(0.0)
             self.lbl_periyot_doluluk.setText("")
             return
 
-        # Ölçüm sayısı
-        self._set_stat(self._s_periyot, str(len(rows)), "#3d8ef5")  # ACCENT
+        self._set_stat(self._s_periyot, str(len(rows)), "#3d8ef5")
 
-        # Son yıl / periyot
-        son = rows[-1]
+        son     = rows[-1]
         son_yil = son.get("Yil", "")
-        self._set_stat(self._s_son_yil,
-                       f"{son_yil} / {son.get('Periyot','')} ({son.get('PeriyotAdi','')})")
+        self._set_stat(
+            self._s_son_yil,
+            f"{son_yil} / {son.get('Periyot','')} ({son.get('PeriyotAdi','')})",
+        )
 
-        # Hp10 istatistikleri
         hp10s = []
         for r in rows:
-            try: hp10s.append(float(r.get("Hp10") or 0))
-            except (ValueError, TypeError): pass
+            try:
+                hp10s.append(float(r.get("Hp10") or 0))
+            except (ValueError, TypeError):
+                pass
 
         if hp10s:
             ort = sum(hp10s) / len(hp10s)
             mx  = max(hp10s)
-            ort_renk = ("#f87171" if ort >= HP10_TEHLIKE else
-                        "#facc15" if ort >= HP10_UYARI else "#4ade80")
-            mx_renk  = ("#f87171" if mx  >= HP10_TEHLIKE else
-                        "#facc15" if mx  >= HP10_UYARI else "#4ade80")
-            self._set_stat(self._s_ort_hp10, f"{ort:.3f} mSv", ort_renk)
-            self._set_stat(self._s_max_hp10, f"{mx:.3f} mSv",  mx_renk)
+            def _renk(v):
+                return ("#f87171" if v >= HP10_TEHLIKE else
+                        "#facc15" if v >= HP10_UYARI   else "#4ade80")
+            self._set_stat(self._s_ort_hp10, f"{ort:.3f} mSv", _renk(ort))
+            self._set_stat(self._s_max_hp10, f"{mx:.3f} mSv",  _renk(mx))
         else:
-            self._set_stat(self._s_ort_hp10, "—")
-            self._set_stat(self._s_max_hp10, "—")
+            self._set_stat(self._s_ort_hp10, "\u2014")
+            self._set_stat(self._s_max_hp10, "\u2014")
 
-        # Genel durum — Çalışma Koşulu + trend
-        son_durum = str(son.get("Durum", "")).strip()
-        yil_veriler = [r for r in rows if str(r.get("Yil","")) == str(son_yil)]
-        yillik_hp10 = sum(float(r.get("Hp10") or 0) for r in yil_veriler
-                          if r.get("Hp10") is not None)
-        if "Aşım" in son_durum:
-            self._set_stat(self._s_durum, "⚠ Doz Aşımı", "#f87171")
+        son_durum   = str(son.get("Durum", "")).strip()
+        yil_veriler = [r for r in rows if str(r.get("Yil", "")) == str(son_yil)]
+        yillik_hp10 = sum(
+            float(r.get("Hp10") or 0) for r in yil_veriler
+            if r.get("Hp10") is not None
+        )
+
+        if "A\u015f\u0131m" in son_durum:
+            self._set_stat(self._s_durum, "\u26a0 Doz A\u015f\u0131m\u0131", "#f87171")
         elif yillik_hp10 >= CALISMA_A:
-            self._set_stat(self._s_durum, "Doz Bazlı Koşul A (>6 mSv)", "#facc15")
+            self._set_stat(self._s_durum, "Ko\u015ful A (>6 mSv)", "#facc15")
         elif len(hp10s) >= 2:
-            trend = "↓ Azalıyor" if hp10s[-1] <= hp10s[0] else "↑ Artıyor"
-            renk  = "#4ade80" if hp10s[-1] <= hp10s[0] else "#facc15"
+            trend = "\u2193 Azal\u0131yor" if hp10s[-1] <= hp10s[0] else "\u2191 Art\u0131yor"
+            renk  = "#4ade80"            if hp10s[-1] <= hp10s[0] else "#facc15"
             self._set_stat(self._s_durum, trend, renk)
         else:
-            self._set_stat(self._s_durum, "Sınırın Altında", "#4ade80")
+            self._set_stat(self._s_durum, "S\u0131n\u0131r\u0131n Alt\u0131nda", "#4ade80")
 
-        # Yıllık gauge (son yıl)
         self._gauge_yillik.set_deger(yillik_hp10)
-
-        # 5 yıllık gauge
         try:
             yil_int    = int(son_yil)
             yil_aralik = set(range(yil_int - 4, yil_int + 1))
-            bes_hp10   = sum(float(r.get("Hp10") or 0) for r in rows
-                             if r.get("Yil") in yil_aralik and r.get("Hp10") is not None)
+            bes_hp10   = sum(
+                float(r.get("Hp10") or 0) for r in rows
+                if r.get("Yil") in yil_aralik and r.get("Hp10") is not None
+            )
         except (ValueError, TypeError):
             bes_hp10 = sum(hp10s)
         self._gauge_5yil.set_deger(bes_hp10)
 
-        # Periyot doluluk (son yıl)
         kayitli = {r.get("Periyot") for r in yil_veriler}
-        eksik = [i for i in range(1, PERIYOT_SAYISI + 1) if i not in kayitli]
+        eksik   = [i for i in range(1, PERIYOT_SAYISI + 1) if i not in kayitli]
         if not eksik:
-            doluluk_metin = f"✔ {son_yil} yılı\n{PERIYOT_SAYISI}/{PERIYOT_SAYISI} periyot kayıtlı"
+            metin = f"\u2714 {son_yil} y\u0131l\u0131\n{PERIYOT_SAYISI}/{PERIYOT_SAYISI} periyot kay\u0131tl\u0131"
         else:
-            doluluk_metin = (f"⚠ {son_yil} yılı\n{len(kayitli)}/{PERIYOT_SAYISI} periyot  |  "
-                             f"Eksik: {', '.join(str(e) for e in eksik)}. periyot")
-        self.lbl_periyot_doluluk.setText(doluluk_metin)
+            metin = (
+                f"\u26a0 {son_yil} y\u0131l\u0131\n"
+                f"{len(kayitli)}/{PERIYOT_SAYISI} periyot  |  "
+                f"Eksik: {', '.join(str(e) for e in eksik)}. periyot"
+            )
+        self.lbl_periyot_doluluk.setText(metin)
         self.lbl_periyot_doluluk.setProperty("color-role", "primary")
 
-    # ─── Dışarıdan ayarlama ─────────────────────────────────
-    def set_personel(self, db: str, personel_id: str):
-        """Farklı personel için paneli yeniden yükler."""
+    # ─── Harici aray\u00fcz ──────────────────────────────────────────
+
+    def set_personel(self, db, personel_id: str):
         self._db          = db
         self._personel_id = str(personel_id).strip()
         self.load_data()
 
-    # PersonelMerkez ile uyumlu interface
     def set_embedded_mode(self, mode):
         pass

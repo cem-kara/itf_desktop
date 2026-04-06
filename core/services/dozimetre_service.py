@@ -15,7 +15,7 @@ import uuid
 from typing import Optional
 from collections import defaultdict
 
-from core.hata_yonetici import SonucYonetici
+from core.hata_yonetici import SonucYonetici, logger
 
 from database.repository_registry import RepositoryRegistry
 
@@ -44,25 +44,6 @@ from core.di import get_dozimetre_service
 
     def _personel_repo(self):
         return self._r.get("Personel")
-
-    def get_personel_listesi(self, aktif_only: bool = False) -> SonucYonetici:
-        try:
-            rows = self._personel_repo().get_all() or []
-            if aktif_only:
-                rows = [
-                    r for r in rows
-                    if str(r.get("Durum", "")).strip().lower() != "pasif"
-                ]
-            return SonucYonetici.tamam(veri=rows)
-        except Exception as exc:
-            return SonucYonetici.hata(exc, "DozimetreService.get_personel_listesi")
-
-    def get_rapor_olcumleri(self, rapor_no: str) -> SonucYonetici:
-        try:
-            data = self._repo().get_where({"RaporNo": str(rapor_no or "")}) or []
-            return SonucYonetici.tamam(veri=data)
-        except Exception as exc:
-            return SonucYonetici.hata(exc, "DozimetreService.get_rapor_olcumleri")
 
     # ──────────────────────────────────────────────────────────
     #  Sorgular
@@ -190,6 +171,124 @@ from core.di import get_dozimetre_service
 
         except Exception as exc:
             return SonucYonetici.hata(exc, "DozimetreService.get_istatistikler")
+
+    # ──────────────────────────────────────────────────────────
+    #  Doz Araştırma Formu
+    # ──────────────────────────────────────────────────────────
+
+    # ──────────────────────────────────────────────────────────
+    #  Doz Araştırma Formu (meta kayıt — detay PDF'de)
+    # ──────────────────────────────────────────────────────────
+
+    def _form_repo(self):
+        return self._r.get("Doz_Arastirma_Formu")
+
+    def _uret_form_no(self, personel_id: str, yil, periyot) -> str:
+        """ARF-{TC[:6]}-{YIL}{PER:02d}-{uuid[:6]}"""
+        import uuid as _uuid
+        pid = str(personel_id)[:6].upper()
+        return f"ARF-{pid}-{yil}{int(periyot or 0):02d}-{_uuid.uuid4().hex[:6].upper()}"
+
+    def form_kaydet(
+        self,
+        personel_id: str,
+        yil: int,
+        periyot: int,
+        olculen_doz: float,
+        pdf_yolu: str,
+        olcum_kayit_no: str = "",
+    ) -> SonucYonetici:
+        """
+        Doz Araştırma Formu meta kaydını kaydeder.
+        Detaylar PDF'de tutulur; DB yalnızca referans bilgisi saklar.
+
+        Args:
+            personel_id    : TC kimlik no
+            yil / periyot  : Ölçüm dönemi
+            olculen_doz    : Ölçülen Hp(10) değeri (mSv)
+            pdf_yolu       : Kaydedilen PDF'in tam yolu
+            olcum_kayit_no : Dozimetre_Olcum.KayitNo referansı (opsiyonel)
+        """
+        try:
+            from datetime import date
+            pid = str(personel_id).strip()
+            if not pid:
+                return SonucYonetici.hata(
+                    ValueError("PersonelID boş olamaz"), "DozimetreService.form_kaydet"
+                )
+            form_no = self._uret_form_no(pid, yil, periyot)
+            kayit = {
+                "FormNo":          form_no,
+                "PersonelID":      pid,
+                "OlcumKayitNo":    olcum_kayit_no,
+                "Yil":             self._int(yil),
+                "Periyot":         self._int(periyot),
+                "OlculenDoz":      self._float(olculen_doz),
+                "PdfYolu":         pdf_yolu,
+                "OlusturmaTarihi": date.today().isoformat(),
+            }
+            self._form_repo().insert(kayit)
+            logger.info(f"Doz Araştırma Formu kaydedildi: {form_no} — {pid} {yil}/{periyot}")
+            return SonucYonetici.tamam(
+                f"Form kaydedildi: {form_no}",
+                veri={"FormNo": form_no, "PdfYolu": pdf_yolu},
+            )
+        except Exception as exc:
+            return SonucYonetici.hata(exc, "DozimetreService.form_kaydet")
+
+    def form_var_mi(
+        self, personel_id: str, yil: int, periyot: int
+    ) -> dict | None:
+        """
+        Bu periyot için doldurulmuş form var mı?
+
+        Returns:
+            dict  → {"FormNo": ..., "PdfYolu": ...}  (kayıt varsa ve PDF erişilebilirse)
+            None  → form yok veya PDF dosyası silinmiş
+        """
+        try:
+            import os
+            pid  = str(personel_id).strip()
+            rows = self._form_repo().get_where({
+                "PersonelID": pid,
+                "Yil":        self._int(yil),
+                "Periyot":    self._int(periyot),
+            }) or []
+            for row in rows:
+                pdf = str(row.get("PdfYolu") or "")
+                if pdf and os.path.exists(pdf):
+                    return {"FormNo": row["FormNo"], "PdfYolu": pdf}
+            return None
+        except Exception as exc:
+            logger.warning(f"form_var_mi sorgu hatası: {exc}")
+            return None
+
+    def form_listesi(self, personel_id: str = "") -> SonucYonetici:
+        """Personelin tüm araştırma formu kayıtlarını döner."""
+        try:
+            if personel_id:
+                rows = self._form_repo().get_where(
+                    {"PersonelID": personel_id.strip()}
+                ) or []
+            else:
+                rows = self._form_repo().get_all() or []
+            rows.sort(
+                key=lambda r: (r.get("Yil") or 0, r.get("Periyot") or 0),
+                reverse=True,
+            )
+            return SonucYonetici.tamam(veri=rows)
+        except Exception as exc:
+            return SonucYonetici.hata(exc, "DozimetreService.form_listesi")
+
+    def form_sil(self, form_no: str) -> SonucYonetici:
+        """Form meta kaydını siler (PDF dosyasına dokunmaz)."""
+        try:
+            self._form_repo().delete(form_no)
+            logger.info(f"Doz Araştırma Formu meta kaydı silindi: {form_no}")
+            return SonucYonetici.tamam("Form kaydı silindi.")
+        except Exception as exc:
+            return SonucYonetici.hata(exc, "DozimetreService.form_sil")
+
 
     # ──────────────────────────────────────────────────────────
     #  Yazma

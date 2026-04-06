@@ -140,9 +140,18 @@ class DozArastirmaFormuDialog(QDialog):
         Mevcut alanlar otomatik doldurulur.
     """
 
-    def __init__(self, olcum_kaydi: Optional[dict] = None, parent=None):
+    def __init__(
+        self,
+        olcum_kaydi: Optional[dict] = None,
+        db=None,
+        personel_id: str = "",
+        parent=None,
+    ):
         super().__init__(parent)
-        self._kayit = olcum_kaydi or {}
+        self._kayit      = olcum_kaydi or {}
+        self._db         = db
+        self._personel_id = str(personel_id).strip()
+        self._saved_pdf_path: str = ""  # başarılı kayıt sonrası dolar
         self.setWindowTitle("Doz Araştırma Formu  —  RADAT RD.F43")
         self.setMinimumWidth(860)
         self.setMinimumHeight(680)
@@ -590,7 +599,7 @@ class DozArastirmaFormuDialog(QDialog):
     # ─── Kaydet ───────────────────────────────────────────────
 
     def _on_kaydet(self):
-        # Zorunlu alan kontrolü
+        # ── Zorunlu alan kontrolü ─────────────────────────────
         if not self._e_ad_soyad.text().strip():
             self._lbl_zorunlu.setText("⚠ Adı Soyadı alanı zorunludur.")
             self._e_ad_soyad.setFocus()
@@ -600,7 +609,83 @@ class DozArastirmaFormuDialog(QDialog):
             self._e_doz.setFocus()
             return
         self._lbl_zorunlu.setText("")
+
+        # ── Veri topla ────────────────────────────────────────
+        veri = self.get_form_data()
+        pid  = self._personel_id or veri.get("TCKimlik", "")
+        veri["PersonelID"]   = pid
+        veri["OlcumKayitNo"] = self._kayit.get("KayitNo", "")
+
+        # ── PDF üret ──────────────────────────────────────────
+        try:
+            from core.pdf.doz_arastirma_formu_pdf import DozArastirmaFormuPDF
+            pdf_uretici = DozArastirmaFormuPDF(veri)
+            pdf_yolu    = pdf_uretici.kaydet()          # geçici dosya
+        except Exception as exc:
+            logger.error(f"PDF üretme hatası: {exc}")
+            self._lbl_zorunlu.setText(f"⚠ PDF üretilemedi: {exc}")
+            return
+
+        # ── Doküman yönetimine kaydet ─────────────────────────
+        if self._db and pid:
+            try:
+                from core.di import get_dokuman_service
+                import os
+                from datetime import date
+
+                yil = str(veri.get("Yil") or date.today().year)
+                per = str(veri.get("Periyot") or "")
+                dosya_adi = f"{pid}_DozArastirmaFormu_{yil}P{per}.pdf"
+
+                svc_dok = get_dokuman_service(self._db)
+                sonuc   = svc_dok.upload_and_save(
+                    file_path   = pdf_yolu,
+                    entity_type = "personel",
+                    entity_id   = pid,
+                    belge_turu  = "Doz Araştırma Formu",
+                    folder_name = "Personel_Belge",
+                    doc_type    = "Personel_Belge",
+                    aciklama    = (
+                        f"Doz Araştırma Formu — {yil}/{per}. Periyot  "
+                        f"Hp(10): {veri.get('OlculenDoz','?')} mSv"
+                    ),
+                    iliskili_id  = veri.get("OlcumKayitNo") or "",
+                    iliskili_tip = "Dozimetre_Olcum",
+                    custom_name  = dosya_adi,
+                )
+
+                if sonuc.basarili:
+                    self._saved_pdf_path = sonuc.veri.get("local_path", pdf_yolu) if sonuc.veri else pdf_yolu
+                    logger.info(
+                        f"Doz Araştırma Formu personel klasörüne kaydedildi: "
+                        f"{self._saved_pdf_path}"
+                    )
+                else:
+                    logger.warning(f"Doküman kaydı başarısız: {sonuc.mesaj}")
+                    self._saved_pdf_path = pdf_yolu  # geçici yol yine de kullanılabilir
+
+            except Exception as exc:
+                logger.error(f"Doküman kayıt hatası: {exc}")
+                self._saved_pdf_path = pdf_yolu
+        else:
+            self._saved_pdf_path = pdf_yolu
+            logger.info("DB bağlantısı yok — PDF geçici konumda: " + pdf_yolu)
+
+        # ── Geçici dosyayı temizle (kopyalandıysa) ────────────
+        try:
+            import os
+            if (self._saved_pdf_path and
+                    self._saved_pdf_path != pdf_yolu and
+                    os.path.exists(pdf_yolu)):
+                os.remove(pdf_yolu)
+        except Exception:
+            pass
+
         self.accept()
+
+    def get_saved_pdf_path(self) -> str:
+        """Kaydedilen PDF dosyasının yolunu döndürür."""
+        return getattr(self, "_saved_pdf_path", "")
 
     # ─── Veri okuma ───────────────────────────────────────────
 

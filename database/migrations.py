@@ -1,65 +1,41 @@
 # database/migrations.py
-# ─────────────────────────────────────────────────────────────────────────────
-#  REPYS — Versiyon Tabanlı Migration Yöneticisi
-#
-#  Tasarım kararları:
-#    · CURRENT_VERSION = 1  — v1-v7 arası tüm şema bu dosyaya squash edildi.
-#    · Mevcut kurulumlar (schema_version MAX >= 1) hiçbir işlem yapılmadan geçer.
-#    · Yeni kurulumlar: v0 → v1 tek adımda (create_tables + seed).
-#    · Gelecek değişiklik için _migrate_to_v2() ekle, CURRENT_VERSION = 2 yap.
-#    · PRAGMA foreign_keys = ON her bağlantıda zorunlu olarak etkinleştirilir.
-# ─────────────────────────────────────────────────────────────────────────────
 import sqlite3
 import shutil
 from datetime import datetime
 from pathlib import Path
-
 from core.logger import logger
 
 
 class MigrationManager:
     """
     Versiyon tabanlı migration yöneticisi.
-
-    v1: Tüm tablolar — eski v1-v7 squash edildi, temiz kurulum şeması.
-
-    Yeni migration eklemek için:
-        1. _migrate_to_vN() metodunu yaz.
-        2. CURRENT_VERSION = N yap.
-        3. Metod imzası: def _migrate_to_vN(self) → None
+    v1: Tüm tablolar — güncel şema (temiz kurulum)
     """
 
-    CURRENT_VERSION = 1
+    CURRENT_VERSION = 9
 
-    def __init__(self, db_path: str) -> None:
-        self.db_path   = db_path
+    def __init__(self, db_path):
+        self.db_path = db_path
         self.backup_dir = Path(db_path).parent / "backups"
         self.backup_dir.mkdir(exist_ok=True)
 
-    # ══════════════════════════════════════════════════════════════════════════
-    #  BAĞLANTI
-    # ══════════════════════════════════════════════════════════════════════════
+    # ════════════════════════════════════════════════════════
+    #  BAĞLANTI & VERSİYON
+    # ════════════════════════════════════════════════════════
 
-    def connect(self) -> sqlite3.Connection:
-        """FK kısıtlaması ve WAL modu etkin bağlantı döndürür."""
+    def connect(self):
         conn = sqlite3.connect(self.db_path, timeout=30)
         conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA foreign_keys=ON")   # ← SQLite varsayılanı OFF'dur
         return conn
 
-    # ══════════════════════════════════════════════════════════════════════════
-    #  ŞEMA VERSİYONU
-    # ══════════════════════════════════════════════════════════════════════════
-
-    def get_schema_version(self) -> int:
+    def get_schema_version(self):
         conn = self.connect()
-        cur  = conn.cursor()
+        cur = conn.cursor()
         try:
-            cur.execute(
-                "SELECT name FROM sqlite_master "
-                "WHERE type='table' AND name='schema_version'"
-            )
+            cur.execute("""
+                SELECT name FROM sqlite_master
+                WHERE type='table' AND name='schema_version'
+            """)
             if not cur.fetchone():
                 cur.execute("""
                     CREATE TABLE schema_version (
@@ -71,683 +47,451 @@ class MigrationManager:
                 conn.commit()
                 return 0
             cur.execute("SELECT MAX(version) FROM schema_version")
-            row = cur.fetchone()
-            return row[0] if row[0] is not None else 0
+            result = cur.fetchone()
+            return result[0] if result[0] is not None else 0
         finally:
             conn.close()
 
-    def _set_schema_version(self, conn: sqlite3.Connection,
-                            version: int, description: str = "") -> None:
-        conn.execute(
-            "INSERT INTO schema_version (version, applied_at, description) "
-            "VALUES (?, ?, ?)",
-            (version, datetime.now().isoformat(), description),
-        )
+    def set_schema_version(self, version, description=""):
+        conn = self.connect()
+        cur = conn.cursor()
+        try:
+            cur.execute("""
+                INSERT INTO schema_version (version, applied_at, description)
+                VALUES (?, ?, ?)
+            """, (version, datetime.now().isoformat(), description))
+            conn.commit()
+            logger.info(f"Sema versiyonu {version}: {description}")
+        finally:
+            conn.close()
 
-    # ══════════════════════════════════════════════════════════════════════════
+    # ════════════════════════════════════════════════════════
     #  YEDEKLEME
-    # ══════════════════════════════════════════════════════════════════════════
+    # ════════════════════════════════════════════════════════
 
-    def backup_database(self) -> Path | None:
+    def backup_database(self):
         if not Path(self.db_path).exists():
             return None
-        ts          = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_path = self.backup_dir / f"db_backup_{ts}.db"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = self.backup_dir / f"db_backup_{timestamp}.db"
         try:
             shutil.copy2(self.db_path, backup_path)
-            logger.info(f"Yedek alındı: {backup_path}")
+            logger.info(f"Yedek: {backup_path}")
             self._cleanup_old_backups()
             return backup_path
         except Exception as e:
-            logger.error(f"Yedekleme hatası: {e}")
+            logger.error(f"Yedekleme hatasi: {e}")
             return None
 
-    def _cleanup_old_backups(self, keep: int = 10) -> None:
+    def _cleanup_old_backups(self, keep_count=10):
         backups = sorted(self.backup_dir.glob("db_backup_*.db"))
-        for old in backups[:-keep]:
+        for old in backups[:-keep_count]:
             try:
                 old.unlink()
-            except Exception as e:
-                logger.warning(f"Eski yedek silinemedi: {old} ({e})")
+            except Exception:
+                pass
 
-    # ══════════════════════════════════════════════════════════════════════════
-    #  MIGRATION ÇALIŞTIRICI
-    # ══════════════════════════════════════════════════════════════════════════
+    # ════════════════════════════════════════════════════════
+    #  MIGRATION CALISTIRICI
+    # ════════════════════════════════════════════════════════
 
-    def run_migrations(self) -> bool:
+    def run_migrations(self):
         current = self.get_schema_version()
-
         if current >= self.CURRENT_VERSION:
-            logger.info(f"Şema güncel (v{current})")
+            logger.info(f"Sema guncel (v{current})")
             return True
 
         backup_path = self.backup_database()
-        logger.info(f"Migration başlıyor: v{current} → v{self.CURRENT_VERSION}")
+        logger.info(f"Migration: v{current} to v{self.CURRENT_VERSION}")
 
         try:
-            for v in range(current + 1, self.CURRENT_VERSION + 1):
-                method = getattr(self, f"_migrate_to_v{v}", None)
+            for version in range(current + 1, self.CURRENT_VERSION + 1):
+                method = getattr(self, f"_migrate_to_v{version}", None)
                 if method:
-                    logger.info(f"  v{v} uygulanıyor…")
+                    logger.info(f"  v{version} uygulanıyor...")
                     method()
                 else:
-                    logger.info(f"  v{v} no-op (metod yok)")
-            logger.info("Tüm migration'lar tamamlandı")
+                    logger.info(f"  v{version} no-op")
+                self.set_schema_version(version, f"Migrated to v{version}")
+            logger.info("Tum migrationlar tamamlandi")
             return True
         except Exception as e:
-            logger.error(f"Migration hatası: {e} | Yedek: {backup_path}")
+            logger.error(f"Migration hatasi: {e} | Yedek: {backup_path}")
             raise
 
-    # ══════════════════════════════════════════════════════════════════════════
-    #  V1 — TEMİZ KURULUM  (eski v1-v7 squash)
-    # ══════════════════════════════════════════════════════════════════════════
-
-    def _migrate_to_v1(self) -> None:
+    def _migrate_to_v6(self):
         """
-        v1: Tüm tablolar sıfırdan oluşturulur, temel veriler eklenir.
+        v6: NB_BirimAyar'a birim bazlı çalışma günü anahtarları eklendi.
+        - HaftasonuCalismaVar  : Hafta sonu günlerinde bu birimde atama yapılır mı?
+        - ResmiTatilCalismaVar : Resmi tatillerde atama yapılır mı?
+        - DiniBayramCalismaVar : Dini bayram günlerinde atama yapılır mı?
 
-        Önceki sürümlerde ayrı migration'larla eklenen kolonlar
-        (v3: FmMaxSaat, v5: MaxGunlukSureDakika, v6: HaftasonuCalismaVar /
-         ResmiTatilCalismaVar / DiniBayramCalismaVar, v7: ArdisikGunIzinli)
-        ve tablolar (v4: NB_HazirlikOnay) bu CREATE TABLE bloklarına dahildir.
+        Not:
+          Eski DiniBayramAtama alanı geriye uyumluluk için korunur.
+          Yeni akışta UI/servisler bu 3 alanı esas almalıdır.
         """
         conn = self.connect()
+        cur  = conn.cursor()
         try:
-            cur = conn.cursor()
-            self._create_all_tables(cur)
-            self._seed_initial_data(cur)
-            self._seed_auth_data(cur)
-            self._set_schema_version(conn, 1, "Temiz kurulum (squash v1-v7)")
+            kolonlar = [
+                ("HaftasonuCalismaVar", 1),
+                ("ResmiTatilCalismaVar", 1),
+                ("DiniBayramCalismaVar", 0),
+            ]
+            for kolon, varsayilan in kolonlar:
+                try:
+                    cur.execute(
+                        f"ALTER TABLE NB_BirimAyar "
+                        f"ADD COLUMN {kolon} INTEGER NOT NULL DEFAULT {varsayilan}"
+                    )
+                    logger.info(f"v6: NB_BirimAyar.{kolon} kolonu eklendi")
+                except Exception as e:
+                    if "duplicate column" in str(e).lower():
+                        logger.info(f"v6: {kolon} zaten var, atlandı")
+                    else:
+                        raise
             conn.commit()
-            logger.info("v1: Tüm tablolar oluşturuldu")
-        except Exception:
-            conn.rollback()
-            raise
         finally:
             conn.close()
 
-    # ══════════════════════════════════════════════════════════════════════════
-    #  TABLO OLUŞTURMA — TEK GİRİŞ NOKTASI
-    # ══════════════════════════════════════════════════════════════════════════
-
-    def _create_all_tables(self, cur: sqlite3.Cursor) -> None:
-        """Tüm tabloları oluşturur. İdempotent — varsa atlar."""
-        self._create_core_tables(cur)
-        self._create_auth_tables(cur)
-        self._create_nb_tables(cur)
-
-    # ──────────────────────────────────────────────────────────────────────────
-    #  CORE TABLOLAR
-    # ──────────────────────────────────────────────────────────────────────────
-
-    def _create_core_tables(self, cur: sqlite3.Cursor) -> None:
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Personel (
-            KimlikNo                TEXT PRIMARY KEY,
-            AdSoyad                 TEXT,
-            DogumYeri               TEXT,
-            DogumTarihi             TEXT,
-            HizmetSinifi            TEXT,
-            KadroUnvani             TEXT,
-            GorevYeri               TEXT,
-            KurumSicilNo            TEXT,
-            MemuriyeteBaslamaTarihi TEXT,
-            CepTelefonu             TEXT,
-            Eposta                  TEXT,
-            MezunOlunanOkul         TEXT,
-            MezunOlunanFakulte      TEXT,
-            MezuniyetTarihi         TEXT,
-            DiplomaNo               TEXT,
-            MezunOlunanOkul2        TEXT,
-            MezunOlunanFakulte2     TEXT,
-            MezuniyetTarihi2        TEXT,
-            DiplomaNo2              TEXT,
-            Resim                   TEXT,
-            Diploma1                TEXT,
-            Diploma2                TEXT,
-            OzlukDosyasi            TEXT,
-            Durum                   TEXT,
-            AyrilisTarihi           TEXT,
-            AyrilmaNedeni           TEXT,
-            MuayeneTarihi           TEXT,
-            Sonuc                   TEXT,
-            sync_status             TEXT DEFAULT 'clean',
-            updated_at              TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Izin_Giris (
-            Izinid        TEXT PRIMARY KEY,
-            HizmetSinifi  TEXT,
-            Personelid    TEXT REFERENCES Personel(KimlikNo),
-            AdSoyad       TEXT,
-            IzinTipi      TEXT,
-            BaslamaTarihi TEXT,
-            Gun           INTEGER,
-            BitisTarihi   TEXT,
-            Durum         TEXT,
-            sync_status   TEXT DEFAULT 'clean',
-            updated_at    TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Izin_Bilgi (
-            TCKimlik             TEXT PRIMARY KEY REFERENCES Personel(KimlikNo),
-            AdSoyad              TEXT,
-            YillikDevir          REAL,
-            YillikHakedis        REAL,
-            YillikToplamHak      REAL,
-            YillikKullanilan     REAL,
-            YillikKalan          REAL,
-            SuaKullanilabilirHak REAL,
-            SuaKullanilan        REAL,
-            SuaKalan             REAL,
-            SuaCariYilKazanim    REAL,
-            RaporMazeretTop      REAL,
-            sync_status          TEXT DEFAULT 'clean',
-            updated_at           TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS FHSZ_Puantaj (
-            Personelid       TEXT    NOT NULL REFERENCES Personel(KimlikNo),
-            AdSoyad          TEXT,
-            Birim            TEXT,
-            CalismaKosulu    TEXT,
-            AitYil           INTEGER NOT NULL,
-            Donem            TEXT    NOT NULL,
-            AylikGun         INTEGER,
-            KullanilanIzin   INTEGER,
-            FiiliCalismaSaat REAL,
-            sync_status      TEXT DEFAULT 'clean',
-            updated_at       TEXT,
-            PRIMARY KEY (Personelid, AitYil, Donem)
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Cihazlar (
-            Cihazid              TEXT PRIMARY KEY,
-            CihazTipi            TEXT,
-            Marka                TEXT,
-            Model                TEXT,
-            Amac                 TEXT,
-            Kaynak               TEXT,
-            SeriNo               TEXT,
-            NDKSeriNo            TEXT,
-            HizmeteGirisTarihi   TEXT,
-            RKS                  TEXT,
-            Sorumlusu            TEXT,
-            Gorevi               TEXT,
-            NDKLisansNo          TEXT,
-            BaslamaTarihi        TEXT,
-            BitisTarihi          TEXT,
-            LisansDurum          TEXT,
-            AnaBilimDali         TEXT,
-            Birim                TEXT,
-            BulunduguBina        TEXT,
-            GarantiDurumu        TEXT,
-            GarantiBitisTarihi   TEXT,
-            DemirbasNo           TEXT,
-            KalibrasyonGereklimi TEXT,
-            BakimDurum           TEXT,
-            Durum                TEXT,
-            Img                  TEXT,
-            NDKLisansBelgesi     TEXT,
-            sync_status          TEXT DEFAULT 'clean',
-            updated_at           TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Dokumanlar (
-            EntityType        TEXT NOT NULL,
-            EntityId          TEXT NOT NULL,
-            BelgeTuru         TEXT NOT NULL,
-            Belge             TEXT NOT NULL,
-            DokumanId         TEXT,
-            DocType           TEXT,
-            DisplayName       TEXT,
-            LocalPath         TEXT,
-            BelgeAciklama     TEXT,
-            YuklenmeTarihi    TEXT,
-            DrivePath         TEXT,
-            IliskiliBelgeID   TEXT,
-            IliskiliBelgeTipi TEXT,
-            sync_status       TEXT DEFAULT 'clean',
-            updated_at        TEXT,
-            PRIMARY KEY (EntityType, EntityId, BelgeTuru, Belge)
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Cihaz_Ariza (
-            Arizaid         TEXT PRIMARY KEY,
-            Cihazid         TEXT REFERENCES Cihazlar(Cihazid),
-            BaslangicTarihi TEXT,
-            Saat            TEXT,
-            Bildiren        TEXT,
-            ArizaTipi       TEXT,
-            Oncelik         TEXT,
-            Baslik          TEXT,
-            ArizaAcikla     TEXT,
-            Durum           TEXT,
-            Rapor           TEXT,
-            sync_status     TEXT DEFAULT 'clean',
-            updated_at      TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Ariza_Islem (
-            Islemid     TEXT PRIMARY KEY,
-            Arizaid     TEXT REFERENCES Cihaz_Ariza(Arizaid),
-            Tarih       TEXT,
-            Saat        TEXT,
-            IslemYapan  TEXT,
-            IslemTuru   TEXT,
-            YapilanIslem TEXT,
-            YeniDurum   TEXT,
-            Rapor       TEXT,
-            sync_status TEXT DEFAULT 'clean',
-            updated_at  TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Periyodik_Bakim (
-            Planid          TEXT PRIMARY KEY,
-            Cihazid         TEXT REFERENCES Cihazlar(Cihazid),
-            BakimPeriyodu   TEXT,
-            BakimSirasi     INTEGER,
-            PlanlananTarih  TEXT,
-            Bakim           TEXT,
-            Durum           TEXT,
-            BakimTarihi     TEXT,
-            BakimTipi       TEXT,
-            YapilanIslemler TEXT,
-            Aciklama        TEXT,
-            Teknisyen       TEXT,
-            Rapor           TEXT,
-            SozlesmeId      TEXT,
-            sync_status     TEXT DEFAULT 'clean',
-            updated_at      TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Kalibrasyon (
-            Kalid        TEXT PRIMARY KEY,
-            Cihazid      TEXT REFERENCES Cihazlar(Cihazid),
-            Firma        TEXT,
-            SertifikaNo  TEXT,
-            YapilanTarih TEXT,
-            Gecerlilik   TEXT,
-            BitisTarihi  TEXT,
-            Durum        TEXT,
-            Dosya        TEXT,
-            Aciklama     TEXT,
-            sync_status  TEXT DEFAULT 'clean',
-            updated_at   TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Sabitler (
-            Rowid       TEXT PRIMARY KEY,
-            Kod         TEXT,
-            MenuEleman  TEXT,
-            Aciklama    TEXT,
-            sync_status TEXT DEFAULT 'clean',
-            updated_at  TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Tatiller (
-            Tarih       TEXT PRIMARY KEY,
-            ResmiTatil  TEXT,
-            sync_status TEXT DEFAULT 'clean',
-            updated_at  TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Loglar (
-            Tarih     TEXT,
-            Saat      TEXT,
-            Kullanici TEXT,
-            Modul     TEXT,
-            Islem     TEXT,
-            Detay     TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS RKE_List (
-            EkipmanNo        TEXT PRIMARY KEY,
-            KoruyucuNumarasi TEXT,
-            AnaBilimDali     TEXT,
-            Birim            TEXT,
-            KoruyucuCinsi    TEXT,
-            KursunEsdegeri   TEXT,
-            HizmetYili       INTEGER,
-            Bedeni           TEXT,
-            KontrolTarihi    TEXT,
-            Durum            TEXT,
-            Aciklama         TEXT,
-            VarsaDemirbasNo  TEXT,
-            KayitTarih       TEXT,
-            Barkod           TEXT,
-            sync_status      TEXT DEFAULT 'clean',
-            updated_at       TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS RKE_Muayene (
-            KayitNo              TEXT PRIMARY KEY,
-            EkipmanNo            TEXT REFERENCES RKE_List(EkipmanNo),
-            FMuayeneTarihi       TEXT,
-            FizikselDurum        TEXT,
-            SMuayeneTarihi       TEXT,
-            SkopiDurum           TEXT,
-            Aciklamalar          TEXT,
-            KontrolEdenUnvani    TEXT,
-            BirimSorumlusuUnvani TEXT,
-            Notlar               TEXT,
-            Rapor                TEXT,
-            sync_status          TEXT DEFAULT 'clean',
-            updated_at           TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Personel_Saglik_Takip (
-            KayitNo                  TEXT PRIMARY KEY,
-            Personelid               TEXT REFERENCES Personel(KimlikNo),
-            AdSoyad                  TEXT,
-            Birim                    TEXT,
-            Yil                      INTEGER,
-            MuayeneTarihi            TEXT,
-            SonrakiKontrolTarihi     TEXT,
-            Sonuc                    TEXT,
-            Durum                    TEXT,
-            RaporDosya               TEXT,
-            Notlar                   TEXT,
-            DermatolojiMuayeneTarihi TEXT,
-            DermatolojiDurum         TEXT,
-            DahiliyeMuayeneTarihi    TEXT,
-            DahiliyeDurum            TEXT,
-            GozMuayeneTarihi         TEXT,
-            GozDurum                 TEXT,
-            GoruntulemeMuayeneTarihi TEXT,
-            GoruntulemeDurum         TEXT,
-            sync_status              TEXT DEFAULT 'clean',
-            updated_at               TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Dozimetre_Olcum (
-            KayitNo         TEXT PRIMARY KEY,
-            RaporNo         TEXT,
-            Periyot         INTEGER,
-            PeriyotAdi      TEXT,
-            Yil             INTEGER,
-            DozimetriTipi   TEXT,
-            AdSoyad         TEXT,
-            CalistiBirim    TEXT,
-            PersonelID      TEXT REFERENCES Personel(KimlikNo),
-            DozimetreNo     TEXT,
-            VucutBolgesi    TEXT,
-            Hp10            REAL,
-            Hp007           REAL,
-            Durum           TEXT,
-            OlusturmaTarihi TEXT DEFAULT (date('now')),
-            sync_status     TEXT DEFAULT 'clean',
-            updated_at      TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Dis_Alan_Calisma (
-            TCKimlik          TEXT    NOT NULL DEFAULT '',
-            AdSoyad           TEXT    NOT NULL,
-            DonemAy           INTEGER NOT NULL CHECK (DonemAy BETWEEN 1 AND 12),
-            DonemYil          INTEGER NOT NULL CHECK (DonemYil > 2000),
-            AnaBilimDali      TEXT    NOT NULL DEFAULT '',
-            Birim             TEXT    NOT NULL DEFAULT '',
-            IslemTipi         TEXT    NOT NULL,
-            Katsayi           REAL    NOT NULL,
-            VakaSayisi        INTEGER NOT NULL CHECK (VakaSayisi > 0),
-            HesaplananSaat    REAL    NOT NULL,
-            TutanakNo         TEXT    NOT NULL,
-            TutanakTarihi     TEXT    NOT NULL,
-            KayitTarihi       TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
-            KaydedenKullanici TEXT,
-            PRIMARY KEY (TCKimlik, DonemAy, DonemYil, TutanakNo)
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Dis_Alan_Izin_Ozet (
-            TCKimlik        TEXT    NOT NULL DEFAULT '',
-            AdSoyad         TEXT    NOT NULL,
-            DonemAy         INTEGER NOT NULL CHECK (DonemAy BETWEEN 1 AND 12),
-            DonemYil        INTEGER NOT NULL CHECK (DonemYil > 2000),
-            ToplamSaat      REAL    NOT NULL DEFAULT 0.0,
-            IzinGunHakki    REAL    NOT NULL DEFAULT 0.0,
-            HesaplamaTarihi TEXT,
-            RksOnay         INTEGER NOT NULL DEFAULT 0 CHECK (RksOnay IN (0,1)),
-            Notlar          TEXT,
-            PRIMARY KEY (TCKimlik, AdSoyad, DonemAy, DonemYil)
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Dis_Alan_Katsayi_Protokol (
-            AnaBilimDali        TEXT NOT NULL,
-            Birim               TEXT NOT NULL,
-            GecerlilikBaslangic TEXT NOT NULL,
-            Katsayi             REAL NOT NULL,
-            OrtSureDk           INTEGER,
-            AlanTipAciklama     TEXT,
-            AciklamaFormul      TEXT,
-            ProtokolRef         TEXT,
-            GecerlilikBitis     TEXT,
-            Aktif               INTEGER NOT NULL DEFAULT 1 CHECK (Aktif IN (0,1)),
-            KayitTarihi         TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
-            KaydedenKullanici   TEXT,
-            PRIMARY KEY (AnaBilimDali, Birim, GecerlilikBaslangic)
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Cihaz_Teknik (
-            Cihazid                      TEXT PRIMARY KEY REFERENCES Cihazlar(Cihazid),
-            BirincilUrunNumarasi         TEXT,
-            KurumUnvan                   TEXT,
-            MarkaAdi                     TEXT,
-            EtiketAdi                    TEXT,
-            VersiyonModel                TEXT,
-            UrunTipi                     TEXT,
-            Sinif                        TEXT,
-            KatalogNo                    TEXT,
-            GmdnTerimKod                 TEXT,
-            GmdnTerimTurkceAd            TEXT,
-            TemelUdiDi                   TEXT,
-            UrunTanimi                   TEXT,
-            Aciklama                     TEXT,
-            KurumGorunenAd               TEXT,
-            KurumNo                      TEXT,
-            KurumTelefon                 TEXT,
-            KurumEposta                  TEXT,
-            IthalImalBilgisi             TEXT,
-            MenseiUlkeSet                TEXT,
-            IthalEdilenUlkeSet           TEXT,
-            SutEslesmesiSet              TEXT,
-            Durum                        TEXT,
-            CihazKayitTipi               TEXT,
-            UtsBaslangicTarihi           TEXT,
-            KontroleGonderildigiTarih    TEXT,
-            KalibrasyonaTabiMi           TEXT,
-            KalibrasyonPeriyodu          TEXT,
-            BakimaTabiMi                 TEXT,
-            BakimPeriyodu                TEXT,
-            MrgUyumlu                    TEXT,
-            IyonizeRadyasyonIcerir       TEXT,
-            TekHastayaKullanilabilir     TEXT,
-            SinirliKullanimSayisiVar     TEXT,
-            SinirliKullanimSayisi        TEXT,
-            BaskaImalatciyaUrettirildiMi TEXT,
-            GmdnTerimTurkceAciklama      TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Cihaz_Teknik_Belge (
-            Cihazid        TEXT NOT NULL REFERENCES Cihazlar(Cihazid),
-            BelgeTuru      TEXT NOT NULL,
-            Belge          TEXT NOT NULL,
-            BelgeAdi       TEXT,
-            YuklenmeTarihi TEXT,
-            DrivePath      TEXT,
-            LocalPath      TEXT,
-            PRIMARY KEY (Cihazid, BelgeTuru, Belge)
-        )
-        """)
-
-    # ──────────────────────────────────────────────────────────────────────────
-    #  AUTH TABLOLAR
-    # ──────────────────────────────────────────────────────────────────────────
-
-    def _create_auth_tables(self, cur: sqlite3.Cursor) -> None:
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Users (
-            UserId             INTEGER PRIMARY KEY AUTOINCREMENT,
-            Username           TEXT    UNIQUE NOT NULL,
-            PasswordHash       TEXT    NOT NULL,
-            IsActive           INTEGER NOT NULL DEFAULT 1,
-            MustChangePassword INTEGER NOT NULL DEFAULT 0,
-            CreatedAt          TEXT    NOT NULL,
-            LastLoginAt        TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Roles (
-            RoleId   INTEGER PRIMARY KEY AUTOINCREMENT,
-            RoleName TEXT UNIQUE NOT NULL
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS Permissions (
-            PermissionId  INTEGER PRIMARY KEY AUTOINCREMENT,
-            PermissionKey TEXT UNIQUE NOT NULL,
-            Description   TEXT
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS UserRoles (
-            UserId INTEGER NOT NULL REFERENCES Users(UserId),
-            RoleId INTEGER NOT NULL REFERENCES Roles(RoleId),
-            PRIMARY KEY (UserId, RoleId)
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS RolePermissions (
-            RoleId       INTEGER NOT NULL REFERENCES Roles(RoleId),
-            PermissionId INTEGER NOT NULL REFERENCES Permissions(PermissionId),
-            PRIMARY KEY (RoleId, PermissionId)
-        )
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS AuthAudit (
-            AuditId   INTEGER PRIMARY KEY AUTOINCREMENT,
-            Username  TEXT,
-            Success   INTEGER NOT NULL,
-            Reason    TEXT,
-            CreatedAt TEXT NOT NULL
-        )
-        """)
-
-    # ──────────────────────────────────────────────────────────────────────────
-    #  NÖBET MODÜLÜ TABLOLAR  (eski v2-v7 squash)
-    # ──────────────────────────────────────────────────────────────────────────
-
-    def _create_nb_tables(self, cur: sqlite3.Cursor) -> None:
+    def _migrate_to_v9(self):
         """
-        NB_ (New Build) nöbet modülü tabloları.
-        Tüm kolonlar (v3-v7 eklentileri dahil) bu tanımda mevcut.
+        v9: Doz_Arastirma_Formu tablosu sadeleştirildi.
+
+        v8'deki 66 sütunluk tablo DROP edilip 8 sütunluk meta tablo
+        oluşturuluyor. Form detayları PDF'de tutulur; DB yalnızca
+        "bu periyot için form var mı?" sorusunu yanıtlar.
+
+        Mevcut veri: v8 tablosu zaten boş olmalı (prod'a henüz yazılmadı).
+        Veri varsa FormNo + PdfYolu korunur, geri kalan kaybolur.
         """
+        conn = self.connect()
+        cur  = conn.cursor()
+        try:
+            # Mevcut kayıtları yedekle (FormNo + PdfYolu varsa)
+            try:
+                cur.execute(
+                    "SELECT FormNo, PersonelID, Yil, Periyot, OlculenDoz "
+                    "FROM Doz_Arastirma_Formu"
+                )
+                yedek = cur.fetchall()
+            except Exception:
+                yedek = []
+
+            # Eski tabloyu sil
+            cur.execute("DROP TABLE IF EXISTS Doz_Arastirma_Formu")
+
+            # Yeni sade tablo
+            cur.execute("""
+            CREATE TABLE Doz_Arastirma_Formu (
+                FormNo          TEXT PRIMARY KEY,
+                PersonelID      TEXT NOT NULL DEFAULT '',
+                OlcumKayitNo    TEXT,
+                Yil             INTEGER,
+                Periyot         INTEGER,
+                OlculenDoz      REAL,
+                PdfYolu         TEXT,
+                OlusturmaTarihi TEXT DEFAULT (date('now'))
+            )
+            """)
+
+            # Yedeklenmiş kayıtları geri yaz
+            for row in yedek:
+                try:
+                    cur.execute(
+                        "INSERT OR IGNORE INTO Doz_Arastirma_Formu "
+                        "(FormNo, PersonelID, Yil, Periyot, OlculenDoz) "
+                        "VALUES (?, ?, ?, ?, ?)",
+                        row
+                    )
+                except Exception:
+                    pass
+
+            conn.commit()
+            logger.info(f"v9: Doz_Arastirma_Formu sadeleştirildi ({len(yedek)} kayıt korundu)")
+        finally:
+            conn.close()
+
+    def _migrate_to_v8(self):
+        """
+        v8: Doz_Arastirma_Formu tablosu eklendi.
+        TAEK/RADAT RD.F43 Doz Araştırma Formu kayıtları için.
+        """
+        conn = self.connect()
+        cur  = conn.cursor()
+        try:
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS Doz_Arastirma_Formu (
+                FormNo              TEXT PRIMARY KEY,
+                OlcumKayitNo        TEXT,
+                PersonelID          TEXT NOT NULL DEFAULT '',
+                AdSoyad             TEXT,
+                TCKimlik            TEXT,
+                KurulusAdi          TEXT,
+                KurulusKodu         TEXT,
+                UygulamaAlani       TEXT,
+                Meslek              TEXT,
+                Yil                 INTEGER,
+                Periyot             INTEGER,
+                Sure                TEXT,
+                OlculenDoz          REAL,
+                DozimetreNo         TEXT,
+                DozimetriTipi       TEXT,
+                CalismaGunSayisi    INTEGER,
+                GunlukCalismaSaat   INTEGER,
+                KaynakXIsini        INTEGER DEFAULT 0,
+                KaynakKapali        INTEGER DEFAULT 0,
+                KaynakAcik          INTEGER DEFAULT 0,
+                KaynakTesis         INTEGER DEFAULT 0,
+                KaynakDiger         TEXT,
+                S3_BaskasıKullandi  TEXT,
+                S3_Aciklama         TEXT,
+                S4_RadAlaniMuhafaza TEXT,
+                S4_Aciklama         TEXT,
+                S5_RadAlaniUnutuldu TEXT,
+                S5_SureSaat         REAL,
+                S5_MesafeM          REAL,
+                S5_Aciklama         TEXT,
+                S6_TetkikSirasinda  TEXT,
+                S6_Aciklama         TEXT,
+                KorunmaParavan      INTEGER DEFAULT 0,
+                KorunmaOnluk        INTEGER DEFAULT 0,
+                KorunmaGozluk       INTEGER DEFAULT 0,
+                KorunmaTiroid       INTEGER DEFAULT 0,
+                KorunmaEldiven      INTEGER DEFAULT 0,
+                DzPositionYaka      INTEGER DEFAULT 0,
+                DzPositionKemer     INTEGER DEFAULT 0,
+                DzPositionGomlek    INTEGER DEFAULT 0,
+                DzPositionOnlukUst  INTEGER DEFAULT 0,
+                DzPositionOnlukAlt  INTEGER DEFAULT 0,
+                DzPositionElBilek   INTEGER DEFAULT 0,
+                S9_RadKirlilik      TEXT,
+                S9_Izotop           TEXT,
+                Yorum_HataliKullanim  INTEGER DEFAULT 0,
+                Yorum_CalKosulu       INTEGER DEFAULT 0,
+                Yorum_KasitliIsinlama INTEGER DEFAULT 0,
+                Yorum_Diger           TEXT,
+                KullaniciAciklama     TEXT,
+                SC1_TesisDegisim    TEXT,
+                SC1_Aciklama        TEXT,
+                SC2_KorunmaBilgi    TEXT,
+                SC3_Egitim          TEXT,
+                SC4_OlaganDisi      TEXT,
+                SC4_Aciklama        TEXT,
+                SC5_DigerArtis      TEXT,
+                SC5_Aciklama        TEXT,
+                SC6_RadArtis        TEXT,
+                SC6_Aciklama        TEXT,
+                HesaplananDoz       REAL,
+                Sor_HataliKullanim    INTEGER DEFAULT 0,
+                Sor_CalKosulu         INTEGER DEFAULT 0,
+                Sor_KasitliIsinlama   INTEGER DEFAULT 0,
+                Sor_Diger             TEXT,
+                SorumluAciklama       TEXT,
+                FormTarihi          TEXT,
+                OlusturmaTarihi     TEXT DEFAULT (date('now')),
+                GuncellemeTarihi    TEXT,
+                FOREIGN KEY (PersonelID) REFERENCES Personel(KimlikNo)
+            )
+            """)
+            logger.info("v8: Doz_Arastirma_Formu tablosu oluşturuldu")
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _migrate_to_v7(self):
+        """
+        v7: NB_BirimAyar'a ArdisikGunIzinli kolonu eklendi.
+        - ArdisikGunIzinli: 1 ise ardışık gün atamaya izin verilir.
+        """
+        conn = self.connect()
+        cur  = conn.cursor()
+        try:
+            try:
+                cur.execute(
+                    "ALTER TABLE NB_BirimAyar "
+                    "ADD COLUMN ArdisikGunIzinli INTEGER NOT NULL DEFAULT 0"
+                )
+                logger.info("v7: NB_BirimAyar.ArdisikGunIzinli kolonu eklendi")
+            except Exception as e:
+                if "duplicate column" in str(e).lower():
+                    logger.info("v7: ArdisikGunIzinli zaten var, atlandı")
+                else:
+                    raise
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _migrate_to_v5(self):
+        """
+        v5: NB_BirimAyar'a MaxGunlukSureDakika kolonu eklendi.
+        Birim bazlı: o birimin personeli aynı günde max kaç dakika nöbet tutabilir.
+        720 = 12 saat (varsayılan, sadece 1 vardiya), 1440 = 24 saat (gündüz+gece).
+        """
+        conn = self.connect()
+        cur  = conn.cursor()
+        try:
+            cur.execute("""
+                ALTER TABLE NB_BirimAyar
+                ADD COLUMN MaxGunlukSureDakika INTEGER NOT NULL DEFAULT 720
+            """)
+            conn.commit()
+            logger.info("v5: NB_BirimAyar.MaxGunlukSureDakika kolonu eklendi")
+        except Exception as e:
+            if "duplicate column" in str(e).lower():
+                logger.info("v5: MaxGunlukSureDakika zaten var, atlandı")
+            else:
+                raise
+        finally:
+            conn.close()
+
+    def _migrate_to_v4(self):
+        """
+        v4: NB_HazirlikOnay tablosu eklendi.
+        Nöbet planı yapmadan önce ön hazırlık onayı gerektirir.
+        """
+        conn = self.connect()
+        cur  = conn.cursor()
+        try:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS NB_HazirlikOnay (
+                    OnayID      TEXT PRIMARY KEY,
+                    BirimID     TEXT NOT NULL REFERENCES NB_Birim(BirimID),
+                    Yil         INTEGER NOT NULL,
+                    Ay          INTEGER NOT NULL CHECK(Ay BETWEEN 1 AND 12),
+                    Durum       TEXT NOT NULL DEFAULT 'onaylandi',
+                    OnayTarihi  TEXT NOT NULL,
+                    Notlar      TEXT,
+                    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+                    UNIQUE(BirimID, Yil, Ay)
+                )
+            """)
+            conn.commit()
+            logger.info("v4: NB_HazirlikOnay tablosu oluşturuldu")
+        finally:
+            conn.close()
+
+    def _migrate_to_v3(self):
+        """
+        v3: NB_BirimAyar'a FmMaxSaat kolonu eklendi.
+        FM Gönüllünün ayda yapabileceği max fazla mesai saati.
+        """
+        conn = self.connect()
+        cur  = conn.cursor()
+        try:
+            cur.execute("""
+                ALTER TABLE NB_BirimAyar
+                ADD COLUMN FmMaxSaat INTEGER NOT NULL DEFAULT 60
+            """)
+            conn.commit()
+            logger.info("v3: NB_BirimAyar.FmMaxSaat kolonu eklendi")
+        except Exception as e:
+            if "duplicate column" in str(e).lower():
+                logger.info("v3: FmMaxSaat zaten var, atlandı")
+            else:
+                raise
+        finally:
+            conn.close()
+
+    def _migrate_to_v1(self):
+        """v1: Tum tablolar - temiz kurulum."""
+        conn = self.connect()
+        cur = conn.cursor()
+        try:
+            self.create_tables(cur)
+            self._seed_initial_data(cur)
+            self._seed_auth_data(cur)
+            conn.commit()
+            logger.info("v1: Tum tablolar olusturuldu")
+        finally:
+            conn.close()
+
+    def _migrate_to_v2(self):
+        """
+        v2: Nöbet modülü — sıfırdan temiz tasarım.
+
+        Yeni tablolar (NB_ prefix = New Build):
+          NB_Birim          — Birim tanımları (Sabitler bağımsız)
+          NB_BirimAyar      — Birime özgü planlama kuralları
+          NB_VardiyaGrubu   — Vardiya grubu (slot kavramı)
+          NB_Vardiya        — Vardiya zaman dilimi
+          NB_PersonelTercih — Aylık personel nöbet talebi / hedefi
+          NB_Plan           — Aylık plan başlığı (versiyonlu)
+          NB_PlanSatir      — Tek nöbet kaydı (silinmez, iptal edilir)
+          NB_MesaiHesap     — Aylık mesai özeti (birim bazlı)
+          NB_MesaiKural     — Mesai ödeme kuralları (tarih aralıklı)
+
+        NOT: Personel.GorevYeri FHSZ kapsamında korunur, dokunulmaz.
+             Nöbet birim bağlantısı NB_Birim üzerinden kurulur.
+        """
+        conn = self.connect()
+        cur  = conn.cursor()
+        try:
+            self._nb_create_tables(cur)
+            self._nb_seed_birimler(cur)
+            conn.commit()
+            logger.info("v2: Nobet modulu (NB_) tablolari olusturuldu")
+        finally:
+            conn.close()
+
+    # ════════════════════════════════════════════════════════
+    #  NÖBET MODÜLÜ — TABLO OLUŞTURMA (v2)
+    # ════════════════════════════════════════════════════════
+
+    def _nb_create_tables(self, cur):
+        """NB_ tablolarını oluşturur. İdempotent — varsa atlar."""
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS NB_Birim (
-            BirimID    TEXT PRIMARY KEY,
-            BirimKodu  TEXT NOT NULL UNIQUE,
-            BirimAdi   TEXT NOT NULL,
-            BirimTipi  TEXT NOT NULL DEFAULT 'radyoloji',
-            UstBirimID TEXT REFERENCES NB_Birim(BirimID),
-            Aktif      INTEGER NOT NULL DEFAULT 1,
-            Sira       INTEGER NOT NULL DEFAULT 99,
-            Aciklama   TEXT,
-            created_at TEXT NOT NULL DEFAULT (datetime('now')),
-            updated_at TEXT,
-            created_by TEXT,
-            is_deleted INTEGER NOT NULL DEFAULT 0
+            BirimID      TEXT PRIMARY KEY,
+            BirimKodu    TEXT NOT NULL UNIQUE,
+            BirimAdi     TEXT NOT NULL,
+            BirimTipi    TEXT NOT NULL DEFAULT 'radyoloji',
+            UstBirimID   TEXT REFERENCES NB_Birim(BirimID),
+            Aktif        INTEGER NOT NULL DEFAULT 1,
+            Sira         INTEGER NOT NULL DEFAULT 99,
+            Aciklama     TEXT,
+            created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at   TEXT,
+            created_by   TEXT,
+            is_deleted   INTEGER NOT NULL DEFAULT 0
         )
         """)
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS NB_BirimAyar (
-            AyarID                TEXT    PRIMARY KEY,
-            BirimID               TEXT    NOT NULL REFERENCES NB_Birim(BirimID),
+            AyarID                TEXT PRIMARY KEY,
+            BirimID               TEXT NOT NULL REFERENCES NB_Birim(BirimID),
             GunlukSlotSayisi      INTEGER NOT NULL DEFAULT 4,
             GunlukSlotDakika      INTEGER,
-            CalismaModu           TEXT    NOT NULL DEFAULT 'tam_gun',
+            CalismaModu           TEXT NOT NULL DEFAULT 'tam_gun',
             OtomatikBolunme       INTEGER NOT NULL DEFAULT 1,
             GunlukHedefDakika     INTEGER NOT NULL DEFAULT 420,
             HaftasonuNobetZorunlu INTEGER NOT NULL DEFAULT 1,
             DiniBayramAtama       INTEGER NOT NULL DEFAULT 0,
-            -- v6: birim bazlı çalışma günü anahtarları
             HaftasonuCalismaVar   INTEGER NOT NULL DEFAULT 1,
             ResmiTatilCalismaVar  INTEGER NOT NULL DEFAULT 1,
             DiniBayramCalismaVar  INTEGER NOT NULL DEFAULT 0,
-            -- v7: ardışık gün toleransı
             ArdisikGunIzinli      INTEGER NOT NULL DEFAULT 0,
-            -- v3: FM gönüllü aylık max saat
-            FmMaxSaat             INTEGER NOT NULL DEFAULT 60,
-            -- v5: birim bazlı günlük max nöbet süresi
-            MaxGunlukSureDakika   INTEGER NOT NULL DEFAULT 720,
             GeserlilikBaslangic   TEXT,
             GeserlilikBitis       TEXT,
-            created_at            TEXT    NOT NULL DEFAULT (datetime('now')),
+            created_at            TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at            TEXT,
-            UNIQUE (BirimID, GeserlilikBaslangic)
+            UNIQUE(BirimID, GeserlilikBaslangic)
         )
         """)
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS NB_VardiyaGrubu (
-            GrupID   TEXT PRIMARY KEY,
-            BirimID  TEXT NOT NULL REFERENCES NB_Birim(BirimID),
-            GrupAdi  TEXT NOT NULL,
-            GrupTuru TEXT NOT NULL DEFAULT 'zorunlu',
-            Sira     INTEGER NOT NULL DEFAULT 1,
-            Aktif    INTEGER NOT NULL DEFAULT 1,
+            GrupID     TEXT PRIMARY KEY,
+            BirimID    TEXT NOT NULL REFERENCES NB_Birim(BirimID),
+            GrupAdi    TEXT NOT NULL,
+            GrupTuru   TEXT NOT NULL DEFAULT 'zorunlu',
+            Sira       INTEGER NOT NULL DEFAULT 1,
+            Aktif      INTEGER NOT NULL DEFAULT 1,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at TEXT,
-            UNIQUE (BirimID, GrupAdi)
+            UNIQUE(BirimID, GrupAdi)
         )
         """)
 
@@ -777,7 +521,7 @@ class MigrationManager:
             PersonelID        TEXT NOT NULL REFERENCES Personel(KimlikNo),
             BirimID           TEXT NOT NULL REFERENCES NB_Birim(BirimID),
             Yil               INTEGER NOT NULL,
-            Ay                INTEGER NOT NULL CHECK (Ay BETWEEN 1 AND 12),
+            Ay                INTEGER NOT NULL CHECK(Ay BETWEEN 1 AND 12),
             NobetTercihi      TEXT NOT NULL DEFAULT 'zorunlu',
             HedefDakika       INTEGER,
             HedefTipi         TEXT NOT NULL DEFAULT 'normal',
@@ -790,18 +534,18 @@ class MigrationManager:
             OnayTarihi        TEXT,
             created_at        TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at        TEXT,
-            UNIQUE (PersonelID, BirimID, Yil, Ay)
+            UNIQUE(PersonelID, BirimID, Yil, Ay)
         )
         """)
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS NB_Plan (
             PlanID                 TEXT PRIMARY KEY,
-            BirimID                TEXT    NOT NULL REFERENCES NB_Birim(BirimID),
+            BirimID                TEXT NOT NULL REFERENCES NB_Birim(BirimID),
             Yil                    INTEGER NOT NULL,
-            Ay                     INTEGER NOT NULL CHECK (Ay BETWEEN 1 AND 12),
+            Ay                     INTEGER NOT NULL CHECK(Ay BETWEEN 1 AND 12),
             Versiyon               INTEGER NOT NULL DEFAULT 1,
-            Durum                  TEXT    NOT NULL DEFAULT 'taslak',
+            Durum                  TEXT NOT NULL DEFAULT 'taslak',
             AlgoritmaVersiyon      TEXT,
             OlusturmaParametreleri TEXT,
             Notlar                 TEXT,
@@ -810,7 +554,7 @@ class MigrationManager:
             created_at             TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at             TEXT,
             created_by             TEXT,
-            UNIQUE (BirimID, Yil, Ay, Versiyon)
+            UNIQUE(BirimID, Yil, Ay, Versiyon)
         )
         """)
 
@@ -838,11 +582,11 @@ class MigrationManager:
         cur.execute("""
         CREATE TABLE IF NOT EXISTS NB_MesaiHesap (
             HesapID           TEXT PRIMARY KEY,
-            PersonelID        TEXT    NOT NULL REFERENCES Personel(KimlikNo),
-            BirimID           TEXT    NOT NULL REFERENCES NB_Birim(BirimID),
-            PlanID            TEXT    NOT NULL REFERENCES NB_Plan(PlanID),
+            PersonelID        TEXT NOT NULL REFERENCES Personel(KimlikNo),
+            BirimID           TEXT NOT NULL REFERENCES NB_Birim(BirimID),
+            PlanID            TEXT NOT NULL REFERENCES NB_Plan(PlanID),
             Yil               INTEGER NOT NULL,
-            Ay                INTEGER NOT NULL CHECK (Ay BETWEEN 1 AND 12),
+            Ay                INTEGER NOT NULL CHECK(Ay BETWEEN 1 AND 12),
             CalisDakika       INTEGER NOT NULL DEFAULT 0,
             HedefDakika       INTEGER NOT NULL DEFAULT 0,
             FazlaDakika       INTEGER NOT NULL DEFAULT 0,
@@ -850,11 +594,11 @@ class MigrationManager:
             ToplamFazlaDakika INTEGER NOT NULL DEFAULT 0,
             OdenenDakika      INTEGER NOT NULL DEFAULT 0,
             DevireGidenDakika INTEGER NOT NULL DEFAULT 0,
-            HesapDurumu       TEXT    NOT NULL DEFAULT 'taslak',
+            HesapDurumu       TEXT NOT NULL DEFAULT 'taslak',
             HesapTarihi       TEXT,
-            created_at        TEXT    NOT NULL DEFAULT (datetime('now')),
+            created_at        TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at        TEXT,
-            UNIQUE (PersonelID, BirimID, Yil, Ay, PlanID)
+            UNIQUE(PersonelID, BirimID, Yil, Ay, PlanID)
         )
         """)
 
@@ -874,45 +618,642 @@ class MigrationManager:
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS NB_BirimPersonel (
-            ID             TEXT PRIMARY KEY,
-            BirimID        TEXT    NOT NULL REFERENCES NB_Birim(BirimID),
-            PersonelID     TEXT    NOT NULL REFERENCES Personel(KimlikNo),
-            Rol            TEXT    NOT NULL DEFAULT 'teknisyen',
-            GorevBaslangic TEXT    NOT NULL,
-            GorevBitis     TEXT,
-            AnabirimMi     INTEGER NOT NULL DEFAULT 1,
-            Aktif          INTEGER NOT NULL DEFAULT 1,
-            Notlar         TEXT,
-            created_at     TEXT    NOT NULL DEFAULT (datetime('now')),
-            updated_at     TEXT,
-            UNIQUE (BirimID, PersonelID, GorevBaslangic)
+            ID               TEXT PRIMARY KEY,
+            BirimID          TEXT NOT NULL REFERENCES NB_Birim(BirimID),
+            PersonelID       TEXT NOT NULL REFERENCES Personel(KimlikNo),
+            -- teknisyen | uzman | sorumlu | asistan
+            Rol              TEXT NOT NULL DEFAULT 'teknisyen',
+            GorevBaslangic   TEXT NOT NULL,
+            GorevBitis       TEXT,
+            -- 1: ana birim  0: ikinci birim (rotasyon, geçici görev)
+            AnabirimMi       INTEGER NOT NULL DEFAULT 1,
+            Aktif            INTEGER NOT NULL DEFAULT 1,
+            Notlar           TEXT,
+            created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at       TEXT,
+            UNIQUE(BirimID, PersonelID, GorevBaslangic)
         )
         """)
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_nb_birimper_personel ON NB_BirimPersonel(PersonelID)")
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_nb_birimper_birim    ON NB_BirimPersonel(BirimID)")
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_nb_birimper_personel "
+            "ON NB_BirimPersonel(PersonelID)"
+        )
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_nb_birimper_birim "
+            "ON NB_BirimPersonel(BirimID)"
+        )
 
-        # v4: Nöbet hazırlık onayı (plan başlamadan önce)
+    def _nb_seed_birimler(self, cur):
+        """Sabitler.Birim kayıtlarını NB_Birim'e taşır. İdempotent."""
+        try:
+            cur.execute("""
+                INSERT OR IGNORE INTO NB_Birim
+                    (BirimID, BirimKodu, BirimAdi, Aktif, Sira, created_at)
+                SELECT
+                    lower(hex(randomblob(16))),
+                    upper(replace(replace(replace(replace(replace(
+                        trim(MenuEleman),
+                        ' ', '_'), 'İ', 'I'), 'Ş', 'S'), 'Ğ', 'G'), 'Ü', 'U')),
+                    trim(MenuEleman),
+                    1,
+                    row_number() OVER (ORDER BY MenuEleman),
+                    datetime('now')
+                FROM Sabitler
+                WHERE Kod = 'Birim'
+                  AND MenuEleman IS NOT NULL
+                  AND trim(MenuEleman) != ''
+            """)
+            n = cur.rowcount
+            if n > 0:
+                logger.info(f"v2 seed: {n} birim Sabitler → NB_Birim aktarildi")
+        except Exception as e:
+            logger.debug(f"v2 seed birimler: {e}")
+
+    # ════════════════════════════════════════════════════════
+    #  TABLO OLUSTURMA
+    # ════════════════════════════════════════════════════════
+
+    def create_tables(self, cur):
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS NB_HazirlikOnay (
-            OnayID     TEXT PRIMARY KEY,
-            BirimID    TEXT    NOT NULL REFERENCES NB_Birim(BirimID),
-            Yil        INTEGER NOT NULL,
-            Ay         INTEGER NOT NULL CHECK (Ay BETWEEN 1 AND 12),
-            Durum      TEXT    NOT NULL DEFAULT 'onaylandi',
-            OnayTarihi TEXT    NOT NULL,
-            Notlar     TEXT,
-            created_at TEXT    NOT NULL DEFAULT (datetime('now')),
-            UNIQUE (BirimID, Yil, Ay)
+        CREATE TABLE IF NOT EXISTS Personel (
+            KimlikNo                    TEXT PRIMARY KEY,
+            AdSoyad                     TEXT,
+            DogumYeri                   TEXT,
+            DogumTarihi                 TEXT,
+            HizmetSinifi                TEXT,
+            KadroUnvani                 TEXT,
+            GorevYeri                   TEXT,
+            KurumSicilNo                TEXT,
+            MemuriyeteBaslamaTarihi     TEXT,
+            CepTelefonu                 TEXT,
+            Eposta                      TEXT,
+            MezunOlunanOkul             TEXT,
+            MezunOlunanFakulte          TEXT,
+            MezuniyetTarihi             TEXT,
+            DiplomaNo                   TEXT,
+            MezunOlunanOkul2            TEXT,
+            MezunOlunanFakulte2         TEXT,
+            MezuniyetTarihi2            TEXT,
+            DiplomaNo2                  TEXT,
+            Resim                       TEXT,
+            Diploma1                    TEXT,
+            Diploma2                    TEXT,
+            OzlukDosyasi                TEXT,
+            Durum                       TEXT,
+            AyrilisTarihi               TEXT,
+            AyrilmaNedeni               TEXT,
+            MuayeneTarihi               TEXT,
+            Sonuc                       TEXT,
+            sync_status                 TEXT DEFAULT 'clean',
+            updated_at                  TEXT
         )
         """)
 
-    # ══════════════════════════════════════════════════════════════════════════
-    #  SEED VERİLERİ
-    # ══════════════════════════════════════════════════════════════════════════
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Izin_Giris (
+            Izinid          TEXT PRIMARY KEY,
+            HizmetSinifi    TEXT,
+            Personelid      TEXT,
+            AdSoyad         TEXT,
+            IzinTipi        TEXT,
+            BaslamaTarihi   TEXT,
+            Gun             INTEGER,
+            BitisTarihi     TEXT,
+            Durum           TEXT,
+            sync_status     TEXT DEFAULT 'clean',
+            updated_at      TEXT
+        )
+        """)
 
-    def _seed_initial_data(self, cur: sqlite3.Cursor) -> None:
-        """Sabitler ve Tatiller başlangıç verilerini ekler. İdempotent."""
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Izin_Bilgi (
+            TCKimlik                TEXT PRIMARY KEY,
+            AdSoyad                 TEXT,
+            YillikDevir             REAL,
+            YillikHakedis           REAL,
+            YillikToplamHak         REAL,
+            YillikKullanilan        REAL,
+            YillikKalan             REAL,
+            SuaKullanilabilirHak    REAL,
+            SuaKullanilan           REAL,
+            SuaKalan                REAL,
+            SuaCariYilKazanim       REAL,
+            RaporMazeretTop         REAL,
+            sync_status             TEXT DEFAULT 'clean',
+            updated_at              TEXT
+        )
+        """)
 
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS FHSZ_Puantaj (
+            Personelid          TEXT NOT NULL,
+            AdSoyad             TEXT,
+            Birim               TEXT,
+            CalismaKosulu       TEXT,
+            AitYil              INTEGER NOT NULL,
+            Donem               TEXT NOT NULL,
+            AylikGun            INTEGER,
+            KullanilanIzin      INTEGER,
+            FiiliCalismaSaat    REAL,
+            sync_status         TEXT DEFAULT 'clean',
+            updated_at          TEXT,
+            PRIMARY KEY (Personelid, AitYil, Donem)
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Cihazlar (
+            Cihazid                 TEXT PRIMARY KEY,
+            CihazTipi               TEXT,
+            Marka                   TEXT,
+            Model                   TEXT,
+            Amac                    TEXT,
+            Kaynak                  TEXT,
+            SeriNo                  TEXT,
+            NDKSeriNo               TEXT,
+            HizmeteGirisTarihi      TEXT,
+            RKS                     TEXT,
+            Sorumlusu               TEXT,
+            Gorevi                  TEXT,
+            NDKLisansNo             TEXT,
+            BaslamaTarihi           TEXT,
+            BitisTarihi             TEXT,
+            LisansDurum             TEXT,
+            AnaBilimDali            TEXT,
+            Birim                   TEXT,
+            BulunduguBina           TEXT,
+            GarantiDurumu           TEXT,
+            GarantiBitisTarihi      TEXT,
+            DemirbasNo              TEXT,
+            KalibrasyonGereklimi    TEXT,
+            BakimDurum              TEXT,
+            Durum                   TEXT,
+            Img                     TEXT,
+            NDKLisansBelgesi        TEXT,
+            sync_status             TEXT DEFAULT 'clean',
+            updated_at              TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Dokumanlar (
+            EntityType          TEXT NOT NULL,
+            EntityId            TEXT NOT NULL,
+            BelgeTuru           TEXT NOT NULL,
+            Belge               TEXT NOT NULL,
+            DokumanId           TEXT,
+            DocType             TEXT,
+            DisplayName         TEXT,
+            LocalPath           TEXT,
+            BelgeAciklama       TEXT,
+            YuklenmeTarihi      TEXT,
+            DrivePath           TEXT,
+            IliskiliBelgeID     TEXT,
+            IliskiliBelgeTipi   TEXT,
+            sync_status         TEXT DEFAULT 'clean',
+            updated_at          TEXT,
+            PRIMARY KEY (EntityType, EntityId, BelgeTuru, Belge)
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Cihaz_Ariza (
+            Arizaid         TEXT PRIMARY KEY,
+            Cihazid         TEXT,
+            BaslangicTarihi TEXT,
+            Saat            TEXT,
+            Bildiren        TEXT,
+            ArizaTipi       TEXT,
+            Oncelik         TEXT,
+            Baslik          TEXT,
+            ArizaAcikla     TEXT,
+            Durum           TEXT,
+            Rapor           TEXT,
+            sync_status     TEXT DEFAULT 'clean',
+            updated_at      TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Ariza_Islem (
+            Islemid         TEXT PRIMARY KEY,
+            Arizaid         TEXT,
+            Tarih           TEXT,
+            Saat            TEXT,
+            IslemYapan      TEXT,
+            IslemTuru       TEXT,
+            YapilanIslem    TEXT,
+            YeniDurum       TEXT,
+            Rapor           TEXT,
+            sync_status     TEXT DEFAULT 'clean',
+            updated_at      TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Periyodik_Bakim (
+            Planid              TEXT PRIMARY KEY,
+            Cihazid             TEXT,
+            BakimPeriyodu       TEXT,
+            BakimSirasi         INTEGER,
+            PlanlananTarih      TEXT,
+            Bakim               TEXT,
+            Durum               TEXT,
+            BakimTarihi         TEXT,
+            BakimTipi           TEXT,
+            YapilanIslemler     TEXT,
+            Aciklama            TEXT,
+            Teknisyen           TEXT,
+            Rapor               TEXT,
+            SozlesmeId          TEXT,
+            sync_status         TEXT DEFAULT 'clean',
+            updated_at          TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Kalibrasyon (
+            Kalid           TEXT PRIMARY KEY,
+            Cihazid         TEXT,
+            Firma           TEXT,
+            SertifikaNo     TEXT,
+            YapilanTarih    TEXT,
+            Gecerlilik      TEXT,
+            BitisTarihi     TEXT,
+            Durum           TEXT,
+            Dosya           TEXT,
+            Aciklama        TEXT,
+            sync_status     TEXT DEFAULT 'clean',
+            updated_at      TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Sabitler (
+            Rowid       TEXT PRIMARY KEY,
+            Kod         TEXT,
+            MenuEleman  TEXT,
+            Aciklama    TEXT,
+            sync_status TEXT DEFAULT 'clean',
+            updated_at  TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Tatiller (
+            Tarih       TEXT PRIMARY KEY,
+            ResmiTatil  TEXT,
+            sync_status TEXT DEFAULT 'clean',
+            updated_at  TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Loglar (
+            Tarih       TEXT,
+            Saat        TEXT,
+            Kullanici   TEXT,
+            Modul       TEXT,
+            Islem       TEXT,
+            Detay       TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS RKE_List (
+            EkipmanNo        TEXT PRIMARY KEY,
+            KoruyucuNumarasi TEXT,
+            AnaBilimDali     TEXT,
+            Birim            TEXT,
+            KoruyucuCinsi    TEXT,
+            KursunEsdegeri   TEXT,
+            HizmetYili       INTEGER,
+            Bedeni           TEXT,
+            KontrolTarihi    TEXT,
+            Durum            TEXT,
+            Aciklama         TEXT,
+            VarsaDemirbasNo  TEXT,
+            KayitTarih       TEXT,
+            Barkod           TEXT,
+            sync_status      TEXT DEFAULT 'clean',
+            updated_at       TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS RKE_Muayene (
+            KayitNo                 TEXT PRIMARY KEY,
+            EkipmanNo               TEXT,
+            FMuayeneTarihi          TEXT,
+            FizikselDurum           TEXT,
+            SMuayeneTarihi          TEXT,
+            SkopiDurum              TEXT,
+            Aciklamalar             TEXT,
+            KontrolEdenUnvani       TEXT,
+            BirimSorumlusuUnvani    TEXT,
+            Notlar                  TEXT,
+            Rapor                   TEXT,
+            sync_status             TEXT DEFAULT 'clean',
+            updated_at              TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Personel_Saglik_Takip (
+            KayitNo                     TEXT PRIMARY KEY,
+            Personelid                  TEXT,
+            AdSoyad                     TEXT,
+            Birim                       TEXT,
+            Yil                         INTEGER,
+            MuayeneTarihi               TEXT,
+            SonrakiKontrolTarihi        TEXT,
+            Sonuc                       TEXT,
+            Durum                       TEXT,
+            RaporDosya                  TEXT,
+            Notlar                      TEXT,
+            DermatolojiMuayeneTarihi    TEXT,
+            DermatolojiDurum            TEXT,
+            DahiliyeMuayeneTarihi       TEXT,
+            DahiliyeDurum               TEXT,
+            GozMuayeneTarihi            TEXT,
+            GozDurum                    TEXT,
+            GoruntulemeMuayeneTarihi    TEXT,
+            GoruntulemeDurum            TEXT,
+            sync_status                 TEXT DEFAULT 'clean',
+            updated_at                  TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Dozimetre_Olcum (
+            KayitNo            TEXT PRIMARY KEY,
+            RaporNo            TEXT,
+            Periyot            INTEGER,
+            PeriyotAdi         TEXT,
+            Yil                INTEGER,
+            DozimetriTipi      TEXT,
+            AdSoyad            TEXT,
+            CalistiBirim       TEXT,
+            PersonelID         TEXT,
+            DozimetreNo        TEXT,
+            VucutBolgesi       TEXT,
+            Hp10               REAL,
+            Hp007              REAL,
+            Durum              TEXT,
+            OlusturmaTarihi    TEXT DEFAULT (date('now')),
+            sync_status        TEXT DEFAULT 'clean',
+            updated_at         TEXT
+        )
+        """)
+
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Doz_Arastirma_Formu (
+            FormNo              TEXT PRIMARY KEY,
+            OlcumKayitNo        TEXT,            -- Dozimetre_Olcum.KayitNo FK (referans)
+            PersonelID          TEXT NOT NULL,
+            AdSoyad             TEXT,
+            TCKimlik            TEXT,
+            KurulusAdi          TEXT,
+            KurulusKodu         TEXT,
+            UygulamaAlani       TEXT,
+            Meslek              TEXT,
+            Yil                 INTEGER,
+            Periyot             INTEGER,
+            Sure                TEXT,
+            OlculenDoz          REAL,
+            DozimetreNo         TEXT,
+            DozimetriTipi       TEXT,
+            -- Bölüm B: Kullanıcı Yanıtları
+            CalismaGunSayisi    INTEGER,
+            GunlukCalismaSaat   INTEGER,
+            KaynakXIsini        INTEGER DEFAULT 0,
+            KaynakKapali        INTEGER DEFAULT 0,
+            KaynakAcik          INTEGER DEFAULT 0,
+            KaynakTesis         INTEGER DEFAULT 0,
+            KaynakDiger         TEXT,
+            S3_BaskasıKullandi  TEXT,
+            S3_Aciklama         TEXT,
+            S4_RadAlaniMuhafaza TEXT,
+            S4_Aciklama         TEXT,
+            S5_RadAlaniUnutuldu TEXT,
+            S5_SureSaat         REAL,
+            S5_MesafeM          REAL,
+            S5_Aciklama         TEXT,
+            S6_TetkikSirasinda  TEXT,
+            S6_Aciklama         TEXT,
+            KorunmaParavan      INTEGER DEFAULT 0,
+            KorunmaOnluk        INTEGER DEFAULT 0,
+            KorunmaGozluk       INTEGER DEFAULT 0,
+            KorunmaTiroid       INTEGER DEFAULT 0,
+            KorunmaEldiven      INTEGER DEFAULT 0,
+            DzPositionYaka      INTEGER DEFAULT 0,
+            DzPositionKemer     INTEGER DEFAULT 0,
+            DzPositionGomlek    INTEGER DEFAULT 0,
+            DzPositionOnlukUst  INTEGER DEFAULT 0,
+            DzPositionOnlukAlt  INTEGER DEFAULT 0,
+            DzPositionElBilek   INTEGER DEFAULT 0,
+            S9_RadKirlilik      TEXT,
+            S9_Izotop           TEXT,
+            Yorum_HataliKullanim INTEGER DEFAULT 0,
+            Yorum_CalKosulu     INTEGER DEFAULT 0,
+            Yorum_KasitliIsinlama INTEGER DEFAULT 0,
+            Yorum_Diger         TEXT,
+            KullaniciAciklama   TEXT,
+            -- Bölüm C: Radyasyondan Korunma Sorumlusu
+            SC1_TesisDegisim    TEXT,
+            SC1_Aciklama        TEXT,
+            SC2_KorunmaBilgi    TEXT,
+            SC3_Egitim          TEXT,
+            SC4_OlaganDisi      TEXT,
+            SC4_Aciklama        TEXT,
+            SC5_DigerArtis      TEXT,
+            SC5_Aciklama        TEXT,
+            SC6_RadArtis        TEXT,
+            SC6_Aciklama        TEXT,
+            HesaplananDoz       REAL,
+            Sor_HataliKullanim  INTEGER DEFAULT 0,
+            Sor_CalKosulu       INTEGER DEFAULT 0,
+            Sor_KasitliIsinlama INTEGER DEFAULT 0,
+            Sor_Diger           TEXT,
+            SorumluAciklama     TEXT,
+            -- Meta
+            FormTarihi          TEXT,
+            OlusturmaTarihi     TEXT DEFAULT (date('now')),
+            GuncellemeTarihi    TEXT,
+            FOREIGN KEY (PersonelID) REFERENCES Personel(KimlikNo)
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Dis_Alan_Calisma (
+            TCKimlik            TEXT    NOT NULL DEFAULT '',
+            AdSoyad             TEXT    NOT NULL,
+            DonemAy             INTEGER NOT NULL CHECK (DonemAy BETWEEN 1 AND 12),
+            DonemYil            INTEGER NOT NULL CHECK (DonemYil > 2000),
+            AnaBilimDali        TEXT    NOT NULL DEFAULT '',
+            Birim               TEXT    NOT NULL DEFAULT '',
+            IslemTipi           TEXT    NOT NULL,
+            Katsayi             REAL    NOT NULL,
+            VakaSayisi          INTEGER NOT NULL CHECK (VakaSayisi > 0),
+            HesaplananSaat      REAL    NOT NULL,
+            TutanakNo           TEXT    NOT NULL,
+            TutanakTarihi       TEXT    NOT NULL,
+            KayitTarihi         TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
+            KaydedenKullanici   TEXT,
+            PRIMARY KEY (TCKimlik, DonemAy, DonemYil, TutanakNo)
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Dis_Alan_Izin_Ozet (
+            TCKimlik            TEXT    NOT NULL DEFAULT '',
+            AdSoyad             TEXT    NOT NULL,
+            DonemAy             INTEGER NOT NULL CHECK (DonemAy BETWEEN 1 AND 12),
+            DonemYil            INTEGER NOT NULL CHECK (DonemYil > 2000),
+            ToplamSaat          REAL    NOT NULL DEFAULT 0.0,
+            IzinGunHakki        REAL    NOT NULL DEFAULT 0.0,
+            HesaplamaTarihi     TEXT,
+            RksOnay             INTEGER NOT NULL DEFAULT 0 CHECK (RksOnay IN (0,1)),
+            Notlar              TEXT,
+            PRIMARY KEY (TCKimlik, AdSoyad, DonemAy, DonemYil)
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Dis_Alan_Katsayi_Protokol (
+            AnaBilimDali           TEXT    NOT NULL,
+            Birim                  TEXT    NOT NULL,
+            GecerlilikBaslangic    TEXT    NOT NULL,
+            Katsayi                REAL    NOT NULL,
+            OrtSureDk              INTEGER,
+            AlanTipAciklama        TEXT,
+            AciklamaFormul         TEXT,
+            ProtokolRef            TEXT,
+            GecerlilikBitis        TEXT,
+            Aktif                  INTEGER NOT NULL DEFAULT 1 CHECK (Aktif IN (0,1)),
+            KayitTarihi            TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
+            KaydedenKullanici      TEXT,
+            PRIMARY KEY (AnaBilimDali, Birim, GecerlilikBaslangic)
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Cihaz_Teknik (
+            Cihazid                     TEXT    PRIMARY KEY,
+            BirincilUrunNumarasi        TEXT,
+            KurumUnvan                  TEXT,
+            MarkaAdi                    TEXT,
+            EtiketAdi                   TEXT,
+            VersiyonModel               TEXT,
+            UrunTipi                    TEXT,
+            Sinif                       TEXT,
+            KatalogNo                   TEXT,
+            GmdnTerimKod                TEXT,
+            GmdnTerimTurkceAd           TEXT,
+            TemelUdiDi                  TEXT,
+            UrunTanimi                  TEXT,
+            Aciklama                    TEXT,
+            KurumGorunenAd              TEXT,
+            KurumNo                     TEXT,
+            KurumTelefon                TEXT,
+            KurumEposta                 TEXT,
+            IthalImalBilgisi            TEXT,
+            MenseiUlkeSet               TEXT,
+            IthalEdilenUlkeSet          TEXT,
+            SutEslesmesiSet             TEXT,
+            Durum                       TEXT,
+            CihazKayitTipi              TEXT,
+            UtsBaslangicTarihi          TEXT,
+            KontroleGonderildigiTarih   TEXT,
+            KalibrasyonaTabiMi          TEXT,
+            KalibrasyonPeriyodu         TEXT,
+            BakimaTabiMi                TEXT,
+            BakimPeriyodu               TEXT,
+            MrgUyumlu                   TEXT,
+            IyonizeRadyasyonIcerir      TEXT,
+            TekHastayaKullanilabilir    TEXT,
+            SinirliKullanimSayisiVar    TEXT,
+            SinirliKullanimSayisi       TEXT,
+            BaskaImalatciyaUrettirildiMi TEXT,
+            GmdnTerimTurkceAciklama     TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Cihaz_Teknik_Belge (
+            Cihazid         TEXT    NOT NULL,
+            BelgeTuru       TEXT    NOT NULL,
+            Belge           TEXT    NOT NULL,
+            BelgeAdi        TEXT,
+            YuklenmeTarihi  TEXT,
+            DrivePath       TEXT,
+            LocalPath       TEXT,
+            PRIMARY KEY (Cihazid, BelgeTuru, Belge)
+        )
+        """)
+
+        self._create_auth_tables(cur)
+
+    def _create_auth_tables(self, cur):
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Users (
+            UserId             INTEGER PRIMARY KEY AUTOINCREMENT,
+            Username           TEXT UNIQUE NOT NULL,
+            PasswordHash       TEXT NOT NULL,
+            IsActive           INTEGER NOT NULL DEFAULT 1,
+            MustChangePassword INTEGER NOT NULL DEFAULT 0,
+            CreatedAt          TEXT NOT NULL,
+            LastLoginAt        TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Roles (
+            RoleId   INTEGER PRIMARY KEY AUTOINCREMENT,
+            RoleName TEXT UNIQUE NOT NULL
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS Permissions (
+            PermissionId  INTEGER PRIMARY KEY AUTOINCREMENT,
+            PermissionKey TEXT UNIQUE NOT NULL,
+            Description   TEXT
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS UserRoles (
+            UserId INTEGER NOT NULL,
+            RoleId INTEGER NOT NULL,
+            PRIMARY KEY (UserId, RoleId)
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS RolePermissions (
+            RoleId       INTEGER NOT NULL,
+            PermissionId INTEGER NOT NULL,
+            PRIMARY KEY (RoleId, PermissionId)
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS AuthAudit (
+            AuditId   INTEGER PRIMARY KEY AUTOINCREMENT,
+            Username  TEXT,
+            Success   INTEGER NOT NULL,
+            Reason    TEXT,
+            CreatedAt TEXT NOT NULL
+        )
+        """)
+
+    # ════════════════════════════════════════════════════════
+    #  SEED VERILERI
+    # ════════════════════════════════════════════════════════
+
+    def _seed_initial_data(self, cur):
         sistem_sabitler = [
             ("1",   "Izin_Tipi", "Aylıksız İzin - Askerlik Nedeniyle", ""),
             ("2",   "Izin_Tipi", "Aylıksız İzin - Doğum Nedeniyle", ""),
@@ -1091,152 +1432,183 @@ class MigrationManager:
         ]
 
         added = 0
-        for rowid, kod, menu_eleman, aciklama in sistem_sabitler:
+        for _, kod, menu_eleman, aciklama in sistem_sabitler:
             cur.execute(
-                "SELECT COUNT(*) FROM Sabitler WHERE Kod=? AND MenuEleman=?",
-                (kod, menu_eleman),
+                "SELECT COUNT(*) FROM Sabitler WHERE Kod = ? AND MenuEleman = ?",
+                (kod, menu_eleman)
             )
             if cur.fetchone()[0] == 0:
                 cur.execute(
-                    "INSERT INTO Sabitler (Rowid, Kod, MenuEleman, Aciklama) "
-                    "VALUES (?, ?, ?, ?)",
-                    (rowid, kod, menu_eleman, aciklama),
+                    "INSERT INTO Sabitler (Kod, MenuEleman, Aciklama) VALUES (?, ?, ?)",
+                    (kod, menu_eleman, aciklama)
                 )
                 added += 1
         if added:
-            logger.info(f"  Sabitler: {added} kayıt eklendi")
+            logger.info(f"  Sabitler: {added} kayit eklendi")
 
         tatiller = [
-            ("2026-01-01", "Yılbaşı"),
-            ("2026-04-23", "Ulusal Egemenlik ve Çocuk Bayramı"),
-            ("2026-05-01", "Emek ve Dayanışma Günü"),
-            ("2026-05-19", "Atatürk'ü Anma Gençlik ve Spor Bayramı"),
-            ("2026-07-15", "Demokrasi ve Milli Birlik Günü"),
-            ("2026-08-30", "Zafer Bayramı"),
-            ("2026-10-28", "Cumhuriyet Bayramı Arifesi"),
-            ("2026-10-29", "Cumhuriyet Bayramı"),
-            ("2026-12-31", "Yılbaşı Gecesi"),
+            ("2026-01-01", "Yilbasi"),
+            ("2026-04-23", "Ulusal Egemenlik ve Cocuk Bayrami"),
+            ("2026-05-01", "Emek ve Dayanisma Gunu"),
+            ("2026-05-19", "Ataturk'u Anma Genclik ve Spor Bayrami"),
+            ("2026-07-15", "Demokrasi ve Milli Birlik Gunu"),
+            ("2026-08-30", "Zafer Bayrami"),
+            ("2026-10-28", "Cumhuriyet Bayrami Arifesi"),
+            ("2026-10-29", "Cumhuriyet Bayrami"),
+            ("2026-12-31", "Yilbasi gecesi"),
         ]
+
         added_t = 0
         for tarih, ad in tatiller:
-            cur.execute("SELECT COUNT(*) FROM Tatiller WHERE Tarih=?", (tarih,))
+            cur.execute("SELECT COUNT(*) FROM Tatiller WHERE Tarih = ?", (tarih,))
             if cur.fetchone()[0] == 0:
                 cur.execute(
                     "INSERT INTO Tatiller (Tarih, ResmiTatil) VALUES (?, ?)",
-                    (tarih, ad),
+                    (tarih, ad)
                 )
                 added_t += 1
         if added_t:
-            logger.info(f"  Tatiller: {added_t} kayıt eklendi")
+            logger.info(f"  Tatiller: {added_t} kayit eklendi")
 
-    def _seed_auth_data(self, cur: sqlite3.Cursor) -> None:
-        """RBAC rolleri, izinleri ve rol-izin eşlemlerini ekler. İdempotent."""
+    def _seed_auth_data(self, cur):
+        # Tüm RBAC anahtarlarını PermissionKeys.all() ile ekle
         from core.auth.permission_keys import PermissionKeys
-
         desc_map = {
-            "personel.read":    "Personel okuma",
-            "personel.write":   "Personel yazma",
-            "cihaz.read":       "Cihaz okuma",
-            "cihaz.write":      "Cihaz yazma",
-            "admin.panel":      "Admin panel erişimi",
-            "admin.critical":   "Kritik admin işlemleri",
-            "dis_alan.read":    "Dış alan okuma",
-            "dis_alan.write":   "Dış alan yazma",
-            "rke.read":         "RKE okuma",
-            "rke.write":        "RKE yazma",
-            "saglik.read":      "Sağlık okuma",
-            "saglik.write":     "Sağlık yazma",
-            "dozimetre.read":   "Dozimetre okuma",
-            "dozimetre.write":  "Dozimetre yazma",
-            "fhsz.read":        "FHSZ okuma",
-            "fhsz.write":       "FHSZ yazma",
-            "dokuman.read":     "Doküman okuma",
-            "dokuman.write":    "Doküman yazma",
-            "rapor.excel":      "Rapor Excel",
-            "rapor.pdf":        "Rapor PDF",
-            "backup.create":    "Yedek oluşturma",
-            "backup.restore":   "Yedek geri yükleme",
+            "personel.read": "Personel okuma",
+            "personel.write": "Personel yazma",
+            "cihaz.read": "Cihaz okuma",
+            "cihaz.write": "Cihaz yazma",
+            "admin.panel": "Admin panel erişimi",
+            "admin.critical": "Kritik admin işlemleri",
+            "dis_alan.read": "Dış alan okuma",
+            "dis_alan.write": "Dış alan yazma",
+            "rke.read": "RKE okuma",
+            "rke.write": "RKE yazma",
+            "saglik.read": "Sağlık okuma",
+            "saglik.write": "Sağlık yazma",
+            "dozimetre.read": "Dozimetre okuma",
+            "dozimetre.write": "Dozimetre yazma",
+            "fhsz.read": "FHSZ okuma",
+            "fhsz.write": "FHSZ yazma",
+            "dokuman.read": "Doküman okuma",
+            "dokuman.write": "Doküman yazma",
+            "rapor.excel": "Rapor Excel",
+            "rapor.pdf": "Rapor PDF",
+            "backup.create": "Yedek oluşturma",
+            "backup.restore": "Yedek geri yükleme",
         }
-
         for key in PermissionKeys.all():
-            cur.execute(
-                "SELECT COUNT(*) FROM Permissions WHERE PermissionKey=?", (key,)
-            )
+            desc = desc_map.get(key, key)
+            cur.execute("SELECT COUNT(*) FROM Permissions WHERE PermissionKey = ?", (key,))
             if cur.fetchone()[0] == 0:
                 cur.execute(
                     "INSERT INTO Permissions (PermissionKey, Description) VALUES (?, ?)",
-                    (key, desc_map.get(key, key)),
+                    (key, desc)
                 )
 
-        for role in ("admin", "operator", "viewer"):
-            cur.execute("SELECT COUNT(*) FROM Roles WHERE RoleName=?", (role,))
+        for role in ["admin", "operator", "viewer"]:
+            cur.execute("SELECT COUNT(*) FROM Roles WHERE RoleName = ?", (role,))
             if cur.fetchone()[0] == 0:
                 cur.execute("INSERT INTO Roles (RoleName) VALUES (?)", (role,))
 
         cur.execute("SELECT RoleId, RoleName FROM Roles")
         role_map = {row["RoleName"]: row["RoleId"] for row in cur.fetchall()}
-
         cur.execute("SELECT PermissionId, PermissionKey FROM Permissions")
         perm_map = {row["PermissionKey"]: row["PermissionId"] for row in cur.fetchall()}
 
-        def _grant(role_name: str, keys: list[str]) -> None:
-            rid = role_map.get(role_name)
-            if not rid:
-                return
-            for key in keys:
-                pid = perm_map.get(key)
-                if not pid:
-                    continue
+        admin_id = role_map.get("admin")
+        if admin_id:
+            for perm_id in perm_map.values():
                 cur.execute(
                     "SELECT COUNT(*) FROM RolePermissions WHERE RoleId=? AND PermissionId=?",
-                    (rid, pid),
+                    (admin_id, perm_id)
                 )
                 if cur.fetchone()[0] == 0:
                     cur.execute(
                         "INSERT INTO RolePermissions (RoleId, PermissionId) VALUES (?, ?)",
-                        (rid, pid),
+                        (admin_id, perm_id)
                     )
 
-        _grant("admin",    list(perm_map.keys()))
-        _grant("operator", ["personel.read", "personel.write",
-                             "cihaz.read",   "cihaz.write"])
-        _grant("viewer",   ["personel.read", "cihaz.read"])
+        operator_id = role_map.get("operator")
+        if operator_id:
+            for key in ("personel.read", "personel.write", "cihaz.read", "cihaz.write"):
+                perm_id = perm_map.get(key)
+                if not perm_id:
+                    continue
+                cur.execute(
+                    "SELECT COUNT(*) FROM RolePermissions WHERE RoleId=? AND PermissionId=?",
+                    (operator_id, perm_id)
+                )
+                if cur.fetchone()[0] == 0:
+                    cur.execute(
+                        "INSERT INTO RolePermissions (RoleId, PermissionId) VALUES (?, ?)",
+                        (operator_id, perm_id)
+                    )
 
-    # ══════════════════════════════════════════════════════════════════════════
-    #  ACİL RESET  (geliştirme / test ortamı)
-    # ══════════════════════════════════════════════════════════════════════════
+        viewer_id = role_map.get("viewer")
+        if viewer_id:
+            for key in ("personel.read", "cihaz.read"):
+                perm_id = perm_map.get(key)
+                if not perm_id:
+                    continue
+                cur.execute(
+                    "SELECT COUNT(*) FROM RolePermissions WHERE RoleId=? AND PermissionId=?",
+                    (viewer_id, perm_id)
+                )
+                if cur.fetchone()[0] == 0:
+                    cur.execute(
+                        "INSERT INTO RolePermissions (RoleId, PermissionId) VALUES (?, ?)",
+                        (viewer_id, perm_id)
+                    )
 
-    def reset_database(self) -> None:
-        """Tüm tabloları siler ve v1 şemasını yeniden oluşturur."""
-        logger.warning("VERİTABANI RESET — TÜM VERİ SİLİNECEK!")
+    # ════════════════════════════════════════════════════════
+    #  ACIL RESET
+    # ════════════════════════════════════════════════════════
+
+    def reset_database(self):
+        """Tum tablolari sil ve yeniden olustur."""
+        logger.warning("VERITABANI RESET - TUM VERI SILINECEK!")
         backup_path = self.backup_database()
         if backup_path:
-            logger.info(f"Son yedek alındı: {backup_path}")
+            logger.info(f"Son yedek: {backup_path}")
 
         conn = self.connect()
-        try:
-            cur = conn.cursor()
-            cur.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
+        cur = conn.cursor()
+
+        tables = [
+            "Personel", "Izin_Giris", "Izin_Bilgi", "FHSZ_Puantaj",
+            "Cihazlar", "Cihaz_Ariza", "Ariza_Islem",
+            "Cihaz_Teknik", "Cihaz_Teknik_Belge",
+            "Periyodik_Bakim", "Kalibrasyon",
+            "Dokumanlar", "Sabitler", "Tatiller", "Loglar",
+            "RKE_List", "RKE_Muayene", "Personel_Saglik_Takip",
+            "Dozimetre_Olcum",
+            "Dis_Alan_Calisma", "Dis_Alan_Izin_Ozet",
+            "Dis_Alan_Katsayi_Protokol",
+            "Users", "Roles", "Permissions",
+            "UserRoles", "RolePermissions", "AuthAudit",
+            "schema_version",
+        ]
+
+        for table in tables:
+            cur.execute(f"DROP TABLE IF EXISTS {table}")
+
+        self.create_tables(cur)
+        self._seed_initial_data(cur)
+        self._seed_auth_data(cur)
+
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS schema_version (
+                version     INTEGER PRIMARY KEY,
+                applied_at  TEXT NOT NULL,
+                description TEXT
             )
-            tables = [r[0] for r in cur.fetchall()]
-            for tbl in tables:
-                cur.execute(f"DROP TABLE IF EXISTS {tbl}")
-            self._create_all_tables(cur)
-            self._seed_initial_data(cur)
-            self._seed_auth_data(cur)
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS schema_version (
-                    version    INTEGER PRIMARY KEY,
-                    applied_at TEXT NOT NULL,
-                    description TEXT
-                )
-            """)
-            self._set_schema_version(conn, self.CURRENT_VERSION, "Full reset")
-            conn.commit()
-            logger.info(f"Tüm tablolar yeniden oluşturuldu (v{self.CURRENT_VERSION})")
-        except Exception:
-            conn.rollback()
-            raise
-        finally:
-            conn.close()
+        """)
+        cur.execute(
+            "INSERT INTO schema_version (version, applied_at, description) VALUES (?, ?, ?)",
+            (self.CURRENT_VERSION, datetime.now().isoformat(), "Full reset")
+        )
+
+        conn.commit()
+        conn.close()
+        logger.info(f"Tum tablolar yeniden olusturuldu (v{self.CURRENT_VERSION})")

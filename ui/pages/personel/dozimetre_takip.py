@@ -79,9 +79,9 @@ GECMIS_COLS = [
 ]
 
 KARS_COLS = [
-    ("AdSoyad",      "Ad Soyad",     160),
+    ("AdSoyad",      "Ad Soyad",     140),
     ("PersonelID",   "TC / ID",      110),
-    ("CalistiBirim", "Birim",        130),
+    ("CalistiBirim", "Birim",        150),
     ("hp10_p1",      "Per.1 Hp(10)",  80),
     ("hp10_p2",      "Per.2 Hp(10)",  80),
     ("fark",         "Fark",          70),
@@ -89,10 +89,10 @@ KARS_COLS = [
 ]
 
 BIRIM_COLS = [
-    ("CalistiBirim", "Birim",        160),
+    ("CalistiBirim", "Birim",        120),
     ("kayit_say",    "Kayıt Sayısı",  90),
-    ("ort_hp10",     "Ort. Hp(10)",   80),
-    ("max_hp10",     "Maks. Hp(10)",  80),
+    ("ort_hp10",     "Ort. Hp(10)",   90),
+    ("max_hp10",     "Maks. Hp(10)",  90),
     ("oran",         "Genel Ort. Katı", 100),
     ("uyari_say",    f"≥{HP10_UYARI} mSv", 80),
     ("tehlike_say",  f"≥{HP10_TEHLIKE} mSv", 80),
@@ -101,9 +101,9 @@ BIRIM_COLS = [
 ANOMALI_COLS = [
     ("Yil",          "Yıl",          60),
     ("Periyot",      "Per.",          40),
-    ("AdSoyad",      "Ad Soyad",     160),
+    ("AdSoyad",      "Ad Soyad",     140),
     ("PersonelID",   "TC / ID",      110),
-    ("CalistiBirim", "Birim",        130),
+    ("CalistiBirim", "Birim",        150),
     ("Hp10",         "Hp(10)",        65),
     ("kisi_ort",     "Kişi Ort.",     70),
     ("kat",          "× Ortalama",    80),
@@ -124,6 +124,28 @@ def _hp_renk(v: float) -> QColor:
     if v >= HP10_TEHLIKE: return QColor("#f87171")
     if v >= HP10_UYARI:   return QColor("#facc15")
     return QColor("#4ade80")
+
+
+def _role_color(role: Optional[str], fallback_token: str = "TEXT_PRIMARY") -> QColor:
+    """color-role veya token adını aktif temadaki gerçek renge çözer."""
+    role_map = {
+        "primary": "TEXT_PRIMARY",
+        "secondary": "TEXT_SECONDARY",
+        "muted": "TEXT_MUTED",
+        "accent": "ACCENT",
+        "success": "STATUS_SUCCESS",
+        "warning": "STATUS_WARNING",
+        "danger": "STATUS_ERROR",
+        "error": "STATUS_ERROR",
+    }
+
+    key = (role or "").strip()
+    if key.startswith("#") or key.lower().startswith("rgb"):
+        return QColor(key)
+
+    token = role_map.get(key.lower(), key.upper() if key else fallback_token)
+    value = getattr(DarkTheme, token, None) or getattr(DarkTheme, fallback_token)
+    return QColor(value)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -282,13 +304,16 @@ class _TrendWidget(QWidget):
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.setFont(QFont("", 7))
 
+        clr_muted = _role_color("muted", "TEXT_MUTED")
+        clr_accent = _role_color("accent", "ACCENT")
+
         rows   = self._rows
         hp10s  = [(_hp(r.get("Hp10"))  or 0.0) for r in rows]
         hp007s = [(_hp(r.get("Hp007")) or 0.0) for r in rows]
         labels = [f"{r.get('Yil','')}-{r.get('Periyot','')}" for r in rows]
 
         if len(hp10s) < 2:
-            p.setPen(QColor("muted"))
+            p.setPen(clr_muted)
             p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter,
                        "Trend için en az 2 periyot gerekli")
             return
@@ -309,7 +334,7 @@ class _TrendWidget(QWidget):
             p.drawLine(pl, py(HP10_UYARI), w - pr, py(HP10_UYARI))
 
         # Hp(10) — mavi, kalın
-        p.setPen(QPen(QColor("accent"), 2))
+        p.setPen(QPen(clr_accent, 2))
         for i in range(n - 1):
             p.drawLine(px(i), py(hp10s[i]), px(i+1), py(hp10s[i+1]))
         for i, v in enumerate(hp10s):
@@ -325,16 +350,19 @@ class _TrendWidget(QWidget):
             p.drawEllipse(px(i)-2, py(v)-2, 5, 5)
 
         # X ekseni etiketleri
-        p.setPen(QColor("muted"))
+        p.setPen(clr_muted)
         if labels:
             p.drawText(pl, h - 4, labels[0])
             p.drawText(w - pr - 40, h - 4, labels[-1])
 
         # Legend
-        p.setPen(QColor("accent"))
-        p.drawText(w - pr - 90, pt + 10, "— Hp(10)")
+        legend_x = w - pr - 98
+        legend_y = pt + 10
+        line_h = max(12, p.fontMetrics().height() + 2)
+        p.setPen(clr_accent)
+        p.drawText(legend_x, legend_y, "— Hp(10)")
         p.setPen(QColor("#fb923c"))
-        p.drawText(w - pr - 90, pt + 20, "-- Hp(0,07)")
+        p.drawText(legend_x, legend_y + line_h, "-- Hp(0,07)")
 
 
 # ─────────────────────────────────────────────────────────────
@@ -361,11 +389,15 @@ class _GaugeWidget(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
+        role_color = str(self.property("color-role") or "primary")
+        clr_title = _role_color("muted", "TEXT_MUTED")
+        clr_value = _role_color(role_color, "TEXT_PRIMARY")
+
         oran = min(self._deger / self._limit, 1.0) if self._limit else 0.0
         w = self.width()
 
         # Başlık
-        p.setPen(QColor("muted"))
+        p.setPen(clr_title)
         p.setFont(QFont("", 8))
         p.drawText(0, 12, self._baslik)
 
@@ -384,7 +416,7 @@ class _GaugeWidget(QWidget):
             p.drawRoundedRect(0, bar_y, int(w * oran), bar_h, 4, 4)
 
         # Değer
-        p.setPen(QColor("primary"))
+        p.setPen(clr_value)
         p.setFont(QFont("", 8, QFont.Weight.Bold))
         metin = f"{self._deger:.2f} / {self._limit:.0f} mSv  (%{oran*100:.0f})"
         p.drawText(0, bar_y + bar_h + 14, metin)
@@ -588,13 +620,17 @@ class DozimetreTakipPage(QWidget):
             f"Yıllık Kümülatif Hp(10)  [NDK: {YILLIK_LIMIT:.0f} mSv]",
             YILLIK_LIMIT, 0.5, 0.75
         )
+        #self._gauge_yillik.setProperty("style-role", "mini-gauge")
+        self._gauge_yillik.setProperty("color-role", "secondary")
         sag.addWidget(self._gauge_yillik)
-
-        # 5 yıllık kümülatif gauge
+        
+            # 5 yıllık kümülatif gauge
         self._gauge_5yil = _GaugeWidget(
             f"5 Yıllık Kümülatif Hp(10)  [NDK: {BES_YILLIK:.0f} mSv]",
             BES_YILLIK, 0.5, 0.75
         )
+        #self._gauge_5yil.setProperty("style-role", "mini-gauge")
+        self._gauge_5yil.setProperty("color-role", "primary")
         sag.addWidget(self._gauge_5yil)
 
         # Trend
@@ -933,7 +969,7 @@ class DozimetreTakipPage(QWidget):
             f"{ad}  —  {pid}  |  {len(gecmis)} periyot ölçümü"
         )
         self.lbl_alt_baslik.setStyleSheet(
-            f"font-size:13px;font-weight:600;color:{"primary"};"
+            f"font-size:13px;font-weight:600;color:{DarkTheme.TEXT_PRIMARY};"
         )
         self._gecmis_model.set_data(gecmis)
         self._trend.set_data(gecmis)
